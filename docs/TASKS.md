@@ -13,19 +13,19 @@ Milestones are sequential-ish — M1 blocks most things, but M3 can start before
 - [x] Mod skeleton: registries, creative tab, placeholder T1 printer block + blank disc item
 - [x] Integration roadmap from top-500 survey (v1/v2/v3 scoping)
 
-## M1 — Blueprint Core (format + importers)
+## M1 — Blueprint Core (format + importers) ✅
 
 The keystone — everything else consumes this. Pure logic, testable without a running game.
 
 - [x] **Decided (2026-06-10):** blueprint storage = world-level file store (`world/mc3dprint/blueprints/<uuid>.blueprint`, gzipped NBT); discs carry UUID reference + cached metadata. Inline disc NBT would exceed packet/NBT limits on large builds; file store also powers the Server Repository and `.blueprint` sharing directly
-- [ ] Native blueprint data model: block palette + positions + block entities, NBT-serializable
-- [ ] Serializer/deserializer round-trip + unit tests
-- [ ] Importer: vanilla structure `.nbt` (Create schematics use this format)
-- [ ] Importer: Sponge `.schem` v2/v3 (WorldEdit)
-- [ ] Exporter: `.schem` (WorldEdit interop is import *and* export)
-- [ ] Transform ops: rotate 90°/180°/270°, mirror X/Z — with block-state rotation (stairs, etc.)
-- [ ] Blueprint Disc item: stores blueprint reference, lock/unlock (Shift+Right Click), locked visual indicator
-- [ ] `.blueprint` file read/write for the disk-based Server Repository (`world/mc3dprint/blueprints/`)
+- [x] Native blueprint data model: block palette + positions + block entities, NBT-serializable
+- [x] Serializer/deserializer round-trip + unit tests
+- [x] Importer: vanilla structure `.nbt` (Create schematics use this format)
+- [x] Importer: Sponge `.schem` v2/v3 (WorldEdit)
+- [x] Exporter: `.schem` (WorldEdit interop is import *and* export)
+- [x] Transform ops: rotate 90°/180°/270°, mirror X/Z — with block-state rotation (stairs, etc.)
+- [x] Blueprint Disc item: stores blueprint reference, lock/unlock (Shift+Right Click), locked visual indicator
+- [x] `.blueprint` file read/write for the disk-based Server Repository (`world/mc3dprint/blueprints/`)
 
 ## M2 — T1 Printer Machine (Item Mode)
 

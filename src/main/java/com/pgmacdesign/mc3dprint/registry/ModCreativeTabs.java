@@ -19,6 +19,7 @@ public final class ModCreativeTabs {
                     .displayItems((parameters, output) -> {
                         output.accept(ModItems.TIER1_PRINTER.get());
                         output.accept(ModItems.BLANK_BLUEPRINT_DISC.get());
+                        output.accept(ModItems.BLUEPRINT_DISC.get());
                     })
                     .build());
 
