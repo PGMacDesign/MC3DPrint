@@ -37,12 +37,12 @@ The keystone — everything else consumes this. Pure logic, testable without a r
 - [x] Output buffer pauses printer when full — never void items
 - [x] Config file: base costs, speeds, efficiency values (from Balancing table)
 
-## M3 — Scanner & Capture
+## M3 — Scanner & Capture ✅
 
-- [ ] Scanner tool item: two-corner bounding box selection (WorldEdit wand style)
-- [ ] Scan capture → write to Blank Blueprint Disc
-- [ ] Scanner tier volume limits (T1 ≈ 7×7×7)
-- [ ] Capture validation: volume limits, unscannable blocks policy
+- [x] Scanner tool item: two-corner bounding box selection (WorldEdit wand style)
+- [x] Scan capture → write to Blank Blueprint Disc
+- [x] Scanner tier volume limits (T1 ≈ 7×7×7)
+- [x] Capture validation: volume limits, unscannable blocks policy
 
 ## M4 — Structure Printing
 

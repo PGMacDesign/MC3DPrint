@@ -20,6 +20,7 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.TIER1_PRINTER.get());
                         output.accept(ModItems.BLANK_BLUEPRINT_DISC.get());
                         output.accept(ModItems.BLUEPRINT_DISC.get());
+                        output.accept(ModItems.SCANNER.get());
                     })
                     .build());
 

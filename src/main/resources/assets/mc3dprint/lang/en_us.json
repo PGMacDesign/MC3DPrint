@@ -13,5 +13,16 @@
   "gui.mc3dprint.state.idle": "Idle",
   "gui.mc3dprint.state.printing": "Printing…",
   "gui.mc3dprint.state.paused_no_power": "PAUSED — No Power",
-  "gui.mc3dprint.state.paused_output_full": "PAUSED — Output Full"
+  "gui.mc3dprint.state.paused_output_full": "PAUSED — Output Full",
+  "item.mc3dprint.scanner": "Structure Scanner",
+  "message.mc3dprint.corner_a_set": "Corner A set: %s, %s, %s",
+  "message.mc3dprint.corner_b_set": "Corner B set: %s, %s, %s",
+  "message.mc3dprint.corners_cleared": "Selection cleared",
+  "message.mc3dprint.scan_no_corners": "Select two corners first (right-click blocks)",
+  "message.mc3dprint.scan_too_large": "Selection %s×%s×%s exceeds scanner limit (%s per axis)",
+  "message.mc3dprint.scan_need_blank_disc": "Hold a Blank Blueprint Disc in your offhand",
+  "message.mc3dprint.scan_complete": "Scan complete — %s blocks captured",
+  "tooltip.mc3dprint.corner_a": "Corner A: %s, %s, %s",
+  "tooltip.mc3dprint.corner_b": "Corner B: %s, %s, %s",
+  "tooltip.mc3dprint.scanner_help": "Right-click blocks to set corners, right-click air to scan"
 }

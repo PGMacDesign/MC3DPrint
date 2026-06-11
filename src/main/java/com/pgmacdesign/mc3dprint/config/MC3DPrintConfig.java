@@ -14,6 +14,7 @@ public final class MC3DPrintConfig {
     public static final ForgeConfigSpec.IntValue T1_ENERGY_PER_TICK;
     public static final ForgeConfigSpec.IntValue T1_ITEM_PRINT_TICKS;
     public static final ForgeConfigSpec.IntValue T1_MAX_ENERGY_RECEIVE;
+    public static final ForgeConfigSpec.IntValue T1_SCANNER_MAX_EDGE;
 
     static {
         ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
@@ -31,6 +32,12 @@ public final class MC3DPrintConfig {
         T1_MAX_ENERGY_RECEIVE = builder
                 .comment("Max RF accepted per tick from cables")
                 .defineInRange("maxEnergyReceive", 1_000, 1, Integer.MAX_VALUE);
+        builder.pop();
+
+        builder.comment("Scanner").push("scanner");
+        T1_SCANNER_MAX_EDGE = builder
+                .comment("Tier 1 Scanner: maximum scan size per axis")
+                .defineInRange("t1MaxEdge", 7, 1, 256);
         builder.pop();
 
         SPEC = builder.build();

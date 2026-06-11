@@ -40,6 +40,23 @@ public final class BlueprintBlockState {
         return id.indexOf(':') >= 0 ? id : "minecraft:" + id;
     }
 
+    /** Captures a live BlockState into the registry-free form. Game-side only. */
+    public static BlueprintBlockState fromBlockState(BlockState state) {
+        ResourceLocation key = ForgeRegistries.BLOCKS.getKey(state.getBlock());
+        if (key == null) {
+            throw new IllegalArgumentException("Block has no registry key: " + state);
+        }
+        SortedMap<String, String> properties = new TreeMap<>();
+        for (Property<?> property : state.getProperties()) {
+            properties.put(property.getName(), propertyName(state, property));
+        }
+        return new BlueprintBlockState(key.toString(), properties);
+    }
+
+    private static <T extends Comparable<T>> String propertyName(BlockState state, Property<T> property) {
+        return property.getName(state.getValue(property));
+    }
+
     /** Parses {@code namespace:path[key=value,...]}. */
     public static BlueprintBlockState parse(String serialized) {
         int bracket = serialized.indexOf('[');
