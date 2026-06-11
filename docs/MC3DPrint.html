@@ -1,0 +1,1834 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MC3DPrint — Minecraft 3D Printing Mod Design Document</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d2e;
+    --surface2: #222538;
+    --border: #2e3154;
+    --accent: #6c63ff;
+    --accent2: #00d4aa;
+    --accent3: #ff6b6b;
+    --gold: #ffd700;
+    --text: #e2e8f0;
+    --muted: #8892a4;
+    --green: #4ade80;
+    --red: #f87171;
+    --orange: #fb923c;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    font-size: 15px;
+  }
+  /* HEADER */
+  .hero {
+    background: linear-gradient(135deg, #0f1117 0%, #1a1040 50%, #0f1117 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 60px 40px 50px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle at 50% 50%, rgba(108,99,255,0.08) 0%, transparent 60%);
+    animation: pulse 6s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:0.5;transform:scale(1)} 50%{opacity:1;transform:scale(1.05)} }
+  .hero h1 {
+    font-size: 3em;
+    font-weight: 800;
+    letter-spacing: -1px;
+    background: linear-gradient(90deg, #6c63ff, #00d4aa, #6c63ff);
+    background-size: 200%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: shimmer 4s linear infinite;
+    position: relative;
+  }
+  @keyframes shimmer { 0%{background-position:0%} 100%{background-position:200%} }
+  .hero p {
+    color: var(--muted);
+    font-size: 1.1em;
+    margin-top: 12px;
+    position: relative;
+  }
+  .badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.75em;
+    font-weight: 600;
+    margin: 4px;
+    letter-spacing: 0.5px;
+  }
+  .badge-purple { background: rgba(108,99,255,0.2); border: 1px solid rgba(108,99,255,0.4); color: #a78bfa; }
+  .badge-teal { background: rgba(0,212,170,0.15); border: 1px solid rgba(0,212,170,0.3); color: #34d399; }
+  .badge-orange { background: rgba(251,146,60,0.15); border: 1px solid rgba(251,146,60,0.3); color: #fb923c; }
+  .badge-gold { background: rgba(255,215,0,0.15); border: 1px solid rgba(255,215,0,0.3); color: #ffd700; }
+
+  /* LAYOUT */
+  .container { max-width: 1100px; margin: 0 auto; padding: 40px 24px; }
+  .toc {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px 28px;
+    margin-bottom: 40px;
+  }
+  .toc h3 { color: var(--accent2); margin-bottom: 14px; font-size: 0.85em; text-transform: uppercase; letter-spacing: 1px; }
+  .toc ol { padding-left: 20px; columns: 2; gap: 20px; }
+  .toc li { margin-bottom: 6px; }
+  .toc a { color: var(--muted); text-decoration: none; font-size: 0.9em; }
+  .toc a:hover { color: var(--accent); }
+
+  section { margin-bottom: 56px; }
+  h2 {
+    font-size: 1.6em;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  h2 .icon { font-size: 1em; }
+  h3 { font-size: 1.1em; font-weight: 600; color: var(--accent2); margin: 20px 0 10px; }
+  p { color: var(--muted); margin-bottom: 12px; }
+  ul, ol { color: var(--muted); padding-left: 20px; margin-bottom: 12px; }
+  li { margin-bottom: 6px; }
+  strong { color: var(--text); }
+  code {
+    background: rgba(108,99,255,0.15);
+    border: 1px solid rgba(108,99,255,0.2);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+    font-size: 0.88em;
+    color: #a78bfa;
+  }
+  .note-box {
+    background: rgba(251,146,60,0.08);
+    border: 1px solid rgba(251,146,60,0.25);
+    border-left: 3px solid var(--orange);
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin: 16px 0;
+    color: #fed7aa;
+    font-size: 0.9em;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-bottom: 16px;
+  }
+  .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+
+  /* TABLES */
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+  th {
+    background: var(--surface2);
+    color: var(--accent2);
+    font-size: 0.8em;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 10px 14px;
+    text-align: left;
+  }
+  td { padding: 10px 14px; border-bottom: 1px solid var(--border); color: var(--muted); }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+  tr td:first-child { color: var(--text); font-weight: 500; }
+
+  /* ===================== VISUALS ===================== */
+
+  /* TIER VISUALIZER */
+  .tier-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin: 20px 0;
+  }
+  .tier-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s, border-color 0.2s;
+  }
+  .tier-card:hover { transform: translateY(-3px); border-color: var(--accent); }
+  .tier-card.special { border-color: var(--gold); }
+  .tier-label {
+    font-size: 0.75em;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .tier-number {
+    font-size: 2em;
+    font-weight: 800;
+    color: var(--accent);
+    line-height: 1;
+  }
+  .tier-card.special .tier-number { color: var(--gold); }
+  .tier-viz { margin: 10px auto; }
+  .tier-info { font-size: 0.8em; color: var(--muted); margin-top: 8px; }
+  .tier-block-single {
+    width: 32px; height: 32px;
+    background: linear-gradient(135deg, #6c63ff, #4f46e5);
+    border-radius: 4px;
+    margin: 6px auto;
+    box-shadow: 0 0 12px rgba(108,99,255,0.4);
+  }
+
+  /* SVG Multiblock grids */
+  .mb-grid svg { display: block; margin: 0 auto; }
+
+  /* MATTER BAR CHART */
+  .matter-chart { margin: 20px 0; }
+  .matter-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+  .matter-label { width: 160px; font-size: 0.85em; color: var(--muted); flex-shrink: 0; text-align: right; }
+  .matter-bar-wrap { flex: 1; background: var(--surface2); border-radius: 4px; height: 22px; overflow: hidden; }
+  .matter-bar {
+    height: 100%;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    padding-left: 8px;
+    font-size: 0.78em;
+    font-weight: 600;
+    color: #fff;
+    transition: width 0.5s ease;
+  }
+  .matter-val { width: 70px; font-size: 0.85em; font-weight: 600; color: var(--text); flex-shrink: 0; }
+
+  /* PRINT HEAD ANIMATION */
+  .printer-demo {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    text-align: center;
+    position: relative;
+  }
+  .printer-scene {
+    position: relative;
+    width: 320px;
+    height: 260px;
+    margin: 0 auto;
+  }
+  /* Frame corners */
+  .frame-corner {
+    position: absolute;
+    width: 14px; height: 14px;
+    background: #4f46e5;
+    border-radius: 2px;
+    box-shadow: 0 0 8px rgba(108,99,255,0.6);
+  }
+  .fc-tl { top: 10px; left: 20px; }
+  .fc-tr { top: 10px; right: 20px; }
+  .fc-bl { bottom: 40px; left: 20px; }
+  .fc-br { bottom: 40px; right: 20px; }
+  /* Frame rails */
+  .frame-rail-h { position: absolute; height: 2px; background: rgba(108,99,255,0.4); }
+  .frame-rail-v { position: absolute; width: 2px; background: rgba(108,99,255,0.4); }
+  /* Gantry */
+  .gantry-x {
+    position: absolute;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, #00d4aa, transparent);
+    top: 30px;
+    left: 27px;
+    right: 27px;
+    animation: gantry-move 3s ease-in-out infinite;
+  }
+  @keyframes gantry-move {
+    0%,100% { top: 30px; }
+    50% { top: 140px; }
+  }
+  .print-head {
+    position: absolute;
+    width: 16px; height: 16px;
+    background: radial-gradient(circle, #fff 20%, #00d4aa 60%, transparent 100%);
+    border-radius: 50%;
+    top: -7px;
+    left: 50%;
+    transform: translateX(-50%);
+    animation: head-move 1.2s ease-in-out infinite alternate;
+    box-shadow: 0 0 16px #00d4aa;
+  }
+  @keyframes head-move { 0%{left:10%} 100%{left:85%} }
+  /* Laser beam */
+  .laser {
+    position: absolute;
+    width: 2px;
+    background: linear-gradient(to bottom, #00d4aa, transparent);
+    height: 20px;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    opacity: 0.8;
+    animation: laser-pulse 0.3s ease-in-out infinite alternate;
+  }
+  @keyframes laser-pulse { 0%{opacity:0.4;height:15px} 100%{opacity:1;height:24px} }
+  /* Building up */
+  .build-area {
+    position: absolute;
+    bottom: 40px;
+    left: 27px;
+    right: 27px;
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 2px;
+  }
+  .build-layer {
+    height: 10px;
+    border-radius: 2px;
+    opacity: 0;
+    transform: scaleY(0);
+    transform-origin: bottom;
+    transition: opacity 0.15s ease, transform 0.15s ease;
+  }
+  .build-layer.visible { opacity: 1; transform: scaleY(1); }
+  .build-layer:nth-child(1) { background: rgba(139,90,43,0.95); }
+  .build-layer:nth-child(2) { background: rgba(100,100,100,0.95); }
+  .build-layer:nth-child(3) { background: rgba(80,140,80,0.95); }
+  .build-layer:nth-child(4) { background: rgba(60,100,200,0.95); }
+  .build-layer:nth-child(5) { background: rgba(120,60,180,0.95); }
+  .build-layer:nth-child(6) { background: rgba(180,60,80,0.95); }
+  /* Filament Spool */
+  .spool-wrap { position: absolute; right: -68px; top: 50px; text-align: center; }
+  .spool {
+    width: 44px; height: 44px; border-radius: 50%;
+    background: conic-gradient(#6c63ff 0deg,#a78bfa 120deg,#6c63ff 240deg,#4f46e5 360deg);
+    border: 3px solid #312e81; display:flex; align-items:center; justify-content:center;
+    box-shadow: 0 0 10px rgba(108,99,255,0.5);
+  }
+  .spool-hub { width:14px;height:14px;background:#1e1b4b;border-radius:50%;border:2px solid #6c63ff; }
+  .spool-label { font-size:0.58em;color:var(--muted);margin-top:4px;white-space:nowrap; }
+  .spool-bar-wrap { width:44px;height:4px;background:#222;border-radius:3px;margin:3px auto 0;overflow:hidden; }
+  .spool-bar-fill { height:100%;background:linear-gradient(90deg,#6c63ff,#a78bfa);border-radius:3px;width:70%; }
+  @keyframes spool-spin { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
+  /* Particles */
+  .particle {
+    position: absolute;
+    width: 4px; height: 4px;
+    background: #00d4aa;
+    border-radius: 50%;
+    animation: particle-fly 1.5s ease-out infinite;
+    opacity: 0;
+  }
+  @keyframes particle-fly {
+    0%{opacity:1;transform:translate(0,0) scale(1)}
+    100%{opacity:0;transform:translate(var(--dx), var(--dy)) scale(0)}
+  }
+  .p1{top:50%;left:50%;--dx:-20px;--dy:-30px;animation-delay:0s}
+  .p2{top:50%;left:50%;--dx:25px;--dy:-20px;animation-delay:0.3s}
+  .p3{top:50%;left:50%;--dx:-15px;--dy:10px;animation-delay:0.6s}
+  .p4{top:50%;left:50%;--dx:18px;--dy:-35px;animation-delay:0.9s}
+
+  /* GUI MOCKUP */
+  .gui-mockup {
+    background: #1a1a2e;
+    border: 2px solid #444;
+    border-radius: 6px;
+    width: 100%;
+    max-width: 560px;
+    margin: 0 auto;
+    font-family: 'Cascadia Code', monospace;
+    overflow: hidden;
+  }
+  .gui-title-bar {
+    background: #2a2a4a;
+    padding: 8px 14px;
+    font-size: 0.85em;
+    color: #a78bfa;
+    border-bottom: 1px solid #444;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .gui-body { padding: 16px; }
+  .gui-row { display: flex; gap: 12px; margin-bottom: 12px; align-items: stretch; }
+  .gui-slot {
+    width: 48px; height: 48px;
+    background: #111;
+    border: 2px solid #555;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3em;
+    flex-shrink: 0;
+  }
+  .gui-gauge-wrap { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+  .gui-gauge-label { font-size: 0.7em; color: #888; }
+  .gui-gauge {
+    height: 16px;
+    background: #111;
+    border: 1px solid #444;
+    border-radius: 3px;
+    overflow: hidden;
+    position: relative;
+  }
+  .gui-gauge-fill {
+    height: 100%;
+    border-radius: 3px;
+    position: relative;
+    animation: gauge-animate 4s ease-in-out infinite alternate;
+  }
+  .gui-gauge-fill.matter { background: linear-gradient(90deg, #6c63ff, #a78bfa); width: 70%; }
+  .gui-gauge-fill.rf { background: linear-gradient(90deg, #fbbf24, #f59e0b); width: 55%; animation-delay: 0.5s; }
+  @keyframes gauge-animate { 0%{filter:brightness(0.8)} 100%{filter:brightness(1.2)} }
+  .gui-queue {
+    background: #111;
+    border: 1px solid #444;
+    border-radius: 4px;
+    padding: 8px;
+    font-size: 0.75em;
+    color: #888;
+  }
+  .gui-queue-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 0;
+    border-bottom: 1px solid #222;
+    color: #aaa;
+  }
+  .gui-queue-item:last-child { border-bottom: none; }
+  .qi-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .qi-active { background: #4ade80; box-shadow: 0 0 6px #4ade80; }
+  .qi-pending { background: #555; }
+  .qi-progress {
+    margin-left: auto;
+    background: #222;
+    border-radius: 3px;
+    height: 6px;
+    width: 60px;
+    overflow: hidden;
+  }
+  .qi-prog-fill {
+    height: 100%;
+    background: #4ade80;
+    border-radius: 3px;
+    animation: prog 6s linear infinite;
+  }
+  @keyframes prog { 0%{width:0%} 100%{width:100%} }
+  .gui-btn {
+    display: inline-block;
+    padding: 6px 14px;
+    border-radius: 4px;
+    font-size: 0.78em;
+    font-weight: 600;
+    cursor: pointer;
+    margin: 3px;
+  }
+  .btn-green { background: rgba(74,222,128,0.2); border: 1px solid #4ade80; color: #4ade80; }
+  .btn-blue { background: rgba(108,99,255,0.2); border: 1px solid #6c63ff; color: #a78bfa; }
+  .btn-red { background: rgba(248,113,113,0.2); border: 1px solid #f87171; color: #f87171; }
+  .gui-section-label { font-size: 0.7em; color: #666; text-transform: uppercase; letter-spacing: 0.5px; margin: 10px 0 4px; }
+
+  /* BLUEPRINT DISC */
+  .disc-visual {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 32px;
+    flex-wrap: wrap;
+    margin: 20px 0;
+  }
+  .disc {
+    width: 100px; height: 100px;
+    border-radius: 50%;
+    background: conic-gradient(#1a1d2e 0deg, #2e3154 90deg, #1a1d2e 180deg, #222538 270deg, #1a1d2e 360deg);
+    border: 3px solid #6c63ff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    box-shadow: 0 0 20px rgba(108,99,255,0.4);
+    animation: disc-spin 8s linear infinite;
+  }
+  .disc.locked { border-color: var(--gold); box-shadow: 0 0 20px rgba(255,215,0,0.4); animation-play-state: paused; }
+  @keyframes disc-spin { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
+  .disc-center {
+    width: 24px; height: 24px;
+    background: var(--bg);
+    border-radius: 50%;
+    border: 2px solid #6c63ff;
+    animation: counter-spin 8s linear infinite;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.6em;
+  }
+  .disc.locked .disc-center { border-color: var(--gold); }
+  @keyframes counter-spin { 0%{transform:rotate(0deg)} 100%{transform:rotate(-360deg)} }
+  .disc-info { text-align: center; margin-top: 10px; font-size: 0.8em; color: var(--muted); }
+  .disc-name { color: var(--text); font-weight: 600; margin-bottom: 4px; }
+
+  /* WORLD LOOT MAP */
+  .loot-timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin: 16px 0;
+    position: relative;
+  }
+  .loot-timeline::before {
+    content: '';
+    position: absolute;
+    left: 28px;
+    top: 0; bottom: 0;
+    width: 2px;
+    background: linear-gradient(to bottom, var(--accent), var(--gold));
+  }
+  .loot-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    position: relative;
+  }
+  .loot-tier-badge {
+    width: 56px;
+    text-align: center;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 4px;
+    font-size: 0.8em;
+    font-weight: 700;
+    color: var(--accent);
+    flex-shrink: 0;
+    z-index: 1;
+  }
+  .loot-content {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 0.88em;
+  }
+  .loot-content strong { color: var(--text); }
+  .loot-content span { color: var(--muted); font-size: 0.9em; }
+
+  /* COMPATIBILITY GRID */
+  .compat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+    margin: 16px 0;
+  }
+  .compat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    transition: transform 0.2s, border-color 0.2s;
+  }
+  .compat-card:hover { transform: translateY(-2px); border-color: var(--accent); }
+  .compat-card.priority { border-color: rgba(0,212,170,0.4); }
+  .compat-name { font-weight: 700; color: var(--text); margin-bottom: 6px; font-size: 0.95em; }
+  .compat-desc { font-size: 0.8em; color: var(--muted); line-height: 1.5; }
+  .compat-tag { font-size: 0.7em; margin-top: 8px; }
+
+  /* ORE VISUAL */
+  .ore-demo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 40px;
+    flex-wrap: wrap;
+    margin: 20px 0;
+  }
+  .ore-block {
+    width: 80px; height: 80px;
+    background: linear-gradient(135deg, #0d1f3c, #162b4a, #0a1828);
+    border: 2px solid #1e3a5f;
+    border-radius: 6px;
+    position: relative;
+    overflow: visible;
+  }
+  .ore-vein {
+    position: absolute;
+    border-radius: 2px;
+    background: linear-gradient(135deg, #34d399, #10b981);
+    box-shadow: 0 0 8px #10b981, 0 0 14px rgba(52,211,153,0.5);
+  }
+  .ov1 { width: 20px; height: 8px; top: 15px; left: 10px; transform: rotate(-15deg); }
+  .ov2 { width: 14px; height: 6px; top: 35px; left: 35px; transform: rotate(20deg); }
+  .ov3 { width: 18px; height: 7px; top: 50px; left: 18px; transform: rotate(-5deg); }
+  .sparkle {
+    position: absolute;
+    width: 4px; height: 4px;
+    background: #6ee7b7;
+    border-radius: 50%;
+    animation: sparkle-anim 2s ease-in-out infinite;
+    box-shadow: 0 0 8px #10b981, 0 0 14px rgba(52,211,153,0.6);
+  }
+  .sp1 { top: -8px; left: 20px; animation-delay: 0s; }
+  .sp2 { top: 10px; right: -8px; animation-delay: 0.4s; }
+  .sp3 { bottom: -6px; left: 40px; animation-delay: 0.8s; }
+  .sp4 { top: 30px; left: -8px; animation-delay: 1.2s; }
+  .sp5 { top: -6px; right: 15px; animation-delay: 1.6s; }
+  @keyframes sparkle-anim {
+    0%,100%{opacity:0;transform:scale(0.5)}
+    50%{opacity:1;transform:scale(1.3)}
+  }
+  .ore-ingot {
+    width: 60px; height: 60px;
+    background: linear-gradient(135deg, #0d1f3c, #1e3a5f, #0d1f3c);
+    border-radius: 8px;
+    border: 2px solid #10b981;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.6em;
+    position: relative;
+    box-shadow: 0 0 16px rgba(16,185,129,0.4);
+    animation: ingot-glow 3s ease-in-out infinite alternate;
+  }
+  @keyframes ingot-glow {
+    0%{box-shadow:0 0 10px rgba(16,185,129,0.3)}
+    100%{box-shadow:0 0 24px rgba(16,185,129,0.7)}
+  }
+
+  /* BALANCING CHART */
+  .speed-chart { margin: 20px 0; }
+  .speed-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .speed-tier { width: 50px; font-size: 0.85em; font-weight: 700; color: var(--accent); flex-shrink: 0; }
+  .speed-bars { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+  .speed-bar { height: 10px; border-radius: 3px; }
+  .sb-speed { background: linear-gradient(90deg, #6c63ff, #a78bfa); }
+  .sb-eff { background: linear-gradient(90deg, #00d4aa, #34d399); }
+  .sb-rf { background: linear-gradient(90deg, #fbbf24, #f59e0b); opacity: 0.7; }
+  .speed-vals { width: 80px; font-size: 0.72em; color: var(--muted); text-align: right; flex-shrink: 0; }
+  .chart-legend {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.8em; color: var(--muted); }
+  .legend-dot { width: 12px; height: 8px; border-radius: 2px; }
+
+  /* ADVANCEMENT TREE */
+  .adv-tree {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 16px 0;
+    align-items: flex-start;
+  }
+  .adv-node {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 0.82em;
+    position: relative;
+    min-width: 130px;
+    max-width: 180px;
+    text-align: center;
+    transition: transform 0.2s;
+  }
+  .adv-node:hover { transform: scale(1.04); border-color: var(--accent); }
+  .adv-node.hidden { border-style: dashed; border-color: var(--gold); }
+  .adv-icon { font-size: 1.5em; display: block; margin-bottom: 4px; }
+  .adv-title { color: var(--text); font-weight: 600; }
+  .adv-desc { color: var(--muted); font-size: 0.9em; margin-top: 2px; }
+
+  /* FOOTER */
+  footer {
+    text-align: center;
+    padding: 40px;
+    border-top: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 0.85em;
+  }
+  footer strong { color: var(--accent2); }
+
+  @media (max-width: 700px) {
+    .tier-grid { grid-template-columns: repeat(2, 1fr); }
+    .toc ol { columns: 1; }
+    .hero h1 { font-size: 2em; }
+    .gui-row { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<div class="hero">
+  <h1>🖨️ MC3DPrint</h1>
+  <p>Minecraft 3D Printing Machine Mod — Full Design Document</p>
+  <div style="margin-top:16px">
+    <span class="badge badge-purple">Forge (Fabric-friendly architecture)</span>
+    <span class="badge badge-teal">Redstone Flux</span>
+    <span class="badge badge-orange">8 Tiers</span>
+    <span class="badge badge-gold">AE2 Compatible</span>
+    <span class="badge badge-purple">Structure Printing</span>
+  </div>
+  <p style="margin-top:16px;font-style:italic;color:#6c63ff">"WorldEdit for survival mode players."</p>
+</div>
+
+<div class="container">
+
+  <!-- TOC -->
+  <div class="toc">
+    <h3>📋 Table of Contents</h3>
+    <ol>
+      <li><a href="#tiers">Machine Tiers</a></li>
+      <li><a href="#power">Power — Redstone Flux</a></li>
+      <li><a href="#matter">Filament System</a></li>
+      <li><a href="#enhancements">Enhancements & Slots</a></li>
+      <li><a href="#io">I/O Design</a></li>
+      <li><a href="#animation">Print Head Animation</a></li>
+      <li><a href="#scanner">Scanner & Blueprint Discs</a></li>
+      <li><a href="#gui">Printer GUI</a></li>
+      <li><a href="#ore">Custom Ore — Printite</a></li>
+      <li><a href="#compat">Mod Compatibility</a></li>
+      <li><a href="#loot">World Loot & Discovery</a></li>
+      <li><a href="#multiplayer">Multiplayer & Server</a></li>
+      <li><a href="#community">Community & Launch</a></li>
+      <li><a href="#balancing">Balancing & Tuning</a></li>
+      <li><a href="#stretch">Stretch Goals</a></li>
+      <li><a href="#openqs">Open Questions</a></li>
+    </ol>
+  </div>
+
+  <!-- TIERS -->
+  <section id="tiers">
+    <h2><span class="icon">⚙️</span> Machine Tiers</h2>
+    <p>Tiers 1–4 are single craftable blocks — craft in a table, place in the world, done. Tiers 5–8 are true multiblock structures built in-world from multiple placed blocks. Tier 8 requires Draconic Evolution.</p>
+
+    <div class="tier-grid">
+      <!-- T1 -->
+      <div class="tier-card">
+        <div class="tier-label">Tier</div>
+        <div class="tier-number">1</div>
+        <div class="tier-viz">
+          <svg width="40" height="40"><rect x="10" y="10" width="20" height="20" rx="3" fill="#6c63ff" opacity="0.9"/></svg>
+        </div>
+        <div class="tier-info">Single block<br>Basic items only</div>
+      </div>
+      <!-- T2 -->
+      <div class="tier-card">
+        <div class="tier-label">Tier</div>
+        <div class="tier-number">2</div>
+        <div class="tier-viz">
+          <svg width="40" height="40"><rect x="10" y="10" width="20" height="20" rx="3" fill="#6c63ff"/><rect x="13" y="13" width="14" height="14" rx="2" fill="#a78bfa" opacity="0.5"/></svg>
+        </div>
+        <div class="tier-info">Single block<br>Unlocks blueprints</div>
+      </div>
+      <!-- T3 -->
+      <div class="tier-card">
+        <div class="tier-label">Tier</div>
+        <div class="tier-number">3</div>
+        <div class="tier-viz">
+          <svg width="50" height="50" viewBox="0 0 50 50">
+            <g transform="translate(4,4)">
+              <!-- 3x3 grid -->
+              <rect x="0" y="0" width="12" height="12" rx="2" fill="#4f46e5"/>
+              <rect x="14" y="0" width="12" height="12" rx="2" fill="#4f46e5"/>
+              <rect x="28" y="0" width="12" height="12" rx="2" fill="#4f46e5"/>
+              <rect x="0" y="14" width="12" height="12" rx="2" fill="#4f46e5"/>
+              <rect x="14" y="14" width="12" height="12" rx="2" fill="#6c63ff" opacity="0.8"/>
+              <rect x="28" y="14" width="12" height="12" rx="2" fill="#4f46e5"/>
+              <rect x="0" y="28" width="12" height="12" rx="2" fill="#4f46e5"/>
+              <rect x="14" y="28" width="12" height="12" rx="2" fill="#4f46e5"/>
+              <rect x="28" y="28" width="12" height="12" rx="2" fill="#4f46e5"/>
+            </g>
+          </svg>
+        </div>
+        <div class="tier-info">Single block · 3×3 print area<br>Small structures</div>
+      </div>
+      <!-- T4 -->
+      <div class="tier-card">
+        <div class="tier-label">Tier</div>
+        <div class="tier-number">4</div>
+        <div class="tier-viz">
+          <svg width="54" height="54" viewBox="0 0 54 54">
+            <g transform="translate(1,1)">
+              <!-- 4x4 grid, just corners and center for readability -->
+              <rect x="0"  y="0"  width="10" height="10" rx="2" fill="#4f46e5"/>
+              <rect x="13" y="0"  width="10" height="10" rx="2" fill="#4f46e5"/>
+              <rect x="26" y="0"  width="10" height="10" rx="2" fill="#4f46e5"/>
+              <rect x="39" y="0"  width="10" height="10" rx="2" fill="#4f46e5"/>
+              <rect x="0"  y="13" width="10" height="10" rx="2" fill="#4f46e5"/>
+              <rect x="13" y="13" width="10" height="10" rx="2" fill="#5b52f0" opacity="0.7"/>
+              <rect x="26" y="13" width="10" height="10" rx="2" fill="#5b52f0" opacity="0.7"/>
+              <rect x="39" y="13" width="10" height="10" rx="2" fill="#4f46e5"/>
+              <rect x="0"  y="26" width="10" height="10" rx="2" fill="#4f46e5"/>
+              <rect x="13" y="26" width="10" height="10" rx="2" fill="#5b52f0" opacity="0.7"/>
+              <rect x="26" y="26" width="10" height="10" rx="2" fill="#5b52f0" opacity="0.7"/>
+              <rect x="39" y="26" width="10" height="10" rx="2" fill="#4f46e5"/>
+              <rect x="0"  y="39" width="10" height="10" rx="2" fill="#4f46e5"/>
+              <rect x="13" y="39" width="10" height="10" rx="2" fill="#4f46e5"/>
+              <rect x="26" y="39" width="10" height="10" rx="2" fill="#4f46e5"/>
+              <rect x="39" y="39" width="10" height="10" rx="2" fill="#4f46e5"/>
+            </g>
+          </svg>
+        </div>
+        <div class="tier-info">Single block · 5×5 print area<br>Advanced items</div>
+      </div>
+      <!-- T5 -->
+      <div class="tier-card">
+        <div class="tier-label">Tier</div>
+        <div class="tier-number">5</div>
+        <div class="tier-viz">
+          <svg width="56" height="56" viewBox="0 0 56 56">
+            <!-- 5x5, simplified -->
+            <g fill="#4f46e5">
+              <rect x="0" y="0" width="9" height="9" rx="2"/>
+              <rect x="11" y="0" width="9" height="9" rx="2"/>
+              <rect x="22" y="0" width="9" height="9" rx="2"/>
+              <rect x="33" y="0" width="9" height="9" rx="2"/>
+              <rect x="44" y="0" width="9" height="9" rx="2"/>
+              <rect x="0" y="11" width="9" height="9" rx="2"/>
+              <rect x="44" y="11" width="9" height="9" rx="2"/>
+              <rect x="0" y="22" width="9" height="9" rx="2"/>
+              <rect x="22" y="22" width="9" height="9" rx="2" fill="#6c63ff"/>
+              <rect x="44" y="22" width="9" height="9" rx="2"/>
+              <rect x="0" y="33" width="9" height="9" rx="2"/>
+              <rect x="44" y="33" width="9" height="9" rx="2"/>
+              <rect x="0" y="44" width="9" height="9" rx="2"/>
+              <rect x="11" y="44" width="9" height="9" rx="2"/>
+              <rect x="22" y="44" width="9" height="9" rx="2"/>
+              <rect x="33" y="44" width="9" height="9" rx="2"/>
+              <rect x="44" y="44" width="9" height="9" rx="2"/>
+            </g>
+          </svg>
+        </div>
+        <div class="tier-info">9×9 multiblock<br>Elite items · Requires Printite</div>
+      </div>
+      <!-- T6 -->
+      <div class="tier-card">
+        <div class="tier-label">Tier</div>
+        <div class="tier-number">6</div>
+        <div class="tier-viz">
+          <svg width="56" height="56" viewBox="0 0 56 56">
+            <g fill="#3730a3">
+              <!-- Border of 6x6 -->
+              <rect x="0" y="0" width="8" height="8" rx="1"/><rect x="10" y="0" width="8" height="8" rx="1"/>
+              <rect x="20" y="0" width="8" height="8" rx="1"/><rect x="30" y="0" width="8" height="8" rx="1"/>
+              <rect x="40" y="0" width="8" height="8" rx="1"/><rect x="50" y="0" width="8" height="8" rx="1" fill="#6c63ff"/>
+              <rect x="0" y="10" width="8" height="8" rx="1"/><rect x="50" y="10" width="8" height="8" rx="1"/>
+              <rect x="0" y="20" width="8" height="8" rx="1"/><rect x="50" y="20" width="8" height="8" rx="1"/>
+              <rect x="0" y="30" width="8" height="8" rx="1"/><rect x="50" y="30" width="8" height="8" rx="1"/>
+              <rect x="0" y="40" width="8" height="8" rx="1"/><rect x="50" y="40" width="8" height="8" rx="1"/>
+              <rect x="0" y="50" width="8" height="8" rx="1"/><rect x="10" y="50" width="8" height="8" rx="1"/>
+              <rect x="20" y="50" width="8" height="8" rx="1"/><rect x="30" y="50" width="8" height="8" rx="1"/>
+              <rect x="40" y="50" width="8" height="8" rx="1"/><rect x="50" y="50" width="8" height="8" rx="1"/>
+              <!-- Interior with Printite color -->
+              <rect x="10" y="10" width="8" height="8" rx="1" fill="#4c1d95" opacity="0.6"/>
+              <rect x="20" y="10" width="8" height="8" rx="1" fill="#4c1d95" opacity="0.6"/>
+              <rect x="30" y="10" width="8" height="8" rx="1" fill="#4c1d95" opacity="0.6"/>
+              <rect x="40" y="10" width="8" height="8" rx="1" fill="#4c1d95" opacity="0.6"/>
+            </g>
+          </svg>
+        </div>
+        <div class="tier-info">15×15 multiblock<br>Large structures</div>
+      </div>
+      <!-- T7 -->
+      <div class="tier-card">
+        <div class="tier-label">Tier</div>
+        <div class="tier-number">7</div>
+        <div class="tier-viz">
+          <svg width="56" height="56" viewBox="0 0 56 56">
+            <g fill="#3730a3">
+              <!-- 7x7 border suggestion -->
+              <rect x="0" y="0" width="7" height="7" rx="1"/><rect x="8" y="0" width="7" height="7" rx="1"/>
+              <rect x="16" y="0" width="7" height="7" rx="1"/><rect x="24" y="0" width="7" height="7" rx="1"/>
+              <rect x="32" y="0" width="7" height="7" rx="1"/><rect x="40" y="0" width="7" height="7" rx="1"/>
+              <rect x="48" y="0" width="7" height="7" rx="1"/>
+              <rect x="0" y="8" width="7" height="7" rx="1"/><rect x="48" y="8" width="7" height="7" rx="1"/>
+              <rect x="0" y="16" width="7" height="7" rx="1"/><rect x="48" y="16" width="7" height="7" rx="1"/>
+              <rect x="0" y="24" width="7" height="7" rx="1"/><rect x="24" y="24" width="7" height="7" rx="1" fill="#6c63ff"/><rect x="48" y="24" width="7" height="7" rx="1"/>
+              <rect x="0" y="32" width="7" height="7" rx="1"/><rect x="48" y="32" width="7" height="7" rx="1"/>
+              <rect x="0" y="40" width="7" height="7" rx="1"/><rect x="48" y="40" width="7" height="7" rx="1"/>
+              <rect x="0" y="48" width="7" height="7" rx="1"/><rect x="8" y="48" width="7" height="7" rx="1"/>
+              <rect x="16" y="48" width="7" height="7" rx="1"/><rect x="24" y="48" width="7" height="7" rx="1"/>
+              <rect x="32" y="48" width="7" height="7" rx="1"/><rect x="40" y="48" width="7" height="7" rx="1"/>
+              <rect x="48" y="48" width="7" height="7" rx="1"/>
+            </g>
+          </svg>
+        </div>
+        <div class="tier-info">23×23 multiblock<br>Max base-game tier</div>
+      </div>
+      <!-- T8 -->
+      <div class="tier-card special">
+        <div class="tier-label">Tier</div>
+        <div class="tier-number">8 ⭐</div>
+        <div class="tier-viz">
+          <svg width="56" height="56" viewBox="0 0 56 56">
+            <g fill="#78350f">
+              <!-- 9x9 implied by density -->
+              <rect x="0" y="0" width="5" height="5" rx="1" fill="#ffd700"/>
+              <rect x="7" y="0" width="5" height="5" rx="1" fill="#ffd700"/>
+              <rect x="14" y="0" width="5" height="5" rx="1" fill="#ffd700"/>
+              <rect x="21" y="0" width="5" height="5" rx="1" fill="#ffd700"/>
+              <rect x="28" y="0" width="5" height="5" rx="1" fill="#ffd700"/>
+              <rect x="35" y="0" width="5" height="5" rx="1" fill="#ffd700"/>
+              <rect x="42" y="0" width="5" height="5" rx="1" fill="#ffd700"/>
+              <rect x="49" y="0" width="5" height="5" rx="1" fill="#ffd700"/>
+              <rect x="0" y="7" width="5" height="5" rx="1" fill="#ffd700"/>
+              <rect x="49" y="7" width="5" height="5" rx="1" fill="#ffd700"/>
+              <rect x="0" y="14" width="5" height="5" rx="1" fill="#ffd700"/>
+              <rect x="49" y="14" width="5" height="5" rx="1" fill="#ffd700"/>
+              <rect x="0" y="21" width="5" height="5" rx="1" fill="#ffd700"/>
+              <rect x="49" y="21" width="5" height="5" rx="1" fill="#ffd700"/>
+              <rect x="0" y="28" width="5" height="5" rx="1" fill="#ffd700"/>
+              <rect x="27" y="28" width="5" height="5" rx="1" fill="#ffd700"/>
+              <rect x="49" y="28" width="5" height="5" rx="1" fill="#ffd700"/>
+              <rect x="0" y="35" width="5" height="5" rx="1" fill="#ffd700"/>
+              <rect x="49" y="35" width="5" height="5" rx="1" fill="#ffd700"/>
+              <rect x="0" y="42" width="5" height="5" rx="1" fill="#ffd700"/>
+              <rect x="49" y="42" width="5" height="5" rx="1" fill="#ffd700"/>
+              <rect x="0" y="49" width="5" height="5" rx="1" fill="#ffd700"/>
+              <rect x="7" y="49" width="5" height="5" rx="1" fill="#ffd700"/>
+              <rect x="14" y="49" width="5" height="5" rx="1" fill="#ffd700"/>
+              <rect x="21" y="49" width="5" height="5" rx="1" fill="#ffd700"/>
+              <rect x="28" y="49" width="5" height="5" rx="1" fill="#ffd700"/>
+              <rect x="35" y="49" width="5" height="5" rx="1" fill="#ffd700"/>
+              <rect x="42" y="49" width="5" height="5" rx="1" fill="#ffd700"/>
+              <rect x="49" y="49" width="5" height="5" rx="1" fill="#ffd700"/>
+            </g>
+          </svg>
+        </div>
+        <div class="tier-info">33×33 multiblock<br>Requires Draconic Evolution</div>
+      </div>
+    </div>
+
+    <div class="note-box">⚠️ No machine durability — ever. Machines are permanent investments, not maintenance chores.</div>
+    <div class="card" style="margin-top:16px">
+      <h3>🔨 Crafting Method by Tier</h3>
+      <p><strong>T1–T4:</strong> Single craftable block. Craft it in a crafting table, place it in the world. Done. T3 and T4 are more powerful single-block machines — not multiblocks.</p>
+      <p><strong>T5–T8:</strong> Require <strong>multiblock assembly</strong> — specific blocks must be placed in-world in the correct configuration. No crafting table recipe. The machine forms when the structure is complete. The higher the effort, the more impressive the machine.</p>
+      <h3 style="margin-top:16px">📦 Multiblock Portability — Collapse to Item</h3>
+      <p>Multiblock machines are fully portable without disassembly. The effort is in <em>building</em> it, not <em>moving</em> it.</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px">
+        <div style="background:#111;border:1px solid #2e3154;border-radius:8px;padding:14px">
+          <div style="font-size:0.8em;font-weight:700;color:#00d4aa;margin-bottom:8px">🔧 Formation</div>
+          <ol style="font-size:0.82em;color:#8892a4;padding-left:16px">
+            <li>Place component blocks in correct layout</li>
+            <li>Right-click the controller block</li>
+            <li>Multiblock forms into one logical unit</li>
+            <li>Component blocks become rendered structure</li>
+          </ol>
+        </div>
+        <div style="background:#111;border:1px solid #2e3154;border-radius:8px;padding:14px">
+          <div style="font-size:0.8em;font-weight:700;color:#6c63ff;margin-bottom:8px">📦 Relocation</div>
+          <ol style="font-size:0.82em;color:#8892a4;padding-left:16px">
+            <li>Break the controller block</li>
+            <li>Entire multiblock collapses instantly</li>
+            <li>Drops as a <strong style="color:#e2e8f0">single item</strong> (e.g., "Tier 5 Fabricator")</li>
+            <li>Place it anywhere → machine reforms automatically</li>
+          </ol>
+        </div>
+      </div>
+      <p style="font-size:0.82em;color:#8892a4;margin-top:10px;font-style:italic">No inventory tetris. No lost components. No rebuilding from scratch. Build it once, relocate freely.</p>
+    </div>
+  </section>
+
+  <!-- POWER -->
+  <section id="power">
+    <h2><span class="icon">⚡</span> Power — Redstone Flux</h2>
+    <div class="card-grid">
+      <div class="card">
+        <h3>RF Compatibility</h3>
+        <p>Standard RF power grid — works with Thermal Expansion, Mekanism, EnderIO, Draconic Evolution, and any RF-producing mod.</p>
+      </div>
+      <div class="card">
+        <h3>Power-Loss Behavior</h3>
+        <p>If RF cuts out mid-print, the job <strong>pauses</strong> and resumes exactly where it left off when power is restored. No matter lost. No partial structure mess. GUI displays <code>PAUSED — Insufficient Power</code>.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- MATTER / FILAMENT SYSTEM -->
+  <section id="matter">
+    <h2><span class="icon">🧵</span> Filament System</h2>
+    <p>All fabrication is powered by <strong>Filament Units (FU)</strong> — a unified measurement of stored material potential. There is no separate "Raw Matter" pool. FU is the single currency for both storing and spending material.</p>
+
+    <div class="card" style="margin-bottom:16px">
+      <h3>The Flow</h3>
+      <p>1. Feed materials into the <strong>Filament Winder</strong> → converts to FU, winds onto a blank spool<br>
+      2. Load the spool onto the printer sides (Shift+Right Click)<br>
+      3. Printer draws FU from the spool as it prints<br>
+      4. RF consumed at both steps — winding and printing</p>
+    </div>
+
+    <h3>Filament Unit Values</h3>
+    <p>Conversion is <strong>symmetric</strong> — what a material yields in FU is exactly what it costs to print it. Materials within the same group share identical FU values. Diamond = Emerald. Cobblestone = Dirt = Gravel = Sand.</p>
+
+    <div class="matter-chart">
+      <div class="matter-row">
+        <div class="matter-label" style="font-size:0.75em">Cobblestone · Dirt · Gravel · Sand · Soul Sand</div>
+        <div class="matter-bar-wrap"><div class="matter-bar" style="width:0.4%;background:linear-gradient(90deg,#64748b,#94a3b8)">1</div></div>
+        <div class="matter-val">1 FU · T1</div>
+      </div>
+      <div class="matter-row">
+        <div class="matter-label" style="font-size:0.75em">Stone · Sandstone · Stone Bricks · All Wood types</div>
+        <div class="matter-bar-wrap"><div class="matter-bar" style="width:1%;background:linear-gradient(90deg,#78716c,#a8a29e)">3</div></div>
+        <div class="matter-val">3 FU · T1</div>
+      </div>
+      <div class="matter-row">
+        <div class="matter-label" style="font-size:0.75em">Glass · Terracotta · Concrete · Wool · Quartz</div>
+        <div class="matter-bar-wrap"><div class="matter-bar" style="width:2%;background:linear-gradient(90deg,#e7e5e4,#d6d3d1)">5</div></div>
+        <div class="matter-val">5 FU · T1</div>
+      </div>
+      <div class="matter-row">
+        <div class="matter-label" style="font-size:0.75em">Copper · Amethyst · Lapis (per unit)</div>
+        <div class="matter-bar-wrap"><div class="matter-bar" style="width:3%;background:linear-gradient(90deg,#b45309,#f59e0b)">10</div></div>
+        <div class="matter-val">10 FU · T2</div>
+      </div>
+      <div class="matter-row">
+        <div class="matter-label" style="font-size:0.75em">Gold Ingot · Gold Nugget ×9</div>
+        <div class="matter-bar-wrap"><div class="matter-bar" style="width:3.5%;background:linear-gradient(90deg,#ca8a04,#fbbf24)">15</div></div>
+        <div class="matter-val">15 FU · T2</div>
+      </div>
+      <div class="matter-row">
+        <div class="matter-label" style="font-size:0.75em">Iron Ingot · Iron Nugget ×9</div>
+        <div class="matter-bar-wrap"><div class="matter-bar" style="width:4%;background:linear-gradient(90deg,#94a3b8,#cbd5e1)">20</div></div>
+        <div class="matter-val">20 FU · T2</div>
+      </div>
+      <div class="matter-row">
+        <div class="matter-label" style="font-size:0.75em">Redstone ×8 · Slimeball · Magma Cream</div>
+        <div class="matter-bar-wrap"><div class="matter-bar" style="width:6%;background:linear-gradient(90deg,#dc2626,#f87171)">30</div></div>
+        <div class="matter-val">30 FU · T3</div>
+      </div>
+      <div class="matter-row">
+        <div class="matter-label" style="font-size:0.75em">Diamond = Emerald <em>(same rarity)</em></div>
+        <div class="matter-bar-wrap"><div class="matter-bar" style="width:10%;background:linear-gradient(90deg,#0e7490,#22d3ee)">50</div></div>
+        <div class="matter-val">50 FU · T4</div>
+      </div>
+      <div class="matter-row">
+        <div class="matter-label" style="font-size:0.75em">Netherite Ingot · Ancient Debris ×4</div>
+        <div class="matter-bar-wrap"><div class="matter-bar" style="width:20%;background:linear-gradient(90deg,#7c3aed,#a78bfa)">500</div></div>
+        <div class="matter-val">500 FU · T5</div>
+      </div>
+      <div class="matter-row">
+        <div class="matter-label" style="font-size:0.75em">Nether Star</div>
+        <div class="matter-bar-wrap"><div class="matter-bar" style="width:60%;background:linear-gradient(90deg,#15803d,#4ade80)">1,500</div></div>
+        <div class="matter-val">1,500 FU · T6</div>
+      </div>
+      <div class="matter-row">
+        <div class="matter-label" style="font-size:0.75em">Dragon Egg</div>
+        <div class="matter-bar-wrap"><div class="matter-bar" style="width:100%;background:linear-gradient(90deg,#7e22ce,#d946ef)">2,500</div></div>
+        <div class="matter-val">2,500 FU · T7</div>
+      </div>
+    </div>
+    <div style="font-size:0.78em;color:var(--muted);margin-top:8px">
+      <strong style="color:var(--text)">Grouping rules:</strong> Same rarity = same FU · All stone variants = base stone value · All wood species = same value · Nugget ×9 = ingot value
+    </div>
+
+    <div class="note-box">⚠️ All FU values are placeholders — expect significant rebalancing during playtesting. The Winder Tier column also acts as a tier gate: you cannot convert a diamond in a T1 Winder.</div>
+
+    <h3>Tier Down-Conversion (One Direction Only)</h3>
+    <div class="card">
+      <p>Higher-tier materials can be processed <strong>down</strong> by one tier at a <strong>16:1 FU ratio</strong>. 1× T5 material → 16× T4 material's worth of FU.</p>
+      <p><strong>Cannot tier up.</strong> Hard restriction. Prevents cobblestone farming from trivializing the economy.</p>
+      <p>Down-conversion is one step at a time: T6→T5→T4, not T6→T3 directly.</p>
+    </div>
+  </section>
+
+  <!-- FILAMENT SPOOLS -->
+  <section id="spools">
+    <h2><span class="icon">🧵</span> Filament Spool System</h2>
+    <p>Rather than dumping raw materials directly into the printer, they're first processed through a <strong>Filament Winder</strong> into a physical <strong>Filament Spool</strong> item. The spool loads into the printer and is consumed during printing — visibly spinning on the machine exterior as it unwinds.</p>
+
+    <div class="card-grid">
+      <div class="card">
+        <h3>🔧 Filament Winder Machine</h3>
+        <p>Separate machine that accepts raw materials (top input) and winds them into a Filament Spool at the output. Tiered T1–T8 — higher tiers wind faster and accept higher-tier materials. Simple top-in / front-out I/O, same as the printer.</p>
+      </div>
+      <div class="card">
+        <h3>🧵 Spool Attachment & Slots</h3>
+        <ul>
+          <li><strong>Shift + Right Click</strong> the side of the printer in-world to attach or detach a spool</li>
+          <li>Slots are on the <strong>left and right sides</strong> of the machine (Snapmaker U1-style placement)</li>
+          <li>Auto-switches to the next loaded spool when one depletes — no print interruption</li>
+          <li>Hover in GUI to see remaining FU as fill bar + %</li>
+          <li>Depletion with no backup spool <strong>pauses</strong> the printer, never loses progress</li>
+        </ul>
+        <table style="margin-top:12px">
+          <tr><th>Tier</th><th>Right</th><th>Left</th><th>Total</th></tr>
+          <tr><td>T1</td><td>1</td><td>0</td><td>1</td></tr>
+          <tr><td>T2</td><td>1</td><td>1</td><td>2</td></tr>
+          <tr><td>T3</td><td>2</td><td>1</td><td>3</td></tr>
+          <tr><td>T4+</td><td>2</td><td>2</td><td>4</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <h3>Spool Capacities by Tier</h3>
+    <table>
+      <tr><th>Spool Tier</th><th>FU Capacity</th><th>Suitable For</th></tr>
+      <tr><td>T1</td><td>500 FU</td><td>Basic item prints</td></tr>
+      <tr><td>T2</td><td>2,000 FU</td><td>Small item batches</td></tr>
+      <tr><td>T3</td><td>6,000 FU</td><td>Small structures</td></tr>
+      <tr><td>T4</td><td>20,000 FU</td><td>Mid-tier structures</td></tr>
+      <tr><td>T5</td><td>75,000 FU</td><td>Large builds</td></tr>
+      <tr><td>T6</td><td>250,000 FU</td><td>Mega builds</td></tr>
+      <tr><td>T7</td><td>1,000,000 FU</td><td>Massive structure printing</td></tr>
+      <tr><td>T8 ⭐</td><td>5,000,000 FU</td><td>Draconic-tier prints</td></tr>
+    </table>
+
+    <div class="note-box">The spool spinning animation on the printer exterior is a signature visual. You can see it slowly unwinding as the build progresses — a direct visual tie to real 3D printing that makes the machine feel alive.</div>
+  </section>
+
+  <!-- ITEM TIER REQUIREMENTS -->
+  <section id="itemtiers">
+    <h2><span class="icon">🛡️</span> Item Tier Requirements</h2>
+    <p>Higher-tier machines aren't just for bigger print areas — they gate what <em>items</em> can be printed too. A T1 printer cannot print a diamond sword, full stop. Tier determines both print volume and item access.</p>
+
+    <table>
+      <tr><th>Tier Required</th><th>Printable Items (examples)</th></tr>
+      <tr><td>T1</td><td>Cobblestone, dirt, gravel, wood planks, sticks, torches, basic food</td></tr>
+      <tr><td>T2</td><td>Stone tools, iron tools &amp; armor, buckets, rails, basic redstone components</td></tr>
+      <tr><td>T3</td><td>Gold tools/armor, lapis, chain armor, crossbows, books, maps</td></tr>
+      <tr><td>T4</td><td>Diamond tools &amp; armor, enchanting table, ender chest, anvil</td></tr>
+      <tr><td>T5</td><td>Netherite tools &amp; armor, beacons, tridents, elytra</td></tr>
+      <tr><td>T6</td><td>Nether Star crafted items, conduits, end-game vanilla gear</td></tr>
+      <tr><td>T7</td><td>Highest-tier vanilla crafted items; modded legendary gear</td></tr>
+      <tr><td>T8 ⭐</td><td>Draconic Evolution top-tier gear (requires DE installed)</td></tr>
+    </table>
+
+    <div class="note-box">Structure printing volume is governed by machine footprint. Item printing is always gated by tier — these are two separate but complementary progression systems on the same machine.</div>
+  </section>
+
+  <!-- ENHANCEMENTS -->
+  <section id="enhancements">
+    <h2><span class="icon">🔧</span> Enhancements & Expansion Slots</h2>
+    <p>Slot count mirrors tier: T3 = 3 slots, T7 = 7 slots, T8 = 8 slots. Modifiers stack <strong>multiplicatively</strong>.</p>
+    <div class="card-grid">
+      <div class="card"><h3>⚡ Speed Upgrade</h3><p>Increases print head movement speed. Faster prints per tier of upgrade.</p></div>
+      <div class="card"><h3>🧪 Efficiency Upgrade</h3><p>Reduces FU cost per print. Get more filament out of each spool.</p></div>
+      <div class="card"><h3>🪨 Matter Density Upgrade</h3><p>Better conversion rate for low-value inputs. Cobblestone goes further.</p></div>
+      <div class="card"><h3>🔋 RF Efficiency Upgrade</h3><p>Reduces RF consumption per block placed.</p></div>
+      <div class="card"><h3>📦 Buffer Upgrade</h3><p>Increases internal Matter and RF storage capacity.</p></div>
+    </div>
+    <p style="margin-top:12px">Upgrades are themselves tiered — a T1 Speed Upgrade vs. a T5 Speed Upgrade provide meaningfully different performance. All values tunable in config.</p>
+  </section>
+
+  <!-- I/O -->
+  <section id="io">
+    <h2><span class="icon">🔌</span> I/O Design</h2>
+    <p><strong>Anti-AE2-Inscriber.</strong> No side-specific requirements. No "silicone in the right, redstone in the top" nonsense.</p>
+
+    <div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;margin:20px 0">
+      <!-- IO Diagram -->
+      <div style="flex-shrink:0;text-align:center">
+        <svg width="160" height="200" viewBox="0 0 160 200">
+          <!-- Top arrow in -->
+          <defs>
+            <marker id="arrowIn" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+              <path d="M0,0 L8,4 L0,8 Z" fill="#4ade80"/>
+            </marker>
+            <marker id="arrowOut" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+              <path d="M0,0 L8,4 L0,8 Z" fill="#f87171"/>
+            </marker>
+          </defs>
+          <!-- Printer block -->
+          <rect x="40" y="60" width="80" height="80" rx="8" fill="#1e1b4b" stroke="#6c63ff" stroke-width="2"/>
+          <text x="80" y="97" text-anchor="middle" fill="#a78bfa" font-size="11" font-family="monospace">MC3D</text>
+          <text x="80" y="112" text-anchor="middle" fill="#a78bfa" font-size="11" font-family="monospace">PRINT</text>
+          <!-- Top input -->
+          <line x1="80" y1="20" x2="80" y2="57" stroke="#4ade80" stroke-width="2" marker-end="url(#arrowIn)"/>
+          <text x="80" y="14" text-anchor="middle" fill="#4ade80" font-size="11">Any Input</text>
+          <text x="80" y="26" text-anchor="middle" fill="#4ade80" font-size="10">⬆ Top Face</text>
+          <!-- Bottom output -->
+          <line x1="80" y1="143" x2="80" y2="172" stroke="#f87171" stroke-width="2" marker-end="url(#arrowOut)"/>
+          <text x="80" y="185" text-anchor="middle" fill="#f87171" font-size="11">Any Output</text>
+          <text x="80" y="197" text-anchor="middle" fill="#f87171" font-size="10">⬇ Bottom / Front</text>
+          <!-- Sides: Filament Spool slots only -->
+          <circle cx="18" cy="100" r="10" fill="#1e1b4b" stroke="#6c63ff" stroke-width="1.5"/>
+          <circle cx="18" cy="100" r="4" fill="#0f1117" stroke="#6c63ff" stroke-width="1"/>
+          <text x="18" y="120" text-anchor="middle" fill="#6c63ff" font-size="8">Spool</text>
+          <circle cx="142" cy="100" r="10" fill="#1e1b4b" stroke="#6c63ff" stroke-width="1.5"/>
+          <circle cx="142" cy="100" r="4" fill="#0f1117" stroke="#6c63ff" stroke-width="1"/>
+          <text x="142" y="120" text-anchor="middle" fill="#6c63ff" font-size="8">Spool</text>
+          <text x="18" y="128" text-anchor="middle" fill="#444" font-size="7">Shift+RC</text>
+          <text x="142" y="128" text-anchor="middle" fill="#444" font-size="7">Shift+RC</text>
+        </svg>
+      </div>
+      <div style="flex:1;min-width:220px">
+        <h3>Rules</h3>
+        <ul>
+          <li><strong>Top face</strong> — accepts any input: matter materials, blueprint discs, anything going in</li>
+          <li><strong>Bottom / Front face</strong> — output: finished items, ejected discs</li>
+          <li>Works with <strong>vanilla hoppers</strong> at T1 — zero gatekeeping on early automation</li>
+          <li>Compatible with EnderIO conduits, Thermal ducts, Mekanism pipes, AE2 import/export buses, RS cables</li>
+          <li>Output buffer pauses the printer if full — <strong>never voids items</strong></li>
+          <li>Blueprint disc returns to output slot after print completes</li>
+          <li><strong>Side faces</strong> — reserved exclusively for Filament Spool attachment (Shift+Right Click). Not general I/O.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ANIMATION -->
+  <section id="animation">
+    <h2><span class="icon">🎬</span> Print Head Animation</h2>
+    <p>Inspired by the BuildCraft Quarry — but in reverse. The quarry destroys top-down; this builds <strong>bottom-up</strong>, layer by layer, like real FDM 3D printing.</p>
+
+    <div class="printer-demo">
+      <p style="color:var(--muted);font-size:0.85em;margin-bottom:16px">Live prototype animation — gantry + laser zap system</p>
+      <div class="printer-scene">
+        <!-- Frame corners -->
+        <div class="frame-corner fc-tl"></div>
+        <div class="frame-corner fc-tr"></div>
+        <div class="frame-corner fc-bl"></div>
+        <div class="frame-corner fc-br"></div>
+        <!-- Rails -->
+        <div class="frame-rail-h" style="top:17px;left:34px;right:34px"></div>
+        <div class="frame-rail-h" style="bottom:46px;left:34px;right:34px"></div>
+        <div class="frame-rail-v" style="left:26px;top:17px;height:calc(100% - 63px)"></div>
+        <div class="frame-rail-v" style="right:26px;top:17px;height:calc(100% - 63px)"></div>
+        <!-- Gantry + head -->
+        <div class="gantry-x">
+          <div class="print-head">
+            <div class="laser"></div>
+          </div>
+          <!-- Particles -->
+          <div class="particle p1"></div>
+          <div class="particle p2"></div>
+          <div class="particle p3"></div>
+          <div class="particle p4"></div>
+        </div>
+        <!-- Building layers -->
+        <div class="build-area" id="buildArea">
+          <div class="build-layer"></div>
+          <div class="build-layer"></div>
+          <div class="build-layer"></div>
+          <div class="build-layer"></div>
+          <div class="build-layer"></div>
+          <div class="build-layer"></div>
+        </div>
+        <!-- Filament Spool RIGHT (T5, purple) -->
+        <div class="spool-wrap">
+          <div class="spool" id="spoolEl"><div class="spool-hub"></div></div>
+          <div class="spool-label">T5 Spool</div>
+          <div class="spool-bar-wrap"><div class="spool-bar-fill" id="spoolBar"></div></div>
+        </div>
+        <!-- Filament Spool LEFT (T4, teal) -->
+        <div class="spool-wrap" style="right:auto;left:-72px;">
+          <div class="spool" id="spoolEl2" style="background:conic-gradient(#00d4aa 0deg,#34d399 120deg,#065f46 240deg,#00d4aa 360deg);border-color:#065f46;box-shadow:0 0 10px rgba(0,212,170,0.5)"><div class="spool-hub" style="border-color:#00d4aa"></div></div>
+          <div class="spool-label">T4 Spool</div>
+          <div class="spool-bar-wrap"><div class="spool-bar-fill" id="spoolBar2" style="width:45%;background:linear-gradient(90deg,#00d4aa,#34d399)"></div></div>
+        </div>
+      </div>
+      <div style="margin-top:16px;display:flex;gap:20px;justify-content:center;flex-wrap:wrap;font-size:0.8em;color:var(--muted)">
+        <span>🟦 Structural frame (rendered, not real blocks)</span>
+        <span>🟢 Gantry arm</span>
+        <span>⚡ Laser zap placement</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- SCANNER -->
+  <section id="scanner">
+    <h2><span class="icon">📡</span> Scanner Tool & Blueprint Discs</h2>
+
+    <div class="card-grid">
+      <div class="card">
+        <h3>Scanner Workflow</h3>
+        <ol>
+          <li>Craft the Scanner tool</li>
+          <li>Right-click two corners to define a bounding box</li>
+          <li>Trigger scan — structure captured</li>
+          <li>Receive a <strong>Blueprint Disc</strong> item</li>
+          <li>Load disc into printer → queue print</li>
+        </ol>
+        <p style="margin-top:10px"><em>Higher-tier scanners capture larger volumes.</em></p>
+      </div>
+      <div class="card">
+        <h3>Blueprint Disc Properties</h3>
+        <ul>
+          <li>Portable — carry, trade, store in chests</li>
+          <li>Works in any compatible printer of sufficient tier</li>
+          <li><code>Shift + Right Click</code> to lock/unlock</li>
+          <li>Right-click to open transform menu (rotate/mirror)</li>
+          <li>Reusable — not single-use consumable</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Disc Visuals -->
+    <div class="disc-visual">
+      <div>
+        <div class="disc"><div class="disc-center">💾</div></div>
+        <div class="disc-info">
+          <div class="disc-name">Village House Blueprint</div>
+          <span class="badge badge-purple">Requires T3</span>
+        </div>
+      </div>
+      <div>
+        <div class="disc" style="border-color:#00d4aa;box-shadow:0 0 20px rgba(0,212,170,0.4)">
+          <div class="disc-center" style="border-color:#00d4aa">🏰</div>
+        </div>
+        <div class="disc-info">
+          <div class="disc-name">Stone Keep Blueprint</div>
+          <span class="badge badge-teal">Requires T5</span>
+        </div>
+      </div>
+      <div>
+        <div class="disc locked"><div class="disc-center" style="border-color:var(--gold)">🔒</div></div>
+        <div class="disc-info">
+          <div class="disc-name">Chip & Milo Statue</div>
+          <span class="badge badge-gold">Requires T6 · Locked</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- GUI -->
+  <section id="gui">
+    <h2><span class="icon">🖥️</span> Printer GUI</h2>
+    <p>All controls in one clean interface. No bouncing between screens.</p>
+
+    <div class="gui-mockup">
+      <div class="gui-title-bar">
+        🖨️ MC3DPrint — Tier 5 Fabricator
+      </div>
+      <div class="gui-body">
+
+        <div class="gui-row">
+          <div>
+            <div class="gui-section-label">Smart Print Slot</div>
+            <div class="gui-slot" title="Item = prints that item · Disc = runs blueprint">💾</div>
+            <div style="font-size:0.65em;color:#555;margin-top:4px;max-width:60px;line-height:1.3">Item <em>or</em> Disc</div>
+          </div>
+          <div class="gui-gauge-wrap">
+            <div class="gui-section-label">Filament Spools</div>
+            <!-- Spool row: 4 slots (T5 machine = 2L + 2R) -->
+            <div style="display:flex;gap:5px;margin-bottom:6px;align-items:center">
+              <!-- Spool 1: active, 68% -->
+              <div style="text-align:center">
+                <div style="width:28px;height:28px;border-radius:50%;background:conic-gradient(#6c63ff 0deg,#a78bfa 110deg,#312e81 110deg);border:2px solid #6c63ff;display:flex;align-items:center;justify-content:center;box-shadow:0 0 6px rgba(108,99,255,0.5);animation:spool-spin 3s linear infinite" id="gs1"><div style="width:8px;height:8px;background:#0f1117;border-radius:50%;border:1px solid #6c63ff"></div></div>
+                <div style="font-size:0.6em;color:#4ade80;margin-top:2px">68%</div>
+              </div>
+              <!-- Spool 2: 32% -->
+              <div style="text-align:center">
+                <div style="width:28px;height:28px;border-radius:50%;background:conic-gradient(#6c63ff 0deg,#a78bfa 50deg,#312e81 50deg);border:2px solid #4f46e5;display:flex;align-items:center;justify-content:center"><div style="width:8px;height:8px;background:#0f1117;border-radius:50%;border:1px solid #4f46e5"></div></div>
+                <div style="font-size:0.6em;color:#a78bfa;margin-top:2px">32%</div>
+              </div>
+              <!-- Spool 3: full/fresh -->
+              <div style="text-align:center">
+                <div style="width:28px;height:28px;border-radius:50%;background:conic-gradient(#6c63ff 0deg,#a78bfa 355deg,#312e81 355deg);border:2px solid #4f46e5;display:flex;align-items:center;justify-content:center"><div style="width:8px;height:8px;background:#0f1117;border-radius:50%;border:1px solid #4f46e5"></div></div>
+                <div style="font-size:0.6em;color:#6c63ff;margin-top:2px">~full</div>
+              </div>
+              <!-- Spool 4: empty slot -->
+              <div style="text-align:center">
+                <div style="width:28px;height:28px;border-radius:50%;background:#111;border:2px dashed #333;display:flex;align-items:center;justify-content:center;font-size:0.7em;color:#333">+</div>
+                <div style="font-size:0.6em;color:#333;margin-top:2px">empty</div>
+              </div>
+              <div style="margin-left:4px;font-size:0.7em;color:#555;line-height:1.4">Shift+RClick<br>to attach</div>
+            </div>
+            <div class="gui-section-label" style="margin-top:4px">Redstone Flux</div>
+            <div class="gui-gauge"><div class="gui-gauge-fill rf"></div></div>
+          </div>
+          <div>
+            <div class="gui-section-label">Upgrades</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">
+              <div class="gui-slot" style="width:36px;height:36px;font-size:0.9em">⚡</div>
+              <div class="gui-slot" style="width:36px;height:36px;font-size:0.9em">🧪</div>
+              <div class="gui-slot" style="width:36px;height:36px;font-size:0.9em">📦</div>
+              <div class="gui-slot" style="width:36px;height:36px;font-size:0.9em;border-color:#333"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="gui-section-label">Matter Calculator</div>
+        <div style="background:#111;border:1px solid #333;border-radius:4px;padding:8px;font-size:0.78em;color:#888;margin-bottom:6px">
+          <span style="color:#a78bfa">Village House</span> &nbsp;·&nbsp; FU cost: <span style="color:#4ade80">840</span> &nbsp;·&nbsp; RF: <span style="color:#fbbf24">12,000</span> &nbsp;·&nbsp; ETA: <span style="color:#94a3b8">~4m 20s</span>
+        </div>
+        <div style="font-size:0.7em;color:#444;margin-bottom:10px;font-style:italic">Smart slot: drop a craftable item to print it directly, or load a Blueprint Disc for structure/batch printing. Slot icon updates to reflect mode.</div>
+
+        <div class="gui-section-label">Print Queue</div>
+        <div class="gui-queue">
+          <div class="gui-queue-item">
+            <div class="qi-dot qi-active"></div>
+            <span>Village House Blueprint</span>
+            <div class="qi-progress"><div class="qi-prog-fill"></div></div>
+          </div>
+          <div class="gui-queue-item">
+            <div class="qi-dot qi-pending"></div>
+            <span style="color:#555">Stone Keep Blueprint</span>
+            <span style="margin-left:auto;color:#444;font-size:0.85em">queued</span>
+          </div>
+        </div>
+
+        <div style="margin-top:10px">
+          <span class="gui-btn btn-green">▶ Print</span>
+          <span class="gui-btn btn-blue">👁 Preview</span>
+          <span class="gui-btn btn-blue">🔄 Rotate</span>
+          <span class="gui-btn btn-red">⏹ Cancel</span>
+        </div>
+
+        <div class="gui-section-label" style="margin-top:10px">Print History</div>
+        <div style="font-size:0.72em;color:#555;background:#111;border:1px solid #222;border-radius:4px;padding:8px">
+          <div style="border-bottom:1px solid #222;padding-bottom:4px;margin-bottom:4px">✅ Oak Cabin · 2h ago · 320 FU</div>
+          <div style="border-bottom:1px solid #222;padding-bottom:4px;margin-bottom:4px">✅ Iron Sword ×4 · 3h ago · 28 FU</div>
+          <div>✅ Wheat Farm · 5h ago · 640 FU</div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ORE -->
+  <section id="ore">
+    <h2><span class="icon">💎</span> Custom Ore — Printite</h2>
+    <div class="note-box">⚠️ <strong>Name placeholder:</strong> currently <strong>"Printite"</strong> — rename pending. Find/replace when finalized.</div>
+
+    <div class="ore-demo">
+      <div>
+        <div style="text-align:center;margin-bottom:8px;font-size:0.85em;color:var(--muted)">Ore Block (End Stone)</div>
+        <div class="ore-block">
+          <div class="ore-vein ov1"></div>
+          <div class="ore-vein ov2"></div>
+          <div class="ore-vein ov3"></div>
+          <div class="sparkle sp1"></div>
+          <div class="sparkle sp2"></div>
+          <div class="sparkle sp3"></div>
+          <div class="sparkle sp4"></div>
+          <div class="sparkle sp5"></div>
+        </div>
+        <div style="text-align:center;margin-top:8px;font-size:0.8em;color:#34d399">Emerald-green glow active</div>
+      </div>
+      <div>
+        <div style="text-align:center;margin-bottom:8px;font-size:0.85em;color:var(--muted)">Printite Ingot</div>
+        <div class="ore-ingot">✨</div>
+        <div style="text-align:center;margin-top:8px;font-size:0.8em;color:#34d399">Subtle emerald shimmer</div>
+      </div>
+      <div style="max-width:240px">
+        <h3>Properties</h3>
+        <ul>
+          <li><strong>Dimension:</strong> The End only</li>
+          <li><strong>Rarity:</strong> Comparable to ancient debris</li>
+          <li><strong>Used for:</strong> T5+ machine components + higher-tier Scanner</li>
+          <li><strong>Visual:</strong> Deep blue base (darker than lapis) with emerald-green glowing speckled inclusions. The specks match the exact green of vanilla emeralds. Animated glow/shimmer on specks. Ingot carries a subtle emerald shimmer in inventory.</li>
+          <li>One ore, one purpose — not scattered across unrelated recipes</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- COMPAT -->
+  <section id="compat">
+    <h2><span class="icon">🔗</span> Mod Compatibility</h2>
+    <p>Soft dependencies only. Mod works standalone; integrations activate when the target mod is present.</p>
+
+    <div class="compat-grid">
+      <div class="compat-card priority">
+        <div class="compat-name">Applied Energistics 2 ⭐</div>
+        <div class="compat-desc">Pull matter directly from ME network. Store blueprint discs in ME storage. Trigger prints via AE2 autocrafting. <strong>Filament Unit Converter</strong> block for end-game ME automation. <em>Top priority integration.</em></div>
+        <div class="compat-tag"><span class="badge badge-teal">Priority</span></div>
+      </div>
+      <div class="compat-card">
+        <div class="compat-name">Draconic Evolution ⭐</div>
+        <div class="compat-desc">Unlocks Tier 8 machine via Awakened Draconium. DE energy system support. Chaos-tier matter values.</div>
+        <div class="compat-tag"><span class="badge badge-gold">T8 Unlock</span></div>
+      </div>
+      <div class="compat-card">
+        <div class="compat-name">Refined Storage</div>
+        <div class="compat-desc">Network-driven matter sourcing. Same pattern as AE2 — alternative for players who prefer RS.</div>
+      </div>
+      <div class="compat-card">
+        <div class="compat-name">Thermal Expansion</div>
+        <div class="compat-desc">RF compatibility. Possible shared augment/upgrade language for familiar upgrade feel.</div>
+      </div>
+      <div class="compat-card">
+        <div class="compat-name">Mekanism</div>
+        <div class="compat-desc">RF/energy compatibility. Pipe input for matter feed via mechanical pipes.</div>
+      </div>
+      <div class="compat-card">
+        <div class="compat-name">EnderIO</div>
+        <div class="compat-desc">Conduit compatibility for I/O automation. Works natively via standard inventory face logic.</div>
+      </div>
+    </div>
+    <p><em>Full mod list from Patrick incoming — more T8 candidates to be evaluated.</em></p>
+
+    <div class="card" style="margin-top:20px;border-color:rgba(0,212,170,0.3)">
+      <h3>⚗️ AE2 Integration — Filament Unit Converter</h3>
+      <p><em>Only exists / is craftable / is visible if Applied Energistics 2 is installed. Fully hidden without AE2 present.</em></p>
+      <p style="margin-top:8px">A dedicated block that bridges the ME network directly into the filament system — the end-game automation unlock. As long as the configured materials exist anywhere in the ME network, the printer's filament supply is effectively infinite.</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px">
+        <div style="background:#111;border:1px solid #1a3a2a;border-radius:8px;padding:14px">
+          <div style="font-size:0.8em;font-weight:700;color:#00d4aa;margin-bottom:8px">🎨 Appearance</div>
+          <ul style="font-size:0.82em;color:#8892a4;padding-left:16px">
+            <li>Attaches to the AE2 system like an addon/peripheral</li>
+            <li>Metal-framed block with a physical filament spool protruding from it</li>
+            <li>Spool spins slowly while actively converting</li>
+            <li>Looks like the ME network has its own filament supply</li>
+          </ul>
+        </div>
+        <div style="background:#111;border:1px solid #1a3a2a;border-radius:8px;padding:14px">
+          <div style="font-size:0.8em;font-weight:700;color:#00d4aa;margin-bottom:8px">⚙️ GUI &amp; Behavior</div>
+          <ul style="font-size:0.82em;color:#8892a4;padding-left:16px">
+            <li>Player configures which items/materials to auto-convert</li>
+            <li>Listens to ME network for available stock of configured items</li>
+            <li>Automatically pulls and converts on demand</li>
+            <li>Responds in real-time — conversion resumes when stock is restocked</li>
+            <li>Works with full ME system: import/export buses, channels, autocrafting</li>
+            <li>Only processes items explicitly configured — no accidental consumption</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LOOT -->
+  <section id="loot">
+    <h2><span class="icon">🗺️</span> World Loot & Blueprint Discovery</h2>
+    <p>Blueprints can be <em>found</em> in the wild — making exploration rewarding at every stage of progression. Each disc is labeled with its tier requirement.</p>
+
+    <div class="loot-timeline">
+      <div class="loot-row">
+        <div class="loot-tier-badge">T1–T2</div>
+        <div class="loot-content"><strong>🏘️ Village chests, dungeon loot</strong> <br><span>Basic item blueprints, simple structures</span></div>
+      </div>
+      <div class="loot-row">
+        <div class="loot-tier-badge">T3–T4</div>
+        <div class="loot-content"><strong>⛏️ Mineshafts, desert & jungle temples</strong> <br><span>Mid-tier structures, enhanced items</span></div>
+      </div>
+      <div class="loot-row">
+        <div class="loot-tier-badge">T5</div>
+        <div class="loot-content"><strong>🔥 Nether fortress, bastion remnants</strong> <br><span>Large structures, elite item blueprints</span></div>
+      </div>
+      <div class="loot-row">
+        <div class="loot-tier-badge">T6</div>
+        <div class="loot-content"><strong>🏰 End cities, End ships</strong> <br><span>Massive structures, exotic items — also where creator blueprints hide</span></div>
+      </div>
+      <div class="loot-row">
+        <div class="loot-tier-badge" style="color:var(--gold);border-color:var(--gold)">T7–T8</div>
+        <div class="loot-content" style="border-color:rgba(255,215,0,0.3)"><strong>⭐ Ultra-rare End city drops / boss loot</strong> <br><span>Legendary blueprints. Draconic-tier structures.</span></div>
+      </div>
+    </div>
+
+    <h3>🎬 Creator Signature Blueprints</h3>
+    <div class="card">
+      <p>Rare specialty blueprints hidden in high-tier loot as easter eggs and influencer tie-ins:</p>
+      <ul>
+        <li><strong>Figurines/Statues</strong> of popular Minecraft YouTubers — prints a life-size decorative statue (e.g., Chip & Milo, found in End chests, T6 required)</li>
+        <li><strong>Signature Builds</strong> — a creator's iconic base or house as a printable blueprint</li>
+        <li>Each labeled with the creator's name and tier requirement</li>
+      </ul>
+      <p style="margin-top:10px"><strong>Strategy:</strong> Reach out to creators pre-launch, offer their likeness as an in-mod easter egg in exchange for a video feature. A YouTuber finding their own statue blueprint mid-video is a viral moment that writes itself.</p>
+    </div>
+  </section>
+
+  <!-- MULTIPLAYER -->
+  <section id="multiplayer">
+    <h2><span class="icon">🌐</span> Multiplayer & Server Features</h2>
+    <div class="card-grid">
+      <div class="card">
+        <h3>🚧 Print Zone Conflict Detection</h3>
+        <p>Mod-internal only — no external claim mod dependency. If an active print job occupies an area and another printer tries to print in the same space, it throws an error and refuses to start. Simple bounding box overlap detection.</p>
+      </div>
+      <div class="card">
+        <h3>📦 Built-in Chunk Loading</h3>
+        <p>When a print job starts, all chunks in the print volume are automatically force-loaded. Released when the job completes, pauses, or cancels. No external chunk loader required — works reliably for T6/T7 mega-prints.</p>
+      </div>
+      <div class="card">
+        <h3>📡 Remote Terminal Block</h3>
+        <p>Pairs to a specific printer. Full control from anywhere: load blueprints, check matter/RF, start/stop/queue prints. Multiple terminals per printer. Essential when the multiblock is deep inside a build.</p>
+      </div>
+      <div class="card">
+        <h3>🗄️ Server Blueprint Repository</h3>
+        <p>Blueprints stored as <code>world/mc3dprint/blueprints/*.blueprint</code> files on disk. Server owners manage the folder directly. Modpack makers can pre-populate it. Accessible in-game via a Repository block or library tab.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- COMMUNITY -->
+  <section id="community">
+    <h2><span class="icon">🚀</span> Community & Launch Strategy</h2>
+    <div class="card-grid">
+      <div class="card">
+        <h3>🌐 Blueprint Sharing Platform</h3>
+        <p>Companion website for uploading/downloading <code>.blueprint</code> files. Own this from day one. GitHub-backed repo with clean frontend, or a dedicated site. In-mod "Browse Community Blueprints" button in GUI. Call it out on CurseForge at launch.</p>
+      </div>
+      <div class="card">
+        <h3>📖 Patchouli Guidebook</h3>
+        <p>Auto-given on first printer component craft. Covers tier progression, matter system, scanner, I/O, enhancements, blueprint format. Standard for well-regarded tech mods — sets a professional tone.</p>
+      </div>
+      <div class="card">
+        <h3>🔗 JEI / REI Integration</h3>
+        <p>Custom "3D Printer Recipes" category: item, matter cost, RF cost, required tier. Blueprint disc contents browsable as recipes. Non-negotiable — players will complain loudly if absent.</p>
+      </div>
+    </div>
+
+    <h3>🏆 Custom Advancement Tree</h3>
+    <div class="adv-tree">
+      <div class="adv-node">
+        <span class="adv-icon">🖨️</span>
+        <div class="adv-title">First Extrusion</div>
+        <div class="adv-desc">Complete your first item print</div>
+      </div>
+      <div class="adv-node">
+        <span class="adv-icon">📡</span>
+        <div class="adv-title">Architect</div>
+        <div class="adv-desc">Scan your first structure</div>
+      </div>
+      <div class="adv-node">
+        <span class="adv-icon">🏗️</span>
+        <div class="adv-title">Fabricator</div>
+        <div class="adv-desc">Print your first structure</div>
+      </div>
+      <div class="adv-node">
+        <span class="adv-icon">🧪</span>
+        <div class="adv-title">Matter Matters</div>
+        <div class="adv-desc">Convert 1,000 matter points</div>
+      </div>
+      <div class="adv-node">
+        <span class="adv-icon">⚙️</span>
+        <div class="adv-title">T7 Online</div>
+        <div class="adv-desc">Build a Tier 7 printer</div>
+      </div>
+      <div class="adv-node">
+        <span class="adv-icon">🗺️</span>
+        <div class="adv-title">Found in the Wild</div>
+        <div class="adv-desc">Discover a blueprint in world loot</div>
+      </div>
+      <div class="adv-node hidden">
+        <span class="adv-icon">🐉</span>
+        <div class="adv-title">Draconic Fabricator</div>
+        <div class="adv-desc" style="color:var(--gold)">Build a Tier 8 printer</div>
+        <div style="margin-top:4px"><span class="badge badge-gold">Hidden</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- BALANCING -->
+  <section id="balancing">
+    <h2><span class="icon">⚖️</span> Balancing & Tuning</h2>
+    <p>Placeholder values — start conservative, buff after playtesting. All values exposed in config for pack makers.</p>
+
+    <div class="chart-legend">
+      <div class="legend-item"><div class="legend-dot" style="background:linear-gradient(90deg,#6c63ff,#a78bfa)"></div> Speed (blocks/sec)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:linear-gradient(90deg,#00d4aa,#34d399)"></div> FU Efficiency</div>
+      <div class="legend-item"><div class="legend-dot" style="background:linear-gradient(90deg,#fbbf24,#f59e0b)"></div> RF/block (inverted)</div>
+    </div>
+
+    <div class="speed-chart">
+      <div class="speed-row">
+        <div class="speed-tier">T1</div>
+        <div class="speed-bars">
+          <div class="speed-bar sb-speed" style="width:1.5%"></div>
+          <div class="speed-bar sb-eff" style="width:50%"></div>
+          <div class="speed-bar sb-rf" style="width:100%"></div>
+        </div>
+        <div class="speed-vals">0.5/s · 50% · 100RF</div>
+      </div>
+      <div class="speed-row">
+        <div class="speed-tier">T2</div>
+        <div class="speed-bars">
+          <div class="speed-bar sb-speed" style="width:3%"></div>
+          <div class="speed-bar sb-eff" style="width:55%"></div>
+          <div class="speed-bar sb-rf" style="width:90%"></div>
+        </div>
+        <div class="speed-vals">1/s · 55% · 90RF</div>
+      </div>
+      <div class="speed-row">
+        <div class="speed-tier">T3</div>
+        <div class="speed-bars">
+          <div class="speed-bar sb-speed" style="width:6%"></div>
+          <div class="speed-bar sb-eff" style="width:65%"></div>
+          <div class="speed-bar sb-rf" style="width:75%"></div>
+        </div>
+        <div class="speed-vals">2/s · 65% · 75RF</div>
+      </div>
+      <div class="speed-row">
+        <div class="speed-tier">T4</div>
+        <div class="speed-bars">
+          <div class="speed-bar sb-speed" style="width:13%"></div>
+          <div class="speed-bar sb-eff" style="width:75%"></div>
+          <div class="speed-bar sb-rf" style="width:60%"></div>
+        </div>
+        <div class="speed-vals">4/s · 75% · 60RF</div>
+      </div>
+      <div class="speed-row">
+        <div class="speed-tier">T5</div>
+        <div class="speed-bars">
+          <div class="speed-bar sb-speed" style="width:26%"></div>
+          <div class="speed-bar sb-eff" style="width:85%"></div>
+          <div class="speed-bar sb-rf" style="width:45%"></div>
+        </div>
+        <div class="speed-vals">8/s · 85% · 45RF</div>
+      </div>
+      <div class="speed-row">
+        <div class="speed-tier">T6</div>
+        <div class="speed-bars">
+          <div class="speed-bar sb-speed" style="width:40%"></div>
+          <div class="speed-bar sb-eff" style="width:92%"></div>
+          <div class="speed-bar sb-rf" style="width:30%"></div>
+        </div>
+        <div class="speed-vals">12/s · 92% · 30RF</div>
+      </div>
+      <div class="speed-row">
+        <div class="speed-tier">T7</div>
+        <div class="speed-bars">
+          <div class="speed-bar sb-speed" style="width:66%"></div>
+          <div class="speed-bar sb-eff" style="width:98%"></div>
+          <div class="speed-bar sb-rf" style="width:15%"></div>
+        </div>
+        <div class="speed-vals">20/s · 98% · 15RF</div>
+      </div>
+      <div class="speed-row">
+        <div class="speed-tier" style="color:var(--gold)">T8 ⭐</div>
+        <div class="speed-bars">
+          <div class="speed-bar sb-speed" style="width:100%;background:linear-gradient(90deg,#92400e,#fbbf24)"></div>
+          <div class="speed-bar sb-eff" style="width:99%;background:linear-gradient(90deg,#065f46,#fbbf24)"></div>
+          <div class="speed-bar sb-rf" style="width:10%;background:linear-gradient(90deg,#fbbf24,#f59e0b)"></div>
+        </div>
+        <div class="speed-vals">30/s · 99% · 10RF</div>
+      </div>
+    </div>
+
+    <h3>Locked Design Decisions</h3>
+    <div class="card">
+      <p>✅ <strong>No machine durability</strong> — permanent investments, not maintenance</p>
+      <p>✅ <strong>No tier-up matter conversion</strong> — prevents cobblestone farm exploits</p>
+      <p>✅ <strong>Soft dependencies only</strong> — standalone mod, integrations are bonuses</p>
+      <p>✅ <strong>Multiplicative modifier stacking</strong> — prevents runaway enhancement values</p>
+      <p>✅ <strong>Power-loss pauses, never resets</strong> — no punishment for infrastructure mistakes</p>
+    </div>
+  </section>
+
+  <!-- STRETCH -->
+  <section id="stretch">
+    <h2><span class="icon">🌟</span> Stretch Goals</h2>
+    <div class="card-grid">
+      <div class="card">
+        <h3>✨ Print Completion Effect</h3>
+        <p>Visual flourish when a job finishes: beam of light, fireworks, satisfying sound. The "done" moment should feel genuinely rewarding.</p>
+      </div>
+      <div class="card">
+        <h3>💠 Hologram Idle Animation</h3>
+        <p>When idle, the printer displays a slowly rotating hologram of the last blueprint printed. Purely cosmetic, looks amazing.</p>
+      </div>
+      <div class="card">
+        <h3>🎨 Printer Skin System</h3>
+        <p>Dye or skin the printer frame cosmetically. Drives screenshots, community showcases, and engagement without affecting gameplay.</p>
+      </div>
+      <div class="card">
+        <h3>🔁 Deconstruct Mode</h3>
+        <p>Printer runs in reverse — breaks down a structure and converts it back to Filament Units. Clean demolition with FU recovery.</p>
+      </div>
+      <div class="card">
+        <h3>📋 Batch Blueprint Sequencing</h3>
+        <p>Chain multiple blueprints into a single automated sequence: print A, then B, then C — fully unattended.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- OPEN QUESTIONS -->
+  <section id="openqs">
+    <h2><span class="icon">❓</span> Open Questions</h2>
+    <div class="card">
+      <ul>
+        <li><strong>Mod loader:</strong> ✅ <strong>Forge only for now.</strong> Architecture should avoid Forge-only APIs where a cross-platform abstraction exists — keep Fabric/Architectury possible in the future without pigeonholing the codebase today.</li>
+        <li><strong>Blueprint file format:</strong> NBT schematics, JSON, or custom <code>.blueprint</code> format?</li>
+        <li><strong>Print area:</strong> ✅ <strong>Must be pre-cleared.</strong> The printer cannot replace existing blocks — players are responsible for clearing the space before printing.</li>
+        <li><strong>Mod list:</strong> Patrick to provide full list of favorite mods for compatibility evaluation and additional T8 tier candidates</li>
+        <li><strong>Ore name:</strong> Printite is a placeholder — final name TBD</li>
+      </ul>
+    </div>
+  </section>
+
+</div>
+
+<footer>
+  <strong>MC3DPrint</strong> — Minecraft 3D Printing Mod Design Document &nbsp;·&nbsp; v0.1 concept &nbsp;·&nbsp; 2026-06-06<br>
+  <span style="color:#444">Generated from MC3DPrint.md · All values are placeholders pending playtesting</span>
+</footer>
+
+<script>
+// Build layer animation — accumulate bottom-up, hold, then reset
+(function() {
+  const layers = document.querySelectorAll('#buildArea .build-layer');
+  const spool = document.getElementById('spoolEl');
+  const spoolBar = document.getElementById('spoolBar');
+  const spool2 = document.getElementById('spoolEl2');
+  const spoolBar2 = document.getElementById('spoolBar2');
+  let current = 0;
+  let spoolPct = 70;
+  let spoolAngle = 0;
+  let spinning = false;
+
+  function showNextLayer() {
+    if (current < layers.length) {
+      layers[current].classList.add('visible');
+      current++;
+      spinning = true;
+      setTimeout(showNextLayer, 420);
+    } else {
+      // All layers shown — hold briefly then reset
+      spinning = false;
+      setTimeout(resetLayers, 1200);
+    }
+  }
+
+  function resetLayers() {
+    layers.forEach(l => l.classList.remove('visible'));
+    current = 0;
+    setTimeout(showNextLayer, 500);
+  }
+
+  // Spool spin animation
+  function animateSpool() {
+    if (spinning) {
+      spoolAngle = (spoolAngle + 2) % 360;
+      spool.style.transform = 'rotate(' + spoolAngle + 'deg)';
+      spool2.style.transform = 'rotate(' + spoolAngle + 'deg)';
+      // Slowly drain spools
+      spoolPct = Math.max(10, spoolPct - 0.015);
+      spoolBar.style.width = spoolPct + '%';
+      var pct2 = parseFloat(spoolBar2.style.width) || 45;
+      spoolBar2.style.width = Math.max(5, pct2 - 0.01) + '%';
+    }
+    requestAnimationFrame(animateSpool);
+  }
+
+  showNextLayer();
+  animateSpool();
+})();
+</script>
+</body>
+</html>

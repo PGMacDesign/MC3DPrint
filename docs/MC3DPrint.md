@@ -1,0 +1,480 @@
+---
+date: 2026-06-06
+tags: [minecraft, mod-idea, 3d-printing, fabrication, multiblock, redstone-flux]
+type: idea
+status: active
+---
+
+# MC3DPrint — Minecraft 3D Printing Machine Mod
+
+A tech mod centered on a tiered 3D Printing Machine capable of fabricating items, tools, and entire structures. The core fantasy: *WorldEdit for survival mode players.* Scan a building, save it as a blueprint, print it anywhere — no commands required.
+
+---
+
+## Table of Contents
+
+1. [[#Machine Tiers]]
+2. [[#Power — Redstone Flux]]
+3. [[#Filament System]]
+4. [[#Enhancements & Expansion Slots]]
+5. [[#I/O Design]]
+6. [[#Print Head Animation]]
+7. [[#Scanner Tool & Blueprint Discs]]
+8. [[#Printer GUI]]
+9. [[#Custom Ore — Printite]]
+10. [[#Mod Compatibility]]
+11. [[#World Loot & Blueprint Discovery]]
+12. [[#Multiplayer & Server Features]]
+13. [[#Community & Launch Strategy]]
+14. [[#Balancing & Tuning]]
+15. [[#Stretch Goals]]
+16. [[#Open Questions]]
+
+---
+
+## Machine Tiers
+
+Tiers 1–4 are single craftable blocks. Tiers 5–8 are true multiblock structures built in-world. Tier 8 requires Draconic Evolution.
+
+| Tier | Structure | Footprint | Capability |
+|------|-----------|-----------|------------|
+| 1 | Single block | 1×1 | Basic items (tools, weapons) |
+| 2 | Single block | 1×1 | Unlocks structure scanning & blueprints |
+| 3 | Single block | 3×3 print area | Small structures, mid-tier items |
+| 4 | Single block | 5×5 print area | Larger structures, advanced items |
+| 5 | Multiblock | 9×9 | Complex builds, elite items; **requires Printite** |
+| 6 | Multiblock | 15×15 | Large structures, exotic materials |
+| 7 | Multiblock | 23×23 | Maximum base-game size; legendary items & massive builds |
+| 8 ⭐ | Multiblock | 33×33 | **Draconic tier** — Awakened Draconium required; pattern-consistent prestige tier |
+
+- Machine complexity and material cost scales with tier
+- **T1–T4:** Single craftable blocks — craft in a crafting table, place in the world
+- **T5–T8:** True **multiblock structures** — multiple different blocks placed in a specific pattern in-world, then right-click the controller to form the machine. No crafting table recipe.
+- No durability on machines — ever. Permanent investments, not maintenance burdens.
+
+### Multiblock Portability — Collapse to Item
+
+A key quality-of-life feature: multiblock machines are fully portable without disassembly.
+
+**Formation:**
+1. Place component blocks in the correct layout
+2. Right-click the controller block → multiblock forms into a single logical unit
+3. Component blocks become part of the structure (rendered geometry) — the machine is now "one thing"
+
+**Relocation (the important part):**
+- Break the controller block → entire multiblock collapses instantly
+- Drops as a **single inventory item** (e.g., `Tier 5 Fabricator`) — not scattered components
+- Walk to the new location, place the item → machine reforms automatically, fully intact
+- No inventory tetris, no lost components, no rebuilding from scratch
+
+**Why this matters:** Without this, players with large T6/T7 machines would face a massive penalty for wanting to print in a different area. The multiblock system is about *effort to build*, not *effort to move*. Build it once, relocate freely.
+
+---
+
+## Power — Redstone Flux
+
+- Powered by **Redstone Flux (RF)** — compatible with Thermal Expansion, Mekanism, EnderIO, and all standard RF mods
+- RF cost per block placed scales with tier and print complexity
+- Power-loss mid-print: job **pauses** and resumes exactly where it left off when power is restored — no matter lost, no partial mess
+- GUI displays "PAUSED — Insufficient Power" clearly
+- Internal RF buffer included per machine; size scales with tier
+
+---
+
+## Filament System
+
+All fabrication is powered by **Filament Units (FU)** — a unified measurement of stored material potential. There is no separate "Raw Matter" pool. FU is the single currency for both storing and spending material.
+
+### The Flow
+
+1. Feed materials into the **Filament Winder** → converts to FU, winds onto a blank spool
+2. Load the spool onto the printer sides (Shift+Right Click)
+3. Printer draws FU from the spool as it prints
+4. RF is consumed at both steps — winding and printing
+
+### Filament Unit Values
+
+Conversion is **symmetric** — what a material produces in FU is exactly what it costs to print that material. A diamond yields 50 FU. Printing a diamond costs 50 FU. No arbitrage.
+
+Materials within the same group share identical FU values — e.g. cobblestone, dirt, gravel, and sand are all interchangeable as 1 FU inputs.
+
+| FU Value | Materials (all equivalent) | Min Winder Tier |
+|----------|---------------------------|-----------------|
+| **1 FU** | Cobblestone, Dirt, Gravel, Sand, Gravel, Soul Sand, Soul Soil, Clay Ball | T1 |
+| **3 FU** | Stone, Sandstone, Smooth Stone, Stone Bricks, Andesite, Diorite, Granite, Calcite, Tuff | T1 |
+| **3 FU** | Oak/Spruce/Birch/Jungle/Acacia/Dark Oak/Mangrove/Cherry Log or Planks | T1 |
+| **5 FU** | Glass, Terracotta, Concrete, Wool, Nether Bricks, Quartz Block | T1 |
+| **10 FU** | Copper Ingot, Amethyst Shard, Lapis Lazuli (per unit) | T2 |
+| **15 FU** | Gold Ingot, Gold Nugget ×9 | T2 |
+| **20 FU** | Iron Ingot, Iron Nugget ×9 | T2 |
+| **30 FU** | Redstone Dust ×8, Slimeball, Magma Cream | T3 |
+| **50 FU** | Diamond, Emerald *(same value — equally rare, equally useful)* | T4 |
+| **500 FU** | Netherite Ingot, Ancient Debris ×4 | T5 |
+| **1,500 FU** | Nether Star | T6 |
+| **2,500 FU** | Dragon Egg | T7 |
+
+*All values are placeholders — expect significant rebalancing during playtesting.*
+
+**Key grouping rules:**
+- Same rarity tier = same FU value (diamond = emerald, cobblestone = dirt = gravel = sand)
+- Stone variants (sandstone, stone bricks, etc.) = same as base stone
+- All wood types = same value regardless of species
+- Nugget ×9 = ingot value (consistent with vanilla crafting ratios)
+
+**Winder tier gating:** A T1 Winder cannot convert diamonds — the Winder must match or exceed the material's required tier. This closes any bypass around the item tier print restrictions and keeps progression intact.
+
+### Tier Down-Conversion (One Direction Only)
+
+- Higher-tier materials can be processed by the Winder **down** by one tier at a **16:1 FU ratio**
+  - 1× T5 material → 16× T4 material's worth of FU
+- **Cannot tier up** — hard restriction. Prevents cobblestone farming from trivializing the economy.
+- Down-conversion is one step at a time (T6→T5, not T6→T3 directly)
+
+### Filament Spool
+
+FU is stored on physical **Filament Spool** items, wound by the Filament Winder and attached to the printer sides.
+
+**Spool capacities:**
+
+| Spool Tier | FU Capacity |
+|------------|-------------|
+| T1 | 500 FU |
+| T2 | 2,000 FU |
+| T3 | 6,000 FU |
+| T4 | 20,000 FU |
+| T5 | 75,000 FU |
+| T6 | 250,000 FU |
+| T7 | 1,000,000 FU |
+| T8 | 5,000,000 FU |
+
+**Spool slots by tier:**
+
+| Tier | Right | Left | Total |
+|------|-------|------|-------|
+| T1 | 1 | 0 | 1 |
+| T2 | 1 | 1 | 2 |
+| T3 | 2 | 1 | 3 |
+| T4+ | 2 | 2 | 4 |
+
+- Attached via `Shift + Right Click` on the side of the printer
+- Auto-switches to backup spool when one depletes — no print interruption
+- Depletion with no backup pauses the printer, never loses progress
+- Visual: spool spins on the machine exterior while printing; GUI shows FU remaining as fill bar + %
+
+### Print Costs & Efficiency
+
+- Each item/structure has a base FU cost (symmetric with material values)
+- Lower-tier machines are less efficient — they consume more FU than the theoretical minimum
+- Higher-tier machines approach 1:1 efficiency
+- Efficiency Upgrades reduce FU consumption further
+- Matter Calculator in the GUI shows exact FU cost, RF cost, and ETA before committing to a print
+---
+
+## Item Tier Requirements
+
+Higher-tier machines aren't just for bigger print areas — they're also required to print higher-tier items. A T1 printer cannot print a diamond sword. Period.
+
+| Tier Required | Printable Items (examples) |
+|--------------|---------------------------|
+| T1 | Cobblestone, dirt, gravel, wood planks, sticks, torches, basic food |
+| T2 | Stone tools, iron tools & armor, buckets, rails, basic redstone components |
+| T3 | Gold tools/armor, lapis, chain armor, crossbows, books, maps |
+| T4 | Diamond tools & armor, enchanting table, ender chest, anvil |
+| T5 | Netherite tools & armor, beacons, tridents, elytra |
+| T6 | Nether Star crafted items (conduit, beacon pyramid components), end-game gear |
+| T7 | Highest-tier crafted vanilla items; modded legendary gear |
+| T8 ⭐ | Draconic Evolution top-tier gear (with DE installed) |
+
+**Structure printing** is governed separately by the print volume (footprint) — but item printing is always gated by tier regardless of machine size.
+
+---
+
+## Enhancements & Expansion Slots
+
+Each printer has expansion slots for upgrade modules. Slot count mirrors tier (T3 = 3 slots, T7 = 7 slots, T8 = 8 slots).
+
+| Upgrade | Effect |
+|---------|--------|
+| Speed Upgrade | Increases print head movement speed |
+| Efficiency Upgrade | Reduces Matter cost per print |
+| Matter Density Upgrade | Better conversion rate for low-value inputs |
+| RF Efficiency Upgrade | Reduces RF consumption per block placed |
+| Buffer Upgrade | Increases internal Matter storage capacity |
+
+- Upgrades are themselves tiered (T1 Speed Upgrade vs. T5 Speed Upgrade)
+- Modifiers stack **multiplicatively**, not additively — prevents runaway values
+- All base values and modifier rates exposed in config for pack makers
+
+---
+
+## I/O Design
+
+Simple, intuitive, automation-friendly from day one. **Anti-AE2-Inscriber** by design.
+
+- **Top face** — accepts any input: matter materials, blueprint discs, anything going *in*
+- **Bottom / Front face** — output/extraction: finished items, ejected discs, anything coming *out*
+- No side-specific requirements. No "silicone goes in the right, redstone goes in the top" nonsense.
+- **Sides are reserved exclusively for Filament Spool attachment** (Shift+Right Click) — not general I/O faces
+- Works with vanilla hoppers at T1 — zero gatekeeping on early automation
+- Compatible with any pipe mod respecting standard inventory faces: EnderIO conduits, Thermal ducts, Mekanism pipes, AE2 import/export buses, RS cables, etc.
+- Output buffer pauses the printer if full — never voids items
+- Blueprint disc returns to output slot after a completed print (stays loaded if repeat-print is queued)
+
+---
+
+## Print Head Animation
+
+Inspired by the BuildCraft Quarry — but in reverse. The quarry destroys top-down; this builds bottom-up.
+
+1. **Structural Frame** — spawns rendered geometry around the entire print volume when a job starts (not real placeable blocks — won't interfere with the build)
+2. **X/Y Gantry Arms** — extend across the frame, visibly connected to the print head
+3. **Print Head** — rides the gantry, moving layer by layer (X → Y → Z, exactly like FDM 3D printing)
+4. **Zap Effect** — at each position, the head fires a laser/beam downward; block materializes on contact
+5. **Particle trail** on moving gantry arms; satisfying sound cue per block placed
+6. Animation speed increases visibly with machine tier and Speed Upgrades
+
+---
+
+## Scanner Tool & Blueprint Discs
+
+### Scanner Tool
+A craftable handheld tool used to capture structures as portable blueprints.
+
+**Workflow:**
+1. Craft the Scanner (mid-tier, requires tech components + Printite at higher scanner tiers)
+2. Right-click two corners to define a bounding box (WorldEdit wand style)
+3. Trigger scan — structure is captured
+4. Output: **Blueprint Disc** — a physical inventory item storing the schematic
+
+**Scanner Tiers:**
+- T1 Scanner: small volumes (up to ~7×7×7)
+- Higher-tier scanners: larger capture volumes matching printer tier capabilities
+
+### Blueprint Discs
+
+- Portable — carry in inventory, store in chests, trade with other players
+- Not locked to any specific printer — works in any compatible machine of sufficient tier
+- **Shift + Right Click** to lock/unlock a disc — locked discs cannot be overwritten or deleted
+- Locked discs show a visual indicator (icon + border color in GUI)
+- **Blueprint Transform** — right-click to open transform menu: rotate 90°/180°/270°, mirror on X or Z axis
+
+### Blueprint Library Block
+- Storage block for organizing multiple Blueprint Discs
+- Acts as a local personal library
+- Higher-tier version: **Server Blueprint Repository** (see Multiplayer section)
+
+---
+
+## Printer GUI
+
+All controls in one clean interface:
+
+- **Smart Print Slot** — accepts both items *and* Blueprint Discs in the same slot
+  - Drop a **craftable item** → prints one copy of that item (Item Mode)
+  - Load a **Blueprint Disc** → runs the full blueprint (Blueprint Mode)
+  - Slot icon changes dynamically based on what's loaded
+  - No mode toggle, no confusion — the slot figures it out
+  - Works at every tier: T1 uses item drops exclusively; T2+ supports both
+- **Matter Gauge** — current pool level and input conversion rate
+- **RF Gauge** — current power level and consumption rate
+- **Matter Calculator** — input a loaded blueprint → shows exact matter cost, RF required, estimated print time at current tier + upgrades
+- **Hologram Preview** — renders a ghost outline of the structure in-world before printing; green = clear, red = obstructed
+- **Transform Controls** — rotate and mirror the blueprint before printing
+- **Print Queue** — queue multiple jobs, reorder, pause/resume, cancel (cancel refunds a configurable % of matter)
+- **Print History Log** — simple last-N-jobs list: blueprint name, timestamp, matter consumed
+- **Upgrade Slots** — expansion module management
+- Queue persists through server restarts
+
+---
+
+## Custom Ore — Printite
+
+> ⚠️ *Name placeholder: currently **"Printite"** — rename TBD. Find/replace when finalized.*
+
+- **Dimension:** The End only — zero overworld generation, keeps world gen clean
+- **Rarity:** Rare (comparable to ancient debris)
+- **Used for:** T6/T7 machine components and higher-tier Scanner crafting — one ore, one purpose
+- **Visual:** Darker blue base (deeper/darker than lapis lazuli) with emerald-green glowing speckled inclusions — distinct from both Draconic Evolution's purple and vanilla End materials. The glowing specks match the exact green of emerald. Animated shimmer/glow on the specks, premium look, easy to spot in the End's dark terrain.
+- Ingot/gem form carries a subtle shimmer in inventory as well
+
+---
+
+## Mod Compatibility
+
+Soft dependencies only — mod works standalone, integrations activate when the target mod is present.
+
+| Mod | Integration |
+|-----|-------------|
+| **Applied Energistics 2** | Pull matter directly from ME network; store blueprint discs in ME storage; trigger prints via AE2 autocrafting *(top priority)*; **Filament Unit Converter** (see below) |
+| **Draconic Evolution** | Unlocks Tier 8 machine via Awakened Draconium; DE energy system support |
+| **Refined Storage** | Network-driven matter sourcing, same pattern as AE2 |
+| **Thermal Expansion** | RF compatibility; shared augment/upgrade language |
+| **Mekanism** | RF/energy compatibility; pipe input for matter feed |
+| **EnderIO** | Conduit compatibility for I/O automation |
+| **BuildCraft** | Quarry-style animation inspiration; potential blueprint format crossover |
+
+*More mods to evaluate — Patrick will provide a full list.*
+
+### AE2 Integration — Filament Unit Converter
+
+A dedicated block that bridges the ME network directly into the filament system. Only exists / is visible if Applied Energistics 2 is installed (soft dependency — hidden entirely without AE2).
+
+**Concept:** End-game automation. The Filament Unit Converter attaches to the ME network and can export filament directly out of the Filament Winder or other converters — essentially giving the network an infinite filament supply as long as the required materials exist in storage. The spool never runs out as long as the network has stock.
+
+**Appearance:** Looks like an attachment onto the AE2 system — a metal-framed block with a physical filament spool protruding from it, slowly spinning while active.
+
+**GUI:**
+- Player specifies which items/materials to auto-convert into filament
+- Listens to the ME network for available stock of configured items
+- Automatically pulls and converts items according to the configured rules
+- Responds in real-time — if the network gains more stock, conversion resumes
+
+**Behavior:**
+- Works seamlessly with the full ME system (import/export buses, autocrafting, channels, etc.)
+- Keeps the printer's filament topped up without manual spool management
+- Only processes conversions for items the player has explicitly configured — no accidental consumption
+- Hidden / uncraftable / non-functional if AE2 is not loaded
+
+**Integration philosophy:**
+- Capability APIs (Forge) or standard interfaces (Fabric) for clean integration
+- No hard requirements on any external mod
+- AE2 is the launch-day priority: T7 printer + ME network + autocrafting is an end-game setup people will go wild for
+
+---
+
+## World Loot & Blueprint Discovery
+
+Blueprints can be *found* in the wild — making exploration rewarding at every stage of progression.
+
+### Tiered Loot Placement
+
+| Blueprint Tier | Loot Locations |
+|---------------|----------------|
+| T1–T2 | Village chests, dungeon loot |
+| T3–T4 | Mineshafts, desert/jungle temples |
+| T5 | Nether fortresses, bastion remnants |
+| T6 | End cities, End ships |
+| T7–T8 | Ultra-rare End city drops; potential boss loot |
+
+- Each found blueprint labeled: *"Requires Tier X Printer"*
+- Blueprint Discs are **reusable physical items** (not single-use consumables) — can be kept, traded, or stored in a Blueprint Library
+- Pre-built structure blueprints included as a curated set (villages, towers, dungeons, etc.) — nice to have, but player-provided blueprints are the killer feature
+
+### Signature Blueprints — Creator Easter Eggs
+
+Specialty rare blueprints hidden in high-tier loot:
+- **Figurines/Statues** of popular Minecraft YouTubers — prints a life-size decorative statue
+  - Example: Chip & Milo figurines, found in End chests, T6 required
+- **Signature Builds** — a creator's iconic base/house as a printable blueprint
+- Each labeled with the creator's name and tier requirement
+
+**Strategy:** Reach out to creators pre-launch, offer their likeness/build as an in-mod easter egg in exchange for a video feature. A YouTuber discovering their own statue blueprint mid-video is exactly the kind of moment that goes viral.
+
+---
+
+## Multiplayer & Server Features
+
+### Print Zone Conflict Detection
+- Mod-internal only — no dependency on external claim mods
+- If a print job is active and another printer attempts to print into the same area, it throws an error and refuses to start
+- Simple bounding box overlap detection — not a full land claim system
+
+### Built-in Chunk Loading
+- When a print job starts, the printer automatically force-loads all chunks within the print volume
+- Chunk loading is released when the job completes, pauses, or is cancelled
+- No external chunk loader mod required — works reliably for large T6/T7 prints out of the box
+
+### Remote Terminal Block
+- Craftable block that pairs to a specific printer and provides full remote control
+- Load blueprints, check matter/RF levels, monitor job progress, start/stop/queue prints from a distance
+- Multiple terminals can link to one printer
+- Essential for builds where the printer multiblock is embedded inside a larger structure
+
+### Server Blueprint Repository
+- Server-wide shared Blueprint Library accessible to all players
+- Blueprints stored as individual files on disk: `world/mc3dprint/blueprints/*.blueprint`
+- Server owner manages the folder directly — add, remove, organize
+- Modpack makers can pre-populate with curated content at pack assembly time
+- In-game: accessible via a Server Repository block or as a dedicated tab in the Blueprint Library GUI
+
+---
+
+## Community & Launch Strategy
+
+### Blueprint Sharing Platform
+- Companion website for uploading/downloading `.blueprint` files
+- Own this from day one — the community will build it themselves if you don't
+- Implementation options: GitHub-backed repo with clean frontend, or dedicated site
+- In-mod hook: optional "Browse Community Blueprints" button in GUI
+- CurseForge project page calls this out explicitly to seed the community at launch
+
+### In-Game Documentation — Patchouli Guidebook
+- Auto-given to the player on first printer component craft
+- Covers: tier progression, matter system, scanner usage, I/O setup, enhancements, blueprint format
+- Standard for well-regarded tech mods — sets a professional tone and reduces support burden
+
+### JEI / REI Integration
+- Custom "3D Printer Recipes" category showing: item, matter cost, RF cost, required tier
+- Blueprint disc contents browsable as recipes
+- Non-negotiable — players expect it and will complain loudly if it's absent
+
+### Custom Advancement Tree
+- Dedicated tab with a full progression tree as a built-in roadmap
+
+| Advancement | Trigger |
+|-------------|---------|
+| *First Extrusion* | Complete first item print |
+| *Architect* | Scan your first structure |
+| *Fabricator* | Print your first structure |
+| *Matter Matters* | Convert 1,000 matter points |
+| *T7 Online* | Build a Tier 7 printer |
+| *Found in the Wild* | Discover a blueprint in world loot |
+| *Draconic Fabricator* | Build a Tier 8 printer *(hidden)* |
+
+---
+
+## Balancing & Tuning
+
+### Placeholder Speed & Efficiency Values
+
+Start conservative — easier to buff than nerf post-release. All values exposed in config.
+
+| Tier | Blocks/sec | Matter Efficiency | RF/block |
+|------|-----------|-------------------|----------|
+| 1 | 0.5 | 50% | 100 RF |
+| 2 | 1.0 | 55% | 90 RF |
+| 3 | 2.0 | 65% | 75 RF |
+| 4 | 4.0 | 75% | 60 RF |
+| 5 | 8.0 | 85% | 45 RF |
+| 6 | 12.0 | 92% | 30 RF |
+| 7 | 20.0 | 98% | 15 RF |
+| 8 ⭐ | 30.0 | 99% | 10 RF |
+
+*Heavy revision expected during playtesting.*
+
+### Locked Design Decisions
+- ✅ No machine durability — permanent investments, not maintenance
+- ✅ No tier-up matter conversion — prevents cobblestone farm exploits
+- ✅ Soft dependencies only — standalone mod, integrations are bonuses
+- ✅ Multiplicative modifier stacking — prevents runaway enhancement values
+- ✅ Power-loss pauses, never resets — no punishment for infrastructure mistakes
+
+---
+
+## Stretch Goals
+
+- **Print Completion Effect** — visual flourish on job finish: beam of light, fireworks, sound cue. The "done" moment should feel *good*.
+- **Hologram Idle Animation** — when no job is running, printer displays a slowly rotating hologram of the last blueprint printed. Purely cosmetic, looks great.
+- **Printer Color / Skin System** — cosmetic dye or skin options for the printer frame. Drives screenshots and community engagement.
+- **Deconstruct Mode** — printer runs in reverse, breaking down a structure and converting it back into matter points. Useful for clean demolition and resource recovery.
+- **Batch Blueprint Sequencing** — chain multiple blueprints into a single automated sequence (print building A, then B, then C) without manual intervention.
+
+---
+
+## Open Questions
+
+- **Mod loader:** ✅ Forge only for now — but architect the codebase to avoid locking out Fabric/Architectury in the future. Don't use Forge-only APIs where a cross-platform abstraction exists. Future-proof without building for two platforms today.
+- **Blueprint file format:** NBT schematics, JSON, or custom `.blueprint` format?
+- **Print area:** ✅ Must be pre-cleared — the printer cannot replace existing blocks. Players are responsible for clearing the space before printing.
+- **Mod list:** Patrick to provide full list of favorite mods for compatibility evaluation and T8 tier candidates
+- **Ore name:** Printite is a placeholder — final name TBD
