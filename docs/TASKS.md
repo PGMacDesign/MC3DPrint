@@ -27,15 +27,15 @@ The keystone — everything else consumes this. Pure logic, testable without a r
 - [x] Blueprint Disc item: stores blueprint reference, lock/unlock (Shift+Right Click), locked visual indicator
 - [x] `.blueprint` file read/write for the disk-based Server Repository (`world/mc3dprint/blueprints/`)
 
-## M2 — T1 Printer Machine (Item Mode)
+## M2 — T1 Printer Machine (Item Mode) ✅
 
-- [ ] Printer BlockEntity + menu/screen GUI
-- [ ] Forge Energy (RF) buffer, capability exposure, per-tier buffer sizes in config
-- [ ] Smart Print Slot — Item Mode: drop a craftable item, print a copy
-- [ ] Print job timing + RF drain; "PAUSED — Insufficient Power" state (pause, never reset)
-- [ ] I/O: top face input, bottom/front output, sides reserved; vanilla hopper compat
-- [ ] Output buffer pauses printer when full — never void items
-- [ ] Config file: base costs, speeds, efficiency values (from Balancing table)
+- [x] Printer BlockEntity + menu/screen GUI
+- [x] Forge Energy (RF) buffer, capability exposure, per-tier buffer sizes in config
+- [x] Smart Print Slot — Item Mode: drop a craftable item, print a copy
+- [x] Print job timing + RF drain; "PAUSED — Insufficient Power" state (pause, never reset)
+- [x] I/O: top face input, bottom/front output, sides reserved; vanilla hopper compat
+- [x] Output buffer pauses printer when full — never void items
+- [x] Config file: base costs, speeds, efficiency values (from Balancing table)
 
 ## M3 — Scanner & Capture
 

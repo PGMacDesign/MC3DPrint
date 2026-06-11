@@ -7,5 +7,11 @@
   "tooltip.mc3dprint.disc_size": "%s×%s×%s — %s blocks",
   "tooltip.mc3dprint.disc_locked": "Locked",
   "message.mc3dprint.disc_locked": "Blueprint Disc locked",
-  "message.mc3dprint.disc_unlocked": "Blueprint Disc unlocked"
+  "message.mc3dprint.disc_unlocked": "Blueprint Disc unlocked",
+  "container.mc3dprint.tier1_printer": "Tier 1 3D Printer",
+  "tooltip.mc3dprint.energy": "%s / %s RF",
+  "gui.mc3dprint.state.idle": "Idle",
+  "gui.mc3dprint.state.printing": "Printing…",
+  "gui.mc3dprint.state.paused_no_power": "PAUSED — No Power",
+  "gui.mc3dprint.state.paused_output_full": "PAUSED — Output Full"
 }
