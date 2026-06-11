@@ -84,14 +84,14 @@ The keystone — everything else consumes this. Pure logic, testable without a r
 - [ ] Spool spin animation on machine exterior — *deferred (needs custom block models)*; GUI FU fill bars ✅ (M5)
 - [x] Print completion effect (firework burst + chime); hologram idle animation *(stretch, deferred)*
 
-## M8 — v1 Integrations
+## M8 — v1 Integrations ✅ *(AE2-deep + live compat testing flagged)*
 
-- [ ] JEI: "3D Printer Recipes" category (item, FU cost, RF cost, required tier); disc contents browsable
-- [ ] Patchouli guidebook, auto-given on first printer craft
-- [ ] AE2: Filament Unit Converter block (hidden without AE2), ME-driven matter sourcing, autocrafting triggers
-- [ ] Create: schematic import UX (table/slot that converts Create schematics → Blueprint Discs)
-- [ ] WorldEdit: `.schem` import/export UX
-- [ ] Compat testing: Mekanism/Thermal/EnderIO/Flux pipes & energy, RS pattern after AE2
+- [x] JEI: "3D Printing" category (item, base FU cost, required tier; printers/fabricators as catalysts) — *disc-contents browsing + RF column pending*
+- [x] Patchouli guidebook (soft dep, data-driven; 2 categories / 3 entries) — *auto-give waits on crafting recipes (M9)*
+- [x] Filament Converter block: pulls filtered items from ANY adjacent inventory (incl. ME/RS interfaces), winds FU straight into docked spools on adjacent printers — *AE2-API deep integration (network listening, autocrafting triggers) deferred: needs testing against real AE2*
+- [x] Create: schematic import UX via `/mc3dprint import <file>.nbt` (vanilla structure format)
+- [x] WorldEdit: `.schem` import (`/mc3dprint import`) + export (`/mc3dprint export` with disc in hand)
+- [ ] Compat testing: Mekanism/Thermal/EnderIO/Flux pipes & energy — *needs a real modpack dev instance; not coverable headless*
 
 ## M9 — World Content, Multiplayer & Launch
 

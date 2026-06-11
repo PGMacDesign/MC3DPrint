@@ -1,0 +1,11 @@
+{
+  "name": "Printer Tiers",
+  "category": "mc3dprint:machines",
+  "icon": "mc3dprint:tier3_printer",
+  "sortnum": 0,
+  "pages": [
+    { "type": "patchouli:text", "text": "Tiers 1-4 are single blocks. T1-T2 print items only; structure printing starts at $(l)Tier 3$() (3×3 footprint) and grows to 5×5 at Tier 4.$(br2)Power is Redstone Flux from any side. Power loss $(l)pauses$() a job — progress is never lost." },
+    { "type": "patchouli:text", "title": "Multiblocks", "text": "Tiers 5-8 are multiblock $(item)Fabricators$(): place an N×N base of $(item)Printer Casing$() (3×3 for T5, up to 9×9 for T8), put the controller in the center, and right-click to form.$(br2)Breaking a formed controller collapses the whole machine into one item — place it to re-form, fully intact." },
+    { "type": "patchouli:text", "title": "Upgrades", "text": "Shift+Right Click upgrade modules onto a printer: $(li)Speed ×0.8 print time$(li)Efficiency ×0.9 FU cost$(li)RF Efficiency ×0.85 power$(li)Buffer ×1.5 RF capacity$(br2)Slots equal the machine tier. Modules stack multiplicatively.$(br2)The Tier 8 Fabricator demands Draconic Evolution and Awakened Draconium corners." }
+  ]
+}

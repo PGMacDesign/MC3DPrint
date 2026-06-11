@@ -1,0 +1,10 @@
+{
+  "name": "Filament Units",
+  "category": "mc3dprint:basics",
+  "icon": "mc3dprint:filament_spool_t1",
+  "sortnum": 0,
+  "pages": [
+    { "type": "patchouli:text", "text": "Everything the printer makes is paid for in $(l)Filament Units (FU)$(). Feed materials into a $(item)Filament Winder$() to wind FU onto a $(item)Filament Spool$(), then Shift+Right Click the spool onto a printer's side.$(br2)Conversion is symmetric: a diamond yields exactly what printing a diamond costs." },
+    { "type": "patchouli:text", "title": "Tier Gating", "text": "A winder can only process materials of its tier or below — a Tier 1 winder refuses diamonds. Printers enforce the same rule when printing, so progression can't be bypassed.$(br2)Lower-tier machines are also less efficient: a T1 printer pays double the base FU cost." }
+  ]
+}

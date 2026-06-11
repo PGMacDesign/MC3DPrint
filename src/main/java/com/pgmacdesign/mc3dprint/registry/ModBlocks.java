@@ -41,6 +41,9 @@ public final class ModBlocks {
     public static final RegistryObject<Block> PRINTER_CASING = BLOCKS.register("printer_casing",
             () -> new CasingBlock(machineProperties()));
 
+    public static final RegistryObject<Block> FILAMENT_CONVERTER = BLOCKS.register("filament_converter",
+            () -> new com.pgmacdesign.mc3dprint.machine.FilamentConverterBlock(machineProperties()));
+
     /** End-only ore for T5+ machine components (name placeholder per design doc). */
     public static final RegistryObject<Block> PRINTITE_ORE = BLOCKS.register("printite_ore",
             () -> new Block(BlockBehaviour.Properties.of()

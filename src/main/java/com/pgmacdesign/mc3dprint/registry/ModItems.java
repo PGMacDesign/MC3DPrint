@@ -51,6 +51,9 @@ public final class ModItems {
     public static final RegistryObject<Item> PRINTER_CASING = ITEMS.register("printer_casing",
             () -> new BlockItem(ModBlocks.PRINTER_CASING.get(), new Item.Properties()));
 
+    public static final RegistryObject<Item> FILAMENT_CONVERTER = ITEMS.register("filament_converter",
+            () -> new BlockItem(ModBlocks.FILAMENT_CONVERTER.get(), new Item.Properties()));
+
     public static final RegistryObject<Item> PRINTITE_ORE = ITEMS.register("printite_ore",
             () -> new BlockItem(ModBlocks.PRINTITE_ORE.get(), new Item.Properties()));
 

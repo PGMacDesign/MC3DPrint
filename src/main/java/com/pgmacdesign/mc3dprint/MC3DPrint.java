@@ -33,5 +33,8 @@ public class MC3DPrint {
                 FuValueRegistry.invalidate();
             }
         });
+
+        net.minecraftforge.common.MinecraftForge.EVENT_BUS.addListener(
+                com.pgmacdesign.mc3dprint.command.ImportCommand::register);
     }
 }

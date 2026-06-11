@@ -1,0 +1,10 @@
+{
+  "name": "Scanning Structures",
+  "category": "mc3dprint:basics",
+  "icon": "mc3dprint:scanner",
+  "sortnum": 1,
+  "pages": [
+    { "type": "patchouli:text", "text": "The $(item)Structure Scanner$() captures builds as blueprints. Right-click two corner blocks to define the box, hold a $(item)Blank Blueprint Disc$() in your offhand, then right-click the air to scan.$(br2)The result is a written $(item)Blueprint Disc$() — portable, tradeable, and reusable." },
+    { "type": "patchouli:text", "title": "Discs", "text": "Shift+Right Click a written disc to $(l)lock$() it against overwriting. Load it into a Tier 3+ printer to print the structure. The print area must be pre-cleared — the printer never replaces existing blocks.$(br2)Admins can import WorldEdit .schem and Create .nbt files with $(l)/mc3dprint import$()." }
+  ]
+}

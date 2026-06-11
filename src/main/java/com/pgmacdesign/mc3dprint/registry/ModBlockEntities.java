@@ -20,6 +20,11 @@ public final class ModBlockEntities {
                                     .map(RegistryObject::get)
                                     .toArray(net.minecraft.world.level.block.Block[]::new)).build(null));
 
+    public static final RegistryObject<BlockEntityType<com.pgmacdesign.mc3dprint.machine.FilamentConverterBlockEntity>> FILAMENT_CONVERTER =
+            BLOCK_ENTITIES.register("filament_converter", () ->
+                    BlockEntityType.Builder.of(com.pgmacdesign.mc3dprint.machine.FilamentConverterBlockEntity::new,
+                            ModBlocks.FILAMENT_CONVERTER.get()).build(null));
+
     public static final RegistryObject<BlockEntityType<WinderBlockEntity>> FILAMENT_WINDER =
             BLOCK_ENTITIES.register("filament_winder", () ->
                     BlockEntityType.Builder.of(WinderBlockEntity::new,

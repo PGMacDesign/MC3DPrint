@@ -21,6 +21,7 @@ public final class ModCreativeTabs {
                         ModItems.FABRICATORS.forEach(fabricator -> output.accept(fabricator.get()));
                         output.accept(ModItems.PRINTER_CASING.get());
                         ModItems.WINDERS.forEach(winder -> output.accept(winder.get()));
+                        output.accept(ModItems.FILAMENT_CONVERTER.get());
                         output.accept(ModItems.BLANK_BLUEPRINT_DISC.get());
                         output.accept(ModItems.BLUEPRINT_DISC.get());
                         output.accept(ModItems.SCANNER.get());

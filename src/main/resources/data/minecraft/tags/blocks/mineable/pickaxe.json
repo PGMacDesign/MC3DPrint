@@ -1,10 +1,20 @@
 {
   "replace": false,
   "values": [
-    "mc3dprint:tier1_printer", "mc3dprint:tier2_printer", "mc3dprint:tier3_printer", "mc3dprint:tier4_printer",
-    "mc3dprint:filament_winder", "mc3dprint:filament_winder_t2", "mc3dprint:filament_winder_t3", "mc3dprint:filament_winder_t4",
+    "mc3dprint:tier1_printer",
+    "mc3dprint:tier2_printer",
+    "mc3dprint:tier3_printer",
+    "mc3dprint:tier4_printer",
+    "mc3dprint:filament_winder",
+    "mc3dprint:filament_winder_t2",
+    "mc3dprint:filament_winder_t3",
+    "mc3dprint:filament_winder_t4",
     "mc3dprint:printer_casing",
-    "mc3dprint:tier5_fabricator", "mc3dprint:tier6_fabricator", "mc3dprint:tier7_fabricator", "mc3dprint:tier8_fabricator",
-    "mc3dprint:printite_ore"
+    "mc3dprint:tier5_fabricator",
+    "mc3dprint:tier6_fabricator",
+    "mc3dprint:tier7_fabricator",
+    "mc3dprint:tier8_fabricator",
+    "mc3dprint:printite_ore",
+    "mc3dprint:filament_converter"
   ]
 }
