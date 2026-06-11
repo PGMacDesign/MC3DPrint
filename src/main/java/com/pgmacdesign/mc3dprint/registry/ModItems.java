@@ -17,8 +17,23 @@ public final class ModItems {
     public static final DeferredRegister<Item> ITEMS =
             DeferredRegister.create(ForgeRegistries.ITEMS, MC3DPrint.MOD_ID);
 
-    public static final RegistryObject<Item> TIER1_PRINTER = ITEMS.register("tier1_printer",
-            () -> new BlockItem(ModBlocks.TIER1_PRINTER.get(), new Item.Properties()));
+    /** Printer block items, index 0 = Tier 1. */
+    public static final List<RegistryObject<Item>> PRINTERS = buildBlockItems(ModBlocks.PRINTERS);
+
+    /** Winder block items, index 0 = Tier 1. */
+    public static final List<RegistryObject<Item>> WINDERS = buildBlockItems(ModBlocks.WINDERS);
+
+    public static final RegistryObject<Item> TIER1_PRINTER = PRINTERS.get(0);
+
+    private static List<RegistryObject<Item>> buildBlockItems(
+            List<net.minecraftforge.registries.RegistryObject<net.minecraft.world.level.block.Block>> blocks) {
+        List<RegistryObject<Item>> items = new ArrayList<>(blocks.size());
+        for (var block : blocks) {
+            items.add(ITEMS.register(block.getId().getPath(),
+                    () -> new BlockItem(block.get(), new Item.Properties())));
+        }
+        return List.copyOf(items);
+    }
 
     public static final RegistryObject<Item> BLANK_BLUEPRINT_DISC = ITEMS.register("blank_blueprint_disc",
             () -> new Item(new Item.Properties().stacksTo(16)));
@@ -29,8 +44,7 @@ public final class ModItems {
     public static final RegistryObject<Item> SCANNER = ITEMS.register("scanner",
             () -> new ScannerItem(new Item.Properties().stacksTo(1)));
 
-    public static final RegistryObject<Item> FILAMENT_WINDER = ITEMS.register("filament_winder",
-            () -> new BlockItem(ModBlocks.FILAMENT_WINDER.get(), new Item.Properties()));
+    public static final RegistryObject<Item> FILAMENT_WINDER = WINDERS.get(0);
 
     /** Filament spools, index 0 = Tier 1. */
     public static final List<RegistryObject<Item>> SPOOLS = buildSpools();

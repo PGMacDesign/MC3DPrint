@@ -74,11 +74,9 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
     public static final int DATA_TEMPLATE_COST = 7;
     public static final int DATA_COUNT = 8;
 
-    public static final int SPOOL_SLOTS = 1; // T1: one spool dock (right side)
-
     public enum State {
         IDLE, PRINTING, PAUSED_NO_POWER, PAUSED_OUTPUT_FULL, PAUSED_OBSTRUCTED, ZONE_CONFLICT,
-        PAUSED_NO_FILAMENT, NOT_PRINTABLE;
+        PAUSED_NO_FILAMENT, NOT_PRINTABLE, AREA_TOO_SMALL;
 
         public static State byOrdinal(int ordinal) {
             return ordinal >= 0 && ordinal < values().length ? values()[ordinal] : IDLE;
@@ -92,24 +90,11 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         }
     };
 
-    private final ItemStackHandler spools = new ItemStackHandler(SPOOL_SLOTS) {
-        @Override
-        protected void onContentsChanged(int slot) {
-            setChanged();
-        }
+    private final MachineTier tier;
+    private final ItemStackHandler spools;
+    private final MachineEnergyStorage energy;
 
-        @Override
-        public boolean isItemValid(int slot, @Nonnull ItemStack stack) {
-            return stack.getItem() instanceof SpoolItem;
-        }
-    };
-
-    private final MachineEnergyStorage energy = new MachineEnergyStorage(
-            MC3DPrintConfig.T1_ENERGY_BUFFER.get(),
-            MC3DPrintConfig.T1_MAX_ENERGY_RECEIVE.get(),
-            this::setChanged);
-
-    private final LazyOptional<MachineEnergyStorage> energyCap = LazyOptional.of(() -> energy);
+    private final LazyOptional<MachineEnergyStorage> energyCap = LazyOptional.of(this::energyStorage);
     private final LazyOptional<IItemHandler> inputCap =
             LazyOptional.of(() -> new RangedWrapper(inventory, SLOT_TEMPLATE, SLOT_TEMPLATE + 1));
     private final LazyOptional<IItemHandler> outputCap =
@@ -141,7 +126,32 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
     private record PlacementEntry(BlockPos local, int paletteIndex) {}
 
     public PrinterBlockEntity(BlockPos pos, BlockState blockState) {
-        super(ModBlockEntities.TIER1_PRINTER.get(), pos, blockState);
+        super(ModBlockEntities.PRINTER.get(), pos, blockState);
+        this.tier = blockState.getBlock() instanceof PrinterBlock printerBlock
+                ? printerBlock.tier() : MachineTier.T1;
+        this.spools = new ItemStackHandler(tier.spoolSlots()) {
+            @Override
+            protected void onContentsChanged(int slot) {
+                setChanged();
+            }
+
+            @Override
+            public boolean isItemValid(int slot, @Nonnull ItemStack stack) {
+                return stack.getItem() instanceof SpoolItem;
+            }
+        };
+        this.energy = new MachineEnergyStorage(
+                MC3DPrintConfig.energyBuffer(tier),
+                MC3DPrintConfig.maxEnergyReceive(tier),
+                this::setChanged);
+    }
+
+    public MachineTier tier() {
+        return tier;
+    }
+
+    private MachineEnergyStorage energyStorage() {
+        return energy;
     }
 
     public static void serverTick(Level level, BlockPos pos, BlockState blockState, PrinterBlockEntity printer) {
@@ -182,13 +192,13 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             state = State.PAUSED_OUTPUT_FULL;
         } else if (totalFu() < fuCost) {
             state = State.PAUSED_NO_FILAMENT;
-        } else if (!energy.hasAtLeast(MC3DPrintConfig.T1_ENERGY_PER_TICK.get())) {
+        } else if (!energy.hasAtLeast(MC3DPrintConfig.itemRfPerTick(tier))) {
             state = State.PAUSED_NO_POWER;
         } else {
             state = State.PRINTING;
-            energy.consume(MC3DPrintConfig.T1_ENERGY_PER_TICK.get());
+            energy.consume(MC3DPrintConfig.itemRfPerTick(tier));
             itemProgress++;
-            if (itemProgress >= MC3DPrintConfig.T1_ITEM_PRINT_TICKS.get()) {
+            if (itemProgress >= MC3DPrintConfig.itemPrintTicks(tier)) {
                 drainFu(fuCost);
                 emitCopy(template);
                 itemProgress = 0;
@@ -198,9 +208,13 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
 
     // --- Filament ---
 
-    /** FU cost to print this item after T1 efficiency, or -1 if it has no FU value (not printable). */
+    /**
+     * FU cost to print this item after tier efficiency, or -1 if it has no FU
+     * value or its material tier exceeds this machine's tier (not printable).
+     */
     public int itemFuCost(ItemStack template) {
         return FuValueRegistry.valueOf(template)
+                .filter(v -> v.tier() <= tier.number())
                 .map(v -> applyEfficiency(v.fu()))
                 .orElse(-1);
     }
@@ -214,8 +228,8 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         return applyEfficiency(base);
     }
 
-    private static int applyEfficiency(int baseFu) {
-        return (int) Math.ceil(baseFu / MC3DPrintConfig.T1_EFFICIENCY.get());
+    private int applyEfficiency(int baseFu) {
+        return (int) Math.ceil(baseFu / MC3DPrintConfig.efficiency(tier));
     }
 
     public int totalFu() {
@@ -330,14 +344,14 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         }
 
         placementCooldown++;
-        if (placementCooldown < MC3DPrintConfig.T1_TICKS_PER_BLOCK.get()) {
+        if (placementCooldown < MC3DPrintConfig.ticksPerBlock(tier)) {
             if (state == State.IDLE) {
                 state = State.PRINTING;
             }
             return;
         }
 
-        int rfPerBlock = MC3DPrintConfig.T1_RF_PER_BLOCK.get();
+        int rfPerBlock = MC3DPrintConfig.rfPerBlock(tier);
         if (!energy.hasAtLeast(rfPerBlock)) {
             state = State.PAUSED_NO_POWER;
             return;
@@ -395,8 +409,27 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             return;
         }
         Blueprint blueprint = loaded.get();
+
+        // tier gating: structure printing needs a print area, the footprint
+        // must fit, and every material must be within this machine's tier
+        if (tier.maxFootprint() == 0) {
+            state = State.NOT_PRINTABLE;
+            return;
+        }
         PrintOrientation orientation = PrintOrientation.NONE;
         BlockPos size = orientation.transformedSize(blueprint.sizeX(), blueprint.sizeY(), blueprint.sizeZ());
+        if (size.getX() > tier.maxFootprint() || size.getZ() > tier.maxFootprint()) {
+            state = State.AREA_TOO_SMALL;
+            return;
+        }
+        for (BlueprintBlockState paletteState : blueprint.palette()) {
+            Item paletteItem = paletteState.resolve().map(s -> s.getBlock().asItem()).orElse(Items.AIR);
+            if (paletteItem != Items.AIR && FuValueRegistry.valueOf(new ItemStack(paletteItem))
+                    .map(v -> v.tier() > tier.number()).orElse(false)) {
+                state = State.NOT_PRINTABLE;
+                return;
+            }
+        }
 
         // min corner: centered horizontally over the printer, one block up
         BlockPos origin = worldPosition.offset(-(size.getX() / 2), 1, -(size.getZ() / 2));
@@ -554,7 +587,7 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
     }
 
     public int maxProgress() {
-        return MC3DPrintConfig.T1_ITEM_PRINT_TICKS.get();
+        return MC3DPrintConfig.itemPrintTicks(tier);
     }
 
     public ItemStackHandler inventory() {
@@ -599,7 +632,7 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
 
     @Override
     public Component getDisplayName() {
-        return Component.translatable("container.mc3dprint.tier1_printer");
+        return getBlockState().getBlock().getName();
     }
 
     @Nullable

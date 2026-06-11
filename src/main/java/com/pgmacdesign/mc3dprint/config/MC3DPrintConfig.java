@@ -1,60 +1,61 @@
 package com.pgmacdesign.mc3dprint.config;
 
 import com.pgmacdesign.mc3dprint.fu.FuValueRegistry;
+import com.pgmacdesign.mc3dprint.machine.MachineTier;
 import net.minecraftforge.common.ForgeConfigSpec;
 
 import java.util.List;
 
 /**
- * Gameplay tuning values, all pack-maker exposed per the design doc.
- * Values are conservative placeholders from the balancing table —
- * "easier to buff than nerf post-release."
+ * Gameplay tuning, all pack-maker exposed per the design doc. Per-tier values
+ * default to the balancing table — conservative on purpose ("easier to buff
+ * than nerf post-release").
  */
 public final class MC3DPrintConfig {
     public static final ForgeConfigSpec SPEC;
 
-    public static final ForgeConfigSpec.IntValue T1_ENERGY_BUFFER;
-    public static final ForgeConfigSpec.IntValue T1_ENERGY_PER_TICK;
-    public static final ForgeConfigSpec.IntValue T1_ITEM_PRINT_TICKS;
-    public static final ForgeConfigSpec.IntValue T1_MAX_ENERGY_RECEIVE;
+    // Per-tier (index = tier - 1)
+    private static final ForgeConfigSpec.IntValue[] ENERGY_BUFFER = new ForgeConfigSpec.IntValue[8];
+    private static final ForgeConfigSpec.IntValue[] MAX_ENERGY_RECEIVE = new ForgeConfigSpec.IntValue[8];
+    private static final ForgeConfigSpec.IntValue[] ITEM_RF_PER_TICK = new ForgeConfigSpec.IntValue[8];
+    private static final ForgeConfigSpec.IntValue[] ITEM_PRINT_TICKS = new ForgeConfigSpec.IntValue[8];
+    private static final ForgeConfigSpec.IntValue[] RF_PER_BLOCK = new ForgeConfigSpec.IntValue[8];
+    private static final ForgeConfigSpec.IntValue[] TICKS_PER_BLOCK = new ForgeConfigSpec.IntValue[8];
+    private static final ForgeConfigSpec.DoubleValue[] EFFICIENCY = new ForgeConfigSpec.DoubleValue[8];
+
     public static final ForgeConfigSpec.IntValue T1_SCANNER_MAX_EDGE;
-    public static final ForgeConfigSpec.IntValue T1_RF_PER_BLOCK;
-    public static final ForgeConfigSpec.IntValue T1_TICKS_PER_BLOCK;
-    public static final ForgeConfigSpec.IntValue PRINT_HISTORY_SIZE;
-    public static final ForgeConfigSpec.DoubleValue T1_EFFICIENCY;
-    public static final ForgeConfigSpec.IntValue UNKNOWN_BLOCK_FU;
     public static final ForgeConfigSpec.IntValue WINDER_RF_PER_ITEM;
     public static final ForgeConfigSpec.IntValue WINDER_TICKS_PER_ITEM;
     public static final ForgeConfigSpec.IntValue WINDER_ENERGY_BUFFER;
     public static final ForgeConfigSpec.IntValue WINDER_MAX_ENERGY_RECEIVE;
+    public static final ForgeConfigSpec.IntValue PRINT_HISTORY_SIZE;
+    public static final ForgeConfigSpec.IntValue UNKNOWN_BLOCK_FU;
     public static final ForgeConfigSpec.ConfigValue<List<? extends String>> FU_VALUES;
+
+    private static final int[] DEFAULT_ITEM_RF_PER_TICK = {40, 60, 80, 100, 120, 150, 200, 250};
 
     static {
         ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
 
-        builder.comment("Tier 1 Printer").push("tier1");
-        T1_ENERGY_BUFFER = builder
-                .comment("Internal RF buffer capacity")
-                .defineInRange("energyBuffer", 50_000, 1_000, Integer.MAX_VALUE);
-        T1_ENERGY_PER_TICK = builder
-                .comment("RF consumed per tick while printing")
-                .defineInRange("energyPerTick", 40, 1, Integer.MAX_VALUE);
-        T1_ITEM_PRINT_TICKS = builder
-                .comment("Ticks to print one item in Item Mode (20 ticks = 1 second)")
-                .defineInRange("itemPrintTicks", 80, 1, Integer.MAX_VALUE);
-        T1_RF_PER_BLOCK = builder
-                .comment("RF consumed per block placed in Blueprint Mode (balancing table: 100 RF at T1)")
-                .defineInRange("rfPerBlock", 100, 1, Integer.MAX_VALUE);
-        T1_TICKS_PER_BLOCK = builder
-                .comment("Ticks between block placements in Blueprint Mode (balancing table: 0.5 blocks/sec at T1)")
-                .defineInRange("ticksPerBlock", 40, 1, Integer.MAX_VALUE);
-        T1_EFFICIENCY = builder
-                .comment("Matter efficiency: FU cost = base / efficiency (balancing table: 50% at T1)")
-                .defineInRange("efficiency", 0.5, 0.01, 1.0);
-        T1_MAX_ENERGY_RECEIVE = builder
-                .comment("Max RF accepted per tick from cables")
-                .defineInRange("maxEnergyReceive", 1_000, 1, Integer.MAX_VALUE);
-        builder.pop();
+        for (MachineTier tier : MachineTier.values()) {
+            int i = tier.number() - 1;
+            builder.comment("Tier " + tier.number() + " printer").push("tier" + tier.number());
+            ENERGY_BUFFER[i] = builder.comment("Internal RF buffer capacity")
+                    .defineInRange("energyBuffer", tier.defaultEnergyBuffer(), 1_000, Integer.MAX_VALUE);
+            MAX_ENERGY_RECEIVE[i] = builder.comment("Max RF accepted per tick from cables")
+                    .defineInRange("maxEnergyReceive", tier.defaultMaxReceive(), 1, Integer.MAX_VALUE);
+            ITEM_RF_PER_TICK[i] = builder.comment("RF consumed per tick while printing an item")
+                    .defineInRange("itemRfPerTick", DEFAULT_ITEM_RF_PER_TICK[i], 1, Integer.MAX_VALUE);
+            ITEM_PRINT_TICKS[i] = builder.comment("Ticks to print one item in Item Mode")
+                    .defineInRange("itemPrintTicks", tier.defaultItemPrintTicks(), 1, Integer.MAX_VALUE);
+            RF_PER_BLOCK[i] = builder.comment("RF consumed per block placed in Blueprint Mode")
+                    .defineInRange("rfPerBlock", tier.defaultRfPerBlock(), 1, Integer.MAX_VALUE);
+            TICKS_PER_BLOCK[i] = builder.comment("Ticks between block placements in Blueprint Mode")
+                    .defineInRange("ticksPerBlock", tier.defaultTicksPerBlock(), 1, Integer.MAX_VALUE);
+            EFFICIENCY[i] = builder.comment("Matter efficiency: FU cost = base / efficiency")
+                    .defineInRange("efficiency", tier.defaultEfficiency(), 0.01, 1.0);
+            builder.pop();
+        }
 
         builder.comment("Scanner").push("scanner");
         T1_SCANNER_MAX_EDGE = builder
@@ -91,6 +92,34 @@ public final class MC3DPrintConfig {
         builder.pop();
 
         SPEC = builder.build();
+    }
+
+    public static int energyBuffer(MachineTier tier) {
+        return ENERGY_BUFFER[tier.number() - 1].get();
+    }
+
+    public static int maxEnergyReceive(MachineTier tier) {
+        return MAX_ENERGY_RECEIVE[tier.number() - 1].get();
+    }
+
+    public static int itemRfPerTick(MachineTier tier) {
+        return ITEM_RF_PER_TICK[tier.number() - 1].get();
+    }
+
+    public static int itemPrintTicks(MachineTier tier) {
+        return ITEM_PRINT_TICKS[tier.number() - 1].get();
+    }
+
+    public static int rfPerBlock(MachineTier tier) {
+        return RF_PER_BLOCK[tier.number() - 1].get();
+    }
+
+    public static int ticksPerBlock(MachineTier tier) {
+        return TICKS_PER_BLOCK[tier.number() - 1].get();
+    }
+
+    public static double efficiency(MachineTier tier) {
+        return EFFICIENCY[tier.number() - 1].get();
     }
 
     private MC3DPrintConfig() {}

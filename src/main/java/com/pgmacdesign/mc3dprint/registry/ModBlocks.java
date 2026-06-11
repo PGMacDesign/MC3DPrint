@@ -1,6 +1,7 @@
 package com.pgmacdesign.mc3dprint.registry;
 
 import com.pgmacdesign.mc3dprint.MC3DPrint;
+import com.pgmacdesign.mc3dprint.machine.MachineTier;
 import com.pgmacdesign.mc3dprint.machine.PrinterBlock;
 import com.pgmacdesign.mc3dprint.machine.WinderBlock;
 import net.minecraft.world.level.block.Block;
@@ -11,23 +12,52 @@ import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public final class ModBlocks {
     public static final DeferredRegister<Block> BLOCKS =
             DeferredRegister.create(ForgeRegistries.BLOCKS, MC3DPrint.MOD_ID);
 
-    public static final RegistryObject<Block> TIER1_PRINTER = BLOCKS.register("tier1_printer",
-            () -> new PrinterBlock(BlockBehaviour.Properties.of()
-                    .mapColor(MapColor.METAL)
-                    .strength(3.5F, 6.0F)
-                    .sound(SoundType.METAL)
-                    .requiresCorrectToolForDrops()));
+    private static BlockBehaviour.Properties machineProperties() {
+        return BlockBehaviour.Properties.of()
+                .mapColor(MapColor.METAL)
+                .strength(3.5F, 6.0F)
+                .sound(SoundType.METAL)
+                .requiresCorrectToolForDrops();
+    }
 
-    public static final RegistryObject<Block> FILAMENT_WINDER = BLOCKS.register("filament_winder",
-            () -> new WinderBlock(BlockBehaviour.Properties.of()
-                    .mapColor(MapColor.METAL)
-                    .strength(3.0F, 6.0F)
-                    .sound(SoundType.METAL)
-                    .requiresCorrectToolForDrops()));
+    /** Single-block printers, index 0 = Tier 1. T5-T8 are multiblock controllers (phase b). */
+    public static final List<RegistryObject<Block>> PRINTERS = buildPrinters();
+
+    /** Filament winders, index 0 = Tier 1. */
+    public static final List<RegistryObject<Block>> WINDERS = buildWinders();
+
+    // Aliases for the most-referenced blocks
+    public static final RegistryObject<Block> TIER1_PRINTER = PRINTERS.get(0);
+    public static final RegistryObject<Block> FILAMENT_WINDER = WINDERS.get(0);
+
+    private static List<RegistryObject<Block>> buildPrinters() {
+        List<RegistryObject<Block>> printers = new ArrayList<>(4);
+        for (int tierNumber = 1; tierNumber <= 4; tierNumber++) {
+            final MachineTier tier = MachineTier.byNumber(tierNumber);
+            printers.add(BLOCKS.register("tier" + tierNumber + "_printer",
+                    () -> new PrinterBlock(tier, machineProperties())));
+        }
+        return List.copyOf(printers);
+    }
+
+    private static List<RegistryObject<Block>> buildWinders() {
+        List<RegistryObject<Block>> winders = new ArrayList<>(4);
+        winders.add(BLOCKS.register("filament_winder",
+                () -> new WinderBlock(MachineTier.T1, machineProperties())));
+        for (int tierNumber = 2; tierNumber <= 4; tierNumber++) {
+            final MachineTier tier = MachineTier.byNumber(tierNumber);
+            winders.add(BLOCKS.register("filament_winder_t" + tierNumber,
+                    () -> new WinderBlock(tier, machineProperties())));
+        }
+        return List.copyOf(winders);
+    }
 
     private ModBlocks() {}
 }

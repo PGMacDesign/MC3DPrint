@@ -17,8 +17,8 @@ public final class ModCreativeTabs {
                     .title(Component.translatable("itemGroup.mc3dprint"))
                     .icon(() -> new ItemStack(ModItems.TIER1_PRINTER.get()))
                     .displayItems((parameters, output) -> {
-                        output.accept(ModItems.TIER1_PRINTER.get());
-                        output.accept(ModItems.FILAMENT_WINDER.get());
+                        ModItems.PRINTERS.forEach(printer -> output.accept(printer.get()));
+                        ModItems.WINDERS.forEach(winder -> output.accept(winder.get()));
                         output.accept(ModItems.BLANK_BLUEPRINT_DISC.get());
                         output.accept(ModItems.BLUEPRINT_DISC.get());
                         output.accept(ModItems.SCANNER.get());

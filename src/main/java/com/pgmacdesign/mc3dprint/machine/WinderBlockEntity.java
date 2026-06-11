@@ -47,8 +47,6 @@ public class WinderBlockEntity extends BlockEntity implements MenuProvider {
     public static final int DATA_SPOOL_CAP = 5;
     public static final int DATA_COUNT = 6;
 
-    public static final int WINDER_TIER = 1;
-
     private final ItemStackHandler inventory = new ItemStackHandler(SLOT_COUNT) {
         @Override
         protected void onContentsChanged(int slot) {
@@ -75,9 +73,16 @@ public class WinderBlockEntity extends BlockEntity implements MenuProvider {
     private final LazyOptional<IItemHandler> allCap = LazyOptional.of(() -> inventory);
 
     private int progress;
+    private final MachineTier tier;
 
     public WinderBlockEntity(BlockPos pos, BlockState blockState) {
         super(ModBlockEntities.FILAMENT_WINDER.get(), pos, blockState);
+        this.tier = blockState.getBlock() instanceof WinderBlock winderBlock
+                ? winderBlock.tier() : MachineTier.T1;
+    }
+
+    public MachineTier tier() {
+        return tier;
     }
 
     public static void serverTick(Level level, BlockPos pos, BlockState blockState, WinderBlockEntity winder) {
@@ -89,7 +94,7 @@ public class WinderBlockEntity extends BlockEntity implements MenuProvider {
         ItemStack spool = inventory.getStackInSlot(SLOT_SPOOL);
 
         Optional<FuValue> value = FuValueRegistry.valueOf(input);
-        if (value.isEmpty() || value.get().tier() > WINDER_TIER
+        if (value.isEmpty() || value.get().tier() > tier.number()
                 || !(spool.getItem() instanceof SpoolItem spoolItem)
                 || SpoolItem.getFu(spool) + value.get().fu() > spoolItem.capacity()
                 || !energy.hasAtLeast(MC3DPrintConfig.WINDER_RF_PER_ITEM.get())) {
@@ -145,7 +150,7 @@ public class WinderBlockEntity extends BlockEntity implements MenuProvider {
 
     @Override
     public Component getDisplayName() {
-        return Component.translatable("container.mc3dprint.filament_winder");
+        return getBlockState().getBlock().getName();
     }
 
     @Nullable

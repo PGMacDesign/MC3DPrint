@@ -23,9 +23,15 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Containers;
 
 public class PrinterBlock extends BaseEntityBlock {
+    private final MachineTier tier;
 
-    public PrinterBlock(Properties properties) {
+    public PrinterBlock(MachineTier tier, Properties properties) {
         super(properties);
+        this.tier = tier;
+    }
+
+    public MachineTier tier() {
+        return tier;
     }
 
     @Override
@@ -45,7 +51,7 @@ public class PrinterBlock extends BaseEntityBlock {
         if (level.isClientSide) {
             return null;
         }
-        return createTickerHelper(type, ModBlockEntities.TIER1_PRINTER.get(), PrinterBlockEntity::serverTick);
+        return createTickerHelper(type, ModBlockEntities.PRINTER.get(), PrinterBlockEntity::serverTick);
     }
 
     @Override

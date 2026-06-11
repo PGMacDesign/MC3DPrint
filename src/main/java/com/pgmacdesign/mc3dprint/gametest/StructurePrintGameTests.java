@@ -41,7 +41,8 @@ public class StructurePrintGameTests {
     }
 
     private static PrinterBlockEntity poweredPrinter(GameTestHelper helper, BlockPos localPos) {
-        helper.setBlock(localPos, ModBlocks.TIER1_PRINTER.get());
+        // T3 — the first tier with a structure print area (3x3)
+        helper.setBlock(localPos, ModBlocks.PRINTERS.get(2).get());
         if (!(helper.getBlockEntity(localPos) instanceof PrinterBlockEntity printer)) {
             throw new GameTestAssertException("Printer block entity missing");
         }
@@ -95,19 +96,30 @@ public class StructurePrintGameTests {
         });
     }
 
+    /** 3x1x3 solid stone — long enough that the first job is still running during the assertion. */
+    private static Blueprint slowBlueprint() {
+        Blueprint.Builder builder = Blueprint.builder("gametest-slow", 3, 1, 3);
+        for (int x = 0; x < 3; x++) {
+            for (int z = 0; z < 3; z++) {
+                builder.set(x, 0, z, BlueprintBlockState.parse("minecraft:stone"));
+            }
+        }
+        return builder.build();
+    }
+
     @GameTest(template = "empty5", timeoutTicks = 200)
     public static void overlappingPrintZonesConflict(GameTestHelper helper) {
         PrinterBlockEntity first = poweredPrinter(helper, new BlockPos(1, 1, 1));
         PrinterBlockEntity second = poweredPrinter(helper, new BlockPos(2, 1, 1));
 
-        first.inventory().setStackInSlot(PrinterBlockEntity.SLOT_TEMPLATE, discFor(helper, smallBlueprint()));
+        first.inventory().setStackInSlot(PrinterBlockEntity.SLOT_TEMPLATE, discFor(helper, slowBlueprint()));
         // let the first claim its zone, then load the second
         helper.runAfterDelay(10, () ->
-                second.inventory().setStackInSlot(PrinterBlockEntity.SLOT_TEMPLATE, discFor(helper, smallBlueprint())));
+                second.inventory().setStackInSlot(PrinterBlockEntity.SLOT_TEMPLATE, discFor(helper, slowBlueprint())));
 
-        helper.runAfterDelay(80, () -> {
-            if (first.activeJob() == null && first.state() != PrinterBlockEntity.State.IDLE) {
-                helper.fail("First printer should be printing, state " + first.state());
+        helper.runAfterDelay(40, () -> {
+            if (first.activeJob() == null) {
+                helper.fail("First printer should still be printing, state " + first.state());
                 return;
             }
             if (second.state() != PrinterBlockEntity.State.ZONE_CONFLICT) {

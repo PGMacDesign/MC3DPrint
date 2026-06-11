@@ -99,6 +99,7 @@ public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
             case ZONE_CONFLICT -> Component.translatable("gui.mc3dprint.state.zone_conflict");
             case PAUSED_NO_FILAMENT -> Component.translatable("gui.mc3dprint.state.paused_no_filament");
             case NOT_PRINTABLE -> Component.translatable("gui.mc3dprint.state.not_printable");
+            case AREA_TOO_SMALL -> Component.translatable("gui.mc3dprint.state.area_too_small");
         };
         int color = menu.state() == PrinterBlockEntity.State.PRINTING ? 0x2E7D32
                 : menu.state() == PrinterBlockEntity.State.IDLE ? 0x404040 : 0xB71C1C;

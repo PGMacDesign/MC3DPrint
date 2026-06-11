@@ -12,13 +12,17 @@ public final class ModBlockEntities {
     public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITIES =
             DeferredRegister.create(ForgeRegistries.BLOCK_ENTITY_TYPES, MC3DPrint.MOD_ID);
 
-    public static final RegistryObject<BlockEntityType<PrinterBlockEntity>> TIER1_PRINTER =
-            BLOCK_ENTITIES.register("tier1_printer", () ->
-                    BlockEntityType.Builder.of(PrinterBlockEntity::new, ModBlocks.TIER1_PRINTER.get()).build(null));
+    public static final RegistryObject<BlockEntityType<PrinterBlockEntity>> PRINTER =
+            BLOCK_ENTITIES.register("printer", () ->
+                    BlockEntityType.Builder.of(PrinterBlockEntity::new,
+                            ModBlocks.PRINTERS.stream().map(RegistryObject::get)
+                                    .toArray(net.minecraft.world.level.block.Block[]::new)).build(null));
 
     public static final RegistryObject<BlockEntityType<WinderBlockEntity>> FILAMENT_WINDER =
             BLOCK_ENTITIES.register("filament_winder", () ->
-                    BlockEntityType.Builder.of(WinderBlockEntity::new, ModBlocks.FILAMENT_WINDER.get()).build(null));
+                    BlockEntityType.Builder.of(WinderBlockEntity::new,
+                            ModBlocks.WINDERS.stream().map(RegistryObject::get)
+                                    .toArray(net.minecraft.world.level.block.Block[]::new)).build(null));
 
     private ModBlockEntities() {}
 }
