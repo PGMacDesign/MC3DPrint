@@ -6,6 +6,9 @@ import com.pgmacdesign.mc3dprint.blueprint.BlueprintBlockState;
 import com.pgmacdesign.mc3dprint.blueprint.BlueprintFileStore;
 import com.pgmacdesign.mc3dprint.blueprint.PrintOrientation;
 import com.pgmacdesign.mc3dprint.config.MC3DPrintConfig;
+import com.pgmacdesign.mc3dprint.fu.FuValue;
+import com.pgmacdesign.mc3dprint.fu.FuValueRegistry;
+import com.pgmacdesign.mc3dprint.fu.SpoolItem;
 import com.pgmacdesign.mc3dprint.item.BlueprintDiscItem;
 import com.pgmacdesign.mc3dprint.registry.ModBlockEntities;
 import net.minecraft.core.BlockPos;
@@ -20,7 +23,9 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ContainerData;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -64,10 +69,16 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
     public static final int DATA_ENERGY = 2;
     public static final int DATA_MAX_ENERGY = 3;
     public static final int DATA_STATE = 4;
-    public static final int DATA_COUNT = 5;
+    public static final int DATA_FU = 5;
+    public static final int DATA_FU_CAP = 6;
+    public static final int DATA_TEMPLATE_COST = 7;
+    public static final int DATA_COUNT = 8;
+
+    public static final int SPOOL_SLOTS = 1; // T1: one spool dock (right side)
 
     public enum State {
-        IDLE, PRINTING, PAUSED_NO_POWER, PAUSED_OUTPUT_FULL, PAUSED_OBSTRUCTED, ZONE_CONFLICT;
+        IDLE, PRINTING, PAUSED_NO_POWER, PAUSED_OUTPUT_FULL, PAUSED_OBSTRUCTED, ZONE_CONFLICT,
+        PAUSED_NO_FILAMENT, NOT_PRINTABLE;
 
         public static State byOrdinal(int ordinal) {
             return ordinal >= 0 && ordinal < values().length ? values()[ordinal] : IDLE;
@@ -78,6 +89,18 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         @Override
         protected void onContentsChanged(int slot) {
             setChanged();
+        }
+    };
+
+    private final ItemStackHandler spools = new ItemStackHandler(SPOOL_SLOTS) {
+        @Override
+        protected void onContentsChanged(int slot) {
+            setChanged();
+        }
+
+        @Override
+        public boolean isItemValid(int slot, @Nonnull ItemStack stack) {
+            return stack.getItem() instanceof SpoolItem;
         }
     };
 
@@ -149,8 +172,16 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         if (template.isEmpty()) {
             state = State.IDLE;
             itemProgress = 0;
+            return;
+        }
+        int fuCost = itemFuCost(template);
+        if (fuCost < 0) {
+            state = State.NOT_PRINTABLE;
+            itemProgress = 0;
         } else if (!canEmitCopy(template)) {
             state = State.PAUSED_OUTPUT_FULL;
+        } else if (totalFu() < fuCost) {
+            state = State.PAUSED_NO_FILAMENT;
         } else if (!energy.hasAtLeast(MC3DPrintConfig.T1_ENERGY_PER_TICK.get())) {
             state = State.PAUSED_NO_POWER;
         } else {
@@ -158,10 +189,88 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             energy.consume(MC3DPrintConfig.T1_ENERGY_PER_TICK.get());
             itemProgress++;
             if (itemProgress >= MC3DPrintConfig.T1_ITEM_PRINT_TICKS.get()) {
+                drainFu(fuCost);
                 emitCopy(template);
                 itemProgress = 0;
             }
         }
+    }
+
+    // --- Filament ---
+
+    /** FU cost to print this item after T1 efficiency, or -1 if it has no FU value (not printable). */
+    public int itemFuCost(ItemStack template) {
+        return FuValueRegistry.valueOf(template)
+                .map(v -> applyEfficiency(v.fu()))
+                .orElse(-1);
+    }
+
+    private int blockFuCost(BlockState state) {
+        Item item = state.getBlock().asItem();
+        int base = item == Items.AIR
+                ? MC3DPrintConfig.UNKNOWN_BLOCK_FU.get()
+                : FuValueRegistry.valueOf(new ItemStack(item)).map(FuValue::fu)
+                        .orElse(MC3DPrintConfig.UNKNOWN_BLOCK_FU.get());
+        return applyEfficiency(base);
+    }
+
+    private static int applyEfficiency(int baseFu) {
+        return (int) Math.ceil(baseFu / MC3DPrintConfig.T1_EFFICIENCY.get());
+    }
+
+    public int totalFu() {
+        int total = 0;
+        for (int i = 0; i < spools.getSlots(); i++) {
+            total += SpoolItem.getFu(spools.getStackInSlot(i));
+        }
+        return total;
+    }
+
+    public int fuCapacity() {
+        int total = 0;
+        for (int i = 0; i < spools.getSlots(); i++) {
+            if (spools.getStackInSlot(i).getItem() instanceof SpoolItem spool) {
+                total += spool.capacity();
+            }
+        }
+        return total;
+    }
+
+    /** Drains across attached spools in order (auto-switch per design). */
+    private void drainFu(int amount) {
+        int remaining = amount;
+        for (int i = 0; i < spools.getSlots() && remaining > 0; i++) {
+            ItemStack spool = spools.getStackInSlot(i);
+            remaining -= SpoolItem.drain(spool, remaining);
+            spools.setStackInSlot(i, spool);
+        }
+    }
+
+    /** Attaches a spool from {@code held} (Shift+Right Click on a side). True if accepted. */
+    public boolean attachSpool(ItemStack held) {
+        for (int i = 0; i < spools.getSlots(); i++) {
+            if (spools.getStackInSlot(i).isEmpty()) {
+                spools.setStackInSlot(i, held.split(1));
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** Removes and returns the last attached spool, or empty. */
+    public ItemStack detachSpool() {
+        for (int i = spools.getSlots() - 1; i >= 0; i--) {
+            ItemStack spool = spools.getStackInSlot(i);
+            if (!spool.isEmpty()) {
+                spools.setStackInSlot(i, ItemStack.EMPTY);
+                return spool;
+            }
+        }
+        return ItemStack.EMPTY;
+    }
+
+    public ItemStackHandler spoolInventory() {
+        return spools;
     }
 
     private boolean canEmitCopy(ItemStack template) {
@@ -246,6 +355,11 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         Optional<BlockState> resolved = blueprint.palette().get(entry.paletteIndex()).resolve();
         // unknown block (e.g. blueprint from a modded world) — skip it, never stall the job
         if (resolved.isPresent()) {
+            int fuCost = blockFuCost(resolved.get());
+            if (totalFu() < fuCost) {
+                state = State.PAUSED_NO_FILAMENT;
+                return;
+            }
             BlockState placedState = resolved.get()
                     .mirror(activeJob.orientation().mirror())
                     .rotate(activeJob.orientation().rotation());
@@ -260,6 +374,7 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
                 }
             }
             energy.consume(rfPerBlock);
+            drainFu(fuCost);
         }
 
         activeJob.setPlaced(activeJob.placed() + 1);
@@ -456,6 +571,12 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
                     case DATA_ENERGY -> energy.getEnergyStored();
                     case DATA_MAX_ENERGY -> energy.getMaxEnergyStored();
                     case DATA_STATE -> state.ordinal();
+                    case DATA_FU -> totalFu();
+                    case DATA_FU_CAP -> fuCapacity();
+                    case DATA_TEMPLATE_COST -> {
+                        ItemStack template = inventory.getStackInSlot(SLOT_TEMPLATE);
+                        yield activeJob == null && !template.isEmpty() ? Math.max(0, itemFuCost(template)) : 0;
+                    }
                     default -> 0;
                 };
             }
@@ -521,6 +642,7 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
     protected void saveAdditional(CompoundTag tag) {
         super.saveAdditional(tag);
         tag.put("Inventory", inventory.serializeNBT());
+        tag.put("Spools", spools.serializeNBT());
         tag.putInt("Energy", energy.getEnergyStored());
         tag.putInt("Progress", itemProgress);
         tag.putInt("State", state.ordinal());
@@ -536,6 +658,7 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
     public void load(CompoundTag tag) {
         super.load(tag);
         inventory.deserializeNBT(tag.getCompound("Inventory"));
+        spools.deserializeNBT(tag.getCompound("Spools"));
         energy.setStored(tag.getInt("Energy"));
         itemProgress = tag.getInt("Progress");
         state = State.byOrdinal(tag.getInt("State"));

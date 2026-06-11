@@ -14,7 +14,9 @@ public final class ClientSetup {
 
     @SubscribeEvent
     public static void onClientSetup(FMLClientSetupEvent event) {
-        event.enqueueWork(() ->
-                MenuScreens.register(ModMenuTypes.TIER1_PRINTER.get(), PrinterScreen::new));
+        event.enqueueWork(() -> {
+            MenuScreens.register(ModMenuTypes.TIER1_PRINTER.get(), PrinterScreen::new);
+            MenuScreens.register(ModMenuTypes.FILAMENT_WINDER.get(), WinderScreen::new);
+        });
     }
 }

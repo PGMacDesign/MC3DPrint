@@ -1,8 +1,10 @@
 package com.pgmacdesign.mc3dprint.gametest;
 
 import com.pgmacdesign.mc3dprint.MC3DPrint;
+import com.pgmacdesign.mc3dprint.fu.SpoolItem;
 import com.pgmacdesign.mc3dprint.machine.PrinterBlockEntity;
 import com.pgmacdesign.mc3dprint.registry.ModBlocks;
+import com.pgmacdesign.mc3dprint.registry.ModItems;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestAssertException;
@@ -27,7 +29,14 @@ public class PrinterGameTests {
                 energy.receiveEnergy(1_000, false);
             }
         });
+        attachLoadedSpool(printer);
         return printer;
+    }
+
+    static void attachLoadedSpool(PrinterBlockEntity printer) {
+        ItemStack spool = new ItemStack(ModItems.SPOOLS.get(0).get());
+        SpoolItem.setFu(spool, 400);
+        printer.spoolInventory().setStackInSlot(0, spool);
     }
 
     @GameTest(template = "empty5", timeoutTicks = 150)
@@ -55,6 +64,7 @@ public class PrinterGameTests {
         if (!(helper.getBlockEntity(pos) instanceof PrinterBlockEntity printer)) {
             throw new GameTestAssertException("Printer block entity missing");
         }
+        attachLoadedSpool(printer); // filament present — isolate the power variable
         printer.inventory().setStackInSlot(PrinterBlockEntity.SLOT_TEMPLATE, new ItemStack(Items.STONE));
 
         // after plenty of ticks with zero energy, nothing must be printed

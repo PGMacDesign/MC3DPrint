@@ -2,6 +2,7 @@ package com.pgmacdesign.mc3dprint.registry;
 
 import com.pgmacdesign.mc3dprint.MC3DPrint;
 import com.pgmacdesign.mc3dprint.machine.PrinterMenu;
+import com.pgmacdesign.mc3dprint.machine.WinderMenu;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraftforge.common.extensions.IForgeMenuType;
 import net.minecraftforge.registries.DeferredRegister;
@@ -15,6 +16,10 @@ public final class ModMenuTypes {
     public static final RegistryObject<MenuType<PrinterMenu>> TIER1_PRINTER =
             MENU_TYPES.register("tier1_printer",
                     () -> IForgeMenuType.create(PrinterMenu::new));
+
+    public static final RegistryObject<MenuType<WinderMenu>> FILAMENT_WINDER =
+            MENU_TYPES.register("filament_winder",
+                    () -> IForgeMenuType.create(WinderMenu::new));
 
     private ModMenuTypes() {}
 }

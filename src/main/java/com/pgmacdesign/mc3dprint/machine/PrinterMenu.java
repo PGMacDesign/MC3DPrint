@@ -83,6 +83,18 @@ public class PrinterMenu extends AbstractContainerMenu {
         return PrinterBlockEntity.State.byOrdinal(data.get(PrinterBlockEntity.DATA_STATE));
     }
 
+    public int fu() {
+        return data.get(PrinterBlockEntity.DATA_FU);
+    }
+
+    public int fuCapacity() {
+        return data.get(PrinterBlockEntity.DATA_FU_CAP);
+    }
+
+    public int templateCost() {
+        return data.get(PrinterBlockEntity.DATA_TEMPLATE_COST);
+    }
+
     @Override
     public ItemStack quickMoveStack(Player player, int slotIndex) {
         Slot slot = slots.get(slotIndex);

@@ -11,13 +11,19 @@ import net.minecraft.world.entity.player.Inventory;
 
 public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
     private static final ResourceLocation TEXTURE = java.util.Objects.requireNonNull(
-            ResourceLocation.tryParse(MC3DPrint.MOD_ID + ":textures/gui/tier1_printer.png"));
+            ResourceLocation.tryParse(MC3DPrint.MOD_ID + ":textures/gui/machine.png"));
 
     // Energy bar geometry (must match the frame drawn in the texture)
     private static final int ENERGY_X = 11;
     private static final int ENERGY_Y = 18;
     private static final int ENERGY_WIDTH = 12;
     private static final int ENERGY_HEIGHT = 50;
+
+    // Filament bar geometry
+    private static final int FU_X = 153;
+    private static final int FU_Y = 18;
+    private static final int FU_WIDTH = 12;
+    private static final int FU_HEIGHT = 50;
 
     // Progress arrow geometry
     private static final int ARROW_X = 80;
@@ -43,6 +49,11 @@ public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
                     Component.translatable("tooltip.mc3dprint.energy", menu.energy(), menu.maxEnergy()),
                     mouseX, mouseY);
         }
+        if (isHovering(FU_X, FU_Y, FU_WIDTH, FU_HEIGHT, mouseX, mouseY)) {
+            graphics.renderTooltip(font,
+                    Component.translatable("tooltip.mc3dprint.fu", menu.fu(), menu.fuCapacity()),
+                    mouseX, mouseY);
+        }
     }
 
     @Override
@@ -66,6 +77,14 @@ public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
                     left + ARROW_X + progressPixels, top + ARROW_Y + ARROW_HEIGHT,
                     0xCC4FC3F7);
         }
+
+        // Filament fill, bottom-up
+        int cap = Math.max(1, menu.fuCapacity());
+        int fuPixels = (int) ((long) menu.fu() * FU_HEIGHT / cap);
+        if (fuPixels > 0) {
+            graphics.fill(left + FU_X, top + FU_Y + FU_HEIGHT - fuPixels,
+                    left + FU_X + FU_WIDTH, top + FU_Y + FU_HEIGHT, 0xFF4FC3F7);
+        }
     }
 
     @Override
@@ -78,9 +97,15 @@ public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
             case PAUSED_OUTPUT_FULL -> Component.translatable("gui.mc3dprint.state.paused_output_full");
             case PAUSED_OBSTRUCTED -> Component.translatable("gui.mc3dprint.state.paused_obstructed");
             case ZONE_CONFLICT -> Component.translatable("gui.mc3dprint.state.zone_conflict");
+            case PAUSED_NO_FILAMENT -> Component.translatable("gui.mc3dprint.state.paused_no_filament");
+            case NOT_PRINTABLE -> Component.translatable("gui.mc3dprint.state.not_printable");
         };
         int color = menu.state() == PrinterBlockEntity.State.PRINTING ? 0x2E7D32
                 : menu.state() == PrinterBlockEntity.State.IDLE ? 0x404040 : 0xB71C1C;
         graphics.drawString(font, status, 80, 60, color, false);
+        int cost = menu.templateCost();
+        if (cost > 0) {
+            graphics.drawString(font, Component.translatable("gui.mc3dprint.cost", cost), 36, 60, 0x404040, false);
+        }
     }
 }

@@ -1,6 +1,9 @@
 package com.pgmacdesign.mc3dprint.config;
 
+import com.pgmacdesign.mc3dprint.fu.FuValueRegistry;
 import net.minecraftforge.common.ForgeConfigSpec;
+
+import java.util.List;
 
 /**
  * Gameplay tuning values, all pack-maker exposed per the design doc.
@@ -18,6 +21,13 @@ public final class MC3DPrintConfig {
     public static final ForgeConfigSpec.IntValue T1_RF_PER_BLOCK;
     public static final ForgeConfigSpec.IntValue T1_TICKS_PER_BLOCK;
     public static final ForgeConfigSpec.IntValue PRINT_HISTORY_SIZE;
+    public static final ForgeConfigSpec.DoubleValue T1_EFFICIENCY;
+    public static final ForgeConfigSpec.IntValue UNKNOWN_BLOCK_FU;
+    public static final ForgeConfigSpec.IntValue WINDER_RF_PER_ITEM;
+    public static final ForgeConfigSpec.IntValue WINDER_TICKS_PER_ITEM;
+    public static final ForgeConfigSpec.IntValue WINDER_ENERGY_BUFFER;
+    public static final ForgeConfigSpec.IntValue WINDER_MAX_ENERGY_RECEIVE;
+    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> FU_VALUES;
 
     static {
         ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
@@ -38,6 +48,9 @@ public final class MC3DPrintConfig {
         T1_TICKS_PER_BLOCK = builder
                 .comment("Ticks between block placements in Blueprint Mode (balancing table: 0.5 blocks/sec at T1)")
                 .defineInRange("ticksPerBlock", 40, 1, Integer.MAX_VALUE);
+        T1_EFFICIENCY = builder
+                .comment("Matter efficiency: FU cost = base / efficiency (balancing table: 50% at T1)")
+                .defineInRange("efficiency", 0.5, 0.01, 1.0);
         T1_MAX_ENERGY_RECEIVE = builder
                 .comment("Max RF accepted per tick from cables")
                 .defineInRange("maxEnergyReceive", 1_000, 1, Integer.MAX_VALUE);
@@ -49,10 +62,32 @@ public final class MC3DPrintConfig {
                 .defineInRange("t1MaxEdge", 7, 1, 256);
         builder.pop();
 
+        builder.comment("Filament Winder").push("winder");
+        WINDER_RF_PER_ITEM = builder
+                .comment("RF consumed per item wound onto a spool")
+                .defineInRange("rfPerItem", 200, 0, Integer.MAX_VALUE);
+        WINDER_TICKS_PER_ITEM = builder
+                .comment("Ticks to wind one item")
+                .defineInRange("ticksPerItem", 20, 1, Integer.MAX_VALUE);
+        WINDER_ENERGY_BUFFER = builder
+                .comment("Internal RF buffer capacity")
+                .defineInRange("energyBuffer", 20_000, 1_000, Integer.MAX_VALUE);
+        WINDER_MAX_ENERGY_RECEIVE = builder
+                .comment("Max RF accepted per tick from cables")
+                .defineInRange("maxEnergyReceive", 1_000, 1, Integer.MAX_VALUE);
+        builder.pop();
+
         builder.comment("General").push("general");
         PRINT_HISTORY_SIZE = builder
                 .comment("Entries kept in each printer's job history log")
                 .defineInRange("printHistorySize", 10, 0, 100);
+        UNKNOWN_BLOCK_FU = builder
+                .comment("FU cost per printed block whose item has no configured FU value")
+                .defineInRange("unknownBlockFu", 3, 0, Integer.MAX_VALUE);
+        FU_VALUES = builder
+                .comment("Filament Unit values: '<item_or_#tag>=<fu>@<min_tier>'. Symmetric: wind yield == print cost (before efficiency).")
+                .defineListAllowEmpty("fuValues", FuValueRegistry.defaultEntries(),
+                        o -> o instanceof String s && s.contains("=") && s.contains("@"));
         builder.pop();
 
         SPEC = builder.build();

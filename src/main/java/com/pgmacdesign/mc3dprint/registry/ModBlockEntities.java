@@ -2,6 +2,7 @@ package com.pgmacdesign.mc3dprint.registry;
 
 import com.pgmacdesign.mc3dprint.MC3DPrint;
 import com.pgmacdesign.mc3dprint.machine.PrinterBlockEntity;
+import com.pgmacdesign.mc3dprint.machine.WinderBlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
@@ -14,6 +15,10 @@ public final class ModBlockEntities {
     public static final RegistryObject<BlockEntityType<PrinterBlockEntity>> TIER1_PRINTER =
             BLOCK_ENTITIES.register("tier1_printer", () ->
                     BlockEntityType.Builder.of(PrinterBlockEntity::new, ModBlocks.TIER1_PRINTER.get()).build(null));
+
+    public static final RegistryObject<BlockEntityType<WinderBlockEntity>> FILAMENT_WINDER =
+            BLOCK_ENTITIES.register("filament_winder", () ->
+                    BlockEntityType.Builder.of(WinderBlockEntity::new, ModBlocks.FILAMENT_WINDER.get()).build(null));
 
     private ModBlockEntities() {}
 }

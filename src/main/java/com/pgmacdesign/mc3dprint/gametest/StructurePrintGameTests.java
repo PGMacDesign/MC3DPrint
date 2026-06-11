@@ -50,6 +50,7 @@ public class StructurePrintGameTests {
                 energy.receiveEnergy(1_000, false);
             }
         });
+        PrinterGameTests.attachLoadedSpool(printer);
         return printer;
     }
 

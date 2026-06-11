@@ -2,6 +2,7 @@ package com.pgmacdesign.mc3dprint.registry;
 
 import com.pgmacdesign.mc3dprint.MC3DPrint;
 import com.pgmacdesign.mc3dprint.machine.PrinterBlock;
+import com.pgmacdesign.mc3dprint.machine.WinderBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
@@ -18,6 +19,13 @@ public final class ModBlocks {
             () -> new PrinterBlock(BlockBehaviour.Properties.of()
                     .mapColor(MapColor.METAL)
                     .strength(3.5F, 6.0F)
+                    .sound(SoundType.METAL)
+                    .requiresCorrectToolForDrops()));
+
+    public static final RegistryObject<Block> FILAMENT_WINDER = BLOCKS.register("filament_winder",
+            () -> new WinderBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.METAL)
+                    .strength(3.0F, 6.0F)
                     .sound(SoundType.METAL)
                     .requiresCorrectToolForDrops()));
 

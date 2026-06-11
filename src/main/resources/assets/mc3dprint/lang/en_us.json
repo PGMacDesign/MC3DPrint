@@ -26,5 +26,22 @@
   "message.mc3dprint.scan_complete": "Scan complete — %s blocks captured",
   "tooltip.mc3dprint.corner_a": "Corner A: %s, %s, %s",
   "tooltip.mc3dprint.corner_b": "Corner B: %s, %s, %s",
-  "tooltip.mc3dprint.scanner_help": "Right-click blocks to set corners, right-click air to scan"
+  "tooltip.mc3dprint.scanner_help": "Right-click blocks to set corners, right-click air to scan",
+  "block.mc3dprint.filament_winder": "Filament Winder",
+  "container.mc3dprint.filament_winder": "Filament Winder",
+  "item.mc3dprint.filament_spool_t1": "Filament Spool (Tier 1)",
+  "item.mc3dprint.filament_spool_t2": "Filament Spool (Tier 2)",
+  "item.mc3dprint.filament_spool_t3": "Filament Spool (Tier 3)",
+  "item.mc3dprint.filament_spool_t4": "Filament Spool (Tier 4)",
+  "item.mc3dprint.filament_spool_t5": "Filament Spool (Tier 5)",
+  "item.mc3dprint.filament_spool_t6": "Filament Spool (Tier 6)",
+  "item.mc3dprint.filament_spool_t7": "Filament Spool (Tier 7)",
+  "item.mc3dprint.filament_spool_t8": "Filament Spool (Tier 8)",
+  "tooltip.mc3dprint.spool_fu": "%s / %s FU",
+  "tooltip.mc3dprint.spool_tier": "Tier %s spool",
+  "tooltip.mc3dprint.fu": "%s / %s FU",
+  "gui.mc3dprint.state.paused_no_filament": "PAUSED — No Filament",
+  "gui.mc3dprint.state.not_printable": "Not Printable",
+  "gui.mc3dprint.cost": "%s FU",
+  "message.mc3dprint.spool_slots_full": "All spool docks are occupied"
 }

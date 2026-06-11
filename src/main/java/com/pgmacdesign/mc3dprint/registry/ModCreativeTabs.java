@@ -18,9 +18,11 @@ public final class ModCreativeTabs {
                     .icon(() -> new ItemStack(ModItems.TIER1_PRINTER.get()))
                     .displayItems((parameters, output) -> {
                         output.accept(ModItems.TIER1_PRINTER.get());
+                        output.accept(ModItems.FILAMENT_WINDER.get());
                         output.accept(ModItems.BLANK_BLUEPRINT_DISC.get());
                         output.accept(ModItems.BLUEPRINT_DISC.get());
                         output.accept(ModItems.SCANNER.get());
+                        ModItems.SPOOLS.forEach(spool -> output.accept(spool.get()));
                     })
                     .build());
 

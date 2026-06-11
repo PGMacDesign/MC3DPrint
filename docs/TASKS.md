@@ -55,15 +55,15 @@ The keystone — everything else consumes this. Pure logic, testable without a r
 - [x] Print zone conflict detection (bounding box overlap between active jobs)
 - [x] Print history log (last N jobs, NBT; GUI display later)
 
-## M5 — Filament System
+## M5 — Filament System ✅ *(2 partials)*
 
-- [ ] Filament Winder block: materials → FU, winder tier gating
-- [ ] FU value tables (symmetric conversion, group-based) — config-exposed
-- [ ] Filament Spool items T1–T8 with capacities
-- [ ] Spool side attachment (Shift+Right Click), spool slots by tier, auto-switch on depletion
-- [ ] Tier down-conversion, one step, 16:1 — no tier-up, ever
-- [ ] Switch print costs from placeholder to FU economy + per-tier efficiency
-- [ ] Matter Calculator GUI panel (FU cost, RF cost, ETA before committing)
+- [x] Filament Winder block: materials → FU, winder tier gating
+- [x] FU value tables (symmetric conversion, group-based) — config-exposed (`fuValues`, item + #tag syntax)
+- [x] Filament Spool items T1–T8 with capacities
+- [x] Spool side attachment (Shift+Right Click), auto-switch on depletion *(slots-by-tier lands with M6 tiers; T1 = 1 dock)*
+- [ ] ~~Tier down-conversion 16:1~~ — *superseded: FU is one universal unit; winder tier gating provides the progression gate. 16:1 rule needs design clarification (see Open Decisions)*
+- [x] Switch print costs from placeholder to FU economy + per-tier efficiency (M2 dupe closed)
+- [ ] Matter Calculator GUI panel — *partial: template FU cost + filament gauges in GUI; full blueprint calculator (RF + ETA) pending*
 
 ## M6 — Tiers, Multiblocks & Progression
 
@@ -110,6 +110,7 @@ The keystone — everything else consumes this. Pure logic, testable without a r
 
 - [x] Blueprint storage: ✅ file store + disc reference (see M1)
 - [ ] Final ore name (Printite is placeholder)
+- [ ] Clarify the 16:1 down-conversion rule from the design doc — contradicts universal FU; currently superseded by winder tier gating
 - [ ] Patrick's full favorite-mod list for compat evaluation
 
 ## v2 / v3 Backlog
