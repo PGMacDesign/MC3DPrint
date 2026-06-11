@@ -1,0 +1,90 @@
+package com.pgmacdesign.mc3dprint.machine;
+
+import com.pgmacdesign.mc3dprint.blueprint.PrintOrientation;
+import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtUtils;
+import net.minecraft.world.level.block.Mirror;
+import net.minecraft.world.level.block.Rotation;
+
+import java.util.UUID;
+
+/**
+ * A persistent structure print job. Progress is the count of blocks already
+ * placed (placement order is deterministic: Y, then Z, then X), so resume
+ * after restart/power loss is just "skip the first N".
+ */
+public final class PrintJob {
+    private final UUID blueprintId;
+    private final String blueprintName;
+    private final BlockPos origin; // world position of the oriented min corner
+    private final PrintOrientation orientation;
+    private final int totalBlocks;
+    private int placed;
+
+    public PrintJob(UUID blueprintId, String blueprintName, BlockPos origin,
+                    PrintOrientation orientation, int totalBlocks) {
+        this.blueprintId = blueprintId;
+        this.blueprintName = blueprintName;
+        this.origin = origin;
+        this.orientation = orientation;
+        this.totalBlocks = totalBlocks;
+    }
+
+    public UUID blueprintId() {
+        return blueprintId;
+    }
+
+    public String blueprintName() {
+        return blueprintName;
+    }
+
+    public BlockPos origin() {
+        return origin;
+    }
+
+    public PrintOrientation orientation() {
+        return orientation;
+    }
+
+    public int totalBlocks() {
+        return totalBlocks;
+    }
+
+    public int placed() {
+        return placed;
+    }
+
+    public void setPlaced(int placed) {
+        this.placed = placed;
+    }
+
+    public boolean isComplete() {
+        return placed >= totalBlocks;
+    }
+
+    public CompoundTag save() {
+        CompoundTag tag = new CompoundTag();
+        tag.putUUID("Blueprint", blueprintId);
+        tag.putString("Name", blueprintName);
+        tag.put("Origin", NbtUtils.writeBlockPos(origin));
+        tag.putByte("Rotation", (byte) orientation.rotation().ordinal());
+        tag.putByte("Mirror", (byte) orientation.mirror().ordinal());
+        tag.putInt("Total", totalBlocks);
+        tag.putInt("Placed", placed);
+        return tag;
+    }
+
+    public static PrintJob load(CompoundTag tag) {
+        PrintJob job = new PrintJob(
+                tag.getUUID("Blueprint"),
+                tag.getString("Name"),
+                NbtUtils.readBlockPos(tag.getCompound("Origin")),
+                new PrintOrientation(
+                        Rotation.values()[Math.floorMod(tag.getByte("Rotation"), Rotation.values().length)],
+                        Mirror.values()[Math.floorMod(tag.getByte("Mirror"), Mirror.values().length)]),
+                tag.getInt("Total"));
+        job.placed = tag.getInt("Placed");
+        return job;
+    }
+}

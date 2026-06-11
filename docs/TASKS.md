@@ -44,16 +44,16 @@ The keystone — everything else consumes this. Pure logic, testable without a r
 - [x] Scanner tier volume limits (T1 ≈ 7×7×7)
 - [x] Capture validation: volume limits, unscannable blocks policy
 
-## M4 — Structure Printing
+## M4 — Structure Printing ✅ *(2 partials)*
 
-- [ ] Blueprint Mode in Smart Print Slot (slot detects item vs disc)
-- [ ] Print queue: multiple jobs, reorder, pause/resume, cancel (configurable refund %)
-- [ ] Layer-by-layer bottom-up placement engine
-- [ ] Pre-clear validation + hologram preview (green = clear, red = obstructed)
-- [ ] Power-loss pause/resume mid-print, queue persists through restarts
-- [ ] Built-in chunk loading for print volume (release on complete/pause/cancel)
-- [ ] Print zone conflict detection (bounding box overlap between active jobs)
-- [ ] Print history log (last N jobs)
+- [x] Blueprint Mode in Smart Print Slot (slot detects item vs disc)
+- [ ] Print queue: multiple jobs, reorder, pause/resume, cancel (configurable refund %) — *partial: sequential jobs w/ persistence done; reorder UI + cancel refund pending (FU refunds need M5)*
+- [x] Layer-by-layer bottom-up placement engine
+- [x] Pre-clear validation *(server-side done; hologram preview render moved to M7 visuals)*
+- [x] Power-loss pause/resume mid-print, jobs persist through restarts
+- [x] Built-in chunk loading for print volume (release on complete/cancel)
+- [x] Print zone conflict detection (bounding box overlap between active jobs)
+- [x] Print history log (last N jobs, NBT; GUI display later)
 
 ## M5 — Filament System
 

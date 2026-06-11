@@ -59,6 +59,7 @@ public class PrinterBlock extends BaseEntityBlock {
     @Override
     public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean isMoving) {
         if (!state.is(newState.getBlock()) && level.getBlockEntity(pos) instanceof PrinterBlockEntity printer) {
+            printer.cancelActiveJob();
             ItemStackHandler inventory = printer.inventory();
             for (int slot = 0; slot < inventory.getSlots(); slot++) {
                 Containers.dropItemStack(level, pos.getX(), pos.getY(), pos.getZ(), inventory.getStackInSlot(slot));

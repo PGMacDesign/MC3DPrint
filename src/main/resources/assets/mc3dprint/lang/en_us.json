@@ -14,6 +14,8 @@
   "gui.mc3dprint.state.printing": "Printing…",
   "gui.mc3dprint.state.paused_no_power": "PAUSED — No Power",
   "gui.mc3dprint.state.paused_output_full": "PAUSED — Output Full",
+  "gui.mc3dprint.state.paused_obstructed": "PAUSED — Area Obstructed",
+  "gui.mc3dprint.state.zone_conflict": "BLOCKED — Print Zone Conflict",
   "item.mc3dprint.scanner": "Structure Scanner",
   "message.mc3dprint.corner_a_set": "Corner A set: %s, %s, %s",
   "message.mc3dprint.corner_b_set": "Corner B set: %s, %s, %s",

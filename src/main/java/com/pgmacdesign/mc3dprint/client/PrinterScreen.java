@@ -76,6 +76,8 @@ public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
             case PRINTING -> Component.translatable("gui.mc3dprint.state.printing");
             case PAUSED_NO_POWER -> Component.translatable("gui.mc3dprint.state.paused_no_power");
             case PAUSED_OUTPUT_FULL -> Component.translatable("gui.mc3dprint.state.paused_output_full");
+            case PAUSED_OBSTRUCTED -> Component.translatable("gui.mc3dprint.state.paused_obstructed");
+            case ZONE_CONFLICT -> Component.translatable("gui.mc3dprint.state.zone_conflict");
         };
         int color = menu.state() == PrinterBlockEntity.State.PRINTING ? 0x2E7D32
                 : menu.state() == PrinterBlockEntity.State.IDLE ? 0x404040 : 0xB71C1C;
