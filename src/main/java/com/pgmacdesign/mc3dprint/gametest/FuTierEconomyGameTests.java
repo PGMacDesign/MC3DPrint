@@ -132,6 +132,23 @@ public class FuTierEconomyGameTests {
         });
     }
 
+    @GameTest(template = "empty5", timeoutTicks = 100)
+    public static void nuggetAndConcreteValuesRegistered(GameTestHelper helper) {
+        // nuggets = ingot/9 rounded DOWN (lossy by design); concrete joins the 5 FU group
+        var goldNugget = com.pgmacdesign.mc3dprint.fu.FuValueRegistry.valueOf(new ItemStack(Items.GOLD_NUGGET));
+        var ironNugget = com.pgmacdesign.mc3dprint.fu.FuValueRegistry.valueOf(new ItemStack(Items.IRON_NUGGET));
+        var concrete = com.pgmacdesign.mc3dprint.fu.FuValueRegistry.valueOf(new ItemStack(Items.RED_CONCRETE));
+        if (goldNugget.isEmpty() || goldNugget.get().fu() != 1 || goldNugget.get().tier() != 2) {
+            helper.fail("Gold nugget should be 1 FU @ T2, got " + goldNugget);
+        } else if (ironNugget.isEmpty() || ironNugget.get().fu() != 2 || ironNugget.get().tier() != 2) {
+            helper.fail("Iron nugget should be 2 FU @ T2, got " + ironNugget);
+        } else if (concrete.isEmpty() || concrete.get().fu() != 5 || concrete.get().tier() != 1) {
+            helper.fail("Concrete should be 5 FU @ T1, got " + concrete);
+        } else {
+            helper.succeed();
+        }
+    }
+
     @GameTest(template = "empty5", timeoutTicks = 150)
     public static void winderDownConvertsAtCompoundedRatio(GameTestHelper helper) {
         WinderBlockEntity winder = placePoweredWinder(helper, new BlockPos(2, 1, 2), 1); // T2

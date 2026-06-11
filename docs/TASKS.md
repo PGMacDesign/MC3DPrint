@@ -125,7 +125,7 @@ Requirements from the original design doc that were rewritten/dropped without a 
 - [ ] Patchouli: auto-give on first printer craft (now unblocked — recipes exist); add I/O, blueprint-format, and upgrades entries per spec'd scope
 - [ ] Upgrade modifier rates → config (spec: "all modifier rates exposed in config"; currently hardcoded)
 - [x] ~~Tiered upgrade items~~ — **decided 2026-06-11 (Patrick): keep flat**, doc amended
-- [ ] FU table: add concrete family @ 5 FU; decide nugget handling (×9 rule unrepresentable in integer per-item FU)
+- [x] FU table: concrete family @ 5 FU added; nuggets = ingot/9 rounded down (gold 1 FU, iron 2 FU @ T2) — decided 2026-06-11 (Patrick): lossy is fine
 - [x] I/O: sides now spool-exclusive per spec (no item handler on sides; bottom = output, top = input) — decided + implemented 2026-06-11
 - [x] Spool exterior render: docked spools drawn on side faces, spinning while printing, winding radius shrinks with fill level (line-art pass; solid models later) — closes the M7 "spool spin animation" deferral
 

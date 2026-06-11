@@ -116,10 +116,19 @@ public final class FuValueRegistry {
                 // 5 FU @ T1 — processed building blocks
                 "minecraft:glass=5@1", "minecraft:terracotta=5@1", "#minecraft:wool=5@1",
                 "minecraft:nether_bricks=5@1", "minecraft:quartz_block=5@1",
+                "minecraft:white_concrete=5@1", "minecraft:orange_concrete=5@1",
+                "minecraft:magenta_concrete=5@1", "minecraft:light_blue_concrete=5@1",
+                "minecraft:yellow_concrete=5@1", "minecraft:lime_concrete=5@1",
+                "minecraft:pink_concrete=5@1", "minecraft:gray_concrete=5@1",
+                "minecraft:light_gray_concrete=5@1", "minecraft:cyan_concrete=5@1",
+                "minecraft:purple_concrete=5@1", "minecraft:blue_concrete=5@1",
+                "minecraft:brown_concrete=5@1", "minecraft:green_concrete=5@1",
+                "minecraft:red_concrete=5@1", "minecraft:black_concrete=5@1",
                 // 10 FU @ T2
                 "minecraft:copper_ingot=10@2", "minecraft:amethyst_shard=10@2", "minecraft:lapis_lazuli=10@2",
-                // 15-20 FU @ T2 — metals
+                // 15-20 FU @ T2 — metals (nuggets = ingot/9 rounded DOWN, lossy by design: 2026-06-11)
                 "minecraft:gold_ingot=15@2", "minecraft:iron_ingot=20@2",
+                "minecraft:gold_nugget=1@2", "minecraft:iron_nugget=2@2",
                 // ~30 FU @ T3
                 "minecraft:redstone=4@3", "minecraft:slime_ball=30@3", "minecraft:magma_cream=30@3",
                 // 50 FU @ T4 — gems (diamond = emerald by design)
