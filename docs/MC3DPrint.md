@@ -320,6 +320,37 @@ All integration targets verified on Forge 1.20.1 (June 2026):
 
 > **BuildCraft** — dropped from the integration list. No 1.20.x port exists (1.12.2 was its last era). It remains *animation inspiration only* for the quarry-style print head.
 
+> **NeoForge** — evaluated 2026-06, staying on Forge. On 1.20.1, NeoForge 47.x is renamed Forge (no API benefit), and moving to NeoForge's real home (1.21.1) would cost Thermal Expansion entirely (dead at 1.20.1) and leave the T8 gate on a beta-only Draconic Evolution. Revisit as a future port once DE stabilizes on 1.21.x.
+
+### Integration Roadmap — v2 / v3 Stretch Goals
+
+From a survey of the top 500 mods on 1.20.1 by total downloads (2026-06). Download counts included for prioritization.
+
+**v2 — natural fits:**
+
+| Mod | Downloads | Integration idea |
+|-----|-----------|------------------|
+| **Create** | 191M | Import Create schematics as Blueprint Discs — interop with the Schematicannon crowd, not competition. Biggest crossover audience available |
+| **CraftTweaker / KubeJS** | 220M / 147M | Scriptable FU values, tier gates, print recipes. What makes pack makers adopt the mod — arguably v1.5 |
+| **Jade / The One Probe** | 239M / 96M | Look-at overlays: job progress, FU/RF levels, pause reason. Cheap to build, every pack runs one |
+| **FTB Quests** | 203M | Quest task/trigger hooks so packs can gate progression on prints |
+| **MineColonies + Structurize** | 84M / 72M | Print colony buildings from the Structurize blueprint format — huge builder audience |
+| **CC: Tweaked (+ Advanced Peripherals)** | 78M / 46M | Printer as computer peripheral: start/queue/monitor prints from Lua. Automated print farms |
+| **WorldEdit** | 62M | `.schem` import/export for Blueprint Discs — closes the loop on the "WorldEdit for survival" tagline |
+| **Structure-mod loot injection** | — | Seed Blueprint Disc loot into YUNG's structures (~15 mods in top 500), When Dungeons Arise (104M), The Lost Cities (86M) |
+
+**v3 — fun / wild:**
+
+| Mod | Downloads | Integration idea |
+|-----|-----------|------------------|
+| **Tinkers' Construct** | 190M | Print casts and tool parts |
+| **Immersive Engineering** | 187M | IE blueprint items printable; aesthetic kinship with the gantry multiblock |
+| **Botania** | 165M | Mana-to-FU conversion flower |
+| **Building Gadgets** | 145M | Template format interop |
+| **Compact Machines** | 94M | Pre-fab compact machine interiors — "base in a box" blueprints |
+| **ProjectE** | 76M | EMC↔FU exchanger — config-gated, **off by default** (balance grenade, meme value real) |
+| **Xaero's / JourneyMap** | 222M / 335M | Print-zone map overlays and printer waypoints |
+
 *More mods to evaluate — Patrick will provide a full list.*
 
 ### AE2 Integration — Filament Unit Converter
