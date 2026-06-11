@@ -2,6 +2,7 @@ package com.pgmacdesign.mc3dprint.gametest;
 
 import com.pgmacdesign.mc3dprint.MC3DPrint;
 import com.pgmacdesign.mc3dprint.fu.SpoolItem;
+import com.pgmacdesign.mc3dprint.machine.ClockGeneratorBlockEntity;
 import com.pgmacdesign.mc3dprint.machine.PrinterBlockEntity;
 import com.pgmacdesign.mc3dprint.registry.ModBlocks;
 import com.pgmacdesign.mc3dprint.registry.ModItems;
@@ -37,7 +38,32 @@ public class CreativePowerGameTests {
     }
 
     @GameTest(template = "empty5", timeoutTicks = 100)
-    public static void clockGeneratorTrickleChargesPrinter(GameTestHelper helper) {
+    public static void clockGeneratorBurnsFuelIntoPrinter(GameTestHelper helper) {
+        BlockPos printerPos = new BlockPos(2, 1, 2);
+        helper.setBlock(printerPos, ModBlocks.TIER1_PRINTER.get());
+        helper.setBlock(printerPos.east(), ModBlocks.CLOCK_GENERATOR.get());
+        if (!(helper.getBlockEntity(printerPos) instanceof PrinterBlockEntity printer)) {
+            throw new GameTestAssertException("Printer block entity missing");
+        }
+        if (!(helper.getBlockEntity(printerPos.east()) instanceof ClockGeneratorBlockEntity generator)) {
+            throw new GameTestAssertException("Clock generator block entity missing");
+        }
+        if (generator.addFuel(new ItemStack(Items.COAL)) <= 0) {
+            throw new GameTestAssertException("Generator rejected coal as fuel");
+        }
+
+        // 40 ticks at the default 10 RF/t should land ~400 RF in the printer
+        helper.runAfterDelay(40, () -> printer.getCapability(ForgeCapabilities.ENERGY).ifPresent(energy -> {
+            if (energy.getEnergyStored() < 200) {
+                helper.fail("Clock generator delivered too little RF: " + energy.getEnergyStored());
+            } else {
+                helper.succeed();
+            }
+        }));
+    }
+
+    @GameTest(template = "empty5", timeoutTicks = 100)
+    public static void clockGeneratorIsDeadWithoutFuel(GameTestHelper helper) {
         BlockPos printerPos = new BlockPos(2, 1, 2);
         helper.setBlock(printerPos, ModBlocks.TIER1_PRINTER.get());
         helper.setBlock(printerPos.east(), ModBlocks.CLOCK_GENERATOR.get());
@@ -45,10 +71,9 @@ public class CreativePowerGameTests {
             throw new GameTestAssertException("Printer block entity missing");
         }
 
-        // 40 ticks at the default 10 RF/t should land ~400 RF in the printer
-        helper.runAfterDelay(40, () -> printer.getCapability(ForgeCapabilities.ENERGY).ifPresent(energy -> {
-            if (energy.getEnergyStored() < 200) {
-                helper.fail("Clock generator delivered too little RF: " + energy.getEnergyStored());
+        helper.runAfterDelay(60, () -> printer.getCapability(ForgeCapabilities.ENERGY).ifPresent(energy -> {
+            if (energy.getEnergyStored() > 0) {
+                helper.fail("Generator produced RF without fuel: " + energy.getEnergyStored());
             } else {
                 helper.succeed();
             }

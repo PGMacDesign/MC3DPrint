@@ -4,13 +4,17 @@ import com.pgmacdesign.mc3dprint.config.MC3DPrintConfig;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraftforge.common.ForgeHooks;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.energy.IEnergyStorage;
+import net.minecraftforge.items.ItemStackHandler;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -18,16 +22,32 @@ import javax.annotation.Nullable;
 import static com.pgmacdesign.mc3dprint.registry.ModBlockEntities.CLOCK_GENERATOR;
 
 /**
- * Clock Generator: free trickle power so the mod is usable without any other
- * RF mod installed. Generates a configurable amount of RF per tick (default 10)
- * with no fuel, pushes it to adjacent machines, and exposes an extract-only
- * energy capability for cables.
+ * Clock Generator: entry-level power so the mod is usable without any other RF
+ * mod installed. Burns standard furnace fuel (coal, charcoal, coal blocks,
+ * lava buckets, ...) at a configurable multiple of its furnace burn time —
+ * super efficient, but never free. Generates a configurable RF per tick while
+ * burning, pushes it to adjacent machines, and exposes an extract-only energy
+ * capability for cables. Fuel goes in by hand (right-click) or hopper.
  */
 public class ClockGeneratorBlockEntity extends BlockEntity {
     /** Buffer holds this many ticks of generation so brief disconnects don't void RF. */
     private static final int BUFFER_TICKS = 200;
 
     private int stored;
+    private int burnRemaining;
+
+    private final ItemStackHandler fuel = new ItemStackHandler(1) {
+        @Override
+        public boolean isItemValid(int slot, @Nonnull ItemStack stack) {
+            return isFuel(stack);
+        }
+
+        @Override
+        protected void onContentsChanged(int slot) {
+            setChanged();
+        }
+    };
+    private final LazyOptional<ItemStackHandler> fuelCap = LazyOptional.of(() -> fuel);
 
     private final IEnergyStorage energy = new IEnergyStorage() {
         @Override
@@ -75,8 +95,37 @@ public class ClockGeneratorBlockEntity extends BlockEntity {
         return MC3DPrintConfig.CLOCK_GENERATOR_RF_PER_TICK.get();
     }
 
+    public static int burnMultiplier() {
+        return MC3DPrintConfig.CLOCK_GENERATOR_BURN_MULTIPLIER.get();
+    }
+
+    public static boolean isFuel(ItemStack stack) {
+        return ForgeHooks.getBurnTime(stack, RecipeType.SMELTING) > 0;
+    }
+
     private static int capacity() {
         return ratePerTick() * BUFFER_TICKS;
+    }
+
+    public int storedEnergy() {
+        return stored;
+    }
+
+    public int burnTicksRemaining() {
+        return burnRemaining;
+    }
+
+    /** Inserts one fuel item from the held stack; returns its boosted burn time, or 0 if rejected. */
+    public int addFuel(ItemStack held) {
+        if (!isFuel(held)) {
+            return 0;
+        }
+        ItemStack one = held.copyWithCount(1);
+        if (!fuel.insertItem(0, one, false).isEmpty()) {
+            return 0; // slot occupied by a different fuel or full
+        }
+        held.shrink(1);
+        return ForgeHooks.getBurnTime(one, RecipeType.SMELTING) * burnMultiplier();
     }
 
     public static void serverTick(Level level, BlockPos pos, BlockState state, ClockGeneratorBlockEntity generator) {
@@ -85,7 +134,24 @@ public class ClockGeneratorBlockEntity extends BlockEntity {
 
     private void tick(Level level, BlockPos pos) {
         int before = stored;
-        stored = Math.min(stored + ratePerTick(), capacity());
+
+        // ignite the next fuel item only when there's room to use the output
+        if (burnRemaining <= 0 && stored < capacity()) {
+            ItemStack next = fuel.extractItem(0, 1, false);
+            if (!next.isEmpty()) {
+                burnRemaining = ForgeHooks.getBurnTime(next, RecipeType.SMELTING) * burnMultiplier();
+                // burnable containers (lava bucket) leave their empty container behind
+                ItemStack remainder = next.getCraftingRemainingItem();
+                if (!remainder.isEmpty() && fuel.getStackInSlot(0).isEmpty()) {
+                    fuel.setStackInSlot(0, remainder);
+                }
+            }
+        }
+
+        if (burnRemaining > 0) {
+            burnRemaining--;
+            stored = Math.min(stored + ratePerTick(), capacity());
+        }
 
         for (Direction direction : Direction.values()) {
             if (stored <= 0) {
@@ -102,7 +168,7 @@ public class ClockGeneratorBlockEntity extends BlockEntity {
             }
         }
 
-        if (stored != before) {
+        if (stored != before || burnRemaining > 0) {
             setChanged();
         }
     }
@@ -113,6 +179,9 @@ public class ClockGeneratorBlockEntity extends BlockEntity {
         if (cap == ForgeCapabilities.ENERGY) {
             return energyCap.cast();
         }
+        if (cap == ForgeCapabilities.ITEM_HANDLER) {
+            return fuelCap.cast();
+        }
         return super.getCapability(cap, side);
     }
 
@@ -120,17 +189,24 @@ public class ClockGeneratorBlockEntity extends BlockEntity {
     public void invalidateCaps() {
         super.invalidateCaps();
         energyCap.invalidate();
+        fuelCap.invalidate();
     }
 
     @Override
     protected void saveAdditional(CompoundTag tag) {
         super.saveAdditional(tag);
         tag.putInt("Energy", stored);
+        tag.putInt("BurnRemaining", burnRemaining);
+        tag.put("Fuel", fuel.serializeNBT());
     }
 
     @Override
     public void load(CompoundTag tag) {
         super.load(tag);
         stored = Math.max(0, tag.getInt("Energy"));
+        burnRemaining = Math.max(0, tag.getInt("BurnRemaining"));
+        if (tag.contains("Fuel")) {
+            fuel.deserializeNBT(tag.getCompound("Fuel"));
+        }
     }
 }

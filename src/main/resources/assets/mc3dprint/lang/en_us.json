@@ -114,7 +114,11 @@
   "block.mc3dprint.clock_generator": "Clock Generator",
   "block.mc3dprint.creative_energy_source": "Creative Energy Source",
   "item.mc3dprint.creative_filament_spool": "Creative Filament Spool",
-  "tooltip.mc3dprint.clock_generator": "Generates %s RF/t — free fallback power, no fuel",
+  "tooltip.mc3dprint.clock_generator": "Generates %s RF/t from furnace fuel at %s× burn time — right-click or hopper to fuel",
+  "message.mc3dprint.generator_fueled": "Fuel added — ~%s minutes of burn",
+  "message.mc3dprint.generator_fuel_full": "Fuel slot is full",
+  "message.mc3dprint.generator_not_fuel": "Not a furnace fuel",
+  "message.mc3dprint.generator_status": "Burn: ~%s min remaining — Buffer: %s RF",
   "tooltip.mc3dprint.creative_energy": "Unlimited RF to adjacent machines (creative only)",
   "tooltip.mc3dprint.spool_creative": "∞ FU — never depletes (creative only)"
 }

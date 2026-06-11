@@ -112,7 +112,7 @@ The keystone — everything else consumes this. Pure logic, testable without a r
 
 - [x] Creative Energy Source — infinite RF to neighbors + extract-only cap; creative menu only, no recipe, drops nothing
 - [x] Creative Filament Spool — acts as a T8 spool, always full, never depletes; winders skip it; creative menu only
-- [x] Clock Generator — free 10 RF/t fallback power (config `general.clockGeneratorRfPerTick`), craftable, so the mod works with no other RF mod
+- [x] Clock Generator — 10 RF/t from furnace fuel at 10× burn time (configs `general.clockGeneratorRfPerTick`, `general.clockGeneratorBurnMultiplier`), craftable, hopper-feedable, so the mod works with no other RF mod
 - [x] Scanner selection preview — corner A (blue) / corner B (cyan) boxes + full selection outline rendered in-world while holding the scanner
 - [x] Gate T8 fabricator + T8 spool behind Draconic Evolution (creative tab, JEI, recipes via `forge:conditional`)
 - [x] Gate Filament Converter behind AE2 (creative tab, JEI, recipe) — *note: converter also works with plain chests/RS; easy to un-gate if that's wanted later*
