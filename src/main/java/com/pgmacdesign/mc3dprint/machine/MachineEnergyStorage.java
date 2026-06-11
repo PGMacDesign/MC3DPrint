@@ -40,4 +40,10 @@ public class MachineEnergyStorage extends EnergyStorage {
     public void setStored(int amount) {
         energy = Math.max(0, Math.min(amount, capacity));
     }
+
+    /** Buffer upgrades resize the capacity at runtime; stored energy is clamped. */
+    public void setCapacity(int newCapacity) {
+        capacity = Math.max(1, newCapacity);
+        energy = Math.min(energy, capacity);
+    }
 }

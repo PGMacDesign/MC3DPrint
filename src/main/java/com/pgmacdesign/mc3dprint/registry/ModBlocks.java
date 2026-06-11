@@ -41,6 +41,15 @@ public final class ModBlocks {
     public static final RegistryObject<Block> PRINTER_CASING = BLOCKS.register("printer_casing",
             () -> new CasingBlock(machineProperties()));
 
+    /** End-only ore for T5+ machine components (name placeholder per design doc). */
+    public static final RegistryObject<Block> PRINTITE_ORE = BLOCKS.register("printite_ore",
+            () -> new Block(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_BLUE)
+                    .strength(4.5F, 9.0F)
+                    .sound(SoundType.STONE)
+                    .lightLevel(state -> 4)
+                    .requiresCorrectToolForDrops()));
+
     // Aliases for the most-referenced blocks
     public static final RegistryObject<Block> TIER1_PRINTER = PRINTERS.get(0);
     public static final RegistryObject<Block> FILAMENT_WINDER = WINDERS.get(0);

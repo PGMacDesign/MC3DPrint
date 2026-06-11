@@ -4,6 +4,7 @@ import com.pgmacdesign.mc3dprint.MC3DPrint;
 import com.pgmacdesign.mc3dprint.fu.SpoolItem;
 import com.pgmacdesign.mc3dprint.item.BlueprintDiscItem;
 import com.pgmacdesign.mc3dprint.machine.multiblock.FabricatorBlockItem;
+import com.pgmacdesign.mc3dprint.machine.upgrade.UpgradeItem;
 import com.pgmacdesign.mc3dprint.scanner.ScannerItem;
 
 import java.util.ArrayList;
@@ -49,6 +50,21 @@ public final class ModItems {
 
     public static final RegistryObject<Item> PRINTER_CASING = ITEMS.register("printer_casing",
             () -> new BlockItem(ModBlocks.PRINTER_CASING.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> PRINTITE_ORE = ITEMS.register("printite_ore",
+            () -> new BlockItem(ModBlocks.PRINTITE_ORE.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> PRINTITE_CRYSTAL = ITEMS.register("printite_crystal",
+            () -> new Item(new Item.Properties()));
+
+    public static final RegistryObject<Item> SPEED_UPGRADE = ITEMS.register("speed_upgrade",
+            () -> new UpgradeItem(UpgradeItem.Type.SPEED, new Item.Properties().stacksTo(16)));
+    public static final RegistryObject<Item> EFFICIENCY_UPGRADE = ITEMS.register("efficiency_upgrade",
+            () -> new UpgradeItem(UpgradeItem.Type.EFFICIENCY, new Item.Properties().stacksTo(16)));
+    public static final RegistryObject<Item> RF_EFFICIENCY_UPGRADE = ITEMS.register("rf_efficiency_upgrade",
+            () -> new UpgradeItem(UpgradeItem.Type.RF_EFFICIENCY, new Item.Properties().stacksTo(16)));
+    public static final RegistryObject<Item> BUFFER_UPGRADE = ITEMS.register("buffer_upgrade",
+            () -> new UpgradeItem(UpgradeItem.Type.BUFFER, new Item.Properties().stacksTo(16)));
 
     /** Fabricator (controller) items, index 0 = Tier 5. Collapsed stacks re-form the multiblock. */
     public static final List<RegistryObject<Item>> FABRICATORS = buildFabricators();

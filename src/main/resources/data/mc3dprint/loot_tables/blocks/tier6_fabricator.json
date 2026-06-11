@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:block",
+  "pools": [
+    {
+      "rolls": 1,
+      "entries": [ { "type": "minecraft:item", "name": "mc3dprint:tier6_fabricator" } ],
+      "conditions": [
+        { "condition": "minecraft:survives_explosion" },
+        {
+          "condition": "minecraft:block_state_property",
+          "block": "mc3dprint:tier6_fabricator",
+          "properties": { "formed": "false" }
+        }
+      ]
+    }
+  ]
+}

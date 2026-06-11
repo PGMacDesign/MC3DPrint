@@ -25,6 +25,12 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.BLUEPRINT_DISC.get());
                         output.accept(ModItems.SCANNER.get());
                         ModItems.SPOOLS.forEach(spool -> output.accept(spool.get()));
+                        output.accept(ModItems.PRINTITE_ORE.get());
+                        output.accept(ModItems.PRINTITE_CRYSTAL.get());
+                        output.accept(ModItems.SPEED_UPGRADE.get());
+                        output.accept(ModItems.EFFICIENCY_UPGRADE.get());
+                        output.accept(ModItems.RF_EFFICIENCY_UPGRADE.get());
+                        output.accept(ModItems.BUFFER_UPGRADE.get());
                     })
                     .build());
 

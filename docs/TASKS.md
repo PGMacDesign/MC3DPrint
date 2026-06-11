@@ -65,16 +65,16 @@ The keystone — everything else consumes this. Pure logic, testable without a r
 - [x] Switch print costs from placeholder to FU economy + per-tier efficiency (M2 dupe closed)
 - [ ] Matter Calculator GUI panel — *partial: template FU cost + filament gauges in GUI; full blueprint calculator (RF + ETA) pending*
 
-## M6 — Tiers, Multiblocks & Progression
+## M6 — Tiers, Multiblocks & Progression ✅
 
-- [ ] T2–T4 single-block printers (print area scaling, item tier gating)
-- [ ] Item tier requirement system (T1 can't print a diamond sword)
-- [ ] Multiblock framework: formation by controller right-click, validation, rendered structure
-- [ ] Collapse-to-item: break controller → single item drop → place to reform intact
-- [ ] T5–T8 multiblock structures (9×9 → 33×33)
-- [ ] Printite ore: End-only worldgen, ore/ingot items, animated shimmer texture *(final name TBD)*
-- [ ] Upgrade/expansion slot system: Speed, Efficiency, Matter Density, RF Efficiency, Buffer — tiered, multiplicative stacking
-- [ ] T8 Draconic gate (soft dep: only with DE installed)
+- [x] T2–T4 single-block printers (print area scaling, item tier gating)
+- [x] Item tier requirement system (T1 can't print a diamond sword)
+- [x] Multiblock framework: formation by controller right-click, validation *(rendered combined geometry → M7 visuals)*
+- [x] Collapse-to-item: break controller → single item drop → place to reform intact (full machine state in item NBT)
+- [x] T5–T8 multiblock structures (9×9 → 33×33 print areas; casing bases 3×3 → 9×9)
+- [x] Printite ore: End-only worldgen (data-driven), crystal item, glow speck texture *(animated shimmer → M7; final name TBD)*
+- [x] Upgrade system: Speed/Efficiency/RF Efficiency/Buffer, multiplicative stacking, slots = tier *(Matter Density deferred — needs input-side mechanics; slot-grid GUI → M7 GUI pass)*
+- [x] T8 Draconic gate (soft dep: formation requires DE + Awakened Draconium corners)
 
 ## M7 — Visuals & Feel
 
