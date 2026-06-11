@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "mc3dprint:item/blank_blueprint_disc"
+  }
+}

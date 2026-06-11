@@ -1,0 +1,5 @@
+{
+  "variants": {
+    "": { "model": "mc3dprint:block/tier1_printer" }
+  }
+}

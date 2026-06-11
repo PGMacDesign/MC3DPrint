@@ -317,6 +317,8 @@ All integration targets verified on Forge 1.20.1 (June 2026):
 | **EnderIO** | 6.2.x-beta | Conduit compatibility for I/O automation. ⚠️ Beta on 1.20.1 — lower priority; standard capability I/O should cover it without dedicated code |
 | **Patchouli** | 1.20.1-85 | In-game guidebook (see Community section) |
 | **JEI** | 15.20.x | Recipe integration (see Community section) |
+| **Create** | 0.5.1.x / 6.0.x | Import Create schematics (vanilla structure `.nbt`) as Blueprint Discs — interop with the Schematicannon ecosystem, not competition *(promoted from v2, 2026-06)* |
+| **WorldEdit** | 7.2.15 | `.schem` (Sponge schematic) import/export for Blueprint Discs — closes the loop on the "WorldEdit for survival" tagline *(promoted from v2, 2026-06)* |
 
 > **BuildCraft** — dropped from the integration list. No 1.20.x port exists (1.12.2 was its last era). It remains *animation inspiration only* for the quarry-style print head.
 
@@ -328,15 +330,15 @@ From a survey of the top 500 mods on 1.20.1 by total downloads (2026-06). Downlo
 
 **v2 — natural fits:**
 
+> Create (191M) and WorldEdit (62M) were originally v2 candidates — **promoted to v1 scope** (2026-06). Both are blueprint-format interop and share the importer pipeline.
+
 | Mod | Downloads | Integration idea |
 |-----|-----------|------------------|
-| **Create** | 191M | Import Create schematics as Blueprint Discs — interop with the Schematicannon crowd, not competition. Biggest crossover audience available |
 | **CraftTweaker / KubeJS** | 220M / 147M | Scriptable FU values, tier gates, print recipes. What makes pack makers adopt the mod — arguably v1.5 |
 | **Jade / The One Probe** | 239M / 96M | Look-at overlays: job progress, FU/RF levels, pause reason. Cheap to build, every pack runs one |
 | **FTB Quests** | 203M | Quest task/trigger hooks so packs can gate progression on prints |
 | **MineColonies + Structurize** | 84M / 72M | Print colony buildings from the Structurize blueprint format — huge builder audience |
 | **CC: Tweaked (+ Advanced Peripherals)** | 78M / 46M | Printer as computer peripheral: start/queue/monitor prints from Lua. Automated print farms |
-| **WorldEdit** | 62M | `.schem` import/export for Blueprint Discs — closes the loop on the "WorldEdit for survival" tagline |
 | **Structure-mod loot injection** | — | Seed Blueprint Disc loot into YUNG's structures (~15 mods in top 500), When Dungeons Arise (104M), The Lost Cities (86M) |
 
 **v3 — fun / wild:**
@@ -514,7 +516,7 @@ Start conservative — easier to buff than nerf post-release. All values exposed
 ## Open Questions
 
 - **Mod loader & version:** ✅ **Minecraft 1.20.1, Forge only** — 1.20.1 is the modpack-standard version where every integration target overlaps (including Draconic Evolution, the usual deal-breaker). Architect the codebase to avoid locking out Fabric/Architectury in the future. Don't use Forge-only APIs where a cross-platform abstraction exists. Future-proof without building for two platforms today.
-- **Blueprint file format:** NBT schematics, JSON, or custom `.blueprint` format?
+- **Blueprint file format:** NBT schematics, JSON, or custom `.blueprint` format? **New constraint (2026-06):** v1 must *import* vanilla structure `.nbt` (Create schematics) and Sponge `.schem` (WorldEdit) — so whatever the native format is, it needs an importer pipeline from day one.
 - **Print area:** ✅ Must be pre-cleared — the printer cannot replace existing blocks. Players are responsible for clearing the space before printing.
 - **Mod list:** Patrick to provide full list of favorite mods for compatibility evaluation and T8 tier candidates
 - **Ore name:** Printite is a placeholder — final name TBD
