@@ -2,14 +2,19 @@ package com.pgmacdesign.mc3dprint.integration.jei;
 
 import com.pgmacdesign.mc3dprint.MC3DPrint;
 import com.pgmacdesign.mc3dprint.fu.FuValueRegistry;
+import com.pgmacdesign.mc3dprint.machine.multiblock.MultiblockPattern;
+import com.pgmacdesign.mc3dprint.registry.ModCreativeTabs;
 import com.pgmacdesign.mc3dprint.registry.ModItems;
 import mezz.jei.api.IModPlugin;
 import mezz.jei.api.JeiPlugin;
+import mezz.jei.api.constants.VanillaTypes;
 import mezz.jei.api.registration.IRecipeCatalystRegistration;
 import mezz.jei.api.registration.IRecipeCategoryRegistration;
 import mezz.jei.api.registration.IRecipeRegistration;
+import mezz.jei.api.runtime.IJeiRuntime;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
+import net.minecraftforge.fml.ModList;
 import net.minecraftforge.registries.ForgeRegistries;
 
 import java.util.ArrayList;
@@ -45,6 +50,22 @@ public class MC3DPrintJeiPlugin implements IModPlugin {
                     entries.add(new PrintRecipeCategory.PrintEntry(stack, value.fu(), value.tier())));
         });
         registration.addRecipes(PrintRecipeCategory.TYPE, entries);
+    }
+
+    /** Mirror the creative-tab gating: hide T8 content without DE, converter without AE2. */
+    @Override
+    public void onRuntimeAvailable(IJeiRuntime runtime) {
+        java.util.List<ItemStack> hidden = new ArrayList<>();
+        if (!ModList.get().isLoaded(MultiblockPattern.DRACONIC_MOD_ID)) {
+            hidden.add(new ItemStack(ModItems.FABRICATORS.get(3).get()));
+            hidden.add(new ItemStack(ModItems.SPOOLS.get(7).get()));
+        }
+        if (!ModList.get().isLoaded(ModCreativeTabs.AE2_MOD_ID)) {
+            hidden.add(new ItemStack(ModItems.FILAMENT_CONVERTER.get()));
+        }
+        if (!hidden.isEmpty()) {
+            runtime.getIngredientManager().removeIngredientsAtRuntime(VanillaTypes.ITEM_STACK, hidden);
+        }
     }
 
     @Override

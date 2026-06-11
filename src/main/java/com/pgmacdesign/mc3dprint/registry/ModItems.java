@@ -58,6 +58,15 @@ public final class ModItems {
             () -> new com.pgmacdesign.mc3dprint.machine.RemoteTerminalBlock.TerminalBlockItem(
                     ModBlocks.REMOTE_TERMINAL.get(), new Item.Properties()));
 
+    public static final RegistryObject<Item> CLOCK_GENERATOR = ITEMS.register("clock_generator",
+            () -> new BlockItem(ModBlocks.CLOCK_GENERATOR.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> CREATIVE_ENERGY_SOURCE = ITEMS.register("creative_energy_source",
+            () -> new BlockItem(ModBlocks.CREATIVE_ENERGY_SOURCE.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> CREATIVE_SPOOL = ITEMS.register("creative_filament_spool",
+            () -> new com.pgmacdesign.mc3dprint.fu.CreativeSpoolItem(new Item.Properties()));
+
     public static final RegistryObject<Item> PRINTITE_ORE = ITEMS.register("printite_ore",
             () -> new BlockItem(ModBlocks.PRINTITE_ORE.get(), new Item.Properties()));
 

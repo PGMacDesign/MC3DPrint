@@ -30,6 +30,16 @@ public final class ModBlockEntities {
                     BlockEntityType.Builder.of(com.pgmacdesign.mc3dprint.machine.RemoteTerminalBlock.TerminalBlockEntity::new,
                             ModBlocks.REMOTE_TERMINAL.get()).build(null));
 
+    public static final RegistryObject<BlockEntityType<com.pgmacdesign.mc3dprint.machine.ClockGeneratorBlockEntity>> CLOCK_GENERATOR =
+            BLOCK_ENTITIES.register("clock_generator", () ->
+                    BlockEntityType.Builder.of(com.pgmacdesign.mc3dprint.machine.ClockGeneratorBlockEntity::new,
+                            ModBlocks.CLOCK_GENERATOR.get()).build(null));
+
+    public static final RegistryObject<BlockEntityType<com.pgmacdesign.mc3dprint.machine.CreativeEnergyBlockEntity>> CREATIVE_ENERGY_SOURCE =
+            BLOCK_ENTITIES.register("creative_energy_source", () ->
+                    BlockEntityType.Builder.of(com.pgmacdesign.mc3dprint.machine.CreativeEnergyBlockEntity::new,
+                            ModBlocks.CREATIVE_ENERGY_SOURCE.get()).build(null));
+
     public static final RegistryObject<BlockEntityType<WinderBlockEntity>> FILAMENT_WINDER =
             BLOCK_ENTITIES.register("filament_winder", () ->
                     BlockEntityType.Builder.of(WinderBlockEntity::new,

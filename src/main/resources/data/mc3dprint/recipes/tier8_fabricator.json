@@ -1,23 +1,36 @@
 {
-  "type": "minecraft:crafting_shaped",
-  "pattern": [
-    "NEN",
-    "EFE",
-    "NEN"
-  ],
-  "key": {
-    "N": {
-      "item": "minecraft:nether_star"
-    },
-    "E": {
-      "item": "minecraft:dragon_egg"
-    },
-    "F": {
-      "item": "mc3dprint:tier7_fabricator"
+  "type": "forge:conditional",
+  "recipes": [
+    {
+      "conditions": [
+        {
+          "type": "forge:mod_loaded",
+          "modid": "draconicevolution"
+        }
+      ],
+      "recipe": {
+        "type": "minecraft:crafting_shaped",
+        "pattern": [
+          "NEN",
+          "EFE",
+          "NEN"
+        ],
+        "key": {
+          "N": {
+            "item": "minecraft:nether_star"
+          },
+          "E": {
+            "item": "minecraft:dragon_egg"
+          },
+          "F": {
+            "item": "mc3dprint:tier7_fabricator"
+          }
+        },
+        "result": {
+          "item": "mc3dprint:tier8_fabricator",
+          "count": 1
+        }
+      }
     }
-  },
-  "result": {
-    "item": "mc3dprint:tier8_fabricator",
-    "count": 1
-  }
+  ]
 }

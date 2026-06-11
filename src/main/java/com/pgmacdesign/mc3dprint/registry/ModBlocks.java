@@ -47,6 +47,14 @@ public final class ModBlocks {
     public static final RegistryObject<Block> REMOTE_TERMINAL = BLOCKS.register("remote_terminal",
             () -> new com.pgmacdesign.mc3dprint.machine.RemoteTerminalBlock(machineProperties()));
 
+    /** Free trickle generator so the mod works with no other RF mod installed. */
+    public static final RegistryObject<Block> CLOCK_GENERATOR = BLOCKS.register("clock_generator",
+            () -> new com.pgmacdesign.mc3dprint.machine.ClockGeneratorBlock(machineProperties()));
+
+    /** Creative-only infinite RF source (no recipe). */
+    public static final RegistryObject<Block> CREATIVE_ENERGY_SOURCE = BLOCKS.register("creative_energy_source",
+            () -> new com.pgmacdesign.mc3dprint.machine.CreativeEnergyBlock(machineProperties()));
+
     /** End-only ore for T5+ machine components (name placeholder per design doc). */
     public static final RegistryObject<Block> PRINTITE_ORE = BLOCKS.register("printite_ore",
             () -> new Block(BlockBehaviour.Properties.of()

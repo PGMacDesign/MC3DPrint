@@ -1,14 +1,18 @@
 package com.pgmacdesign.mc3dprint.registry;
 
 import com.pgmacdesign.mc3dprint.MC3DPrint;
+import com.pgmacdesign.mc3dprint.machine.multiblock.MultiblockPattern;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.ItemStack;
+import net.minecraftforge.fml.ModList;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.RegistryObject;
 
 public final class ModCreativeTabs {
+    public static final String AE2_MOD_ID = "ae2";
+
     public static final DeferredRegister<CreativeModeTab> CREATIVE_MODE_TABS =
             DeferredRegister.create(Registries.CREATIVE_MODE_TAB, MC3DPrint.MOD_ID);
 
@@ -17,22 +21,39 @@ public final class ModCreativeTabs {
                     .title(Component.translatable("itemGroup.mc3dprint"))
                     .icon(() -> new ItemStack(ModItems.TIER1_PRINTER.get()))
                     .displayItems((parameters, output) -> {
+                        // T8 content only shows with Draconic Evolution; converter only with AE2
+                        boolean draconic = ModList.get().isLoaded(MultiblockPattern.DRACONIC_MOD_ID);
+                        boolean ae2 = ModList.get().isLoaded(AE2_MOD_ID);
+
                         ModItems.PRINTERS.forEach(printer -> output.accept(printer.get()));
-                        ModItems.FABRICATORS.forEach(fabricator -> output.accept(fabricator.get()));
+                        for (int i = 0; i < ModItems.FABRICATORS.size(); i++) {
+                            if (draconic || i + 5 < 8) {
+                                output.accept(ModItems.FABRICATORS.get(i).get());
+                            }
+                        }
                         output.accept(ModItems.PRINTER_CASING.get());
                         ModItems.WINDERS.forEach(winder -> output.accept(winder.get()));
-                        output.accept(ModItems.FILAMENT_CONVERTER.get());
+                        output.accept(ModItems.CLOCK_GENERATOR.get());
+                        if (ae2) {
+                            output.accept(ModItems.FILAMENT_CONVERTER.get());
+                        }
                         output.accept(ModItems.REMOTE_TERMINAL.get());
                         output.accept(ModItems.BLANK_BLUEPRINT_DISC.get());
                         output.accept(ModItems.BLUEPRINT_DISC.get());
                         output.accept(ModItems.SCANNER.get());
-                        ModItems.SPOOLS.forEach(spool -> output.accept(spool.get()));
+                        for (int i = 0; i < ModItems.SPOOLS.size(); i++) {
+                            if (draconic || i + 1 < 8) {
+                                output.accept(ModItems.SPOOLS.get(i).get());
+                            }
+                        }
                         output.accept(ModItems.PRINTITE_ORE.get());
                         output.accept(ModItems.PRINTITE_CRYSTAL.get());
                         output.accept(ModItems.SPEED_UPGRADE.get());
                         output.accept(ModItems.EFFICIENCY_UPGRADE.get());
                         output.accept(ModItems.RF_EFFICIENCY_UPGRADE.get());
                         output.accept(ModItems.BUFFER_UPGRADE.get());
+                        output.accept(ModItems.CREATIVE_ENERGY_SOURCE.get());
+                        output.accept(ModItems.CREATIVE_SPOOL.get());
                     })
                     .build());
 

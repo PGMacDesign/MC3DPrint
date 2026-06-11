@@ -28,6 +28,7 @@ public final class MC3DPrintConfig {
     public static final ForgeConfigSpec.IntValue WINDER_TICKS_PER_ITEM;
     public static final ForgeConfigSpec.IntValue WINDER_ENERGY_BUFFER;
     public static final ForgeConfigSpec.IntValue WINDER_MAX_ENERGY_RECEIVE;
+    public static final ForgeConfigSpec.IntValue CLOCK_GENERATOR_RF_PER_TICK;
     public static final ForgeConfigSpec.IntValue PRINT_HISTORY_SIZE;
     public static final ForgeConfigSpec.IntValue UNKNOWN_BLOCK_FU;
     public static final ForgeConfigSpec.ConfigValue<List<? extends String>> FU_VALUES;
@@ -79,6 +80,9 @@ public final class MC3DPrintConfig {
         builder.pop();
 
         builder.comment("General").push("general");
+        CLOCK_GENERATOR_RF_PER_TICK = builder
+                .comment("RF generated per tick by the Clock Generator (free fallback power)")
+                .defineInRange("clockGeneratorRfPerTick", 10, 1, Integer.MAX_VALUE);
         PRINT_HISTORY_SIZE = builder
                 .comment("Entries kept in each printer's job history log")
                 .defineInRange("printHistorySize", 10, 0, 100);

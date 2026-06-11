@@ -40,20 +40,28 @@ public class SpoolItem extends Item {
         return CAPACITY_BY_TIER[tier - 1];
     }
 
+    /** Creative spools are always full and never deplete. */
+    public boolean creative() {
+        return false;
+    }
+
     public static int getFu(ItemStack stack) {
+        if (stack.getItem() instanceof SpoolItem spool && spool.creative()) {
+            return spool.capacity();
+        }
         return stack.getTag() != null ? stack.getTag().getInt(TAG_FU) : 0;
     }
 
     public static void setFu(ItemStack stack, int fu) {
-        if (stack.getItem() instanceof SpoolItem spool) {
+        if (stack.getItem() instanceof SpoolItem spool && !spool.creative()) {
             stack.getOrCreateTag().putInt(TAG_FU, Mth.clamp(fu, 0, spool.capacity()));
         }
     }
 
     /** Adds up to {@code amount} FU; returns how much was actually stored. */
     public static int fill(ItemStack stack, int amount) {
-        if (!(stack.getItem() instanceof SpoolItem spool)) {
-            return 0;
+        if (!(stack.getItem() instanceof SpoolItem spool) || spool.creative()) {
+            return 0; // creative spools report no room, so winders never wind into them
         }
         int current = getFu(stack);
         int added = Math.min(amount, spool.capacity() - current);
@@ -65,6 +73,9 @@ public class SpoolItem extends Item {
 
     /** Drains up to {@code amount} FU; returns how much was actually drained. */
     public static int drain(ItemStack stack, int amount) {
+        if (stack.getItem() instanceof SpoolItem spool && spool.creative()) {
+            return amount;
+        }
         int current = getFu(stack);
         int drained = Math.min(amount, current);
         if (drained > 0) {
