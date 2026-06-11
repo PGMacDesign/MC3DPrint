@@ -117,6 +117,17 @@ The keystone — everything else consumes this. Pure logic, testable without a r
 - [x] Gate T8 fabricator + T8 spool behind Draconic Evolution (creative tab, JEI, recipes via `forge:conditional`)
 - [x] Gate Filament Converter behind AE2 (creative tab, JEI, recipe) — *note: converter also works with plain chests/RS; easy to un-gate if that's wanted later*
 
+## Audit Findings (2026-06-11) — see [AUDIT-2026-06-11.md](AUDIT-2026-06-11.md)
+
+Requirements from the original design doc that were rewritten/dropped without a record during the autonomous build:
+
+- [ ] Advancements: add *First Extrusion*, *Fabricator*, *Found in the Wild*; fix *Matter Matters* trigger (spec: convert 1,000 FU) and *Architect* (spec: first scan) — needs custom criteria triggers
+- [ ] Patchouli: auto-give on first printer craft (now unblocked — recipes exist); add I/O, blueprint-format, and upgrades entries per spec'd scope
+- [ ] Upgrade modifier rates → config (spec: "all modifier rates exposed in config"; currently hardcoded)
+- [ ] Tiered upgrade items (spec: "T1 Speed Upgrade vs. T5 Speed Upgrade") — **scope decision needed**
+- [ ] FU table: add concrete family @ 5 FU; decide nugget handling (×9 rule unrepresentable in integer per-item FU)
+- [ ] I/O: spec says sides are spool-exclusive (no output); shipped sides as extract-only output — **product call needed** (enforce or amend doc deliberately)
+
 ## Open Decisions
 
 - [x] Blueprint storage: ✅ file store + disc reference (see M1)
