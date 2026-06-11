@@ -19,16 +19,22 @@ public final class PrintJob {
     private final String blueprintName;
     private final BlockPos origin; // world position of the oriented min corner
     private final PrintOrientation orientation;
+    private final BlockPos size;   // oriented volume size (renderer + zone math without the blueprint)
     private final int totalBlocks;
     private int placed;
 
     public PrintJob(UUID blueprintId, String blueprintName, BlockPos origin,
-                    PrintOrientation orientation, int totalBlocks) {
+                    PrintOrientation orientation, BlockPos size, int totalBlocks) {
         this.blueprintId = blueprintId;
         this.blueprintName = blueprintName;
         this.origin = origin;
         this.orientation = orientation;
+        this.size = size;
         this.totalBlocks = totalBlocks;
+    }
+
+    public BlockPos size() {
+        return size;
     }
 
     public UUID blueprintId() {
@@ -70,6 +76,7 @@ public final class PrintJob {
         tag.put("Origin", NbtUtils.writeBlockPos(origin));
         tag.putByte("Rotation", (byte) orientation.rotation().ordinal());
         tag.putByte("Mirror", (byte) orientation.mirror().ordinal());
+        tag.put("JobSize", NbtUtils.writeBlockPos(size));
         tag.putInt("Total", totalBlocks);
         tag.putInt("Placed", placed);
         return tag;
@@ -83,6 +90,7 @@ public final class PrintJob {
                 new PrintOrientation(
                         Rotation.values()[Math.floorMod(tag.getByte("Rotation"), Rotation.values().length)],
                         Mirror.values()[Math.floorMod(tag.getByte("Mirror"), Mirror.values().length)]),
+                NbtUtils.readBlockPos(tag.getCompound("JobSize")),
                 tag.getInt("Total"));
         job.placed = tag.getInt("Placed");
         return job;

@@ -76,13 +76,13 @@ The keystone — everything else consumes this. Pure logic, testable without a r
 - [x] Upgrade system: Speed/Efficiency/RF Efficiency/Buffer, multiplicative stacking, slots = tier *(Matter Density deferred — needs input-side mechanics; slot-grid GUI → M7 GUI pass)*
 - [x] T8 Draconic gate (soft dep: formation requires DE + Awakened Draconium corners)
 
-## M7 — Visuals & Feel
+## M7 — Visuals & Feel ✅ *(needs eyes-on runClient pass; 2 deferrals)*
 
-- [ ] Structural frame render around print volume
-- [ ] X/Y gantry arms + print head animation (FDM-style, speed scales with tier/upgrades)
-- [ ] Zap/beam effect + block materialization, particle trail, per-block sound
-- [ ] Spool spin animation on machine exterior; GUI FU fill bars
-- [ ] Print completion effect *(stretch)*; hologram idle animation *(stretch)*
+- [x] Structural frame render around print volume (line/hologram style)
+- [x] X/Y gantry arms + print head animation (rides last placement; speed follows tier/upgrade cadence) — *solid modeled geometry is a later polish pass*
+- [x] Zap/beam effect + block materialization, spark particles, per-block sound
+- [ ] Spool spin animation on machine exterior — *deferred (needs custom block models)*; GUI FU fill bars ✅ (M5)
+- [x] Print completion effect (firework burst + chime); hologram idle animation *(stretch, deferred)*
 
 ## M8 — v1 Integrations
 

@@ -131,6 +131,8 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
 
     private State state = State.IDLE;
     private boolean collapsing;
+    @Nullable
+    private BlockPos lastPlacedPos; // synced; drives the print head + beam render
 
     private record PlacementEntry(BlockPos local, int paletteIndex) {}
 
@@ -475,6 +477,15 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             }
             energy.consume(rfPerBlock);
             drainFu(fuCost);
+
+            // zap: the head fires a beam and the block materializes
+            serverLevel.sendParticles(net.minecraft.core.particles.ParticleTypes.ELECTRIC_SPARK,
+                    worldPos.getX() + 0.5, worldPos.getY() + 0.5, worldPos.getZ() + 0.5,
+                    8, 0.3, 0.3, 0.3, 0.02);
+            serverLevel.playSound(null, worldPos, net.minecraft.sounds.SoundEvents.AMETHYST_BLOCK_PLACE,
+                    net.minecraft.sounds.SoundSource.BLOCKS, 0.6F, 1.4F);
+            lastPlacedPos = worldPos.immutable();
+            syncToClients();
         }
 
         activeJob.setPlaced(activeJob.placed() + 1);
@@ -532,13 +543,14 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             return;
         }
 
-        activeJob = new PrintJob(blueprintId, blueprint.name(), origin, orientation, blueprint.blockCount());
+        activeJob = new PrintJob(blueprintId, blueprint.name(), origin, orientation, size, blueprint.blockCount());
         cachedBlueprint = blueprint;
         placementOrder = buildPlacementOrder(blueprint);
         placementCooldown = 0;
         forceChunks(serverLevel, box, true);
         state = State.PRINTING;
         setChanged();
+        syncToClients();
     }
 
     private boolean isAreaClear(ServerLevel serverLevel, Blueprint blueprint,
@@ -562,14 +574,27 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             return;
         }
         recordHistory(activeJob);
+
+        // print completion effect — the "done" moment should feel good
+        BlockPos size = activeJob.size();
+        serverLevel.sendParticles(net.minecraft.core.particles.ParticleTypes.FIREWORK,
+                activeJob.origin().getX() + size.getX() / 2.0,
+                activeJob.origin().getY() + size.getY() + 0.5,
+                activeJob.origin().getZ() + size.getZ() / 2.0,
+                40, size.getX() / 3.0, 0.5, size.getZ() / 3.0, 0.05);
+        serverLevel.playSound(null, worldPosition, net.minecraft.sounds.SoundEvents.PLAYER_LEVELUP,
+                net.minecraft.sounds.SoundSource.BLOCKS, 0.8F, 1.0F);
+
         releaseJobResources(serverLevel);
         inventory.setStackInSlot(SLOT_OUTPUT, disc.copy());
         inventory.setStackInSlot(SLOT_TEMPLATE, ItemStack.EMPTY);
         activeJob = null;
         cachedBlueprint = null;
         placementOrder = null;
+        lastPlacedPos = null;
         state = State.IDLE;
         setChanged();
+        syncToClients();
     }
 
     public void cancelActiveJob() {
@@ -580,7 +605,9 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         cachedBlueprint = null;
         placementOrder = null;
         placementCooldown = 0;
+        lastPlacedPos = null;
         setChanged();
+        syncToClients();
     }
 
     private void releaseJobResources(ServerLevel serverLevel) {
@@ -591,9 +618,7 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
     }
 
     private BoundingBox jobBox() {
-        Blueprint bp = cachedBlueprint;
-        PrintOrientation orientation = activeJob.orientation();
-        BlockPos size = orientation.transformedSize(bp.sizeX(), bp.sizeY(), bp.sizeZ());
+        BlockPos size = activeJob.size();
         return BoundingBox.fromCorners(activeJob.origin(),
                 activeJob.origin().offset(size.getX() - 1, size.getY() - 1, size.getZ() - 1));
     }
@@ -666,9 +691,69 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
     public void onLoad() {
         super.onLoad();
         // re-claim zone + chunk tickets for a job restored from disk
-        if (activeJob != null && level instanceof ServerLevel serverLevel && ensureBlueprintLoaded(serverLevel)) {
+        if (activeJob != null && level instanceof ServerLevel serverLevel) {
             PrintZoneManager.claim(serverLevel, worldPosition, jobBox());
             forceChunks(serverLevel, jobBox(), true);
+        }
+    }
+
+    // --- Client sync (renderer needs the active job + last placement) ---
+
+    @Nullable
+    public BlockPos lastPlacedPos() {
+        return lastPlacedPos;
+    }
+
+    @Override
+    public CompoundTag getUpdateTag() {
+        CompoundTag tag = new CompoundTag();
+        if (activeJob != null) {
+            tag.put("ActiveJob", activeJob.save());
+        }
+        if (lastPlacedPos != null) {
+            tag.put("LastPlaced", net.minecraft.nbt.NbtUtils.writeBlockPos(lastPlacedPos));
+        }
+        tag.putInt("State", state.ordinal());
+        return tag;
+    }
+
+    @Override
+    public void handleUpdateTag(CompoundTag tag) {
+        activeJob = tag.contains("ActiveJob", Tag.TAG_COMPOUND) ? PrintJob.load(tag.getCompound("ActiveJob")) : null;
+        lastPlacedPos = tag.contains("LastPlaced", Tag.TAG_COMPOUND)
+                ? net.minecraft.nbt.NbtUtils.readBlockPos(tag.getCompound("LastPlaced")) : null;
+        state = State.byOrdinal(tag.getInt("State"));
+    }
+
+    @Nullable
+    @Override
+    public net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket getUpdatePacket() {
+        return net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket.create(this,
+                be -> ((PrinterBlockEntity) be).getUpdateTag());
+    }
+
+    @Override
+    public void onDataPacket(net.minecraft.network.Connection connection,
+                             net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket packet) {
+        if (packet.getTag() != null) {
+            handleUpdateTag(packet.getTag());
+        }
+    }
+
+    @Override
+    public net.minecraft.world.phys.AABB getRenderBoundingBox() {
+        if (activeJob != null) {
+            BlockPos size = activeJob.size();
+            return new net.minecraft.world.phys.AABB(activeJob.origin(),
+                    activeJob.origin().offset(size.getX(), size.getY(), size.getZ()))
+                    .minmax(new net.minecraft.world.phys.AABB(worldPosition));
+        }
+        return super.getRenderBoundingBox();
+    }
+
+    private void syncToClients() {
+        if (level != null && !level.isClientSide) {
+            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), Block.UPDATE_CLIENTS);
         }
     }
 
