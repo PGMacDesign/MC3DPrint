@@ -9,6 +9,8 @@ status: active
 
 A tech mod centered on a tiered 3D Printing Machine capable of fabricating items, tools, and entire structures. The core fantasy: *WorldEdit for survival mode players.* Scan a building, save it as a blueprint, print it anywhere — no commands required.
 
+**Target platform: Minecraft 1.20.1 / Forge** ✅ *(locked 2026-06-10 — all integration targets verified available on Forge 1.20.1)*
+
 ---
 
 ## Table of Contents
@@ -303,15 +305,20 @@ All controls in one clean interface:
 
 Soft dependencies only — mod works standalone, integrations activate when the target mod is present.
 
-| Mod | Integration |
-|-----|-------------|
-| **Applied Energistics 2** | Pull matter directly from ME network; store blueprint discs in ME storage; trigger prints via AE2 autocrafting *(top priority)*; **Filament Unit Converter** (see below) |
-| **Draconic Evolution** | Unlocks Tier 8 machine via Awakened Draconium; DE energy system support |
-| **Refined Storage** | Network-driven matter sourcing, same pattern as AE2 |
-| **Thermal Expansion** | RF compatibility; shared augment/upgrade language |
-| **Mekanism** | RF/energy compatibility; pipe input for matter feed |
-| **EnderIO** | Conduit compatibility for I/O automation |
-| **BuildCraft** | Quarry-style animation inspiration; potential blueprint format crossover |
+All integration targets verified on Forge 1.20.1 (June 2026):
+
+| Mod | 1.20.1 Build | Integration |
+|-----|--------------|-------------|
+| **Applied Energistics 2** | 15.4.x | Pull matter directly from ME network; store blueprint discs in ME storage; trigger prints via AE2 autocrafting *(top priority)*; **Filament Unit Converter** (see below) |
+| **Draconic Evolution** | 3.1.2.x | Unlocks Tier 8 machine via Awakened Draconium; DE energy system support |
+| **Refined Storage** | v1.12.x | Network-driven matter sourcing, same pattern as AE2. **Target the RS1 API** — RS 2.0 is a separate codebase on newer MC versions |
+| **Thermal Expansion** | 11.0.x | RF compatibility; shared augment/upgrade language |
+| **Mekanism** | 10.4.x | RF/energy compatibility; pipe input for matter feed |
+| **EnderIO** | 6.2.x-beta | Conduit compatibility for I/O automation. ⚠️ Beta on 1.20.1 — lower priority; standard capability I/O should cover it without dedicated code |
+| **Patchouli** | 1.20.1-85 | In-game guidebook (see Community section) |
+| **JEI** | 15.20.x | Recipe integration (see Community section) |
+
+> **BuildCraft** — dropped from the integration list. No 1.20.x port exists (1.12.2 was its last era). It remains *animation inspiration only* for the quarry-style print head.
 
 *More mods to evaluate — Patrick will provide a full list.*
 
@@ -413,10 +420,11 @@ Specialty rare blueprints hidden in high-tier loot:
 - Covers: tier progression, matter system, scanner usage, I/O setup, enhancements, blueprint format
 - Standard for well-regarded tech mods — sets a professional tone and reduces support burden
 
-### JEI / REI Integration
+### JEI Integration
 - Custom "3D Printer Recipes" category showing: item, matter cost, RF cost, required tier
 - Blueprint disc contents browsable as recipes
 - Non-negotiable — players expect it and will complain loudly if it's absent
+- JEI only — REI is Fabric-focused; on Forge 1.20.1, JEI is the standard
 
 ### Custom Advancement Tree
 - Dedicated tab with a full progression tree as a built-in roadmap
@@ -453,6 +461,7 @@ Start conservative — easier to buff than nerf post-release. All values exposed
 *Heavy revision expected during playtesting.*
 
 ### Locked Design Decisions
+- ✅ Minecraft 1.20.1 / Forge — all integration targets verified on this version
 - ✅ No machine durability — permanent investments, not maintenance
 - ✅ No tier-up matter conversion — prevents cobblestone farm exploits
 - ✅ Soft dependencies only — standalone mod, integrations are bonuses
@@ -473,7 +482,7 @@ Start conservative — easier to buff than nerf post-release. All values exposed
 
 ## Open Questions
 
-- **Mod loader:** ✅ Forge only for now — but architect the codebase to avoid locking out Fabric/Architectury in the future. Don't use Forge-only APIs where a cross-platform abstraction exists. Future-proof without building for two platforms today.
+- **Mod loader & version:** ✅ **Minecraft 1.20.1, Forge only** — 1.20.1 is the modpack-standard version where every integration target overlaps (including Draconic Evolution, the usual deal-breaker). Architect the codebase to avoid locking out Fabric/Architectury in the future. Don't use Forge-only APIs where a cross-platform abstraction exists. Future-proof without building for two platforms today.
 - **Blueprint file format:** NBT schematics, JSON, or custom `.blueprint` format?
 - **Print area:** ✅ Must be pre-cleared — the printer cannot replace existing blocks. Players are responsible for clearing the space before printing.
 - **Mod list:** Patrick to provide full list of favorite mods for compatibility evaluation and T8 tier candidates
