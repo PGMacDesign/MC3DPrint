@@ -65,6 +65,7 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
     public static final int SLOT_OUTPUT = 1;
     public static final int SLOT_COUNT = 2;
 
+    // Logical container-data indices; synced split into shorts (see SplitContainerData)
     public static final int DATA_PROGRESS = 0;
     public static final int DATA_MAX_PROGRESS = 1;
     public static final int DATA_ENERGY = 2;
@@ -73,7 +74,9 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
     public static final int DATA_FU = 5;
     public static final int DATA_FU_CAP = 6;
     public static final int DATA_TEMPLATE_COST = 7;
-    public static final int DATA_COUNT = 8;
+    public static final int DATA_SPOOLS_USED = 8;
+    public static final int DATA_SPOOL_SLOTS = 9;
+    public static final int DATA_COUNT = 10;
 
     public enum State {
         IDLE, PRINTING, PAUSED_NO_POWER, PAUSED_OUTPUT_FULL, PAUSED_OBSTRUCTED, ZONE_CONFLICT,
@@ -766,36 +769,33 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
     }
 
     public ContainerData containerData() {
-        return new ContainerData() {
-            @Override
-            public int get(int index) {
-                return switch (index) {
-                    case DATA_PROGRESS -> activeJob != null ? activeJob.placed() : itemProgress;
-                    case DATA_MAX_PROGRESS -> activeJob != null ? Math.max(1, activeJob.totalBlocks()) : maxProgress();
-                    case DATA_ENERGY -> energy.getEnergyStored();
-                    case DATA_MAX_ENERGY -> energy.getMaxEnergyStored();
-                    case DATA_STATE -> state.ordinal();
-                    case DATA_FU -> totalFu();
-                    case DATA_FU_CAP -> fuCapacity();
-                    case DATA_TEMPLATE_COST -> {
-                        ItemStack template = inventory.getStackInSlot(SLOT_TEMPLATE);
-                        yield activeJob == null && !template.isEmpty() ? Math.max(0, itemFuCost(template)) : 0;
+        return new SplitContainerData(DATA_COUNT, this::dataValue);
+    }
+
+    private int dataValue(int index) {
+        return switch (index) {
+            case DATA_PROGRESS -> activeJob != null ? activeJob.placed() : itemProgress;
+            case DATA_MAX_PROGRESS -> activeJob != null ? Math.max(1, activeJob.totalBlocks()) : maxProgress();
+            case DATA_ENERGY -> energy.getEnergyStored();
+            case DATA_MAX_ENERGY -> energy.getMaxEnergyStored();
+            case DATA_STATE -> state.ordinal();
+            case DATA_FU -> totalFu();
+            case DATA_FU_CAP -> fuCapacity();
+            case DATA_TEMPLATE_COST -> {
+                ItemStack template = inventory.getStackInSlot(SLOT_TEMPLATE);
+                yield activeJob == null && !template.isEmpty() ? Math.max(0, itemFuCost(template)) : 0;
+            }
+            case DATA_SPOOLS_USED -> {
+                int used = 0;
+                for (int i = 0; i < spools.getSlots(); i++) {
+                    if (!spools.getStackInSlot(i).isEmpty()) {
+                        used++;
                     }
-                    default -> 0;
-                };
-            }
-
-            @Override
-            public void set(int index, int value) {
-                if (index == DATA_PROGRESS) {
-                    itemProgress = value;
                 }
+                yield used;
             }
-
-            @Override
-            public int getCount() {
-                return DATA_COUNT;
-            }
+            case DATA_SPOOL_SLOTS -> spools.getSlots();
+            default -> 0;
         };
     }
 

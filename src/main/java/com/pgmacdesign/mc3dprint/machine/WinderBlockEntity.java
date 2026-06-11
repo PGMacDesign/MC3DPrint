@@ -119,32 +119,19 @@ public class WinderBlockEntity extends BlockEntity implements MenuProvider {
     }
 
     public ContainerData containerData() {
-        return new ContainerData() {
-            @Override
-            public int get(int index) {
-                ItemStack spool = inventory.getStackInSlot(SLOT_SPOOL);
-                return switch (index) {
-                    case DATA_PROGRESS -> progress;
-                    case DATA_MAX_PROGRESS -> MC3DPrintConfig.WINDER_TICKS_PER_ITEM.get();
-                    case DATA_ENERGY -> energy.getEnergyStored();
-                    case DATA_MAX_ENERGY -> energy.getMaxEnergyStored();
-                    case DATA_SPOOL_FU -> SpoolItem.getFu(spool);
-                    case DATA_SPOOL_CAP -> spool.getItem() instanceof SpoolItem s ? s.capacity() : 0;
-                    default -> 0;
-                };
-            }
+        return new SplitContainerData(DATA_COUNT, this::dataValue);
+    }
 
-            @Override
-            public void set(int index, int value) {
-                if (index == DATA_PROGRESS) {
-                    progress = value;
-                }
-            }
-
-            @Override
-            public int getCount() {
-                return DATA_COUNT;
-            }
+    private int dataValue(int index) {
+        ItemStack spool = inventory.getStackInSlot(SLOT_SPOOL);
+        return switch (index) {
+            case DATA_PROGRESS -> progress;
+            case DATA_MAX_PROGRESS -> MC3DPrintConfig.WINDER_TICKS_PER_ITEM.get();
+            case DATA_ENERGY -> energy.getEnergyStored();
+            case DATA_MAX_ENERGY -> energy.getMaxEnergyStored();
+            case DATA_SPOOL_FU -> SpoolItem.getFu(spool);
+            case DATA_SPOOL_CAP -> spool.getItem() instanceof SpoolItem s ? s.capacity() : 0;
+            default -> 0;
         };
     }
 

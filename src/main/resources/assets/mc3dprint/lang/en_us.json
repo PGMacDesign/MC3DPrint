@@ -120,5 +120,8 @@
   "message.mc3dprint.generator_not_fuel": "Not a furnace fuel",
   "message.mc3dprint.generator_status": "Burn: ~%s min remaining — Buffer: %s RF",
   "tooltip.mc3dprint.creative_energy": "Unlimited RF to adjacent machines (creative only)",
-  "tooltip.mc3dprint.spool_creative": "∞ FU — never depletes (creative only)"
+  "tooltip.mc3dprint.spool_creative": "∞ FU — never depletes (creative only)",
+  "gui.mc3dprint.spools": "Spools %s/%s",
+  "tooltip.mc3dprint.spools_docked": "%s of %s spools docked",
+  "tooltip.mc3dprint.fu_no_spools": "Shift+Click a spool here to dock it (or sneak-use the printer with one)"
 }

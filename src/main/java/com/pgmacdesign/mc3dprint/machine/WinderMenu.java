@@ -22,13 +22,20 @@ public class WinderMenu extends AbstractContainerMenu {
     private final ContainerData data;
 
     public WinderMenu(int windowId, Inventory playerInventory, FriendlyByteBuf buf) {
-        this(windowId, playerInventory, clientBlockEntity(playerInventory, buf));
+        this(windowId, playerInventory, clientBlockEntity(playerInventory, buf),
+                new SimpleContainerData(SplitContainerData.slotCount(WinderBlockEntity.DATA_COUNT)));
     }
 
     public WinderMenu(int windowId, Inventory playerInventory, @Nullable WinderBlockEntity winder) {
+        this(windowId, playerInventory, winder, winder != null ? winder.containerData()
+                : new SimpleContainerData(SplitContainerData.slotCount(WinderBlockEntity.DATA_COUNT)));
+    }
+
+    private WinderMenu(int windowId, Inventory playerInventory, @Nullable WinderBlockEntity winder,
+                       ContainerData data) {
         super(ModMenuTypes.FILAMENT_WINDER.get(), windowId);
         this.winder = winder;
-        this.data = winder != null ? winder.containerData() : new SimpleContainerData(WinderBlockEntity.DATA_COUNT);
+        this.data = data;
 
         IItemHandler inventory = winder != null ? winder.inventory() : new ItemStackHandler(WinderBlockEntity.SLOT_COUNT);
         addSlot(new SlotItemHandler(inventory, WinderBlockEntity.SLOT_INPUT, 53, 35));
@@ -58,27 +65,27 @@ public class WinderMenu extends AbstractContainerMenu {
     }
 
     public int progress() {
-        return data.get(WinderBlockEntity.DATA_PROGRESS);
+        return SplitContainerData.combine(data, WinderBlockEntity.DATA_PROGRESS);
     }
 
     public int maxProgress() {
-        return Math.max(1, data.get(WinderBlockEntity.DATA_MAX_PROGRESS));
+        return Math.max(1, SplitContainerData.combine(data, WinderBlockEntity.DATA_MAX_PROGRESS));
     }
 
     public int energy() {
-        return data.get(WinderBlockEntity.DATA_ENERGY);
+        return SplitContainerData.combine(data, WinderBlockEntity.DATA_ENERGY);
     }
 
     public int maxEnergy() {
-        return Math.max(1, data.get(WinderBlockEntity.DATA_MAX_ENERGY));
+        return Math.max(1, SplitContainerData.combine(data, WinderBlockEntity.DATA_MAX_ENERGY));
     }
 
     public int spoolFu() {
-        return data.get(WinderBlockEntity.DATA_SPOOL_FU);
+        return SplitContainerData.combine(data, WinderBlockEntity.DATA_SPOOL_FU);
     }
 
     public int spoolCapacity() {
-        return data.get(WinderBlockEntity.DATA_SPOOL_CAP);
+        return SplitContainerData.combine(data, WinderBlockEntity.DATA_SPOOL_CAP);
     }
 
     @Override

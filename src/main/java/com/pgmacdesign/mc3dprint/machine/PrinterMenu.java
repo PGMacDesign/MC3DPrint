@@ -1,5 +1,6 @@
 package com.pgmacdesign.mc3dprint.machine;
 
+import com.pgmacdesign.mc3dprint.fu.SpoolItem;
 import com.pgmacdesign.mc3dprint.registry.ModMenuTypes;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.entity.player.Inventory;
@@ -13,6 +14,7 @@ import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.ItemStackHandler;
 import net.minecraftforge.items.SlotItemHandler;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 public class PrinterMenu extends AbstractContainerMenu {
@@ -25,22 +27,35 @@ public class PrinterMenu extends AbstractContainerMenu {
     private final PrinterBlockEntity printer;
     private final ContainerData data;
 
-    /** Client constructor (from network). */
+    /** Client constructor (from network). Data arrives via vanilla sync into the SimpleContainerData. */
     public PrinterMenu(int windowId, Inventory playerInventory, FriendlyByteBuf buf) {
-        this(windowId, playerInventory, clientBlockEntity(playerInventory, buf));
+        this(windowId, playerInventory, clientBlockEntity(playerInventory, buf),
+                new SimpleContainerData(SplitContainerData.slotCount(PrinterBlockEntity.DATA_COUNT)));
     }
 
     /** Server constructor. */
     public PrinterMenu(int windowId, Inventory playerInventory, @Nullable PrinterBlockEntity printer) {
+        this(windowId, playerInventory, printer, printer != null ? printer.containerData()
+                : new SimpleContainerData(SplitContainerData.slotCount(PrinterBlockEntity.DATA_COUNT)));
+    }
+
+    private PrinterMenu(int windowId, Inventory playerInventory, @Nullable PrinterBlockEntity printer,
+                        ContainerData data) {
         super(ModMenuTypes.TIER1_PRINTER.get(), windowId);
         this.printer = printer;
-        this.data = printer != null ? printer.containerData() : new SimpleContainerData(PrinterBlockEntity.DATA_COUNT);
+        this.data = data;
 
         IItemHandler inventory = printer != null ? printer.inventory() : new ItemStackHandler(PrinterBlockEntity.SLOT_COUNT);
-        addSlot(new SlotItemHandler(inventory, PrinterBlockEntity.SLOT_TEMPLATE, TEMPLATE_SLOT_X, TEMPLATE_SLOT_Y));
+        addSlot(new SlotItemHandler(inventory, PrinterBlockEntity.SLOT_TEMPLATE, TEMPLATE_SLOT_X, TEMPLATE_SLOT_Y) {
+            @Override
+            public boolean mayPlace(@Nonnull ItemStack stack) {
+                // spools dock on the machine (Shift+Click or sneak-use the block), never print
+                return !(stack.getItem() instanceof SpoolItem);
+            }
+        });
         addSlot(new SlotItemHandler(inventory, PrinterBlockEntity.SLOT_OUTPUT, OUTPUT_SLOT_X, OUTPUT_SLOT_Y) {
             @Override
-            public boolean mayPlace(ItemStack stack) {
+            public boolean mayPlace(@Nonnull ItemStack stack) {
                 return false;
             }
         });
@@ -64,35 +79,43 @@ public class PrinterMenu extends AbstractContainerMenu {
     }
 
     public int progress() {
-        return data.get(PrinterBlockEntity.DATA_PROGRESS);
+        return SplitContainerData.combine(data, PrinterBlockEntity.DATA_PROGRESS);
     }
 
     public int maxProgress() {
-        return Math.max(1, data.get(PrinterBlockEntity.DATA_MAX_PROGRESS));
+        return Math.max(1, SplitContainerData.combine(data, PrinterBlockEntity.DATA_MAX_PROGRESS));
     }
 
     public int energy() {
-        return data.get(PrinterBlockEntity.DATA_ENERGY);
+        return SplitContainerData.combine(data, PrinterBlockEntity.DATA_ENERGY);
     }
 
     public int maxEnergy() {
-        return Math.max(1, data.get(PrinterBlockEntity.DATA_MAX_ENERGY));
+        return Math.max(1, SplitContainerData.combine(data, PrinterBlockEntity.DATA_MAX_ENERGY));
     }
 
     public PrinterBlockEntity.State state() {
-        return PrinterBlockEntity.State.byOrdinal(data.get(PrinterBlockEntity.DATA_STATE));
+        return PrinterBlockEntity.State.byOrdinal(SplitContainerData.combine(data, PrinterBlockEntity.DATA_STATE));
     }
 
     public int fu() {
-        return data.get(PrinterBlockEntity.DATA_FU);
+        return SplitContainerData.combine(data, PrinterBlockEntity.DATA_FU);
     }
 
     public int fuCapacity() {
-        return data.get(PrinterBlockEntity.DATA_FU_CAP);
+        return SplitContainerData.combine(data, PrinterBlockEntity.DATA_FU_CAP);
     }
 
     public int templateCost() {
-        return data.get(PrinterBlockEntity.DATA_TEMPLATE_COST);
+        return SplitContainerData.combine(data, PrinterBlockEntity.DATA_TEMPLATE_COST);
+    }
+
+    public int spoolsUsed() {
+        return SplitContainerData.combine(data, PrinterBlockEntity.DATA_SPOOLS_USED);
+    }
+
+    public int spoolSlots() {
+        return SplitContainerData.combine(data, PrinterBlockEntity.DATA_SPOOL_SLOTS);
     }
 
     @Override
@@ -108,6 +131,12 @@ public class PrinterMenu extends AbstractContainerMenu {
         if (slotIndex < machineSlots) {
             // machine -> player inventory
             if (!moveItemStackTo(moved, machineSlots, slots.size(), true)) {
+                return ItemStack.EMPTY;
+            }
+        } else if (moved.getItem() instanceof SpoolItem) {
+            // spools dock onto the machine, never into the print slot (server authoritative)
+            if (printer == null || printer.getLevel() == null || printer.getLevel().isClientSide
+                    || !printer.attachSpool(moved)) {
                 return ItemStack.EMPTY;
             }
         } else {

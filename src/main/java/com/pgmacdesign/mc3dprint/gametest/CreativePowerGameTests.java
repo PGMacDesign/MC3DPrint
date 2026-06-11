@@ -104,6 +104,52 @@ public class CreativePowerGameTests {
         helper.succeed();
     }
 
+    /**
+     * Regression: vanilla syncs container data as 16-bit shorts. Large RF/FU
+     * values must survive the split-and-recombine round trip (the GUI showed
+     * 0 RF / 0 FU before SplitContainerData).
+     */
+    @GameTest(template = "empty5", timeoutTicks = 100)
+    public static void containerDataSurvivesShortSync(GameTestHelper helper) {
+        BlockPos printerPos = new BlockPos(2, 1, 2);
+        helper.setBlock(printerPos, ModBlocks.PRINTERS.get(2).get()); // T3: 250k RF buffer
+        if (!(helper.getBlockEntity(printerPos) instanceof PrinterBlockEntity printer)) {
+            throw new GameTestAssertException("Printer block entity missing");
+        }
+        printer.getCapability(ForgeCapabilities.ENERGY).ifPresent(energy -> {
+            while (energy.receiveEnergy(Integer.MAX_VALUE, true) > 0) {
+                energy.receiveEnergy(Integer.MAX_VALUE, false);
+            }
+        });
+        for (int i = 0; i < printer.spoolInventory().getSlots(); i++) {
+            printer.spoolInventory().setStackInSlot(i, new ItemStack(ModItems.CREATIVE_SPOOL.get()));
+        }
+
+        var live = printer.containerData();
+        var synced = new net.minecraft.world.inventory.SimpleContainerData(live.getCount());
+        for (int i = 0; i < live.getCount(); i++) {
+            synced.set(i, (short) live.get(i)); // emulate ClientboundContainerSetDataPacket truncation
+        }
+
+        int expectedEnergy = printer.getCapability(ForgeCapabilities.ENERGY)
+                .map(net.minecraftforge.energy.IEnergyStorage::getEnergyStored).orElse(0);
+        int syncedEnergy = com.pgmacdesign.mc3dprint.machine.SplitContainerData.combine(
+                synced, PrinterBlockEntity.DATA_ENERGY);
+        int syncedFuCap = com.pgmacdesign.mc3dprint.machine.SplitContainerData.combine(
+                synced, PrinterBlockEntity.DATA_FU_CAP);
+        int expectedFuCap = printer.fuCapacity();
+
+        if (expectedEnergy < 100_000) {
+            helper.fail("Test premise broken: expected a large RF buffer, got " + expectedEnergy);
+        } else if (syncedEnergy != expectedEnergy) {
+            helper.fail("Energy corrupted by short sync: " + syncedEnergy + " != " + expectedEnergy);
+        } else if (syncedFuCap != expectedFuCap || expectedFuCap < 100_000) {
+            helper.fail("FU capacity corrupted by short sync: " + syncedFuCap + " != " + expectedFuCap);
+        } else {
+            helper.succeed();
+        }
+    }
+
     @GameTest(template = "empty5", timeoutTicks = 200)
     public static void creativeSpoolPrintsItems(GameTestHelper helper) {
         BlockPos printerPos = new BlockPos(2, 1, 2);

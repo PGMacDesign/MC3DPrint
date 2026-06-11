@@ -50,9 +50,14 @@ public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
                     mouseX, mouseY);
         }
         if (isHovering(FU_X, FU_Y, FU_WIDTH, FU_HEIGHT, mouseX, mouseY)) {
-            graphics.renderTooltip(font,
-                    Component.translatable("tooltip.mc3dprint.fu", menu.fu(), menu.fuCapacity()),
-                    mouseX, mouseY);
+            java.util.List<Component> lines = new java.util.ArrayList<>();
+            lines.add(Component.translatable("tooltip.mc3dprint.fu", menu.fu(), menu.fuCapacity()));
+            lines.add(Component.translatable("tooltip.mc3dprint.spools_docked",
+                    menu.spoolsUsed(), menu.spoolSlots()));
+            if (menu.spoolsUsed() == 0) {
+                lines.add(Component.translatable("tooltip.mc3dprint.fu_no_spools"));
+            }
+            graphics.renderComponentTooltip(font, lines, mouseX, mouseY);
         }
     }
 
@@ -108,5 +113,8 @@ public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
         if (cost > 0) {
             graphics.drawString(font, Component.translatable("gui.mc3dprint.cost", cost), 36, 60, 0x404040, false);
         }
+        Component spools = Component.translatable("gui.mc3dprint.spools", menu.spoolsUsed(), menu.spoolSlots());
+        int spoolsColor = menu.spoolsUsed() == 0 ? 0xB71C1C : 0x404040;
+        graphics.drawString(font, spools, imageWidth - 8 - font.width(spools), inventoryLabelY, spoolsColor, false);
     }
 }
