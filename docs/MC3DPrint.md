@@ -125,23 +125,24 @@ Materials within the same group share identical FU values — e.g. cobblestone, 
 
 **Winder tier gating:** A T1 Winder cannot convert diamonds — the Winder must match or exceed the material's required tier. This closes any bypass around the item tier print restrictions and keeps progression intact.
 
-### Tiered FU & Conversion (decided 2026-06-11, implemented)
+### Tier Down-Conversion (One Direction Only)
 
-FU is **denominated by tier** — a tier-S spool holds tier-S FU. The exchange
-rate is **4:1 per tier step** (config `general.filamentConversionRatio`,
-default 4; set 1 for universal FU), applied automatically everywhere:
+FU is **denominated by spool tier** — a tier-S spool holds tier-S FU.
 
-- **Down-conversion is generous**: 1 T3 FU covers 16 T1 FU of cost. High-tier
-  spools stretch further on cheap jobs — bring your endgame spool anywhere.
-- **Up-conversion is lossy, not blocked**: covering a tier-N cost with
-  tier-M FU (M < N) costs 4^(N−M)×. Printing a nether star (1500 FU @ T6)
-  from cobblestone FU costs ~1.5M cobblestone — the exploit dies by
-  economics rather than a hard wall, so there are no dead-end spools.
-- Winder and Filament Converter convert wound material into the docked
-  spool's tier with a carry accumulator (sub-unit remainders persist, nothing
-  is voided). Symmetric: wind-then-print round trips never profit.
-- *(Supersedes the original "16:1, down-only, one step at a time" rule —
-  16:1 was too steep and one-direction-only created stranded-FU dead ends.)*
+- Higher-tier FU converts **down** at a **4:1 ratio per tier step** (revised
+  2026-06-11 from the original 16:1 — too steep), compounding across steps
+  (T3 → T1 = 16:1). Config: `general.filamentConversionRatio`, default 4.
+- **Cannot tier up** — hard restriction. T1 FU never becomes T2 FU: the
+  winder refuses to wind a material into a spool above the material's tier,
+  and a spool below an item's cost tier contributes nothing toward printing
+  it. Prevents cobblestone farming from trivializing the economy.
+- Down-conversion applies automatically at both ends: winding a T2 iron
+  ingot (20 FU) into a T1 spool deposits 80 T1 FU, and a docked T7 spool
+  pays T1-denominated costs at 4⁶ FU of value per unit. Division is always
+  exact going down — no remainders, nothing voided.
+- *(Implementation note: multi-step down-conversion happens in one pass at
+  the compounded ratio, equivalent to the original "one step at a time"
+  chain without the manual rewinding.)*
 
 ### Filament Spool
 

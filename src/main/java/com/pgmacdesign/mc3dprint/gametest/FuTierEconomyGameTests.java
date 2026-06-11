@@ -17,9 +17,10 @@ import net.minecraftforge.gametest.GameTestHolder;
 import net.minecraftforge.gametest.PrefixGameTestTemplate;
 
 /**
- * Tiered FU economics (default ratio 4): 1 tier-N FU = 4 tier-(N-1) FU.
- * Down-conversion is generous, up-conversion is lossy — winding a mountain of
- * cobblestone must not cheaply print high-tier items.
+ * Tiered FU economics (default ratio 4): 1 tier-N FU = 4 tier-(N-1) FU,
+ * DOWN-CONVERSION ONLY (hard product rule). High-tier FU covers low-tier
+ * costs at the compounded ratio; low-tier FU contributes nothing toward
+ * higher-tier costs, and winding never deposits into a higher-tier spool.
  */
 @GameTestHolder(MC3DPrint.MOD_ID)
 @PrefixGameTestTemplate(false)
@@ -55,15 +56,17 @@ public class FuTierEconomyGameTests {
     }
 
     @GameTest(template = "empty5", timeoutTicks = 100)
-    public static void lowTierFuIsWeakOnHighTierJobs(GameTestHelper helper) {
+    public static void lowTierFuNeverCoversHigherTierJobs(GameTestHelper helper) {
         PrinterBlockEntity printer = placePrinter(helper, new BlockPos(2, 1, 2), 3); // T4
-        printer.spoolInventory().setStackInSlot(0, spoolWithFu(1, 100)); // 100 T1 FU
+        printer.spoolInventory().setStackInSlot(0, spoolWithFu(1, 400)); // full-ish T1 spool
 
-        // 100 T1 FU toward T4 costs: 100 / 64 = 1 (floor) — the anti-exploit
-        if (printer.effectiveFu(4) != 1) {
-            helper.fail("Expected 1 effective T4 FU from 100 T1 FU, got " + printer.effectiveFu(4));
-        } else if (printer.effectiveFu(2) != 25) {
-            helper.fail("Expected 25 effective T2 FU, got " + printer.effectiveFu(2));
+        // hard rule: FU never converts up — zero toward any higher tier
+        if (printer.effectiveFu(2) != 0) {
+            helper.fail("T1 FU must not cover T2 costs, got " + printer.effectiveFu(2));
+        } else if (printer.effectiveFu(4) != 0) {
+            helper.fail("T1 FU must not cover T4 costs, got " + printer.effectiveFu(4));
+        } else if (printer.effectiveFu(1) != 400) {
+            helper.fail("T1 FU toward T1 costs should be 1:1, got " + printer.effectiveFu(1));
         } else {
             helper.succeed();
         }
@@ -96,10 +99,8 @@ public class FuTierEconomyGameTests {
         });
     }
 
-    @GameTest(template = "empty5", timeoutTicks = 300)
-    public static void winderConvertsIntoHigherTierSpoolWithCarry(GameTestHelper helper) {
-        BlockPos pos = new BlockPos(2, 1, 2);
-        helper.setBlock(pos, ModBlocks.FILAMENT_WINDER.get());
+    private static WinderBlockEntity placePoweredWinder(GameTestHelper helper, BlockPos pos, int tierIndex) {
+        helper.setBlock(pos, ModBlocks.WINDERS.get(tierIndex).get());
         if (!(helper.getBlockEntity(pos) instanceof WinderBlockEntity winder)) {
             throw new GameTestAssertException("Winder block entity missing");
         }
@@ -108,17 +109,43 @@ public class FuTierEconomyGameTests {
                 energy.receiveEnergy(1_000, false);
             }
         });
-        // 8 cobblestone (1 FU @ T1 each) into a T2 spool: 8 base units = 2 T2 FU
+        return winder;
+    }
+
+    @GameTest(template = "empty5", timeoutTicks = 150)
+    public static void winderRefusesWindingIntoHigherTierSpool(GameTestHelper helper) {
+        WinderBlockEntity winder = placePoweredWinder(helper, new BlockPos(2, 1, 2), 0); // T1
+        // cobblestone is T1 material; a T2 spool is up-conversion — hard refusal
         winder.inventory().setStackInSlot(WinderBlockEntity.SLOT_SPOOL, spoolWithFu(2, 0));
         winder.inventory().setStackInSlot(WinderBlockEntity.SLOT_INPUT, new ItemStack(Items.COBBLESTONE, 8));
 
+        helper.runAfterDelay(100, () -> {
+            int fu = SpoolItem.getFu(winder.inventory().getStackInSlot(WinderBlockEntity.SLOT_SPOOL));
+            int inputLeft = winder.inventory().getStackInSlot(WinderBlockEntity.SLOT_INPUT).getCount();
+            if (fu != 0) {
+                helper.fail("Up-conversion happened: T2 spool gained " + fu + " FU from T1 material");
+            } else if (inputLeft != 8) {
+                helper.fail("Winder consumed input without a valid spool: " + inputLeft + " left");
+            } else {
+                helper.succeed();
+            }
+        });
+    }
+
+    @GameTest(template = "empty5", timeoutTicks = 150)
+    public static void winderDownConvertsAtCompoundedRatio(GameTestHelper helper) {
+        WinderBlockEntity winder = placePoweredWinder(helper, new BlockPos(2, 1, 2), 1); // T2
+        // iron ingot: 20 FU @ T2 -> into a T1 spool at 4:1 = 80 T1 FU
+        winder.inventory().setStackInSlot(WinderBlockEntity.SLOT_SPOOL, spoolWithFu(1, 0));
+        winder.inventory().setStackInSlot(WinderBlockEntity.SLOT_INPUT, new ItemStack(Items.IRON_INGOT, 1));
+
         helper.succeedWhen(() -> {
             if (!winder.inventory().getStackInSlot(WinderBlockEntity.SLOT_INPUT).isEmpty()) {
-                throw new GameTestAssertException("Input not fully wound yet");
+                throw new GameTestAssertException("Ingot not wound yet");
             }
             int fu = SpoolItem.getFu(winder.inventory().getStackInSlot(WinderBlockEntity.SLOT_SPOOL));
-            if (fu != 2) {
-                helper.fail("Expected 2 T2 FU from 8 cobblestone, got " + fu);
+            if (fu != 80) {
+                helper.fail("Expected 80 T1 FU from one T2 iron ingot, got " + fu);
             }
         });
     }

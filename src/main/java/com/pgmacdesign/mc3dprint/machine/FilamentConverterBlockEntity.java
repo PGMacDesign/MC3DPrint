@@ -41,8 +41,6 @@ public class FilamentConverterBlockEntity extends BlockEntity {
 
     private ItemStack filter = ItemStack.EMPTY;
     private int cooldown;
-    /** Sub-spool-unit FU remainder from tier conversion, in base (tier-1) units. */
-    private long carryBase;
 
     public FilamentConverterBlockEntity(BlockPos pos, BlockState blockState) {
         super(ModBlockEntities.FILAMENT_CONVERTER.get(), pos, blockState);
@@ -75,36 +73,37 @@ public class FilamentConverterBlockEntity extends BlockEntity {
             return;
         }
 
-        ItemStack spool = findSpoolWithRoom(level, pos);
+        ItemStack spool = findSpoolWithRoom(level, pos, value.get());
         if (spool.isEmpty()) {
             return;
         }
         if (!pullOneFilterItem(level, pos)) {
             return;
         }
-        // convert the material's FU to the spool's tier; sub-unit remainder
-        // accumulates in carryBase so nothing is ever voided
-        int ratio = FuConversion.ratio();
-        carryBase += FuConversion.toBase(value.get().fu(), value.get().tier(), ratio);
         SpoolItem spoolItem = (SpoolItem) spool.getItem();
-        long depositable = FuConversion.fromBase(carryBase, spoolItem.tier(), ratio);
-        if (depositable > 0) {
-            int deposited = SpoolItem.fill(spool, FuConversion.clampToInt(depositable));
-            carryBase -= FuConversion.toBase(deposited, spoolItem.tier(), ratio);
-        }
+        long yield = FuConversion.windYield(value.get().fu(), value.get().tier(),
+                spoolItem.tier(), FuConversion.ratio());
+        SpoolItem.fill(spool, FuConversion.clampToInt(yield));
         energy.consume(MC3DPrintConfig.WINDER_RF_PER_ITEM.get());
         setChanged();
     }
 
-    /** A docked, non-creative spool on an adjacent printer with room left. */
-    private ItemStack findSpoolWithRoom(Level level, BlockPos pos) {
+    /**
+     * A docked, non-creative spool on an adjacent printer that can take the
+     * material's full converted yield. Down-conversion only (hard rule): the
+     * spool's tier must be at or below the material's tier.
+     */
+    private ItemStack findSpoolWithRoom(Level level, BlockPos pos, FuValue value) {
+        int ratio = FuConversion.ratio();
         for (Direction direction : Direction.values()) {
             if (level.getBlockEntity(pos.relative(direction)) instanceof PrinterBlockEntity printer) {
                 var spools = printer.spoolInventory();
                 for (int i = 0; i < spools.getSlots(); i++) {
                     ItemStack spool = spools.getStackInSlot(i);
                     if (spool.getItem() instanceof SpoolItem spoolItem && !spoolItem.creative()
-                            && SpoolItem.getFu(spool) < spoolItem.capacity()) {
+                            && FuConversion.canWindInto(value.tier(), spoolItem.tier())
+                            && SpoolItem.getFu(spool) + FuConversion.windYield(value.fu(),
+                                    value.tier(), spoolItem.tier(), ratio) <= spoolItem.capacity()) {
                         return spool;
                     }
                 }
@@ -156,7 +155,6 @@ public class FilamentConverterBlockEntity extends BlockEntity {
     protected void saveAdditional(CompoundTag tag) {
         super.saveAdditional(tag);
         tag.putInt("Energy", energy.getEnergyStored());
-        tag.putLong("CarryBase", carryBase);
         if (!filter.isEmpty()) {
             tag.put("Filter", filter.save(new CompoundTag()));
         }
@@ -166,7 +164,6 @@ public class FilamentConverterBlockEntity extends BlockEntity {
     public void load(CompoundTag tag) {
         super.load(tag);
         energy.setStored(tag.getInt("Energy"));
-        carryBase = Math.max(0, tag.getLong("CarryBase"));
         filter = tag.contains("Filter") ? ItemStack.of(tag.getCompound("Filter")) : ItemStack.EMPTY;
     }
 }

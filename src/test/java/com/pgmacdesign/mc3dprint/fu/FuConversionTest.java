@@ -3,6 +3,8 @@ package com.pgmacdesign.mc3dprint.fu;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class FuConversionTest {
     private static final int RATIO = 4;
@@ -30,17 +32,24 @@ class FuConversionTest {
     }
 
     @Test
-    void upConversionIsLossyByFloor() {
-        // 10 tier-1 FU toward a tier-2 cost: 10 / 4 = 2 (floor)
-        long base = FuConversion.toBase(10, 1, RATIO);
-        assertEquals(2, FuConversion.fromBase(base, 2, RATIO));
+    void upConversionIsHardBlocked() {
+        // product rule: FU never converts up, in either machine
+        assertFalse(FuConversion.canCover(1, 2));
+        assertFalse(FuConversion.canCover(3, 4));
+        assertTrue(FuConversion.canCover(2, 2));
+        assertTrue(FuConversion.canCover(7, 1));
+
+        assertFalse(FuConversion.canWindInto(1, 2)); // T1 material into T2 spool: never
+        assertTrue(FuConversion.canWindInto(2, 1));  // T2 material down into T1 spool: fine
+        assertTrue(FuConversion.canWindInto(4, 4));
     }
 
     @Test
-    void netherStarFromCobblestoneIsBrutallyExpensive() {
-        // nether star: 1500 FU @ T6; cobblestone: 1 FU @ T1
-        long costBase = FuConversion.toBase(1_500, 6, RATIO);
-        assertEquals(1_536_000, costBase); // 1.5M cobblestone — no more gaming the economy
+    void downConversionIsExact() {
+        // down-only means division is always exact — no remainders to strand
+        assertEquals(80, FuConversion.windYield(20, 2, 1, RATIO)); // iron ingot into T1 spool
+        assertEquals(20, FuConversion.windYield(20, 2, 2, RATIO)); // same tier 1:1
+        assertEquals(800, FuConversion.windYield(50, 4, 2, RATIO)); // diamond into T2: 50*16
     }
 
     @Test

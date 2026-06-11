@@ -74,8 +74,6 @@ public class WinderBlockEntity extends BlockEntity implements MenuProvider {
     private final LazyOptional<IItemHandler> allCap = LazyOptional.of(() -> inventory);
 
     private int progress;
-    /** Sub-spool-unit FU remainder from tier conversion, in base (tier-1) units. */
-    private long carryBase;
     private final MachineTier tier;
 
     public WinderBlockEntity(BlockPos pos, BlockState blockState) {
@@ -96,12 +94,20 @@ public class WinderBlockEntity extends BlockEntity implements MenuProvider {
         ItemStack input = inventory.getStackInSlot(SLOT_INPUT);
         ItemStack spool = inventory.getStackInSlot(SLOT_SPOOL);
 
+        // down-conversion only (hard rule): a material winds into spools at or
+        // below its tier; the yield compounds by the ratio per tier step down
         Optional<FuValue> value = FuValueRegistry.valueOf(input);
         if (value.isEmpty() || value.get().tier() > tier.number()
                 || !(spool.getItem() instanceof SpoolItem spoolItem) || spoolItem.creative()
-                || SpoolItem.getFu(spool) >= spoolItem.capacity()
+                || !FuConversion.canWindInto(value.get().tier(), spoolItem.tier())
                 || !energy.hasAtLeast(MC3DPrintConfig.WINDER_RF_PER_ITEM.get())) {
             progress = 0;
+            return;
+        }
+        long yield = FuConversion.windYield(value.get().fu(), value.get().tier(),
+                spoolItem.tier(), FuConversion.ratio());
+        if (SpoolItem.getFu(spool) + yield > spoolItem.capacity()) {
+            progress = 0; // full yield must fit — no FU is ever voided
             return;
         }
 
@@ -109,15 +115,7 @@ public class WinderBlockEntity extends BlockEntity implements MenuProvider {
         if (progress >= MC3DPrintConfig.WINDER_TICKS_PER_ITEM.get()) {
             progress = 0;
             energy.consume(MC3DPrintConfig.WINDER_RF_PER_ITEM.get());
-            // material FU converts to the spool's tier; the sub-unit remainder
-            // accumulates in carryBase so nothing is ever voided
-            int ratio = FuConversion.ratio();
-            carryBase += FuConversion.toBase(value.get().fu(), value.get().tier(), ratio);
-            long depositable = FuConversion.fromBase(carryBase, spoolItem.tier(), ratio);
-            if (depositable > 0) {
-                int deposited = SpoolItem.fill(spool, FuConversion.clampToInt(depositable));
-                carryBase -= FuConversion.toBase(deposited, spoolItem.tier(), ratio);
-            }
+            SpoolItem.fill(spool, FuConversion.clampToInt(yield));
             input.shrink(1);
             inventory.setStackInSlot(SLOT_INPUT, input);
             inventory.setStackInSlot(SLOT_SPOOL, spool);
@@ -183,7 +181,6 @@ public class WinderBlockEntity extends BlockEntity implements MenuProvider {
         tag.put("Inventory", inventory.serializeNBT());
         tag.putInt("Energy", energy.getEnergyStored());
         tag.putInt("Progress", progress);
-        tag.putLong("CarryBase", carryBase);
     }
 
     @Override
@@ -192,6 +189,5 @@ public class WinderBlockEntity extends BlockEntity implements MenuProvider {
         inventory.deserializeNBT(tag.getCompound("Inventory"));
         energy.setStored(tag.getInt("Energy"));
         progress = tag.getInt("Progress");
-        carryBase = Math.max(0, tag.getLong("CarryBase"));
     }
 }

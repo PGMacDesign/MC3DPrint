@@ -9,10 +9,12 @@ import com.pgmacdesign.mc3dprint.config.MC3DPrintConfig;
  *
  * <pre>base = amount × ratio^(tier-1)</pre>
  *
- * Down-converting (high-tier FU on a cheap job) is generous; up-converting
- * (cheap FU on a high-tier job) costs ratio^(tierGap) — printing a nether
- * star from cobblestone FU is possible, just brutally expensive. That, not a
- * hard wall, is what keeps the economy honest. Ratio 1 restores universal FU.
+ * <b>Hard rule (product requirement): FU never converts UP.</b> Down-only:
+ * high-tier FU covers lower-tier costs at the compounded ratio, but low-tier
+ * FU contributes nothing toward higher-tier costs, and winding never deposits
+ * into a spool above the material's tier. This is what stops cobblestone
+ * farming from trivializing the economy. {@link #canCover} and
+ * {@link #canWindInto} are the single source of truth for the rule.
  *
  * Methods take the ratio as a parameter so the math is unit-testable without
  * a loaded config; {@link #ratio()} reads the live config value.
@@ -21,6 +23,21 @@ public final class FuConversion {
 
     public static int ratio() {
         return MC3DPrintConfig.FILAMENT_CONVERSION_RATIO.get();
+    }
+
+    /** Down-only: a spool can pay costs at or below its own tier, never above. */
+    public static boolean canCover(int spoolTier, int costTier) {
+        return spoolTier >= costTier;
+    }
+
+    /** Down-only: a material winds into spools at or below its tier, never above. */
+    public static boolean canWindInto(int materialTier, int spoolTier) {
+        return spoolTier <= materialTier;
+    }
+
+    /** Exact down-conversion of a material's FU into spool-tier units. */
+    public static long windYield(int fu, int materialTier, int spoolTier, int ratio) {
+        return fromBase(toBase(fu, materialTier, ratio), spoolTier, ratio);
     }
 
     /** ratio^(tier-1) — the base-unit worth of one FU at {@code tier}. */

@@ -301,16 +301,18 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
     }
 
     /**
-     * FU available toward a cost denominated at {@code costTier}, applying the
-     * tier exchange rate (1 tier-N FU = ratio tier-(N-1) FU). High-tier spools
-     * stretch on cheap jobs; low-tier FU covers high-tier jobs at ratio^gap.
+     * FU available toward a cost denominated at {@code costTier}. Down-only,
+     * hard rule: spools at or above the cost tier contribute at the exchange
+     * rate (1 tier-N FU = ratio tier-(N-1) FU); spools below it contribute
+     * nothing — FU never converts up.
      */
     public int effectiveFu(int costTier) {
         int ratio = FuConversion.ratio();
         long base = 0;
         for (int i = 0; i < spools.getSlots(); i++) {
             ItemStack spool = spools.getStackInSlot(i);
-            if (spool.getItem() instanceof SpoolItem spoolItem) {
+            if (spool.getItem() instanceof SpoolItem spoolItem
+                    && FuConversion.canCover(spoolItem.tier(), costTier)) {
                 base += FuConversion.toBase(SpoolItem.getFu(spool), spoolItem.tier(), ratio);
             }
         }
@@ -322,7 +324,8 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         int ratio = FuConversion.ratio();
         long base = 0;
         for (int i = 0; i < spools.getSlots(); i++) {
-            if (spools.getStackInSlot(i).getItem() instanceof SpoolItem spool) {
+            if (spools.getStackInSlot(i).getItem() instanceof SpoolItem spool
+                    && FuConversion.canCover(spool.tier(), costTier)) {
                 base += FuConversion.toBase(spool.capacity(), spool.tier(), ratio);
             }
         }
@@ -341,16 +344,18 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
 
     /**
      * Drains a cost denominated at {@code costTier} across attached spools in
-     * order, converting each spool's tier at the exchange rate. When a spool's
-     * unit is worth more than the remaining cost, a whole unit is consumed
-     * (ceil) — at most one high-tier unit of rounding per print.
+     * order, converting down at the exchange rate. Spools below the cost tier
+     * are skipped (FU never converts up). When a spool's unit is worth more
+     * than the remaining cost, a whole unit is consumed (ceil) — at most one
+     * high-tier unit of rounding per print.
      */
     private void drainFu(int amount, int costTier) {
         int ratio = FuConversion.ratio();
         long remainingBase = FuConversion.toBase(amount, costTier, ratio);
         for (int i = 0; i < spools.getSlots() && remainingBase > 0; i++) {
             ItemStack spool = spools.getStackInSlot(i);
-            if (!(spool.getItem() instanceof SpoolItem spoolItem)) {
+            if (!(spool.getItem() instanceof SpoolItem spoolItem)
+                    || !FuConversion.canCover(spoolItem.tier(), costTier)) {
                 continue;
             }
             long stored = SpoolItem.getFu(spool);
