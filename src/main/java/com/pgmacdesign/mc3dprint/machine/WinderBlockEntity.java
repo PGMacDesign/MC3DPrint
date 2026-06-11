@@ -1,6 +1,7 @@
 package com.pgmacdesign.mc3dprint.machine;
 
 import com.pgmacdesign.mc3dprint.config.MC3DPrintConfig;
+import com.pgmacdesign.mc3dprint.fu.FuConversion;
 import com.pgmacdesign.mc3dprint.fu.FuValue;
 import com.pgmacdesign.mc3dprint.fu.FuValueRegistry;
 import com.pgmacdesign.mc3dprint.fu.SpoolItem;
@@ -73,6 +74,8 @@ public class WinderBlockEntity extends BlockEntity implements MenuProvider {
     private final LazyOptional<IItemHandler> allCap = LazyOptional.of(() -> inventory);
 
     private int progress;
+    /** Sub-spool-unit FU remainder from tier conversion, in base (tier-1) units. */
+    private long carryBase;
     private final MachineTier tier;
 
     public WinderBlockEntity(BlockPos pos, BlockState blockState) {
@@ -95,8 +98,8 @@ public class WinderBlockEntity extends BlockEntity implements MenuProvider {
 
         Optional<FuValue> value = FuValueRegistry.valueOf(input);
         if (value.isEmpty() || value.get().tier() > tier.number()
-                || !(spool.getItem() instanceof SpoolItem spoolItem)
-                || SpoolItem.getFu(spool) + value.get().fu() > spoolItem.capacity()
+                || !(spool.getItem() instanceof SpoolItem spoolItem) || spoolItem.creative()
+                || SpoolItem.getFu(spool) >= spoolItem.capacity()
                 || !energy.hasAtLeast(MC3DPrintConfig.WINDER_RF_PER_ITEM.get())) {
             progress = 0;
             return;
@@ -106,7 +109,15 @@ public class WinderBlockEntity extends BlockEntity implements MenuProvider {
         if (progress >= MC3DPrintConfig.WINDER_TICKS_PER_ITEM.get()) {
             progress = 0;
             energy.consume(MC3DPrintConfig.WINDER_RF_PER_ITEM.get());
-            SpoolItem.fill(spool, value.get().fu());
+            // material FU converts to the spool's tier; the sub-unit remainder
+            // accumulates in carryBase so nothing is ever voided
+            int ratio = FuConversion.ratio();
+            carryBase += FuConversion.toBase(value.get().fu(), value.get().tier(), ratio);
+            long depositable = FuConversion.fromBase(carryBase, spoolItem.tier(), ratio);
+            if (depositable > 0) {
+                int deposited = SpoolItem.fill(spool, FuConversion.clampToInt(depositable));
+                carryBase -= FuConversion.toBase(deposited, spoolItem.tier(), ratio);
+            }
             input.shrink(1);
             inventory.setStackInSlot(SLOT_INPUT, input);
             inventory.setStackInSlot(SLOT_SPOOL, spool);
@@ -172,6 +183,7 @@ public class WinderBlockEntity extends BlockEntity implements MenuProvider {
         tag.put("Inventory", inventory.serializeNBT());
         tag.putInt("Energy", energy.getEnergyStored());
         tag.putInt("Progress", progress);
+        tag.putLong("CarryBase", carryBase);
     }
 
     @Override
@@ -180,5 +192,6 @@ public class WinderBlockEntity extends BlockEntity implements MenuProvider {
         inventory.deserializeNBT(tag.getCompound("Inventory"));
         energy.setStored(tag.getInt("Energy"));
         progress = tag.getInt("Progress");
+        carryBase = Math.max(0, tag.getLong("CarryBase"));
     }
 }

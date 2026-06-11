@@ -131,13 +131,15 @@ public class CreativePowerGameTests {
             synced.set(i, (short) live.get(i)); // emulate ClientboundContainerSetDataPacket truncation
         }
 
-        int expectedEnergy = printer.getCapability(ForgeCapabilities.ENERGY)
-                .map(net.minecraftforge.energy.IEnergyStorage::getEnergyStored).orElse(0);
+        // expected = what the live (untruncated) data reports, recombined
+        int expectedEnergy = com.pgmacdesign.mc3dprint.machine.SplitContainerData.combine(
+                live, PrinterBlockEntity.DATA_ENERGY);
+        int expectedFuCap = com.pgmacdesign.mc3dprint.machine.SplitContainerData.combine(
+                live, PrinterBlockEntity.DATA_FU_CAP);
         int syncedEnergy = com.pgmacdesign.mc3dprint.machine.SplitContainerData.combine(
                 synced, PrinterBlockEntity.DATA_ENERGY);
         int syncedFuCap = com.pgmacdesign.mc3dprint.machine.SplitContainerData.combine(
                 synced, PrinterBlockEntity.DATA_FU_CAP);
-        int expectedFuCap = printer.fuCapacity();
 
         if (expectedEnergy < 100_000) {
             helper.fail("Test premise broken: expected a large RF buffer, got " + expectedEnergy);

@@ -32,6 +32,7 @@ public final class MC3DPrintConfig {
     public static final ForgeConfigSpec.IntValue CLOCK_GENERATOR_BURN_MULTIPLIER;
     public static final ForgeConfigSpec.IntValue PRINT_HISTORY_SIZE;
     public static final ForgeConfigSpec.IntValue UNKNOWN_BLOCK_FU;
+    public static final ForgeConfigSpec.IntValue FILAMENT_CONVERSION_RATIO;
     public static final ForgeConfigSpec.ConfigValue<List<? extends String>> FU_VALUES;
 
     private static final int[] DEFAULT_ITEM_RF_PER_TICK = {40, 60, 80, 100, 120, 150, 200, 250};
@@ -94,6 +95,11 @@ public final class MC3DPrintConfig {
         UNKNOWN_BLOCK_FU = builder
                 .comment("FU cost per printed block whose item has no configured FU value")
                 .defineInRange("unknownBlockFu", 3, 0, Integer.MAX_VALUE);
+        FILAMENT_CONVERSION_RATIO = builder
+                .comment("Filament tier exchange rate: 1 FU of tier N is worth this many FU of tier N-1.",
+                        "Down-converting is generous, up-converting costs ratio^tierGap (anti-exploit).",
+                        "Set to 1 for a single universal FU with no tier economics.")
+                .defineInRange("filamentConversionRatio", 4, 1, 64);
         FU_VALUES = builder
                 .comment("Filament Unit values: '<item_or_#tag>=<fu>@<min_tier>'. Symmetric: wind yield == print cost (before efficiency).")
                 .defineListAllowEmpty("fuValues", FuValueRegistry.defaultEntries(),

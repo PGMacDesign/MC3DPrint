@@ -125,12 +125,23 @@ Materials within the same group share identical FU values — e.g. cobblestone, 
 
 **Winder tier gating:** A T1 Winder cannot convert diamonds — the Winder must match or exceed the material's required tier. This closes any bypass around the item tier print restrictions and keeps progression intact.
 
-### Tier Down-Conversion (One Direction Only)
+### Tiered FU & Conversion (decided 2026-06-11, implemented)
 
-- Higher-tier materials can be processed by the Winder **down** by one tier at a **16:1 FU ratio**
-  - 1× T5 material → 16× T4 material's worth of FU
-- **Cannot tier up** — hard restriction. Prevents cobblestone farming from trivializing the economy.
-- Down-conversion is one step at a time (T6→T5, not T6→T3 directly)
+FU is **denominated by tier** — a tier-S spool holds tier-S FU. The exchange
+rate is **4:1 per tier step** (config `general.filamentConversionRatio`,
+default 4; set 1 for universal FU), applied automatically everywhere:
+
+- **Down-conversion is generous**: 1 T3 FU covers 16 T1 FU of cost. High-tier
+  spools stretch further on cheap jobs — bring your endgame spool anywhere.
+- **Up-conversion is lossy, not blocked**: covering a tier-N cost with
+  tier-M FU (M < N) costs 4^(N−M)×. Printing a nether star (1500 FU @ T6)
+  from cobblestone FU costs ~1.5M cobblestone — the exploit dies by
+  economics rather than a hard wall, so there are no dead-end spools.
+- Winder and Filament Converter convert wound material into the docked
+  spool's tier with a carry accumulator (sub-unit remainders persist, nothing
+  is voided). Symmetric: wind-then-print round trips never profit.
+- *(Supersedes the original "16:1, down-only, one step at a time" rule —
+  16:1 was too steep and one-direction-only created stranded-FU dead ends.)*
 
 ### Filament Spool
 

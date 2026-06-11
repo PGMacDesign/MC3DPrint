@@ -38,7 +38,8 @@ public class UpgradeGameTests {
         PrinterBlockEntity printer = poweredT4(helper);
         printer.installUpgrade(new ItemStack(ModItems.EFFICIENCY_UPGRADE.get()));
 
-        ItemStack spool = new ItemStack(ModItems.SPOOLS.get(0).get());
+        // T4 spool: diamond cost is T4-denominated, so the drain is exact 1:1
+        ItemStack spool = new ItemStack(ModItems.SPOOLS.get(3).get());
         SpoolItem.setFu(spool, 100);
         printer.spoolInventory().setStackInSlot(0, spool);
         printer.inventory().setStackInSlot(PrinterBlockEntity.SLOT_TEMPLATE, new ItemStack(Items.DIAMOND));

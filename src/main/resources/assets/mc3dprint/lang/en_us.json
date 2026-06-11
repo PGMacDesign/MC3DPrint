@@ -123,5 +123,6 @@
   "tooltip.mc3dprint.spool_creative": "∞ FU — never depletes (creative only)",
   "gui.mc3dprint.spools": "Spools %s/%s",
   "tooltip.mc3dprint.spools_docked": "%s of %s spools docked",
-  "tooltip.mc3dprint.fu_no_spools": "Shift+Click a spool here to dock it (or sneak-use the printer with one)"
+  "tooltip.mc3dprint.fu_no_spools": "Shift+Click a spool here to dock it (or sneak-use the printer with one)",
+  "tooltip.mc3dprint.spool_worth": "1 FU here = %s Tier 1 FU"
 }

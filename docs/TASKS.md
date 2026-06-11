@@ -61,7 +61,7 @@ The keystone — everything else consumes this. Pure logic, testable without a r
 - [x] FU value tables (symmetric conversion, group-based) — config-exposed (`fuValues`, item + #tag syntax)
 - [x] Filament Spool items T1–T8 with capacities
 - [x] Spool side attachment (Shift+Right Click), auto-switch on depletion *(slots-by-tier lands with M6 tiers; T1 = 1 dock)*
-- [ ] ~~Tier down-conversion 16:1~~ — *superseded: FU is one universal unit; winder tier gating provides the progression gate. 16:1 rule needs design clarification (see Open Decisions)*
+- [x] Tiered FU with 4:1-per-tier exchange (was: 16:1 down-only) — down-conversion generous, up-conversion lossy (anti-cobblestone-exploit); config `filamentConversionRatio` (1 = universal FU). Decided + implemented 2026-06-11
 - [x] Switch print costs from placeholder to FU economy + per-tier efficiency (M2 dupe closed)
 - [ ] Matter Calculator GUI panel — *partial: template FU cost + filament gauges in GUI; full blueprint calculator (RF + ETA) pending*
 
@@ -121,7 +121,7 @@ The keystone — everything else consumes this. Pure logic, testable without a r
 
 - [x] Blueprint storage: ✅ file store + disc reference (see M1)
 - [ ] Final ore name (Printite is placeholder)
-- [ ] Clarify the 16:1 down-conversion rule from the design doc — contradicts universal FU; currently superseded by winder tier gating
+- [x] ~~Clarify the 16:1 down-conversion rule~~ — resolved 2026-06-11: tiered FU at 4:1 per tier, both directions (see design doc)
 - [ ] Patrick's full favorite-mod list for compat evaluation
 
 ## v2 / v3 Backlog

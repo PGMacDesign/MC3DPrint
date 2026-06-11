@@ -89,6 +89,10 @@ public class TierGatingGameTests {
     @GameTest(template = "empty5", timeoutTicks = 200)
     public static void t4PrintsTier4Item(GameTestHelper helper) {
         PrinterBlockEntity t4 = printer(helper, ModBlocks.PRINTERS.get(3).get(), new BlockPos(2, 1, 2));
+        // diamond costs T4-denominated FU; a T4 spool pays it 1:1
+        ItemStack t4Spool = new ItemStack(ModItems.SPOOLS.get(3).get());
+        SpoolItem.setFu(t4Spool, 400);
+        t4.spoolInventory().setStackInSlot(0, t4Spool);
         t4.inventory().setStackInSlot(PrinterBlockEntity.SLOT_TEMPLATE, new ItemStack(Items.DIAMOND));
 
         helper.succeedWhen(() -> {

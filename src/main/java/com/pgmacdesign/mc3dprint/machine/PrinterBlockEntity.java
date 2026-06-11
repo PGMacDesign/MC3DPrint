@@ -6,6 +6,7 @@ import com.pgmacdesign.mc3dprint.blueprint.BlueprintBlockState;
 import com.pgmacdesign.mc3dprint.blueprint.BlueprintFileStore;
 import com.pgmacdesign.mc3dprint.blueprint.PrintOrientation;
 import com.pgmacdesign.mc3dprint.config.MC3DPrintConfig;
+import com.pgmacdesign.mc3dprint.fu.FuConversion;
 import com.pgmacdesign.mc3dprint.fu.FuValue;
 import com.pgmacdesign.mc3dprint.fu.FuValueRegistry;
 import com.pgmacdesign.mc3dprint.fu.SpoolItem;
@@ -229,12 +230,13 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             return;
         }
         int fuCost = itemFuCost(template);
+        int costTier = itemFuTier(template);
         if (fuCost < 0) {
             state = State.NOT_PRINTABLE;
             itemProgress = 0;
         } else if (!canEmitCopy(template)) {
             state = State.PAUSED_OUTPUT_FULL;
-        } else if (totalFu() < fuCost) {
+        } else if (effectiveFu(costTier) < fuCost) {
             state = State.PAUSED_NO_FILAMENT;
         } else if (!energy.hasAtLeast(rfAdjusted(MC3DPrintConfig.itemRfPerTick(tier)))) {
             state = State.PAUSED_NO_POWER;
@@ -243,7 +245,7 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             energy.consume(rfAdjusted(MC3DPrintConfig.itemRfPerTick(tier)));
             itemProgress++;
             if (itemProgress >= maxProgress()) {
-                drainFu(fuCost);
+                drainFu(fuCost, costTier);
                 emitCopy(template);
                 itemProgress = 0;
             }
@@ -263,13 +265,23 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
                 .orElse(-1);
     }
 
+    /** The tier the item's FU cost is denominated in (1 if it has no value). */
+    public int itemFuTier(ItemStack template) {
+        return FuValueRegistry.valueOf(template).map(FuValue::tier).orElse(1);
+    }
+
     private int blockFuCost(BlockState state) {
+        Optional<FuValue> value = blockFuValue(state);
+        return applyEfficiency(value.map(FuValue::fu).orElse(MC3DPrintConfig.UNKNOWN_BLOCK_FU.get()));
+    }
+
+    private int blockFuTier(BlockState state) {
+        return blockFuValue(state).map(FuValue::tier).orElse(1);
+    }
+
+    private Optional<FuValue> blockFuValue(BlockState state) {
         Item item = state.getBlock().asItem();
-        int base = item == Items.AIR
-                ? MC3DPrintConfig.UNKNOWN_BLOCK_FU.get()
-                : FuValueRegistry.valueOf(new ItemStack(item)).map(FuValue::fu)
-                        .orElse(MC3DPrintConfig.UNKNOWN_BLOCK_FU.get());
-        return applyEfficiency(base);
+        return item == Items.AIR ? Optional.empty() : FuValueRegistry.valueOf(new ItemStack(item));
     }
 
     private int applyEfficiency(int baseFu) {
@@ -279,12 +291,42 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         return (int) Math.ceil(cost - 1.0e-7);
     }
 
+    /** Raw sum of stored spool FU, ignoring tier denominations. Display/debug only. */
     public int totalFu() {
         int total = 0;
         for (int i = 0; i < spools.getSlots(); i++) {
             total += SpoolItem.getFu(spools.getStackInSlot(i));
         }
         return total;
+    }
+
+    /**
+     * FU available toward a cost denominated at {@code costTier}, applying the
+     * tier exchange rate (1 tier-N FU = ratio tier-(N-1) FU). High-tier spools
+     * stretch on cheap jobs; low-tier FU covers high-tier jobs at ratio^gap.
+     */
+    public int effectiveFu(int costTier) {
+        int ratio = FuConversion.ratio();
+        long base = 0;
+        for (int i = 0; i < spools.getSlots(); i++) {
+            ItemStack spool = spools.getStackInSlot(i);
+            if (spool.getItem() instanceof SpoolItem spoolItem) {
+                base += FuConversion.toBase(SpoolItem.getFu(spool), spoolItem.tier(), ratio);
+            }
+        }
+        return FuConversion.clampToInt(FuConversion.fromBase(base, costTier, ratio));
+    }
+
+    /** Capacity counterpart of {@link #effectiveFu} for the GUI gauge. */
+    public int effectiveFuCapacity(int costTier) {
+        int ratio = FuConversion.ratio();
+        long base = 0;
+        for (int i = 0; i < spools.getSlots(); i++) {
+            if (spools.getStackInSlot(i).getItem() instanceof SpoolItem spool) {
+                base += FuConversion.toBase(spool.capacity(), spool.tier(), ratio);
+            }
+        }
+        return FuConversion.clampToInt(FuConversion.fromBase(base, costTier, ratio));
     }
 
     public int fuCapacity() {
@@ -297,12 +339,27 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         return total;
     }
 
-    /** Drains across attached spools in order (auto-switch per design). */
-    private void drainFu(int amount) {
-        int remaining = amount;
-        for (int i = 0; i < spools.getSlots() && remaining > 0; i++) {
+    /**
+     * Drains a cost denominated at {@code costTier} across attached spools in
+     * order, converting each spool's tier at the exchange rate. When a spool's
+     * unit is worth more than the remaining cost, a whole unit is consumed
+     * (ceil) — at most one high-tier unit of rounding per print.
+     */
+    private void drainFu(int amount, int costTier) {
+        int ratio = FuConversion.ratio();
+        long remainingBase = FuConversion.toBase(amount, costTier, ratio);
+        for (int i = 0; i < spools.getSlots() && remainingBase > 0; i++) {
             ItemStack spool = spools.getStackInSlot(i);
-            remaining -= SpoolItem.drain(spool, remaining);
+            if (!(spool.getItem() instanceof SpoolItem spoolItem)) {
+                continue;
+            }
+            long stored = SpoolItem.getFu(spool);
+            long storedBase = FuConversion.toBase(stored, spoolItem.tier(), ratio);
+            long drainUnits = storedBase <= remainingBase
+                    ? stored
+                    : FuConversion.fromBaseCeil(remainingBase, spoolItem.tier(), ratio);
+            int drained = SpoolItem.drain(spool, FuConversion.clampToInt(drainUnits));
+            remainingBase -= FuConversion.toBase(drained, spoolItem.tier(), ratio);
             spools.setStackInSlot(i, spool);
         }
     }
@@ -461,7 +518,8 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         // unknown block (e.g. blueprint from a modded world) — skip it, never stall the job
         if (resolved.isPresent()) {
             int fuCost = blockFuCost(resolved.get());
-            if (totalFu() < fuCost) {
+            int costTier = blockFuTier(resolved.get());
+            if (effectiveFu(costTier) < fuCost) {
                 state = State.PAUSED_NO_FILAMENT;
                 return;
             }
@@ -479,7 +537,7 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
                 }
             }
             energy.consume(rfPerBlock);
-            drainFu(fuCost);
+            drainFu(fuCost, costTier);
 
             // zap: the head fires a beam and the block materializes
             serverLevel.sendParticles(net.minecraft.core.particles.ParticleTypes.ELECTRIC_SPARK,
@@ -779,8 +837,8 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             case DATA_ENERGY -> energy.getEnergyStored();
             case DATA_MAX_ENERGY -> energy.getMaxEnergyStored();
             case DATA_STATE -> state.ordinal();
-            case DATA_FU -> totalFu();
-            case DATA_FU_CAP -> fuCapacity();
+            case DATA_FU -> effectiveFu(displayTier());
+            case DATA_FU_CAP -> effectiveFuCapacity(displayTier());
             case DATA_TEMPLATE_COST -> {
                 ItemStack template = inventory.getStackInSlot(SLOT_TEMPLATE);
                 yield activeJob == null && !template.isEmpty() ? Math.max(0, itemFuCost(template)) : 0;
@@ -797,6 +855,22 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             case DATA_SPOOL_SLOTS -> spools.getSlots();
             default -> 0;
         };
+    }
+
+    /**
+     * Tier the FU gauge is denominated in: the template item's cost tier when
+     * one is loaded (so gauge and cost label use the same units), else the
+     * machine tier.
+     */
+    private int displayTier() {
+        ItemStack template = inventory.getStackInSlot(SLOT_TEMPLATE);
+        if (!template.isEmpty() && !isLoadedDisc(template)) {
+            Optional<FuValue> value = FuValueRegistry.valueOf(template);
+            if (value.isPresent()) {
+                return value.get().tier();
+            }
+        }
+        return tier.number();
     }
 
     // --- MenuProvider ---

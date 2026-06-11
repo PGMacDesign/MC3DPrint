@@ -128,5 +128,10 @@ public class SpoolItem extends Item {
                 .withStyle(ChatFormatting.AQUA));
         tooltip.add(Component.translatable("tooltip.mc3dprint.spool_tier", tier)
                 .withStyle(ChatFormatting.GRAY));
+        if (tier > 1 && FuConversion.ratio() > 1) {
+            tooltip.add(Component.translatable("tooltip.mc3dprint.spool_worth",
+                            FuConversion.unitWorth(tier, FuConversion.ratio()))
+                    .withStyle(ChatFormatting.DARK_GRAY));
+        }
     }
 }
