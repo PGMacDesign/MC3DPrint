@@ -73,19 +73,23 @@ public class FilamentConverterBlockEntity extends BlockEntity {
             return;
         }
 
-        ItemStack spool = findSpoolWithRoom(level, pos, value.get());
-        if (spool.isEmpty()) {
+        SpoolTarget target = findSpoolWithRoom(level, pos, value.get());
+        if (target == null) {
             return;
         }
         if (!pullOneFilterItem(level, pos)) {
             return;
         }
-        SpoolItem spoolItem = (SpoolItem) spool.getItem();
+        SpoolItem spoolItem = (SpoolItem) target.spool().getItem();
         long yield = FuConversion.windYield(value.get().fu(), value.get().tier(),
                 spoolItem.tier(), FuConversion.ratio());
-        SpoolItem.fill(spool, FuConversion.clampToInt(yield));
+        SpoolItem.fill(target.spool(), FuConversion.clampToInt(yield));
+        target.printer().notifySpoolsChanged(); // exterior spool render tracks fill
         energy.consume(MC3DPrintConfig.WINDER_RF_PER_ITEM.get());
         setChanged();
+    }
+
+    private record SpoolTarget(PrinterBlockEntity printer, ItemStack spool) {
     }
 
     /**
@@ -93,7 +97,8 @@ public class FilamentConverterBlockEntity extends BlockEntity {
      * material's full converted yield. Down-conversion only (hard rule): the
      * spool's tier must be at or below the material's tier.
      */
-    private ItemStack findSpoolWithRoom(Level level, BlockPos pos, FuValue value) {
+    @Nullable
+    private SpoolTarget findSpoolWithRoom(Level level, BlockPos pos, FuValue value) {
         int ratio = FuConversion.ratio();
         for (Direction direction : Direction.values()) {
             if (level.getBlockEntity(pos.relative(direction)) instanceof PrinterBlockEntity printer) {
@@ -104,12 +109,12 @@ public class FilamentConverterBlockEntity extends BlockEntity {
                             && FuConversion.canWindInto(value.tier(), spoolItem.tier())
                             && SpoolItem.getFu(spool) + FuConversion.windYield(value.fu(),
                                     value.tier(), spoolItem.tier(), ratio) <= spoolItem.capacity()) {
-                        return spool;
+                        return new SpoolTarget(printer, spool);
                     }
                 }
             }
         }
-        return ItemStack.EMPTY;
+        return null;
     }
 
     private boolean pullOneFilterItem(Level level, BlockPos pos) {

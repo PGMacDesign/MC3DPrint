@@ -215,7 +215,10 @@ Each printer has expansion slots for upgrade modules. Slot count mirrors tier (T
 | RF Efficiency Upgrade | Reduces RF consumption per block placed |
 | Buffer Upgrade | Increases internal Matter storage capacity |
 
-- Upgrades are themselves tiered (T1 Speed Upgrade vs. T5 Speed Upgrade)
+- ~~Upgrades are themselves tiered (T1 Speed Upgrade vs. T5 Speed Upgrade)~~
+  **Decided 2026-06-11 (Patrick): upgrades stay FLAT** — one item per type;
+  scaling comes from slot count (slots = machine tier) and multiplicative
+  stacking, not item tiers
 - Modifiers stack **multiplicatively**, not additively — prevents runaway values
 - All base values and modifier rates exposed in config for pack makers
 
@@ -228,7 +231,7 @@ Simple, intuitive, automation-friendly from day one. **Anti-AE2-Inscriber** by d
 - **Top face** — accepts any input: matter materials, blueprint discs, anything going *in*
 - **Bottom / Front face** — output/extraction: finished items, ejected discs, anything coming *out*
 - No side-specific requirements. No "silicone goes in the right, redstone goes in the top" nonsense.
-- **Sides are reserved exclusively for Filament Spool attachment** (Shift+Right Click) — not general I/O faces
+- **Sides are reserved exclusively for Filament Spool attachment** (Shift+Right Click) — not general I/O faces. *Enforced 2026-06-11: sides expose no item handler; output is the bottom face (printers have no facing, so "front" collapsed into bottom). Docked spools render on the side faces — spinning while printing, winding shrinking toward the axle as filament depletes.*
 - Works with vanilla hoppers at T1 — zero gatekeeping on early automation
 - Compatible with any pipe mod respecting standard inventory faces: EnderIO conduits, Thermal ducts, Mekanism pipes, AE2 import/export buses, RS cables, etc.
 - Output buffer pauses the printer if full — never voids items

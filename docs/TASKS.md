@@ -81,7 +81,7 @@ The keystone — everything else consumes this. Pure logic, testable without a r
 - [x] Structural frame render around print volume (line/hologram style)
 - [x] X/Y gantry arms + print head animation (rides last placement; speed follows tier/upgrade cadence) — *solid modeled geometry is a later polish pass*
 - [x] Zap/beam effect + block materialization, spark particles, per-block sound
-- [ ] Spool spin animation on machine exterior — *deferred (needs custom block models)*; GUI FU fill bars ✅ (M5)
+- [x] Spool spin animation on machine exterior — line-art spools on side faces: spin while printing, winding shrinks with fill (2026-06-11); solid block models remain a polish pass; GUI FU fill bars ✅ (M5)
 - [x] Print completion effect (firework burst + chime); hologram idle animation *(stretch, deferred)*
 
 ## M8 — v1 Integrations ✅ *(AE2-deep + live compat testing flagged)*
@@ -124,9 +124,10 @@ Requirements from the original design doc that were rewritten/dropped without a 
 - [ ] Advancements: add *First Extrusion*, *Fabricator*, *Found in the Wild*; fix *Matter Matters* trigger (spec: convert 1,000 FU) and *Architect* (spec: first scan) — needs custom criteria triggers
 - [ ] Patchouli: auto-give on first printer craft (now unblocked — recipes exist); add I/O, blueprint-format, and upgrades entries per spec'd scope
 - [ ] Upgrade modifier rates → config (spec: "all modifier rates exposed in config"; currently hardcoded)
-- [ ] Tiered upgrade items (spec: "T1 Speed Upgrade vs. T5 Speed Upgrade") — **scope decision needed**
+- [x] ~~Tiered upgrade items~~ — **decided 2026-06-11 (Patrick): keep flat**, doc amended
 - [ ] FU table: add concrete family @ 5 FU; decide nugget handling (×9 rule unrepresentable in integer per-item FU)
-- [ ] I/O: spec says sides are spool-exclusive (no output); shipped sides as extract-only output — **product call needed** (enforce or amend doc deliberately)
+- [x] I/O: sides now spool-exclusive per spec (no item handler on sides; bottom = output, top = input) — decided + implemented 2026-06-11
+- [x] Spool exterior render: docked spools drawn on side faces, spinning while printing, winding radius shrinks with fill level (line-art pass; solid models later) — closes the M7 "spool spin animation" deferral
 
 ## Open Decisions
 

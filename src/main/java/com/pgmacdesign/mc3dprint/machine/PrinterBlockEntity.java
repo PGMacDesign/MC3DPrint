@@ -367,6 +367,13 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             remainingBase -= FuConversion.toBase(drained, spoolItem.tier(), ratio);
             spools.setStackInSlot(i, spool);
         }
+        syncToClients(); // the exterior spool render shrinks with the fill level
+    }
+
+    /** Spool contents changed externally (e.g. Filament Converter top-off). */
+    public void notifySpoolsChanged() {
+        setChanged();
+        syncToClients();
     }
 
     /** Attaches a spool from {@code held} (Shift+Right Click on a side). True if accepted. */
@@ -374,6 +381,7 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         for (int i = 0; i < spools.getSlots(); i++) {
             if (spools.getStackInSlot(i).isEmpty()) {
                 spools.setStackInSlot(i, held.split(1));
+                syncToClients();
                 return true;
             }
         }
@@ -386,6 +394,7 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             ItemStack spool = spools.getStackInSlot(i);
             if (!spool.isEmpty()) {
                 spools.setStackInSlot(i, ItemStack.EMPTY);
+                syncToClients();
                 return spool;
             }
         }
@@ -770,6 +779,17 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         return lastPlacedPos;
     }
 
+    /** Client-side snapshot of a docked spool for the exterior render. */
+    public record SpoolRenderInfo(int tier, float fillFraction, boolean creative) {
+    }
+
+    private final List<SpoolRenderInfo> clientSpools = new ArrayList<>();
+
+    /** Docked-spool snapshots, one per spool slot in order (client render). */
+    public List<SpoolRenderInfo> clientSpools() {
+        return clientSpools;
+    }
+
     @Override
     public CompoundTag getUpdateTag() {
         CompoundTag tag = new CompoundTag();
@@ -780,6 +800,20 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             tag.put("LastPlaced", net.minecraft.nbt.NbtUtils.writeBlockPos(lastPlacedPos));
         }
         tag.putInt("State", state.ordinal());
+
+        ListTag spoolList = new ListTag();
+        for (int i = 0; i < spools.getSlots(); i++) {
+            ItemStack spool = spools.getStackInSlot(i);
+            CompoundTag entry = new CompoundTag();
+            if (spool.getItem() instanceof SpoolItem spoolItem) {
+                entry.putInt("Tier", spoolItem.tier());
+                entry.putFloat("Fill", spoolItem.creative() ? 1.0F
+                        : (float) SpoolItem.getFu(spool) / Math.max(1, spoolItem.capacity()));
+                entry.putBoolean("Creative", spoolItem.creative());
+            }
+            spoolList.add(entry);
+        }
+        tag.put("Spools", spoolList);
         return tag;
     }
 
@@ -789,6 +823,15 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         lastPlacedPos = tag.contains("LastPlaced", Tag.TAG_COMPOUND)
                 ? net.minecraft.nbt.NbtUtils.readBlockPos(tag.getCompound("LastPlaced")) : null;
         state = State.byOrdinal(tag.getInt("State"));
+
+        clientSpools.clear();
+        ListTag spoolList = tag.getList("Spools", Tag.TAG_COMPOUND);
+        for (int i = 0; i < spoolList.size(); i++) {
+            CompoundTag entry = spoolList.getCompound(i);
+            clientSpools.add(entry.contains("Tier")
+                    ? new SpoolRenderInfo(entry.getInt("Tier"), entry.getFloat("Fill"), entry.getBoolean("Creative"))
+                    : null);
+        }
     }
 
     @Nullable
@@ -903,9 +946,16 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             if (side == null) {
                 return allCap.cast();
             }
-            // Top inserts the template; every other face is extract-only output.
-            // Sides will be reclaimed for filament spools in M5.
-            return side == Direction.UP ? inputCap.cast() : outputCap.cast();
+            // Per the I/O design: top inserts, bottom extracts, and the four
+            // sides are reserved exclusively for docked filament spools — no
+            // general item I/O (they render the spinning spools instead).
+            if (side == Direction.UP) {
+                return inputCap.cast();
+            }
+            if (side == Direction.DOWN) {
+                return outputCap.cast();
+            }
+            return LazyOptional.empty();
         }
         return super.getCapability(cap, side);
     }
