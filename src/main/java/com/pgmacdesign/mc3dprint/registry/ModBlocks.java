@@ -4,6 +4,8 @@ import com.pgmacdesign.mc3dprint.MC3DPrint;
 import com.pgmacdesign.mc3dprint.machine.MachineTier;
 import com.pgmacdesign.mc3dprint.machine.PrinterBlock;
 import com.pgmacdesign.mc3dprint.machine.WinderBlock;
+import com.pgmacdesign.mc3dprint.machine.multiblock.CasingBlock;
+import com.pgmacdesign.mc3dprint.machine.multiblock.ControllerBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
@@ -33,9 +35,25 @@ public final class ModBlocks {
     /** Filament winders, index 0 = Tier 1. */
     public static final List<RegistryObject<Block>> WINDERS = buildWinders();
 
+    /** Multiblock controllers, index 0 = Tier 5. */
+    public static final List<RegistryObject<Block>> CONTROLLERS = buildControllers();
+
+    public static final RegistryObject<Block> PRINTER_CASING = BLOCKS.register("printer_casing",
+            () -> new CasingBlock(machineProperties()));
+
     // Aliases for the most-referenced blocks
     public static final RegistryObject<Block> TIER1_PRINTER = PRINTERS.get(0);
     public static final RegistryObject<Block> FILAMENT_WINDER = WINDERS.get(0);
+
+    private static List<RegistryObject<Block>> buildControllers() {
+        List<RegistryObject<Block>> controllers = new ArrayList<>(4);
+        for (int tierNumber = 5; tierNumber <= 8; tierNumber++) {
+            final MachineTier tier = MachineTier.byNumber(tierNumber);
+            controllers.add(BLOCKS.register("tier" + tierNumber + "_fabricator",
+                    () -> new ControllerBlock(tier, machineProperties())));
+        }
+        return List.copyOf(controllers);
+    }
 
     private static List<RegistryObject<Block>> buildPrinters() {
         List<RegistryObject<Block>> printers = new ArrayList<>(4);

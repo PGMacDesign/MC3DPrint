@@ -122,8 +122,18 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
     private final List<CompoundTag> history = new ArrayList<>();
 
     private State state = State.IDLE;
+    private boolean collapsing;
 
     private record PlacementEntry(BlockPos local, int paletteIndex) {}
+
+    /** Set while a formed multiblock is being collapsed to an item — suppresses content drops. */
+    public void markCollapsing() {
+        this.collapsing = true;
+    }
+
+    public boolean isCollapsing() {
+        return collapsing;
+    }
 
     public PrinterBlockEntity(BlockPos pos, BlockState blockState) {
         super(ModBlockEntities.PRINTER.get(), pos, blockState);
@@ -159,6 +169,15 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
     }
 
     private void tick() {
+        // multiblock controllers only operate while formed
+        if (getBlockState().hasProperty(com.pgmacdesign.mc3dprint.machine.multiblock.ControllerBlock.FORMED)
+                && !getBlockState().getValue(com.pgmacdesign.mc3dprint.machine.multiblock.ControllerBlock.FORMED)) {
+            if (activeJob != null) {
+                cancelActiveJob();
+            }
+            state = State.IDLE;
+            return;
+        }
         State previous = state;
         ItemStack template = inventory.getStackInSlot(SLOT_TEMPLATE);
 

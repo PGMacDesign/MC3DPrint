@@ -15,7 +15,9 @@ public final class ModBlockEntities {
     public static final RegistryObject<BlockEntityType<PrinterBlockEntity>> PRINTER =
             BLOCK_ENTITIES.register("printer", () ->
                     BlockEntityType.Builder.of(PrinterBlockEntity::new,
-                            ModBlocks.PRINTERS.stream().map(RegistryObject::get)
+                            java.util.stream.Stream.concat(
+                                    ModBlocks.PRINTERS.stream(), ModBlocks.CONTROLLERS.stream())
+                                    .map(RegistryObject::get)
                                     .toArray(net.minecraft.world.level.block.Block[]::new)).build(null));
 
     public static final RegistryObject<BlockEntityType<WinderBlockEntity>> FILAMENT_WINDER =

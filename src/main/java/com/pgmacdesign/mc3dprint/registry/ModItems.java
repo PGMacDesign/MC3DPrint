@@ -3,6 +3,7 @@ package com.pgmacdesign.mc3dprint.registry;
 import com.pgmacdesign.mc3dprint.MC3DPrint;
 import com.pgmacdesign.mc3dprint.fu.SpoolItem;
 import com.pgmacdesign.mc3dprint.item.BlueprintDiscItem;
+import com.pgmacdesign.mc3dprint.machine.multiblock.FabricatorBlockItem;
 import com.pgmacdesign.mc3dprint.scanner.ScannerItem;
 
 import java.util.ArrayList;
@@ -45,6 +46,21 @@ public final class ModItems {
             () -> new ScannerItem(new Item.Properties().stacksTo(1)));
 
     public static final RegistryObject<Item> FILAMENT_WINDER = WINDERS.get(0);
+
+    public static final RegistryObject<Item> PRINTER_CASING = ITEMS.register("printer_casing",
+            () -> new BlockItem(ModBlocks.PRINTER_CASING.get(), new Item.Properties()));
+
+    /** Fabricator (controller) items, index 0 = Tier 5. Collapsed stacks re-form the multiblock. */
+    public static final List<RegistryObject<Item>> FABRICATORS = buildFabricators();
+
+    private static List<RegistryObject<Item>> buildFabricators() {
+        List<RegistryObject<Item>> fabricators = new ArrayList<>(ModBlocks.CONTROLLERS.size());
+        for (var controller : ModBlocks.CONTROLLERS) {
+            fabricators.add(ITEMS.register(controller.getId().getPath(),
+                    () -> new FabricatorBlockItem(controller.get(), new Item.Properties().stacksTo(1))));
+        }
+        return List.copyOf(fabricators);
+    }
 
     /** Filament spools, index 0 = Tier 1. */
     public static final List<RegistryObject<Item>> SPOOLS = buildSpools();

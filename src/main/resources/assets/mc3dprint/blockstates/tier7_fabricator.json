@@ -1,0 +1,6 @@
+{
+  "variants": {
+    "formed=false": { "model": "mc3dprint:block/tier7_fabricator" },
+    "formed=true": { "model": "mc3dprint:block/tier7_fabricator" }
+  }
+}

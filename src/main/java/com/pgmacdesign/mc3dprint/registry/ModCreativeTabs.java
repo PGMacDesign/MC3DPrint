@@ -18,6 +18,8 @@ public final class ModCreativeTabs {
                     .icon(() -> new ItemStack(ModItems.TIER1_PRINTER.get()))
                     .displayItems((parameters, output) -> {
                         ModItems.PRINTERS.forEach(printer -> output.accept(printer.get()));
+                        ModItems.FABRICATORS.forEach(fabricator -> output.accept(fabricator.get()));
+                        output.accept(ModItems.PRINTER_CASING.get());
                         ModItems.WINDERS.forEach(winder -> output.accept(winder.get()));
                         output.accept(ModItems.BLANK_BLUEPRINT_DISC.get());
                         output.accept(ModItems.BLUEPRINT_DISC.get());
