@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "DDD",
+    "DSD",
+    "DDD"
+  ],
+  "key": {
+    "D": {
+      "item": "minecraft:diamond"
+    },
+    "S": {
+      "item": "mc3dprint:filament_spool_t3"
+    }
+  },
+  "result": {
+    "item": "mc3dprint:filament_spool_t4",
+    "count": 1
+  }
+}

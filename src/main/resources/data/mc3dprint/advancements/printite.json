@@ -1,0 +1,14 @@
+{
+  "parent": "mc3dprint:matter_matters",
+  "display": {
+    "icon": { "item": "mc3dprint:printite_crystal" },
+    "title": { "translate": "advancement.mc3dprint.printite.title" },
+    "description": { "translate": "advancement.mc3dprint.printite.desc" }
+  },
+  "criteria": {
+    "has_printite": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": { "items": [ { "items": [ "mc3dprint:printite_crystal" ] } ] }
+    }
+  }
+}

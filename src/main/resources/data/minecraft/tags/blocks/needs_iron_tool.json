@@ -14,6 +14,7 @@
     "mc3dprint:tier6_fabricator",
     "mc3dprint:tier7_fabricator",
     "mc3dprint:tier8_fabricator",
-    "mc3dprint:filament_converter"
+    "mc3dprint:filament_converter",
+    "mc3dprint:remote_terminal"
   ]
 }

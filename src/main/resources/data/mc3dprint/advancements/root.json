@@ -1,0 +1,16 @@
+{
+  "display": {
+    "icon": { "item": "mc3dprint:tier1_printer" },
+    "title": { "translate": "advancement.mc3dprint.root.title" },
+    "description": { "translate": "advancement.mc3dprint.root.desc" },
+    "background": "mc3dprint:textures/block/printer_casing.png",
+    "show_toast": true,
+    "announce_to_chat": false
+  },
+  "criteria": {
+    "has_printer": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": { "items": [ { "items": [ "mc3dprint:tier1_printer" ] } ] }
+    }
+  }
+}

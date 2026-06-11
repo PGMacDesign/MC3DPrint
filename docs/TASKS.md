@@ -93,16 +93,18 @@ The keystone — everything else consumes this. Pure logic, testable without a r
 - [x] WorldEdit: `.schem` import (`/mc3dprint import`) + export (`/mc3dprint export` with disc in hand)
 - [ ] Compat testing: Mekanism/Thermal/EnderIO/Flux pipes & energy — *needs a real modpack dev instance; not coverable headless*
 
-## M9 — World Content, Multiplayer & Launch
+## M9 — World Content, Multiplayer & Launch ✅ *(code complete; human launch steps in LAUNCH.md)*
 
-- [ ] Blueprint Disc loot injection, tiered by structure (villages → End cities)
-- [ ] Curated pre-built blueprint set
-- [ ] Signature/creator blueprints + outreach *(easter eggs)*
-- [ ] Advancement tree (First Extrusion → Draconic Fabricator)
-- [ ] Remote Terminal block (pair to printer, full remote control)
-- [ ] Server Blueprint Repository block + GUI tab
-- [ ] Balancing pass over all config values
-- [ ] CurseForge + Modrinth pages, blueprint sharing site plan
+- [x] Crafting recipes for the full progression chain (29 recipes, T1→T8 + tools/spools/upgrades) — *not on the original list, but a survival-mode launch blocker*
+
+- [x] Blueprint Disc loot injection via global loot modifiers (villages/dungeon + mineshaft/temples; chances + targets data-driven) — *End city tier waits on higher-tier curated content*
+- [x] Curated pre-built blueprint set (starter hut, watchtower, storage shed) — bundled as data, auto-installed per world with deterministic UUIDs; pack makers can ship their own the same way
+- [ ] Signature/creator blueprints + outreach *(human task — see LAUNCH.md)*
+- [x] Advancement tree (root → Architect/Matter Matters → Printite → T7 Online → Draconic Fabricator, hidden) — *First Extrusion/Fabricator need custom code triggers; approximated for now*
+- [x] Remote Terminal block (sneak-click printer to pair, opens its GUI from anywhere; multiple terminals per printer)
+- [ ] Server Blueprint Repository block + GUI tab — *partial: world file store + /mc3dprint import/export + curated auto-install cover the server-owner workflow; dedicated block/GUI deferred to the GUI pass*
+- [ ] Balancing pass over all config values — *needs human playtesting (see LAUNCH.md)*
+- [ ] CurseForge + Modrinth pages — *store copy drafted in LAUNCH.md; publishing is a human step*
 
 ---
 

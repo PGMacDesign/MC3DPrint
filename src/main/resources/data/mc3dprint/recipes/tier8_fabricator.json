@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "NEN",
+    "EFE",
+    "NEN"
+  ],
+  "key": {
+    "N": {
+      "item": "minecraft:nether_star"
+    },
+    "E": {
+      "item": "minecraft:dragon_egg"
+    },
+    "F": {
+      "item": "mc3dprint:tier7_fabricator"
+    }
+  },
+  "result": {
+    "item": "mc3dprint:tier8_fabricator",
+    "count": 1
+  }
+}

@@ -54,6 +54,10 @@ public final class ModItems {
     public static final RegistryObject<Item> FILAMENT_CONVERTER = ITEMS.register("filament_converter",
             () -> new BlockItem(ModBlocks.FILAMENT_CONVERTER.get(), new Item.Properties()));
 
+    public static final RegistryObject<Item> REMOTE_TERMINAL = ITEMS.register("remote_terminal",
+            () -> new com.pgmacdesign.mc3dprint.machine.RemoteTerminalBlock.TerminalBlockItem(
+                    ModBlocks.REMOTE_TERMINAL.get(), new Item.Properties()));
+
     public static final RegistryObject<Item> PRINTITE_ORE = ITEMS.register("printite_ore",
             () -> new BlockItem(ModBlocks.PRINTITE_ORE.get(), new Item.Properties()));
 

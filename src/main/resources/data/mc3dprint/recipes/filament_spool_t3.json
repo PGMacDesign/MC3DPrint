@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "GGG",
+    "GSG",
+    "GGG"
+  ],
+  "key": {
+    "G": {
+      "item": "minecraft:gold_ingot"
+    },
+    "S": {
+      "item": "mc3dprint:filament_spool_t2"
+    }
+  },
+  "result": {
+    "item": "mc3dprint:filament_spool_t3",
+    "count": 1
+  }
+}

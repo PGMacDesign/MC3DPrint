@@ -25,6 +25,7 @@ public class MC3DPrint {
         ModBlockEntities.BLOCK_ENTITIES.register(modEventBus);
         ModMenuTypes.MENU_TYPES.register(modEventBus);
         ModCreativeTabs.CREATIVE_MODE_TABS.register(modEventBus);
+        com.pgmacdesign.mc3dprint.registry.ModLootModifiers.LOOT_MODIFIERS.register(modEventBus);
 
         context.registerConfig(ModConfig.Type.COMMON, MC3DPrintConfig.SPEC);
 
@@ -36,5 +37,7 @@ public class MC3DPrint {
 
         net.minecraftforge.common.MinecraftForge.EVENT_BUS.addListener(
                 com.pgmacdesign.mc3dprint.command.ImportCommand::register);
+        net.minecraftforge.common.MinecraftForge.EVENT_BUS.addListener(
+                com.pgmacdesign.mc3dprint.blueprint.CuratedBlueprints::onServerStarted);
     }
 }

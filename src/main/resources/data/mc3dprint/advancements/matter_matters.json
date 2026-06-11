@@ -1,0 +1,14 @@
+{
+  "parent": "mc3dprint:root",
+  "display": {
+    "icon": { "item": "mc3dprint:filament_spool_t1" },
+    "title": { "translate": "advancement.mc3dprint.matter_matters.title" },
+    "description": { "translate": "advancement.mc3dprint.matter_matters.desc" }
+  },
+  "criteria": {
+    "has_winder": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": { "items": [ { "items": [ "mc3dprint:filament_winder" ] } ] }
+    }
+  }
+}

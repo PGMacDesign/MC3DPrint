@@ -1,0 +1,16 @@
+{
+  "parent": "mc3dprint:t7_online",
+  "display": {
+    "icon": { "item": "mc3dprint:tier8_fabricator" },
+    "title": { "translate": "advancement.mc3dprint.draconic.title" },
+    "description": { "translate": "advancement.mc3dprint.draconic.desc" },
+    "frame": "challenge",
+    "hidden": true
+  },
+  "criteria": {
+    "placed_t8": {
+      "trigger": "minecraft:placed_block",
+      "conditions": { "block": "mc3dprint:tier8_fabricator" }
+    }
+  }
+}

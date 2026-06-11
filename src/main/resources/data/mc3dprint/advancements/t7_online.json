@@ -1,0 +1,15 @@
+{
+  "parent": "mc3dprint:printite",
+  "display": {
+    "icon": { "item": "mc3dprint:tier7_fabricator" },
+    "title": { "translate": "advancement.mc3dprint.t7_online.title" },
+    "description": { "translate": "advancement.mc3dprint.t7_online.desc" },
+    "frame": "challenge"
+  },
+  "criteria": {
+    "placed_t7": {
+      "trigger": "minecraft:placed_block",
+      "conditions": { "block": "mc3dprint:tier7_fabricator" }
+    }
+  }
+}

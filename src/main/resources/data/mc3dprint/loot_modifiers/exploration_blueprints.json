@@ -1,0 +1,15 @@
+{
+  "type": "mc3dprint:add_blueprint_disc",
+  "conditions": [
+    {
+      "condition": "minecraft:any_of",
+      "terms": [
+        { "condition": "forge:loot_table_id", "loot_table_id": "minecraft:chests/abandoned_mineshaft" },
+        { "condition": "forge:loot_table_id", "loot_table_id": "minecraft:chests/desert_pyramid" },
+        { "condition": "forge:loot_table_id", "loot_table_id": "minecraft:chests/jungle_temple" }
+      ]
+    }
+  ],
+  "chance": 0.2,
+  "blueprints": [ "watchtower" ]
+}

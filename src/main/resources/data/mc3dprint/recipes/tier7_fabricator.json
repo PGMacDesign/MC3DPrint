@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "PNP",
+    "NFN",
+    "PNP"
+  ],
+  "key": {
+    "P": {
+      "item": "mc3dprint:printite_crystal"
+    },
+    "N": {
+      "item": "minecraft:nether_star"
+    },
+    "F": {
+      "item": "mc3dprint:tier6_fabricator"
+    }
+  },
+  "result": {
+    "item": "mc3dprint:tier7_fabricator",
+    "count": 1
+  }
+}

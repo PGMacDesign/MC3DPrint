@@ -25,6 +25,11 @@ public final class ModBlockEntities {
                     BlockEntityType.Builder.of(com.pgmacdesign.mc3dprint.machine.FilamentConverterBlockEntity::new,
                             ModBlocks.FILAMENT_CONVERTER.get()).build(null));
 
+    public static final RegistryObject<BlockEntityType<com.pgmacdesign.mc3dprint.machine.RemoteTerminalBlock.TerminalBlockEntity>> REMOTE_TERMINAL =
+            BLOCK_ENTITIES.register("remote_terminal", () ->
+                    BlockEntityType.Builder.of(com.pgmacdesign.mc3dprint.machine.RemoteTerminalBlock.TerminalBlockEntity::new,
+                            ModBlocks.REMOTE_TERMINAL.get()).build(null));
+
     public static final RegistryObject<BlockEntityType<WinderBlockEntity>> FILAMENT_WINDER =
             BLOCK_ENTITIES.register("filament_winder", () ->
                     BlockEntityType.Builder.of(WinderBlockEntity::new,

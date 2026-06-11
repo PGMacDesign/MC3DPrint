@@ -127,10 +127,10 @@ public class PrinterMenu extends AbstractContainerMenu {
 
     @Override
     public boolean stillValid(Player player) {
+        // no distance check: Remote Terminals open this menu from far away by design
         if (printer == null || printer.getLevel() == null) {
             return false;
         }
-        return printer.getLevel().getBlockEntity(printer.getBlockPos()) == printer
-                && player.distanceToSqr(printer.getBlockPos().getCenter()) <= 64.0;
+        return printer.getLevel().getBlockEntity(printer.getBlockPos()) == printer && !printer.isRemoved();
     }
 }
