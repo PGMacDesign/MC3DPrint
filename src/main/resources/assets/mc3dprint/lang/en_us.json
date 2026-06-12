@@ -135,5 +135,9 @@
   "advancement.mc3dprint.fabricator.title": "Fabricator",
   "advancement.mc3dprint.fabricator.desc": "Print your first structure from a Blueprint Disc",
   "advancement.mc3dprint.found_in_the_wild.title": "Found in the Wild",
-  "advancement.mc3dprint.found_in_the_wild.desc": "Discover a Blueprint Disc in world loot"
+  "advancement.mc3dprint.found_in_the_wild.desc": "Discover a Blueprint Disc in world loot",
+  "gui.mc3dprint.preview_on": "Ghost: On",
+  "gui.mc3dprint.preview_off": "Ghost: Off",
+  "message.mc3dprint.preview_no_disc": "Load a written Blueprint Disc to preview",
+  "message.mc3dprint.preview_too_big": "Blueprint too large to preview (%s blocks, limit %s)"
 }

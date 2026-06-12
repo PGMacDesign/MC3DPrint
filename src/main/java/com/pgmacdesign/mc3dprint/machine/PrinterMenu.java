@@ -129,10 +129,15 @@ public class PrinterMenu extends AbstractContainerMenu {
         return SplitContainerData.combine(data, PrinterBlockEntity.DATA_OFFSET_X + axis);
     }
 
-    // GUI button ids: 0 start, 1 auto toggle, 2..7 = X-/X+/Y-/Y+/Z-/Z+
+    // GUI button ids: 0 start, 1 auto toggle, 2..7 = X-/X+/Y-/Y+/Z-/Z+, 8 preview
     public static final int BUTTON_START = 0;
     public static final int BUTTON_AUTO = 1;
     public static final int BUTTON_OFFSET_BASE = 2;
+    public static final int BUTTON_PREVIEW = 8;
+
+    public boolean preview() {
+        return SplitContainerData.combine(data, PrinterBlockEntity.DATA_PREVIEW) != 0;
+    }
 
     @Override
     public boolean clickMenuButton(Player player, int id) {
@@ -145,6 +150,10 @@ public class PrinterMenu extends AbstractContainerMenu {
         }
         if (id == BUTTON_AUTO) {
             printer.setAutoStart(!printer.autoStart());
+            return true;
+        }
+        if (id == BUTTON_PREVIEW) {
+            printer.togglePreview(player);
             return true;
         }
         int offsetId = id - BUTTON_OFFSET_BASE;

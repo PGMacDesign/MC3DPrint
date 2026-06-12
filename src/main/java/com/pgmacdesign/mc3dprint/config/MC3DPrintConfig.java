@@ -37,6 +37,8 @@ public final class MC3DPrintConfig {
     public static final ForgeConfigSpec.IntValue PRINT_HISTORY_SIZE;
     public static final ForgeConfigSpec.IntValue UNKNOWN_BLOCK_FU;
     public static final ForgeConfigSpec.IntValue FILAMENT_CONVERSION_RATIO;
+    public static final ForgeConfigSpec.IntValue PREVIEW_MAX_BLOCKS;
+    public static final ForgeConfigSpec.IntValue PREVIEW_RENDER_DISTANCE;
     public static final ForgeConfigSpec.ConfigValue<List<? extends String>> FU_VALUES;
 
     private static final int[] DEFAULT_ITEM_RF_PER_TICK = {40, 60, 80, 100, 120, 150, 200, 250};
@@ -119,6 +121,13 @@ public final class MC3DPrintConfig {
                         "Down-converting is generous, up-converting costs ratio^tierGap (anti-exploit).",
                         "Set to 1 for a single universal FU with no tier economics.")
                 .defineInRange("filamentConversionRatio", 4, 1, 64);
+        PREVIEW_MAX_BLOCKS = builder
+                .comment("Hologram preview: largest blueprint (in blocks) that can be previewed")
+                .defineInRange("previewMaxBlocks", 10_000, 1, 1_000_000);
+        PREVIEW_RENDER_DISTANCE = builder
+                .comment("Hologram preview: ghost blocks render within this distance of the camera",
+                        "(the frame outline always shows the full extent)")
+                .defineInRange("previewRenderDistance", 16, 4, 64);
         FU_VALUES = builder
                 .comment("Filament Unit values: '<item_or_#tag>=<fu>@<min_tier>'. Symmetric: wind yield == print cost (before efficiency).")
                 .defineListAllowEmpty("fuValues", FuValueRegistry.defaultEntries(),

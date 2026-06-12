@@ -160,6 +160,38 @@ public class StructurePrintGameTests {
         });
     }
 
+    @GameTest(template = "empty5", timeoutTicks = 100)
+    public static void previewPayloadSyncsWhenToggled(GameTestHelper helper) {
+        BlockPos printerPos = new BlockPos(2, 1, 2);
+        PrinterBlockEntity printer = poweredPrinter(helper, printerPos);
+        printer.setAutoStart(false); // preview is a pre-print feature
+
+        // no disc: toggle must refuse
+        printer.togglePreview(null);
+        if (printer.getUpdateTag().getBoolean("PreviewOn")) {
+            helper.fail("Preview enabled without a disc");
+            return;
+        }
+
+        printer.inventory().setStackInSlot(PrinterBlockEntity.SLOT_TEMPLATE, discFor(helper, smallBlueprint()));
+        printer.togglePreview(null);
+        var tag = printer.getUpdateTag();
+        if (!tag.getBoolean("PreviewOn")) {
+            helper.fail("Preview did not enable with a valid disc");
+            return;
+        }
+        if (!tag.contains("Preview") || !tag.contains("PreviewOrigin")) {
+            helper.fail("Preview payload missing from update tag");
+            return;
+        }
+        printer.togglePreview(null);
+        if (printer.getUpdateTag().contains("Preview")) {
+            helper.fail("Preview payload still present after disabling");
+            return;
+        }
+        helper.succeed();
+    }
+
     @GameTest(template = "empty5", timeoutTicks = 200)
     public static void refusesToStartWhenAreaObstructed(GameTestHelper helper) {
         BlockPos printerPos = new BlockPos(2, 1, 2);

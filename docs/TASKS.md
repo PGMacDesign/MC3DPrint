@@ -49,7 +49,7 @@ The keystone — everything else consumes this. Pure logic, testable without a r
 - [x] Blueprint Mode in Smart Print Slot (slot detects item vs disc)
 - [ ] Print queue: multiple jobs, reorder, pause/resume, cancel (configurable refund %) — *partial: sequential jobs w/ persistence done; reorder UI + cancel refund pending (FU refunds need M5)*
 - [x] Layer-by-layer bottom-up placement engine
-- [x] Pre-clear validation *(server-side done; hologram preview render moved to M7 visuals)*
+- [x] Pre-clear validation; hologram preview shipped 2026-06-11 (Ghost toggle in GUI: translucent blueprint at the build position, green=clear / red=obstructed, matching blocks hidden; size cap + 16-block render distance in config)
 - [x] Power-loss pause/resume mid-print, jobs persist through restarts
 - [x] Built-in chunk loading for print volume (release on complete/cancel)
 - [x] Print zone conflict detection (bounding box overlap between active jobs)
@@ -116,6 +116,11 @@ The keystone — everything else consumes this. Pure logic, testable without a r
 - [x] Scanner selection preview — corner A (blue) / corner B (cyan) boxes + full selection outline rendered in-world while holding the scanner
 - [x] Gate T8 fabricator + T8 spool behind Draconic Evolution (creative tab, JEI, recipes via `forge:conditional`)
 - [x] Gate Filament Converter behind AE2 (creative tab, JEI, recipe) — *note: converter also works with plain chests/RS; easy to un-gate if that's wanted later*
+
+## Post-Audit Features (2026-06-11)
+
+- [x] Repair printing: re-running a disc skips blocks that already match (zero cost) and fills only what's missing; never overwrites mismatches
+- [x] Hologram preview: per-printer Ghost toggle, ghost blocks within `previewRenderDistance` (default 16) of the camera, full-extent frame outline, `previewMaxBlocks` cap (default 10k)
 
 ## Audit Findings (2026-06-11) — see [AUDIT-2026-06-11.md](AUDIT-2026-06-11.md)
 

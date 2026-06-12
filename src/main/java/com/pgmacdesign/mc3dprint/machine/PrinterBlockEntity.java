@@ -82,7 +82,8 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
     public static final int DATA_OFFSET_X = 11;
     public static final int DATA_OFFSET_Y = 12;
     public static final int DATA_OFFSET_Z = 13;
-    public static final int DATA_COUNT = 14;
+    public static final int DATA_PREVIEW = 14;
+    public static final int DATA_COUNT = 15;
 
     /** Build offsets are clamped to this range on each axis. */
     public static final int MAX_OFFSET = 64;
@@ -148,6 +149,13 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
     /** Player who placed the machine — receives print advancements. */
     @Nullable
     private UUID owner;
+
+    // hologram preview: ghost-renders the loaded disc at the build position
+    private boolean previewEnabled;
+    @Nullable
+    private Blueprint previewBlueprint;
+    @Nullable
+    private UUID previewBlueprintId;
     private int offsetX;
     private int offsetY;
     private int offsetZ;
@@ -875,6 +883,35 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         return clientSpools;
     }
 
+    /** One ghost block of the hologram preview (client render). */
+    public record PreviewBlock(BlockPos pos, BlockState state) {
+    }
+
+    private final List<PreviewBlock> clientPreview = new ArrayList<>();
+    @Nullable
+    private BlockPos clientPreviewOrigin;
+    @Nullable
+    private BlockPos clientPreviewSize;
+    private boolean clientPreviewOn;
+
+    public List<PreviewBlock> clientPreview() {
+        return clientPreview;
+    }
+
+    public boolean previewShowing() {
+        return clientPreviewOn && !clientPreview.isEmpty() && activeJob == null;
+    }
+
+    @Nullable
+    public BlockPos clientPreviewOrigin() {
+        return clientPreviewOrigin;
+    }
+
+    @Nullable
+    public BlockPos clientPreviewSize() {
+        return clientPreviewSize;
+    }
+
     @Override
     public CompoundTag getUpdateTag() {
         CompoundTag tag = new CompoundTag();
@@ -885,6 +922,29 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             tag.put("LastPlaced", net.minecraft.nbt.NbtUtils.writeBlockPos(lastPlacedPos));
         }
         tag.putInt("State", state.ordinal());
+
+        if (previewEnabled && activeJob == null && level instanceof ServerLevel serverLevel) {
+            ItemStack template = inventory.getStackInSlot(SLOT_TEMPLATE);
+            UUID id = isLoadedDisc(template) ? BlueprintDiscItem.getBlueprintId(template).orElse(null) : null;
+            if (id == null) {
+                previewEnabled = false; // disc removed — preview dies with it
+            } else {
+                if (previewBlueprint == null || !id.equals(previewBlueprintId)) {
+                    previewBlueprint = BlueprintFileStore.forServer(serverLevel.getServer()).load(id).orElse(null);
+                    previewBlueprintId = id;
+                }
+                if (previewBlueprint != null
+                        && previewBlueprint.blockCount() <= MC3DPrintConfig.PREVIEW_MAX_BLOCKS.get()) {
+                    BlockPos size = new BlockPos(previewBlueprint.sizeX(), previewBlueprint.sizeY(),
+                            previewBlueprint.sizeZ());
+                    BlockPos origin = worldPosition.offset(
+                            -(size.getX() / 2) + offsetX, 1 + offsetY, -(size.getZ() / 2) + offsetZ);
+                    tag.put("Preview", com.pgmacdesign.mc3dprint.blueprint.BlueprintSerializer.write(previewBlueprint));
+                    tag.put("PreviewOrigin", net.minecraft.nbt.NbtUtils.writeBlockPos(origin));
+                }
+            }
+        }
+        tag.putBoolean("PreviewOn", previewEnabled);
 
         ListTag spoolList = new ListTag();
         for (int i = 0; i < spools.getSlots(); i++) {
@@ -908,6 +968,21 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         lastPlacedPos = tag.contains("LastPlaced", Tag.TAG_COMPOUND)
                 ? net.minecraft.nbt.NbtUtils.readBlockPos(tag.getCompound("LastPlaced")) : null;
         state = State.byOrdinal(tag.getInt("State"));
+
+        clientPreviewOn = tag.getBoolean("PreviewOn");
+        clientPreview.clear();
+        clientPreviewOrigin = null;
+        clientPreviewSize = null;
+        if (tag.contains("Preview", Tag.TAG_COMPOUND) && tag.contains("PreviewOrigin", Tag.TAG_COMPOUND)) {
+            Blueprint blueprint = com.pgmacdesign.mc3dprint.blueprint.BlueprintSerializer
+                    .read(tag.getCompound("Preview"));
+            BlockPos origin = net.minecraft.nbt.NbtUtils.readBlockPos(tag.getCompound("PreviewOrigin"));
+            clientPreviewOrigin = origin;
+            clientPreviewSize = new BlockPos(blueprint.sizeX(), blueprint.sizeY(), blueprint.sizeZ());
+            blueprint.forEachBlock((local, paletteIndex) ->
+                    blueprint.palette().get(paletteIndex).resolve().ifPresent(resolvedState ->
+                            clientPreview.add(new PreviewBlock(origin.offset(local), resolvedState))));
+        }
 
         clientSpools.clear();
         ListTag spoolList = tag.getList("Spools", Tag.TAG_COMPOUND);
@@ -940,6 +1015,11 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             BlockPos size = activeJob.size();
             return new net.minecraft.world.phys.AABB(activeJob.origin(),
                     activeJob.origin().offset(size.getX(), size.getY(), size.getZ()))
+                    .minmax(new net.minecraft.world.phys.AABB(worldPosition));
+        }
+        if (clientPreviewOrigin != null && clientPreviewSize != null) {
+            return new net.minecraft.world.phys.AABB(clientPreviewOrigin,
+                    clientPreviewOrigin.offset(clientPreviewSize))
                     .minmax(new net.minecraft.world.phys.AABB(worldPosition));
         }
         return super.getRenderBoundingBox();
@@ -1000,6 +1080,46 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             default -> offsetZ = clamped = Mth.clamp(offsetZ + delta, -MAX_OFFSET, MAX_OFFSET);
         }
         setChanged();
+        if (previewEnabled) {
+            syncToClients(); // the ghost follows the offsets live
+        }
+    }
+
+    /** Toggles the hologram preview; validates disc presence and the size cap. */
+    public void togglePreview(@Nullable net.minecraft.world.entity.player.Player player) {
+        if (previewEnabled) {
+            previewEnabled = false;
+        } else {
+            ItemStack template = inventory.getStackInSlot(SLOT_TEMPLATE);
+            if (!isLoadedDisc(template) || !(level instanceof ServerLevel serverLevel)) {
+                if (player != null) {
+                    player.displayClientMessage(Component.translatable("message.mc3dprint.preview_no_disc"), true);
+                }
+                return;
+            }
+            UUID id = BlueprintDiscItem.getBlueprintId(template).orElse(null);
+            Blueprint blueprint = id == null ? null
+                    : BlueprintFileStore.forServer(serverLevel.getServer()).load(id).orElse(null);
+            if (blueprint == null) {
+                if (player != null) {
+                    player.displayClientMessage(Component.translatable("message.mc3dprint.preview_no_disc"), true);
+                }
+                return;
+            }
+            int cap = MC3DPrintConfig.PREVIEW_MAX_BLOCKS.get();
+            if (blueprint.blockCount() > cap) {
+                if (player != null) {
+                    player.displayClientMessage(Component.translatable("message.mc3dprint.preview_too_big",
+                            blueprint.blockCount(), cap), true);
+                }
+                return;
+            }
+            previewBlueprint = blueprint;
+            previewBlueprintId = id;
+            previewEnabled = true;
+        }
+        setChanged();
+        syncToClients();
     }
 
     public ContainerData containerData() {
@@ -1033,6 +1153,7 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             case DATA_OFFSET_X -> offsetX;
             case DATA_OFFSET_Y -> offsetY;
             case DATA_OFFSET_Z -> offsetZ;
+            case DATA_PREVIEW -> previewEnabled ? 1 : 0;
             default -> 0;
         };
     }
@@ -1126,6 +1247,7 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         if (owner != null) {
             tag.putUUID("Owner", owner);
         }
+        tag.putBoolean("PreviewEnabled", previewEnabled);
     }
 
     @Override
@@ -1149,5 +1271,6 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         offsetY = Mth.clamp(tag.getInt("OffsetY"), -MAX_OFFSET, MAX_OFFSET);
         offsetZ = Mth.clamp(tag.getInt("OffsetZ"), -MAX_OFFSET, MAX_OFFSET);
         owner = tag.hasUUID("Owner") ? tag.getUUID("Owner") : null;
+        previewEnabled = tag.getBoolean("PreviewEnabled");
     }
 }

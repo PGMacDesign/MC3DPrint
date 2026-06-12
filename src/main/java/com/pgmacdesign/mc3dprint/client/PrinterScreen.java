@@ -38,6 +38,7 @@ public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
 
     private Button startButton;
     private Button autoButton;
+    private Button previewButton;
 
     public PrinterScreen(PrinterMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
@@ -57,6 +58,10 @@ public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
                         autoLabel(),
                         b -> sendButtonClick(PrinterMenu.BUTTON_AUTO))
                 .bounds(leftPos + 52, topPos + CONTROLS_Y, 52, 14).build());
+        previewButton = addRenderableWidget(Button.builder(
+                        previewLabel(),
+                        b -> sendButtonClick(PrinterMenu.BUTTON_PREVIEW))
+                .bounds(leftPos + 108, topPos + CONTROLS_Y, 60, 14).build());
 
         // offsets: [-] value [+] per axis; X at 10, Y at 64, Z at 118
         for (int axis = 0; axis < 3; axis++) {
@@ -80,10 +85,16 @@ public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
                 ? "gui.mc3dprint.auto_on" : "gui.mc3dprint.auto_off");
     }
 
+    private Component previewLabel() {
+        return Component.translatable(menu.preview()
+                ? "gui.mc3dprint.preview_on" : "gui.mc3dprint.preview_off");
+    }
+
     @Override
     protected void containerTick() {
         super.containerTick();
         autoButton.setMessage(autoLabel());
+        previewButton.setMessage(previewLabel());
         startButton.active = !menu.autoStart();
     }
 

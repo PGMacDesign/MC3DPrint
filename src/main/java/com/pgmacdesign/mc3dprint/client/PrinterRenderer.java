@@ -48,6 +48,7 @@ public class PrinterRenderer implements BlockEntityRenderer<PrinterBlockEntity> 
 
         PrintJob job = printer.activeJob();
         if (job == null) {
+            renderPreview(printer, poseStack, bufferSource);
             return;
         }
         BlockPos machine = printer.getBlockPos();
@@ -88,6 +89,73 @@ public class PrinterRenderer implements BlockEntityRenderer<PrinterBlockEntity> 
 
             // beam from head down to the materialization point
             line(poseStack, lines, headX, head.minY, headZ, headX, targetY + 1.0, headZ, HR, HG, HB);
+        }
+    }
+
+    /**
+     * Hologram preview: ghost-renders the loaded blueprint at the build
+     * position. Green-white = will be placed, red = obstructed by a wrong
+     * block, already-matching blocks are skipped entirely. Ghosts only draw
+     * within the configured camera distance — the frame outline marks the
+     * full extent without the render cost.
+     */
+    private void renderPreview(PrinterBlockEntity printer, PoseStack poseStack,
+                               MultiBufferSource bufferSource) {
+        if (!printer.previewShowing() || printer.getLevel() == null) {
+            return;
+        }
+        BlockPos origin = printer.clientPreviewOrigin();
+        BlockPos size = printer.clientPreviewSize();
+        BlockPos machine = printer.getBlockPos();
+        if (origin == null || size == null) {
+            return;
+        }
+
+        // full-extent frame, same style as the active-print frame
+        VertexConsumer frameLines = bufferSource.getBuffer(RenderType.lines());
+        LevelRenderer.renderLineBox(poseStack, frameLines,
+                origin.getX() - machine.getX(), origin.getY() - machine.getY(), origin.getZ() - machine.getZ(),
+                origin.getX() - machine.getX() + size.getX(),
+                origin.getY() - machine.getY() + size.getY(),
+                origin.getZ() - machine.getZ() + size.getZ(),
+                0.55F, 0.75F, 1.00F, 0.65F);
+
+        var minecraft = net.minecraft.client.Minecraft.getInstance();
+        var camera = minecraft.gameRenderer.getMainCamera().getPosition();
+        int maxDistance = com.pgmacdesign.mc3dprint.config.MC3DPrintConfig.PREVIEW_RENDER_DISTANCE.get();
+        double maxDistanceSq = (double) maxDistance * maxDistance;
+        var dispatcher = minecraft.getBlockRenderer();
+        var level = printer.getLevel();
+
+        for (PrinterBlockEntity.PreviewBlock ghost : printer.clientPreview()) {
+            BlockPos pos = ghost.pos();
+            if (camera.distanceToSqr(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5) > maxDistanceSq) {
+                continue;
+            }
+            net.minecraft.world.level.block.state.BlockState existing = level.getBlockState(pos);
+            if (existing == ghost.state()) {
+                continue; // already correct — repair mode will skip it too
+            }
+            boolean blocked = !existing.canBeReplaced();
+
+            poseStack.pushPose();
+            poseStack.translate(pos.getX() - machine.getX(), pos.getY() - machine.getY(),
+                    pos.getZ() - machine.getZ());
+            // slight shrink so ghost faces never z-fight with real neighbors
+            poseStack.translate(0.5, 0.5, 0.5);
+            poseStack.scale(0.95F, 0.95F, 0.95F);
+            poseStack.translate(-0.5, -0.5, -0.5);
+
+            MultiBufferSource ghostBuffers = blocked
+                    ? type -> new GhostVertexConsumer(bufferSource.getBuffer(RenderType.translucent()),
+                            1.0F, 0.35F, 0.35F, 150)
+                    : type -> new GhostVertexConsumer(bufferSource.getBuffer(RenderType.translucent()),
+                            0.65F, 1.0F, 0.70F, 140);
+            dispatcher.renderSingleBlock(ghost.state(), poseStack, ghostBuffers,
+                    LevelRenderer.getLightColor(level, pos),
+                    net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY,
+                    net.minecraftforge.client.model.data.ModelData.EMPTY, null);
+            poseStack.popPose();
         }
     }
 
