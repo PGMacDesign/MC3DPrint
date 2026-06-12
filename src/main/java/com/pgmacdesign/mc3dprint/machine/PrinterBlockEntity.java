@@ -561,8 +561,31 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             return;
         }
 
-        PlacementEntry entry = placementOrder.get(activeJob.placed());
         Blueprint blueprint = cachedBlueprint;
+
+        // repair mode: fast-forward through blocks that already match the
+        // blueprint — they cost nothing and are never re-placed. This is what
+        // lets a damaged build be fixed by simply printing the disc again.
+        while (!activeJob.isComplete()) {
+            PlacementEntry skipCandidate = placementOrder.get(activeJob.placed());
+            BlockState target = blueprint.palette().get(skipCandidate.paletteIndex()).resolve()
+                    .map(resolvedState -> resolvedState
+                            .mirror(activeJob.orientation().mirror())
+                            .rotate(activeJob.orientation().rotation()))
+                    .orElse(null);
+            if (target == null
+                    || serverLevel.getBlockState(worldPosFor(skipCandidate.local(), blueprint)) != target) {
+                break;
+            }
+            activeJob.setPlaced(activeJob.placed() + 1);
+        }
+        if (activeJob.isComplete()) {
+            setChanged();
+            tryFinishJob(serverLevel, disc);
+            return;
+        }
+
+        PlacementEntry entry = placementOrder.get(activeJob.placed());
         BlockPos worldPos = worldPosFor(entry.local(), blueprint);
 
         if (!serverLevel.getBlockState(worldPos).canBeReplaced()) {
@@ -672,6 +695,11 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         syncToClients();
     }
 
+    /**
+     * A position is printable when it's replaceable OR already holds exactly
+     * the block the blueprint wants there (repair/fill-in: never destructive,
+     * matching blocks are simply skipped at zero cost).
+     */
     private boolean isAreaClear(ServerLevel serverLevel, Blueprint blueprint,
                                 PrintOrientation orientation, BlockPos origin) {
         boolean[] clear = {true};
@@ -679,8 +707,16 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             if (clear[0]) {
                 BlockPos world = origin.offset(orientation.transform(local,
                         blueprint.sizeX(), blueprint.sizeY(), blueprint.sizeZ()));
-                if (!serverLevel.getBlockState(world).canBeReplaced()) {
-                    clear[0] = false;
+                BlockState existing = serverLevel.getBlockState(world);
+                if (!existing.canBeReplaced()) {
+                    BlockState target = blueprint.palette().get(paletteIndex).resolve()
+                            .map(resolvedState -> resolvedState
+                                    .mirror(orientation.mirror())
+                                    .rotate(orientation.rotation()))
+                            .orElse(null);
+                    if (existing != target) {
+                        clear[0] = false;
+                    }
                 }
             }
         });

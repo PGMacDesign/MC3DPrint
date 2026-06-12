@@ -116,6 +116,50 @@ public class StructurePrintGameTests {
         });
     }
 
+    @GameTest(template = "empty5", timeoutTicks = 300)
+    public static void repairPrintFillsOnlyMissingBlocks(GameTestHelper helper) {
+        BlockPos printerPos = new BlockPos(2, 1, 2);
+        PrinterBlockEntity printer = poweredPrinter(helper, printerPos);
+        // pre-place the stone half of the structure: the printer must skip it,
+        // place only the glass, and pay FU only for the glass
+        helper.setBlock(new BlockPos(1, 2, 1), Blocks.STONE);
+        printer.inventory().setStackInSlot(PrinterBlockEntity.SLOT_TEMPLATE, discFor(helper, smallBlueprint()));
+
+        // T3 efficiency 0.65: glass 5 FU -> ceil(7.69) = 8; stone would be 5 more
+        helper.succeedWhen(() -> {
+            helper.assertBlockPresent(Blocks.GLASS, new BlockPos(2, 2, 2));
+            ItemStack output = printer.inventory().getStackInSlot(PrinterBlockEntity.SLOT_OUTPUT);
+            if (!(output.getItem() instanceof BlueprintDiscItem)) {
+                throw new GameTestAssertException("Disc not ejected after repair print");
+            }
+            int fu = com.pgmacdesign.mc3dprint.fu.SpoolItem.getFu(printer.spoolInventory().getStackInSlot(0));
+            if (fu != 392) {
+                throw new GameTestAssertException("Expected 392 FU (only glass paid for), got " + fu);
+            }
+        });
+    }
+
+    @GameTest(template = "empty5", timeoutTicks = 200)
+    public static void reprintOverIntactStructureCostsNothing(GameTestHelper helper) {
+        BlockPos printerPos = new BlockPos(2, 1, 2);
+        PrinterBlockEntity printer = poweredPrinter(helper, printerPos);
+        // the whole structure already exists and matches exactly
+        helper.setBlock(new BlockPos(1, 2, 1), Blocks.STONE);
+        helper.setBlock(new BlockPos(2, 2, 2), Blocks.GLASS);
+        printer.inventory().setStackInSlot(PrinterBlockEntity.SLOT_TEMPLATE, discFor(helper, smallBlueprint()));
+
+        helper.succeedWhen(() -> {
+            ItemStack output = printer.inventory().getStackInSlot(PrinterBlockEntity.SLOT_OUTPUT);
+            if (!(output.getItem() instanceof BlueprintDiscItem)) {
+                throw new GameTestAssertException("Disc not ejected after no-op print");
+            }
+            int fu = com.pgmacdesign.mc3dprint.fu.SpoolItem.getFu(printer.spoolInventory().getStackInSlot(0));
+            if (fu != 400) {
+                throw new GameTestAssertException("No-op reprint must cost nothing, drained to " + fu);
+            }
+        });
+    }
+
     @GameTest(template = "empty5", timeoutTicks = 200)
     public static void refusesToStartWhenAreaObstructed(GameTestHelper helper) {
         BlockPos printerPos = new BlockPos(2, 1, 2);
