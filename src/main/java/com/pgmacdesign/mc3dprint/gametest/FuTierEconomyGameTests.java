@@ -159,8 +159,8 @@ public class FuTierEconomyGameTests {
         var iron = com.pgmacdesign.mc3dprint.fu.FuValueRegistry.valueOf(new ItemStack(Items.IRON_BLOCK));
         if (netherite.isEmpty() || netherite.get().fu() != 4500 || netherite.get().tier() != 5) {
             helper.fail("Netherite block should be 4500 FU @ T5, got " + netherite);
-        } else if (diamond.isEmpty() || diamond.get().fu() != 450 || diamond.get().tier() != 4) {
-            helper.fail("Diamond block should be 450 FU @ T4, got " + diamond);
+        } else if (diamond.isEmpty() || diamond.get().fu() != 450 || diamond.get().tier() != 5) {
+            helper.fail("Diamond block should be 450 FU @ T5, got " + diamond);
         } else if (iron.isEmpty() || iron.get().fu() != 180 || iron.get().tier() != 2) {
             helper.fail("Iron block should be 180 FU @ T2, got " + iron);
         } else {

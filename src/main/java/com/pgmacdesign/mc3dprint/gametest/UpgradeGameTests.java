@@ -38,13 +38,13 @@ public class UpgradeGameTests {
         PrinterBlockEntity printer = poweredT4(helper);
         printer.installUpgrade(new ItemStack(ModItems.EFFICIENCY_UPGRADE.get()));
 
-        // T4 spool: diamond cost is T4-denominated, so the drain is exact 1:1
+        // T4 spool: emerald cost is T4-denominated, so the drain is exact 1:1
         ItemStack spool = new ItemStack(ModItems.SPOOLS.get(3).get());
         SpoolItem.setFu(spool, 100);
         printer.spoolInventory().setStackInSlot(0, spool);
-        printer.inventory().setStackInSlot(PrinterBlockEntity.SLOT_TEMPLATE, new ItemStack(Items.DIAMOND));
+        printer.inventory().setStackInSlot(PrinterBlockEntity.SLOT_TEMPLATE, new ItemStack(Items.EMERALD));
 
-        // diamond 50 FU base, T4 efficiency 75% -> 66.67, ×0.9 with one module -> ceil(60.0) = 60
+        // emerald 50 FU base, T4 efficiency 75% -> 66.67, ×0.9 with one module -> ceil(60.0) = 60
         helper.succeedWhen(() -> {
             if (printer.inventory().getStackInSlot(PrinterBlockEntity.SLOT_OUTPUT).isEmpty()) {
                 throw new GameTestAssertException("No output yet");

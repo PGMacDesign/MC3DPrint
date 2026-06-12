@@ -51,7 +51,7 @@ class FuConversionTest {
         // winding is exact-tier in-game (windYield called with equal tiers → 1:1);
         // the general exchange below backs the print-side down-conversion math
         assertEquals(20, FuConversion.windYield(20, 2, 2, RATIO)); // iron into a T2 spool: 1:1
-        assertEquals(50, FuConversion.windYield(50, 4, 4, RATIO)); // diamond into a T4 spool: 1:1
+        assertEquals(50, FuConversion.windYield(50, 4, 4, RATIO)); // a T4 gem (emerald) into a T4 spool: 1:1
         assertEquals(80, FuConversion.windYield(20, 2, 1, RATIO)); // exchange primitive: 20 T2 = 80 T1
         assertEquals(800, FuConversion.windYield(50, 4, 2, RATIO)); // exchange primitive: 50 T4 = 800 T2
     }

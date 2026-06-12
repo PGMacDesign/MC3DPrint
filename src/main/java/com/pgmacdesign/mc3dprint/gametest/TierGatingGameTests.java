@@ -70,9 +70,9 @@ public class TierGatingGameTests {
     }
 
     @GameTest(template = "empty5", timeoutTicks = 150)
-    public static void t1RefusesTier4Item(GameTestHelper helper) {
+    public static void t1RefusesHighTierItem(GameTestHelper helper) {
         PrinterBlockEntity t1 = printer(helper, ModBlocks.PRINTERS.get(0).get(), new BlockPos(2, 1, 2));
-        t1.inventory().setStackInSlot(PrinterBlockEntity.SLOT_TEMPLATE, new ItemStack(Items.DIAMOND));
+        t1.inventory().setStackInSlot(PrinterBlockEntity.SLOT_TEMPLATE, new ItemStack(Items.DIAMOND)); // T5
 
         helper.runAfterDelay(60, () -> {
             if (t1.state() != PrinterBlockEntity.State.NOT_PRINTABLE) {
@@ -80,7 +80,7 @@ public class TierGatingGameTests {
                 return;
             }
             if (!t1.inventory().getStackInSlot(PrinterBlockEntity.SLOT_OUTPUT).isEmpty()) {
-                helper.fail("T1 printed a tier-4 item");
+                helper.fail("T1 printed a high-tier item");
                 return;
             }
             helper.succeed();
@@ -90,16 +90,16 @@ public class TierGatingGameTests {
     @GameTest(template = "empty5", timeoutTicks = 200)
     public static void t4PrintsTier4Item(GameTestHelper helper) {
         PrinterBlockEntity t4 = printer(helper, ModBlocks.PRINTERS.get(3).get(), new BlockPos(2, 1, 2));
-        // diamond costs T4-denominated FU; a T4 spool pays it 1:1
+        // emerald is the T4 gem (diamond is T5); a T4 spool pays its T4 cost 1:1
         ItemStack t4Spool = new ItemStack(ModItems.SPOOLS.get(3).get());
         SpoolItem.setFu(t4Spool, 400);
         t4.spoolInventory().setStackInSlot(0, t4Spool);
-        t4.inventory().setStackInSlot(PrinterBlockEntity.SLOT_TEMPLATE, new ItemStack(Items.DIAMOND));
+        t4.inventory().setStackInSlot(PrinterBlockEntity.SLOT_TEMPLATE, new ItemStack(Items.EMERALD));
 
         helper.succeedWhen(() -> {
             ItemStack output = t4.inventory().getStackInSlot(PrinterBlockEntity.SLOT_OUTPUT);
-            if (output.isEmpty() || !output.is(Items.DIAMOND)) {
-                throw new GameTestAssertException("T4 has not printed the diamond yet");
+            if (output.isEmpty() || !output.is(Items.EMERALD)) {
+                throw new GameTestAssertException("T4 has not printed the emerald yet");
             }
         });
     }

@@ -59,7 +59,7 @@ public class FilamentGameTests {
                 energy.receiveEnergy(1_000, false);
             }
         });
-        // diamond is 50 FU @ tier 4 — a T1 spool can't hold it (exact-tier rule)
+        // diamond is 50 FU @ tier 5 — a T1 spool can't hold it (exact-tier rule)
         winder.inventory().setStackInSlot(WinderBlockEntity.SLOT_INPUT, new ItemStack(Items.DIAMOND));
         winder.inventory().setStackInSlot(WinderBlockEntity.SLOT_SPOOL, new ItemStack(ModItems.SPOOLS.get(0).get()));
 
@@ -84,15 +84,15 @@ public class FilamentGameTests {
         if (!(helper.getBlockEntity(pos) instanceof WinderBlockEntity winder)) {
             throw new GameTestAssertException("Winder block entity missing");
         }
-        // diamond (T4) + T1 spool: wrong tier — GUI shows red X + "Requires Tier 4 Spool"
+        // diamond (T5) + T1 spool: wrong tier — GUI shows red X + "Requires Tier 5 Spool"
         winder.inventory().setStackInSlot(WinderBlockEntity.SLOT_INPUT, new ItemStack(Items.DIAMOND));
         winder.inventory().setStackInSlot(WinderBlockEntity.SLOT_SPOOL, new ItemStack(ModItems.SPOOLS.get(0).get()));
         if (winder.winderStatus() != WinderBlockEntity.STATUS_WRONG_TIER) {
             helper.fail("Expected WRONG_TIER, got " + winder.winderStatus());
             return;
         }
-        if (winder.requiredSpoolTier() != 4) {
-            helper.fail("Expected required tier 4, got " + winder.requiredSpoolTier());
+        if (winder.requiredSpoolTier() != 5) {
+            helper.fail("Expected required tier 5, got " + winder.requiredSpoolTier());
             return;
         }
         // a stick has no FU value at all
@@ -101,11 +101,11 @@ public class FilamentGameTests {
             helper.fail("Expected NOT_CONVERTIBLE for a stick, got " + winder.winderStatus());
             return;
         }
-        // a matching T4 spool clears the status
+        // a matching T5 spool clears the status
         winder.inventory().setStackInSlot(WinderBlockEntity.SLOT_INPUT, new ItemStack(Items.DIAMOND));
-        winder.inventory().setStackInSlot(WinderBlockEntity.SLOT_SPOOL, new ItemStack(ModItems.SPOOLS.get(3).get()));
+        winder.inventory().setStackInSlot(WinderBlockEntity.SLOT_SPOOL, new ItemStack(ModItems.SPOOLS.get(4).get()));
         if (winder.winderStatus() != WinderBlockEntity.STATUS_OK) {
-            helper.fail("Expected OK with a matching T4 spool, got " + winder.winderStatus());
+            helper.fail("Expected OK with a matching T5 spool, got " + winder.winderStatus());
             return;
         }
         helper.succeed();

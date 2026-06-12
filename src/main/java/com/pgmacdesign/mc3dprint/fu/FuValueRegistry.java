@@ -131,8 +131,10 @@ public final class FuValueRegistry {
                 "minecraft:gold_nugget=1@2", "minecraft:iron_nugget=2@2",
                 // ~30 FU @ T3
                 "minecraft:redstone=4@3", "minecraft:slime_ball=30@3", "minecraft:magma_cream=30@3",
-                // 50 FU @ T4 — gems (diamond = emerald by design)
-                "minecraft:diamond=50@4", "minecraft:emerald=50@4",
+                // 50 FU @ T4 — emerald (villager-renewable, stays the T4 gem)
+                "minecraft:emerald=50@4",
+                // 50 FU @ T5 — diamond (mined; gated above emerald per 2026-06-11 decision)
+                "minecraft:diamond=50@5",
                 // T5+
                 "minecraft:netherite_ingot=500@5", "minecraft:ancient_debris=125@5",
                 "minecraft:nether_star=1500@6",
@@ -147,7 +149,7 @@ public final class FuValueRegistry {
                 "minecraft:gold_block=135@2", "minecraft:lapis_block=90@2",
                 "minecraft:amethyst_block=40@2",
                 "minecraft:redstone_block=36@3", "minecraft:slime_block=270@3",
-                "minecraft:diamond_block=450@4", "minecraft:emerald_block=450@4",
+                "minecraft:emerald_block=450@4", "minecraft:diamond_block=450@5",
                 "minecraft:netherite_block=4500@5");
     }
 }

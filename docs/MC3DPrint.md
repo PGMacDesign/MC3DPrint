@@ -110,7 +110,8 @@ Materials within the same group share identical FU values — e.g. cobblestone, 
 | **15 FU** | Gold Ingot, Gold Nugget ×9 | T2 |
 | **20 FU** | Iron Ingot, Iron Nugget ×9 | T2 |
 | **30 FU** | Redstone Dust ×8, Slimeball, Magma Cream | T3 |
-| **50 FU** | Diamond, Emerald *(same value — equally rare, equally useful)* | T4 |
+| **50 FU** | Emerald *(villager-renewable — the T4 gem)* | T4 |
+| **50 FU** | Diamond *(mined — gated above emerald, 2026-06-11)* | T5 |
 | **500 FU** | Netherite Ingot, Ancient Debris ×4 | T5 |
 | **1,500 FU** | Nether Star | T6 |
 | **2,500 FU** | Dragon Egg | T7 |
@@ -118,7 +119,7 @@ Materials within the same group share identical FU values — e.g. cobblestone, 
 *All values are placeholders — expect significant rebalancing during playtesting.*
 
 **Key grouping rules:**
-- Same rarity tier = same FU value (diamond = emerald, cobblestone = dirt = gravel = sand)
+- Same rarity tier = same FU value (cobblestone = dirt = gravel = sand). Diamond and emerald share the 50 FU value but sit at different tiers — diamond T5 (mined), emerald T4 (renewable)
 - Stone variants (sandstone, stone bricks, etc.) = same as base stone
 - All wood types = same value regardless of species
 - Nugget ×9 = ingot value (consistent with vanilla crafting ratios)
