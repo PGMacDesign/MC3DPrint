@@ -88,6 +88,16 @@ public class WinderMenu extends AbstractContainerMenu {
         return SplitContainerData.combine(data, WinderBlockEntity.DATA_SPOOL_CAP);
     }
 
+    /** Tier of spool the input material needs (0 when there's no valued input). */
+    public int requiredTier() {
+        return SplitContainerData.combine(data, WinderBlockEntity.DATA_REQUIRED_TIER);
+    }
+
+    /** {@link WinderBlockEntity#STATUS_OK} / WRONG_TIER / NOT_CONVERTIBLE. */
+    public int status() {
+        return SplitContainerData.combine(data, WinderBlockEntity.DATA_STATUS);
+    }
+
     @Override
     public ItemStack quickMoveStack(Player player, int slotIndex) {
         Slot slot = slots.get(slotIndex);

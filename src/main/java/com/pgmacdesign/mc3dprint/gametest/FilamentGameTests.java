@@ -77,6 +77,40 @@ public class FilamentGameTests {
         });
     }
 
+    @GameTest(template = "empty5", timeoutTicks = 60)
+    public static void winderSurfacesWrongTierStatus(GameTestHelper helper) {
+        BlockPos pos = new BlockPos(2, 1, 2);
+        helper.setBlock(pos, ModBlocks.FILAMENT_WINDER.get());
+        if (!(helper.getBlockEntity(pos) instanceof WinderBlockEntity winder)) {
+            throw new GameTestAssertException("Winder block entity missing");
+        }
+        // diamond (T4) + T1 spool: wrong tier — GUI shows red X + "Requires Tier 4 Spool"
+        winder.inventory().setStackInSlot(WinderBlockEntity.SLOT_INPUT, new ItemStack(Items.DIAMOND));
+        winder.inventory().setStackInSlot(WinderBlockEntity.SLOT_SPOOL, new ItemStack(ModItems.SPOOLS.get(0).get()));
+        if (winder.winderStatus() != WinderBlockEntity.STATUS_WRONG_TIER) {
+            helper.fail("Expected WRONG_TIER, got " + winder.winderStatus());
+            return;
+        }
+        if (winder.requiredSpoolTier() != 4) {
+            helper.fail("Expected required tier 4, got " + winder.requiredSpoolTier());
+            return;
+        }
+        // a stick has no FU value at all
+        winder.inventory().setStackInSlot(WinderBlockEntity.SLOT_INPUT, new ItemStack(Items.STICK));
+        if (winder.winderStatus() != WinderBlockEntity.STATUS_NOT_CONVERTIBLE) {
+            helper.fail("Expected NOT_CONVERTIBLE for a stick, got " + winder.winderStatus());
+            return;
+        }
+        // a matching T4 spool clears the status
+        winder.inventory().setStackInSlot(WinderBlockEntity.SLOT_INPUT, new ItemStack(Items.DIAMOND));
+        winder.inventory().setStackInSlot(WinderBlockEntity.SLOT_SPOOL, new ItemStack(ModItems.SPOOLS.get(3).get()));
+        if (winder.winderStatus() != WinderBlockEntity.STATUS_OK) {
+            helper.fail("Expected OK with a matching T4 spool, got " + winder.winderStatus());
+            return;
+        }
+        helper.succeed();
+    }
+
     @GameTest(template = "empty5", timeoutTicks = 150)
     public static void printerWithoutFilamentPauses(GameTestHelper helper) {
         BlockPos pos = new BlockPos(2, 1, 2);

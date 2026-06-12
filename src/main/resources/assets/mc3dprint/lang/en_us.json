@@ -29,6 +29,8 @@
   "tooltip.mc3dprint.scanner_help": "Right-click blocks to set corners, right-click air to scan",
   "block.mc3dprint.filament_winder": "Filament Winder",
   "container.mc3dprint.filament_winder": "Filament Winder",
+  "gui.mc3dprint.winder.requires_tier": "Requires Tier %s Spool",
+  "gui.mc3dprint.winder.not_convertible": "Can't be converted",
   "block.mc3dprint.tier2_printer": "Tier 2 3D Printer",
   "block.mc3dprint.tier3_printer": "Tier 3 3D Printer",
   "block.mc3dprint.tier4_printer": "Tier 4 3D Printer",

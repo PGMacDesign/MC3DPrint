@@ -48,7 +48,14 @@ public class WinderBlockEntity extends BlockEntity implements MenuProvider {
     public static final int DATA_MAX_ENERGY = 3;
     public static final int DATA_SPOOL_FU = 4;
     public static final int DATA_SPOOL_CAP = 5;
-    public static final int DATA_COUNT = 6;
+    public static final int DATA_REQUIRED_TIER = 6;
+    public static final int DATA_STATUS = 7;
+    public static final int DATA_COUNT = 8;
+
+    /** Winder status surfaced to the GUI. */
+    public static final int STATUS_OK = 0;          // empty, or material + matching spool
+    public static final int STATUS_WRONG_TIER = 1;  // material present, spool tier doesn't match
+    public static final int STATUS_NOT_CONVERTIBLE = 2; // input item has no FU value
 
     private final ItemStackHandler inventory = new ItemStackHandler(SLOT_COUNT) {
         @Override
@@ -126,6 +133,28 @@ public class WinderBlockEntity extends BlockEntity implements MenuProvider {
         return inventory;
     }
 
+    /** Tier of spool the input material needs (its own tier), 0 if none/non-valued. */
+    public int requiredSpoolTier() {
+        return FuValueRegistry.valueOf(inventory.getStackInSlot(SLOT_INPUT))
+                .map(FuValue::tier).orElse(0);
+    }
+
+    /** {@link #STATUS_OK}/{@link #STATUS_WRONG_TIER}/{@link #STATUS_NOT_CONVERTIBLE} for the GUI. */
+    public int winderStatus() {
+        ItemStack input = inventory.getStackInSlot(SLOT_INPUT);
+        if (input.isEmpty()) {
+            return STATUS_OK;
+        }
+        Optional<FuValue> value = FuValueRegistry.valueOf(input);
+        if (value.isEmpty()) {
+            return STATUS_NOT_CONVERTIBLE;
+        }
+        ItemStack spool = inventory.getStackInSlot(SLOT_SPOOL);
+        boolean matched = spool.getItem() instanceof SpoolItem spoolItem && !spoolItem.creative()
+                && FuConversion.canWindInto(value.get().tier(), spoolItem.tier());
+        return matched ? STATUS_OK : STATUS_WRONG_TIER;
+    }
+
     public ContainerData containerData() {
         return new SplitContainerData(DATA_COUNT, this::dataValue);
     }
@@ -139,6 +168,8 @@ public class WinderBlockEntity extends BlockEntity implements MenuProvider {
             case DATA_MAX_ENERGY -> energy.getMaxEnergyStored();
             case DATA_SPOOL_FU -> SpoolItem.getFu(spool);
             case DATA_SPOOL_CAP -> spool.getItem() instanceof SpoolItem s ? s.capacity() : 0;
+            case DATA_REQUIRED_TIER -> requiredSpoolTier();
+            case DATA_STATUS -> winderStatus();
             default -> 0;
         };
     }
