@@ -87,7 +87,7 @@ The keystone — everything else consumes this. Pure logic, testable without a r
 ## M8 — v1 Integrations ✅ *(AE2-deep + live compat testing flagged)*
 
 - [x] JEI: "3D Printing" category (item, base FU cost, required tier; printers/fabricators as catalysts) — *disc-contents browsing + RF column pending*
-- [x] Patchouli guidebook (soft dep, data-driven; 2 categories / 3 entries) — *auto-give waits on crafting recipes (M9)*
+- [x] Patchouli guidebook (soft dep, data-driven; 2 categories / 6 entries) — auto-given on first printer craft (2026-06-11)
 - [x] Filament Converter block: pulls filtered items from ANY adjacent inventory (incl. ME/RS interfaces), winds FU straight into docked spools on adjacent printers — *AE2-API deep integration (network listening, autocrafting triggers) deferred: needs testing against real AE2*
 - [x] Create: schematic import UX via `/mc3dprint import <file>.nbt` (vanilla structure format)
 - [x] WorldEdit: `.schem` import (`/mc3dprint import`) + export (`/mc3dprint export` with disc in hand)
@@ -100,7 +100,7 @@ The keystone — everything else consumes this. Pure logic, testable without a r
 - [x] Blueprint Disc loot injection via global loot modifiers (villages/dungeon + mineshaft/temples; chances + targets data-driven) — *End city tier waits on higher-tier curated content*
 - [x] Curated pre-built blueprint set (starter hut, watchtower, storage shed) — bundled as data, auto-installed per world with deterministic UUIDs; pack makers can ship their own the same way
 - [ ] Signature/creator blueprints + outreach *(human task — see LAUNCH.md)*
-- [x] Advancement tree (root → Architect/Matter Matters → Printite → T7 Online → Draconic Fabricator, hidden) — *First Extrusion/Fabricator need custom code triggers; approximated for now*
+- [x] Advancement tree — full 8-node spec tree (root → First Extrusion / Architect → Fabricator / Matter Matters / Found in the Wild → Printite → T7 Online → Draconic, hidden) with custom criteria triggers (2026-06-11)
 - [x] Remote Terminal block (sneak-click printer to pair, opens its GUI from anywhere; multiple terminals per printer)
 - [ ] Server Blueprint Repository block + GUI tab — *partial: world file store + /mc3dprint import/export + curated auto-install cover the server-owner workflow; dedicated block/GUI deferred to the GUI pass*
 - [ ] Balancing pass over all config values — *needs human playtesting (see LAUNCH.md)*
@@ -121,9 +121,9 @@ The keystone — everything else consumes this. Pure logic, testable without a r
 
 Requirements from the original design doc that were rewritten/dropped without a record during the autonomous build:
 
-- [ ] Advancements: add *First Extrusion*, *Fabricator*, *Found in the Wild*; fix *Matter Matters* trigger (spec: convert 1,000 FU) and *Architect* (spec: first scan) — needs custom criteria triggers
-- [ ] Patchouli: auto-give on first printer craft (now unblocked — recipes exist); add I/O, blueprint-format, and upgrades entries per spec'd scope
-- [ ] Upgrade modifier rates → config (spec: "all modifier rates exposed in config"; currently hardcoded)
+- [x] Advancements: *First Extrusion*, *Fabricator*, *Found in the Wild* added; *Matter Matters* (1,000 FU wound, tracked per player) and *Architect* (real scan) retargeted to custom criteria triggers; machines track their placer as owner — done 2026-06-11
+- [x] Patchouli: handbook auto-given on first printer craft (soft dep, once per player); I/O Setup, Blueprint Discs & Files, and Upgrade Modules entries added — done 2026-06-11
+- [x] Upgrade modifier rates → config (`upgrades` section: speed/efficiency/rf/buffer factors); tooltips read live values — done 2026-06-11
 - [x] ~~Tiered upgrade items~~ — **decided 2026-06-11 (Patrick): keep flat**, doc amended
 - [x] FU table: concrete family @ 5 FU added; nuggets = ingot/9 rounded down (gold 1 FU, iron 2 FU @ T2) — decided 2026-06-11 (Patrick): lossy is fine
 - [x] I/O: sides now spool-exclusive per spec (no item handler on sides; bottom = output, top = input) — decided + implemented 2026-06-11

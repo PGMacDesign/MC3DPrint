@@ -60,6 +60,11 @@ public class AddBlueprintDiscModifier extends LootModifier {
         ItemStack disc = new ItemStack(ModItems.BLUEPRINT_DISC.get());
         BlueprintDiscItem.writeBlueprint(disc, id, blueprint.get());
         generatedLoot.add(disc);
+        // chest loot context: THIS_ENTITY is the player who opened it
+        if (context.getParamOrNull(net.minecraft.world.level.storage.loot.parameters.LootContextParams.THIS_ENTITY)
+                instanceof net.minecraft.server.level.ServerPlayer player) {
+            com.pgmacdesign.mc3dprint.advancement.ModCriteria.LOOT_DISC_FOUND.trigger(player);
+        }
         return generatedLoot;
     }
 

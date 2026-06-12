@@ -27,6 +27,8 @@ public class MC3DPrint {
         ModCreativeTabs.CREATIVE_MODE_TABS.register(modEventBus);
         com.pgmacdesign.mc3dprint.registry.ModLootModifiers.LOOT_MODIFIERS.register(modEventBus);
 
+        com.pgmacdesign.mc3dprint.advancement.ModCriteria.register();
+
         context.registerConfig(ModConfig.Type.COMMON, MC3DPrintConfig.SPEC);
 
         modEventBus.addListener((ModConfigEvent.Reloading event) -> {
@@ -39,5 +41,7 @@ public class MC3DPrint {
                 com.pgmacdesign.mc3dprint.command.ImportCommand::register);
         net.minecraftforge.common.MinecraftForge.EVENT_BUS.addListener(
                 com.pgmacdesign.mc3dprint.blueprint.CuratedBlueprints::onServerStarted);
+        net.minecraftforge.common.MinecraftForge.EVENT_BUS.addListener(
+                com.pgmacdesign.mc3dprint.integration.patchouli.GuidebookAutoGive::onItemCrafted);
     }
 }

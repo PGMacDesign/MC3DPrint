@@ -1,14 +1,19 @@
 {
   "parent": "mc3dprint:root",
   "display": {
-    "icon": { "item": "mc3dprint:blueprint_disc" },
-    "title": { "translate": "advancement.mc3dprint.architect.title" },
-    "description": { "translate": "advancement.mc3dprint.architect.desc" }
+    "icon": {
+      "item": "mc3dprint:blueprint_disc"
+    },
+    "title": {
+      "translate": "advancement.mc3dprint.architect.title"
+    },
+    "description": {
+      "translate": "advancement.mc3dprint.architect.desc"
+    }
   },
   "criteria": {
-    "has_written_disc": {
-      "trigger": "minecraft:inventory_changed",
-      "conditions": { "items": [ { "items": [ "mc3dprint:blueprint_disc" ] } ] }
+    "scanned": {
+      "trigger": "mc3dprint:structure_scanned"
     }
   }
 }

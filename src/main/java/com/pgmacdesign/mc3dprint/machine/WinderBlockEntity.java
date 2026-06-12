@@ -74,6 +74,9 @@ public class WinderBlockEntity extends BlockEntity implements MenuProvider {
     private final LazyOptional<IItemHandler> allCap = LazyOptional.of(() -> inventory);
 
     private int progress;
+    /** Player who placed the winder — accumulates Matter Matters progress. */
+    @Nullable
+    private java.util.UUID owner;
     private final MachineTier tier;
 
     public WinderBlockEntity(BlockPos pos, BlockState blockState) {
@@ -116,6 +119,7 @@ public class WinderBlockEntity extends BlockEntity implements MenuProvider {
             progress = 0;
             energy.consume(MC3DPrintConfig.WINDER_RF_PER_ITEM.get());
             SpoolItem.fill(spool, FuConversion.clampToInt(yield));
+            creditFuConverted(value.get().fu());
             input.shrink(1);
             inventory.setStackInSlot(SLOT_INPUT, input);
             inventory.setStackInSlot(SLOT_SPOOL, spool);
@@ -175,12 +179,39 @@ public class WinderBlockEntity extends BlockEntity implements MenuProvider {
         allCap.invalidate();
     }
 
+    public void setOwner(@Nullable java.util.UUID owner) {
+        this.owner = owner;
+        setChanged();
+    }
+
+    /** Accumulates wound FU on the owner toward the Matter Matters advancement. */
+    private void creditFuConverted(int fu) {
+        if (owner == null || level == null || level.getServer() == null) {
+            return;
+        }
+        net.minecraft.server.level.ServerPlayer player = level.getServer().getPlayerList().getPlayer(owner);
+        if (player == null) {
+            return;
+        }
+        CompoundTag root = player.getPersistentData();
+        CompoundTag persisted = root.getCompound(net.minecraft.world.entity.player.Player.PERSISTED_NBT_TAG);
+        int total = persisted.getInt(com.pgmacdesign.mc3dprint.advancement.ModCriteria.TAG_FU_WOUND) + fu;
+        persisted.putInt(com.pgmacdesign.mc3dprint.advancement.ModCriteria.TAG_FU_WOUND, total);
+        root.put(net.minecraft.world.entity.player.Player.PERSISTED_NBT_TAG, persisted);
+        if (total >= com.pgmacdesign.mc3dprint.advancement.ModCriteria.MATTER_MATTERS_FU) {
+            com.pgmacdesign.mc3dprint.advancement.ModCriteria.FU_CONVERTED.trigger(player);
+        }
+    }
+
     @Override
     protected void saveAdditional(CompoundTag tag) {
         super.saveAdditional(tag);
         tag.put("Inventory", inventory.serializeNBT());
         tag.putInt("Energy", energy.getEnergyStored());
         tag.putInt("Progress", progress);
+        if (owner != null) {
+            tag.putUUID("Owner", owner);
+        }
     }
 
     @Override
@@ -189,5 +220,6 @@ public class WinderBlockEntity extends BlockEntity implements MenuProvider {
         inventory.deserializeNBT(tag.getCompound("Inventory"));
         energy.setStored(tag.getInt("Energy"));
         progress = tag.getInt("Progress");
+        owner = tag.hasUUID("Owner") ? tag.getUUID("Owner") : null;
     }
 }

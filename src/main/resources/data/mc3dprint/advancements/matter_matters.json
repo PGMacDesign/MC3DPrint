@@ -1,14 +1,19 @@
 {
   "parent": "mc3dprint:root",
   "display": {
-    "icon": { "item": "mc3dprint:filament_spool_t1" },
-    "title": { "translate": "advancement.mc3dprint.matter_matters.title" },
-    "description": { "translate": "advancement.mc3dprint.matter_matters.desc" }
+    "icon": {
+      "item": "mc3dprint:filament_spool_t1"
+    },
+    "title": {
+      "translate": "advancement.mc3dprint.matter_matters.title"
+    },
+    "description": {
+      "translate": "advancement.mc3dprint.matter_matters.desc"
+    }
   },
   "criteria": {
-    "has_winder": {
-      "trigger": "minecraft:inventory_changed",
-      "conditions": { "items": [ { "items": [ "mc3dprint:filament_winder" ] } ] }
+    "converted_1000_fu": {
+      "trigger": "mc3dprint:fu_converted"
     }
   }
 }

@@ -1,0 +1,19 @@
+{
+  "parent": "mc3dprint:architect",
+  "display": {
+    "icon": {
+      "item": "mc3dprint:tier3_printer"
+    },
+    "title": {
+      "translate": "advancement.mc3dprint.fabricator.title"
+    },
+    "description": {
+      "translate": "advancement.mc3dprint.fabricator.desc"
+    }
+  },
+  "criteria": {
+    "printed_structure": {
+      "trigger": "mc3dprint:structure_printed"
+    }
+  }
+}

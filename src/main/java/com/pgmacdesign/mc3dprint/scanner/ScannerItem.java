@@ -131,6 +131,9 @@ public class ScannerItem extends Item {
             player.drop(disc, false);
         }
 
+        if (player instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
+            com.pgmacdesign.mc3dprint.advancement.ModCriteria.STRUCTURE_SCANNED.trigger(serverPlayer);
+        }
         player.displayClientMessage(Component.translatable("message.mc3dprint.scan_complete",
                 blueprint.blockCount()), true);
         level.playSound(null, player.blockPosition(), SoundEvents.PLAYER_LEVELUP, SoundSource.PLAYERS, 0.5F, 1.5F);

@@ -1,0 +1,19 @@
+{
+  "parent": "mc3dprint:root",
+  "display": {
+    "icon": {
+      "item": "minecraft:stone"
+    },
+    "title": {
+      "translate": "advancement.mc3dprint.first_extrusion.title"
+    },
+    "description": {
+      "translate": "advancement.mc3dprint.first_extrusion.desc"
+    }
+  },
+  "criteria": {
+    "printed_item": {
+      "trigger": "mc3dprint:first_extrusion"
+    }
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "parent": "mc3dprint:root",
+  "display": {
+    "icon": {
+      "item": "mc3dprint:blueprint_disc"
+    },
+    "title": {
+      "translate": "advancement.mc3dprint.found_in_the_wild.title"
+    },
+    "description": {
+      "translate": "advancement.mc3dprint.found_in_the_wild.desc"
+    }
+  },
+  "criteria": {
+    "found_disc": {
+      "trigger": "mc3dprint:loot_disc_found"
+    }
+  }
+}

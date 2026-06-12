@@ -112,4 +112,13 @@ public class PrinterBlock extends BaseEntityBlock {
             printer.onNeighborSignal(level.hasNeighborSignal(pos));
         }
     }
+
+    @Override
+    public void setPlacedBy(Level level, BlockPos pos, BlockState state,
+                            @Nullable net.minecraft.world.entity.LivingEntity placer, ItemStack stack) {
+        super.setPlacedBy(level, pos, state, placer, stack);
+        if (placer instanceof Player player && level.getBlockEntity(pos) instanceof PrinterBlockEntity be) {
+            be.setOwner(player.getUUID());
+        }
+    }
 }

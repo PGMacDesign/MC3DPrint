@@ -108,11 +108,8 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
     private final ItemStackHandler upgrades;
     private final MachineEnergyStorage energy;
 
-    // multiplicative upgrade factors per module (design: never additive)
-    public static final double SPEED_FACTOR = 0.8;
-    public static final double EFFICIENCY_FACTOR = 0.9;
-    public static final double RF_FACTOR = 0.85;
-    public static final double BUFFER_FACTOR = 1.5;
+    // multiplicative upgrade factors per module (design: never additive);
+    // config-exposed for pack makers per the design doc
 
     private final LazyOptional<MachineEnergyStorage> energyCap = LazyOptional.of(this::energyStorage);
     private final LazyOptional<IItemHandler> inputCap =
@@ -148,6 +145,9 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
     private boolean autoStart;
     private boolean startRequested;
     private boolean lastRedstoneSignal;
+    /** Player who placed the machine — receives print advancements. */
+    @Nullable
+    private UUID owner;
     private int offsetX;
     private int offsetY;
     private int offsetZ;
@@ -303,7 +303,7 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
 
     private int applyEfficiency(int baseFu) {
         double cost = baseFu / MC3DPrintConfig.efficiency(tier)
-                * Math.pow(EFFICIENCY_FACTOR, upgradeCount(UpgradeItem.Type.EFFICIENCY));
+                * Math.pow(MC3DPrintConfig.UPGRADE_EFFICIENCY_FACTOR.get(), upgradeCount(UpgradeItem.Type.EFFICIENCY));
         // epsilon guard: 50/0.75*0.9 is 60.000000000000014 in doubles — don't ceil that to 61
         return (int) Math.ceil(cost - 1.0e-7);
     }
@@ -453,17 +453,17 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
     private void refreshEnergyCapacity() {
         energy.setCapacity((int) Math.min(Integer.MAX_VALUE,
                 Math.round(MC3DPrintConfig.energyBuffer(tier)
-                        * Math.pow(BUFFER_FACTOR, upgradeCount(UpgradeItem.Type.BUFFER)))));
+                        * Math.pow(MC3DPrintConfig.UPGRADE_BUFFER_FACTOR.get(), upgradeCount(UpgradeItem.Type.BUFFER)))));
     }
 
     private int speedAdjusted(int baseTicks) {
         return Math.max(1, (int) Math.round(baseTicks
-                * Math.pow(SPEED_FACTOR, upgradeCount(UpgradeItem.Type.SPEED))));
+                * Math.pow(MC3DPrintConfig.UPGRADE_SPEED_FACTOR.get(), upgradeCount(UpgradeItem.Type.SPEED))));
     }
 
     private int rfAdjusted(int baseRf) {
         return Math.max(1, (int) Math.round(baseRf
-                * Math.pow(RF_FACTOR, upgradeCount(UpgradeItem.Type.RF_EFFICIENCY))));
+                * Math.pow(MC3DPrintConfig.UPGRADE_RF_FACTOR.get(), upgradeCount(UpgradeItem.Type.RF_EFFICIENCY))));
     }
 
     private boolean canEmitCopy(ItemStack template) {
@@ -474,6 +474,19 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         return ItemStack.isSameItemSameTags(output, template) && output.getCount() < output.getMaxStackSize();
     }
 
+    public void setOwner(@Nullable UUID owner) {
+        this.owner = owner;
+        setChanged();
+    }
+
+    @Nullable
+    private net.minecraft.server.level.ServerPlayer ownerPlayer() {
+        if (owner == null || level == null || level.getServer() == null) {
+            return null;
+        }
+        return level.getServer().getPlayerList().getPlayer(owner);
+    }
+
     private void emitCopy(ItemStack template) {
         ItemStack output = inventory.getStackInSlot(SLOT_OUTPUT);
         if (output.isEmpty()) {
@@ -481,6 +494,10 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         } else {
             output.grow(1);
             inventory.setStackInSlot(SLOT_OUTPUT, output);
+        }
+        net.minecraft.server.level.ServerPlayer player = ownerPlayer();
+        if (player != null) {
+            com.pgmacdesign.mc3dprint.advancement.ModCriteria.FIRST_EXTRUSION.trigger(player);
         }
     }
 
@@ -686,6 +703,11 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
                 40, size.getX() / 3.0, 0.5, size.getZ() / 3.0, 0.05);
         serverLevel.playSound(null, worldPosition, net.minecraft.sounds.SoundEvents.PLAYER_LEVELUP,
                 net.minecraft.sounds.SoundSource.BLOCKS, 0.8F, 1.0F);
+
+        net.minecraft.server.level.ServerPlayer player = ownerPlayer();
+        if (player != null) {
+            com.pgmacdesign.mc3dprint.advancement.ModCriteria.STRUCTURE_PRINTED.trigger(player);
+        }
 
         releaseJobResources(serverLevel);
         inventory.setStackInSlot(SLOT_OUTPUT, disc.copy());
@@ -1065,6 +1087,9 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         tag.putInt("OffsetX", offsetX);
         tag.putInt("OffsetY", offsetY);
         tag.putInt("OffsetZ", offsetZ);
+        if (owner != null) {
+            tag.putUUID("Owner", owner);
+        }
     }
 
     @Override
@@ -1087,5 +1112,6 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         offsetX = Mth.clamp(tag.getInt("OffsetX"), -MAX_OFFSET, MAX_OFFSET);
         offsetY = Mth.clamp(tag.getInt("OffsetY"), -MAX_OFFSET, MAX_OFFSET);
         offsetZ = Mth.clamp(tag.getInt("OffsetZ"), -MAX_OFFSET, MAX_OFFSET);
+        owner = tag.hasUUID("Owner") ? tag.getUUID("Owner") : null;
     }
 }

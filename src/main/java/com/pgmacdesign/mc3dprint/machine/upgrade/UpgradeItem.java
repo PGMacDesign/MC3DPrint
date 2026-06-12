@@ -74,7 +74,13 @@ public class UpgradeItem extends Item {
 
     @Override
     public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
-        tooltip.add(Component.translatable("tooltip.mc3dprint.upgrade." + type.id())
+        double factor = switch (type) {
+            case SPEED -> com.pgmacdesign.mc3dprint.config.MC3DPrintConfig.UPGRADE_SPEED_FACTOR.get();
+            case EFFICIENCY -> com.pgmacdesign.mc3dprint.config.MC3DPrintConfig.UPGRADE_EFFICIENCY_FACTOR.get();
+            case RF_EFFICIENCY -> com.pgmacdesign.mc3dprint.config.MC3DPrintConfig.UPGRADE_RF_FACTOR.get();
+            case BUFFER -> com.pgmacdesign.mc3dprint.config.MC3DPrintConfig.UPGRADE_BUFFER_FACTOR.get();
+        };
+        tooltip.add(Component.translatable("tooltip.mc3dprint.upgrade." + type.id(), factor)
                 .withStyle(ChatFormatting.GRAY));
         tooltip.add(Component.translatable("tooltip.mc3dprint.upgrade_help")
                 .withStyle(ChatFormatting.DARK_GRAY));

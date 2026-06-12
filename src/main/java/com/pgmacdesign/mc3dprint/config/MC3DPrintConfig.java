@@ -29,6 +29,10 @@ public final class MC3DPrintConfig {
     public static final ForgeConfigSpec.IntValue WINDER_ENERGY_BUFFER;
     public static final ForgeConfigSpec.IntValue WINDER_MAX_ENERGY_RECEIVE;
     public static final ForgeConfigSpec.IntValue CLOCK_GENERATOR_RF_PER_TICK;
+    public static final ForgeConfigSpec.DoubleValue UPGRADE_SPEED_FACTOR;
+    public static final ForgeConfigSpec.DoubleValue UPGRADE_EFFICIENCY_FACTOR;
+    public static final ForgeConfigSpec.DoubleValue UPGRADE_RF_FACTOR;
+    public static final ForgeConfigSpec.DoubleValue UPGRADE_BUFFER_FACTOR;
     public static final ForgeConfigSpec.IntValue CLOCK_GENERATOR_BURN_MULTIPLIER;
     public static final ForgeConfigSpec.IntValue PRINT_HISTORY_SIZE;
     public static final ForgeConfigSpec.IntValue UNKNOWN_BLOCK_FU;
@@ -79,6 +83,21 @@ public final class MC3DPrintConfig {
         WINDER_MAX_ENERGY_RECEIVE = builder
                 .comment("Max RF accepted per tick from cables")
                 .defineInRange("maxEnergyReceive", 1_000, 1, Integer.MAX_VALUE);
+        builder.pop();
+
+        builder.comment("Upgrade modules (multiplicative per module installed)").push("upgrades");
+        UPGRADE_SPEED_FACTOR = builder
+                .comment("Print time multiplier per Speed Upgrade")
+                .defineInRange("speedFactor", 0.8, 0.05, 1.0);
+        UPGRADE_EFFICIENCY_FACTOR = builder
+                .comment("FU cost multiplier per Efficiency Upgrade")
+                .defineInRange("efficiencyFactor", 0.9, 0.05, 1.0);
+        UPGRADE_RF_FACTOR = builder
+                .comment("RF cost multiplier per RF Efficiency Upgrade")
+                .defineInRange("rfFactor", 0.85, 0.05, 1.0);
+        UPGRADE_BUFFER_FACTOR = builder
+                .comment("RF buffer multiplier per Buffer Upgrade")
+                .defineInRange("bufferFactor", 1.5, 1.0, 8.0);
         builder.pop();
 
         builder.comment("General").push("general");
