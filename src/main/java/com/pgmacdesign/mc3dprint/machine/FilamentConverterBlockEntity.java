@@ -94,8 +94,8 @@ public class FilamentConverterBlockEntity extends BlockEntity {
 
     /**
      * A docked, non-creative spool on an adjacent printer that can take the
-     * material's full converted yield. Down-conversion only (hard rule): the
-     * spool's tier must be at or below the material's tier.
+     * material's full yield. Exact-tier rule (hard rule): the spool's tier must
+     * equal the material's tier — same gate as the Filament Winder.
      */
     @Nullable
     private SpoolTarget findSpoolWithRoom(Level level, BlockPos pos, FuValue value) {

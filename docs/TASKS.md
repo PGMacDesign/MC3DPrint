@@ -57,7 +57,7 @@ The keystone — everything else consumes this. Pure logic, testable without a r
 
 ## M5 — Filament System ✅ *(2 partials)*
 
-- [x] Filament Winder block: materials → FU, winder tier gating
+- [x] Filament Winder block: materials → FU. Single universal winder; the spool gates it — a material only winds into a spool of its exact tier (revised 2026-06-11, was a T1–T4 winder ladder)
 - [x] FU value tables (symmetric conversion, group-based) — config-exposed (`fuValues`, item + #tag syntax)
 - [x] Filament Spool items T1–T8 with capacities
 - [x] Spool side attachment (Shift+Right Click), auto-switch on depletion *(slots-by-tier lands with M6 tiers; T1 = 1 dock)*

@@ -17,10 +17,11 @@ import net.minecraftforge.gametest.GameTestHolder;
 import net.minecraftforge.gametest.PrefixGameTestTemplate;
 
 /**
- * Tiered FU economics (default ratio 4): 1 tier-N FU = 4 tier-(N-1) FU,
- * DOWN-CONVERSION ONLY (hard product rule). High-tier FU covers low-tier
- * costs at the compounded ratio; low-tier FU contributes nothing toward
- * higher-tier costs, and winding never deposits into a higher-tier spool.
+ * Tiered FU economics (default ratio 4): 1 tier-N FU = 4 tier-(N-1) FU. At
+ * PRINT time conversion is down-only — high-tier FU covers low-tier costs at
+ * the compounded ratio; low-tier FU contributes nothing toward higher-tier
+ * costs. At the WINDER the rule is exact-tier: a material only winds into a
+ * spool of its own tier (netherite → T5 spool, never a T1 spool).
  */
 @GameTestHolder(MC3DPrint.MOD_ID)
 @PrefixGameTestTemplate(false)
@@ -99,8 +100,8 @@ public class FuTierEconomyGameTests {
         });
     }
 
-    private static WinderBlockEntity placePoweredWinder(GameTestHelper helper, BlockPos pos, int tierIndex) {
-        helper.setBlock(pos, ModBlocks.WINDERS.get(tierIndex).get());
+    private static WinderBlockEntity placePoweredWinder(GameTestHelper helper, BlockPos pos) {
+        helper.setBlock(pos, ModBlocks.FILAMENT_WINDER.get());
         if (!(helper.getBlockEntity(pos) instanceof WinderBlockEntity winder)) {
             throw new GameTestAssertException("Winder block entity missing");
         }
@@ -114,7 +115,7 @@ public class FuTierEconomyGameTests {
 
     @GameTest(template = "empty5", timeoutTicks = 150)
     public static void winderRefusesWindingIntoHigherTierSpool(GameTestHelper helper) {
-        WinderBlockEntity winder = placePoweredWinder(helper, new BlockPos(2, 1, 2), 0); // T1
+        WinderBlockEntity winder = placePoweredWinder(helper, new BlockPos(2, 1, 2));
         // cobblestone is T1 material; a T2 spool is up-conversion — hard refusal
         winder.inventory().setStackInSlot(WinderBlockEntity.SLOT_SPOOL, spoolWithFu(2, 0));
         winder.inventory().setStackInSlot(WinderBlockEntity.SLOT_INPUT, new ItemStack(Items.COBBLESTONE, 8));
@@ -150,10 +151,30 @@ public class FuTierEconomyGameTests {
     }
 
     @GameTest(template = "empty5", timeoutTicks = 150)
-    public static void winderDownConvertsAtCompoundedRatio(GameTestHelper helper) {
-        WinderBlockEntity winder = placePoweredWinder(helper, new BlockPos(2, 1, 2), 1); // T2
-        // iron ingot: 20 FU @ T2 -> into a T1 spool at 4:1 = 80 T1 FU
+    public static void winderRefusesWindingIntoLowerTierSpool(GameTestHelper helper) {
+        WinderBlockEntity winder = placePoweredWinder(helper, new BlockPos(2, 1, 2));
+        // iron is a T2 material; a T1 spool no longer down-winds — exact tier only
         winder.inventory().setStackInSlot(WinderBlockEntity.SLOT_SPOOL, spoolWithFu(1, 0));
+        winder.inventory().setStackInSlot(WinderBlockEntity.SLOT_INPUT, new ItemStack(Items.IRON_INGOT, 4));
+
+        helper.runAfterDelay(100, () -> {
+            int fu = SpoolItem.getFu(winder.inventory().getStackInSlot(WinderBlockEntity.SLOT_SPOOL));
+            int inputLeft = winder.inventory().getStackInSlot(WinderBlockEntity.SLOT_INPUT).getCount();
+            if (fu != 0) {
+                helper.fail("T1 spool wound a T2 material: spool gained " + fu + " FU");
+            } else if (inputLeft != 4) {
+                helper.fail("Winder consumed input without a matching spool: " + inputLeft + " left");
+            } else {
+                helper.succeed();
+            }
+        });
+    }
+
+    @GameTest(template = "empty5", timeoutTicks = 150)
+    public static void winderWindsIntoMatchingTierSpool(GameTestHelper helper) {
+        WinderBlockEntity winder = placePoweredWinder(helper, new BlockPos(2, 1, 2));
+        // iron is 20 FU @ T2 -> into a matching T2 spool it deposits 20 T2 FU, 1:1
+        winder.inventory().setStackInSlot(WinderBlockEntity.SLOT_SPOOL, spoolWithFu(2, 0));
         winder.inventory().setStackInSlot(WinderBlockEntity.SLOT_INPUT, new ItemStack(Items.IRON_INGOT, 1));
 
         helper.succeedWhen(() -> {
@@ -161,8 +182,8 @@ public class FuTierEconomyGameTests {
                 throw new GameTestAssertException("Ingot not wound yet");
             }
             int fu = SpoolItem.getFu(winder.inventory().getStackInSlot(WinderBlockEntity.SLOT_SPOOL));
-            if (fu != 80) {
-                helper.fail("Expected 80 T1 FU from one T2 iron ingot, got " + fu);
+            if (fu != 20) {
+                helper.fail("Expected 20 T2 FU from one T2 iron ingot into a T2 spool, got " + fu);
             }
         });
     }

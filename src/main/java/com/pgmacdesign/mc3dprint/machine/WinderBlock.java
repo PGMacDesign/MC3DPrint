@@ -22,15 +22,9 @@ import net.minecraftforge.network.NetworkHooks;
 import javax.annotation.Nullable;
 
 public class WinderBlock extends BaseEntityBlock {
-    private final MachineTier tier;
 
-    public WinderBlock(MachineTier tier, Properties properties) {
+    public WinderBlock(Properties properties) {
         super(properties);
-        this.tier = tier;
-    }
-
-    public MachineTier tier() {
-        return tier;
     }
 
     @Override

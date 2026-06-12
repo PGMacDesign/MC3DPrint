@@ -48,7 +48,7 @@ public class FilamentGameTests {
     }
 
     @GameTest(template = "empty5", timeoutTicks = 150)
-    public static void winderRefusesMaterialAboveItsTier(GameTestHelper helper) {
+    public static void winderRefusesMaterialWithoutMatchingSpoolTier(GameTestHelper helper) {
         BlockPos pos = new BlockPos(2, 1, 2);
         helper.setBlock(pos, ModBlocks.FILAMENT_WINDER.get());
         if (!(helper.getBlockEntity(pos) instanceof WinderBlockEntity winder)) {
@@ -59,18 +59,18 @@ public class FilamentGameTests {
                 energy.receiveEnergy(1_000, false);
             }
         });
-        // diamond is 50 FU @ tier 4 — a T1 winder must refuse it
+        // diamond is 50 FU @ tier 4 — a T1 spool can't hold it (exact-tier rule)
         winder.inventory().setStackInSlot(WinderBlockEntity.SLOT_INPUT, new ItemStack(Items.DIAMOND));
         winder.inventory().setStackInSlot(WinderBlockEntity.SLOT_SPOOL, new ItemStack(ModItems.SPOOLS.get(0).get()));
 
         helper.runAfterDelay(80, () -> {
             ItemStack spool = winder.inventory().getStackInSlot(WinderBlockEntity.SLOT_SPOOL);
             if (SpoolItem.getFu(spool) != 0) {
-                helper.fail("T1 winder wound a tier-4 material");
+                helper.fail("T1 spool wound a tier-4 material");
                 return;
             }
             if (winder.inventory().getStackInSlot(WinderBlockEntity.SLOT_INPUT).isEmpty()) {
-                helper.fail("Diamond was consumed by a T1 winder");
+                helper.fail("Diamond was consumed without a matching T4 spool");
                 return;
             }
             helper.succeed();

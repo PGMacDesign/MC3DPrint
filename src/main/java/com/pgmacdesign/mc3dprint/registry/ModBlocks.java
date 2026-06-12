@@ -32,7 +32,8 @@ public final class ModBlocks {
     /** Single-block printers, index 0 = Tier 1. T5-T8 are multiblock controllers (phase b). */
     public static final List<RegistryObject<Block>> PRINTERS = buildPrinters();
 
-    /** Filament winders, index 0 = Tier 1. */
+    /** Single universal Filament Winder (kept as a 1-element list so the block
+     * item, creative tab, and block-entity registrations stay uniform). */
     public static final List<RegistryObject<Block>> WINDERS = buildWinders();
 
     /** Multiblock controllers, index 0 = Tier 5. */
@@ -89,15 +90,10 @@ public final class ModBlocks {
     }
 
     private static List<RegistryObject<Block>> buildWinders() {
-        List<RegistryObject<Block>> winders = new ArrayList<>(4);
-        winders.add(BLOCKS.register("filament_winder",
-                () -> new WinderBlock(MachineTier.T1, machineProperties())));
-        for (int tierNumber = 2; tierNumber <= 4; tierNumber++) {
-            final MachineTier tier = MachineTier.byNumber(tierNumber);
-            winders.add(BLOCKS.register("filament_winder_t" + tierNumber,
-                    () -> new WinderBlock(tier, machineProperties())));
-        }
-        return List.copyOf(winders);
+        // one universal winder — the spool tier (not a winder ladder) gates which
+        // materials it accepts, so a single block handles every tier
+        return List.of(BLOCKS.register("filament_winder",
+                () -> new WinderBlock(machineProperties())));
     }
 
     private ModBlocks() {}

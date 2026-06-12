@@ -100,8 +100,8 @@ Conversion is **symmetric** — what a material produces in FU is exactly what i
 
 Materials within the same group share identical FU values — e.g. cobblestone, dirt, gravel, and sand are all interchangeable as 1 FU inputs.
 
-| FU Value | Materials (all equivalent) | Min Winder Tier |
-|----------|---------------------------|-----------------|
+| FU Value | Materials (all equivalent) | Required Spool Tier |
+|----------|---------------------------|---------------------|
 | **1 FU** | Cobblestone, Dirt, Gravel, Sand, Gravel, Soul Sand, Soul Soil, Clay Ball | T1 |
 | **3 FU** | Stone, Sandstone, Smooth Stone, Stone Bricks, Andesite, Diorite, Granite, Calcite, Tuff | T1 |
 | **3 FU** | Oak/Spruce/Birch/Jungle/Acacia/Dark Oak/Mangrove/Cherry Log or Planks | T1 |
@@ -123,26 +123,30 @@ Materials within the same group share identical FU values — e.g. cobblestone, 
 - All wood types = same value regardless of species
 - Nugget ×9 = ingot value (consistent with vanilla crafting ratios)
 
-**Winder tier gating:** A T1 Winder cannot convert diamonds — the Winder must match or exceed the material's required tier. This closes any bypass around the item tier print restrictions and keeps progression intact.
+**One universal winder, spool-tier gating** (revised 2026-06-11 — replaced the
+T1–T4 winder ladder with a single block): there is exactly **one** Filament
+Winder, and it accepts any material. The gate is the **spool**, not the winder
+— a material only winds into a spool of its **exact tier**. Netherite (T5)
+needs a T5 spool in the machine; a T1 spool won't wind it. Cobblestone (T1)
+needs a T1 spool. This closes the cobblestone-to-nether-star bypass without a
+winder progression ladder.
 
-### Tier Down-Conversion (One Direction Only)
+### Tier Conversion (Down-Only, and Only at Print Time)
 
 FU is **denominated by spool tier** — a tier-S spool holds tier-S FU.
 
-- Higher-tier FU converts **down** at a **4:1 ratio per tier step** (revised
-  2026-06-11 from the original 16:1 — too steep), compounding across steps
-  (T3 → T1 = 16:1). Config: `general.filamentConversionRatio`, default 4.
-- **Cannot tier up** — hard restriction. T1 FU never becomes T2 FU: the
-  winder refuses to wind a material into a spool above the material's tier,
-  and a spool below an item's cost tier contributes nothing toward printing
-  it. Prevents cobblestone farming from trivializing the economy.
-- Down-conversion applies automatically at both ends: winding a T2 iron
-  ingot (20 FU) into a T1 spool deposits 80 T1 FU, and a docked T7 spool
-  pays T1-denominated costs at 4⁶ FU of value per unit. Division is always
-  exact going down — no remainders, nothing voided.
-- *(Implementation note: multi-step down-conversion happens in one pass at
-  the compounded ratio, equivalent to the original "one step at a time"
-  chain without the manual rewinding.)*
+- **Winding is exact-tier** — a material winds *only* into a same-tier spool
+  (T2 iron → T2 spool, 1:1). No tiering up (cobblestone can never reach a T2
+  spool) and no tiering down at the winder either, so you can't launder a
+  high-tier material into a pile of cheap low-tier FU.
+- **Printing down-converts automatically** — higher-tier FU covers lower-tier
+  costs at a **4:1 ratio per tier step** (revised 2026-06-11 from 16:1 — too
+  steep), compounding across steps (T3 → T1 = 16:1). A docked T7 spool pays
+  T1-denominated costs at 4⁶ FU of value per unit. Config:
+  `general.filamentConversionRatio`, default 4.
+- **Cannot tier up — ever.** A spool below an item's cost tier contributes
+  nothing toward printing it. Combined with exact-tier winding, this keeps
+  cobblestone farming from trivializing the economy.
 
 ### Filament Spool
 

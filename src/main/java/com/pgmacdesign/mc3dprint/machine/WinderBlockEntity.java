@@ -31,9 +31,11 @@ import javax.annotation.Nullable;
 import java.util.Optional;
 
 /**
- * Filament Winder (Tier 1): converts materials into FU wound onto a spool.
- * RF is consumed at winding per the design doc. Winder tier gates inputs —
- * a T1 winder refuses diamonds, closing the print-tier bypass.
+ * Filament Winder: converts materials into FU wound onto a spool. RF is
+ * consumed at winding per the design doc. A single universal winder handles
+ * every tier; the gate is the spool — a material only winds into a spool of
+ * its exact tier (netherite needs a T5 spool, cobblestone a T1 spool), which
+ * closes the print-tier bypass without a winder tier ladder.
  */
 public class WinderBlockEntity extends BlockEntity implements MenuProvider {
     public static final int SLOT_INPUT = 0;
@@ -77,16 +79,9 @@ public class WinderBlockEntity extends BlockEntity implements MenuProvider {
     /** Player who placed the winder — accumulates Matter Matters progress. */
     @Nullable
     private java.util.UUID owner;
-    private final MachineTier tier;
 
     public WinderBlockEntity(BlockPos pos, BlockState blockState) {
         super(ModBlockEntities.FILAMENT_WINDER.get(), pos, blockState);
-        this.tier = blockState.getBlock() instanceof WinderBlock winderBlock
-                ? winderBlock.tier() : MachineTier.T1;
-    }
-
-    public MachineTier tier() {
-        return tier;
     }
 
     public static void serverTick(Level level, BlockPos pos, BlockState blockState, WinderBlockEntity winder) {
@@ -97,10 +92,10 @@ public class WinderBlockEntity extends BlockEntity implements MenuProvider {
         ItemStack input = inventory.getStackInSlot(SLOT_INPUT);
         ItemStack spool = inventory.getStackInSlot(SLOT_SPOOL);
 
-        // down-conversion only (hard rule): a material winds into spools at or
-        // below its tier; the yield compounds by the ratio per tier step down
+        // exact-tier rule (hard product rule): a material only winds into a
+        // spool of its own tier — no tiering up, and no lossy tiering down here
         Optional<FuValue> value = FuValueRegistry.valueOf(input);
-        if (value.isEmpty() || value.get().tier() > tier.number()
+        if (value.isEmpty()
                 || !(spool.getItem() instanceof SpoolItem spoolItem) || spoolItem.creative()
                 || !FuConversion.canWindInto(value.get().tier(), spoolItem.tier())
                 || !energy.hasAtLeast(MC3DPrintConfig.WINDER_RF_PER_ITEM.get())) {

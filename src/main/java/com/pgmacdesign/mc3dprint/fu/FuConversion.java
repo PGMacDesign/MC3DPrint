@@ -9,12 +9,13 @@ import com.pgmacdesign.mc3dprint.config.MC3DPrintConfig;
  *
  * <pre>base = amount × ratio^(tier-1)</pre>
  *
- * <b>Hard rule (product requirement): FU never converts UP.</b> Down-only:
- * high-tier FU covers lower-tier costs at the compounded ratio, but low-tier
- * FU contributes nothing toward higher-tier costs, and winding never deposits
- * into a spool above the material's tier. This is what stops cobblestone
- * farming from trivializing the economy. {@link #canCover} and
- * {@link #canWindInto} are the single source of truth for the rule.
+ * <b>Hard rule (product requirement): FU never converts UP.</b> At print time
+ * down-conversion is allowed — high-tier FU covers lower-tier costs at the
+ * compounded ratio, but low-tier FU contributes nothing toward higher-tier
+ * costs ({@link #canCover}). At the winder the rule is stricter: a material
+ * only winds into a spool of its <em>exact</em> tier ({@link #canWindInto}) —
+ * netherite (T5) needs a T5 spool, cobblestone (T1) needs a T1 spool. Together
+ * these stop cobblestone farming from ever reaching a high-tier spool.
  *
  * Methods take the ratio as a parameter so the math is unit-testable without
  * a loaded config; {@link #ratio()} reads the live config value.
@@ -30,12 +31,16 @@ public final class FuConversion {
         return spoolTier >= costTier;
     }
 
-    /** Down-only: a material winds into spools at or below its tier, never above. */
+    /** Exact-tier rule: a material only winds into a spool of its own tier. */
     public static boolean canWindInto(int materialTier, int spoolTier) {
-        return spoolTier <= materialTier;
+        return spoolTier == materialTier;
     }
 
-    /** Exact down-conversion of a material's FU into spool-tier units. */
+    /**
+     * FU a material deposits into a spool. Winding callers are gated by
+     * {@link #canWindInto} (equal tiers), so this returns the material's FU
+     * 1:1; the general tier math is kept for the shared exchange primitives.
+     */
     public static long windYield(int fu, int materialTier, int spoolTier, int ratio) {
         return fromBase(toBase(fu, materialTier, ratio), spoolTier, ratio);
     }
