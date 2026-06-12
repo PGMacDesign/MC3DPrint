@@ -7,6 +7,7 @@ import net.minecraft.world.Containers;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BaseEntityBlock;
 import net.minecraft.world.level.block.RenderShape;
@@ -66,7 +67,13 @@ public class WinderBlock extends BaseEntityBlock {
         if (!state.is(newState.getBlock()) && level.getBlockEntity(pos) instanceof WinderBlockEntity winder) {
             ItemStackHandler inventory = winder.inventory();
             for (int slot = 0; slot < inventory.getSlots(); slot++) {
-                Containers.dropItemStack(level, pos.getX(), pos.getY(), pos.getZ(), inventory.getStackInSlot(slot));
+                ItemStack stack = inventory.getStackInSlot(slot);
+                // creative spools never persist in the world — they vanish on break
+                if (stack.getItem() instanceof com.pgmacdesign.mc3dprint.fu.SpoolItem spoolItem
+                        && spoolItem.creative()) {
+                    continue;
+                }
+                Containers.dropItemStack(level, pos.getX(), pos.getY(), pos.getZ(), stack);
             }
         }
         super.onRemove(state, level, pos, newState, isMoving);

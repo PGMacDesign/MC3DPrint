@@ -16,6 +16,7 @@ import com.pgmacdesign.mc3dprint.registry.ModBlockEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.util.Mth;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
@@ -77,11 +78,18 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
     public static final int DATA_TEMPLATE_COST = 7;
     public static final int DATA_SPOOLS_USED = 8;
     public static final int DATA_SPOOL_SLOTS = 9;
-    public static final int DATA_COUNT = 10;
+    public static final int DATA_AUTO_START = 10;
+    public static final int DATA_OFFSET_X = 11;
+    public static final int DATA_OFFSET_Y = 12;
+    public static final int DATA_OFFSET_Z = 13;
+    public static final int DATA_COUNT = 14;
+
+    /** Build offsets are clamped to this range on each axis. */
+    public static final int MAX_OFFSET = 64;
 
     public enum State {
         IDLE, PRINTING, PAUSED_NO_POWER, PAUSED_OUTPUT_FULL, PAUSED_OBSTRUCTED, ZONE_CONFLICT,
-        PAUSED_NO_FILAMENT, NOT_PRINTABLE, AREA_TOO_SMALL;
+        PAUSED_NO_FILAMENT, NOT_PRINTABLE, AREA_TOO_SMALL, READY;
 
         public static State byOrdinal(int ordinal) {
             return ordinal >= 0 && ordinal < values().length ? values()[ordinal] : IDLE;
@@ -134,6 +142,15 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
     private final List<CompoundTag> history = new ArrayList<>();
 
     private State state = State.IDLE;
+
+    // blueprint jobs start on a trigger (GUI Start button / redstone rising
+    // edge) unless auto-start is enabled; build origin is offset-adjustable
+    private boolean autoStart;
+    private boolean startRequested;
+    private boolean lastRedstoneSignal;
+    private int offsetX;
+    private int offsetY;
+    private int offsetZ;
     private boolean collapsing;
     @Nullable
     private BlockPos lastPlacedPos; // synced; drives the print head + beam render
@@ -487,11 +504,19 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         }
 
         if (activeJob == null) {
+            if (!autoStart && !startRequested) {
+                // keep error states visible until the next trigger attempt
+                if (state == State.IDLE) {
+                    state = State.READY;
+                }
+                return;
+            }
             if (retryCooldown > 0) {
                 retryCooldown--;
                 return;
             }
             retryCooldown = 20;
+            startRequested = false; // consumed; re-trigger after fixing any error
             tryStartJob(serverLevel, disc, discBlueprint);
             return;
         }
@@ -603,8 +628,10 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             }
         }
 
-        // min corner: centered horizontally over the printer, one block up
-        BlockPos origin = worldPosition.offset(-(size.getX() / 2), 1, -(size.getZ() / 2));
+        // min corner: centered horizontally over the printer, one block up,
+        // shifted by the player-configured build offsets
+        BlockPos origin = worldPosition.offset(
+                -(size.getX() / 2) + offsetX, 1 + offsetY, -(size.getZ() / 2) + offsetZ);
         BoundingBox box = BoundingBox.fromCorners(origin,
                 origin.offset(size.getX() - 1, size.getY() - 1, size.getZ() - 1));
 
@@ -874,6 +901,49 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         return inventory;
     }
 
+    public boolean autoStart() {
+        return autoStart;
+    }
+
+    public void setAutoStart(boolean value) {
+        autoStart = value;
+        setChanged();
+    }
+
+    /** Queues a job start for the next tick (GUI Start button or redstone). */
+    public void requestStart() {
+        startRequested = true;
+        retryCooldown = 0;
+        setChanged();
+    }
+
+    /** Rising-edge redstone triggers a start, WorldEdit-machine style. */
+    public void onNeighborSignal(boolean powered) {
+        if (powered && !lastRedstoneSignal) {
+            requestStart();
+        }
+        lastRedstoneSignal = powered;
+    }
+
+    public int offset(int axis) {
+        return switch (axis) {
+            case 0 -> offsetX;
+            case 1 -> offsetY;
+            default -> offsetZ;
+        };
+    }
+
+    /** Adjusts a build offset (0=X, 1=Y, 2=Z); takes effect on the next job. */
+    public void adjustOffset(int axis, int delta) {
+        int clamped;
+        switch (axis) {
+            case 0 -> offsetX = clamped = Mth.clamp(offsetX + delta, -MAX_OFFSET, MAX_OFFSET);
+            case 1 -> offsetY = clamped = Mth.clamp(offsetY + delta, -MAX_OFFSET, MAX_OFFSET);
+            default -> offsetZ = clamped = Mth.clamp(offsetZ + delta, -MAX_OFFSET, MAX_OFFSET);
+        }
+        setChanged();
+    }
+
     public ContainerData containerData() {
         return new SplitContainerData(DATA_COUNT, this::dataValue);
     }
@@ -901,6 +971,10 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
                 yield used;
             }
             case DATA_SPOOL_SLOTS -> spools.getSlots();
+            case DATA_AUTO_START -> autoStart ? 1 : 0;
+            case DATA_OFFSET_X -> offsetX;
+            case DATA_OFFSET_Y -> offsetY;
+            case DATA_OFFSET_Z -> offsetZ;
             default -> 0;
         };
     }
@@ -986,6 +1060,11 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         ListTag historyTag = new ListTag();
         history.forEach(historyTag::add);
         tag.put("History", historyTag);
+        tag.putBoolean("AutoStart", autoStart);
+        tag.putBoolean("LastRedstone", lastRedstoneSignal);
+        tag.putInt("OffsetX", offsetX);
+        tag.putInt("OffsetY", offsetY);
+        tag.putInt("OffsetZ", offsetZ);
     }
 
     @Override
@@ -1003,5 +1082,10 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         for (Tag t : tag.getList("History", Tag.TAG_COMPOUND)) {
             history.add((CompoundTag) t);
         }
+        autoStart = tag.getBoolean("AutoStart");
+        lastRedstoneSignal = tag.getBoolean("LastRedstone");
+        offsetX = Mth.clamp(tag.getInt("OffsetX"), -MAX_OFFSET, MAX_OFFSET);
+        offsetY = Mth.clamp(tag.getInt("OffsetY"), -MAX_OFFSET, MAX_OFFSET);
+        offsetZ = Mth.clamp(tag.getInt("OffsetZ"), -MAX_OFFSET, MAX_OFFSET);
     }
 }

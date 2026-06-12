@@ -5,6 +5,7 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BaseEntityBlock;
 import net.minecraft.world.level.block.RenderShape;
@@ -87,7 +88,13 @@ public class PrinterBlock extends BaseEntityBlock {
             }
             ItemStackHandler spools = printer.spoolInventory();
             for (int slot = 0; slot < spools.getSlots(); slot++) {
-                Containers.dropItemStack(level, pos.getX(), pos.getY(), pos.getZ(), spools.getStackInSlot(slot));
+                ItemStack spool = spools.getStackInSlot(slot);
+                // creative spools never persist in the world — they vanish on break
+                if (spool.getItem() instanceof com.pgmacdesign.mc3dprint.fu.SpoolItem spoolItem
+                        && spoolItem.creative()) {
+                    continue;
+                }
+                Containers.dropItemStack(level, pos.getX(), pos.getY(), pos.getZ(), spool);
             }
             ItemStackHandler upgrades = printer.upgradeInventory();
             for (int slot = 0; slot < upgrades.getSlots(); slot++) {
@@ -95,5 +102,14 @@ public class PrinterBlock extends BaseEntityBlock {
             }
         }
         super.onRemove(state, level, pos, newState, isMoving);
+    }
+
+    @Override
+    public void neighborChanged(BlockState state, Level level, BlockPos pos, Block neighborBlock,
+                                BlockPos neighborPos, boolean movedByPiston) {
+        super.neighborChanged(state, level, pos, neighborBlock, neighborPos, movedByPiston);
+        if (!level.isClientSide && level.getBlockEntity(pos) instanceof PrinterBlockEntity printer) {
+            printer.onNeighborSignal(level.hasNeighborSignal(pos));
+        }
     }
 }

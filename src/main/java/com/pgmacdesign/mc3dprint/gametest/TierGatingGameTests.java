@@ -39,6 +39,7 @@ public class TierGatingGameTests {
         ItemStack spool = new ItemStack(ModItems.SPOOLS.get(0).get());
         SpoolItem.setFu(spool, 400);
         printer.spoolInventory().setStackInSlot(0, spool);
+        printer.setAutoStart(true); // tests exercise gating, not the trigger UX
         return printer;
     }
 

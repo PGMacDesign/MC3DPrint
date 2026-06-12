@@ -4,6 +4,7 @@ import com.pgmacdesign.mc3dprint.MC3DPrint;
 import com.pgmacdesign.mc3dprint.machine.PrinterBlockEntity;
 import com.pgmacdesign.mc3dprint.machine.PrinterMenu;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -11,7 +12,7 @@ import net.minecraft.world.entity.player.Inventory;
 
 public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
     private static final ResourceLocation TEXTURE = java.util.Objects.requireNonNull(
-            ResourceLocation.tryParse(MC3DPrint.MOD_ID + ":textures/gui/machine.png"));
+            ResourceLocation.tryParse(MC3DPrint.MOD_ID + ":textures/gui/printer.png"));
 
     // Energy bar geometry (must match the frame drawn in the texture)
     private static final int ENERGY_X = 11;
@@ -31,11 +32,59 @@ public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
     private static final int ARROW_WIDTH = 22;
     private static final int ARROW_HEIGHT = 15;
 
+    // Control strip (Start / Auto / build offsets) between machine and inventory
+    private static final int CONTROLS_Y = 70;
+    private static final int OFFSETS_Y = 87;
+
+    private Button startButton;
+    private Button autoButton;
+
     public PrinterScreen(PrinterMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
         this.imageWidth = 176;
-        this.imageHeight = 166;
+        this.imageHeight = 188;
         this.inventoryLabelY = this.imageHeight - 94;
+    }
+
+    @Override
+    protected void init() {
+        super.init();
+        startButton = addRenderableWidget(Button.builder(
+                        Component.translatable("gui.mc3dprint.start"),
+                        b -> sendButtonClick(PrinterMenu.BUTTON_START))
+                .bounds(leftPos + 8, topPos + CONTROLS_Y, 40, 14).build());
+        autoButton = addRenderableWidget(Button.builder(
+                        autoLabel(),
+                        b -> sendButtonClick(PrinterMenu.BUTTON_AUTO))
+                .bounds(leftPos + 52, topPos + CONTROLS_Y, 52, 14).build());
+
+        // offsets: [-] value [+] per axis; X at 10, Y at 64, Z at 118
+        for (int axis = 0; axis < 3; axis++) {
+            int x = 10 + axis * 54;
+            int minusId = PrinterMenu.BUTTON_OFFSET_BASE + axis * 2;
+            addRenderableWidget(Button.builder(Component.literal("-"), b -> sendButtonClick(minusId))
+                    .bounds(leftPos + x, topPos + OFFSETS_Y, 12, 12).build());
+            addRenderableWidget(Button.builder(Component.literal("+"), b -> sendButtonClick(minusId + 1))
+                    .bounds(leftPos + x + 36, topPos + OFFSETS_Y, 12, 12).build());
+        }
+    }
+
+    private void sendButtonClick(int id) {
+        if (minecraft != null && minecraft.gameMode != null) {
+            minecraft.gameMode.handleInventoryButtonClick(menu.containerId, id);
+        }
+    }
+
+    private Component autoLabel() {
+        return Component.translatable(menu.autoStart()
+                ? "gui.mc3dprint.auto_on" : "gui.mc3dprint.auto_off");
+    }
+
+    @Override
+    protected void containerTick() {
+        super.containerTick();
+        autoButton.setMessage(autoLabel());
+        startButton.active = !menu.autoStart();
     }
 
     @Override
@@ -58,6 +107,10 @@ public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
                 lines.add(Component.translatable("tooltip.mc3dprint.fu_no_spools"));
             }
             graphics.renderComponentTooltip(font, lines, mouseX, mouseY);
+        }
+        if (isHovering(8, OFFSETS_Y, 160, 12, mouseX, mouseY)) {
+            graphics.renderTooltip(font,
+                    Component.translatable("tooltip.mc3dprint.offsets"), mouseX, mouseY);
         }
     }
 
@@ -97,6 +150,7 @@ public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
         super.renderLabels(graphics, mouseX, mouseY);
         Component status = switch (menu.state()) {
             case IDLE -> Component.translatable("gui.mc3dprint.state.idle");
+            case READY -> Component.translatable("gui.mc3dprint.state.ready");
             case PRINTING -> Component.translatable("gui.mc3dprint.state.printing");
             case PAUSED_NO_POWER -> Component.translatable("gui.mc3dprint.state.paused_no_power");
             case PAUSED_OUTPUT_FULL -> Component.translatable("gui.mc3dprint.state.paused_output_full");
@@ -107,14 +161,23 @@ public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
             case AREA_TOO_SMALL -> Component.translatable("gui.mc3dprint.state.area_too_small");
         };
         int color = menu.state() == PrinterBlockEntity.State.PRINTING ? 0x2E7D32
-                : menu.state() == PrinterBlockEntity.State.IDLE ? 0x404040 : 0xB71C1C;
-        graphics.drawString(font, status, 80, 60, color, false);
+                : menu.state() == PrinterBlockEntity.State.IDLE
+                        || menu.state() == PrinterBlockEntity.State.READY ? 0x404040 : 0xB71C1C;
+        graphics.drawString(font, status, 80, 58, color, false);
         int cost = menu.templateCost();
         if (cost > 0) {
-            graphics.drawString(font, Component.translatable("gui.mc3dprint.cost", cost), 36, 60, 0x404040, false);
+            graphics.drawString(font, Component.translatable("gui.mc3dprint.cost", cost), 36, 58, 0x404040, false);
         }
         Component spools = Component.translatable("gui.mc3dprint.spools", menu.spoolsUsed(), menu.spoolSlots());
         int spoolsColor = menu.spoolsUsed() == 0 ? 0xB71C1C : 0x404040;
         graphics.drawString(font, spools, imageWidth - 8 - font.width(spools), inventoryLabelY, spoolsColor, false);
+
+        // offset readouts centered between their -/+ buttons
+        String[] axes = {"X", "Y", "Z"};
+        for (int axis = 0; axis < 3; axis++) {
+            String text = axes[axis] + " " + menu.offset(axis);
+            int x = 10 + axis * 54 + 12 + (24 - font.width(text)) / 2;
+            graphics.drawString(font, text, x, OFFSETS_Y + 2, 0x404040, false);
+        }
     }
 }

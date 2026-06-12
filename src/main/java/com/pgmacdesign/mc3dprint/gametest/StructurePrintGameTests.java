@@ -52,6 +52,7 @@ public class StructurePrintGameTests {
             }
         });
         PrinterGameTests.attachLoadedSpool(printer);
+        printer.setAutoStart(true); // tests exercise the print path, not the trigger UX
         return printer;
     }
 
@@ -72,6 +73,46 @@ public class StructurePrintGameTests {
             if (!printer.inventory().getStackInSlot(PrinterBlockEntity.SLOT_TEMPLATE).isEmpty()) {
                 throw new GameTestAssertException("Template slot should be empty after completion");
             }
+        });
+    }
+
+    @GameTest(template = "empty5", timeoutTicks = 200)
+    public static void manualModeWaitsForStartTrigger(GameTestHelper helper) {
+        BlockPos printerPos = new BlockPos(2, 1, 2);
+        PrinterBlockEntity printer = poweredPrinter(helper, printerPos);
+        printer.setAutoStart(false); // default shipping behavior: trigger required
+        printer.inventory().setStackInSlot(PrinterBlockEntity.SLOT_TEMPLATE, discFor(helper, smallBlueprint()));
+
+        helper.runAfterDelay(60, () -> {
+            if (printer.activeJob() != null) {
+                helper.fail("Job started without a trigger in manual mode");
+                return;
+            }
+            if (printer.state() != PrinterBlockEntity.State.READY) {
+                helper.fail("Expected READY while awaiting trigger, got " + printer.state());
+                return;
+            }
+            printer.requestStart(); // the GUI Start button / redstone edge calls this
+        });
+        helper.succeedWhen(() -> {
+            helper.assertBlockPresent(Blocks.STONE, new BlockPos(1, 2, 1));
+            helper.assertBlockPresent(Blocks.GLASS, new BlockPos(2, 2, 2));
+        });
+    }
+
+    @GameTest(template = "empty5", timeoutTicks = 300)
+    public static void buildOffsetsShiftTheOrigin(GameTestHelper helper) {
+        BlockPos printerPos = new BlockPos(2, 1, 2);
+        PrinterBlockEntity printer = poweredPrinter(helper, printerPos);
+        printer.adjustOffset(0, 1);  // X +1
+        printer.adjustOffset(1, 1);  // Y +1
+        printer.adjustOffset(2, -1); // Z -1
+        printer.inventory().setStackInSlot(PrinterBlockEntity.SLOT_TEMPLATE, discFor(helper, smallBlueprint()));
+
+        // default origin (1,2,1) shifted by (+1,+1,-1) -> stone at (2,3,0), glass at (3,3,1)
+        helper.succeedWhen(() -> {
+            helper.assertBlockPresent(Blocks.STONE, new BlockPos(2, 3, 0));
+            helper.assertBlockPresent(Blocks.GLASS, new BlockPos(3, 3, 1));
         });
     }
 

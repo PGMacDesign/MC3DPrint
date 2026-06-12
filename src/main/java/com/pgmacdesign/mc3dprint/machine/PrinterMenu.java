@@ -60,13 +60,15 @@ public class PrinterMenu extends AbstractContainerMenu {
             }
         });
 
+        // player inventory sits 22px lower than vanilla: the printer GUI has a
+        // control strip (Start/Auto/build offsets) between machine and inventory
         for (int row = 0; row < 3; row++) {
             for (int col = 0; col < 9; col++) {
-                addSlot(new Slot(playerInventory, col + row * 9 + 9, 8 + col * 18, 84 + row * 18));
+                addSlot(new Slot(playerInventory, col + row * 9 + 9, 8 + col * 18, 106 + row * 18));
             }
         }
         for (int col = 0; col < 9; col++) {
-            addSlot(new Slot(playerInventory, col, 8 + col * 18, 142));
+            addSlot(new Slot(playerInventory, col, 8 + col * 18, 164));
         }
 
         addDataSlots(data);
@@ -116,6 +118,41 @@ public class PrinterMenu extends AbstractContainerMenu {
 
     public int spoolSlots() {
         return SplitContainerData.combine(data, PrinterBlockEntity.DATA_SPOOL_SLOTS);
+    }
+
+    public boolean autoStart() {
+        return SplitContainerData.combine(data, PrinterBlockEntity.DATA_AUTO_START) != 0;
+    }
+
+    /** Build offset for axis 0=X, 1=Y, 2=Z. */
+    public int offset(int axis) {
+        return SplitContainerData.combine(data, PrinterBlockEntity.DATA_OFFSET_X + axis);
+    }
+
+    // GUI button ids: 0 start, 1 auto toggle, 2..7 = X-/X+/Y-/Y+/Z-/Z+
+    public static final int BUTTON_START = 0;
+    public static final int BUTTON_AUTO = 1;
+    public static final int BUTTON_OFFSET_BASE = 2;
+
+    @Override
+    public boolean clickMenuButton(Player player, int id) {
+        if (printer == null || printer.getLevel() == null || printer.getLevel().isClientSide) {
+            return false;
+        }
+        if (id == BUTTON_START) {
+            printer.requestStart();
+            return true;
+        }
+        if (id == BUTTON_AUTO) {
+            printer.setAutoStart(!printer.autoStart());
+            return true;
+        }
+        int offsetId = id - BUTTON_OFFSET_BASE;
+        if (offsetId >= 0 && offsetId < 6) {
+            printer.adjustOffset(offsetId / 2, (offsetId % 2 == 0) ? -1 : 1);
+            return true;
+        }
+        return false;
     }
 
     @Override

@@ -108,4 +108,13 @@ public class ControllerBlock extends PrinterBlock {
             level.playSound(null, controllerPos, SoundEvents.BEACON_DEACTIVATE, SoundSource.BLOCKS, 0.6F, 1.0F);
         }
     }
+
+    @Override
+    public void neighborChanged(BlockState state, Level level, BlockPos pos, Block neighborBlock,
+                                BlockPos neighborPos, boolean movedByPiston) {
+        super.neighborChanged(state, level, pos, neighborBlock, neighborPos, movedByPiston);
+        if (!level.isClientSide && level.getBlockEntity(pos) instanceof PrinterBlockEntity printer) {
+            printer.onNeighborSignal(level.hasNeighborSignal(pos));
+        }
+    }
 }

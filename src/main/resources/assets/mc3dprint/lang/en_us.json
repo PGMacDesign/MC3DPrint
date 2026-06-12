@@ -124,5 +124,10 @@
   "gui.mc3dprint.spools": "Spools %s/%s",
   "tooltip.mc3dprint.spools_docked": "%s of %s spools docked",
   "tooltip.mc3dprint.fu_no_spools": "Shift+Click a spool here to dock it (or sneak-use the printer with one)",
-  "tooltip.mc3dprint.spool_worth": "1 FU here = %s Tier 1 FU"
+  "tooltip.mc3dprint.spool_worth": "1 FU here = %s Tier 1 FU",
+  "gui.mc3dprint.state.ready": "Ready — press Start (or pulse redstone)",
+  "gui.mc3dprint.start": "Start",
+  "gui.mc3dprint.auto_on": "Auto: On",
+  "gui.mc3dprint.auto_off": "Auto: Off",
+  "tooltip.mc3dprint.offsets": "Build offset from the default spot (centered above the printer). Takes effect on the next job."
 }
