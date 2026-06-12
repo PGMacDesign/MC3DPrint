@@ -43,7 +43,7 @@ public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
     public PrinterScreen(PrinterMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
         this.imageWidth = 176;
-        this.imageHeight = 188;
+        this.imageHeight = 200;
         this.inventoryLabelY = this.imageHeight - 94;
     }
 
@@ -118,10 +118,6 @@ public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
                 lines.add(Component.translatable("tooltip.mc3dprint.fu_no_spools"));
             }
             graphics.renderComponentTooltip(font, lines, mouseX, mouseY);
-        }
-        if (isHovering(8, OFFSETS_Y, 160, 12, mouseX, mouseY)) {
-            graphics.renderTooltip(font,
-                    Component.translatable("tooltip.mc3dprint.offsets"), mouseX, mouseY);
         }
     }
 
