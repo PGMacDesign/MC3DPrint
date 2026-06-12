@@ -246,4 +246,24 @@ public class StructurePrintGameTests {
             helper.succeed();
         });
     }
+
+    @GameTest(template = "empty5", timeoutTicks = 80)
+    public static void highTierBlockBlocksUnderTierStructurePrint(GameTestHelper helper) {
+        // a netherite block is T5; a T3 machine must refuse the whole structure,
+        // closing the "scan expensive blocks, print on a cheap machine" exploit
+        PrinterBlockEntity printer = poweredPrinter(helper, new BlockPos(2, 1, 2));
+        Blueprint blueprint = Blueprint.builder("gametest-netherite", 1, 1, 1)
+                .set(0, 0, 0, BlueprintBlockState.parse("minecraft:netherite_block"))
+                .build();
+        printer.inventory().setStackInSlot(PrinterBlockEntity.SLOT_TEMPLATE, discFor(helper, blueprint));
+
+        helper.runAfterDelay(40, () -> {
+            if (printer.state() != PrinterBlockEntity.State.NOT_PRINTABLE) {
+                helper.fail("T3 machine must refuse a netherite-block structure, got " + printer.state());
+                return;
+            }
+            helper.assertBlockNotPresent(Blocks.NETHERITE_BLOCK, new BlockPos(2, 2, 2));
+            helper.succeed();
+        });
+    }
 }

@@ -136,6 +136,18 @@ public final class FuValueRegistry {
                 // T5+
                 "minecraft:netherite_ingot=500@5", "minecraft:ancient_debris=125@5",
                 "minecraft:nether_star=1500@6",
-                "minecraft:dragon_egg=2500@7");
+                "minecraft:dragon_egg=2500@7",
+                // storage / material blocks = their crafting contents (9×, amethyst 4×),
+                // at the constituent's tier. Without these, a scanned diamond/netherite
+                // block falls back to UNKNOWN_BLOCK_FU @ T1 — letting a low-tier machine
+                // print high-tier blocks for pennies. Carrying the tier also makes the
+                // per-block tier gate refuse them on an under-tier machine.
+                "minecraft:coal_block=18@1",
+                "minecraft:copper_block=90@2", "minecraft:iron_block=180@2",
+                "minecraft:gold_block=135@2", "minecraft:lapis_block=90@2",
+                "minecraft:amethyst_block=40@2",
+                "minecraft:redstone_block=36@3", "minecraft:slime_block=270@3",
+                "minecraft:diamond_block=450@4", "minecraft:emerald_block=450@4",
+                "minecraft:netherite_block=4500@5");
     }
 }

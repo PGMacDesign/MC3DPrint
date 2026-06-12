@@ -150,6 +150,24 @@ public class FuTierEconomyGameTests {
         }
     }
 
+    @GameTest(template = "empty5", timeoutTicks = 100)
+    public static void storageBlockValuesRegistered(GameTestHelper helper) {
+        // storage blocks carry their crafting contents' value + tier so a low-tier
+        // machine can't cheap-print them and the per-block tier gate refuses them
+        var netherite = com.pgmacdesign.mc3dprint.fu.FuValueRegistry.valueOf(new ItemStack(Items.NETHERITE_BLOCK));
+        var diamond = com.pgmacdesign.mc3dprint.fu.FuValueRegistry.valueOf(new ItemStack(Items.DIAMOND_BLOCK));
+        var iron = com.pgmacdesign.mc3dprint.fu.FuValueRegistry.valueOf(new ItemStack(Items.IRON_BLOCK));
+        if (netherite.isEmpty() || netherite.get().fu() != 4500 || netherite.get().tier() != 5) {
+            helper.fail("Netherite block should be 4500 FU @ T5, got " + netherite);
+        } else if (diamond.isEmpty() || diamond.get().fu() != 450 || diamond.get().tier() != 4) {
+            helper.fail("Diamond block should be 450 FU @ T4, got " + diamond);
+        } else if (iron.isEmpty() || iron.get().fu() != 180 || iron.get().tier() != 2) {
+            helper.fail("Iron block should be 180 FU @ T2, got " + iron);
+        } else {
+            helper.succeed();
+        }
+    }
+
     @GameTest(template = "empty5", timeoutTicks = 150)
     public static void winderRefusesWindingIntoLowerTierSpool(GameTestHelper helper) {
         WinderBlockEntity winder = placePoweredWinder(helper, new BlockPos(2, 1, 2));
