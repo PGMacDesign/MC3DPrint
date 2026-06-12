@@ -2,31 +2,67 @@ package com.pgmacdesign.mc3dprint.client;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.pgmacdesign.mc3dprint.MC3DPrint;
 import com.pgmacdesign.mc3dprint.machine.PrintJob;
 import com.pgmacdesign.mc3dprint.machine.PrinterBlockEntity;
 import net.minecraft.client.renderer.LevelRenderer;
+import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
+import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.BlockPos;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
-import net.minecraft.world.phys.AABB;
+
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
- * Print-job visualization, BuildCraft-quarry-in-reverse: a structural frame
- * around the print volume, X/Y gantry arms, a print head that rides above the
- * last placed block, and a beam from head to placement point. Docked filament
- * spools render on the four side faces — they spin while printing and their
- * winding shrinks toward the axle as filament depletes.
+ * Print-job visualization — "defined but magical." A textured dark-metal frame
+ * + rails surround the print volume; a small machined extruder head travels the
+ * gantry tracking the actual placement progress with ease-in/ease-out and
+ * partialTick interpolation; a glowing cyan filament strand trails the head
+ * (a capped ring buffer of recently-laid segments fading oldest->dim) and the
+ * hotend glows brightest at the nozzle. Idle = a slow breathing pulse on the
+ * hotend with a near-still head.
  *
- * Line-based rendering (hologram look) — solid modeled gantry geometry is a
- * later polish pass.
+ * <p>Two RenderTypes carry the geometry:
+ * <ul>
+ *   <li>{@link RenderType#entitySolid} (lit by world light) for the structural
+ *       frame, rails and head — the "defined" jump from the old wireframe.</li>
+ *   <li>{@link RenderType#eyes} (additive, fullbright, ignores world light) for
+ *       the cyan hotend + laid-filament glow — the "magical" emissive part.</li>
+ * </ul>
+ *
+ * <p>All interpolation and the laid-filament trail are computed client-side and
+ * stored in {@link #HEAD_STATES} keyed by block position, so the block entity
+ * (and the 58 GameTests over its print/economy logic) is untouched. We only
+ * read {@link PrinterBlockEntity#lastPlacedPos()}, already synced for the head.
  */
 public class PrinterRenderer implements BlockEntityRenderer<PrinterBlockEntity> {
-    // frame: printer-blue; head/beam: warm yellow
-    private static final float FR = 0.31F, FG = 0.76F, FB = 0.97F, FA = 0.8F;
-    private static final float HR = 1.0F, HG = 0.85F, HB = 0.3F;
+    // Dark-metal texture for frame/rails/head, reused from the block set.
+    private static final ResourceLocation METAL =
+            new ResourceLocation(MC3DPrint.MOD_ID, "textures/block/printer_casing.png");
+    // Vanilla 1x1 fully-white, fully-opaque texture. Feeding the additive
+    // RenderType.eyes a white texel lets the vertex color (cyan) drive the glow
+    // output cleanly — a dark/transparent casing texel would muddy or hide it.
+    private static final ResourceLocation WHITE =
+            new ResourceLocation("minecraft", "textures/misc/white.png");
+
+    // Hero cyan glow (brief palette: #5CC8FF core, falling to #1E7FCF).
+    private static final float GLOW_R = 0.36F, GLOW_G = 0.78F, GLOW_B = 1.00F;
+    // Frame tint: a slight cool grey multiply over the metal texture.
+    private static final float FRAME_R = 0.62F, FRAME_G = 0.66F, FRAME_B = 0.72F;
+    // Head tint: lighter machined grey so it reads against the darker frame.
+    private static final float HEAD_R = 0.82F, HEAD_G = 0.85F, HEAD_B = 0.90F;
+
+    private static final float RAIL = 0.025F;  // half-thickness of frame struts/rails
+    private static final float HEAD = 0.13F;   // half-size of the extruder head box
+    private static final int MAX_TRAIL = 64;   // capped laid-filament ring buffer
 
     /** Spool slot index -> the side face it docks on. */
     private static final net.minecraft.core.Direction[] SPOOL_FACES = {
@@ -38,6 +74,46 @@ public class PrinterRenderer implements BlockEntityRenderer<PrinterBlockEntity> 
     private static final float AXLE_RADIUS = 0.08F;
     private static final float WINDING_MAX_EXTRA = 0.18F;
 
+    /**
+     * Per-printer client render state: the smoothed head position and the trail
+     * of laid filament segments. Keyed by the BE position. A static map is the
+     * standard pattern for per-BE client-only animation state that must not live
+     * on the (server-authoritative, save-synced) block entity.
+     */
+    private static final class HeadState {
+        // current/previous smoothed head position, in machine-local space.
+        double curX, curY, curZ;
+        double prevX, prevY, prevZ;
+        // the head's destination (block-center above the last placement).
+        double tgtX, tgtY, tgtZ;
+        boolean initialized;
+        // null until the first placement we've seen; lets us detect new segments.
+        BlockPos lastSeen;
+        // ring buffer of laid segments (local block-center coords), newest last.
+        final Deque<double[]> trail = new ArrayDeque<>();
+
+        void retarget(double x, double y, double z) {
+            tgtX = x;
+            tgtY = y;
+            tgtZ = z;
+            if (!initialized) {
+                curX = prevX = x;
+                curY = prevY = y;
+                curZ = prevZ = z;
+                initialized = true;
+            }
+        }
+
+        void addSegment(double x, double y, double z) {
+            trail.addLast(new double[]{x, y, z});
+            while (trail.size() > MAX_TRAIL) {
+                trail.removeFirst(); // drop the oldest = farthest-cooled segment
+            }
+        }
+    }
+
+    private static final Map<BlockPos, HeadState> HEAD_STATES = new HashMap<>();
+
     public PrinterRenderer(BlockEntityRendererProvider.Context context) {
     }
 
@@ -48,13 +124,18 @@ public class PrinterRenderer implements BlockEntityRenderer<PrinterBlockEntity> 
 
         PrintJob job = printer.activeJob();
         if (job == null) {
+            // Job finished/idle — forget any cached head animation for this BE so
+            // a fresh job restarts cleanly and the map doesn't grow unbounded.
+            HEAD_STATES.remove(printer.getBlockPos());
             renderPreview(printer, poseStack, bufferSource);
             return;
         }
+
         BlockPos machine = printer.getBlockPos();
         BlockPos origin = job.origin();
         BlockPos size = job.size();
 
+        // Print-volume bounds in machine-local space (block coords relative to BE).
         double minX = origin.getX() - machine.getX();
         double minY = origin.getY() - machine.getY();
         double minZ = origin.getZ() - machine.getZ();
@@ -62,42 +143,286 @@ public class PrinterRenderer implements BlockEntityRenderer<PrinterBlockEntity> 
         double maxY = minY + size.getY();
         double maxZ = minZ + size.getZ();
 
-        VertexConsumer lines = bufferSource.getBuffer(RenderType.lines());
+        // Gantry plane sits just above the print volume's top.
+        double gantryY = maxY + 0.25;
 
-        // structural frame around the whole print volume
-        LevelRenderer.renderLineBox(poseStack, lines, minX, minY, minZ, maxX, maxY, maxZ, FR, FG, FB, FA);
+        // Grab each VertexConsumer exactly once per frame per RenderType.
+        VertexConsumer solid = bufferSource.getBuffer(RenderType.entitySolid(METAL));
+        VertexConsumer glow = bufferSource.getBuffer(RenderType.eyes(WHITE));
 
+        renderFrame(poseStack, solid, packedLight, minX, minY, minZ, maxX, maxY, maxZ, gantryY);
+
+        // --- Head tracking + interpolation (client-side) ---
+        HeadState hs = HEAD_STATES.computeIfAbsent(machine, p -> new HeadState());
         BlockPos lastPlaced = printer.lastPlacedPos();
         if (lastPlaced != null) {
-            double headX = lastPlaced.getX() - machine.getX() + 0.5;
-            double headZ = lastPlaced.getZ() - machine.getZ() + 0.5;
-            double targetY = lastPlaced.getY() - machine.getY();
-            // head rides the gantry plane at the frame top, with a subtle bob
-            double bob = 0.06 * Mth.sin((printer.getLevel() != null
-                    ? printer.getLevel().getGameTime() : 0) * 0.35F + partialTick * 0.35F);
-            double headY = maxY + 0.25 + bob;
-
-            // gantry arms: X arm and Z arm through the head position
-            line(poseStack, lines, minX, headY, headZ, maxX, headY, headZ, FR, FG, FB);
-            line(poseStack, lines, headX, headY, minZ, headX, headY, maxZ, FR, FG, FB);
-
-            // print head: small box riding the gantry
-            AABB head = new AABB(headX - 0.18, headY - 0.18, headZ - 0.18,
-                    headX + 0.18, headY + 0.18, headZ + 0.18);
-            LevelRenderer.renderLineBox(poseStack, lines, head.minX, head.minY, head.minZ,
-                    head.maxX, head.maxY, head.maxZ, HR, HG, HB, 1.0F);
-
-            // beam from head down to the materialization point
-            line(poseStack, lines, headX, head.minY, headZ, headX, targetY + 1.0, headZ, HR, HG, HB);
+            double targetX = lastPlaced.getX() - machine.getX() + 0.5;
+            double targetZ = lastPlaced.getZ() - machine.getZ() + 0.5;
+            // Head rides the gantry plane; the strand drops to the placed layer.
+            if (!lastPlaced.equals(hs.lastSeen)) {
+                // A new block was placed: lay a glowing segment at its top face,
+                // then retarget the head over it. Done on the placement *event*,
+                // not every frame, so the trail advances one segment per block.
+                hs.addSegment(targetX, lastPlaced.getY() - machine.getY() + 1.0, targetZ);
+                hs.lastSeen = lastPlaced;
+                // shift cur->prev so partialTick can ease from where we were.
+                hs.prevX = hs.curX;
+                hs.prevY = hs.curY;
+                hs.prevZ = hs.curZ;
+            }
+            hs.retarget(targetX, gantryY, targetZ);
+        } else {
+            // Job just started, nothing placed yet: park the head centered on top.
+            hs.retarget((minX + maxX) / 2.0, gantryY, (minZ + maxZ) / 2.0);
         }
+
+        // Ease-in/ease-out toward the target with a fixed smoothing factor, then
+        // partialTick-lerp between last frame's and this frame's eased position
+        // so motion is frame-smooth rather than 20Hz-steppy. We advance the eased
+        // state once per render (prev<-cur, cur<-ease(cur,tgt)).
+        hs.prevX = hs.curX;
+        hs.prevY = hs.curY;
+        hs.prevZ = hs.curZ;
+        final double ease = 0.22; // smoothing per frame; small = lazier, smoother
+        hs.curX = easeToward(hs.curX, hs.tgtX, ease);
+        hs.curY = easeToward(hs.curY, hs.tgtY, ease);
+        hs.curZ = easeToward(hs.curZ, hs.tgtZ, ease);
+        double headX = Mth.lerp(partialTick, hs.prevX, hs.curX);
+        double headY = Mth.lerp(partialTick, hs.prevY, hs.curY);
+        double headZ = Mth.lerp(partialTick, hs.prevZ, hs.curZ);
+
+        // Rails through the live head position so the gantry "tracks" it.
+        renderRails(poseStack, solid, packedLight, minX, minZ, maxX, maxZ, gantryY, headX, headZ);
+
+        // The extruder head: a small machined box at the smoothed position.
+        box(poseStack, solid, headX - HEAD, headY - HEAD, headZ - HEAD,
+                headX + HEAD, headY + HEAD, headZ + HEAD,
+                HEAD_R, HEAD_G, HEAD_B, 1.0F, packedLight);
+
+        renderFilament(poseStack, glow, printer, hs, headX, headY, headZ, partialTick);
+    }
+
+    /** Eight struts of the print-volume frame plus a top-rim ring (textured, lit). */
+    private void renderFrame(PoseStack poseStack, VertexConsumer solid, int light,
+                             double minX, double minY, double minZ,
+                             double maxX, double maxY, double maxZ, double gantryY) {
+        // Four vertical corner posts.
+        post(poseStack, solid, light, minX, minY, minZ, maxY);
+        post(poseStack, solid, light, maxX, minY, minZ, maxY);
+        post(poseStack, solid, light, minX, minY, maxZ, maxY);
+        post(poseStack, solid, light, maxX, minY, maxZ, maxY);
+        // Top frame rim (four beams) at the print-volume top.
+        beamX(poseStack, solid, light, minX, maxY, minZ, maxX);
+        beamX(poseStack, solid, light, minX, maxY, maxZ, maxX);
+        beamZ(poseStack, solid, light, minX, maxY, minZ, maxZ);
+        beamZ(poseStack, solid, light, maxX, maxY, minZ, maxZ);
+        // Bottom frame rim so the cage reads as enclosed.
+        beamX(poseStack, solid, light, minX, minY, minZ, maxX);
+        beamX(poseStack, solid, light, minX, minY, maxZ, maxX);
+        beamZ(poseStack, solid, light, minX, minY, minZ, maxZ);
+        beamZ(poseStack, solid, light, maxX, minY, minZ, maxZ);
+        // Gantry-plane rim, a touch above the top, where the head rides.
+        beamX(poseStack, solid, light, minX, gantryY, minZ, maxX);
+        beamX(poseStack, solid, light, minX, gantryY, maxZ, maxX);
+        beamZ(poseStack, solid, light, minX, gantryY, minZ, maxZ);
+        beamZ(poseStack, solid, light, maxX, gantryY, minZ, maxZ);
+    }
+
+    /** The two cross rails (X-arm and Z-arm) intersecting over the head. */
+    private void renderRails(PoseStack poseStack, VertexConsumer solid, int light,
+                             double minX, double minZ, double maxX, double maxZ,
+                             double gantryY, double headX, double headZ) {
+        // X-arm spans the full X extent at the head's Z; Z-arm spans Z at head's X.
+        beamX(poseStack, solid, light, minX, gantryY, headZ, maxX);
+        beamZ(poseStack, solid, light, headX, gantryY, minZ, maxZ);
+    }
+
+    /** Glowing cyan hotend + the laid-filament trail (additive, fullbright). */
+    private void renderFilament(PoseStack poseStack, VertexConsumer glow,
+                                PrinterBlockEntity printer, HeadState hs,
+                                double headX, double headY, double headZ, float partialTick) {
+        long gameTime = printer.getLevel() != null ? printer.getLevel().getGameTime() : 0;
+        boolean printing = printer.state() == PrinterBlockEntity.State.PRINTING;
+
+        // Idle = a slow breathing pulse on the hotend; printing = steady bright.
+        float pulse = printing
+                ? 1.0F
+                : 0.45F + 0.30F * (0.5F + 0.5F * Mth.sin((gameTime + partialTick) * 0.10F));
+
+        // Hotend: a small bright billboard-ish cross of quads at the nozzle. We
+        // draw two perpendicular vertical quads so it reads as a glowing core
+        // from any angle without needing true billboarding.
+        float hot = pulse;
+        double nozzleY = headY - HEAD; // bottom of the head box
+        double r = 0.06; // hotend glow half-size
+        // quad facing along Z
+        emissiveQuad(poseStack, glow,
+                headX - r, nozzleY - r, headZ, headX + r, nozzleY - r, headZ,
+                headX + r, nozzleY + r, headZ, headX - r, nozzleY + r, headZ,
+                GLOW_R, GLOW_G, GLOW_B, hot);
+        // quad facing along X
+        emissiveQuad(poseStack, glow,
+                headX, nozzleY - r, headZ - r, headX, nozzleY - r, headZ + r,
+                headX, nozzleY + r, headZ + r, headX, nozzleY + r, headZ - r,
+                GLOW_R, GLOW_G, GLOW_B, hot);
+
+        // Hot strand: a thin bright drop from the nozzle down to the layer it's
+        // currently laying (the most recent trail segment), brightest at the top.
+        double[] newest = hs.trail.peekLast();
+        if (printing && newest != null) {
+            strandQuad(poseStack, glow, headX, nozzleY, headZ,
+                    newest[0], newest[1], newest[2], GLOW_R, GLOW_G, GLOW_B, 0.9F * hot);
+        }
+
+        // Laid trail: connect consecutive segments with thin glowing quads that
+        // fade oldest->dim ("cooling filament"). Oldest at the deque head.
+        int n = hs.trail.size();
+        if (n >= 2) {
+            double[] prev = null;
+            int i = 0;
+            for (double[] seg : hs.trail) {
+                if (prev != null) {
+                    // brightness ramps from dim (old, low i) to bright (new, high i)
+                    float t = (float) i / (float) (n - 1);
+                    float a = 0.12F + 0.55F * t;
+                    strandQuad(poseStack, glow, prev[0], prev[1], prev[2],
+                            seg[0], seg[1], seg[2], GLOW_R, GLOW_G, GLOW_B, a);
+                }
+                prev = seg;
+                i++;
+            }
+        }
+    }
+
+    /** Eases {@code from} toward {@code to} by factor {@code f} (frame-rate-naive
+     * but visually smooth at MC's render cadence). */
+    private static double easeToward(double from, double to, double f) {
+        return from + (to - from) * f;
+    }
+
+    // --- textured solid box primitives (NEW_ENTITY vertex format) ---
+
+    private void post(PoseStack poseStack, VertexConsumer c, int light,
+                      double x, double minY, double z, double maxY) {
+        box(poseStack, c, x - RAIL, minY, z - RAIL, x + RAIL, maxY, z + RAIL,
+                FRAME_R, FRAME_G, FRAME_B, 1.0F, light);
+    }
+
+    private void beamX(PoseStack poseStack, VertexConsumer c, int light,
+                       double x0, double y, double z, double x1) {
+        box(poseStack, c, x0, y - RAIL, z - RAIL, x1, y + RAIL, z + RAIL,
+                FRAME_R, FRAME_G, FRAME_B, 1.0F, light);
+    }
+
+    private void beamZ(PoseStack poseStack, VertexConsumer c, int light,
+                       double x, double y, double z0, double z1) {
+        box(poseStack, c, x - RAIL, y - RAIL, z0, x + RAIL, y + RAIL, z1,
+                FRAME_R, FRAME_G, FRAME_B, 1.0F, light);
+    }
+
+    /**
+     * Emits a textured, lit axis-aligned box (6 quads) into a NEW_ENTITY-format
+     * buffer. The texture is mapped 0..1 per face (a flat metal look — the source
+     * is a 16px casing tile). Winding is CCW when viewed from outside so faces
+     * aren't back-culled. {@code light} is the world packed light for this BE.
+     */
+    private void box(PoseStack poseStack, VertexConsumer c,
+                     double x0, double y0, double z0, double x1, double y1, double z1,
+                     float r, float g, float b, float a, int light) {
+        var pose = poseStack.last();
+        var mat = pose.pose();
+        var norm = pose.normal();
+        float fx0 = (float) x0, fy0 = (float) y0, fz0 = (float) z0;
+        float fx1 = (float) x1, fy1 = (float) y1, fz1 = (float) z1;
+
+        // -Z face (north), normal (0,0,-1)
+        quad(c, mat, norm, r, g, b, a, light, 0, 0, -1,
+                fx1, fy0, fz0, fx0, fy0, fz0, fx0, fy1, fz0, fx1, fy1, fz0);
+        // +Z face (south), normal (0,0,1)
+        quad(c, mat, norm, r, g, b, a, light, 0, 0, 1,
+                fx0, fy0, fz1, fx1, fy0, fz1, fx1, fy1, fz1, fx0, fy1, fz1);
+        // -X face (west), normal (-1,0,0)
+        quad(c, mat, norm, r, g, b, a, light, -1, 0, 0,
+                fx0, fy0, fz0, fx0, fy0, fz1, fx0, fy1, fz1, fx0, fy1, fz0);
+        // +X face (east), normal (1,0,0)
+        quad(c, mat, norm, r, g, b, a, light, 1, 0, 0,
+                fx1, fy0, fz1, fx1, fy0, fz0, fx1, fy1, fz0, fx1, fy1, fz1);
+        // +Y face (up), normal (0,1,0)
+        quad(c, mat, norm, r, g, b, a, light, 0, 1, 0,
+                fx0, fy1, fz1, fx1, fy1, fz1, fx1, fy1, fz0, fx0, fy1, fz0);
+        // -Y face (down), normal (0,-1,0)
+        quad(c, mat, norm, r, g, b, a, light, 0, -1, 0,
+                fx0, fy0, fz0, fx1, fy0, fz0, fx1, fy0, fz1, fx0, fy0, fz1);
+    }
+
+    /** One textured/lit quad (4 verts, UV 0..1 over the tile). */
+    private void quad(VertexConsumer c, org.joml.Matrix4f mat, org.joml.Matrix3f norm,
+                      float r, float g, float b, float a, int light,
+                      float nx, float ny, float nz,
+                      float x0, float y0, float z0, float x1, float y1, float z1,
+                      float x2, float y2, float z2, float x3, float y3, float z3) {
+        c.vertex(mat, x0, y0, z0).color(r, g, b, a).uv(0, 0)
+                .overlayCoords(OverlayTexture.NO_OVERLAY).uv2(light).normal(norm, nx, ny, nz).endVertex();
+        c.vertex(mat, x1, y1, z1).color(r, g, b, a).uv(1, 0)
+                .overlayCoords(OverlayTexture.NO_OVERLAY).uv2(light).normal(norm, nx, ny, nz).endVertex();
+        c.vertex(mat, x2, y2, z2).color(r, g, b, a).uv(1, 1)
+                .overlayCoords(OverlayTexture.NO_OVERLAY).uv2(light).normal(norm, nx, ny, nz).endVertex();
+        c.vertex(mat, x3, y3, z3).color(r, g, b, a).uv(0, 1)
+                .overlayCoords(OverlayTexture.NO_OVERLAY).uv2(light).normal(norm, nx, ny, nz).endVertex();
+    }
+
+    // --- emissive glow primitives (NEW_ENTITY format, FULL_BRIGHT light) ---
+
+    /** A flat emissive quad at fullbright (additive via RenderType.eyes). */
+    private void emissiveQuad(PoseStack poseStack, VertexConsumer c,
+                              double ax, double ay, double az, double bx, double by, double bz,
+                              double cx, double cy, double cz, double dx, double dy, double dz,
+                              float r, float g, float b, float a) {
+        var pose = poseStack.last();
+        var mat = pose.pose();
+        var norm = pose.normal();
+        int fb = LightTexture.FULL_BRIGHT;
+        // UV center of the 1x1 white texture: the eyes shader additively blends
+        // (white texel * vertex color), so the cyan vertex color is the output.
+        c.vertex(mat, (float) ax, (float) ay, (float) az).color(r, g, b, a).uv(0.5F, 0.5F)
+                .overlayCoords(OverlayTexture.NO_OVERLAY).uv2(fb).normal(norm, 0, 0, 1).endVertex();
+        c.vertex(mat, (float) bx, (float) by, (float) bz).color(r, g, b, a).uv(0.5F, 0.5F)
+                .overlayCoords(OverlayTexture.NO_OVERLAY).uv2(fb).normal(norm, 0, 0, 1).endVertex();
+        c.vertex(mat, (float) cx, (float) cy, (float) cz).color(r, g, b, a).uv(0.5F, 0.5F)
+                .overlayCoords(OverlayTexture.NO_OVERLAY).uv2(fb).normal(norm, 0, 0, 1).endVertex();
+        c.vertex(mat, (float) dx, (float) dy, (float) dz).color(r, g, b, a).uv(0.5F, 0.5F)
+                .overlayCoords(OverlayTexture.NO_OVERLAY).uv2(fb).normal(norm, 0, 0, 1).endVertex();
+    }
+
+    /**
+     * A thin glowing strand quad between two points, given a small constant
+     * width on the horizontal plane. Used for the hot drop and the laid trail.
+     */
+    private void strandQuad(PoseStack poseStack, VertexConsumer c,
+                            double x0, double y0, double z0, double x1, double y1, double z1,
+                            float r, float g, float b, float a) {
+        // Build a thin ribbon: offset both endpoints perpendicular to the segment
+        // in the XZ plane (falls back to X if the segment is purely vertical).
+        double dx = x1 - x0, dz = z1 - z0;
+        double len = Math.sqrt(dx * dx + dz * dz);
+        double px, pz;
+        if (len < 1.0e-4) { // vertical drop — give it width along X
+            px = 0.018;
+            pz = 0.0;
+        } else {
+            px = -dz / len * 0.018;
+            pz = dx / len * 0.018;
+        }
+        emissiveQuad(poseStack, c,
+                x0 - px, y0, z0 - pz, x1 - px, y1, z1 - pz,
+                x1 + px, y1, z1 + pz, x0 + px, y0, z0 + pz,
+                r, g, b, a);
     }
 
     /**
      * Hologram preview: ghost-renders the loaded blueprint at the build
-     * position. Green-white = will be placed, red = obstructed by a wrong
-     * block, already-matching blocks are skipped entirely. Ghosts only draw
-     * within the configured camera distance — the frame outline marks the
-     * full extent without the render cost.
+     * position. Unchanged from the wireframe-era renderer — this behavior works
+     * and the brief says keep it as-is.
      */
     private void renderPreview(PrinterBlockEntity printer, PoseStack poseStack,
                                MultiBufferSource bufferSource) {
@@ -111,7 +436,7 @@ public class PrinterRenderer implements BlockEntityRenderer<PrinterBlockEntity> 
             return;
         }
 
-        // full-extent frame, same style as the active-print frame
+        // full-extent frame, drawn as lines so it stays cheap at distance
         VertexConsumer frameLines = bufferSource.getBuffer(RenderType.lines());
         LevelRenderer.renderLineBox(poseStack, frameLines,
                 origin.getX() - machine.getX(), origin.getY() - machine.getY(), origin.getZ() - machine.getZ(),
@@ -200,9 +525,9 @@ public class PrinterRenderer implements BlockEntityRenderer<PrinterBlockEntity> 
             // four rotating spokes make the spin visible
             float spokeDepth = 0.12F;
             for (int s = 0; s < 4; s++) {
-                float a = angle + s * (Mth.PI / 2);
-                float ux = Mth.cos(a);   // along v
-                float uy = Mth.sin(a);   // along world up
+                float ang = angle + s * (Mth.PI / 2);
+                float ux = Mth.cos(ang);   // along v
+                float uy = Mth.sin(ang);   // along world up
                 line(poseStack, lines,
                         cx + nx * spokeDepth, 0.5, cz + nz * spokeDepth,
                         cx + nx * spokeDepth + vx * ux * winding,
