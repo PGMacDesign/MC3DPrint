@@ -40,7 +40,8 @@ public final class ModBlocks {
     public static final List<RegistryObject<Block>> CONTROLLERS = buildControllers();
 
     public static final RegistryObject<Block> PRINTER_CASING = BLOCKS.register("printer_casing",
-            () -> new CasingBlock(machineProperties()));
+            () -> new CasingBlock(machineProperties()
+                    .lightLevel(s -> s.getValue(CasingBlock.ACTIVE) ? 6 : 0)));
 
     public static final RegistryObject<Block> FILAMENT_CONVERTER = BLOCKS.register("filament_converter",
             () -> new com.pgmacdesign.mc3dprint.machine.FilamentConverterBlock(machineProperties()));
@@ -74,7 +75,9 @@ public final class ModBlocks {
         for (int tierNumber = 5; tierNumber <= 8; tierNumber++) {
             final MachineTier tier = MachineTier.byNumber(tierNumber);
             controllers.add(BLOCKS.register("tier" + tierNumber + "_fabricator",
-                    () -> new ControllerBlock(tier, machineProperties())));
+                    () -> new ControllerBlock(tier, machineProperties()
+                            .lightLevel(s -> s.hasProperty(ControllerBlock.FORMED)
+                                    && s.getValue(ControllerBlock.FORMED) ? 8 : 0))));
         }
         return List.copyOf(controllers);
     }

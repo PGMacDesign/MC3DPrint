@@ -19,6 +19,8 @@ import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.phys.BlockHitResult;
 
+import javax.annotation.Nullable;
+
 /**
  * T5-T8 multiblock controller. Unformed: right-click validates the casing
  * pattern and forms the machine. Formed: behaves as a printer of its tier.
@@ -51,6 +53,7 @@ public class ControllerBlock extends PrinterBlock {
                 player.displayClientMessage(error, true);
             } else {
                 level.setBlock(pos, state.setValue(FORMED, true), Block.UPDATE_ALL);
+                setComponentsActive(level, pos, tier(), true, null);
                 player.displayClientMessage(Component.translatable("message.mc3dprint.multiblock_formed",
                         tier().number()), true);
                 level.playSound(null, pos, SoundEvents.BEACON_ACTIVATE, SoundSource.BLOCKS, 0.6F, 1.2F);
@@ -97,15 +100,44 @@ public class ControllerBlock extends PrinterBlock {
         return key != null && key.getNamespace().equals(MultiblockPattern.DRACONIC_MOD_ID);
     }
 
-    /** Called by casings when one is broken — the machine unforms in place. */
-    public static void unform(Level level, BlockPos controllerPos) {
+    /**
+     * Called by casings when one is broken — the machine unforms in place and
+     * all of its still-present casings revert to the plain (inactive) look.
+     *
+     * @param excludePos a casing that is mid-removal (its own onRemove triggered
+     *                   this) and must be skipped — re-setting its state would
+     *                   resurrect the block we are in the middle of destroying.
+     */
+    public static void unform(Level level, BlockPos controllerPos, @Nullable BlockPos excludePos) {
         BlockState state = level.getBlockState(controllerPos);
-        if (state.getBlock() instanceof ControllerBlock && state.getValue(FORMED)) {
+        if (state.getBlock() instanceof ControllerBlock controller && state.getValue(FORMED)) {
             if (level.getBlockEntity(controllerPos) instanceof PrinterBlockEntity printer) {
                 printer.cancelActiveJob();
             }
             level.setBlock(controllerPos, state.setValue(FORMED, false), Block.UPDATE_ALL);
+            setComponentsActive(level, controllerPos, controller.tier(), false, excludePos);
             level.playSound(null, controllerPos, SoundEvents.BEACON_DEACTIVATE, SoundSource.BLOCKS, 0.6F, 1.0F);
+        }
+    }
+
+    /**
+     * Flips the ACTIVE flag on every Printer Casing in the controller's base so
+     * the structure glows when formed and goes dark when unformed. T8's four
+     * Awakened-Draconium corners are not casings and are left untouched.
+     */
+    private static void setComponentsActive(Level level, BlockPos controllerPos, MachineTier tier,
+                                            boolean active, @Nullable BlockPos excludePos) {
+        for (BlockPos offset : MultiblockPattern.componentOffsets(tier)) {
+            BlockPos componentPos = controllerPos.offset(offset);
+            if (componentPos.equals(excludePos)) {
+                continue;
+            }
+            BlockState componentState = level.getBlockState(componentPos);
+            if (componentState.getBlock() instanceof CasingBlock
+                    && componentState.getValue(CasingBlock.ACTIVE) != active) {
+                level.setBlock(componentPos, componentState.setValue(CasingBlock.ACTIVE, active),
+                        Block.UPDATE_ALL);
+            }
         }
     }
 

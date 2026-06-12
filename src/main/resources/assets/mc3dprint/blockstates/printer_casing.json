@@ -1,5 +1,6 @@
 {
   "variants": {
-    "": { "model": "mc3dprint:block/printer_casing" }
+    "active=false": { "model": "mc3dprint:block/printer_casing" },
+    "active=true": { "model": "mc3dprint:block/printer_casing_active" }
   }
 }

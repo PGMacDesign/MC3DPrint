@@ -55,9 +55,10 @@ public class FabricatorBlockItem extends BlockItem {
 
         InteractionResult result = super.place(context); // also restores BlockEntityTag
         if (result.consumesAction() && !level.isClientSide) {
+            BlockState activeCasing = ModBlocks.PRINTER_CASING.get().defaultBlockState()
+                    .setValue(CasingBlock.ACTIVE, true);
             for (BlockPos offset : MultiblockPattern.componentOffsets(controller.tier())) {
-                level.setBlock(pos.offset(offset), ModBlocks.PRINTER_CASING.get().defaultBlockState(),
-                        Block.UPDATE_ALL);
+                level.setBlock(pos.offset(offset), activeCasing, Block.UPDATE_ALL);
             }
             BlockState placed = level.getBlockState(pos);
             if (placed.getBlock() instanceof ControllerBlock) {

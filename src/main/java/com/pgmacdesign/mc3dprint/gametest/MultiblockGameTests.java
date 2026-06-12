@@ -4,6 +4,7 @@ import com.pgmacdesign.mc3dprint.MC3DPrint;
 import com.pgmacdesign.mc3dprint.fu.SpoolItem;
 import com.pgmacdesign.mc3dprint.machine.MachineTier;
 import com.pgmacdesign.mc3dprint.machine.PrinterBlockEntity;
+import com.pgmacdesign.mc3dprint.machine.multiblock.CasingBlock;
 import com.pgmacdesign.mc3dprint.machine.multiblock.ControllerBlock;
 import com.pgmacdesign.mc3dprint.machine.multiblock.MultiblockPattern;
 import com.pgmacdesign.mc3dprint.registry.ModBlocks;
@@ -101,6 +102,51 @@ public class MultiblockGameTests {
             if (state.getValue(ControllerBlock.FORMED)) {
                 helper.fail("Controller still formed after casing break");
                 return;
+            }
+            helper.succeed();
+        });
+    }
+
+    @GameTest(template = "empty5", timeoutTicks = 150)
+    public static void formingActivatesCasingsBreakingDeactivates(GameTestHelper helper) {
+        buildT5(helper);
+
+        // Form via the real right-click path so component activation is exercised.
+        helper.useBlock(CONTROLLER_POS, helper.makeMockSurvivalPlayer());
+
+        helper.runAfterDelay(5, () -> {
+            BlockState controller = helper.getLevel().getBlockState(helper.absolutePos(CONTROLLER_POS));
+            if (!controller.getValue(ControllerBlock.FORMED)) {
+                helper.fail("Controller did not form on right-click");
+                return;
+            }
+            for (BlockPos offset : MultiblockPattern.componentOffsets(MachineTier.T5)) {
+                BlockState casing = helper.getLevel().getBlockState(
+                        helper.absolutePos(CONTROLLER_POS.offset(offset)));
+                if (!(casing.getBlock() instanceof CasingBlock) || !casing.getValue(CasingBlock.ACTIVE)) {
+                    helper.fail("Casing at " + offset + " not ACTIVE after forming");
+                    return;
+                }
+            }
+
+            // Break one casing — the controller unforms and the survivors go dark.
+            helper.destroyBlock(new BlockPos(1, 1, 1));
+        });
+
+        helper.runAfterDelay(25, () -> {
+            BlockState controller = helper.getLevel().getBlockState(helper.absolutePos(CONTROLLER_POS));
+            if (controller.getValue(ControllerBlock.FORMED)) {
+                helper.fail("Controller still FORMED after casing break");
+                return;
+            }
+            for (BlockPos offset : MultiblockPattern.componentOffsets(MachineTier.T5)) {
+                BlockPos rel = CONTROLLER_POS.offset(offset);
+                BlockState casing = helper.getLevel().getBlockState(helper.absolutePos(rel));
+                // the broken casing is gone; any survivor must be inactive
+                if (casing.getBlock() instanceof CasingBlock && casing.getValue(CasingBlock.ACTIVE)) {
+                    helper.fail("Surviving casing at " + offset + " still ACTIVE after unform");
+                    return;
+                }
             }
             helper.succeed();
         });
