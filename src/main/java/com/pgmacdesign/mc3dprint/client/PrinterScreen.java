@@ -36,6 +36,17 @@ public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
     private static final int CONTROLS_Y = 70;
     private static final int OFFSETS_Y = 87;
 
+    // Dark tech-console code colors (see VISUAL-REVAMP-BRIEF "GUI — dark tech-console").
+    // The panel is now charcoal, so the old dark-grey label colors were flipped to
+    // light text + an accent-cyan / warm-red status. All ARGB, drawn shadowless.
+    private static final int LABEL = 0xFFC0C0C8;   // light label text
+    private static final int ACCENT = 0xFF3FE0C0;  // accent cyan (printing/ready status)
+    private static final int WARN = 0xFFE57A7A;    // warm red (paused/error states)
+    private static final int FILL_ENERGY = 0xFFD32F2F;   // energy bar = red
+    private static final int FILL_FILAMENT = 0xFF4FC3F7;  // filament bar = cyan
+    private static final int FILL_PROGRESS = 0xCC4FC3F7;  // progress arrow = cyan
+    private static final int SHIMMER = 0xFFBFE9FF;        // 1px leading-edge shimmer
+
     private Button startButton;
     private Button autoButton;
     private Button previewButton;
@@ -127,34 +138,42 @@ public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
         int top = topPos;
         graphics.blit(TEXTURE, left, top, 0, 0, imageWidth, imageHeight);
 
-        // Energy fill, bottom-up
+        // Energy fill (red), bottom-up
         int energyPixels = (int) ((long) menu.energy() * ENERGY_HEIGHT / menu.maxEnergy());
         if (energyPixels > 0) {
             graphics.fill(left + ENERGY_X, top + ENERGY_Y + ENERGY_HEIGHT - energyPixels,
                     left + ENERGY_X + ENERGY_WIDTH, top + ENERGY_Y + ENERGY_HEIGHT,
-                    0xFFD32F2F);
+                    FILL_ENERGY);
         }
 
-        // Progress fill, left-to-right
+        // Progress fill (cyan), left-to-right, with a 1px brighter shimmer at the leading edge
         int progressPixels = menu.progress() * ARROW_WIDTH / menu.maxProgress();
         if (progressPixels > 0) {
             graphics.fill(left + ARROW_X, top + ARROW_Y,
                     left + ARROW_X + progressPixels, top + ARROW_Y + ARROW_HEIGHT,
-                    0xCC4FC3F7);
+                    FILL_PROGRESS);
+            if (progressPixels < ARROW_WIDTH) {
+                graphics.fill(left + ARROW_X + progressPixels - 1, top + ARROW_Y,
+                        left + ARROW_X + progressPixels, top + ARROW_Y + ARROW_HEIGHT, SHIMMER);
+            }
         }
 
-        // Filament fill, bottom-up
+        // Filament fill (cyan), bottom-up
         int cap = Math.max(1, menu.fuCapacity());
         int fuPixels = (int) ((long) menu.fu() * FU_HEIGHT / cap);
         if (fuPixels > 0) {
             graphics.fill(left + FU_X, top + FU_Y + FU_HEIGHT - fuPixels,
-                    left + FU_X + FU_WIDTH, top + FU_Y + FU_HEIGHT, 0xFF4FC3F7);
+                    left + FU_X + FU_WIDTH, top + FU_Y + FU_HEIGHT, FILL_FILAMENT);
         }
     }
 
     @Override
     protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
-        super.renderLabels(graphics, mouseX, mouseY);
+        // Draw the title + inventory label ourselves in light text instead of
+        // super's dark-grey (which is invisible on the new charcoal console).
+        graphics.drawString(font, title, titleLabelX, titleLabelY, LABEL, false);
+        graphics.drawString(font, playerInventoryTitle, inventoryLabelX, inventoryLabelY, LABEL, false);
+
         Component status = switch (menu.state()) {
             case IDLE -> Component.translatable("gui.mc3dprint.state.idle");
             case READY -> Component.translatable("gui.mc3dprint.state.ready");
@@ -167,16 +186,20 @@ public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
             case NOT_PRINTABLE -> Component.translatable("gui.mc3dprint.state.not_printable");
             case AREA_TOO_SMALL -> Component.translatable("gui.mc3dprint.state.area_too_small");
         };
-        int color = menu.state() == PrinterBlockEntity.State.PRINTING ? 0x2E7D32
-                : menu.state() == PrinterBlockEntity.State.IDLE
-                        || menu.state() == PrinterBlockEntity.State.READY ? 0x404040 : 0xB71C1C;
+        // Status lights accent cyan when printing/ready, warm red for paused/error,
+        // neutral light grey when idle.
+        int color = switch (menu.state()) {
+            case PRINTING, READY -> ACCENT;
+            case IDLE -> LABEL;
+            default -> WARN;
+        };
         graphics.drawString(font, status, 80, 58, color, false);
         int cost = menu.templateCost();
         if (cost > 0) {
-            graphics.drawString(font, Component.translatable("gui.mc3dprint.cost", cost), 36, 58, 0x404040, false);
+            graphics.drawString(font, Component.translatable("gui.mc3dprint.cost", cost), 36, 58, LABEL, false);
         }
         Component spools = Component.translatable("gui.mc3dprint.spools", menu.spoolsUsed(), menu.spoolSlots());
-        int spoolsColor = menu.spoolsUsed() == 0 ? 0xB71C1C : 0x404040;
+        int spoolsColor = menu.spoolsUsed() == 0 ? WARN : LABEL;
         graphics.drawString(font, spools, imageWidth - 8 - font.width(spools), inventoryLabelY, spoolsColor, false);
 
         // offset readouts centered between their -/+ buttons
@@ -184,7 +207,7 @@ public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
         for (int axis = 0; axis < 3; axis++) {
             String text = axes[axis] + " " + menu.offset(axis);
             int x = 10 + axis * 54 + 12 + (24 - font.width(text)) / 2;
-            graphics.drawString(font, text, x, OFFSETS_Y + 2, 0x404040, false);
+            graphics.drawString(font, text, x, OFFSETS_Y + 2, LABEL, false);
         }
     }
 }
