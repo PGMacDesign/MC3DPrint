@@ -95,10 +95,10 @@ public class FilamentGameTests {
             helper.fail("Expected required tier 5, got " + winder.requiredSpoolTier());
             return;
         }
-        // a stick has no FU value at all
-        winder.inventory().setStackInSlot(WinderBlockEntity.SLOT_INPUT, new ItemStack(Items.STICK));
+        // rotten flesh has no FU value at all (mob drop, no recipe to derive from)
+        winder.inventory().setStackInSlot(WinderBlockEntity.SLOT_INPUT, new ItemStack(Items.ROTTEN_FLESH));
         if (winder.winderStatus() != WinderBlockEntity.STATUS_NOT_CONVERTIBLE) {
-            helper.fail("Expected NOT_CONVERTIBLE for a stick, got " + winder.winderStatus());
+            helper.fail("Expected NOT_CONVERTIBLE for rotten flesh, got " + winder.winderStatus());
             return;
         }
         // a matching T5 spool clears the status
@@ -148,7 +148,8 @@ public class FilamentGameTests {
         printer.getCapability(ForgeCapabilities.ENERGY).ifPresent(energy ->
                 energy.receiveEnergy(1_000, false));
         PrinterGameTests.attachLoadedSpool(printer);
-        printer.inventory().setStackInSlot(PrinterBlockEntity.SLOT_TEMPLATE, new ItemStack(Items.STICK));
+        // rotten flesh has no FU value and no recipe to derive one — not printable
+        printer.inventory().setStackInSlot(PrinterBlockEntity.SLOT_TEMPLATE, new ItemStack(Items.ROTTEN_FLESH));
 
         helper.runAfterDelay(40, () -> {
             if (printer.state() != PrinterBlockEntity.State.NOT_PRINTABLE) {

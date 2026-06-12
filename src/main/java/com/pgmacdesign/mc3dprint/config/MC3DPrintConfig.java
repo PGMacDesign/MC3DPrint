@@ -36,6 +36,9 @@ public final class MC3DPrintConfig {
     public static final ForgeConfigSpec.IntValue CLOCK_GENERATOR_BURN_MULTIPLIER;
     public static final ForgeConfigSpec.IntValue PRINT_HISTORY_SIZE;
     public static final ForgeConfigSpec.IntValue UNKNOWN_BLOCK_FU;
+    public static final ForgeConfigSpec.BooleanValue UNKNOWN_BLOCKS_PRINTABLE;
+    public static final ForgeConfigSpec.BooleanValue DERIVE_FROM_SMELTING;
+    public static final ForgeConfigSpec.BooleanValue DERIVE_FROM_STONECUTTING;
     public static final ForgeConfigSpec.IntValue FILAMENT_CONVERSION_RATIO;
     public static final ForgeConfigSpec.IntValue PREVIEW_MAX_BLOCKS;
     public static final ForgeConfigSpec.IntValue PREVIEW_RENDER_DISTANCE;
@@ -114,8 +117,24 @@ public final class MC3DPrintConfig {
                 .comment("Entries kept in each printer's job history log")
                 .defineInRange("printHistorySize", 10, 0, 100);
         UNKNOWN_BLOCK_FU = builder
-                .comment("FU cost per printed block whose item has no configured FU value")
-                .defineInRange("unknownBlockFu", 3, 0, Integer.MAX_VALUE);
+                .comment("FU cost per printed block whose item has no configured/derived FU value.",
+                        "Only used when unknownBlocksPrintable=true. Raised from 3 -> 50 so an",
+                        "un-priced modded block is never dirt-cheap.")
+                .defineInRange("unknownBlockFu", 50, 0, Integer.MAX_VALUE);
+        UNKNOWN_BLOCKS_PRINTABLE = builder
+                .comment("Strict mode. FALSE (default): a structure containing any block with no",
+                        "explicit, API, or recipe-derived FU value is NOT printable on any tier —",
+                        "this closes the 'scan an un-priced expensive block, print it cheap' exploit.",
+                        "TRUE: such blocks fall back to unknownBlockFu and are clamped to require",
+                        "the printing machine's own tier (never cheap on a low-tier machine).")
+                .define("unknownBlocksPrintable", false);
+        DERIVE_FROM_SMELTING = builder
+                .comment("Derive FU values from smelting recipes too (so smeltable ores resolve",
+                        "from their smelted result). Blasting/smoking/campfire are never used.")
+                .define("deriveFromSmelting", true);
+        DERIVE_FROM_STONECUTTING = builder
+                .comment("Derive FU values from stonecutting recipes too.")
+                .define("deriveFromStonecutting", true);
         FILAMENT_CONVERSION_RATIO = builder
                 .comment("Filament tier exchange rate: 1 FU of tier N is worth this many FU of tier N-1.",
                         "Down-converting is generous, up-converting costs ratio^tierGap (anti-exploit).",

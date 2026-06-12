@@ -37,6 +37,14 @@ public class MC3DPrint {
             }
         });
 
+        // recipe-derived FU valuation: bind live recipes on datapack sync (server)
+        // and consume cross-mod FU registrations sent over IMC.
+        modEventBus.addListener(com.pgmacdesign.mc3dprint.fu.FuEvents::onInterModProcess);
+        net.minecraftforge.common.MinecraftForge.EVENT_BUS.addListener(
+                com.pgmacdesign.mc3dprint.fu.FuEvents::onServerStarted);
+        net.minecraftforge.common.MinecraftForge.EVENT_BUS.addListener(
+                com.pgmacdesign.mc3dprint.fu.FuEvents::onDatapackSync);
+
         net.minecraftforge.common.MinecraftForge.EVENT_BUS.addListener(
                 com.pgmacdesign.mc3dprint.command.ImportCommand::register);
         net.minecraftforge.common.MinecraftForge.EVENT_BUS.addListener(

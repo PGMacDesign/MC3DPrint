@@ -122,6 +122,7 @@ The keystone — everything else consumes this. Pure logic, testable without a r
 
 - [x] Repair printing: re-running a disc skips blocks that already match (zero cost) and fills only what's missing; never overwrites mismatches
 - [x] Hologram preview: per-printer Ghost toggle, ghost blocks within `previewRenderDistance` (default 16) of the camera, full-extent frame outline, `previewMaxBlocks` cap (default 10k)
+- [x] Recipe-derived FU valuation: items/blocks with no explicit value are priced from their crafting/smelting/stonecutting recipes (memoized recursive graph, cycle detection, depth cap 12); storage blocks (`diamond_block` 450@5, etc.) now derive instead of being hardcoded. Strict mode (`unknownBlocksPrintable`, default false) refuses un-priced blocks — closes the scan-cheap-print exploit. Pack-maker override via `fuValues` always wins; cross-mod registration via `MC3DPrintAPI` (direct) + Forge IMC (`register_fu_value`, no hard dep). See [FU-VALUES-AND-COMPAT.md](FU-VALUES-AND-COMPAT.md). (2026-06-12)
 
 ## Audit Findings (2026-06-11) — see [AUDIT-2026-06-11.md](AUDIT-2026-06-11.md)
 

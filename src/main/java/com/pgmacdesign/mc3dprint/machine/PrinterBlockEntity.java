@@ -297,11 +297,15 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
 
     private int blockFuCost(BlockState state) {
         Optional<FuValue> value = blockFuValue(state);
+        // Unknown blocks (permissive mode only — strict mode refuses them up front
+        // in tryStartJob) cost unknownBlockFu, denominated at the machine's tier so
+        // a low-tier machine can't print them cheaply.
         return applyEfficiency(value.map(FuValue::fu).orElse(MC3DPrintConfig.UNKNOWN_BLOCK_FU.get()));
     }
 
     private int blockFuTier(BlockState state) {
-        return blockFuValue(state).map(FuValue::tier).orElse(1);
+        // No value -> charge at this machine's own tier (never cheap T1 default).
+        return blockFuValue(state).map(FuValue::tier).orElse(tier.number());
     }
 
     private Optional<FuValue> blockFuValue(BlockState state) {
@@ -669,8 +673,22 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         }
         for (BlueprintBlockState paletteState : blueprint.palette()) {
             Item paletteItem = paletteState.resolve().map(s -> s.getBlock().asItem()).orElse(Items.AIR);
-            if (paletteItem != Items.AIR && FuValueRegistry.valueOf(new ItemStack(paletteItem))
-                    .map(v -> v.tier() > tier.number()).orElse(false)) {
+            if (paletteItem == Items.AIR) {
+                continue;
+            }
+            Optional<FuValue> value = FuValueRegistry.valueOf(new ItemStack(paletteItem));
+            // strict mode: a block with NO value (after derivation) can never be
+            // printed — closes the 'scan un-priced expensive block, print cheap'
+            // exploit. When unknownBlocksPrintable=true such blocks are allowed,
+            // but blockFuCost/blockFuTier clamp them to this machine's own tier.
+            if (value.isEmpty()) {
+                if (!MC3DPrintConfig.UNKNOWN_BLOCKS_PRINTABLE.get()) {
+                    state = State.NOT_PRINTABLE;
+                    return;
+                }
+                continue; // permissive mode: priced at machine tier, always printable here
+            }
+            if (value.get().tier() > tier.number()) {
                 state = State.NOT_PRINTABLE;
                 return;
             }

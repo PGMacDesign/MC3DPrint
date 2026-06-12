@@ -124,6 +124,16 @@ Materials within the same group share identical FU values — e.g. cobblestone, 
 - All wood types = same value regardless of species
 - Nugget ×9 = ingot value (consistent with vanilla crafting ratios)
 
+> **Recipe-derived values, strict mode & the compat API.** Any item with no
+> explicit value is now **priced automatically from its crafting/smelting/
+> stonecutting recipe** (e.g. `diamond_block` derives to 450 FU @ T5 from 9
+> diamonds — no hardcoded entry). Un-priced blocks are refused by default
+> (**strict mode**, `unknownBlocksPrintable=false`), closing the
+> scan-expensive-block / print-cheap exploit. Pack makers override any value via
+> `fuValues`; other mods register their own via `MC3DPrintAPI` or Forge IMC.
+> Full details — derivation rules, config toggles, override syntax, and the
+> compat-mod API/IMC surface — in **[FU-VALUES-AND-COMPAT.md](FU-VALUES-AND-COMPAT.md)**.
+
 **One universal winder, spool-tier gating** (revised 2026-06-11 — replaced the
 T1–T4 winder ladder with a single block): there is exactly **one** Filament
 Winder, and it accepts any material. The gate is the **spool**, not the winder
