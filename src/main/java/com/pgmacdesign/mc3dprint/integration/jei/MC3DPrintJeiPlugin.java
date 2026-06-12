@@ -74,5 +74,8 @@ public class MC3DPrintJeiPlugin implements IModPlugin {
                 registration.addRecipeCatalyst(new ItemStack(printer.get()), PrintRecipeCategory.TYPE));
         ModItems.FABRICATORS.forEach(fabricator ->
                 registration.addRecipeCatalyst(new ItemStack(fabricator.get()), PrintRecipeCategory.TYPE));
+        // the Filament Winder accepts the same items — browsing it shows every
+        // convertible material and the spool tier each one needs
+        registration.addRecipeCatalyst(new ItemStack(ModItems.FILAMENT_WINDER.get()), PrintRecipeCategory.TYPE);
     }
 }

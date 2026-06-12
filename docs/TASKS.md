@@ -86,7 +86,8 @@ The keystone — everything else consumes this. Pure logic, testable without a r
 
 ## M8 — v1 Integrations ✅ *(AE2-deep + live compat testing flagged)*
 
-- [x] JEI: "3D Printing" category (item, base FU cost, required tier; printers/fabricators as catalysts) — *disc-contents browsing + RF column pending*
+- [x] JEI: "3D Printing" category (item, base FU cost, required spool tier; printers/fabricators **and the Filament Winder** as catalysts) — *disc-contents browsing + RF column pending*
+- [x] Tier discovery: tier-colored "3D Print: Tier N (F FU)" tooltip on every convertible item (config-driven, shows in inventory/creative/JEI) + searchable `mc3dprint:filament/tier_1..7` item tags (`$`-search in JEI). *Tags mirror the default economy — they don't auto-track `fuValues` config overrides; tooltip + JEI category do.*
 - [x] Patchouli guidebook (soft dep, data-driven; 2 categories / 6 entries) — auto-given on first printer craft (2026-06-11)
 - [x] Filament Converter block: pulls filtered items from ANY adjacent inventory (incl. ME/RS interfaces), winds FU straight into docked spools on adjacent printers — *AE2-API deep integration (network listening, autocrafting triggers) deferred: needs testing against real AE2*
 - [x] Create: schematic import UX via `/mc3dprint import <file>.nbt` (vanilla structure format)
