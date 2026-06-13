@@ -80,9 +80,11 @@ def detect_hotend(img):
             r, g, b, a = px[x, y]
             if a == 0:
                 continue
-            # cyan-ness: blue & green dominate red, and it's bright
+            # cyan-ness: blue & green dominate red, and it's bright. Require the
+            # pixel to be BLUE-dominant (b >= g) so the chamber hotend (blue cyan)
+            # wins over the teal LCD readout (green-dominant) up top.
             score = (b + g) - 1.4 * r + (b > 180) * 60 + (g > 160) * 30
-            if b > 150 and g > 120 and score > best_score:
+            if b > 150 and g > 120 and b >= g and score > best_score:
                 best_score = score
                 best = (x, y)
     return best if best else (w // 2, h // 2)

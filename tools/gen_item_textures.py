@@ -12,6 +12,8 @@ Same filenames -> item/generated models still resolve. Run from repo root:
 """
 import math
 
+from PIL import Image, ImageDraw
+
 from tex_common import (BODY, FRAME, GLOW, TIER, ACCENT_TEAL, ramp3, shade,
                         new, quantize_to_palette, save_item)
 
@@ -36,83 +38,79 @@ def rect(px, x, y, w, h, c):
 # concentric layer arcs, top-left sheen, and a thin grey flange rim.
 # ---------------------------------------------------------------------------
 def filament_spool(tier):
+    """A clean wound reel: a dark hub hole, a smooth tier-accent coil with two
+    crisp concentric layer rings, one top-left sheen crescent, and a thin grey
+    flange. No modulo banding / scattered sheen — that was the grain. The coil
+    reads as a donut, not noise, and downscales cleanly to the 16px inventory icon."""
     H = 32
     img = new(H); px = acc(img)
     cx, cy = 15.5, 15.5
-    coil = ramp3(TIER[tier])          # (highlight, base, shadow)
-    chi, cmid, clo = coil
+    chi, cmid, clo = ramp3(TIER[tier])
+    sheen = shade(chi, 0.24)
 
-    R_OUT = 14.0     # outer flange edge
-    R_FLANGE = 13.0  # inner flange (coil starts)
-    R_COIL_IN = 5.5  # inner coil edge
-    R_HUB = 4.0      # hub hole radius
+    R_OUT = 14.0      # outer flange edge
+    R_FLANGE = 12.5   # coil outer edge
+    R_COIL_IN = 6.0   # coil inner edge
+    R_HUB = 3.6       # hub hole radius
+    RINGS = (8.4, 10.6)  # two clean concentric "wound layer" lines
 
     for y in range(H):
         for x in range(H):
             dx = (x + 0.5) - cx
             dy = (y + 0.5) - cy
             d = math.hypot(dx, dy)
-            ang = math.atan2(dy, dx)
             if d > R_OUT:
                 continue
-            # light direction: top-left -> dot product with (-1,-1)
-            lit = (-dx - dy) / (math.sqrt(2) * max(d, 0.001))  # -1..1
+            lit = (-dx - dy) / (math.sqrt(2) * max(d, 0.001))  # top-left light
             if d <= R_HUB:
-                # dark hub hole — keep it clearly visible
-                if d > R_HUB - 1.0:
-                    put(px, x, y, FRAME[3])             # hub rim
-                else:
-                    put(px, x, y, FRAME[2] if d < R_HUB - 1.8 else FRAME[3])
+                # dark hub hole (clearly a reel)
+                c = FRAME[3] if d > R_HUB - 1.3 else FRAME[2]
             elif d <= R_COIL_IN:
-                # inner flange ring between hub and coil
-                c = BODY[3] if lit > 0 else BODY[4]
-                put(px, x, y, c)
+                # grey hub flange between hole and coil — smooth lit/shadow
+                c = BODY[2] if lit > 0.25 else (BODY[4] if lit < -0.25 else BODY[3])
             elif d <= R_FLANGE:
-                # the wound filament coil — base/highlight/shadow by light + arcs
-                if lit > 0.35:
-                    c = chi
-                elif lit < -0.35:
-                    c = clo
-                else:
-                    c = cmid
-                # concentric layer arcs: darken at 2 radii bands
-                band = (d - R_COIL_IN)
-                if abs((band % 2.6) - 0.0) < 0.7:
-                    c = shade(c, -0.18)
-                put(px, x, y, c)
+                # wound coil: smooth 3-shade, no banding
+                c = chi if lit > 0.45 else (clo if lit < -0.45 else cmid)
+                for rr in RINGS:                       # crisp concentric layers
+                    if abs(d - rr) < 0.5:
+                        c = clo
+                        break
             else:
-                # thin grey flange rim
-                c = BODY[2] if lit > 0 else BODY[4]
-                if d > R_OUT - 0.9:
+                # thin grey flange rim, darker outer lip
+                if d > R_OUT - 1.0:
                     c = BODY[4] if lit < 0 else BODY[3]
-                put(px, x, y, c)
+                else:
+                    c = BODY[1] if lit > 0.3 else (BODY[4] if lit < -0.3 else BODY[2])
+            put(px, x, y, c)
 
-    # top-left sheen highlight arc on the coil
-    for a in range(200, 250, 4):
-        rad = math.radians(a)
-        for rr in (R_COIL_IN + 2.5, R_COIL_IN + 5.0):
-            x = int(cx + math.cos(rad) * rr)
-            y = int(cy + math.sin(rad) * rr)
-            put(px, x, y, shade(chi, 0.25))
-    # a couple of crisp hub spokes so it reads as a reel
-    put(px, int(cx), int(cy - R_HUB), FRAME[3])
-    put(px, int(cx), int(cy + R_HUB - 1), FRAME[3])
-    # a 1px loose filament end with cyan tip (the feed end)
+    # one clean top-left sheen crescent on the coil (single tight band)
+    for y in range(H):
+        for x in range(H):
+            dx = (x + 0.5) - cx; dy = (y + 0.5) - cy
+            d = math.hypot(dx, dy)
+            if R_COIL_IN + 0.6 < d < R_FLANGE - 0.6:
+                lit = (-dx - dy) / (math.sqrt(2) * max(d, 0.001))
+                if lit > 0.8:
+                    put(px, x, y, sheen)
+
+    # a 1px loose filament end with a cyan magic tip (the feed end)
     ex, ey = int(cx + R_FLANGE - 1), int(cy)
-    put(px, ex, ey, cmid)
-    put(px, ex + 1, ey, clo)
-    put(px, ex + 2, ey - 1, GLOW[3])
+    put(px, ex, ey, cmid); put(px, ex + 1, ey, clo)
+    put(px, ex + 2, ey - 1, GLOW[3]); put(px, ex + 2, ey, GLOW[2])
 
-    quantize_to_palette(img, extra=ramp3(TIER[tier]))
+    quantize_to_palette(img, extra=list(ramp3(TIER[tier])) + [sheen])
     return img
 
 
 # ---------------------------------------------------------------------------
 # HERO 32x32: blueprint discs
 # ---------------------------------------------------------------------------
-def _disc_body(px, H):
+def _disc_body(px, H, face=FRAME[1]):
+    """A clean dark schematic disc: bright outer bevel, a 1px machined rim band,
+    a dark inset ring (so it reads as recessed), then a flat dark `face` the holo
+    content sits on. Returns (cx, cy, R)."""
     cx, cy = 15.5, 15.5
-    R = 13.0
+    R = 14.0
     for y in range(H):
         for x in range(H):
             dx = (x + 0.5) - cx; dy = (y + 0.5) - cy
@@ -121,94 +119,90 @@ def _disc_body(px, H):
                 continue
             lit = (-dx - dy) / (math.sqrt(2) * max(d, 0.001))
             if d > R - 1.0:
-                c = FRAME[0] if lit > 0 else FRAME[3]     # bevel rim
-            elif d > R - 2.2:
-                c = FRAME[1]
+                c = FRAME[0] if lit > 0.1 else FRAME[3]      # outer bevel rim
+            elif d > R - 2.3:
+                c = BODY[4] if lit > 0.3 else FRAME[2]       # machined rim band
+            elif d > R - 3.3:
+                c = FRAME[3]                                 # dark inset (recess)
             else:
-                c = FRAME[2] if lit > -0.2 else FRAME[1]  # dark disc face
+                c = face                                     # flat recessed face
             put(px, x, y, c)
-    # center hub
-    for y in range(H):
-        for x in range(H):
-            dx = (x + 0.5) - cx; dy = (y + 0.5) - cy
-            d = math.hypot(dx, dy)
-            if d <= 2.2:
-                put(px, x, y, FRAME[3] if d > 1.2 else FRAME[1])
     return cx, cy, R
 
 
 def blank_blueprint_disc():
+    """A blank disc = a clearly EMPTY schematic bay: a dashed placeholder frame
+    and a faint crosshair (no structure loaded) + a dim idle teal LED."""
     H = 32
     img = new(H); px = acc(img)
-    cx, cy, R = _disc_body(px, H)
+    field = (0x0B, 0x10, 0x1A)
+    cx, cy, R = _disc_body(px, H, face=field)
     icx, icy = int(cx), int(cy)
-    # an empty recessed face panel (the slot where a schematic would write) so it
-    # reads as a blank disc, not just a dark circle. Inset shadow top-left.
-    field = (0x10, 0x14, 0x1E)
-    rect(px, icx - 6, icy - 6, 12, 12, field)
-    rect(px, icx - 6, icy - 6, 12, 1, FRAME[3])   # top inset shadow
-    rect(px, icx - 6, icy - 6, 1, 12, FRAME[3])   # left inset shadow
-    rect(px, icx - 6, icy + 5, 12, 1, FRAME[1])   # bottom inset light
-    rect(px, icx + 5, icy - 6, 1, 12, FRAME[1])   # right inset light
-    # faint empty grid hint (very dim) so it echoes the written disc
-    for i in range(icx - 5, icx + 6, 5):
-        for j in range(icy - 5, icy + 6):
-            put(px, i, j, shade(field, 0.6))
-    # tiny dim teal idle status dot in a corner
-    put(px, icx + 5, icy - 5, shade(ACCENT_TEAL, -0.35))
-    quantize_to_palette(img, extra=[field, shade(field, 0.6),
-                                    shade(ACCENT_TEAL, -0.35)])
+    dash = shade(field, 0.75)
+    faint = shade(field, 0.45)
+    idle = shade(ACCENT_TEAL, -0.45)
+    half = 7
+    # dashed placeholder square (the empty schematic frame)
+    for t in range(-half, half + 1):
+        if (t + half) % 2 == 0:
+            put(px, icx + t, icy - half, dash)
+            put(px, icx + t, icy + half, dash)
+            put(px, icx - half, icy + t, dash)
+            put(px, icx + half, icy + t, dash)
+    # faint empty-target crosshair in the middle
+    for k in (-2, -1, 1, 2):
+        put(px, icx + k, icy, faint)
+        put(px, icx, icy + k, faint)
+    put(px, icx, icy, shade(field, 0.9))
+    # dim idle teal LED in the bay's top-right corner
+    put(px, icx + half - 1, icy - half + 1, idle)
+    quantize_to_palette(img, extra=[field, dash, faint, shade(field, 0.9), idle])
     return img
 
 
 def blueprint_disc():
+    """A written disc = a bright cyan hologram of a built structure: a FILLED
+    isometric cube (lit top, mid-left, dark-right faces) floating over a faint
+    projection grid, with a couple of holo scan lines. Reads instantly as 'a
+    structure schematic', unlike the old wireframe-in-a-mesh."""
     H = 32
     img = new(H); px = acc(img)
-    cx, cy, R = _disc_body(px, H)
+    field = (0x08, 0x0E, 0x16)
+    cx, cy, R = _disc_body(px, H, face=field)
     icx, icy = int(cx), int(cy)
-    # cyan holographic schematic: a small isometric structure glyph + grid
-    field = (0x10, 0x14, 0x1E)
-    rect(px, icx - 6, icy - 6, 12, 12, field)
-    # grid lines
-    for i in range(icx - 6, icx + 6, 3):
-        for j in range(icy - 6, icy + 6):
-            put(px, i, j, GLOW[3])
-    for j in range(icy - 6, icy + 6, 3):
-        for i in range(icx - 6, icx + 6):
-            put(px, i, j, GLOW[3])
-    # an isometric "structure" — a small cube wireframe in bright cyan
-    cube = [
-        (icx - 2, icy + 3), (icx + 2, icy + 3),         # bottom front edge
-        (icx - 2, icy + 3), (icx - 2, icy - 1),         # left vert
-        (icx + 2, icy + 3), (icx + 2, icy - 1),         # right vert
-        (icx - 2, icy - 1), (icx + 2, icy - 1),         # top front
-        (icx - 2, icy - 1), (icx, icy - 3),             # back-left up
-        (icx + 2, icy - 1), (icx + 4, icy - 3),         # back-right up
-        (icx, icy - 3), (icx + 4, icy - 3),             # top back
-    ]
-    # draw the cube edges
-    def line(x0, y0, x1, y1, c):
-        steps = max(abs(x1 - x0), abs(y1 - y0), 1)
+
+    # faint holographic scan lines + a receding ground projection
+    for sy in (icy - 4, icy + 1, icy + 6):
+        for sx in range(icx - 8, icx + 9):
+            if (sx + sy) % 2 == 0:
+                put(px, sx, sy, GLOW[3])
+    gy = icy + 7
+    for gx in range(icx - 6, icx + 7):
+        put(px, gx, gy, GLOW[3])
+    put(px, icx - 4, gy + 1, GLOW[3]); put(px, icx + 4, gy + 1, GLOW[3])
+
+    # filled isometric cube (ImageDraw rasterizes the three faces cleanly)
+    T = (icx, icy - 7); RT = (icx + 5, icy - 4); F = (icx, icy - 1); LT = (icx - 5, icy - 4)
+    LB = (icx - 5, icy + 2); FB = (icx, icy + 5); RB = (icx + 5, icy + 2)
+    dr = ImageDraw.Draw(img)
+    dr.polygon([T, RT, F, LT], fill=GLOW[1] + (255,))   # top face (brightest)
+    dr.polygon([LT, F, FB, LB], fill=GLOW[2] + (255,))  # left face (mid)
+    dr.polygon([F, RT, RB, FB], fill=GLOW[3] + (255,))  # right face (shadow)
+    px = acc(img)  # re-acquire after ImageDraw
+
+    def line(a, b, c):
+        steps = max(abs(b[0] - a[0]), abs(b[1] - a[1]), 1)
         for s in range(steps + 1):
-            put(px, round(x0 + (x1 - x0) * s / steps),
-                round(y0 + (y1 - y0) * s / steps), c)
-    edges = [
-        ((icx - 2, icy + 3), (icx + 2, icy + 3)),
-        ((icx - 2, icy + 3), (icx - 2, icy - 1)),
-        ((icx + 2, icy + 3), (icx + 2, icy - 1)),
-        ((icx - 2, icy - 1), (icx + 2, icy - 1)),
-        ((icx - 2, icy - 1), (icx, icy - 3)),
-        ((icx + 2, icy - 1), (icx + 4, icy - 3)),
-        ((icx, icy - 3), (icx + 4, icy - 3)),
-        ((icx + 2, icy - 1), (icx + 2, icy + 1)),
-    ]
-    for (a, b) in edges:
-        line(a[0], a[1], b[0], b[1], GLOW[2])
-    # bright vertices
-    for (vx, vy) in [(icx - 2, icy + 3), (icx + 2, icy + 3), (icx - 2, icy - 1),
-                     (icx + 2, icy - 1), (icx, icy - 3), (icx + 4, icy - 3)]:
-        put(px, vx, vy, GLOW[0])
-    quantize_to_palette(img, extra=[(0x10, 0x14, 0x1E)])
+            put(px, round(a[0] + (b[0] - a[0]) * s / steps),
+                round(a[1] + (b[1] - a[1]) * s / steps), c)
+    # crisp white silhouette edges on the lit top-left, brighter front vertical
+    for (a, b) in [(T, LT), (LT, LB), (T, RT)]:
+        line(a, b, GLOW[0])
+    line(F, FB, GLOW[1])
+    for v in (T, LT, F):
+        put(px, v[0], v[1], GLOW[0])
+
+    quantize_to_palette(img, extra=[field])
     return img
 
 

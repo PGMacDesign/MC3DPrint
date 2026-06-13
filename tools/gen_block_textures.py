@@ -9,6 +9,15 @@ Secondary (16x16): printer_casing, filament_converter, remote_terminal,
 Filenames are kept identical so existing cube_all models still resolve. Run
 from repo root:  python3 tools/gen_block_textures.py
 (Active variants are produced by gen_formed_textures.py over these bases.)
+
+Tier ladder (the headline of this generator): a T1 must read as a bare desktop
+printer and a T8 as an ornate glowing fabricator, with EVERY step visibly nicer.
+Four monotonic signals stack with tier:
+  1. accent trim   — bare corner dot (T1) -> full glowing accent border (T8)
+  2. enclosure     — open desktop bed (T1-4) -> sealed industrial chamber (T5-8)
+  3. smart display — no LCD (T1) -> tall multi-row readout (T8)
+  4. hotend/core   — small dim glow (T1) -> large bright core (T8)
+plus more vents, a second/third frame bevel, dual rails and a body polish step.
 """
 from PIL import Image
 
@@ -68,183 +77,232 @@ def glow_dot(px, cx, cy, r, intensity=1.0):
 
 
 # ---------------------------------------------------------------------------
+# Tier-scaling detail helpers — these are what make a T6 read as clearly better
+# than a T4: more accent trim, a richer display, more vents, a bigger hotend.
+# ---------------------------------------------------------------------------
+def _reel(px, cx, cy, r, thi, tmid, tlo):
+    """A small tier-accent filament reel (the spool feeding the printer)."""
+    for dy in range(-r - 1, r + 2):
+        for dx in range(-r - 1, r + 2):
+            d = (dx * dx + dy * dy) ** 0.5
+            if d > r + 0.4:
+                continue
+            if d < 1.2:
+                c = FRAME[3]                                  # hub hole
+            elif d > r - 0.7:
+                c = BODY[3] if (dx + dy) < 0 else BODY[4]     # flange rim
+            else:
+                lit = -(dx + dy)
+                c = thi if lit > 0.8 else (tlo if lit < -0.8 else tmid)
+            put(px, cx + dx, cy + dy, c)
+
+
+def _lcd(px, x, y, w, h, rows):
+    """A dark recessed readout with `rows` teal lines. Bigger panel + more rows
+    at higher tier = a visibly smarter machine. Returns nothing."""
+    field = (0x10, 0x14, 0x1E)
+    rect(px, x, y, w, h, field)
+    hline(px, x, y, w, FRAME[3]); vline(px, x, y, h, FRAME[3])             # inset shadow
+    hline(px, x, y + h - 1, w, FRAME[0]); vline(px, x + w - 1, y, h, FRAME[0])  # lit edge
+    for i in range(rows):
+        ly = y + 1 + i * 2
+        if ly <= y + h - 2:
+            ln = max(1, w - 3 - (i % 2) * 2)
+            c = ACCENT_TEAL if i == 0 else shade(ACCENT_TEAL, -0.4)
+            rect(px, x + 1, ly, ln, 1, c)
+
+
+def _accent_trim(px, tier, thi, tmid, tlo):
+    """Tier-accent chassis trim — the single clearest tier signal. From a bare
+    corner dot (T1) up to a full glowing accent border (T8)."""
+    a, b = 2, H - 3                       # inner trim ring (on the 2nd bevel)
+    corners = [(a, a), (b, a), (a, b), (b, b)]
+    ncorner = 1 if tier == 1 else (2 if tier == 2 else 4)
+    capcol = GLOW[1] if tier >= 8 else thi
+    for (x, y) in corners[:ncorner]:
+        put(px, x, y, capcol)
+        if tier >= 3:                     # small L-shaped cap arms
+            ax = 1 if x == a else -1
+            ay = 1 if y == a else -1
+            put(px, x + ax, y, tmid)
+            put(px, x, y + ay, tmid)
+    if tier >= 4:
+        hline(px, a + 2, a, b - a - 3, tmid)        # top accent rail
+    if tier >= 5:
+        hline(px, a + 2, b, b - a - 3, tlo)         # bottom accent rail
+    if tier >= 7:
+        vline(px, a, a + 2, b - a - 3, tmid)        # left accent rail
+        vline(px, b, a + 2, b - a - 3, tlo)         # right accent rail
+    if tier >= 8:
+        # apex: 1px brighter inner glow halo just inside the accent border
+        for x in range(a + 2, b - 1):
+            put(px, x, a + 1, shade(thi, 0.25))
+            put(px, x, b - 1, shade(thi, -0.15))
+        for y in range(a + 2, b - 1):
+            put(px, a + 1, y, shade(thi, 0.25))
+            put(px, b - 1, y, shade(thi, -0.15))
+
+
+def _vents(px, tier):
+    """Cooling vent slits on the left interior wall; count grows with tier."""
+    n = {1: 1, 2: 1, 3: 2, 4: 2, 5: 3, 6: 3, 7: 4, 8: 4}[tier]
+    for i in range(n):
+        vy = 14 + i * 2
+        put(px, 4, vy, FRAME[3]); put(px, 5, vy, shade(FRAME[1], 0.14))
+
+
+def _frame(px, fabricator, tier):
+    """Dark metal frame. Fabricators get a heavier 3px border, a 3rd bevel ring
+    and seam rivets so they read as an industrial core a clear cut above T4."""
+    bt = 3 if fabricator else 2
+    rect(px, 0, 0, H, H, FRAME[2])
+    rect(px, bt, bt, H - 2 * bt, H - 2 * bt, FRAME[1])
+    # outer bevel: light top-left, shadow bottom-right (single light)
+    hline(px, 0, 0, H, FRAME[0]); vline(px, 0, 0, H, FRAME[0])
+    hline(px, 0, H - 1, H, FRAME[3]); vline(px, H - 1, 0, H, FRAME[3])
+    # second inner bevel for higher tiers / fabricators
+    if fabricator or tier >= 3:
+        hline(px, 2, 2, H - 4, shade(FRAME[1], 0.18))
+        vline(px, 2, 2, H - 4, shade(FRAME[1], 0.18))
+        hline(px, 2, H - 3, H - 4, FRAME[3]); vline(px, H - 3, 2, H - 4, FRAME[3])
+    if fabricator:
+        hline(px, 3, 3, H - 6, FRAME[3]); vline(px, 3, 3, H - 6, FRAME[3])
+        for sx in range(6, H - 5, 4):                 # seam rivets top + bottom
+            put(px, sx, 4, FRAME[3]); put(px, sx, H - 5, FRAME[3])
+    # corner bolt studs (lit top-left, shadowed bottom-right)
+    for (bx, by) in [(3, 3), (H - 4, 3), (3, H - 4), (H - 4, H - 4)]:
+        put(px, bx, by, BODY[3])
+    put(px, 3, 3, BODY[1]); put(px, H - 4, H - 4, FRAME[3])
+
+
+# ---------------------------------------------------------------------------
 # HERO: printer / fabricator block face
 # ---------------------------------------------------------------------------
 def printer_face(tier, fabricator=False):
     """
-    Dark square frame; a machined extruder carriage on a horizontal rail ~1/3
-    down; glowing cyan nozzle below it; a tier-accent spool dot top-corner with
-    a 1px feed line down to the carriage; a light-grey bed slab in the lower
-    third. Fabricators get a heavier frame, a bigger tier-accent core and a
-    larger hotend; detail rises with tier.
+    Open-frame desktop printer (T1-4) or sealed industrial fabricator (T5-8).
+    Shared anatomy: dark frame, a tier-accent feed reel top-left, a smart LCD
+    top-right, a gantry rail with a machined extruder carriage, a descending
+    nozzle and a glowing cyan hotend. Printers expose an open heated bed with a
+    couple of laid cyan filament lines; fabricators seal it inside a dark build
+    chamber with a larger core. Trim, display, glow and vents all scale up with
+    tier so the machine visibly gets better the higher you go.
     """
     img = new(H)
     px = acc(img)
     tcol = TIER[tier]
     thi, tmid, tlo = ramp3(tcol)
 
-    # --- base panel fill (dark metal) ---
-    rect(px, 0, 0, H, H, FRAME[2])
-    # subtle interior panel a touch lighter so the frame border reads
-    inset = 5 if fabricator else 4
-    rect(px, inset, inset, H - 2 * inset, H - 2 * inset, FRAME[1])
+    _frame(px, fabricator, tier)
 
-    # --- outer frame bevel: light top-left, shadow bottom-right (single light) ---
-    hline(px, 0, 0, H, FRAME[0])
-    vline(px, 0, 0, H, FRAME[0])
-    hline(px, 0, H - 1, H, FRAME[3])
-    vline(px, H - 1, 0, H, FRAME[3])
-    # second inner bevel for higher tiers / fabricators (more detail)
-    if fabricator or tier >= 3:
-        hline(px, 2, 2, H - 4, shade(FRAME[1], 0.18))
-        vline(px, 2, 2, H - 4, shade(FRAME[1], 0.18))
-        hline(px, 2, H - 3, H - 4, FRAME[3])
-        vline(px, H - 3, 2, H - 4, FRAME[3])
-    if fabricator:
-        # heavier/denser frame: a darker base tint + panel-seam rivets along
-        # the top and bottom margins so it reads as an industrial core block.
-        for sx in range(6, H - 5, 4):
-            put(px, sx, 4, FRAME[3])
-            put(px, sx, H - 5, FRAME[3])
-        # a 3rd inner bevel ring (extra thickness)
-        hline(px, 3, 3, H - 6, FRAME[3])
-        vline(px, 3, 3, H - 6, FRAME[3])
+    # higher-tier polish: a faint extra highlight inset on the interior panel
+    if tier >= 4:
+        hline(px, 5, 5, H - 10, shade(FRAME[1], 0.1))
 
-    # --- corner bolt studs ---
-    for (bx, by) in [(3, 3), (H - 4, 3), (3, H - 4), (H - 4, H - 4)]:
-        put(px, bx, by, BODY[3])
-        put(px, bx, by, BODY[1] if (bx < 8 and by < 8) else BODY[3])
-    # re-light the top-left stud, shadow the bottom-right ones
-    put(px, 3, 3, BODY[1])
-    put(px, H - 4, H - 4, FRAME[3])
+    # --- tier-accent feed reel, top-left, with a 1px feed line to the carriage
+    reel_r = 3 if fabricator else 2
+    sp_x, sp_y = (7, 7) if fabricator else (6, 7)
+    _reel(px, sp_x, sp_y, reel_r, thi, tmid, tlo)
 
-    # --- horizontal rail (gantry) ~1/3 down ---
-    rail_y = 11
-    rail_x0, rail_x1 = 4, H - 4
-    hline(px, rail_x0, rail_y, rail_x1 - rail_x0, BODY[3])         # rail bar
-    hline(px, rail_x0, rail_y + 1, rail_x1 - rail_x0, FRAME[3])    # rail shadow (AO)
-    hline(px, rail_x0, rail_y - 1, rail_x1 - rail_x0, BODY[4])     # rail top edge faint
-    # rail end mounts
-    put(px, rail_x0, rail_y, BODY[2])
-    put(px, rail_x1 - 1, rail_y, BODY[2])
+    # --- smart LCD readout, top-right; bigger + more rows with tier ---
+    lcd_spec = {
+        1: None,
+        2: (7, 3, 1), 3: (7, 3, 1),
+        4: (8, 5, 2), 5: (8, 5, 2),
+        6: (8, 6, 3), 7: (9, 6, 3), 8: (9, 7, 3),
+    }[tier]
+    if lcd_spec:
+        lw, lh, lrows = lcd_spec
+        _lcd(px, 27 - lw, 4, lw, lh, lrows)
 
-    # --- extruder carriage (machined light-grey box riding the rail) ---
-    cw = 10 if fabricator else 8
-    cx0 = (H - cw) // 2 - (0 if fabricator else 1)
-    cy0 = rail_y - 1
+    # --- horizontal gantry rail (~1/3 down); dual rail from T3 = sturdier ---
+    rail_y = 12
+    rx0, rx1 = 4, H - 4
+    hline(px, rx0, rail_y, rx1 - rx0, BODY[3])
+    hline(px, rx0, rail_y + 1, rx1 - rx0, FRAME[3])     # rail AO
+    put(px, rx0, rail_y, BODY[2]); put(px, rx1 - 1, rail_y, BODY[2])
+    if tier >= 3 or fabricator:
+        hline(px, rx0, rail_y - 2, rx1 - rx0, BODY[4])  # second rail bar
+        hline(px, rx0, rail_y - 1, rx1 - rx0, FRAME[3])
+
+    # --- machined extruder carriage riding the rail ---
+    cw = 11 if fabricator else 9
+    cx0 = (H - cw) // 2
+    cy0 = rail_y - 3
     ch = 7 if fabricator else 6
-    # body
     rect(px, cx0, cy0, cw, ch, BODY[2])
-    # top-left lit edges
-    hline(px, cx0, cy0, cw, BODY[0])
-    vline(px, cx0, cy0, ch, BODY[1])
-    # bottom-right shadow edges + AO seam
-    hline(px, cx0, cy0 + ch - 1, cw, BODY[4])
-    vline(px, cx0 + cw - 1, cy0, ch, BODY[3])
-    # a darker AO line just under the carriage
-    hline(px, cx0 + 1, cy0 + ch, cw - 2, FRAME[3])
-    # carriage detail: a single recessed vent slot (a dark inset window) so it
-    # reads as a machined head, not a face. Inset shadow top-left, lit bottom.
+    hline(px, cx0, cy0, cw, BODY[0]); vline(px, cx0, cy0, ch, BODY[1])       # lit
+    hline(px, cx0, cy0 + ch - 1, cw, BODY[4]); vline(px, cx0 + cw - 1, cy0, ch, BODY[3])  # shade
+    hline(px, cx0 + 1, cy0 + ch, cw - 2, FRAME[3])                            # AO under head
+    # recessed cooling vent window on the head
     vw = cw - 4
     rect(px, cx0 + 2, cy0 + 2, vw, 2, FRAME[3])
-    hline(px, cx0 + 2, cy0 + 2, vw, FRAME[3])
     hline(px, cx0 + 2, cy0 + 3, vw, shade(FRAME[1], -0.1))
-    put(px, cx0 + 2, cy0 + 2, FRAME[3])
-    put(px, cx0 + 2 + vw - 1, cy0 + 3, FRAME[0])  # lit bottom-right corner of inset
-    # tier indicator dot on the carriage (just under the vent)
-    put(px, cx0 + cw - 3, cy0 + 4, thi)
-    put(px, cx0 + cw - 2, cy0 + 4, tmid)
-    if fabricator:
-        # extra vent slit row on the carriage (denser machine)
+    put(px, cx0 + 2 + vw - 1, cy0 + 3, FRAME[0])
+    # tier indicator dot on the carriage
+    put(px, cx0 + cw - 3, cy0 + ch - 2, thi)
+    put(px, cx0 + cw - 2, cy0 + ch - 2, tmid)
+    if fabricator or tier >= 4:                          # second vent slit (denser)
         rect(px, cx0 + 2, cy0 + 5, vw, 1, FRAME[3])
 
     # --- nozzle cone descending from carriage center ---
     nz_x = cx0 + cw // 2
     nz_y0 = cy0 + ch
-    # cone: 2px wide tapering to 1px
-    put(px, nz_x - 1, nz_y0, BODY[4])
-    put(px, nz_x, nz_y0, BODY[3])
+    put(px, nz_x - 1, nz_y0, BODY[4]); put(px, nz_x, nz_y0, BODY[3])
     put(px, nz_x, nz_y0 + 1, BODY[4])
-    nozzle_tip_y = nz_y0 + 2
+    hot_y = nz_y0 + (3 if fabricator else 2)
 
-    # --- light-grey bed slab in lower third ---
-    bed_y = H - 9
-    bed_x0, bed_x1 = 5, H - 5
-    rect(px, bed_x0, bed_y, bed_x1 - bed_x0, 3, BODY[3])  # slab thickness 3px
-    hline(px, bed_x0, bed_y, bed_x1 - bed_x0, BODY[2])    # lit top (toned down)
-    hline(px, bed_x0, bed_y + 2, bed_x1 - bed_x0, BODY[4])  # shadow underside
-    hline(px, bed_x0, bed_y + 3, bed_x1 - bed_x0, FRAME[3])  # AO under bed
-    # bed support legs
-    vline(px, bed_x0 + 1, bed_y + 3, 2, FRAME[3])
-    vline(px, bed_x1 - 2, bed_y + 3, 2, FRAME[3])
-
-    # --- a couple of laid filament layers on the bed (cyan, dim) for printers ---
-    if not fabricator:
-        layer_y = bed_y - 1
-        for lx in range(nz_x - 3, nz_x + 4):
-            put(px, lx, layer_y, GLOW[3])
-        put(px, nz_x - 1, layer_y, GLOW[2])
-        put(px, nz_x, layer_y, GLOW[2])
-
-    # --- glowing cyan nozzle dot (the hotend) ---
-    hot_r = 2.4 if not fabricator else 3.0
-    hot_y = nozzle_tip_y + (1 if not fabricator else 2)
     if fabricator:
-        # fabricator: a bigger tier-accent core ring behind a larger hotend
-        for dy in range(-3, 4):
-            for dx in range(-3, 4):
-                d = (dx * dx + dy * dy) ** 0.5
-                if 2.2 <= d <= 3.3:
-                    put(px, nz_x + dx, hot_y + dy, tlo)
-                elif 1.4 <= d < 2.2:
-                    put(px, nz_x + dx, hot_y + dy, tmid)
-    glow_dot(px, nz_x, hot_y, hot_r)
-    # brighter hotend for higher tiers
-    if tier >= 3 or fabricator:
-        put(px, nz_x, hot_y, GLOW[0])
-        put(px, nz_x, hot_y - 1, GLOW[1])
+        # --- sealed build chamber: a dark windowed bay framed by accent trim,
+        #     with a larger glowing core (and a small object being built) ---
+        wx0, wy0, wx1, wy1 = 7, 17, H - 7, H - 6
+        rect(px, wx0, wy0, wx1 - wx0, wy1 - wy0, (0x0B, 0x10, 0x18))
+        hline(px, wx0, wy0, wx1 - wx0, FRAME[3]); vline(px, wx0, wy0, wy1 - wy0, FRAME[3])
+        hline(px, wx0, wy1 - 1, wx1 - wx0, FRAME[0]); vline(px, wx1 - 1, wy0, wy1 - wy0, FRAME[0])
+        # accent door posts on the chamber
+        vline(px, wx0 - 1, wy0, wy1 - wy0, tlo); vline(px, wx1, wy0, wy1 - wy0, tlo)
+        # a small printed object sitting on the chamber floor
+        obj_y = wy1 - 2
+        rect(px, nz_x - 2, obj_y, 4, 2, GLOW[3])
+        rect(px, nz_x - 1, obj_y, 2, 1, GLOW[2])
+        core_r = 2.4 + (tier - 5) * 0.45
+        glow_dot(px, nz_x, hot_y + 1, core_r)
+        put(px, nz_x, hot_y + 1, GLOW[0]); put(px, nz_x, hot_y, GLOW[1])
+    else:
+        # --- open heated bed with a couple of laid cyan filament lines ---
+        bed_y = H - 8
+        bx0, bx1 = 5, H - 5
+        rect(px, bx0, bed_y, bx1 - bx0, 3, BODY[3])
+        hline(px, bx0, bed_y, bx1 - bx0, BODY[2])
+        hline(px, bx0, bed_y + 2, bx1 - bx0, BODY[4])
+        hline(px, bx0, bed_y + 3, bx1 - bx0, FRAME[3])      # AO under bed
+        vline(px, bx0 + 1, bed_y + 3, 2, FRAME[3]); vline(px, bx1 - 2, bed_y + 3, 2, FRAME[3])
+        # heated-bed accent underline grows in from T2
+        if tier >= 2:
+            hline(px, bx0 + 2, bed_y + 1, (bx1 - bx0 - 4) * tier // 4, tlo)
+        # laid filament layer on the bed
+        layer_y = bed_y - 1
+        for lx in range(nz_x - (1 + tier // 2), nz_x + (2 + tier // 2)):
+            put(px, lx, layer_y, GLOW[3])
+        put(px, nz_x - 1, layer_y, GLOW[2]); put(px, nz_x, layer_y, GLOW[2])
+        hot_r = 1.7 + (tier - 1) * 0.28
+        glow_dot(px, nz_x, hot_y, hot_r)
+        if tier >= 3:
+            put(px, nz_x, hot_y, GLOW[0]); put(px, nz_x, hot_y - 1, GLOW[1])
 
-    # --- tier-accent spool dot top-corner + 1px feed line to carriage ---
-    sp_x, sp_y = 6, 6
-    # spool: small donut, accent coil + dark hub
-    for dy in range(-2, 3):
-        for dx in range(-2, 3):
-            d = (dx * dx + dy * dy) ** 0.5
-            if d <= 2.3:
-                if d < 0.8:
-                    c = FRAME[3]                 # hub hole
-                elif dx < 0 and dy < 0:
-                    c = thi                      # lit
-                elif dx > 0 or dy > 0:
-                    c = tlo                      # shadow
-                else:
-                    c = tmid
-                put(px, sp_x + dx, sp_y + dy, c)
-    # flange rim hint
-    put(px, sp_x - 2, sp_y - 1, BODY[3])
-    put(px, sp_x + 2, sp_y + 1, BODY[4])
-    # feed line: from spool down/right to carriage top (cyan-tinted near head)
-    fx, fy = sp_x + 2, sp_y + 1
+    # feed line from reel to the carriage top (cyan-tinted near the head)
+    fx, fy = sp_x + reel_r, sp_y + 1
     tx, ty = cx0 + 2, cy0
-    steps = max(abs(tx - fx), abs(ty - fy))
+    steps = max(abs(tx - fx), abs(ty - fy), 1)
     for s in range(1, steps):
         x = fx + round((tx - fx) * s / steps)
         y = fy + round((ty - fy) * s / steps)
         put(px, x, y, tlo if s < steps - 2 else GLOW[3])
 
-    # higher tiers: add side vents on the frame (more detail)
-    if tier >= 2 or fabricator:
-        vy = H - 13
-        for i in range(3):
-            put(px, 3, vy + i * 2, FRAME[3])
-            put(px, 4, vy + i * 2, shade(FRAME[1], 0.12))
-            put(px, H - 4, vy + i * 2, FRAME[3])
-            put(px, H - 5, vy + i * 2, shade(FRAME[1], 0.12))
-    if tier >= 4 or fabricator:
-        # a tiny status LED (tier accent) near a bottom corner
-        put(px, 5, H - 6, thi)
+    _vents(px, tier)
+    _accent_trim(px, tier, thi, tmid, tlo)
 
-    quantize_to_palette(img, extra=ramp3(tcol))
+    quantize_to_palette(img, extra=ramp3(tcol) + ((0x0B, 0x10, 0x18),))
     return img
 
 
