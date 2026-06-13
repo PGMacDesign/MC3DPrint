@@ -122,7 +122,6 @@ class CuratedBlueprintGenerator {
     private static final BlueprintBlockState LECTERN = bs("minecraft:lectern[facing=south,has_book=false,powered=false]");
     private static final BlueprintBlockState GRINDSTONE = bs("minecraft:grindstone[face=floor,facing=north]");
     private static final BlueprintBlockState BOOKSHELF = bs("minecraft:bookshelf");
-    private static final BlueprintBlockState WHITE_BED = bs("minecraft:white_bed[facing=south,part=head,occupied=false]");
     private static final BlueprintBlockState CHEST = bs("minecraft:chest[facing=south,type=single,waterlogged=false]");
     private static final BlueprintBlockState WHITE_WOOL = bs("minecraft:white_wool");
     private static final BlueprintBlockState RED_WOOL = bs("minecraft:red_wool");
@@ -347,33 +346,41 @@ class CuratedBlueprintGenerator {
     // ---------------------------------------------------------------------
 
     /**
-     * (1) Fills the two triangular gable ends (the {@code z=z0} and {@code z=z1}
-     * faces) of a {@link #gableRoofX} with {@code mat}, up to the rising ridge,
-     * so the attic is closed. {@code yBase} is the roof's first course (the
-     * wall-top); the slopes step in by one z-row per y, so each gable-end column
-     * is filled from {@code yBase} up to the height the ridge reaches there.
+     * (1) Fills the two triangular gable ends of a {@link #gableRoofX} with
+     * {@code mat}, up to the rising ridge, so the attic is closed.
+     *
+     * <p>A {@link #gableRoofX} has its ridge running along X and slopes facing
+     * &plusmn;Z, so the open triangular ends are the {@code x=x0} and {@code x=x1}
+     * faces — NOT the z-faces (those are covered by the slopes themselves). The
+     * earlier implementation filled the z-faces, which left the real gable
+     * triangles open (you could see sky through them).
+     *
+     * <p>This walks the same step schedule {@link #gableRoofX} uses. At each
+     * course the slope occupies rows {@code z=zn} (north) and {@code z=zs}
+     * (south); the gap between them on the end face — {@code z = zn+1 .. zs-1} —
+     * is the triangle interior and gets {@code mat}. As {@code zn}/{@code zs}
+     * converge with rising {@code y}, the filled span narrows to the ridge,
+     * forming a solid triangle from the eave up to the ridgeline.
+     *
+     * <p>{@code yBase} is the roof's first course (the wall plate). {@code z0/z1}
+     * and {@code x0/x1} must match the {@link #gableRoofX} call.
      */
     private static void gableEndFill(Blueprint.Builder b, int x0, int z0, int x1, int z1,
                                      int yBase, BlueprintBlockState mat) {
-        for (int z : new int[]{z0, z1}) {
+        for (int x : new int[]{x0, x1}) {
             int y = yBase;
             int zn = z0, zs = z1;
-            // walk the same step schedule gableRoofX uses; the gable-end triangle
-            // at a given face rises to the height the slope has stepped to.
             while (zs - zn > 1) {
-                // at this y, columns that lie strictly inside the current slope
-                // footprint and on this gable face are part of the wall triangle.
-                for (int x = x0 + 1; x <= x1 - 1; x++) {
+                // fill the triangle interior strictly between the two slope rows
+                for (int z = zn + 1; z <= zs - 1; z++) {
                     b.set(x, y, z, mat);
                 }
                 zn++;
                 zs--;
                 y++;
             }
-            // top: fill the apex column row(s) of this face up to the ridge
-            for (int x = x0 + 1; x <= x1 - 1; x++) {
-                b.set(x, y, z, mat);
-            }
+            // at the ridge course zn..zs is empty (zn==zs) or a 1-wide cap
+            // (zn+1==zs handled by the loop), so nothing remains to fill.
         }
     }
 
@@ -515,6 +522,34 @@ class CuratedBlueprintGenerator {
         }
         b.set(x, y, z, bs("minecraft:" + wood + "_door[facing=" + facing + ",half=lower,hinge=left,open=false,powered=false]"));
         b.set(x, y + 1, z, bs("minecraft:" + wood + "_door[facing=" + facing + ",half=upper,hinge=left,open=false,powered=false]"));
+    }
+
+    /**
+     * (8b) A complete two-block bed. A bed is the head part at {@code (x,y,z)}
+     * plus the foot part one cell in the OPPOSITE of {@code facing}. In vanilla
+     * 1.20.1 the {@code facing} property (carried identically on both halves)
+     * points from foot toward head, so the head sits {@code facing} of the foot
+     * and the foot sits one step back the other way:
+     * <ul>
+     *   <li>{@code facing=south} → foot at {@code (x, y, z-1)}</li>
+     *   <li>{@code facing=north} → foot at {@code (x, y, z+1)}</li>
+     *   <li>{@code facing=east}  → foot at {@code (x-1, y, z)}</li>
+     *   <li>{@code facing=west}  → foot at {@code (x+1, y, z)}</li>
+     * </ul>
+     * The earlier builds placed only the {@code part=head} half, so a bed
+     * printed as a single block. Use this everywhere a bed appears.
+     */
+    private static void bed(Blueprint.Builder b, int x, int y, int z, String color, String facing) {
+        int fx = x, fz = z;
+        switch (facing) {
+            case "south": fz = z - 1; break;
+            case "north": fz = z + 1; break;
+            case "east":  fx = x - 1; break;
+            case "west":  fx = x + 1; break;
+            default: fz = z - 1; break; // treat unknown as south
+        }
+        b.set(x, y, z, bs("minecraft:" + color + "_bed[facing=" + facing + ",part=head,occupied=false]"));
+        b.set(fx, y, fz, bs("minecraft:" + color + "_bed[facing=" + facing + ",part=foot,occupied=false]"));
     }
 
     /**
@@ -741,7 +776,7 @@ class CuratedBlueprintGenerator {
         window2(b, 4, 2, 2, GLASS_PANE, null);
         window2(b, 2, 2, 4, GLASS_PANE, null);
         // interior: bed + crafting table + floor torch
-        b.set(1, 1, 3, WHITE_BED);
+        bed(b, 1, 1, 3, "white", "south"); // head at z=3, foot at z=2
         b.set(3, 1, 3, CRAFTING_TABLE);
         b.set(2, 1, 2, TORCH);
         // roof: gable + closed ends
@@ -833,7 +868,7 @@ class CuratedBlueprintGenerator {
         gableRoofX(b, 0, 0, 6, 6, 4, "oak_stairs", OAK_SLAB_BOTTOM);
         gableEndFill(b, 0, 0, 6, 6, 4, OAK_PLANKS);
         // interior furnishings
-        b.set(1, 1, 5, WHITE_BED);
+        bed(b, 1, 1, 5, "white", "south"); // head at z=5, foot at z=4
         b.set(5, 1, 5, CHEST);
         b.set(1, 1, 1, CRAFTING_TABLE);
         b.set(2, 1, 1, FURNACE);
@@ -1078,6 +1113,14 @@ class CuratedBlueprintGenerator {
         for (int x = 1; x <= 7; x++) {
             b.set(x, 3, 0, RED_WOOL);
             b.set(x, 3, 6, RED_WOOL);
+        }
+        // close the flared eave course on the two X-end faces (x=0,x=8) so the
+        // lower pitch's ends aren't open under the gambrel. The corner cells at
+        // z=0/z=6 already carry the flare stairs, so fill only the inner z=1..5
+        // span; the upper gable then closes y=4..6.
+        for (int z = 1; z <= 5; z++) {
+            b.set(0, 3, z, RED_WOOL);
+            b.set(8, 3, z, RED_WOOL);
         }
         gableEndFill(b, 0, 1, 8, 5, 4, RED_WOOL);
         // interior: hay loft, pen fence + gate, water trough, composter/barrel
@@ -1425,8 +1468,8 @@ class CuratedBlueprintGenerator {
         b.set(7, 9, 1, bs("minecraft:stone_brick_stairs[facing=east,half=bottom,shape=straight]"));
         // interior: library wall, beds, lantern sconces on chains
         for (int z = 1; z <= 9; z += 2) b.set(11, 6, z, BOOKSHELF);
-        b.set(2, 6, 8, WHITE_BED);
-        b.set(10, 6, 8, WHITE_BED);
+        bed(b, 2, 6, 8, "white", "south");  // head z=8, foot z=7
+        bed(b, 10, 6, 8, "white", "south"); // head z=8, foot z=7
         b.set(6, 4, 5, CHAIN);
         b.set(6, 3, 5, HANGING_LANTERN);
         // upper lantern: chain up to the y=10 hip-roof slab cap (y=9 closes the gap)
