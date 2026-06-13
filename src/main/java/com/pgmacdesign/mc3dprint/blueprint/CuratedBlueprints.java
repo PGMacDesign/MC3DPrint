@@ -34,13 +34,22 @@ public final class CuratedBlueprints {
         return UUID.nameUUIDFromBytes((namespace + ":curated:" + name).getBytes(StandardCharsets.UTF_8));
     }
 
-    /** Every curated blueprint shipped with the mod (bundled + auto-installed). */
+    /**
+     * Every curated blueprint shipped with the mod (bundled + auto-installed).
+     * Must match {@code CuratedBlueprintGenerator.generateCuratedBlueprints()} 1:1
+     * (see docs/blueprint-specs.md §4 coverage matrix for names/footprints/order).
+     */
     public static final List<String> CURATED_NAMES = List.of(
-            "starter_hut", "storage_shed", "watchtower",
-            "small_cottage", "plains_house", "log_cabin", "two_story_house", "cobble_house",
-            "village_well", "lamp_post", "watchtower_tall", "wooden_bridge", "small_farm",
-            "gazebo", "market_stall", "fishing_dock", "wall_gate_segment", "shrine",
-            "windmill_base", "bakery", "blacksmith_hut", "animal_pen", "bell_tower");
+            // Small (T3–T4 footprint)
+            "garden_shed", "campfire_site", "well", "market_stall", "small_cottage", "beacon_spire",
+            // Medium (T5–T6 footprint)
+            "plains_house", "small_farm", "bakery", "blacksmith", "windmill",
+            "stone_bridge", "watchtower", "barn",
+            // High-material-tier (disc T2–T5)
+            "iron_foundry", "redstone_workshop", "diamond_vault",
+            // Large (T6–T7 footprint) + remaining high-tier
+            "church", "manor_house", "copper_observatory", "emerald_market_hall",
+            "lighthouse", "castle_keep");
 
     /**
      * Load a bundled curated blueprint straight from the mod's resources (no world
@@ -78,12 +87,17 @@ public final class CuratedBlueprints {
             String name = path.substring("blueprints/".length(),
                     path.length() - BlueprintFileStore.EXTENSION.length());
             UUID id = uuidFor(rl.getNamespace(), name);
-            if (store.exists(id)) {
-                continue;
-            }
             try (InputStream in = entry.getValue().open()) {
                 CompoundTag tag = NbtIo.read(new DataInputStream(new GZIPInputStream(in)));
-                store.save(id, BlueprintSerializer.read(tag));
+                Blueprint bundled = BlueprintSerializer.read(tag);
+                // Curated blueprints are mod-owned and keyed by a name-derived UUID, so a
+                // content edit keeps the same id. Install when absent AND refresh when the
+                // shipped content changed, so curated fixes reach existing worlds — but skip
+                // the write when the store already holds an identical copy (idempotent boot).
+                if (store.load(id).map(bundled::equals).orElse(false)) {
+                    continue;
+                }
+                store.save(id, bundled);
                 installed++;
             } catch (IOException | BlueprintFormatException e) {
                 LOGGER.warn("Skipping curated blueprint {}: {}", rl, e.getMessage());

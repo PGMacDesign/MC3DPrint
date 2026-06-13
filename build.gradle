@@ -153,6 +153,8 @@ tasks.named('test', Test).configure {
     // (Gradle does not pass -D properties to the forked test JVM by default). A
     // normal build leaves it 'false', so the generator stays skipped.
     systemProperty 'genBlueprints', System.getProperty('genBlueprints', 'false')
+    // Same opt-in plumbing for the blueprint dump/validation tool.
+    systemProperty 'dumpBlueprints', System.getProperty('dumpBlueprints', 'false')
     testLogging {
         events 'failed'
         exceptionFormat 'full'

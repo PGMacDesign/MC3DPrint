@@ -24,3 +24,8 @@ eclipse/
 
 # Misc
 *.log
+logs/
+
+# Python tooling (tools/*.py generators)
+__pycache__/
+*.pyc
