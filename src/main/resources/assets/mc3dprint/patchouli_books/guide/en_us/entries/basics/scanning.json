@@ -4,7 +4,24 @@
   "icon": "mc3dprint:scanner",
   "sortnum": 1,
   "pages": [
-    { "type": "patchouli:text", "text": "The $(item)Structure Scanner$() captures builds as blueprints. Right-click two corner blocks to define the box, hold a $(item)Blank Blueprint Disc$() in your offhand, then right-click the air to scan.$(br2)The result is a written $(item)Blueprint Disc$() — portable, tradeable, and reusable." },
-    { "type": "patchouli:text", "title": "Discs", "text": "Shift+Right Click a written disc to $(l)lock$() it against overwriting. Load it into a Tier 3+ printer to print the structure. The print area must be pre-cleared — the printer never replaces existing blocks.$(br2)Admins can import WorldEdit .schem and Create .nbt files with $(l)/mc3dprint import$()." }
+    {
+      "type": "patchouli:text",
+      "text": "The $(item)Structure Scanner$() captures any build as a reusable blueprint.$(br2)$(li)Right-click the $(l)first corner$() block$(li)Right-click the $(l)opposite corner$() block$(li)Hold a $(item)Blank Blueprint Disc$() in your $(l)off-hand$(), then right-click the air to scan$(br2)The result is a written $(item)Blueprint Disc$() — portable, tradeable, and printable on any machine of the right tier."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "mc3dprint:scanner",
+      "text": "Quartz gives the scanner its eyes; glass focuses the lens."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "mc3dprint:blank_blueprint_disc",
+      "text": "Each craft yields $(l)two$() blank discs. One disc holds one scan."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Print, Don't Replace",
+      "text": "The printer $(l)never overwrites existing blocks$() — it only fills empty space. Clear the print area first, or the printer will skip occupied positions and build the rest.$(br2)Server operators can import WorldEdit $(l).schem$() and Create / vanilla $(l).nbt$() files straight onto discs with $(o)/mc3dprint import$()."
+    }
   ]
 }

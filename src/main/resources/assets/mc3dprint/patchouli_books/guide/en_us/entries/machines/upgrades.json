@@ -6,12 +6,32 @@
   "pages": [
     {
       "type": "patchouli:text",
-      "text": "Printers have upgrade slots equal to their tier (T3 = 3 slots). Shift+Right Click a module onto the machine to install it:$(br)$(li)$(item)Speed$() \u2014 faster printing$(li)$(item)Efficiency$() \u2014 less FU per print$(li)$(item)RF Efficiency$() \u2014 less power$(li)$(item)Buffer$() \u2014 bigger RF tank"
+      "text": "Every printer has upgrade slots equal to its tier (a Tier 3 printer has 3 slots). Shift+Right Click a module onto the machine to install it, or drop it into an upgrade slot in the GUI:$(br)$(li)$(item)Speed$() — faster printing$(li)$(item)Efficiency$() — less FU per print$(li)$(item)RF Efficiency$() — less power$(li)$(item)Buffer$() — bigger RF tank"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "mc3dprint:speed_upgrade",
+      "text": "$(item)Speed Upgrade$(): ×0.8 print time per module."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "mc3dprint:efficiency_upgrade",
+      "text": "$(item)Efficiency Upgrade$(): ×0.9 FU cost per module."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "mc3dprint:rf_efficiency_upgrade",
+      "text": "$(item)RF Efficiency Upgrade$(): ×0.85 RF cost per module."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "mc3dprint:buffer_upgrade",
+      "text": "$(item)Buffer Upgrade$(): ×1.5 RF buffer per module."
     },
     {
       "type": "patchouli:text",
       "title": "Stacking",
-      "text": "Modules stack $(l)multiplicatively$() \u2014 two Speed Upgrades make prints 0.8 \u00d7 0.8 = 64% of the base time, never zero.$(br2)All module rates are exposed in the config for pack makers."
+      "text": "Modules stack $(l)multiplicatively$() — two Speed Upgrades make prints 0.8 × 0.8 = $(l)64%$() of the base time, and it never reaches zero.$(br2)Mix and match within a tier's slots. All module rates are exposed in the config for pack makers."
     }
   ]
 }

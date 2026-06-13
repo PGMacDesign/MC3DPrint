@@ -1,6 +1,8 @@
 package com.pgmacdesign.mc3dprint.registry;
 
 import com.pgmacdesign.mc3dprint.MC3DPrint;
+import com.pgmacdesign.mc3dprint.blueprint.CuratedBlueprints;
+import com.pgmacdesign.mc3dprint.item.BlueprintDiscItem;
 import com.pgmacdesign.mc3dprint.machine.multiblock.MultiblockPattern;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
@@ -54,6 +56,29 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.BUFFER_UPGRADE.get());
                         output.accept(ModItems.CREATIVE_ENERGY_SOURCE.get());
                         output.accept(ModItems.CREATIVE_SPOOL.get());
+
+                        // Curated blueprint discs — grab the bundled village-style
+                        // builds directly in creative (survival finds them in loot).
+                        for (String name : CuratedBlueprints.CURATED_NAMES) {
+                            CuratedBlueprints.loadBundled(name).ifPresent(bp -> {
+                                ItemStack disc = new ItemStack(ModItems.BLUEPRINT_DISC.get());
+                                BlueprintDiscItem.writeBlueprint(disc,
+                                        CuratedBlueprints.uuidFor(MC3DPrint.MOD_ID, name), bp);
+                                output.accept(disc);
+                            });
+                        }
+
+                        // The in-game guidebook — only when Patchouli is installed.
+                        if (ModList.get().isLoaded("patchouli")) {
+                            net.minecraft.world.item.Item guideBook =
+                                    net.minecraftforge.registries.ForgeRegistries.ITEMS.getValue(
+                                            new net.minecraft.resources.ResourceLocation("patchouli", "guide_book"));
+                            if (guideBook != null) {
+                                ItemStack book = new ItemStack(guideBook);
+                                book.getOrCreateTag().putString("patchouli:book", "mc3dprint:guide");
+                                output.accept(book);
+                            }
+                        }
                     })
                     .build());
 

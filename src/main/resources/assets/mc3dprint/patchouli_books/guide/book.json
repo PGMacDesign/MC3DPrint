@@ -1,0 +1,13 @@
+{
+  "name": "book.mc3dprint.guide.name",
+  "landing_text": "book.mc3dprint.guide.landing",
+  "version": 1,
+  "subtitle": "A field manual for 3D printing structures",
+  "creative_tab": "mc3dprint:main",
+  "model": "patchouli:book_blue",
+  "book_texture": "patchouli:textures/gui/book_blue.png",
+  "use_resource_pack": true,
+  "show_progress": false,
+  "index_icon": "mc3dprint:tier1_printer",
+  "dont_generate_book": false
+}

@@ -2,9 +2,26 @@
   "name": "Filament Units",
   "category": "mc3dprint:basics",
   "icon": "mc3dprint:filament_spool_t1",
-  "sortnum": 0,
+  "sortnum": 4,
   "pages": [
-    { "type": "patchouli:text", "text": "Everything the printer makes is paid for in $(l)Filament Units (FU)$(). Feed materials into a $(item)Filament Winder$() to wind FU onto a $(item)Filament Spool$(), then Shift+Right Click the spool onto a printer's side.$(br2)Conversion is symmetric: a diamond yields exactly what printing a diamond costs." },
-    { "type": "patchouli:text", "title": "Tier Gating", "text": "A winder can only process materials of its tier or below — a Tier 1 winder refuses diamonds. Printers enforce the same rule when printing, so progression can't be bypassed.$(br2)Lower-tier machines are also less efficient: a T1 printer pays double the base FU cost." }
+    {
+      "type": "patchouli:text",
+      "text": "Every block a printer places is paid for in $(l)Filament Units (FU)$(). To make FU, feed raw materials into a $(item)Filament Winder$() to wind them onto a $(item)Filament Spool$(), then Shift+Right Click the spool onto a printer's $(l)side$().$(br2)A material's FU value is derived from its crafting / smelting recipe graph, so the economy stays self-consistent."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "mc3dprint:filament_spool_t1",
+      "text": "A Tier 1 spool holds $(l)500 FU$(). Higher tiers hold far more (see FU Economy)."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Exact-Tier Winding",
+      "text": "The winder is strict: a material only winds into a spool of its $(l)exact tier$(). Netherite (Tier 5) needs a Tier 5 spool; cobblestone (Tier 1) needs a Tier 1 spool.$(br2)This is deliberate — it stops cheap, mass-farmed blocks from ever filling a high-tier spool and undercutting the economy."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Spending FU",
+      "text": "At print time the rule relaxes one way: a spool can pay any cost $(l)at or below$() its own tier, never above. High-tier FU covers low-tier blocks (down-converted at the configured ratio); low-tier FU contributes $(l)nothing$() toward higher-tier blocks.$(br2)So a stack of Tier 5 spools can print a whole stone house, but a Tier 1 spool can never print netherite."
+    }
   ]
 }

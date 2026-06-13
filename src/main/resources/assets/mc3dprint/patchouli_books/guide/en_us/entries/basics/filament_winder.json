@@ -1,0 +1,28 @@
+{
+  "name": "The Filament Winder",
+  "category": "mc3dprint:basics",
+  "icon": "mc3dprint:filament_winder",
+  "sortnum": 5,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "The $(item)Filament Winder$() turns raw materials into Filament Units. Put a $(l)material$() in the input slot and an empty (or partial) $(item)Filament Spool$() in the spool slot; the winder consumes the material and winds its FU onto the spool.$(br2)One universal winder handles $(l)every tier$() — the spool's tier, not the winder, decides what it accepts."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "mc3dprint:filament_winder",
+      "text": "The Filament Winder: string, sticks, and a smooth-stone base. Craftable from Tier 1."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "What It Accepts",
+      "text": "The winder enforces the $(l)exact-tier$() rule: a material only winds into a spool of its own tier. If you load a mismatched spool, the GUI shows $(l)\"Requires Tier X Spool\"$().$(br2)Items with no FU value (un-priced blocks in strict mode) show $(l)\"Can't be converted\"$() and are left untouched."
+    },
+    {
+      "type": "patchouli:spotlight",
+      "item": "mc3dprint:filament_converter",
+      "title": "Filament Converter",
+      "text": "With $(l)Applied Energistics 2$() installed, the $(item)Filament Converter$() automates winding from an ME network and keeps docked spools topped up. Set its filter by right-clicking it with an item."
+    }
+  ]
+}

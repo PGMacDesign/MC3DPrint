@@ -11,5 +11,12 @@
     }
   ],
   "chance": 0.2,
-  "blueprints": [ "watchtower" ]
+  "blueprints": [
+    "watchtower",
+    "watchtower_tall",
+    "wooden_bridge",
+    "fishing_dock",
+    "wall_gate_segment",
+    "shrine"
+  ]
 }

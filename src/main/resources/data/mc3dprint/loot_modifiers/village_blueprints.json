@@ -12,5 +12,23 @@
     }
   ],
   "chance": 0.15,
-  "blueprints": [ "starter_hut", "storage_shed" ]
+  "blueprints": [
+    "starter_hut",
+    "storage_shed",
+    "small_cottage",
+    "plains_house",
+    "log_cabin",
+    "two_story_house",
+    "cobble_house",
+    "village_well",
+    "lamp_post",
+    "small_farm",
+    "gazebo",
+    "market_stall",
+    "bakery",
+    "blacksmith_hut",
+    "animal_pen",
+    "bell_tower",
+    "windmill_base"
+  ]
 }

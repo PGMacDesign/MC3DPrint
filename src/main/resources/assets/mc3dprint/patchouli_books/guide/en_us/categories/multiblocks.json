@@ -1,0 +1,6 @@
+{
+  "name": "Multiblocks",
+  "description": "Tiers 5-8 are Fabricators: an N×N Printer Casing base with a controller in the middle. Lay the base, form it, and print at scale.",
+  "icon": "mc3dprint:tier5_fabricator",
+  "sortnum": 2
+}

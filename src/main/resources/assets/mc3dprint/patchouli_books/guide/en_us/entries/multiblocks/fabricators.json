@@ -1,0 +1,33 @@
+{
+  "name": "Fabricators (T5-T8)",
+  "category": "mc3dprint:multiblocks",
+  "icon": "mc3dprint:tier5_fabricator",
+  "sortnum": 0,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "Tiers 5-8 are $(l)Fabricators$(): multiblock machines built from a square base of $(item)Printer Casing$() with a controller block in the center. They print bigger, faster, and cheaper than any single-block printer.$(br2)$(li)$(l)T5$() — 3×3 base$(li)$(l)T6$() — 5×5 base$(li)$(l)T7$() — 7×7 base$(li)$(l)T8$() — 9×9 base"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "mc3dprint:printer_casing",
+      "text": "$(item)Printer Casing$() — the building block of every Fabricator base. One craft yields $(l)four$(); a T5 needs 8, a T8 needs 80."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "mc3dprint:tier5_fabricator",
+      "text": "The $(item)Tier 5 Fabricator$() controller, built around a Tier 4 printer and $(item)Printite Crystal$()."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Forming & Collapsing",
+      "text": "Lay the base, place the controller in the center, and $(l)right-click the controller$() to form the machine — the casing lights up. See the $(l)Build Walkthrough$() for the layouts.$(br2)Breaking a $(l)formed$() controller collapses the whole machine back into a $(l)single item$() that re-forms, fully intact, when re-placed. Move a Fabricator without rebuilding it."
+    },
+    {
+      "type": "patchouli:spotlight",
+      "item": "mc3dprint:tier8_fabricator",
+      "title": "Tier 8: Draconic",
+      "text": "The $(item)Tier 8 Fabricator$() is the endgame. It requires $(l)Draconic Evolution$() to be installed, and its four base corners must be $(l)Awakened Draconium$() blocks instead of casing. Without Draconic Evolution it refuses to form."
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "name": "FAQ",
+  "description": "Why won't it print? How do I move the build? Auto vs manual? The answers to the questions every fabricator operator asks.",
+  "icon": "mc3dprint:remote_terminal",
+  "sortnum": 3
+}

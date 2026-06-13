@@ -149,6 +149,10 @@ dependencies {
 
 tasks.named('test', Test).configure {
     useJUnitPlatform()
+    // Forward the opt-in flag for the curated-blueprint generator to the test JVM
+    // (Gradle does not pass -D properties to the forked test JVM by default). A
+    // normal build leaves it 'false', so the generator stays skipped.
+    systemProperty 'genBlueprints', System.getProperty('genBlueprints', 'false')
     testLogging {
         events 'failed'
         exceptionFormat 'full'

@@ -4,8 +4,32 @@
   "icon": "mc3dprint:tier3_printer",
   "sortnum": 0,
   "pages": [
-    { "type": "patchouli:text", "text": "Tiers 1-4 are single blocks. T1-T2 print items only; structure printing starts at $(l)Tier 3$() (3×3 footprint) and grows to 5×5 at Tier 4.$(br2)Power is Redstone Flux from any side. Power loss $(l)pauses$() a job — progress is never lost." },
-    { "type": "patchouli:text", "title": "Multiblocks", "text": "Tiers 5-8 are multiblock $(item)Fabricators$(): place an N×N base of $(item)Printer Casing$() (3×3 for T5, up to 9×9 for T8), put the controller in the center, and right-click to form.$(br2)Breaking a formed controller collapses the whole machine into one item — place it to re-form, fully intact." },
-    { "type": "patchouli:text", "title": "Upgrades", "text": "Shift+Right Click upgrade modules onto a printer: $(li)Speed ×0.8 print time$(li)Efficiency ×0.9 FU cost$(li)RF Efficiency ×0.85 power$(li)Buffer ×1.5 RF capacity$(br2)Slots equal the machine tier. Modules stack multiplicatively.$(br2)The Tier 8 Fabricator demands Draconic Evolution and Awakened Draconium corners." }
+    {
+      "type": "patchouli:text",
+      "text": "Tiers 1-4 are single blocks. $(l)Tier 1-2$() print items only; structure printing starts at $(l)Tier 3$() (3×3 footprint) and grows to 5×5 at $(l)Tier 4$().$(br2)Power is Redstone Flux from any side. Losing power $(l)pauses$() a job — progress is never lost, and the print resumes when power returns."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "mc3dprint:tier1_printer",
+      "text": "The Tier 1 printer: a piston, a little redstone, and an iron shell. Your first machine."
+    },
+    {
+      "type": "patchouli:image",
+      "images": ["mc3dprint:textures/patchouli/printer_gui.png"],
+      "title": "The Printer GUI",
+      "border": true,
+      "text": "Energy bar (left), template / disc slot, output slot, filament bar (right), upgrade slots, and the $(l)Start$() / $(l)Auto$() controls with X / Y / Z offset steppers."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Higher Tiers",
+      "text": "Higher tiers print $(l)faster$(), cost $(l)less FU$() per block, and accept $(l)more upgrades$() (slots = tier). They also unlock higher material tiers — a Tier 3 machine can't print a Tier 5 (netherite) block.$(br2)Tiers 5-8 are multiblock $(item)Fabricators$() — see the Multiblocks category."
+    },
+    {
+      "type": "patchouli:spotlight",
+      "item": "mc3dprint:remote_terminal",
+      "title": "Remote Terminal",
+      "text": "Sneak-click a printer with the $(item)Remote Terminal$() to pair, then place the terminal anywhere to open that printer's GUI from across the base."
+    }
   ]
 }
