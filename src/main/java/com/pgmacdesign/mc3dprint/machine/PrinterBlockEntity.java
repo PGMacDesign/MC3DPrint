@@ -103,6 +103,14 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         @Override
         protected void onContentsChanged(int slot) {
             setChanged();
+            // A freshly loaded disc may collide with the world at the current build
+            // offsets (a bigger/smaller blueprint, or one overlapping another zone).
+            // Re-check obstruction now so OBSTRUCTED shows immediately, instead of
+            // only on offset change / GUI open / pressing Start. Cheap no-op unless a
+            // disc is loaded with no active job (see recheckObstruction).
+            if (slot == SLOT_TEMPLATE) {
+                recheckObstruction();
+            }
         }
     };
 
@@ -340,10 +348,18 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
 
     private int blockFuCost(BlockState state) {
         Optional<FuValue> value = blockFuValue(state);
-        // Unknown blocks (permissive mode only — strict mode refuses them up front
-        // in tryStartJob) cost unknownBlockFu, denominated at the machine's tier so
-        // a low-tier machine can't print them cheaply.
-        return applyEfficiency(value.map(FuValue::fu).orElse(MC3DPrintConfig.UNKNOWN_BLOCK_FU.get()));
+        if (value.isPresent()) {
+            return applyEfficiency(value.get().fu());
+        }
+        // Itemless structural blocks (farmland, crops, water, wall torches…) are free
+        // matter — there's no item to obtain, so no FU to charge. Other unpriced blocks
+        // (permissive mode only — strict mode refuses them up front in tryStartJob) cost
+        // unknownBlockFu, denominated at the machine's tier so a low-tier machine can't
+        // print them cheaply.
+        if (isStructuralItemless(state)) {
+            return 0;
+        }
+        return applyEfficiency(MC3DPrintConfig.UNKNOWN_BLOCK_FU.get());
     }
 
     private int blockFuTier(BlockState state) {
@@ -365,10 +381,23 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
      */
     private boolean canPrintBlock(BlockState resolvedState) {
         Optional<FuValue> value = blockFuValue(resolvedState);
-        if (value.isEmpty()) {
-            return MC3DPrintConfig.UNKNOWN_BLOCKS_PRINTABLE.get();
+        if (value.isPresent()) {
+            return value.get().tier() <= tier.number();
         }
-        return value.get().tier() <= tier.number();
+        // Itemless structural blocks (farmland, crops, water, wall torches, redstone
+        // wire, fire…) have no obtainable item, so they can't be an FU-exploit vector —
+        // always printable as free matter (this is what makes farms/decorated builds
+        // print whole). An itemed-but-unpriced block still respects strict mode (the
+        // scan-expensive / print-cheap guard).
+        if (isStructuralItemless(resolvedState)) {
+            return true;
+        }
+        return MC3DPrintConfig.UNKNOWN_BLOCKS_PRINTABLE.get();
+    }
+
+    /** A non-air block with no item form — structural/decorative, never obtainable as an item. */
+    private static boolean isStructuralItemless(BlockState state) {
+        return !state.isAir() && state.getBlock().asItem() == Items.AIR;
     }
 
     private void recordSkippedBlock(BlockState resolvedState) {
@@ -720,7 +749,13 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             BlockState placedState = resolved.get()
                     .mirror(activeJob.orientation().mirror())
                     .rotate(activeJob.orientation().rotation());
-            serverLevel.setBlock(worldPos, placedState, Block.UPDATE_ALL);
+            // Place the exact captured state WITHOUT updateShape, so two-block pieces
+            // (beds, doors, tall plants) and support-dependent blocks (crops on farmland)
+            // don't self-break before their partner/support lands, and the blueprint's
+            // captured connections (fences, stairs, walls) are reproduced verbatim rather
+            // than recomputed. Mirrors how /paste and structure blocks place.
+            serverLevel.setBlock(worldPos, placedState,
+                    Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE | Block.UPDATE_SUPPRESS_DROPS);
 
             CompoundTag beData = blueprint.blockEntities().get(entry.local());
             if (beData != null) {
