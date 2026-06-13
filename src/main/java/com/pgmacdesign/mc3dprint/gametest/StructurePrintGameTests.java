@@ -303,4 +303,21 @@ public class StructurePrintGameTests {
             }
         });
     }
+
+    @GameTest(template = "empty5", timeoutTicks = 20)
+    public static void discTierIsTheHighestBlockTier(GameTestHelper helper) {
+        // one diamond block among stone -> the disc's tier is the diamond block's
+        // (diamonds are Tier 5), not the stone's. Confirms BlueprintDiscItem.TAG_TIER.
+        Blueprint blueprint = Blueprint.builder("gametest-tier", 2, 1, 2)
+                .set(0, 0, 0, BlueprintBlockState.parse("minecraft:stone"))
+                .set(1, 0, 1, BlueprintBlockState.parse("minecraft:diamond_block"))
+                .build();
+        ItemStack disc = discFor(helper, blueprint);
+        int tier = disc.getOrCreateTag().getInt(BlueprintDiscItem.TAG_TIER);
+        if (tier != 5) {
+            helper.fail("expected disc tier 5 (diamond block among stone), got " + tier);
+            return;
+        }
+        helper.succeed();
+    }
 }

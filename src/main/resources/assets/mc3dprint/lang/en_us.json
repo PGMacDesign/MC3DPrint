@@ -5,6 +5,7 @@
   "item.mc3dprint.blueprint_disc": "Blueprint Disc",
   "tooltip.mc3dprint.disc_empty": "No blueprint stored",
   "tooltip.mc3dprint.disc_size": "%s×%s×%s — %s blocks",
+  "tooltip.mc3dprint.disc_tier": "Tier %s",
   "tooltip.mc3dprint.disc_locked": "Locked",
   "message.mc3dprint.disc_locked": "Blueprint Disc locked",
   "message.mc3dprint.disc_unlocked": "Blueprint Disc unlocked",

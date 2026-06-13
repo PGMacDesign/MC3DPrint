@@ -1,6 +1,9 @@
 package com.pgmacdesign.mc3dprint.item;
 
 import com.pgmacdesign.mc3dprint.blueprint.Blueprint;
+import com.pgmacdesign.mc3dprint.blueprint.BlueprintBlockState;
+import com.pgmacdesign.mc3dprint.fu.FuValue;
+import com.pgmacdesign.mc3dprint.fu.FuValueRegistry;
 import net.minecraft.ChatFormatting;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
@@ -11,6 +14,7 @@ import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.Level;
 
@@ -32,6 +36,7 @@ public class BlueprintDiscItem extends Item {
     public static final String TAG_NAME = "BlueprintName";
     public static final String TAG_SIZE = "Size";
     public static final String TAG_BLOCK_COUNT = "BlockCount";
+    public static final String TAG_TIER = "Tier";
     public static final String TAG_LOCKED = "Locked";
 
     public BlueprintDiscItem(Properties properties) {
@@ -67,7 +72,36 @@ public class BlueprintDiscItem extends Item {
         tag.putString(TAG_NAME, blueprint.name());
         tag.putIntArray(TAG_SIZE, new int[]{blueprint.sizeX(), blueprint.sizeY(), blueprint.sizeZ()});
         tag.putInt(TAG_BLOCK_COUNT, blueprint.blockCount());
+        tag.putInt(TAG_TIER, blueprintTier(blueprint));
         return true;
+    }
+
+    /**
+     * The blueprint's tier = the highest material tier among its blocks (one
+     * diamond block in a pile of stone still reads as that block's tier), or 1 if
+     * nothing is priced. This is the lowest machine tier that can print all of it.
+     */
+    public static int blueprintTier(Blueprint blueprint) {
+        int max = 1;
+        try {
+            for (BlueprintBlockState paletteState : blueprint.palette()) {
+                var resolved = paletteState.resolve();
+                if (resolved.isEmpty()) {
+                    continue;
+                }
+                Item item = resolved.get().getBlock().asItem();
+                if (item == Items.AIR) {
+                    continue;
+                }
+                int tier = FuValueRegistry.valueOf(new ItemStack(item)).map(FuValue::tier).orElse(1);
+                if (tier > max) {
+                    max = tier;
+                }
+            }
+        } catch (RuntimeException ignored) {
+            // FU registry may not be bound yet (e.g. early datagen) — fall back to 1
+        }
+        return max;
     }
 
     public static boolean clearBlueprint(ItemStack stack) {
@@ -117,8 +151,26 @@ public class BlueprintDiscItem extends Item {
             tooltip.add(Component.translatable("tooltip.mc3dprint.disc_size", size[0], size[1], size[2], tag.getInt(TAG_BLOCK_COUNT))
                     .withStyle(ChatFormatting.GRAY));
         }
+        int tier = tag.getInt(TAG_TIER);
+        if (tier > 0) {
+            tooltip.add(Component.translatable("tooltip.mc3dprint.disc_tier", tier).withStyle(tierFormat(tier)));
+        }
         if (tag.getBoolean(TAG_LOCKED)) {
             tooltip.add(Component.translatable("tooltip.mc3dprint.disc_locked").withStyle(ChatFormatting.GOLD));
         }
+    }
+
+    /** Tier label color, roughly matching the tier accent ramp (T1 grey … T8 magenta). */
+    private static ChatFormatting tierFormat(int tier) {
+        return switch (tier) {
+            case 2 -> ChatFormatting.BLUE;
+            case 3 -> ChatFormatting.AQUA;
+            case 4 -> ChatFormatting.GREEN;
+            case 5 -> ChatFormatting.GOLD;
+            case 6 -> ChatFormatting.RED;
+            case 7 -> ChatFormatting.LIGHT_PURPLE;
+            case 8 -> ChatFormatting.DARK_PURPLE;
+            default -> ChatFormatting.GRAY;
+        };
     }
 }
