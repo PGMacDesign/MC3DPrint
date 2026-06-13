@@ -90,7 +90,30 @@ public class PrinterMenu extends AbstractContainerMenu {
             int rowIdx = i / UPGRADE_COLS;
             int x = UPGRADE_SLOT_X + col * UPGRADE_COL_STEP;
             int y = UPGRADE_SLOT_Y + rowIdx * UPGRADE_ROW_STEP;
-            addSlot(new SlotItemHandler(upgradeHandler, i, x, y));
+            addSlot(new SlotItemHandler(upgradeHandler, i, x, y) {
+                // one module per slot, so the per-type cap counts cleanly
+                @Override
+                public int getMaxStackSize() {
+                    return 1;
+                }
+
+                @Override
+                public int getMaxStackSize(@Nonnull ItemStack stack) {
+                    return 1;
+                }
+
+                @Override
+                public boolean mayPlace(@Nonnull ItemStack stack) {
+                    if (!(stack.getItem() instanceof UpgradeItem upgrade)) {
+                        return false;
+                    }
+                    // a same-type swap into this very slot doesn't raise the count
+                    if (getItem().getItem() instanceof UpgradeItem current && current.type() == upgrade.type()) {
+                        return true;
+                    }
+                    return printer == null || !printer.upgradeTypeAtCap(upgrade.type());
+                }
+            });
         }
 
         // player inventory sits below the control strip (Start/Auto/Ghost +

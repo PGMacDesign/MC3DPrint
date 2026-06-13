@@ -382,11 +382,19 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         }
     }
 
+    /**
+     * FU cost to print {@code baseFu} worth of matter on this machine. The tier's
+     * innate markup ({@code 1/efficiency − 1}) is shaved an equal share by each
+     * Efficiency module, reaching exactly 1:1 (break-even) at {@code maxPerType}
+     * modules — and it never drops below 1:1, so printing is never free matter.
+     */
     private int applyEfficiency(int baseFu) {
-        double cost = baseFu / MC3DPrintConfig.efficiency(tier)
-                * Math.pow(MC3DPrintConfig.UPGRADE_EFFICIENCY_FACTOR.get(), upgradeCount(UpgradeItem.Type.EFFICIENCY));
-        // epsilon guard: 50/0.75*0.9 is 60.000000000000014 in doubles — don't ceil that to 61
-        return (int) Math.ceil(cost - 1.0e-7);
+        int maxPerType = MC3DPrintConfig.UPGRADE_MAX_PER_TYPE.get();
+        int eff = Math.min(upgradeCount(UpgradeItem.Type.EFFICIENCY), maxPerType);
+        double markup = (1.0 / MC3DPrintConfig.efficiency(tier) - 1.0) * (1.0 - (double) eff / maxPerType);
+        // epsilon guard: an exact-integer cost shouldn't be ceil'd up by float noise
+        int cost = (int) Math.ceil(baseFu * (1.0 + markup) - 1.0e-7);
+        return Math.max(baseFu, cost); // never below break-even
     }
 
     /** Raw sum of stored spool FU, ignoring tier denominations. Display/debug only. */
@@ -525,8 +533,20 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         return count;
     }
 
-    /** Installs one module from {@code held} into the first free slot. */
+    /** True once this machine already holds the per-type module cap (config maxPerType). */
+    public boolean upgradeTypeAtCap(UpgradeItem.Type type) {
+        return upgradeCount(type) >= MC3DPrintConfig.UPGRADE_MAX_PER_TYPE.get();
+    }
+
+    /**
+     * Installs one module from {@code held} into the first free slot. Rejected when
+     * this machine already holds the per-type cap of that module (config maxPerType),
+     * even if free slots remain — diversify to fill them.
+     */
     public boolean installUpgrade(ItemStack held) {
+        if (held.getItem() instanceof UpgradeItem upgrade && upgradeTypeAtCap(upgrade.type())) {
+            return false;
+        }
         for (int i = 0; i < upgrades.getSlots(); i++) {
             if (upgrades.getStackInSlot(i).isEmpty()) {
                 upgrades.setStackInSlot(i, held.split(1));

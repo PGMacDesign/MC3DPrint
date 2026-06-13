@@ -45,16 +45,72 @@ public class UpgradeGameTests {
         printer.spoolInventory().setStackInSlot(0, spool);
         printer.inventory().setStackInSlot(PrinterBlockEntity.SLOT_TEMPLATE, new ItemStack(Items.EMERALD));
 
-        // emerald 50 FU base, T4 efficiency 75% -> 66.67, ×0.9 with one module -> ceil(60.0) = 60
+        // emerald 50 FU base; T4 innate markup = 1/0.75 − 1 = 0.333; one of four modules
+        // removes a quarter -> markup 0.25 -> cost ceil(62.5) = 63; 100 − 63 = 37 left
         helper.succeedWhen(() -> {
             if (printer.inventory().getStackInSlot(PrinterBlockEntity.SLOT_OUTPUT).isEmpty()) {
                 throw new GameTestAssertException("No output yet");
             }
             int remaining = printer.totalFu();
-            if (remaining != 40) {
-                throw new GameTestAssertException("Expected 40 FU remaining with efficiency module, got " + remaining);
+            if (remaining != 37) {
+                throw new GameTestAssertException("Expected 37 FU remaining with one efficiency module, got " + remaining);
             }
         });
+    }
+
+    @GameTest(template = "empty5", timeoutTicks = 200)
+    public static void fourEfficiencyModulesBreakEven(GameTestHelper helper) {
+        PrinterBlockEntity printer = poweredT4(helper);
+        // T4 has exactly four upgrade slots — fill them all with Efficiency
+        for (int i = 0; i < 4; i++) {
+            if (!printer.installUpgrade(new ItemStack(ModItems.EFFICIENCY_UPGRADE.get()))) {
+                helper.fail("Efficiency module " + (i + 1) + " should install on T4");
+                return;
+            }
+        }
+        // T4 spool: emerald cost is T4-denominated, so the drain is exact 1:1
+        ItemStack spool = new ItemStack(ModItems.SPOOLS.get(3).get());
+        SpoolItem.setFu(spool, 100);
+        printer.spoolInventory().setStackInSlot(0, spool);
+        printer.inventory().setStackInSlot(PrinterBlockEntity.SLOT_TEMPLATE, new ItemStack(Items.EMERALD));
+
+        // four (= maxPerType) Efficiency modules -> break-even: emerald costs its base 50 FU
+        helper.succeedWhen(() -> {
+            if (printer.inventory().getStackInSlot(PrinterBlockEntity.SLOT_OUTPUT).isEmpty()) {
+                throw new GameTestAssertException("No output yet");
+            }
+            int remaining = printer.totalFu();
+            if (remaining != 50) {
+                throw new GameTestAssertException("Expected exactly 50 FU (1:1 break-even) remaining, got " + remaining);
+            }
+        });
+    }
+
+    @GameTest(template = "empty5", timeoutTicks = 100)
+    public static void efficiencyCapBlocksFifthOfAType(GameTestHelper helper) {
+        // T5 has five upgrade slots, but no more than four of any one type may go in
+        // (CONTROLLERS holds the multiblock tiers T5-T8; index 0 = T5)
+        BlockPos pos = new BlockPos(2, 1, 2);
+        helper.setBlock(pos, ModBlocks.CONTROLLERS.get(0).get());
+        if (!(helper.getBlockEntity(pos) instanceof PrinterBlockEntity t5)) {
+            throw new GameTestAssertException("Printer block entity missing");
+        }
+        for (int i = 0; i < 4; i++) {
+            if (!t5.installUpgrade(new ItemStack(ModItems.EFFICIENCY_UPGRADE.get()))) {
+                helper.fail("Efficiency module " + (i + 1) + " should install on T5");
+                return;
+            }
+        }
+        if (t5.installUpgrade(new ItemStack(ModItems.EFFICIENCY_UPGRADE.get()))) {
+            helper.fail("A fifth Efficiency module must be rejected (per-type cap), even with a free slot");
+            return;
+        }
+        // the free fifth slot still takes a DIFFERENT type
+        if (!t5.installUpgrade(new ItemStack(ModItems.SPEED_UPGRADE.get()))) {
+            helper.fail("A different module type should still fit the free slot");
+            return;
+        }
+        helper.succeed();
     }
 
     @GameTest(template = "empty5", timeoutTicks = 100)

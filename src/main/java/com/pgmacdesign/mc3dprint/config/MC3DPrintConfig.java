@@ -30,9 +30,9 @@ public final class MC3DPrintConfig {
     public static final ForgeConfigSpec.IntValue WINDER_MAX_ENERGY_RECEIVE;
     public static final ForgeConfigSpec.IntValue CLOCK_GENERATOR_RF_PER_TICK;
     public static final ForgeConfigSpec.DoubleValue UPGRADE_SPEED_FACTOR;
-    public static final ForgeConfigSpec.DoubleValue UPGRADE_EFFICIENCY_FACTOR;
     public static final ForgeConfigSpec.DoubleValue UPGRADE_RF_FACTOR;
     public static final ForgeConfigSpec.DoubleValue UPGRADE_BUFFER_FACTOR;
+    public static final ForgeConfigSpec.IntValue UPGRADE_MAX_PER_TYPE;
     public static final ForgeConfigSpec.IntValue CLOCK_GENERATOR_BURN_MULTIPLIER;
     public static final ForgeConfigSpec.IntValue PRINT_HISTORY_SIZE;
     public static final ForgeConfigSpec.IntValue UNKNOWN_BLOCK_FU;
@@ -64,7 +64,10 @@ public final class MC3DPrintConfig {
                     .defineInRange("rfPerBlock", tier.defaultRfPerBlock(), 1, Integer.MAX_VALUE);
             TICKS_PER_BLOCK[i] = builder.comment("Ticks between block placements in Blueprint Mode")
                     .defineInRange("ticksPerBlock", tier.defaultTicksPerBlock(), 1, Integer.MAX_VALUE);
-            EFFICIENCY[i] = builder.comment("Matter efficiency: FU cost = base / efficiency")
+            EFFICIENCY[i] = builder.comment(
+                    "Matter efficiency: the tier's innate print markup. At 0 Efficiency modules FU",
+                    "cost = base / efficiency; each module removes an equal share, reaching exactly",
+                    "1:1 at upgrades.maxPerType modules. Lower tiers are deliberately less efficient.")
                     .defineInRange("efficiency", tier.defaultEfficiency(), 0.01, 1.0);
             builder.pop();
         }
@@ -90,19 +93,23 @@ public final class MC3DPrintConfig {
                 .defineInRange("maxEnergyReceive", 1_000, 1, Integer.MAX_VALUE);
         builder.pop();
 
-        builder.comment("Upgrade modules (multiplicative per module installed)").push("upgrades");
+        builder.comment("Upgrade modules. Speed/RF/Buffer stack multiplicatively per module;",
+                "Efficiency is linear — it shaves the tier's innate print markup, reaching exactly",
+                "1:1 (break-even) at maxPerType modules. Every type is capped at maxPerType per machine.")
+                .push("upgrades");
         UPGRADE_SPEED_FACTOR = builder
                 .comment("Print time multiplier per Speed Upgrade")
                 .defineInRange("speedFactor", 0.8, 0.05, 1.0);
-        UPGRADE_EFFICIENCY_FACTOR = builder
-                .comment("FU cost multiplier per Efficiency Upgrade")
-                .defineInRange("efficiencyFactor", 0.9, 0.05, 1.0);
         UPGRADE_RF_FACTOR = builder
                 .comment("RF cost multiplier per RF Efficiency Upgrade")
                 .defineInRange("rfFactor", 0.85, 0.05, 1.0);
         UPGRADE_BUFFER_FACTOR = builder
                 .comment("RF buffer multiplier per Buffer Upgrade")
                 .defineInRange("bufferFactor", 1.5, 1.0, 8.0);
+        UPGRADE_MAX_PER_TYPE = builder
+                .comment("Max modules of any single type per machine. Also the number of Efficiency",
+                        "modules that brings printing to exactly 1:1 (break-even); fewer leaves a markup.")
+                .defineInRange("maxPerType", 4, 1, 64);
         builder.pop();
 
         builder.comment("General").push("general");

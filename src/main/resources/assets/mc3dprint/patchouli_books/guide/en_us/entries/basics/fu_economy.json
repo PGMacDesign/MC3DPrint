@@ -26,7 +26,7 @@
     {
       "type": "patchouli:text",
       "title": "Lower Tiers Cost More",
-      "text": "Lower-tier machines are deliberately less efficient — a Tier 1 printer pays a higher FU multiplier per block than a Tier 8 Fabricator.$(br2)Climbing the tiers isn't just about bigger prints: every tier you gain makes the same structure $(l)cheaper$() to print. The full ratio and per-tier efficiencies are in the config for pack makers."
+      "text": "Lower-tier machines are deliberately less efficient — a Tier 1 printer pays a higher FU multiplier per block than a Tier 8 Fabricator.$(br2)Printing always costs a little $(l)more$() than the matter is worth — that markup is the price of convenience. Stack $(l)4 Efficiency modules$() to erase it and print at exact break-even (1:1); you can never print matter for $(l)less$() than it's worth. Per-tier efficiencies are in the config."
     }
   ]
 }
