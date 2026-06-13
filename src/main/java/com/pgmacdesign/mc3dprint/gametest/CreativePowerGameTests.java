@@ -161,6 +161,7 @@ public class CreativePowerGameTests {
             throw new GameTestAssertException("Printer block entity missing");
         }
         printer.spoolInventory().setStackInSlot(0, new ItemStack(ModItems.CREATIVE_SPOOL.get()));
+        printer.setAutoStart(true); // item-mode gates on Auto; this test wants a print
         printer.inventory().setStackInSlot(PrinterBlockEntity.SLOT_TEMPLATE, new ItemStack(Items.STONE));
 
         helper.succeedWhen(() -> {

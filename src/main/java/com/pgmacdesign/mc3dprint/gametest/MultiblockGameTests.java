@@ -44,6 +44,7 @@ public class MultiblockGameTests {
         ItemStack spool = new ItemStack(ModItems.SPOOLS.get(0).get());
         SpoolItem.setFu(spool, 400);
         printer.spoolInventory().setStackInSlot(0, spool);
+        printer.setAutoStart(true); // item-mode now gates on Auto; formed-print test wants a print
         return printer;
     }
 

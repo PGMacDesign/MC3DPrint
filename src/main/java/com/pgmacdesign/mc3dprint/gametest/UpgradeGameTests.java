@@ -30,6 +30,7 @@ public class UpgradeGameTests {
                 energy.receiveEnergy(8_000, false);
             }
         });
+        printer.setAutoStart(true); // item-mode now gates on Auto; tests want continuous print
         return printer;
     }
 

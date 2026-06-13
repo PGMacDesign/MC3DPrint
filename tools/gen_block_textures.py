@@ -80,8 +80,12 @@ def glow_dot(px, cx, cy, r, intensity=1.0):
 # Tier-scaling detail helpers — these are what make a T6 read as clearly better
 # than a T4: more accent trim, a richer display, more vents, a bigger hotend.
 # ---------------------------------------------------------------------------
-def _reel(px, cx, cy, r, thi, tmid, tlo):
-    """A small tier-accent filament reel (the spool feeding the printer)."""
+def _reel(px, cx, cy, r, thi, tmid, tlo, flange=None):
+    """A small tier-accent filament reel (the spool feeding the printer). The
+    flange rim defaults to grey; pass `flange=(lit, shadow)` to tint the rim
+    with tier colour so the spool itself reads as the tier hue (printers only).
+    """
+    rim_lit, rim_sh = (BODY[3], BODY[4]) if flange is None else flange
     for dy in range(-r - 1, r + 2):
         for dx in range(-r - 1, r + 2):
             d = (dx * dx + dy * dy) ** 0.5
@@ -90,7 +94,7 @@ def _reel(px, cx, cy, r, thi, tmid, tlo):
             if d < 1.2:
                 c = FRAME[3]                                  # hub hole
             elif d > r - 0.7:
-                c = BODY[3] if (dx + dy) < 0 else BODY[4]     # flange rim
+                c = rim_lit if (dx + dy) < 0 else rim_sh      # flange rim
             else:
                 lit = -(dx + dy)
                 c = thi if lit > 0.8 else (tlo if lit < -0.8 else tmid)
@@ -151,6 +155,38 @@ def _vents(px, tier):
         put(px, 4, vy, FRAME[3]); put(px, 5, vy, shade(FRAME[1], 0.14))
 
 
+def _printer_tier_accents(px, tier, thi, tmid, tlo):
+    """Printer-only (T1-4) tier colour. The shared _accent_trim corner caps are
+    too sparse to read at a glance — these add a couple of modest tier-coloured
+    chassis features so each printer's tier is obvious by hue, while staying a
+    clear step below the fabricators' decoration:
+      * two short tier-coloured side struts on the interior walls (the chassis
+        uprights), one pixel taller per tier;
+      * a thin tier-coloured brand band on the body just above the bed.
+    The cyan hotend/bed glow is untouched — only chassis trim gets tier colour.
+    """
+    # side struts: vertical tier-coloured bars on the left + right interior
+    # walls, framed with a 1px shadow so they read as raised painted uprights.
+    strut_h = 4 + tier            # T1=5 .. T4=8 px tall
+    sy = 7
+    for wx in (3, H - 4):
+        for k in range(strut_h):
+            y = sy + k
+            c = thi if k == 0 else (tlo if k == strut_h - 1 else tmid)
+            put(px, wx, y, c)
+        put(px, wx, sy - 1, FRAME[3]); put(px, wx, sy + strut_h, FRAME[3])
+
+    # brand band: a short horizontal tier-coloured strip on the lower chassis,
+    # widening one notch per tier (T1 a stub .. T4 nearly full width).
+    band_y = H - 10
+    bw = 4 + (tier - 1) * 4       # T1=4 .. T4=16 px wide
+    bx = (H - bw) // 2
+    hline(px, bx, band_y, bw, tmid)
+    put(px, bx, band_y, thi)                       # lit left cap
+    put(px, bx + bw - 1, band_y, tlo)              # shadow right cap
+    hline(px, bx, band_y + 1, bw, FRAME[3])        # 1px AO beneath the band
+
+
 def _frame(px, fabricator, tier):
     """Dark metal frame. Fabricators get a heavier 3px border, a 3rd bevel ring
     and seam rivets so they read as an industrial core a clear cut above T4."""
@@ -202,7 +238,10 @@ def printer_face(tier, fabricator=False):
     # --- tier-accent feed reel, top-left, with a 1px feed line to the carriage
     reel_r = 3 if fabricator else 2
     sp_x, sp_y = (7, 7) if fabricator else (6, 7)
-    _reel(px, sp_x, sp_y, reel_r, thi, tmid, tlo)
+    # printers tint the spool flange in tier colour so the reel reads as the
+    # tier hue; fabricators keep the neutral grey flange (unchanged).
+    reel_flange = None if fabricator else (thi, tlo)
+    _reel(px, sp_x, sp_y, reel_r, thi, tmid, tlo, flange=reel_flange)
 
     # --- smart LCD readout, top-right; bigger + more rows with tier ---
     lcd_spec = {
@@ -289,6 +328,9 @@ def printer_face(tier, fabricator=False):
         glow_dot(px, nz_x, hot_y, hot_r)
         if tier >= 3:
             put(px, nz_x, hot_y, GLOW[0]); put(px, nz_x, hot_y - 1, GLOW[1])
+        # printer-only tier chassis accents (side struts + brand band) so each
+        # T1-4 reads by hue; kept modest, a clear step below the fabricators.
+        _printer_tier_accents(px, tier, thi, tmid, tlo)
 
     # feed line from reel to the carriage top (cyan-tinted near the head)
     fx, fy = sp_x + reel_r, sp_y + 1

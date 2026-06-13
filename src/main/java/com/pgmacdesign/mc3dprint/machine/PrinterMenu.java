@@ -1,6 +1,7 @@
 package com.pgmacdesign.mc3dprint.machine;
 
 import com.pgmacdesign.mc3dprint.fu.SpoolItem;
+import com.pgmacdesign.mc3dprint.machine.upgrade.UpgradeItem;
 import com.pgmacdesign.mc3dprint.registry.ModMenuTypes;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.entity.player.Inventory;
@@ -22,6 +23,23 @@ public class PrinterMenu extends AbstractContainerMenu {
     public static final int TEMPLATE_SLOT_Y = 35;
     public static final int OUTPUT_SLOT_X = 116;
     public static final int OUTPUT_SLOT_Y = 35;
+
+    // Upgrade slot wells: a 2-column grid on the right of the machine area. Slots
+    // are added row-major (col 0 then col 1, top to bottom) up to the tier's
+    // upgrade-slot count (T1=1 … T8=8). These x/y MUST match the wells painted by
+    // tools/gen_printer_gui.py (it reads the coords from here).
+    public static final int UPGRADE_SLOT_X = 178;
+    public static final int UPGRADE_SLOT_Y = 18;
+    public static final int UPGRADE_COL_STEP = 18;
+    public static final int UPGRADE_ROW_STEP = 18;
+    public static final int UPGRADE_COLS = 2;
+    /** Max upgrade slots across all tiers (T8). Wells are painted up to this. */
+    public static final int MAX_UPGRADE_SLOTS = 8;
+
+    /** Index of the first upgrade slot in this menu (after template + output). */
+    private final int upgradeSlotStart;
+    /** Number of upgrade slots actually present (this printer's tier). */
+    private final int upgradeSlotCount;
 
     @Nullable
     private final PrinterBlockEntity printer;
@@ -59,6 +77,21 @@ public class PrinterMenu extends AbstractContainerMenu {
                 return false;
             }
         });
+
+        // Upgrade slots: only the slots this tier actually has are added (T1=1 …
+        // T8=8), laid out in a 2-column grid on the right. Empty wells beyond the
+        // tier's count are painted by the texture but carry no Slot.
+        IItemHandler upgradeHandler = printer != null ? printer.upgradeInventory()
+                : new ItemStackHandler(0);
+        this.upgradeSlotStart = slots.size();
+        this.upgradeSlotCount = upgradeHandler.getSlots();
+        for (int i = 0; i < upgradeSlotCount; i++) {
+            int col = i % UPGRADE_COLS;
+            int rowIdx = i / UPGRADE_COLS;
+            int x = UPGRADE_SLOT_X + col * UPGRADE_COL_STEP;
+            int y = UPGRADE_SLOT_Y + rowIdx * UPGRADE_ROW_STEP;
+            addSlot(new SlotItemHandler(upgradeHandler, i, x, y));
+        }
 
         // player inventory sits below the control strip (Start/Auto/Ghost +
         // build-offset rows) that lives between the machine and the inventory
@@ -124,6 +157,11 @@ public class PrinterMenu extends AbstractContainerMenu {
         return SplitContainerData.combine(data, PrinterBlockEntity.DATA_AUTO_START) != 0;
     }
 
+    /** Number of upgrade slots this printer's tier exposes (0 for some tiers). */
+    public int upgradeSlotCount() {
+        return upgradeSlotCount;
+    }
+
     /** Build offset for axis 0=X, 1=Y, 2=Z. */
     public int offset(int axis) {
         return SplitContainerData.combine(data, PrinterBlockEntity.DATA_OFFSET_X + axis);
@@ -173,16 +211,25 @@ public class PrinterMenu extends AbstractContainerMenu {
         ItemStack moved = slot.getItem();
         ItemStack original = moved.copy();
 
-        int machineSlots = PrinterBlockEntity.SLOT_COUNT;
-        if (slotIndex < machineSlots) {
-            // machine -> player inventory
-            if (!moveItemStackTo(moved, machineSlots, slots.size(), true)) {
+        // Machine-side slots = template + output + upgrade slots; everything after
+        // that is the player inventory.
+        int firstPlayerSlot = upgradeSlotStart + upgradeSlotCount;
+        boolean isMachineSlot = slotIndex < firstPlayerSlot;
+        if (isMachineSlot) {
+            // any machine slot (template / output / upgrade) -> player inventory
+            if (!moveItemStackTo(moved, firstPlayerSlot, slots.size(), true)) {
                 return ItemStack.EMPTY;
             }
         } else if (moved.getItem() instanceof SpoolItem) {
             // spools dock onto the machine, never into the print slot (server authoritative)
             if (printer == null || printer.getLevel() == null || printer.getLevel().isClientSide
                     || !printer.attachSpool(moved)) {
+                return ItemStack.EMPTY;
+            }
+        } else if (moved.getItem() instanceof UpgradeItem) {
+            // upgrade modules -> the upgrade slots (only ones this tier has)
+            if (upgradeSlotCount == 0 || !moveItemStackTo(moved, upgradeSlotStart,
+                    upgradeSlotStart + upgradeSlotCount, false)) {
                 return ItemStack.EMPTY;
             }
         } else {

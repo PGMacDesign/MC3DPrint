@@ -87,8 +87,8 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
     public static final int DATA_PREVIEW = 14;
     public static final int DATA_COUNT = 15;
 
-    /** Build offsets are clamped to this range on each axis. */
-    public static final int MAX_OFFSET = 64;
+    /** Build offsets are clamped to [-MAX_OFFSET, MAX_OFFSET] on each axis. */
+    public static final int MAX_OFFSET = 32;
 
     public enum State {
         IDLE, PRINTING, PAUSED_NO_POWER, PAUSED_OUTPUT_FULL, PAUSED_OBSTRUCTED, ZONE_CONFLICT,
@@ -300,6 +300,10 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             state = State.PAUSED_NO_FILAMENT;
         } else if (!energy.hasAtLeast(rfAdjusted(MC3DPrintConfig.itemRfPerTick(tier)))) {
             state = State.PAUSED_NO_POWER;
+        } else if (!autoStart && !startRequested) {
+            // Item is printable but Auto is off and no manual Start is queued: wait,
+            // mirroring blueprint mode. Don't advance progress; show READY.
+            state = State.READY;
         } else {
             state = State.PRINTING;
             energy.consume(rfAdjusted(MC3DPrintConfig.itemRfPerTick(tier)));
@@ -308,6 +312,10 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
                 drainFu(fuCost, costTier);
                 emitCopy(template);
                 itemProgress = 0;
+                // A manual Start prints exactly one item; Auto keeps printing.
+                if (!autoStart) {
+                    startRequested = false;
+                }
             }
         }
     }
@@ -1028,10 +1036,16 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         tag.putInt("State", state.ordinal());
 
         if (previewEnabled && activeJob == null && level instanceof ServerLevel serverLevel) {
+            // Preview can be toggled on with no disc loaded — that's fine, there's
+            // just nothing to ghost-render. Only emit Preview data when a disc with
+            // a within-cap blueprint is present; otherwise the toggle stays on but
+            // the renderer draws nothing (it early-returns on empty preview data).
             ItemStack template = inventory.getStackInSlot(SLOT_TEMPLATE);
             UUID id = isLoadedDisc(template) ? BlueprintDiscItem.getBlueprintId(template).orElse(null) : null;
             if (id == null) {
-                previewEnabled = false; // disc removed — preview dies with it
+                // no blueprint to show — clear stale cache, keep the toggle on
+                previewBlueprint = null;
+                previewBlueprintId = null;
             } else {
                 if (previewBlueprint == null || !id.equals(previewBlueprintId)) {
                     previewBlueprint = BlueprintFileStore.forServer(serverLevel.getServer()).load(id).orElse(null);
@@ -1189,38 +1203,38 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         }
     }
 
-    /** Toggles the hologram preview; validates disc presence and the size cap. */
+    /**
+     * Toggles the hologram preview. The toggle always works, even with no disc
+     * loaded — without a blueprint there is simply nothing to ghost-render (the
+     * renderer early-returns on empty preview data). When a disc IS present we
+     * resolve and cache its blueprint here and enforce the size cap; if the
+     * blueprint is too big the toggle still flips on but we surface why.
+     */
     public void togglePreview(@Nullable net.minecraft.world.entity.player.Player player) {
         if (previewEnabled) {
             previewEnabled = false;
         } else {
-            ItemStack template = inventory.getStackInSlot(SLOT_TEMPLATE);
-            if (!isLoadedDisc(template) || !(level instanceof ServerLevel serverLevel)) {
-                if (player != null) {
-                    player.displayClientMessage(Component.translatable("message.mc3dprint.preview_no_disc"), true);
-                }
-                return;
-            }
-            UUID id = BlueprintDiscItem.getBlueprintId(template).orElse(null);
-            Blueprint blueprint = id == null ? null
-                    : BlueprintFileStore.forServer(serverLevel.getServer()).load(id).orElse(null);
-            if (blueprint == null) {
-                if (player != null) {
-                    player.displayClientMessage(Component.translatable("message.mc3dprint.preview_no_disc"), true);
-                }
-                return;
-            }
-            int cap = MC3DPrintConfig.PREVIEW_MAX_BLOCKS.get();
-            if (blueprint.blockCount() > cap) {
-                if (player != null) {
-                    player.displayClientMessage(Component.translatable("message.mc3dprint.preview_too_big",
-                            blueprint.blockCount(), cap), true);
-                }
-                return;
-            }
-            previewBlueprint = blueprint;
-            previewBlueprintId = id;
             previewEnabled = true;
+            previewBlueprint = null;
+            previewBlueprintId = null;
+            ItemStack template = inventory.getStackInSlot(SLOT_TEMPLATE);
+            if (isLoadedDisc(template) && level instanceof ServerLevel serverLevel) {
+                UUID id = BlueprintDiscItem.getBlueprintId(template).orElse(null);
+                Blueprint blueprint = id == null ? null
+                        : BlueprintFileStore.forServer(serverLevel.getServer()).load(id).orElse(null);
+                if (blueprint != null) {
+                    int cap = MC3DPrintConfig.PREVIEW_MAX_BLOCKS.get();
+                    if (blueprint.blockCount() > cap) {
+                        if (player != null) {
+                            player.displayClientMessage(Component.translatable("message.mc3dprint.preview_too_big",
+                                    blueprint.blockCount(), cap), true);
+                        }
+                    } else {
+                        previewBlueprint = blueprint;
+                        previewBlueprintId = id;
+                    }
+                }
+            }
         }
         setChanged();
         syncToClients();

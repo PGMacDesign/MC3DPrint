@@ -166,10 +166,21 @@ public class StructurePrintGameTests {
         PrinterBlockEntity printer = poweredPrinter(helper, printerPos);
         printer.setAutoStart(false); // preview is a pre-print feature
 
-        // no disc: toggle must refuse
+        // no disc: the toggle now flips on regardless (nothing to ghost-render),
+        // but no Preview payload is emitted until a disc is loaded.
         printer.togglePreview(null);
+        var noDiscTag = printer.getUpdateTag();
+        if (!noDiscTag.getBoolean("PreviewOn")) {
+            helper.fail("Preview toggle should enable even without a disc");
+            return;
+        }
+        if (noDiscTag.contains("Preview")) {
+            helper.fail("Preview payload present with no disc loaded");
+            return;
+        }
+        printer.togglePreview(null); // toggle back off before the disc scenario
         if (printer.getUpdateTag().getBoolean("PreviewOn")) {
-            helper.fail("Preview enabled without a disc");
+            helper.fail("Preview toggle did not turn back off");
             return;
         }
 

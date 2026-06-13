@@ -152,14 +152,34 @@ def status_leds(px, panel_w):
     led(px, panel_w - 9, 12, LED_AMBER)
 
 
+# Upgrade-slot wells: a 2-column grid on the right of the machine area. These
+# x/y/step values MUST match PrinterMenu (UPGRADE_SLOT_X/Y, UPGRADE_COL_STEP,
+# UPGRADE_ROW_STEP, UPGRADE_COLS, MAX_UPGRADE_SLOTS). The menu only adds the
+# slots a tier actually has, but we paint all MAX_UPGRADE_SLOTS wells so any
+# tier's GUI has a backing well under each live slot.
+UPGRADE_SLOT_X = 178
+UPGRADE_SLOT_Y = 18
+UPGRADE_COL_STEP = 18
+UPGRADE_ROW_STEP = 18
+UPGRADE_COLS = 2
+MAX_UPGRADE_SLOTS = 8
+
+
 def build_printer():
     img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     px = img.load()
-    pw, ph = 176, 200
+    # widened from 176 to host the upgrade-slot column (PrinterScreen.imageWidth)
+    pw, ph = 230, 200
     panel(px, pw, ph)
     machine_band(px)
     slot(px, 53, 35)    # template (PrinterMenu.TEMPLATE_SLOT_X/Y)
     slot(px, 116, 35)   # output   (PrinterMenu.OUTPUT_SLOT_X/Y)
+    # upgrade-slot wells (2-col grid, row-major), up to MAX_UPGRADE_SLOTS
+    for i in range(MAX_UPGRADE_SLOTS):
+        col = i % UPGRADE_COLS
+        row_idx = i // UPGRADE_COLS
+        slot(px, UPGRADE_SLOT_X + col * UPGRADE_COL_STEP,
+             UPGRADE_SLOT_Y + row_idx * UPGRADE_ROW_STEP)
     # player inventory: 3x9 grid + hotbar (PrinterMenu slot Y = 116/134/152 + 174)
     for row in range(3):
         for col in range(9):

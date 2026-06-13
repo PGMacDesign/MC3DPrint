@@ -260,7 +260,7 @@ public final class FuValueRegistry {
                 "minecraft:diamond=50@5",
                 // T5+
                 "minecraft:netherite_ingot=500@5", "minecraft:ancient_debris=125@5",
-                "minecraft:nether_star=1500@6",
+                "minecraft:nether_star=1500@7",
                 "minecraft:dragon_egg=2500@7");
         // NOTE: storage/material blocks (diamond_block, iron_block, ...) are no
         // longer hardcoded — they DERIVE from their crafting recipe (9x or 4x the

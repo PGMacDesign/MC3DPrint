@@ -86,6 +86,7 @@ public class FuTierEconomyGameTests {
         // a whole T2 unit only when the 4 T1-sub-units are exhausted (ceil rule:
         // print #1 consumes 1 T2 unit worth 4; prints overcharge at most 1 unit)
         printer.spoolInventory().setStackInSlot(0, spoolWithFu(2, 10));
+        printer.setAutoStart(true); // item-mode gates on Auto; this test wants a print
         printer.inventory().setStackInSlot(PrinterBlockEntity.SLOT_TEMPLATE, new ItemStack(Items.COBBLESTONE));
 
         helper.succeedWhen(() -> {

@@ -53,7 +53,8 @@ public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
 
     public PrinterScreen(PrinterMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
-        this.imageWidth = 176;
+        // Widened from 176 to fit the upgrade-slot column + "Upgrades" header.
+        this.imageWidth = 230;
         this.imageHeight = 200;
         this.inventoryLabelY = this.imageHeight - 94;
     }
@@ -193,7 +194,12 @@ public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
             case IDLE -> LABEL;
             default -> WARN;
         };
-        graphics.drawString(font, status, 80, 58, color, false);
+        // Keep the status text from running into the upgrade column on the right.
+        // If a localized string is wide, shift its draw x left so it never crosses
+        // the column edge; never push it left of the status anchor at 80.
+        int statusRightEdge = PrinterMenu.UPGRADE_SLOT_X - 4;
+        int statusX = Math.min(80, statusRightEdge - font.width(status));
+        graphics.drawString(font, status, statusX, 58, color, false);
         int cost = menu.templateCost();
         if (cost > 0) {
             graphics.drawString(font, Component.translatable("gui.mc3dprint.cost", cost), 36, 58, LABEL, false);
@@ -201,6 +207,12 @@ public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
         Component spools = Component.translatable("gui.mc3dprint.spools", menu.spoolsUsed(), menu.spoolSlots());
         int spoolsColor = menu.spoolsUsed() == 0 ? WARN : LABEL;
         graphics.drawString(font, spools, imageWidth - 8 - font.width(spools), inventoryLabelY, spoolsColor, false);
+
+        // "Upgrades" header over the upgrade-slot column (only when this tier has slots)
+        if (menu.upgradeSlotCount() > 0) {
+            graphics.drawString(font, Component.translatable("gui.mc3dprint.upgrades"),
+                    PrinterMenu.UPGRADE_SLOT_X, PrinterMenu.UPGRADE_SLOT_Y - 10, LABEL, false);
+        }
 
         // offset readouts centered between their -/+ buttons
         String[] axes = {"X", "Y", "Z"};

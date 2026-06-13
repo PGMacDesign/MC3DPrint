@@ -30,6 +30,7 @@ public class PrinterGameTests {
             }
         });
         attachLoadedSpool(printer);
+        printer.setAutoStart(true); // item-mode now gates on Auto; tests want continuous print
         return printer;
     }
 

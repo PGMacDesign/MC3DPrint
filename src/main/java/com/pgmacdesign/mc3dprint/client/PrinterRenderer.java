@@ -77,6 +77,27 @@ public class PrinterRenderer implements BlockEntityRenderer<PrinterBlockEntity> 
     private static final float WINDING_MAX_EXTRA = 0.18F;
 
     /**
+     * Wound-filament accent color per spool tier (T1..T8), normalized from the
+     * brief's RGB accents. Index 0 = T1. Used to tint a docked spool's reel so
+     * its tier reads at a glance; creative spools stay magenta (see below).
+     */
+    private static final float[][] TIER_COLORS = {
+            {138 / 255f, 148 / 255f, 160 / 255f}, // T1
+            {79 / 255f, 155 / 255f, 232 / 255f},  // T2
+            {52 / 255f, 192 / 255f, 192 / 255f},  // T3
+            {70 / 255f, 198 / 255f, 107 / 255f},  // T4
+            {224 / 255f, 180 / 255f, 58 / 255f},  // T5
+            {232 / 255f, 122 / 255f, 58 / 255f},  // T6
+            {155 / 255f, 107 / 255f, 232 / 255f}, // T7
+            {232 / 255f, 79 / 255f, 176 / 255f},  // T8
+    };
+
+    private static float[] tierColor(int tier) {
+        int idx = Mth.clamp(tier - 1, 0, TIER_COLORS.length - 1);
+        return TIER_COLORS[idx];
+    }
+
+    /**
      * Per-printer client render state: the smoothed head position and the trail
      * of laid filament segments. Keyed by the BE position. A static map is the
      * standard pattern for per-BE client-only animation state that must not live
@@ -567,8 +588,9 @@ public class PrinterRenderer implements BlockEntityRenderer<PrinterBlockEntity> 
         VertexConsumer lines = bufferSource.getBuffer(RenderType.lines());
         long gameTime = printer.getLevel() != null ? printer.getLevel().getGameTime() : 0;
         boolean printing = printer.state() == PrinterBlockEntity.State.PRINTING;
-        // spin fast while printing, creep at idle so docked spools read as "live"
-        float angle = (gameTime + partialTick) * (printing ? 0.45F : 0.015F);
+        // spin fast while printing; a docked reel still visibly rotates at rest
+        // (the old 0.015 idle rate was imperceptible).
+        float angle = (gameTime + partialTick) * (printing ? 0.45F : 0.12F);
 
         for (int slot = 0; slot < spools.size() && slot < SPOOL_FACES.length; slot++) {
             PrinterBlockEntity.SpoolRenderInfo info = spools.get(slot);
@@ -584,9 +606,10 @@ public class PrinterRenderer implements BlockEntityRenderer<PrinterBlockEntity> 
             float cz = 0.5F + nz * reach;
 
             float winding = AXLE_RADIUS + WINDING_MAX_EXTRA * Math.max(0.0F, Math.min(1.0F, info.fillFraction()));
+            // wound filament tinted by spool tier; creative stays magenta
             float[] windColor = info.creative()
                     ? new float[]{0.90F, 0.40F, 0.95F}
-                    : new float[]{0.31F, 0.76F, 0.97F};
+                    : tierColor(info.tier());
 
             for (float depth : new float[]{0.04F, 0.20F}) { // two flanges
                 circle(poseStack, lines, cx + nx * depth, 0.5F, cz + nz * depth,

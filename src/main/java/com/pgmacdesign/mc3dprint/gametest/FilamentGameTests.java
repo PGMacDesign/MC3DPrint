@@ -175,6 +175,7 @@ public class FilamentGameTests {
         ItemStack spool = new ItemStack(ModItems.SPOOLS.get(0).get());
         SpoolItem.setFu(spool, 100);
         printer.spoolInventory().setStackInSlot(0, spool);
+        printer.setAutoStart(true); // item-mode gates on Auto; this test wants a print
         printer.inventory().setStackInSlot(PrinterBlockEntity.SLOT_TEMPLATE, new ItemStack(Items.STONE));
 
         // stone = 3 FU base, T1 efficiency 50% -> 6 FU per copy

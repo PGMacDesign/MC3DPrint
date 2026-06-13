@@ -31,8 +31,8 @@ public final class FilamentTooltip {
             0xE06666, // T3 redstone red
             0x4FE0C8, // T4 diamond cyan
             0xC8803A, // T5 netherite brown
-            0xF2E25C, // T6 nether star gold
-            0xB96BE6, // T7 dragon purple
+            0xF2E25C, // T6 gold
+            0xB96BE6, // T7 nether star / dragon purple
             0xFF5FA8, // T8 draconic magenta
     };
 
