@@ -1,19 +1,19 @@
 {
-  "name": "Multiblock Build Walkthrough",
+  "name": "Multiblock Walkthrough",
   "category": "mc3dprint:multiblocks",
   "icon": "mc3dprint:printer_casing",
   "sortnum": 1,
   "pages": [
     {
       "type": "patchouli:text",
-      "text": "Every Fabricator is built the same way:$(br)$(li)Lay a flat $(l)N×N square$() of $(item)Printer Casing$() on one level$(li)Place the $(l)controller$() in the $(l)center$() cell$(li)$(l)Right-click$() the controller to form$(br2)All casing must sit on the controller's own Y level. The diagrams below show the four base sizes — corners are highlighted."
+      "text": "Every Fabricator is built the same way:$(br)$(li)Lay a flat $(l)N×N square$() of $(item)Printer Casing$() on one level$(li)Place the $(l)controller$() in the $(l)center$() cell$(li)$(l)Right-click$() the controller to form$(br2)All base blocks sit on the controller's own Y level. The diagrams below show the four sizes — corner blocks are highlighted."
     },
     {
       "type": "patchouli:image",
       "images": ["mc3dprint:textures/patchouli/layout_3x3.png"],
       "title": "Tier 5 — 3×3",
       "border": true,
-      "text": "$(l)8$() Printer Casing + $(item)Tier 5 Fabricator$() in the middle. The smallest Fabricator."
+      "text": "$(l)4$() Printer Casing + $(l)4$() corner $(item)Diamond Block$()s + $(item)Tier 5 Fabricator$() in the middle. The smallest Fabricator."
     },
     {
       "type": "patchouli:image",
@@ -39,7 +39,7 @@
     {
       "type": "patchouli:text",
       "title": "If It Won't Form",
-      "text": "Forming checks every base cell. If a cell is wrong, the game tells you the exact coordinates that failed:$(br)$(li)$(l)Wrong / missing block$() — a base cell isn't Printer Casing$(li)$(l)T8 corner$() — a corner isn't Awakened Draconium$(br2)Fix the named position and right-click the controller again. The controller must be dead-center, on the same Y as the casing."
+      "text": "Forming checks every base cell. If a cell is wrong, the game names the exact coordinates that failed:$(br)$(li)$(l)Wrong / missing block$() — a base cell isn't Printer Casing$(li)$(l)T5 corner$() — a corner isn't a Diamond Block$(li)$(l)T8 corner$() — a corner isn't Awakened Draconium$(br2)Fix the named position and right-click the controller again. The controller must be dead-center, on the same Y as the base."
     }
   ]
 }

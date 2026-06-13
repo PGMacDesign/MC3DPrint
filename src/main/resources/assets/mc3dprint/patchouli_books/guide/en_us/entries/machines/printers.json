@@ -14,16 +14,9 @@
       "text": "The Tier 1 printer: a piston, a little redstone, and an iron shell. Your first machine."
     },
     {
-      "type": "patchouli:image",
-      "images": ["mc3dprint:textures/patchouli/printer_gui.png"],
-      "title": "The Printer GUI",
-      "border": true,
-      "text": "Energy bar (left), template / disc slot, output slot, filament bar (right), upgrade slots, and the $(l)Start$() / $(l)Auto$() controls with X / Y / Z offset steppers."
-    },
-    {
       "type": "patchouli:text",
       "title": "Higher Tiers",
-      "text": "Higher tiers print $(l)faster$(), cost $(l)less FU$() per block, and accept $(l)more upgrades$() (slots = tier). They also unlock higher material tiers — a Tier 3 machine can't print a Tier 5 (netherite) block.$(br2)Tiers 5-8 are multiblock $(item)Fabricators$() — see the Multiblocks category."
+      "text": "Higher tiers print $(l)faster$(), cost $(l)less FU$() per block, and accept $(l)more upgrades$() (slots = tier). They also unlock higher material tiers — a Tier 3 machine can't print a Tier 6 (netherite) block.$(br2)Tiers 5-8 are multiblock $(item)Fabricators$() — see the Multiblocks category."
     },
     {
       "type": "patchouli:spotlight",

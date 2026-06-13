@@ -1,0 +1,13 @@
+{
+  "name": "Why won't it print?",
+  "category": "mc3dprint:faq",
+  "icon": "mc3dprint:remote_terminal",
+  "sortnum": 0,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "title": "Not Printable",
+      "text": "A $(l)Not Printable$() status means the machine can't print what you gave it, for one of two reasons:$(br)$(li)the block's $(l)material tier is above the machine's tier$() (e.g. netherite on a Tier 3 printer)$(li)the block has $(l)no FU value$() and you're in strict mode ($(l)default$()) — un-priced blocks can't be printed$(br2)Use a higher-tier machine, or set $(o)unknownBlocksPrintable=true$() to price unknowns."
+    }
+  ]
+}

@@ -6,7 +6,7 @@
   "pages": [
     {
       "type": "patchouli:text",
-      "text": "FU is denominated $(l)by tier$(): a Tier 5 spool stores Tier 5 FU, a Tier 1 spool stores Tier 1 FU. One unit of Tier N FU is worth several units of Tier N-1 (the $(l)conversion ratio$(), set in config).$(br2)So the tier of a spool isn't just capacity — each unit is intrinsically more valuable the higher you go."
+      "text": "FU is denominated $(l)by tier$(): a Tier 5 spool stores Tier 5 FU, a Tier 1 spool stores Tier 1 FU. One unit of Tier N FU is worth several units of Tier N-1 (the $(l)conversion ratio$(), set in config).$(br2)Each unit is worth more the higher its tier — tier is value, not just capacity."
     },
     {
       "type": "patchouli:text",
@@ -15,18 +15,18 @@
     },
     {
       "type": "patchouli:text",
-      "title": "Where FU Cost Comes From",
-      "text": "Each block's FU cost — and its tier — is $(l)derived from its recipe graph$(): crafting, plus optionally smelting and stonecutting. A diamond block costs what its diamonds are worth; stone costs almost nothing.$(br2)A block's material tier sets the minimum machine and spool tier needed to print it, so cheap blocks stay cheap and rare blocks stay gated."
+      "title": "FU Cost Calculations",
+      "text": "Each block's FU cost — and its tier — is $(l)derived from its recipe graph$(): crafting, plus optionally smelting and stonecutting. A diamond block costs what its diamonds are worth; stone costs almost nothing.$(br2)A block's material tier sets the minimum machine and spool tier needed to print it."
     },
     {
       "type": "patchouli:text",
       "title": "Winding vs Spending",
-      "text": "Two different rules, by design:$(br)$(li)$(l)Winding$() (making FU) is $(l)exact-tier$(): netherite only winds into a T5 spool$(li)$(l)Spending$() (printing) is $(l)down-only$(): a spool pays any cost at or below its tier, never above$(br2)Together these stop cobblestone-farming from ever reaching a high-tier spool, while letting your best spools print anything below them."
+      "text": "Two different rules:$(br)$(li)$(l)Winding$() (making FU) is $(l)exact-tier$(): netherite only winds into a T6 spool$(li)$(l)Spending$() (printing) is $(l)down-only$(): a spool pays any cost at or below its tier, never above$(br2)So your best spools can print anything below them, but cheap materials can't reach a high-tier spool."
     },
     {
       "type": "patchouli:text",
       "title": "Lower Tiers Cost More",
-      "text": "Lower-tier machines are deliberately less efficient — a Tier 1 printer pays a higher FU multiplier per block than a Tier 8 Fabricator.$(br2)Printing always costs a little $(l)more$() than the matter is worth — that markup is the price of convenience. Stack $(l)4 Efficiency modules$() to erase it and print at exact break-even (1:1); you can never print matter for $(l)less$() than it's worth. Per-tier efficiencies are in the config."
+      "text": "Lower-tier machines pay a higher FU multiplier per block — a Tier 1 printer costs more per block than a Tier 8 Fabricator.$(br2)Printing always costs a little $(l)more$() than the matter is worth. Stack $(l)4 Efficiency modules$() to reach exact break-even (1:1); you can never print matter for less than it's worth. Per-tier efficiencies are in the config."
     }
   ]
 }

@@ -1,0 +1,13 @@
+{
+  "name": "Other pauses",
+  "category": "mc3dprint:faq",
+  "icon": "minecraft:hopper",
+  "sortnum": 6,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "title": "Other Pauses",
+      "text": "If a print stalls without saying Not Printable, check the status line:$(br)$(li)$(l)No Power$() — feed it more RF$(li)$(l)No Filament$() — dock a fuller / higher-tier spool$(li)$(l)Output Full$() — clear the bottom output$(li)$(l)Obstructed$() — clear the build area (the printer never overwrites blocks)$(br2)Every pause is recoverable — fix the cause and the job resumes where it left off."
+    }
+  ]
+}

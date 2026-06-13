@@ -1,0 +1,13 @@
+{
+  "name": "Auto vs Manual",
+  "category": "mc3dprint:faq",
+  "icon": "mc3dprint:speed_upgrade",
+  "sortnum": 3,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "title": "Why did it print immediately?",
+      "text": "$(l)Auto$() defaults $(l)OFF$(). With Auto off, loading a disc only arms the printer ($(l)Ready$()) — press $(l)Start$() (or pulse redstone) to begin. A manual Start prints $(l)one$() item, or runs one structure job.$(br2)Flip $(l)Auto ON$() and the printer starts the moment a printable disc or item lands, and keeps going. If a print began on its own, Auto is on."
+    }
+  ]
+}

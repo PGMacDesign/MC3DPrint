@@ -5,15 +5,9 @@
   "sortnum": 3,
   "pages": [
     {
-      "type": "patchouli:image",
-      "images": ["mc3dprint:textures/patchouli/print_flow.png"],
-      "title": "Scan, Disc, Print",
-      "border": true,
-      "text": "The whole loop: $(l)scan$() a build with the Structure Scanner, save it to a $(l)disc$(), then $(l)print$() it anywhere a printer can reach."
-    },
-    {
       "type": "patchouli:text",
-      "text": "Scans are stored as $(l)blueprints$() in the world save; a $(item)Blueprint Disc$() is the key that references one. Shift+Right Click a written disc to $(l)lock$() it against being overwritten.$(br2)Discs also turn up in $(l)village and exploration loot$() — print what you find, no scanning required."
+      "title": "Scan, Disc, Print",
+      "text": "The whole loop: $(l)scan$() a build with the Structure Scanner, save it to a $(l)disc$(), then $(l)print$() it anywhere a printer can reach.$(br2)Scans are stored as $(l)blueprints$() in the world save; a $(item)Blueprint Disc$() is the key that references one. Shift+Right Click a written disc to $(l)lock$() it against being overwritten.$(br2)Discs also turn up in $(l)village and exploration loot$() — print what you find, no scanning required."
     },
     {
       "type": "patchouli:text",

@@ -6,7 +6,7 @@
   "pages": [
     {
       "type": "patchouli:text",
-      "text": "Printer I/O is simple by design:$(br)$(li)$(l)Top$() — input (templates, discs)$(li)$(l)Bottom$() — output (prints, ejected discs)$(li)$(l)Sides$() — filament spools $(l)only$()$(br2)Hoppers work from Tier 1, and any pipe mod that respects inventory faces works too."
+      "text": "Printer I/O:$(br)$(li)$(l)Top$() — input (templates, discs)$(li)$(l)Bottom$() — output (prints, ejected discs)$(li)$(l)Sides$() — filament spools $(l)only$()$(br2)Hoppers work from Tier 1, and any pipe mod that respects inventory faces works too."
     },
     {
       "type": "patchouli:text",

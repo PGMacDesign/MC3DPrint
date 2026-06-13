@@ -1,0 +1,13 @@
+{
+  "name": "My structure is mixed",
+  "category": "mc3dprint:faq",
+  "icon": "mc3dprint:blueprint_disc",
+  "sortnum": 1,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "title": "Mixed Structures",
+      "text": "For a $(l)structure$() print, the machine doesn't refuse the whole job over a few bad blocks — it $(l)skips$() any block it can't print (too high a tier, or un-priced) and builds everything else.$(br2)Only an $(l)item$() print, or a structure where $(l)nothing$() is printable, shows Not Printable outright."
+    }
+  ]
+}

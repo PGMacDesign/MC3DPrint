@@ -11,14 +11,17 @@ draw on a transparent 256x256 and keep every diagram inside the top 200px.
 
 Images written (all 256x256):
   layout_3x3.png  layout_5x5.png  layout_7x7.png  layout_9x9.png
-      Top-down multiblock base diagrams for T5/T6/T7/T8. Corner cells labelled
-      (casing, or AWAKENED for T8), centre cell = controller.
-  printer_gui.png
-      Annotated printer GUI: energy bar, template slot, output slot, filament
-      bar, upgrade slots, status line, X/Y/Z offset buttons. Geometry mirrors
-      tools/gen_printer_gui.py / PrinterMenu so the diagram matches the game.
-  print_flow.png
-      "Scan -> Disc -> Print" flow diagram.
+      Top-down multiblock base diagrams for T5/T6/T7/T8. Centre cell =
+      controller. Corner cells are tier-dependent: T5 = Diamond Block (cyan),
+      T6/T7 = Printer Casing, T8 = Awakened Draconium (magenta). Titles, the
+      corner caption, and the "N casing + 1 controller" caption are font-fitted
+      and centered so nothing clips.
+
+  printer_gui.png / print_flow.png (NO LONGER GENERATED)
+      The printer-GUI and Scan->Disc->Print flow images were removed from the
+      guidebook (outdated / inaccurate). Their builders remain below for
+      reference but main() does not call them, and any stale copies in the
+      output directory are pruned.
 
 Run from repo root:
     python3 tools/gen_guide_images.py
@@ -135,15 +138,21 @@ def backdrop(draw, x, y, w, h, fill=FIELD):
     draw.line([(x + 2, y + 4), (x + w - 3, y + 4)], fill=ACCENT_DIM)
 
 
-def title_bar(draw, text, accent=ACCENT):
-    """Top title strip used by every diagram. Auto-shrinks to fit the canvas."""
+def title_bar(draw, text, accent=ACCENT, top=10, underline_y=33):
+    """Top title strip used by every diagram. Auto-shrinks to fit the canvas.
+
+    Returns the y of the underline so callers can lay content out below it
+    without overlapping. ``top`` leaves a margin so the glyph ascenders are
+    never clipped at the canvas edge.
+    """
     font = _fit_font(draw, text, 18, W - 24)
-    _text_center(draw, W // 2, 8, text, font, WHITE)
-    # underline in the accent colour
+    _text_center(draw, W // 2, top, text, font, WHITE)
+    # underline in the accent colour, sized to the (possibly shrunk) title
     tw = draw.textlength(text, font=font)
     x0 = int(W // 2 - tw / 2)
     x1 = int(W // 2 + tw / 2)
-    draw.line([(x0, 32), (x1, 32)], fill=accent, width=2)
+    draw.line([(x0, underline_y), (x1, underline_y)], fill=accent, width=2)
+    return underline_y
 
 
 def bevel_cell(draw, x, y, s, fill, hi, lo):
@@ -158,20 +167,62 @@ def bevel_cell(draw, x, y, s, fill, hi, lo):
 # ---------------------------------------------------------------------------
 # Multiblock layout diagrams (top-down)
 # ---------------------------------------------------------------------------
+# Corner-block styling per tier. T5 corners are Diamond Blocks (cyan), T6/T7
+# corners are ordinary Printer Casing, T8 corners are Awakened Draconium.
+DIAMOND      = (0x4A, 0xC7, 0xCE, 255)  # diamond/cyan corner face
+DIAMOND_HI   = (0x7C, 0xE6, 0xEC, 255)
+DIAMOND_LO   = (0x2C, 0x86, 0x8C, 255)
+DRACONIUM    = (0xC0, 0x3A, 0x8A, 255)  # awakened draconium (magenta)
+DRACONIUM_HI = (0xE0, 0x60, 0xB0, 255)
+DRACONIUM_LO = (0x70, 0x20, 0x50, 255)
+
+
+def _corner_style(tier):
+    """(fill, hi, lo, caption) for a tier's four base corners.
+
+    T5 → Diamond Block, T8 → Awakened Draconium, T6/T7 → plain Printer Casing.
+    """
+    if tier == 5:
+        return DIAMOND, DIAMOND_HI, DIAMOND_LO, "corners = Diamond Block"
+    if tier == 8:
+        return (DRACONIUM, DRACONIUM_HI, DRACONIUM_LO,
+                "corners = Awakened Draconium")
+    return CASING, CASING_HI, CASING_LO, "corners = Printer Casing"
+
+
 def gen_layout(tier, edge):
-    """Top-down N×N base: corners = casing (AWAKENED for T8), centre = controller."""
+    """Top-down N×N base diagram.
+
+    Vertical budget (256px canvas, content kept in the top 200px):
+      title (centered, with top margin)         y ~  6
+      title underline                           y = 30
+      corner caption band (own row)             y = 38
+      grid (centered square, fixed top)         y = 56 .. 56+grid_px
+      controller caption                        below the grid
+      "N casing + 1 controller" caption         below that
+      "right-click controller to form" caption  below that
+    Everything is centered and font-fitted so no title or caption is clipped.
+    """
     img, draw = new_canvas()
     accent = TIER[tier]
-    title_bar(draw, f"Tier {tier}  -  {edge}x{edge} Base", accent)
+    underline_y = title_bar(draw, f"Tier {tier}  -  {edge}x{edge} Base", accent)
 
-    # grid geometry: fit the edge×edge grid into a ~118px square, centered, with
-    # headroom above (corner caption) and below (controller + form captions).
-    grid_px = 118
-    cell = grid_px // edge
+    c_fill, c_hi, c_lo, corner_label = _corner_style(tier)
+
+    # --- corner caption: its own row between the underline and the grid, so it
+    # never overlaps the title or the top of the grid. Font-fit to the canvas.
+    corner_cap_y = underline_y + 6
+    corner_font = _fit_font(draw, corner_label, 12, W - 16)
+    _text_center(draw, W // 2, corner_cap_y, corner_label, corner_font, LABEL)
+
+    # --- grid geometry: a centered square. Cell size is chosen so the whole
+    # grid fits a fixed footprint regardless of edge count, then re-centered.
+    grid_box = 116                      # target footprint for the N×N grid
+    cell = max(8, grid_box // edge)
     grid_px = cell * edge
     gap = max(1, cell // 12)
-    gx = (W - grid_px) // 2
-    gy = 48
+    gx = (W - grid_px) // 2             # horizontal centering
+    gy = corner_cap_y + 14              # grid starts just below the caption row
 
     half = edge // 2
     for r in range(edge):
@@ -186,37 +237,38 @@ def gen_layout(tier, edge):
                 bevel_cell(draw, x, y, inner, accent,
                            tuple(min(255, v + 40) for v in accent[:3]) + (255,),
                            tuple(max(0, v - 50) for v in accent[:3]) + (255,))
-                # emissive dot
                 ccx, ccy = x + inner // 2, y + inner // 2
                 draw.ellipse([ccx - 3, ccy - 3, ccx + 3, ccy + 3], fill=GLOW_CORE)
-            elif is_corner and tier == 8:
-                # AWAKENED draconium corner (magenta-tinted)
-                drac = (0xC0, 0x3A, 0x8A, 255)
-                bevel_cell(draw, x, y, inner, drac,
-                           (0xE0, 0x60, 0xB0, 255), (0x70, 0x20, 0x50, 255))
+            elif is_corner:
+                bevel_cell(draw, x, y, inner, c_fill, c_hi, c_lo)
             else:
                 bevel_cell(draw, x, y, inner, CASING, CASING_HI, CASING_LO)
 
-    # corner label: leader from the top-left corner cell up to a caption that
-    # sits ABOVE the grid (between the title underline and the grid top).
+    # leader from the top-left corner cell up to the corner caption row.
     corner_cx = gx + cell // 2
     corner_cy = gy + cell // 2
-    corner_label = ("corners = Awakened Draconium" if tier == 8
-                    else "corners = Printer Casing")
-    draw.line([(corner_cx, corner_cy), (gx + 4, gy - 5)], fill=LABEL_DIM)
-    _text_center(draw, W // 2, 36, corner_label, FONT_SMALL, LABEL)
+    draw.line([(corner_cx, corner_cy), (corner_cx, corner_cap_y + 10)],
+              fill=LABEL_DIM)
 
-    # controller label (center cell) — leader down to a caption below the grid.
+    # --- controller caption: leader from the centre cell down to a caption row.
     cen_cx = gx + half * cell + cell // 2
     cen_cy = gy + half * cell + cell // 2
-    label_y = gy + grid_px + 6
-    draw.line([(cen_cx, cen_cy), (cen_cx, label_y)], fill=accent)
-    _text_center(draw, cen_cx, label_y, "controller (center)", FONT_SMALL, accent)
+    ctrl_y = gy + grid_px + 8
+    draw.line([(cen_cx, cen_cy), (cen_cx, ctrl_y)], fill=accent)
+    _text_center(draw, cen_cx, ctrl_y, "controller (center)", FONT_SMALL, accent)
 
-    # footer: how to form (two short centred lines, well below the grid)
-    _text_center(draw, W // 2, label_y + 16,
-                 f"{edge*edge - 1} casing  +  1 controller", FONT_SMALL, LABEL_DIM)
-    _text_center(draw, W // 2, label_y + 30,
+    # --- footer captions: how to form. Font-fit the count line so even
+    # "80 casing + 1 controller" fits fully on the canvas.
+    base_cells = edge * edge - 1        # all base cells except the controller
+    if tier == 5 or tier == 8:
+        # four corners are special blocks, the rest are Printer Casing
+        casing = base_cells - 4
+        count_txt = f"{casing} casing + 4 corners + 1 controller"
+    else:
+        count_txt = f"{base_cells} casing + 1 controller"
+    count_font = _fit_font(draw, count_txt, 11, W - 12)
+    _text_center(draw, W // 2, ctrl_y + 16, count_txt, count_font, LABEL_DIM)
+    _text_center(draw, W // 2, ctrl_y + 30,
                  "right-click controller to form", FONT_SMALL, LABEL_DIM)
     return img
 
@@ -390,15 +442,16 @@ def main():
         img.save(path)
         written.append(path)
 
-    gui = gen_printer_gui()
-    gui_path = os.path.join(OUT_DIR, "printer_gui.png")
-    gui.save(gui_path)
-    written.append(gui_path)
-
-    flow = gen_print_flow()
-    flow_path = os.path.join(OUT_DIR, "print_flow.png")
-    flow.save(flow_path)
-    written.append(flow_path)
+    # NOTE: printer_gui.png and print_flow.png are no longer referenced by the
+    # guidebook (the screenshots were outdated / inaccurate and those image
+    # pages were removed). The gen_printer_gui() / gen_print_flow() builders are
+    # kept below for reference but are intentionally not invoked. Any stale PNGs
+    # left in OUT_DIR are pruned so the asset set matches what the book uses.
+    for stale in ("printer_gui.png", "print_flow.png"):
+        sp = os.path.join(OUT_DIR, stale)
+        if os.path.exists(sp):
+            os.remove(sp)
+            print("removed (unused)", sp)
 
     for p in written:
         print("wrote", p)

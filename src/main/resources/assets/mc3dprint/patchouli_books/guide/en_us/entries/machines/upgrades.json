@@ -6,7 +6,7 @@
   "pages": [
     {
       "type": "patchouli:text",
-      "text": "Every printer has upgrade slots equal to its tier (a Tier 3 printer has 3 slots). Shift+Right Click a module onto the machine to install it, or drop it into an upgrade slot in the GUI:$(br)$(li)$(item)Speed$() — faster printing$(li)$(item)Efficiency$() — less FU per print$(li)$(item)RF Efficiency$() — less power$(li)$(item)Buffer$() — bigger RF tank$(br2)You can install at most $(l)4 of any one type$() per machine."
+      "text": "Every printer has upgrade slots equal to its tier (a Tier 3 printer has 3 slots). Shift+Right Click a module onto the machine to install it, or drop it into an upgrade slot in the GUI:$(br)$(li)$(item)Speed$() — faster printing$(li)$(item)Efficiency$() — less FU per print$(li)$(item)RF Efficiency$() — less RF power used per print$(li)$(item)Buffer$() — bigger RF tank$(br2)You can install at most $(l)4 of any one type$() per machine."
     },
     {
       "type": "patchouli:crafting",
