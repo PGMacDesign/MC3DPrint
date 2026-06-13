@@ -73,11 +73,24 @@ public class ControllerBlock extends PrinterBlock {
             collapsed.getOrCreateTag().putBoolean(FabricatorBlockItem.TAG_COLLAPSED, true);
             collapsed.getOrCreateTag().put("BlockEntityTag", printer.saveWithoutMetadata());
 
+            Block cornerBlock = MultiblockPattern.cornerBlock(tier());
             for (BlockPos offset : MultiblockPattern.componentOffsets(tier())) {
                 BlockPos componentPos = pos.offset(offset);
-                if (isOwnComponent(level, componentPos)) {
-                    level.removeBlock(componentPos, false);
+                if (!isOwnComponent(level, componentPos)) {
+                    continue;
                 }
+                // Premium CORNER blocks (T5 diamond, T8 draconium) are valuable —
+                // drop them so the player recovers them instead of vanishing. Plain
+                // casings are consumed into the collapsed controller item as before.
+                boolean isPremiumCorner = cornerBlock != null
+                        && !player.getAbilities().instabuild // creative: no drops, same as the controller item
+                        && MultiblockPattern.isCorner(offset, tier())
+                        && level.getBlockState(componentPos).getBlock() == cornerBlock;
+                if (isPremiumCorner) {
+                    Block.popResource(level, componentPos,
+                            new ItemStack(level.getBlockState(componentPos).getBlock()));
+                }
+                level.removeBlock(componentPos, false);
             }
             if (!player.getAbilities().instabuild) {
                 level.addFreshEntity(new ItemEntity(level,
@@ -89,15 +102,18 @@ public class ControllerBlock extends PrinterBlock {
 
     private boolean isOwnComponent(Level level, BlockPos pos) {
         Block block = level.getBlockState(pos).getBlock();
-        return block instanceof CasingBlock || (tier() == MachineTier.T8 && !(block instanceof ControllerBlock)
-                && !level.getBlockState(pos).isAir() && isAwakenedCorner(level, pos));
+        return block instanceof CasingBlock || isTierCorner(block);
     }
 
-    private boolean isAwakenedCorner(Level level, BlockPos pos) {
-        // T8 corners are DE blocks — only remove them if DE is actually present
-        var key = net.minecraftforge.registries.ForgeRegistries.BLOCKS
-                .getKey(level.getBlockState(pos).getBlock());
-        return key != null && key.getNamespace().equals(MultiblockPattern.DRACONIC_MOD_ID);
+    /**
+     * Whether {@code block} is this tier's premium corner block (T5 diamond,
+     * T8 awakened draconium). Returns false when the tier has no corner block
+     * (T6/T7 corners are plain casing) or the corner block is unavailable
+     * (e.g. T8 with Draconic Evolution not loaded).
+     */
+    private boolean isTierCorner(Block block) {
+        Block corner = MultiblockPattern.cornerBlock(tier());
+        return corner != null && block == corner;
     }
 
     /**
@@ -124,8 +140,9 @@ public class ControllerBlock extends PrinterBlock {
      * Flips the ACTIVE flag on every Printer Casing in the controller's base so
      * the structure glows when formed and goes dark when unformed, and assigns
      * each casing the part its TOP face plays in the unified printer (rail, corner
-     * or bed) based on its offset. T8's four Awakened-Draconium corners are not
-     * casings and are left untouched.
+     * or bed) based on its offset. A tier's premium corner blocks (T5 diamond,
+     * T8 Awakened Draconium) are not casings and are left untouched, so they keep
+     * rendering as themselves at the corners.
      */
     private static void setComponentsActive(Level level, BlockPos controllerPos, MachineTier tier,
                                             boolean active, @Nullable BlockPos excludePos) {

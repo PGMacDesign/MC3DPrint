@@ -94,6 +94,7 @@
   "message.mc3dprint.multiblock_formed": "Tier %s Fabricator formed",
   "message.mc3dprint.multiblock_needs_casing": "Invalid structure — expected Printer Casing at %s, %s, %s",
   "message.mc3dprint.multiblock_needs_awakened": "Invalid structure — expected Awakened Draconium at %s, %s, %s",
+  "message.mc3dprint.multiblock_needs_diamond": "Invalid structure — expected a Block of Diamond at %s, %s, %s",
   "message.mc3dprint.t8_requires_draconic": "The Tier 8 Fabricator requires Draconic Evolution",
   "message.mc3dprint.reform_blocked": "Not enough clear space to re-form the Fabricator",
   "tooltip.mc3dprint.collapsed_fabricator": "Collapsed machine — place to re-form, fully intact",

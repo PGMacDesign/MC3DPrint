@@ -7,6 +7,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.registries.ForgeRegistries;
 
@@ -18,8 +19,10 @@ import java.util.List;
  * T5-T8 multiblock layout: the controller sits at the center of an N×N base
  * of Printer Casing blocks (T5 3×3 ... T8 9×9), all on the controller's Y level.
  *
- * T8 additionally requires Draconic Evolution: the four base corners must be
- * Awakened Draconium blocks, and formation refuses outright without DE loaded.
+ * Some tiers require premium blocks at the four base corners instead of plain
+ * casing (see {@link #cornerBlock}): T5 needs Diamond Blocks; T8 needs Awakened
+ * Draconium and refuses to form outright without Draconic Evolution loaded.
+ * T6/T7 corners are plain casing for now.
  */
 public final class MultiblockPattern {
     public static final String DRACONIC_MOD_ID = "draconicevolution";
@@ -53,9 +56,30 @@ public final class MultiblockPattern {
         return offsets;
     }
 
-    private static boolean isCorner(BlockPos offset, MachineTier tier) {
+    public static boolean isCorner(BlockPos offset, MachineTier tier) {
         int half = baseEdge(tier) / 2;
         return Math.abs(offset.getX()) == half && Math.abs(offset.getZ()) == half;
+    }
+
+    /**
+     * The premium block required at this tier's four base corners, or {@code null}
+     * when the corners are plain Printer Casing like every other base cell.
+     *
+     * <ul>
+     *   <li>T5 → {@link Blocks#DIAMOND_BLOCK}</li>
+     *   <li>T6, T7 → {@code null} (plain casing for now; a later rebalance assigns these)</li>
+     *   <li>T8 → the Draconic Evolution Awakened Draconium block, or {@code null} if DE
+     *       is not loaded / the block is not registered</li>
+     * </ul>
+     */
+    @Nullable
+    public static Block cornerBlock(MachineTier tier) {
+        return switch (tier) {
+            case T5 -> Blocks.DIAMOND_BLOCK;
+            case T8 -> AWAKENED_DRACONIUM != null
+                    ? ForgeRegistries.BLOCKS.getValue(AWAKENED_DRACONIUM) : null;
+            default -> null;
+        };
     }
 
     /** Null when valid; otherwise the user-facing error. */
@@ -64,16 +88,14 @@ public final class MultiblockPattern {
         if (tier == MachineTier.T8 && !ModList.get().isLoaded(DRACONIC_MOD_ID)) {
             return Component.translatable("message.mc3dprint.t8_requires_draconic");
         }
-        Block awakened = tier == MachineTier.T8 && AWAKENED_DRACONIUM != null
-                ? ForgeRegistries.BLOCKS.getValue(AWAKENED_DRACONIUM) : null;
+        Block corner = cornerBlock(tier);
 
         for (BlockPos offset : componentOffsets(tier)) {
             BlockPos pos = controller.offset(offset);
             Block found = level.getBlockState(pos).getBlock();
-            if (tier == MachineTier.T8 && isCorner(offset, tier)) {
-                if (awakened == null || found != awakened) {
-                    return Component.translatable("message.mc3dprint.multiblock_needs_awakened",
-                            pos.getX(), pos.getY(), pos.getZ());
+            if (corner != null && isCorner(offset, tier)) {
+                if (found != corner) {
+                    return cornerError(tier, pos);
                 }
             } else if (found != ModBlocks.PRINTER_CASING.get()) {
                 return Component.translatable("message.mc3dprint.multiblock_needs_casing",
@@ -81,5 +103,12 @@ public final class MultiblockPattern {
             }
         }
         return null;
+    }
+
+    private static Component cornerError(MachineTier tier, BlockPos pos) {
+        String key = tier == MachineTier.T5
+                ? "message.mc3dprint.multiblock_needs_diamond"
+                : "message.mc3dprint.multiblock_needs_awakened";
+        return Component.translatable(key, pos.getX(), pos.getY(), pos.getZ());
     }
 }
