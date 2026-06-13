@@ -21,7 +21,7 @@ import net.minecraftforge.gametest.PrefixGameTestTemplate;
  * PRINT time conversion is down-only — high-tier FU covers low-tier costs at
  * the compounded ratio; low-tier FU contributes nothing toward higher-tier
  * costs. At the WINDER the rule is exact-tier: a material only winds into a
- * spool of its own tier (netherite → T5 spool, never a T1 spool).
+ * spool of its own tier (netherite → T6 spool, never a T1 spool).
  */
 @GameTestHolder(MC3DPrint.MOD_ID)
 @PrefixGameTestTemplate(false)
@@ -158,8 +158,8 @@ public class FuTierEconomyGameTests {
         var netherite = com.pgmacdesign.mc3dprint.fu.FuValueRegistry.valueOf(new ItemStack(Items.NETHERITE_BLOCK));
         var diamond = com.pgmacdesign.mc3dprint.fu.FuValueRegistry.valueOf(new ItemStack(Items.DIAMOND_BLOCK));
         var iron = com.pgmacdesign.mc3dprint.fu.FuValueRegistry.valueOf(new ItemStack(Items.IRON_BLOCK));
-        if (netherite.isEmpty() || netherite.get().fu() != 4500 || netherite.get().tier() != 5) {
-            helper.fail("Netherite block should be 4500 FU @ T5, got " + netherite);
+        if (netherite.isEmpty() || netherite.get().fu() != 4500 || netherite.get().tier() != 6) {
+            helper.fail("Netherite block should be 4500 FU @ T6, got " + netherite);
         } else if (diamond.isEmpty() || diamond.get().fu() != 450 || diamond.get().tier() != 5) {
             helper.fail("Diamond block should be 450 FU @ T5, got " + diamond);
         } else if (iron.isEmpty() || iron.get().fu() != 180 || iron.get().tier() != 2) {

@@ -6,6 +6,7 @@ import com.pgmacdesign.mc3dprint.fu.FuValue;
 import com.pgmacdesign.mc3dprint.fu.FuValueRegistry;
 import com.pgmacdesign.mc3dprint.fu.SpoolItem;
 import com.pgmacdesign.mc3dprint.registry.ModBlockEntities;
+import com.pgmacdesign.mc3dprint.registry.ModItemTags;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
@@ -31,6 +32,11 @@ import java.util.Optional;
  * Right-click with an item to set the filter; sneak+empty hand clears it.
  * Only converts when a docked spool can hold the full yield — no FU is ever
  * stranded or voided. Consumes winder-rate RF per item.
+ *
+ * <p>Honors the same {@link ModItemTags#WINDER_BLACKLIST} gate as the Filament
+ * Winder: a blacklisted filter item (e.g. a stick) is never pulled or
+ * converted, so the converter can't be used to automate the FU-laundering
+ * exploit the winder blocks. See that tag's javadoc.
  */
 public class FilamentConverterBlockEntity extends BlockEntity {
     private final MachineEnergyStorage energy = new MachineEnergyStorage(
@@ -69,7 +75,11 @@ public class FilamentConverterBlockEntity extends BlockEntity {
         cooldown = 0;
 
         Optional<FuValue> value = FuValueRegistry.valueOf(filter);
-        if (value.isEmpty() || !energy.hasAtLeast(MC3DPrintConfig.WINDER_RF_PER_ITEM.get())) {
+        // Same gate as the winder: a blacklisted filter still has an FU value
+        // but must never be converted (it would automate the stick-laundering
+        // exploit). Bail before pulling so blacklisted items are left in place.
+        if (value.isEmpty() || filter.is(ModItemTags.WINDER_BLACKLIST)
+                || !energy.hasAtLeast(MC3DPrintConfig.WINDER_RF_PER_ITEM.get())) {
             return;
         }
 

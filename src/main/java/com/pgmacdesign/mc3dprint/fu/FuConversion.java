@@ -14,7 +14,7 @@ import com.pgmacdesign.mc3dprint.config.MC3DPrintConfig;
  * compounded ratio, but low-tier FU contributes nothing toward higher-tier
  * costs ({@link #canCover}). At the winder the rule is stricter: a material
  * only winds into a spool of its <em>exact</em> tier ({@link #canWindInto}) —
- * netherite (T5) needs a T5 spool, cobblestone (T1) needs a T1 spool. Together
+ * netherite (T6) needs a T6 spool, cobblestone (T1) needs a T1 spool. Together
  * these stop cobblestone farming from ever reaching a high-tier spool.
  *
  * Methods take the ratio as a parameter so the math is unit-testable without

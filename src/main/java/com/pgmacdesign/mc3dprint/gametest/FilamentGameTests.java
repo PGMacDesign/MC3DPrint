@@ -112,6 +112,53 @@ public class FilamentGameTests {
     }
 
     @GameTest(template = "empty5", timeoutTicks = 150)
+    public static void winderRefusesBlacklistedStick(GameTestHelper helper) {
+        BlockPos pos = new BlockPos(2, 1, 2);
+        helper.setBlock(pos, ModBlocks.FILAMENT_WINDER.get());
+        if (!(helper.getBlockEntity(pos) instanceof WinderBlockEntity winder)) {
+            throw new GameTestAssertException("Winder block entity missing");
+        }
+        winder.getCapability(ForgeCapabilities.ENERGY).ifPresent(energy -> {
+            for (int i = 0; i < 20; i++) {
+                energy.receiveEnergy(1_000, false);
+            }
+        });
+
+        // The exploit premise: a stick HAS an FU value (derived from planks),
+        // so without the blacklist it would wind into FU. The winder must still
+        // refuse it because it's on WINDER_BLACKLIST (FU laundering guard).
+        var stickValue = com.pgmacdesign.mc3dprint.fu.FuValueRegistry
+                .valueOf(new ItemStack(Items.STICK));
+        if (stickValue.isEmpty() || stickValue.get().fu() <= 0) {
+            helper.fail("Stick should have a derived FU value > 0 (the laundering premise)");
+            return;
+        }
+
+        // stick is T1 (derives from planks @ T1), so a T1 spool is the *matching*
+        // spool — the only reason it won't wind is the blacklist, not a tier miss.
+        winder.inventory().setStackInSlot(WinderBlockEntity.SLOT_INPUT, new ItemStack(Items.STICK, 4));
+        winder.inventory().setStackInSlot(WinderBlockEntity.SLOT_SPOOL, new ItemStack(ModItems.SPOOLS.get(0).get()));
+
+        helper.runAfterDelay(80, () -> {
+            ItemStack spool = winder.inventory().getStackInSlot(WinderBlockEntity.SLOT_SPOOL);
+            if (SpoolItem.getFu(spool) != 0) {
+                helper.fail("Blacklisted stick wound " + SpoolItem.getFu(spool) + " FU; expected 0");
+                return;
+            }
+            if (winder.inventory().getStackInSlot(WinderBlockEntity.SLOT_INPUT).isEmpty()) {
+                helper.fail("Blacklisted stick was consumed");
+                return;
+            }
+            // and the GUI reads as not-convertible (reused status, no new lang)
+            if (winder.winderStatus() != WinderBlockEntity.STATUS_NOT_CONVERTIBLE) {
+                helper.fail("Expected NOT_CONVERTIBLE for blacklisted stick, got " + winder.winderStatus());
+                return;
+            }
+            helper.succeed();
+        });
+    }
+
+    @GameTest(template = "empty5", timeoutTicks = 150)
     public static void printerWithoutFilamentPauses(GameTestHelper helper) {
         BlockPos pos = new BlockPos(2, 1, 2);
         helper.setBlock(pos, ModBlocks.TIER1_PRINTER.get());

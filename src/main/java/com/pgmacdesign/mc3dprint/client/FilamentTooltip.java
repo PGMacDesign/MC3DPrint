@@ -29,9 +29,9 @@ public final class FilamentTooltip {
             0x9E9E9E, // T1 stone gray
             0x8FC7E8, // T2 copper/iron blue
             0xE06666, // T3 redstone red
-            0x4FE0C8, // T4 diamond cyan
-            0xC8803A, // T5 netherite brown
-            0xF2E25C, // T6 gold
+            0x4FE0C8, // T4 emerald cyan
+            0xC8803A, // T5 diamond (was netherite; netherite is now T6)
+            0xF2E25C, // T6 netherite brown — netherite moved up from T5 to T6
             0xB96BE6, // T7 nether star / dragon purple
             0xFF5FA8, // T8 draconic magenta
     };

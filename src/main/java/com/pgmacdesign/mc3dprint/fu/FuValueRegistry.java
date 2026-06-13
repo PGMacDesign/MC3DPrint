@@ -258,8 +258,10 @@ public final class FuValueRegistry {
                 "minecraft:emerald=50@4",
                 // 50 FU @ T5 — diamond (mined; gated above emerald per 2026-06-11 decision)
                 "minecraft:diamond=50@5",
-                // T5+
-                "minecraft:netherite_ingot=500@5", "minecraft:ancient_debris=125@5",
+                // T6 — netherite family (ancient_debris, scrap, ingot all T6;
+                // netherite_block derives from 9x ingot -> 4500@6)
+                "minecraft:netherite_ingot=500@6", "minecraft:netherite_scrap=125@6",
+                "minecraft:ancient_debris=125@6",
                 "minecraft:nether_star=1500@7",
                 "minecraft:dragon_egg=2500@7");
         // NOTE: storage/material blocks (diamond_block, iron_block, ...) are no

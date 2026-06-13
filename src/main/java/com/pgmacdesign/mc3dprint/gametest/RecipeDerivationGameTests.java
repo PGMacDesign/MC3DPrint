@@ -58,8 +58,8 @@ public class RecipeDerivationGameTests {
     }
 
     @GameTest(template = "empty5", timeoutTicks = 100)
-    public static void netheriteBlockDerivesTo4500T5(GameTestHelper helper) {
-        expect(helper, "netherite_block", Items.NETHERITE_BLOCK, 4500, 5);
+    public static void netheriteBlockDerivesTo4500T6(GameTestHelper helper) {
+        expect(helper, "netherite_block", Items.NETHERITE_BLOCK, 4500, 6);
         helper.succeed();
     }
 
@@ -80,9 +80,10 @@ public class RecipeDerivationGameTests {
 
     @GameTest(template = "empty5", timeoutTicks = 100)
     public static void craftedItemDerivesAndInheritsTier(GameTestHelper helper) {
-        // diamond_sword = 2 diamond (50@5) + 1 stick; sticks are unvalued, so the
-        // recipe is only usable if sticks resolve from planks (#planks=3@1).
-        // value = floor((50+50+3)/1) = 103, tier = max(5,1) = 5.
+        // diamond_sword = 2 diamond (50@5) + 1 stick; sticks have no explicit FU
+        // entry but DERIVE a value from planks (#planks=3@1) — that derived stick
+        // value is exactly why sticks are on the winder blacklist (printable, but
+        // not windable back into filament). value = floor((50+50+3)/1) = 103, tier = 5.
         FuValue sword = value(Items.DIAMOND_SWORD);
         if (sword.tier() != 5) {
             helper.fail("diamond_sword should inherit T5 from diamond, got tier " + sword.tier());

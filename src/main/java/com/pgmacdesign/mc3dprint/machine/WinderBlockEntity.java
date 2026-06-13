@@ -6,6 +6,7 @@ import com.pgmacdesign.mc3dprint.fu.FuValue;
 import com.pgmacdesign.mc3dprint.fu.FuValueRegistry;
 import com.pgmacdesign.mc3dprint.fu.SpoolItem;
 import com.pgmacdesign.mc3dprint.registry.ModBlockEntities;
+import com.pgmacdesign.mc3dprint.registry.ModItemTags;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
@@ -34,8 +35,12 @@ import java.util.Optional;
  * Filament Winder: converts materials into FU wound onto a spool. RF is
  * consumed at winding per the design doc. A single universal winder handles
  * every tier; the gate is the spool — a material only winds into a spool of
- * its exact tier (netherite needs a T5 spool, cobblestone a T1 spool), which
+ * its exact tier (netherite needs a T6 spool, cobblestone a T1 spool), which
  * closes the print-tier bypass without a winder tier ladder.
+ *
+ * <p>A second gate is the {@link ModItemTags#WINDER_BLACKLIST} item tag:
+ * items that can still be printed but must never be wound (e.g. sticks, to
+ * stop FU laundering through cheap micro-crafts). See that tag's javadoc.
  */
 public class WinderBlockEntity extends BlockEntity implements MenuProvider {
     public static final int SLOT_INPUT = 0;
@@ -100,9 +105,13 @@ public class WinderBlockEntity extends BlockEntity implements MenuProvider {
         ItemStack spool = inventory.getStackInSlot(SLOT_SPOOL);
 
         // exact-tier rule (hard product rule): a material only winds into a
-        // spool of its own tier — no tiering up, and no lossy tiering down here
+        // spool of its own tier — no tiering up, and no lossy tiering down here.
+        // The WINDER_BLACKLIST check sits in the SAME guard as the "no FU value"
+        // check: a blacklisted input (e.g. a stick) still has an FU value — it
+        // just must never be wound, to stop FU laundering. See ModItemTags.
         Optional<FuValue> value = FuValueRegistry.valueOf(input);
         if (value.isEmpty()
+                || input.is(ModItemTags.WINDER_BLACKLIST)
                 || !(spool.getItem() instanceof SpoolItem spoolItem) || spoolItem.creative()
                 || !FuConversion.canWindInto(value.get().tier(), spoolItem.tier())
                 || !energy.hasAtLeast(MC3DPrintConfig.WINDER_RF_PER_ITEM.get())) {
@@ -147,6 +156,14 @@ public class WinderBlockEntity extends BlockEntity implements MenuProvider {
         }
         Optional<FuValue> value = FuValueRegistry.valueOf(input);
         if (value.isEmpty()) {
+            return STATUS_NOT_CONVERTIBLE;
+        }
+        // Blacklisted inputs reuse STATUS_NOT_CONVERTIBLE on purpose: from the
+        // player's view a stick simply "can't be converted" here. Note this is
+        // a blacklist hit, NOT an unpriced item — the stack has an FU value,
+        // it's just barred from winding. Checked before the wrong-tier branch so
+        // it reports not-convertible regardless of the docked spool's tier.
+        if (input.is(ModItemTags.WINDER_BLACKLIST)) {
             return STATUS_NOT_CONVERTIBLE;
         }
         ItemStack spool = inventory.getStackInSlot(SLOT_SPOOL);

@@ -260,7 +260,7 @@ public class StructurePrintGameTests {
 
     @GameTest(template = "empty5", timeoutTicks = 80)
     public static void highTierBlockBlocksUnderTierStructurePrint(GameTestHelper helper) {
-        // a netherite block is T5; on a T3 it's the ONLY (un-printable) block, so
+        // a netherite block is T6; on a T3 it's the ONLY (un-printable) block, so
         // there's nothing to build -> NOT_PRINTABLE, and it's never placed. This
         // keeps the "scan expensive blocks, print on a cheap machine" exploit shut.
         PrinterBlockEntity printer = poweredPrinter(helper, new BlockPos(2, 1, 2));
@@ -281,7 +281,7 @@ public class StructurePrintGameTests {
 
     @GameTest(template = "empty5", timeoutTicks = 300)
     public static void skipsUnprintableBlocksAndBuildsRest(GameTestHelper helper) {
-        // A MIXED structure: stone (T1, printable) + a netherite block (T5, above
+        // A MIXED structure: stone (T1, printable) + a netherite block (T6, above
         // a T3 machine). The T3 must SKIP the netherite and still build the stone
         // and complete the job, rather than refusing the whole print. Skipping
         // never places the netherite, so the tier gate is preserved.
