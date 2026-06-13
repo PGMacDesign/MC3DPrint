@@ -122,8 +122,10 @@ public class ControllerBlock extends PrinterBlock {
 
     /**
      * Flips the ACTIVE flag on every Printer Casing in the controller's base so
-     * the structure glows when formed and goes dark when unformed. T8's four
-     * Awakened-Draconium corners are not casings and are left untouched.
+     * the structure glows when formed and goes dark when unformed, and assigns
+     * each casing the part its TOP face plays in the unified printer (rail, corner
+     * or bed) based on its offset. T8's four Awakened-Draconium corners are not
+     * casings and are left untouched.
      */
     private static void setComponentsActive(Level level, BlockPos controllerPos, MachineTier tier,
                                             boolean active, @Nullable BlockPos excludePos) {
@@ -133,12 +135,41 @@ public class ControllerBlock extends PrinterBlock {
                 continue;
             }
             BlockState componentState = level.getBlockState(componentPos);
-            if (componentState.getBlock() instanceof CasingBlock
-                    && componentState.getValue(CasingBlock.ACTIVE) != active) {
-                level.setBlock(componentPos, componentState.setValue(CasingBlock.ACTIVE, active),
-                        Block.UPDATE_ALL);
+            if (!(componentState.getBlock() instanceof CasingBlock)) {
+                continue;
+            }
+            CasingBlock.CasingPart part = active
+                    ? partForOffset(offset.getX(), offset.getZ(), tier)
+                    : CasingBlock.CasingPart.NONE;
+            if (componentState.getValue(CasingBlock.ACTIVE) != active
+                    || componentState.getValue(CasingBlock.PART) != part) {
+                level.setBlock(componentPos, componentState
+                        .setValue(CasingBlock.ACTIVE, active)
+                        .setValue(CasingBlock.PART, part), Block.UPDATE_ALL);
             }
         }
+    }
+
+    /**
+     * Maps a casing's base-plane offset to its top-face part. +X=east, +Z=south.
+     * Corners take the four CORNER_* posts, perimeter edges take a rail oriented
+     * along the edge (E-W bar on the N/S edges, N-S bar on the E/W edges), and the
+     * remaining interior tiles are the heated BED.
+     */
+    private static CasingBlock.CasingPart partForOffset(int x, int z, MachineTier tier) {
+        int half = MultiblockPattern.baseEdge(tier) / 2;
+        if (Math.abs(x) == half && Math.abs(z) == half) {
+            if (x < 0 && z < 0) return CasingBlock.CasingPart.CORNER_NW;
+            if (x > 0 && z < 0) return CasingBlock.CasingPart.CORNER_NE;
+            if (x > 0 && z > 0) return CasingBlock.CasingPart.CORNER_SE;
+            return CasingBlock.CasingPart.CORNER_SW; // x < 0 && z > 0
+        }
+        if (Math.abs(x) == half || Math.abs(z) == half) {
+            return Math.abs(z) == half
+                    ? CasingBlock.CasingPart.RAIL_EW   // N/S edge: bar runs E-W
+                    : CasingBlock.CasingPart.RAIL_NS;  // E/W edge: bar runs N-S
+        }
+        return CasingBlock.CasingPart.BED;
     }
 
     @Override

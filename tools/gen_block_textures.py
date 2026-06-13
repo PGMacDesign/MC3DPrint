@@ -539,6 +539,67 @@ def printite_ore():
     return img
 
 
+# ---------------------------------------------------------------------------
+# Formed-multiblock casing TOP faces (16x16). When a controller forms its base,
+# each casing's top face becomes a part of one big top-down 3D printer: a frame
+# rail along the perimeter, a post at each corner, a heated bed in the interior.
+# These are the glowing/active look (they only show while formed). They tile
+# seamlessly so the whole N×N footprint reads as a single machine from above.
+# ---------------------------------------------------------------------------
+def casing_bed_top():
+    """Interior cell: a heated print-bed grid. Grid lines sit on the 4px lattice
+    (incl. tile edges) so they line up across cells; faint cyan at the nodes."""
+    img = new(S); px = acc(img)
+    rect(px, 0, 0, S, S, BODY[2])                    # machined bed surface
+    hline(px, 0, 0, S, BODY[1]); vline(px, 0, 0, S, BODY[1])     # top-left sheen
+    hline(px, 0, S - 1, S, BODY[3]); vline(px, S - 1, 0, S, BODY[3])
+    for g in range(0, S, 4):                          # tileable recessed grid
+        vline(px, g, 0, S, BODY[3]); hline(px, 0, g, S, BODY[3])
+    for gy in range(0, S, 4):                         # faint cyan heat at nodes
+        for gx in range(0, S, 4):
+            put(px, gx, gy, GLOW[3])
+    put(px, 8, 8, GLOW[2])                            # a little center shimmer
+    quantize_to_palette(img)
+    return img
+
+
+def casing_rail_top():
+    """Perimeter cell (base = N/S edge, an E-W extrusion). Runs edge-to-edge so
+    cells chain into one continuous frame rail; the blockstate rotates it 90° for
+    the E/W edges. A cyan power groove runs down the center of the bar."""
+    img = new(S); px = acc(img)
+    rect(px, 0, 0, S, S, FRAME[2])                   # dark plate behind the rail
+    by0, by1 = 4, 12
+    rect(px, 0, by0, S, by1 - by0, BODY[2])          # the extrusion bar
+    hline(px, 0, by0, S, BODY[0]); hline(px, 0, by1 - 1, S, BODY[4])
+    hline(px, 0, 7, S, FRAME[3])                     # recessed channel
+    hline(px, 0, 8, S, GLOW[2])                      # cyan power groove
+    hline(px, 0, 9, S, FRAME[3])
+    for bx in (2, 8, 14):                            # bolt studs (tile-friendly)
+        put(px, bx, 5, BODY[0]); put(px, bx, 10, BODY[4])
+    quantize_to_palette(img)
+    return img
+
+
+def casing_corner_top():
+    """Corner cell (base = NW): an L of extrusion — one arm running EAST, one
+    SOUTH — meeting an outer post cap with a cyan status light. The blockstate
+    rotates it to the other three corners; grooves meet the adjoining rails."""
+    img = new(S); px = acc(img)
+    rect(px, 0, 0, S, S, FRAME[2])
+    rect(px, 0, 0, 12, 12, FRAME[1])                 # inner frame mass (outer corner)
+    rect(px, 4, 4, S - 4, 8, BODY[2])                # EAST arm
+    hline(px, 4, 4, S - 4, BODY[0]); hline(px, 4, 11, S - 4, BODY[4])
+    rect(px, 4, 4, 8, S - 4, BODY[2])                # SOUTH arm
+    vline(px, 4, 4, S - 4, BODY[0]); vline(px, 11, 4, S - 4, BODY[4])
+    rect(px, 3, 3, 6, 6, BODY[3]); rect(px, 4, 4, 4, 4, BODY[1])   # post cap
+    put(px, 5, 5, GLOW[1])                           # cyan corner status light
+    hline(px, 8, 8, S - 8, GLOW[2])                  # east-arm groove (meets E-W rail)
+    vline(px, 8, 8, S - 8, GLOW[2])                  # south-arm groove (meets N-S rail)
+    quantize_to_palette(img)
+    return img
+
+
 def main():
     written = []
     # heroes
@@ -556,6 +617,10 @@ def main():
     written.append(save_block(clock_generator(), "clock_generator"))
     written.append(save_block(creative_energy_source(), "creative_energy_source"))
     written.append(save_block(printite_ore(), "printite_ore"))
+    # formed-multiblock casing top faces
+    written.append(save_block(casing_bed_top(), "casing_bed_top"))
+    written.append(save_block(casing_rail_top(), "casing_rail_top"))
+    written.append(save_block(casing_corner_top(), "casing_corner_top"))
     for p in written:
         print("wrote", p)
 

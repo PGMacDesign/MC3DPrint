@@ -1,6 +1,21 @@
 {
   "variants": {
-    "active=false": { "model": "mc3dprint:block/printer_casing" },
-    "active=true": { "model": "mc3dprint:block/printer_casing_active" }
+    "active=false,part=none": { "model": "mc3dprint:block/printer_casing" },
+    "active=false,part=bed": { "model": "mc3dprint:block/printer_casing" },
+    "active=false,part=rail_ns": { "model": "mc3dprint:block/printer_casing" },
+    "active=false,part=rail_ew": { "model": "mc3dprint:block/printer_casing" },
+    "active=false,part=corner_ne": { "model": "mc3dprint:block/printer_casing" },
+    "active=false,part=corner_nw": { "model": "mc3dprint:block/printer_casing" },
+    "active=false,part=corner_se": { "model": "mc3dprint:block/printer_casing" },
+    "active=false,part=corner_sw": { "model": "mc3dprint:block/printer_casing" },
+
+    "active=true,part=none": { "model": "mc3dprint:block/printer_casing_active" },
+    "active=true,part=bed": { "model": "mc3dprint:block/casing_bed" },
+    "active=true,part=rail_ew": { "model": "mc3dprint:block/casing_rail" },
+    "active=true,part=rail_ns": { "model": "mc3dprint:block/casing_rail", "y": 90 },
+    "active=true,part=corner_nw": { "model": "mc3dprint:block/casing_corner" },
+    "active=true,part=corner_ne": { "model": "mc3dprint:block/casing_corner", "y": 90 },
+    "active=true,part=corner_se": { "model": "mc3dprint:block/casing_corner", "y": 180 },
+    "active=true,part=corner_sw": { "model": "mc3dprint:block/casing_corner", "y": 270 }
   }
 }

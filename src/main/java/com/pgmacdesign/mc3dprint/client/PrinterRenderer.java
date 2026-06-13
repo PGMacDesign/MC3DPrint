@@ -5,6 +5,8 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.pgmacdesign.mc3dprint.MC3DPrint;
 import com.pgmacdesign.mc3dprint.machine.PrintJob;
 import com.pgmacdesign.mc3dprint.machine.PrinterBlockEntity;
+import com.pgmacdesign.mc3dprint.machine.multiblock.ControllerBlock;
+import com.pgmacdesign.mc3dprint.machine.multiblock.MultiblockPattern;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -121,6 +123,7 @@ public class PrinterRenderer implements BlockEntityRenderer<PrinterBlockEntity> 
     public void render(PrinterBlockEntity printer, float partialTick, PoseStack poseStack,
                        MultiBufferSource bufferSource, int packedLight, int packedOverlay) {
         renderSpools(printer, partialTick, poseStack, bufferSource);
+        renderFormedStructure(printer, partialTick, poseStack, bufferSource, packedLight);
 
         PrintJob job = printer.activeJob();
         if (job == null) {
@@ -484,11 +487,82 @@ public class PrinterRenderer implements BlockEntityRenderer<PrinterBlockEntity> 
         }
     }
 
+    /**
+     * The machine at rest. When the controller is FORMED, draw a static raised
+     * printer superstructure (chunky corner posts + a top gantry rim + a parked
+     * extruder head) scaled to the N×N footprint, rising out of the textured
+     * corner posts on the casings below. This is the MACHINE — it never runs the
+     * traveling-print animation, so it can't desync from the actual print, which
+     * keeps rendering its own cage at the (offset) build volume. Idle = a slow
+     * breathing glow on the parked nozzle; printing = a steady bright glow.
+     */
+    private void renderFormedStructure(PrinterBlockEntity printer, float partialTick,
+                                       PoseStack poseStack, MultiBufferSource bufferSource,
+                                       int packedLight) {
+        var state = printer.getBlockState();
+        if (!state.hasProperty(ControllerBlock.FORMED) || !state.getValue(ControllerBlock.FORMED)) {
+            return;
+        }
+        int half = MultiblockPattern.baseEdge(printer.tier()) / 2;
+        // Local coords: casings extend `half` each way from the controller [0,1]
+        // block. Put posts on the CENTERS of the four corner casings so they rise
+        // straight out of the textured corner posts below.
+        double pcMinX = -half + 0.5, pcMaxX = half + 0.5;
+        double pcMinZ = -half + 0.5, pcMaxZ = half + 0.5;
+        double cx = 0.5, cz = 0.5;                   // controller center
+        double baseY = 1.0;                          // top of the casing layer
+        double topY = baseY + 2.0 + half;            // taller for bigger tiers
+        double s = 0.11;                             // chunky strut half-thickness
+
+        VertexConsumer solid = bufferSource.getBuffer(RenderType.entitySolid(METAL));
+        // four corner posts
+        strut(poseStack, solid, packedLight, pcMinX - s, baseY, pcMinZ - s, pcMinX + s, topY, pcMinZ + s);
+        strut(poseStack, solid, packedLight, pcMaxX - s, baseY, pcMinZ - s, pcMaxX + s, topY, pcMinZ + s);
+        strut(poseStack, solid, packedLight, pcMinX - s, baseY, pcMaxZ - s, pcMinX + s, topY, pcMaxZ + s);
+        strut(poseStack, solid, packedLight, pcMaxX - s, baseY, pcMaxZ - s, pcMaxX + s, topY, pcMaxZ + s);
+        // top rim over the perimeter rail
+        strut(poseStack, solid, packedLight, pcMinX - s, topY - s, pcMinZ - s, pcMaxX + s, topY + s, pcMinZ + s);
+        strut(poseStack, solid, packedLight, pcMinX - s, topY - s, pcMaxZ - s, pcMaxX + s, topY + s, pcMaxZ + s);
+        strut(poseStack, solid, packedLight, pcMinX - s, topY - s, pcMinZ - s, pcMinX + s, topY + s, pcMaxZ + s);
+        strut(poseStack, solid, packedLight, pcMaxX - s, topY - s, pcMinZ - s, pcMaxX + s, topY + s, pcMaxZ + s);
+        // gantry bridge across the center + a parked extruder head beneath it
+        strut(poseStack, solid, packedLight, pcMinX - s, topY - s, cz - s, pcMaxX + s, topY + s, cz + s);
+        box(poseStack, solid, cx - HEAD, topY - 2 * HEAD, cz - HEAD, cx + HEAD, topY, cz + HEAD,
+                HEAD_R, HEAD_G, HEAD_B, 1.0F, packedLight);
+
+        // Parked nozzle glow: breathing at idle, steady-bright while printing.
+        long gameTime = printer.getLevel() != null ? printer.getLevel().getGameTime() : 0;
+        boolean printing = printer.state() == PrinterBlockEntity.State.PRINTING;
+        float pulse = printing ? 1.0F
+                : 0.40F + 0.30F * (0.5F + 0.5F * Mth.sin((gameTime + partialTick) * 0.10F));
+        VertexConsumer glow = bufferSource.getBuffer(RenderType.eyes(WHITE));
+        double nozY = topY - 2 * HEAD;
+        double r = 0.08;
+        emissiveQuad(poseStack, glow, cx - r, nozY - r, cz, cx + r, nozY - r, cz,
+                cx + r, nozY + r, cz, cx - r, nozY + r, cz, GLOW_R, GLOW_G, GLOW_B, pulse);
+        emissiveQuad(poseStack, glow, cx, nozY - r, cz - r, cx, nozY - r, cz + r,
+                cx, nozY + r, cz + r, cx, nozY + r, cz - r, GLOW_R, GLOW_G, GLOW_B, pulse);
+    }
+
+    /** A chunky textured strut (axis-aligned box) for the formed superstructure. */
+    private void strut(PoseStack poseStack, VertexConsumer c, int light,
+                       double x0, double y0, double z0, double x1, double y1, double z1) {
+        box(poseStack, c, x0, y0, z0, x1, y1, z1, FRAME_R, FRAME_G, FRAME_B, 1.0F, light);
+    }
+
     private void renderSpools(PrinterBlockEntity printer, float partialTick,
                               PoseStack poseStack, MultiBufferSource bufferSource) {
         var spools = printer.clientSpools();
         if (spools.isEmpty()) {
             return;
+        }
+        // When formed as a multiblock, push the reels out to the structure's
+        // perimeter so they show on the outer sides instead of being buried
+        // against the surrounding casings.
+        var blockState = printer.getBlockState();
+        float reach = 0.5F;
+        if (blockState.hasProperty(ControllerBlock.FORMED) && blockState.getValue(ControllerBlock.FORMED)) {
+            reach += MultiblockPattern.baseEdge(printer.tier()) / 2;
         }
         VertexConsumer lines = bufferSource.getBuffer(RenderType.lines());
         long gameTime = printer.getLevel() != null ? printer.getLevel().getGameTime() : 0;
@@ -506,8 +580,8 @@ public class PrinterRenderer implements BlockEntityRenderer<PrinterBlockEntity> 
             float nz = face.getStepZ();
             // orthonormal basis on the face plane: u = up, v = normal × up
             float vx = -nz, vz = nx;
-            float cx = 0.5F + nx * 0.5F;
-            float cz = 0.5F + nz * 0.5F;
+            float cx = 0.5F + nx * reach;
+            float cz = 0.5F + nz * reach;
 
             float winding = AXLE_RADIUS + WINDING_MAX_EXTRA * Math.max(0.0F, Math.min(1.0F, info.fillFraction()));
             float[] windColor = info.creative()

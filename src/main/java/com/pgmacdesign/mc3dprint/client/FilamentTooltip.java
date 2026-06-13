@@ -11,7 +11,7 @@ import net.minecraftforge.fml.common.Mod;
 
 /**
  * Ambient tier discovery: any item the Filament Winder can convert gets a
- * tier-colored "3D Print: Tier N (F FU)" line on its tooltip — in the
+ * tier-colored "MC3DP: Tier N (F FU)" line on its tooltip — in the
  * inventory, the creative menu, and JEI alike. The tier shown is exactly the
  * spool tier the winder needs (exact-tier rule), so players can see "diamond is
  * Tier 4, nether star is Tier 6" at a glance instead of guessing.

@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "top": "mc3dprint:block/casing_rail_top",
+    "side": "mc3dprint:block/printer_casing_active",
+    "bottom": "mc3dprint:block/printer_casing_active"
+  }
+}

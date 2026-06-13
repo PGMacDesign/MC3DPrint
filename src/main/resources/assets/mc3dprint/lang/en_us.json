@@ -51,7 +51,7 @@
   "jei.mc3dprint.printing": "3D Printing",
   "jei.mc3dprint.fu_cost": "%s FU (base)",
   "jei.mc3dprint.tier_required": "Tier %s spool",
-  "tooltip.mc3dprint.fu_value": "3D Print: Tier %s (%s FU)",
+  "tooltip.mc3dprint.fu_value": "MC3DP: Tier %s (%s FU)",
   "command.mc3dprint.import_not_found": "No importable file '%s' in %s",
   "command.mc3dprint.import_failed": "Could not import %s: %s",
   "command.mc3dprint.import_success": "Imported %s — %s blocks. Blueprint Disc added to your inventory",
