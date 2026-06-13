@@ -1,6 +1,13 @@
 # MC3DPrint — Roadmap & Outstanding Items
 
-_Last updated: 2026-06-13 · v0.2.0 · HEAD `44a4de5` · 60 GameTests passing · deployed to Prism._
+_Last updated: 2026-06-13 · v0.2.0 · HEAD `9199401` · 62 GameTests passing · deployed to Prism._
+
+**Recently shipped (2026-06-13):** (a) **FU efficiency rework** — printing is lossy by
+design, reaching exact 1:1 break-even at the max Efficiency modules; upgrades now capped
+at 4 per type (`upgrades.maxPerType`). (b) **Curated blueprint set rebuilt** — workstream
+#3 below is essentially done (23 faithful builds T3–T7, systemic defects fixed, refresh-
+on-change install, a dump/validate tool). (c) **3 pipeline skills** added under
+`.claude/skills/` (`mc3dp-find-buildings` / `-create-blueprint` / `-validate-blueprint`).
 
 MC3DPrint is a Forge **1.20.1** tech mod: "WorldEdit for survival." Scan a build
 with the Structure Scanner → save it to a Blueprint Disc → print it anywhere with
@@ -10,7 +17,7 @@ single printer blocks; T5–T8 are multiblock fabricators (an N×N Printer Casin
 
 ---
 
-## Active workstreams (next up: 2, 3, 4 — see #1 under Long-term)
+## Active workstreams (next up: 2 tier rebalance, 4 UI cleanup — #3 blueprints ✅ done; #1 long-term)
 
 ### 2. Tier rebalance (item → tier mapping, across the board)
 - **Now:** `fu/FuValueRegistry.java` — explicit entries + recipe-derivation + strict
@@ -22,18 +29,17 @@ single printer blocks; T5–T8 are multiblock fabricators (an N×N Printer Casin
   RecipeDerivation); the filament tier tags; the new **disc tier** label; the winder
   **exact-tier** rule; printability gating; the blueprint disc tier readout.
 
-### 3. Rework the sample (curated) blueprint discs
-- **Now:** 23 curated blueprints — 3 originals (starter_hut, storage_shed, watchtower)
-  + 20 generated (`test/.../blueprint/CuratedBlueprintGenerator.java`, a JUnit gated by
-  `-DgenBlueprints=true`). Auto-installed on server start (`CuratedBlueprints`), in the
-  creative tab + village/exploration loot. Some are **wrong or missing things**.
-- **Goal:** fix the broken/incomplete builds; likely prettify display names (discs
-  currently show the raw builder name, e.g. "small_cottage").
-- **How to regenerate:** edit `CuratedBlueprintGenerator` (parametric helpers: floor/
-  walls/roof/door/window…), then
-  `./gradlew test --tests '*CuratedBlueprintGenerator*' -DgenBlueprints=true`
-  (writes `data/mc3dprint/blueprints/<name>.blueprint`). The disc **tier label** now
-  helps spot-check contents.
+### 3. Rework the sample (curated) blueprint discs — ✅ DONE (2026-06-13)
+- **Shipped:** the 23-build set was rebuilt from scratch (`test/.../CuratedBlueprintGenerator.java`,
+  14 new parametric helpers), spanning footprint T3–T7 and material T1–T5/T7. Systemic
+  defects fixed (inverted doors, open gables, floating lanterns/battlements, sail-less
+  windmill, sealed well, un-walkable bridge). Full audit + specs in `docs/blueprint-specs.md`.
+- **Tooling added:** `CuratedBlueprints.install` now refreshes curated content on change;
+  `BlueprintDumpTest` (`-DdumpBlueprints=true`) renders ASCII layer maps; the three
+  `mc3dp-*` skills under `.claude/skills/` are the find→create→validate pipeline.
+- **Regenerate:** `./gradlew test --tests '*CuratedBlueprintGenerator*' -DgenBlueprints=true --rerun-tasks`.
+- **Left for in-game review:** print the new set in Prism and eyeball; prettify raw disc
+  display names if still desired.
 
 ### 4. Overall UI cleanup / improvements
 - **Now:** dark tech-console GUI (`tools/gen_printer_gui.py` → `gui/printer.png` +
