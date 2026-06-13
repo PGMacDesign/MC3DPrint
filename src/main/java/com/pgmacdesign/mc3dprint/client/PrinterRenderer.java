@@ -82,7 +82,7 @@ public class PrinterRenderer implements BlockEntityRenderer<PrinterBlockEntity> 
      * its tier reads at a glance; creative spools stay magenta (see below).
      */
     private static final float[][] TIER_COLORS = {
-            {138 / 255f, 148 / 255f, 160 / 255f}, // T1
+            {1.0f, 1.0f, 1.0f},                   // T1 (white: stands out from the grey flange)
             {79 / 255f, 155 / 255f, 232 / 255f},  // T2
             {52 / 255f, 192 / 255f, 192 / 255f},  // T3
             {70 / 255f, 198 / 255f, 107 / 255f},  // T4

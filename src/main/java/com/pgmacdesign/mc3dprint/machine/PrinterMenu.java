@@ -105,6 +105,12 @@ public class PrinterMenu extends AbstractContainerMenu {
         }
 
         addDataSlots(data);
+
+        // Re-check obstruction when the GUI opens so it shows up immediately,
+        // not only after pressing Start (no-op client-side / without a disc).
+        if (printer != null) {
+            printer.recheckObstruction();
+        }
     }
 
     @Nullable

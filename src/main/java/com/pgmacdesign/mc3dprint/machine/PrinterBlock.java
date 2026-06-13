@@ -64,9 +64,14 @@ public class PrinterBlock extends BaseEntityBlock {
         // Sneak + empty hand: pop the last attached spool back off
         if (player.isSecondaryUseActive() && player.getMainHandItem().isEmpty() && player.getOffhandItem().isEmpty()) {
             if (!level.isClientSide) {
-                ItemStack spool = printer.detachSpool();
-                if (!spool.isEmpty() && !player.getInventory().add(spool)) {
-                    player.drop(spool, false);
+                if (printer.isActivelyPrinting()) {
+                    player.displayClientMessage(net.minecraft.network.chat.Component.translatable(
+                            "message.mc3dprint.spool_locked_printing"), true);
+                } else {
+                    ItemStack spool = printer.detachSpool();
+                    if (!spool.isEmpty() && !player.getInventory().add(spool)) {
+                        player.drop(spool, false);
+                    }
                 }
             }
             return InteractionResult.sidedSuccess(level.isClientSide);

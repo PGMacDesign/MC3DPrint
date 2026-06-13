@@ -503,6 +503,11 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         return spools;
     }
 
+    /** True while a structure job is running or an item is mid-print. */
+    public boolean isActivelyPrinting() {
+        return activeJob != null || state == State.PRINTING;
+    }
+
     // --- Upgrades ---
 
     public ItemStackHandler upgradeInventory() {
@@ -1190,14 +1195,56 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
     }
 
     /** Adjusts a build offset (0=X, 1=Y, 2=Z); takes effect on the next job. */
+    /**
+     * Proactively re-evaluate whether the loaded blueprint at the current offsets
+     * would be obstructed, so PAUSED_OBSTRUCTED shows up BEFORE the player presses
+     * Start. Called on offset changes and when the GUI opens; the build-time check
+     * in tryStartJob stays the final authority. No-op unless a disc is loaded and
+     * no job is active, and it only flips OBSTRUCTED<->READY so it never clobbers
+     * other states (no power / no filament / printing).
+     */
+    public void recheckObstruction() {
+        if (!(level instanceof ServerLevel serverLevel) || activeJob != null) {
+            return;
+        }
+        ItemStack disc = inventory.getStackInSlot(SLOT_TEMPLATE);
+        if (!isLoadedDisc(disc) || tier.maxFootprint() == 0) {
+            return;
+        }
+        UUID blueprintId = BlueprintDiscItem.getBlueprintId(disc).orElse(null);
+        if (blueprintId == null) {
+            return;
+        }
+        Optional<Blueprint> loaded = BlueprintFileStore.forServer(serverLevel.getServer()).load(blueprintId);
+        if (loaded.isEmpty()) {
+            return;
+        }
+        Blueprint blueprint = loaded.get();
+        PrintOrientation orientation = PrintOrientation.NONE;
+        BlockPos size = orientation.transformedSize(blueprint.sizeX(), blueprint.sizeY(), blueprint.sizeZ());
+        BlockPos origin = worldPosition.offset(
+                -(size.getX() / 2) + offsetX, 1 + offsetY, -(size.getZ() / 2) + offsetZ);
+        boolean clear = isAreaClear(serverLevel, blueprint, orientation, origin);
+        State previous = state;
+        if (!clear) {
+            state = State.PAUSED_OBSTRUCTED;
+        } else if (state == State.PAUSED_OBSTRUCTED || state == State.IDLE) {
+            state = State.READY;
+        }
+        if (state != previous) {
+            setChanged();
+            syncToClients();
+        }
+    }
+
     public void adjustOffset(int axis, int delta) {
-        int clamped;
         switch (axis) {
-            case 0 -> offsetX = clamped = Mth.clamp(offsetX + delta, -MAX_OFFSET, MAX_OFFSET);
-            case 1 -> offsetY = clamped = Mth.clamp(offsetY + delta, -MAX_OFFSET, MAX_OFFSET);
-            default -> offsetZ = clamped = Mth.clamp(offsetZ + delta, -MAX_OFFSET, MAX_OFFSET);
+            case 0 -> offsetX = Mth.clamp(offsetX + delta, -MAX_OFFSET, MAX_OFFSET);
+            case 1 -> offsetY = Mth.clamp(offsetY + delta, -MAX_OFFSET, MAX_OFFSET);
+            default -> offsetZ = Mth.clamp(offsetZ + delta, -MAX_OFFSET, MAX_OFFSET);
         }
         setChanged();
+        recheckObstruction(); // surface obstruction the moment the build area moves
         if (previewEnabled) {
             syncToClients(); // the ghost follows the offsets live
         }

@@ -111,6 +111,7 @@
   "gui.mc3dprint.state.not_printable": "Not Printable",
   "gui.mc3dprint.cost": "%s FU",
   "message.mc3dprint.spool_slots_full": "All spool docks are occupied",
+  "message.mc3dprint.spool_locked_printing": "Stop the print before removing spools",
   "block.mc3dprint.clock_generator": "Simple Generator",
   "block.mc3dprint.creative_energy_source": "Creative Energy Source",
   "item.mc3dprint.creative_filament_spool": "Creative Filament Spool",
