@@ -1,5 +1,7 @@
 package com.pgmacdesign.mc3dprint.machine;
 
+import com.mojang.logging.LogUtils;
+import org.slf4j.Logger;
 import com.pgmacdesign.mc3dprint.MC3DPrint;
 import com.pgmacdesign.mc3dprint.blueprint.Blueprint;
 import com.pgmacdesign.mc3dprint.blueprint.BlueprintBlockState;
@@ -140,6 +142,10 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
     private final List<CompoundTag> history = new ArrayList<>();
 
     private State state = State.IDLE;
+    private static final Logger LOGGER = LogUtils.getLogger();
+    // Human-readable explanation for the most recent NOT_PRINTABLE; logged once
+    // on the transition into that state so the player can see WHY in the log.
+    private String notPrintableReason = "";
 
     // blueprint jobs start on a trigger (GUI Start button / redstone rising
     // edge) unless auto-start is enabled; build origin is offset-adjustable
@@ -243,7 +249,21 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
 
         if (state != previous) {
             setChanged();
+            // Explain a fresh NOT_PRINTABLE once (not every tick) so the player can
+            // diagnose it from the server log instead of guessing.
+            if (state == State.NOT_PRINTABLE) {
+                LOGGER.info("[MC3DP] Tier {} {} at {} won't print: {}",
+                        tier.number(),
+                        isLoadedDisc(template) ? "blueprint" : "item",
+                        worldPosition,
+                        notPrintableReason.isEmpty() ? "no reason recorded" : notPrintableReason);
+            }
         }
+    }
+
+    /** Registry id of an item/stack for diagnostic logs, e.g. "minecraft:diamond". */
+    private static String idOf(ItemStack stack) {
+        return net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
     }
 
     // --- Item Mode ---
@@ -259,6 +279,16 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         if (fuCost < 0) {
             state = State.NOT_PRINTABLE;
             itemProgress = 0;
+            Optional<FuValue> value = FuValueRegistry.valueOf(template);
+            if (value.isEmpty()) {
+                notPrintableReason = String.format(
+                        "%s has no FU value (unpriced/unknown item — register one via the API/config, "
+                                + "or set unknownBlocksPrintable=true)", idOf(template));
+            } else {
+                notPrintableReason = String.format(
+                        "%s is Tier %d, which exceeds this machine's Tier %d",
+                        idOf(template), value.get().tier(), tier.number());
+            }
         } else if (!canEmitCopy(template)) {
             state = State.PAUSED_OUTPUT_FULL;
         } else if (effectiveFu(costTier) < fuCost) {
@@ -663,6 +693,7 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         // must fit, and every material must be within this machine's tier
         if (tier.maxFootprint() == 0) {
             state = State.NOT_PRINTABLE;
+            notPrintableReason = "this tier cannot print structures (zero print footprint)";
             return;
         }
         PrintOrientation orientation = PrintOrientation.NONE;
@@ -684,12 +715,21 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             if (value.isEmpty()) {
                 if (!MC3DPrintConfig.UNKNOWN_BLOCKS_PRINTABLE.get()) {
                     state = State.NOT_PRINTABLE;
+                    notPrintableReason = String.format(
+                            "blueprint block %s has no FU value (strict mode — set "
+                                    + "unknownBlocksPrintable=true in the config, or register a value "
+                                    + "via the API, to allow it)",
+                            net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(paletteItem));
                     return;
                 }
                 continue; // permissive mode: priced at machine tier, always printable here
             }
             if (value.get().tier() > tier.number()) {
                 state = State.NOT_PRINTABLE;
+                notPrintableReason = String.format(
+                        "blueprint block %s is Tier %d, which exceeds this machine's Tier %d",
+                        net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(paletteItem),
+                        value.get().tier(), tier.number());
                 return;
             }
         }
