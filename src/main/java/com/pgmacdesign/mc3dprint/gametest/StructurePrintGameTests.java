@@ -249,8 +249,9 @@ public class StructurePrintGameTests {
 
     @GameTest(template = "empty5", timeoutTicks = 80)
     public static void highTierBlockBlocksUnderTierStructurePrint(GameTestHelper helper) {
-        // a netherite block is T5; a T3 machine must refuse the whole structure,
-        // closing the "scan expensive blocks, print on a cheap machine" exploit
+        // a netherite block is T5; on a T3 it's the ONLY (un-printable) block, so
+        // there's nothing to build -> NOT_PRINTABLE, and it's never placed. This
+        // keeps the "scan expensive blocks, print on a cheap machine" exploit shut.
         PrinterBlockEntity printer = poweredPrinter(helper, new BlockPos(2, 1, 2));
         Blueprint blueprint = Blueprint.builder("gametest-netherite", 1, 1, 1)
                 .set(0, 0, 0, BlueprintBlockState.parse("minecraft:netherite_block"))
@@ -259,11 +260,36 @@ public class StructurePrintGameTests {
 
         helper.runAfterDelay(40, () -> {
             if (printer.state() != PrinterBlockEntity.State.NOT_PRINTABLE) {
-                helper.fail("T3 machine must refuse a netherite-block structure, got " + printer.state());
+                helper.fail("T3 machine must refuse an all-netherite structure, got " + printer.state());
                 return;
             }
             helper.assertBlockNotPresent(Blocks.NETHERITE_BLOCK, new BlockPos(2, 2, 2));
             helper.succeed();
+        });
+    }
+
+    @GameTest(template = "empty5", timeoutTicks = 300)
+    public static void skipsUnprintableBlocksAndBuildsRest(GameTestHelper helper) {
+        // A MIXED structure: stone (T1, printable) + a netherite block (T5, above
+        // a T3 machine). The T3 must SKIP the netherite and still build the stone
+        // and complete the job, rather than refusing the whole print. Skipping
+        // never places the netherite, so the tier gate is preserved.
+        BlockPos printerPos = new BlockPos(2, 1, 2);
+        PrinterBlockEntity printer = poweredPrinter(helper, printerPos);
+        Blueprint blueprint = Blueprint.builder("gametest-skip", 2, 1, 2)
+                .set(0, 0, 0, BlueprintBlockState.parse("minecraft:stone"))
+                .set(1, 0, 1, BlueprintBlockState.parse("minecraft:netherite_block"))
+                .build();
+        printer.inventory().setStackInSlot(PrinterBlockEntity.SLOT_TEMPLATE, discFor(helper, blueprint));
+
+        // origin = printer + (-1, 1, -1) -> stone at (1,2,1), netherite slot at (2,2,2)
+        helper.succeedWhen(() -> {
+            helper.assertBlockPresent(Blocks.STONE, new BlockPos(1, 2, 1));              // printable built
+            helper.assertBlockNotPresent(Blocks.NETHERITE_BLOCK, new BlockPos(2, 2, 2)); // skipped, never placed
+            ItemStack output = printer.inventory().getStackInSlot(PrinterBlockEntity.SLOT_OUTPUT);
+            if (!(output.getItem() instanceof BlueprintDiscItem)) {
+                throw new GameTestAssertException("disc should eject after completing the partial print");
+            }
         });
     }
 }

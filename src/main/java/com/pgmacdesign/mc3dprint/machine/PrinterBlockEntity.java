@@ -146,6 +146,11 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
     // Human-readable explanation for the most recent NOT_PRINTABLE; logged once
     // on the transition into that state so the player can see WHY in the log.
     private String notPrintableReason = "";
+    // Blocks skipped during the current structure job because this machine can't
+    // print them (no FU value in strict mode, or a tier above the machine). Reset
+    // when a job starts; each distinct type is logged once, summarized on finish.
+    private int skippedThisJob = 0;
+    private final java.util.Set<String> skippedTypesLogged = new java.util.HashSet<>();
 
     // blueprint jobs start on a trigger (GUI Start button / redstone rising
     // edge) unless auto-start is enabled; build origin is offset-adjustable
@@ -341,6 +346,32 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
     private Optional<FuValue> blockFuValue(BlockState state) {
         Item item = state.getBlock().asItem();
         return item == Items.AIR ? Optional.empty() : FuValueRegistry.valueOf(new ItemStack(item));
+    }
+
+    /**
+     * Whether this machine can print the given (resolved) blueprint block. False
+     * for blocks with no FU value in strict mode, and for any block whose tier
+     * exceeds this machine's tier. Such blocks are SKIPPED during a structure
+     * print (never placed), so the structure still builds and the tier / strict
+     * anti-exploit gate is preserved (you can't obtain the block by skipping it).
+     */
+    private boolean canPrintBlock(BlockState resolvedState) {
+        Optional<FuValue> value = blockFuValue(resolvedState);
+        if (value.isEmpty()) {
+            return MC3DPrintConfig.UNKNOWN_BLOCKS_PRINTABLE.get();
+        }
+        return value.get().tier() <= tier.number();
+    }
+
+    private void recordSkippedBlock(BlockState resolvedState) {
+        skippedThisJob++;
+        String id = net.minecraft.core.registries.BuiltInRegistries.BLOCK
+                .getKey(resolvedState.getBlock()).toString();
+        if (skippedTypesLogged.add(id)) {
+            LOGGER.info("[MC3DP] Tier {} printer at {} is skipping un-printable block {} "
+                    + "(no FU value in strict mode, or above this machine's tier)",
+                    tier.number(), worldPosition, id);
+        }
     }
 
     private int applyEfficiency(int baseFu) {
@@ -610,14 +641,23 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         // lets a damaged build be fixed by simply printing the disc again.
         while (!activeJob.isComplete()) {
             PlacementEntry skipCandidate = placementOrder.get(activeJob.placed());
-            BlockState target = blueprint.palette().get(skipCandidate.paletteIndex()).resolve()
+            Optional<BlockState> resolvedOpt = blueprint.palette().get(skipCandidate.paletteIndex()).resolve();
+            BlockState target = resolvedOpt
                     .map(resolvedState -> resolvedState
                             .mirror(activeJob.orientation().mirror())
                             .rotate(activeJob.orientation().rotation()))
                     .orElse(null);
-            if (target == null
-                    || serverLevel.getBlockState(worldPosFor(skipCandidate.local(), blueprint)) != target) {
-                break;
+            // Fast-forward (no tick cost) past blocks we won't place: ones already
+            // matching (repair mode), ones we can't resolve (modded world), and
+            // ones this machine can't print (skipped — see canPrintBlock).
+            boolean unprintable = resolvedOpt.isPresent() && !canPrintBlock(resolvedOpt.get());
+            boolean alreadyPlaced = target != null
+                    && serverLevel.getBlockState(worldPosFor(skipCandidate.local(), blueprint)) == target;
+            if (target != null && !alreadyPlaced && !unprintable) {
+                break; // a printable block that still needs placing
+            }
+            if (unprintable) {
+                recordSkippedBlock(resolvedOpt.get());
             }
             activeJob.setPlaced(activeJob.placed() + 1);
         }
@@ -702,36 +742,34 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             state = State.AREA_TOO_SMALL;
             return;
         }
+        // Validate the palette: rather than refusing the whole job when one block
+        // can't be printed, SKIP un-printable blocks during placement (see the
+        // fast-forward above) and build the rest. Skipping never places the block,
+        // so the tier / strict-mode anti-exploit gate still holds. The only hard
+        // failure here is when NOTHING in the blueprint is printable.
+        boolean anyPrintable = false;
+        BlockState firstUnprintable = null;
         for (BlueprintBlockState paletteState : blueprint.palette()) {
-            Item paletteItem = paletteState.resolve().map(s -> s.getBlock().asItem()).orElse(Items.AIR);
-            if (paletteItem == Items.AIR) {
-                continue;
+            Optional<BlockState> resolvedOpt = paletteState.resolve();
+            if (resolvedOpt.isEmpty()) {
+                continue; // unresolvable (modded world) — skipped at placement
             }
-            Optional<FuValue> value = FuValueRegistry.valueOf(new ItemStack(paletteItem));
-            // strict mode: a block with NO value (after derivation) can never be
-            // printed — closes the 'scan un-priced expensive block, print cheap'
-            // exploit. When unknownBlocksPrintable=true such blocks are allowed,
-            // but blockFuCost/blockFuTier clamp them to this machine's own tier.
-            if (value.isEmpty()) {
-                if (!MC3DPrintConfig.UNKNOWN_BLOCKS_PRINTABLE.get()) {
-                    state = State.NOT_PRINTABLE;
-                    notPrintableReason = String.format(
-                            "blueprint block %s has no FU value (strict mode — set "
-                                    + "unknownBlocksPrintable=true in the config, or register a value "
-                                    + "via the API, to allow it)",
-                            net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(paletteItem));
-                    return;
-                }
-                continue; // permissive mode: priced at machine tier, always printable here
+            if (canPrintBlock(resolvedOpt.get())) {
+                anyPrintable = true;
+            } else if (firstUnprintable == null) {
+                firstUnprintable = resolvedOpt.get();
             }
-            if (value.get().tier() > tier.number()) {
-                state = State.NOT_PRINTABLE;
-                notPrintableReason = String.format(
-                        "blueprint block %s is Tier %d, which exceeds this machine's Tier %d",
-                        net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(paletteItem),
-                        value.get().tier(), tier.number());
-                return;
-            }
+        }
+        if (!anyPrintable) {
+            state = State.NOT_PRINTABLE;
+            String example = firstUnprintable == null ? "all blocks"
+                    : net.minecraft.core.registries.BuiltInRegistries.BLOCK
+                            .getKey(firstUnprintable.getBlock()).toString();
+            notPrintableReason = String.format(
+                    "no blocks in this blueprint are printable by a Tier %d machine "
+                            + "(e.g. %s — unpriced in strict mode, or above this tier)",
+                    tier.number(), example);
+            return;
         }
 
         // min corner: centered horizontally over the printer, one block up,
@@ -751,6 +789,8 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             return;
         }
 
+        skippedThisJob = 0;
+        skippedTypesLogged.clear();
         activeJob = new PrintJob(blueprintId, blueprint.name(), origin, orientation, size, blueprint.blockCount());
         cachedBlueprint = blueprint;
         placementOrder = buildPlacementOrder(blueprint);
@@ -795,6 +835,12 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             return;
         }
         recordHistory(activeJob);
+
+        if (skippedThisJob > 0) {
+            LOGGER.info("[MC3DP] Tier {} printer at {} finished a structure — skipped {} "
+                    + "un-printable block(s) across {} type(s); the rest was built",
+                    tier.number(), worldPosition, skippedThisJob, skippedTypesLogged.size());
+        }
 
         // print completion effect — the "done" moment should feel good
         BlockPos size = activeJob.size();
