@@ -36,7 +36,7 @@ import java.util.UUID;
  *
  * Controls:
  * - Right-click a block: set corner A, then corner B (alternating)
- * - Right-click air: scan (needs both corners + a Blank Blueprint Disc in offhand)
+ * - Right-click air: scan (needs both corners + a Blank Blueprint Disc anywhere in the inventory)
  * - Sneak + right-click air: clear selection
  */
 public class ScannerItem extends Item {
@@ -117,8 +117,17 @@ public class ScannerItem extends Item {
             return InteractionResultHolder.fail(stack);
         }
 
-        ItemStack offhand = player.getOffhandItem();
-        if (!offhand.is(ModItems.BLANK_BLUEPRINT_DISC.get())) {
+        // A blank blueprint disc ANYWHERE in the inventory works — no need to hold it in
+        // the off-hand. Find the first one; fail fast if the player has none.
+        net.minecraft.world.entity.player.Inventory inv = player.getInventory();
+        int blankSlot = -1;
+        for (int i = 0; i < inv.getContainerSize(); i++) {
+            if (inv.getItem(i).is(ModItems.BLANK_BLUEPRINT_DISC.get())) {
+                blankSlot = i;
+                break;
+            }
+        }
+        if (blankSlot < 0) {
             player.displayClientMessage(Component.translatable("message.mc3dprint.scan_need_blank_disc"), true);
             return InteractionResultHolder.fail(stack);
         }
@@ -133,10 +142,9 @@ public class ScannerItem extends Item {
         ItemStack disc = new ItemStack(ModItems.BLUEPRINT_DISC.get());
         BlueprintDiscItem.writeBlueprint(disc, id, blueprint);
 
-        offhand.shrink(1);
-        if (offhand.isEmpty()) {
-            player.setItemInHand(InteractionHand.OFF_HAND, disc);
-        } else if (!player.getInventory().add(disc)) {
+        // consume one blank disc; hand back the written disc (into the inventory, else drop)
+        inv.getItem(blankSlot).shrink(1);
+        if (!player.getInventory().add(disc)) {
             player.drop(disc, false);
         }
 

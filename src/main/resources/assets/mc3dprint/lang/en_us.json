@@ -23,7 +23,7 @@
   "message.mc3dprint.corners_cleared": "Selection cleared",
   "message.mc3dprint.scan_no_corners": "Select two corners first (right-click blocks)",
   "message.mc3dprint.scan_too_large": "Selection %s×%s×%s exceeds scanner limit (%s per axis)",
-  "message.mc3dprint.scan_need_blank_disc": "Hold a Blank Blueprint Disc in your offhand",
+  "message.mc3dprint.scan_need_blank_disc": "Need a Blank Blueprint Disc in your inventory",
   "message.mc3dprint.scan_complete": "Scan complete — %s blocks captured",
   "tooltip.mc3dprint.corner_a": "Corner A: %s, %s, %s",
   "tooltip.mc3dprint.corner_b": "Corner B: %s, %s, %s",
