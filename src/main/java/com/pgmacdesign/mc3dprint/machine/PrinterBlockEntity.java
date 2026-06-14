@@ -1032,10 +1032,27 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
     }
 
     private static List<PlacementEntry> buildPlacementOrder(Blueprint blueprint) {
-        List<PlacementEntry> order = new ArrayList<>(blueprint.blockCount());
-        blueprint.forEachBlock((local, paletteIndex) ->
-                order.add(new PlacementEntry(local.immutable(), paletteIndex)));
-        return order;
+        // Solids place bottom-up (Y/Z/X) so supports exist before supported blocks; pure
+        // liquids (water/lava sources) place LAST, after every solid neighbour is down.
+        // Otherwise a source set in the middle of a print flows into cells that haven't
+        // printed yet — e.g. the wheat farm's centre water flooding the whole field
+        // before its surrounding farmland lands, leaving a pool with no farmland/crops.
+        // Placing liquids last lets the field enclose the source first, so it stays put.
+        // Waterlogged solids aren't LiquidBlock, so they keep their normal bottom-up slot.
+        List<PlacementEntry> solids = new ArrayList<>(blueprint.blockCount());
+        List<PlacementEntry> liquids = new ArrayList<>();
+        blueprint.forEachBlock((local, paletteIndex) -> {
+            PlacementEntry entry = new PlacementEntry(local.immutable(), paletteIndex);
+            BlockState state = blueprint.palette().get(paletteIndex).resolve().orElse(null);
+            if (state != null
+                    && state.getBlock() instanceof net.minecraft.world.level.block.LiquidBlock) {
+                liquids.add(entry);
+            } else {
+                solids.add(entry);
+            }
+        });
+        solids.addAll(liquids);
+        return solids;
     }
 
     private BlockPos worldPosFor(BlockPos local, Blueprint blueprint) {
