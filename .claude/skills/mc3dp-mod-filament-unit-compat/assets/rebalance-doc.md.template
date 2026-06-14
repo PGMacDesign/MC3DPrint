@@ -1,0 +1,41 @@
+# __MOD_NAME__ __MC_VERSION__ (__AUTHOR__) — Acquisition Ranking & FU Tier Map
+
+_Research input for MC3DPrint's modded FU support — the **__MOD_NAME__** soft-dep, modelled on
+the AE2 / Thermal / Tinkers' compat hooks. Item ids + recipes read from the **`__BRANCH__`
+branch** of `__OWNER_REPO__` on __DATE__ (__SOURCE_FILES__)._
+
+---
+
+## 0. Namespace & what to gate on
+Item namespace: **`__MOD_ID__`**. Gate on `ModList.get().isLoaded("__MOD_ID__")`.
+__NAMESPACE_NOTES__ (note any split between repo/asset folders and the actual item namespace).
+
+### The derivation fact (why we value so few items)
+`RecipeFuValuator` reads vanilla recipe *types* (`minecraft:crafting_*`, `smelting`,
+`stonecutting`), including modded recipes that use them — so blocks/nuggets/standard crafts
+**derive**. The __CUSTOM_RECIPE_SOURCE__ recipes are a custom type it can't read, so those
+outputs are the leaves we pin.
+
+## 1. Acquisition axis (mapped to vanilla tiers)
+```
+T_  <items>   — <how obtained>
+T_  <items>   — <how obtained>
+```
+### Abundance / anti-launder reasoning
+- <item> at T_, not higher, because <a spool would otherwise print something rarer>.
+- <cross-mod common> pinned to <tier> to match <other mod>.
+
+## 2. FU values registered (`integration/__MOD_PKG__/__MOD_CLASS__Compat.java`)
+| Item id (`__MOD_ID__:`) | FU | Tier | Source / rationale |
+|---|---:|:--:|---|
+| `__path__` | __fu__ | _ | __why__ |
+
+**Derived automatically (not pinned):** every `*_block` / `*_nugget` / standard craft.
+**Intentionally UNVALUED:** __unvalued list + why__.
+
+## 3. Open verification (in-game, with __MOD_NAME__ installed)
+- Confirm `__id__` obtain path (least-certain ids go here).
+- Re-check recent-build alloy inputs that may shift between mod versions.
+
+All numbers are **tunable**. Related: `docs/rebalance/{ae2,thermal,tconstruct}.md`,
+`references/fu-model.md`, and the `modded-fu-compat` memory.

@@ -1,0 +1,22 @@
+[
+  {"query": "ok next up let's add filament unit support for Mekanism — osmium, refined obsidian, all their alloys should wind and print", "should_trigger": true},
+  {"query": "can you value Immersive Engineering's steel and constantan so they actually print on the fabricator? right now they're unprintable", "should_trigger": true},
+  {"query": "make EnderIO's dark steel, electrical steel, and the energetic/vibrant alloys windable into filament with sane tiers", "should_trigger": true},
+  {"query": "wire up Botania for the FU economy — manasteel, terrasteel, elementium, gaia spirit, the whole mana progression", "should_trigger": true},
+  {"query": "I want to support Applied Energistics 2 in the printer economy but for the 1.21 version of the mod this time", "should_trigger": true},
+  {"query": "set up filament unit values for Ars Nouveau's source gem and the imbued / archwood materials", "should_trigger": true},
+  {"query": "none of Powah's items print — add a compat hook so its energized steel and niotic crystals get FU tiers", "should_trigger": true},
+  {"query": "give Create's brass, andesite alloy, and zinc proper filament tiers so they're printable", "should_trigger": true},
+  {"query": "we should support Thermal's enderium and the signalum/lumium alloys in the filament system", "should_trigger": true},
+  {"query": "add mod compat so Silent Gear's materials can be wound into filament and printed", "should_trigger": true},
+  {"query": "rebalance the vanilla FU tiers — I think glowstone should be T4 not T3, and bump sea lantern up", "should_trigger": false},
+  {"query": "Mekanism and MC3DPrint are crashing together on world load, can you debug the mod conflict", "should_trigger": false},
+  {"query": "add JEI integration so MC3DPrint's printer recipes show up in the recipe viewer", "should_trigger": false},
+  {"query": "write a blueprint for a Create-style cogwheel factory building so people can print it", "should_trigger": false},
+  {"query": "remind me what tier we ended up putting Tinkers' manyullyn at and why", "should_trigger": false},
+  {"query": "the winder won't accept a stack of gold ingots — what's the exact-tier rule again?", "should_trigger": false},
+  {"query": "bump the mod version to 0.4.0 and build a release jar now that the modded compat is in", "should_trigger": false},
+  {"query": "the printer is consuming way too much RF when printing netherite blocks, something's off in the efficiency calc", "should_trigger": false},
+  {"query": "update the Patchouli guide page about filament units to mention the new modded materials", "should_trigger": false},
+  {"query": "add a new upgrade module type that boosts print speed on the tier 5 fabricator", "should_trigger": false}
+]

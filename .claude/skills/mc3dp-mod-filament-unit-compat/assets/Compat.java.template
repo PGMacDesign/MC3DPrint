@@ -1,0 +1,47 @@
+package com.pgmacdesign.mc3dprint.integration.__MOD_PKG__;
+
+import com.pgmacdesign.mc3dprint.fu.FuValueRegistry;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraftforge.fml.ModList;
+import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
+
+/**
+ * __MOD_NAME__ ({@code __MOD_ID__}) FU values. Registered ONLY when __MOD_NAME__ is loaded;
+ * entries are stored by {@link ResourceLocation}, so a vanilla-only install never sees them —
+ * no crash, no warning spam, zero config / creative-tab footprint.
+ *
+ * <p><b>Why only these items?</b> Every block (×9 ingots) and nugget (÷9) and standard
+ * craft/smelt derives automatically through our {@code RecipeFuValuator}; we pin only the
+ * __CUSTOM_RECIPE_SOURCE__ leaves (a custom recipe type the valuator can't read) plus any
+ * mined raws/ores.
+ *
+ * <p><b>Tiering</b> follows acquisition rarity anchored to the vanilla map (iron=20@T2,
+ * blaze_rod=40@T4, diamond=50@T5, netherite_scrap=125@T6). __TIERING_SUMMARY__
+ *
+ * <p><b>Anti-launder:</b> __ANTILAUNDER_NOTES__
+ *
+ * <p>Intentionally UNVALUED (strict mode → unprintable, safe): __UNVALUED_NOTES__
+ */
+public final class __MOD_CLASS__Compat {
+    private static final String __MOD_CONST__ = "__MOD_ID__";
+
+    private __MOD_CLASS__Compat() {}
+
+    public static void onCommonSetup(FMLCommonSetupEvent event) {
+        if (!ModList.get().isLoaded(__MOD_CONST__)) {
+            return;
+        }
+        event.enqueueWork(() -> {
+            // T_ — __bucket rationale__
+            register("__path__", __fu__, __tier__);
+            // ... group registrations by tier, one-line rationale per group ...
+        });
+    }
+
+    private static void register(String path, int fu, int tier) {
+        ResourceLocation id = ResourceLocation.tryParse(__MOD_CONST__ + ":" + path);
+        if (id != null) {
+            FuValueRegistry.registerApiItemValue(id, fu, tier);
+        }
+    }
+}
