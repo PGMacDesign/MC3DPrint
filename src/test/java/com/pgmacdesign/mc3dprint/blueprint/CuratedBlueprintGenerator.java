@@ -884,21 +884,20 @@ class CuratedBlueprintGenerator {
         Blueprint.Builder b = Blueprint.builder("Wheat Farm", 7, 3, 7);
         // dirt-path walking border
         floor(b, 0, 0, 0, 6, 6, DIRT_PATH);
-        // inner 5×5 farmland, centre water source flush
+        // inner 5×5 of fully-grown farmland — NO flowing water source. Printing is
+        // incremental (one block per tick), so a water source set in the middle of the
+        // field flows into the cells that haven't printed yet and can never be enclosed
+        // in time — the farm came out a bare pool with no soil/crops. Instead: moisture=7
+        // soil prints hydrated-looking, and a crop on EVERY tile stops the soil reverting
+        // to dirt as it dries, so it stays a full, recognisable crop field.
         for (int x = 1; x <= 5; x++) {
             for (int z = 1; z <= 5; z++) {
-                if (x == 3 && z == 3) {
-                    b.set(x, 0, z, WATER);
-                } else {
-                    b.set(x, 0, z, FARMLAND);
-                    // crop variety by row; skip the cell above water
-                    BlueprintBlockState crop;
-                    if (z == 1 || z == 2) crop = WHEAT;
-                    else if (z == 4) crop = CARROTS;
-                    else if (z == 5) crop = POTATOES;
-                    else crop = WHEAT;
-                    b.set(x, 1, z, crop);
-                }
+                b.set(x, 0, z, FARMLAND);
+                BlueprintBlockState crop;
+                if (z <= 3) crop = WHEAT;
+                else if (z == 4) crop = CARROTS;
+                else crop = POTATOES;
+                b.set(x, 1, z, crop);
             }
         }
         // fence ring on the path lip
