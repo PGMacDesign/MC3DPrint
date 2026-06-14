@@ -18,6 +18,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraftforge.event.level.BlockEvent;
 
 import javax.annotation.Nullable;
 
@@ -134,6 +135,60 @@ public class ControllerBlock extends PrinterBlock {
             setComponentsActive(level, controllerPos, controller.tier(), false, excludePos);
             level.playSound(null, controllerPos, SoundEvents.BEACON_DEACTIVATE, SoundSource.BLOCKS, 0.6F, 1.0F);
         }
+    }
+
+    /**
+     * Unforms any formed controller whose base footprint contains {@code brokenPos}
+     * — i.e. {@code brokenPos} is one of its structural components. Shared by the
+     * two removal paths: our own casings call this from {@link CasingBlock#onRemove},
+     * and the premium CORNER blocks (T5 diamond, T8 awakened draconium) — foreign
+     * blocks with no removal hook of ours — are caught by {@link #onBlockBreak}.
+     * Scans the largest-tier footprint radius on the controller's Y plane, then
+     * confirms {@code brokenPos} actually falls inside the found controller's own
+     * (possibly smaller) footprint before unforming.
+     */
+    public static void unformContaining(Level level, BlockPos brokenPos) {
+        if (level.isClientSide) {
+            return;
+        }
+        int maxHalf = MultiblockPattern.baseEdge(MachineTier.T8) / 2;
+        for (int dx = -maxHalf; dx <= maxHalf; dx++) {
+            for (int dz = -maxHalf; dz <= maxHalf; dz++) {
+                if (dx == 0 && dz == 0) {
+                    continue; // a component is never its own controller
+                }
+                BlockPos candidate = brokenPos.offset(dx, 0, dz);
+                BlockState candidateState = level.getBlockState(candidate);
+                if (candidateState.getBlock() instanceof ControllerBlock controller
+                        && candidateState.getValue(FORMED)) {
+                    int half = MultiblockPattern.baseEdge(controller.tier()) / 2;
+                    if (Math.abs(dx) <= half && Math.abs(dz) <= half) {
+                        // exclude brokenPos: it is mid-removal, so re-setting its state
+                        // would resurrect the block being destroyed.
+                        unform(level, candidate, brokenPos);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Forge block-break hook for the premium corner blocks. A {@link CasingBlock}
+     * unforms its machine from its own {@code onRemove}, but the T5/T8 corners are
+     * vanilla/modded blocks we can't hook that way — so breaking an Awakened
+     * Draconium (or Diamond) corner would otherwise leave the machine formed. Catch
+     * that here. Our own casings/controllers are skipped (they self-handle: casings
+     * via onRemove, the controller via {@code playerWillDestroy}).
+     */
+    public static void onBlockBreak(BlockEvent.BreakEvent event) {
+        if (!(event.getLevel() instanceof Level level) || level.isClientSide) {
+            return;
+        }
+        Block broken = event.getState().getBlock();
+        if (broken instanceof CasingBlock || broken instanceof ControllerBlock) {
+            return;
+        }
+        unformContaining(level, event.getPos());
     }
 
     /**

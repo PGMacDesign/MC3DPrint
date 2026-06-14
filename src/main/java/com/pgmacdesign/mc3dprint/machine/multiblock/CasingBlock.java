@@ -1,6 +1,5 @@
 package com.pgmacdesign.mc3dprint.machine.multiblock;
 
-import com.pgmacdesign.mc3dprint.machine.MachineTier;
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.level.Level;
@@ -60,23 +59,7 @@ public class CasingBlock extends Block {
         // state.is(newState.getBlock()) is true there and this branch is skipped —
         // it only fires when the casing is genuinely being removed/replaced.
         if (!level.isClientSide && !state.is(newState.getBlock())) {
-            // largest pattern is 9x9 -> controller within 4 blocks on the same Y
-            int maxHalf = MultiblockPattern.baseEdge(MachineTier.T8) / 2;
-            for (int dx = -maxHalf; dx <= maxHalf; dx++) {
-                for (int dz = -maxHalf; dz <= maxHalf; dz++) {
-                    BlockPos candidate = pos.offset(dx, 0, dz);
-                    BlockState candidateState = level.getBlockState(candidate);
-                    if (candidateState.getBlock() instanceof ControllerBlock controller
-                            && candidateState.getValue(ControllerBlock.FORMED)) {
-                        int half = MultiblockPattern.baseEdge(controller.tier()) / 2;
-                        if (Math.abs(dx) <= half && Math.abs(dz) <= half) {
-                            // exclude this very block: it is mid-removal, so re-setting
-                            // its ACTIVE state would resurrect it.
-                            ControllerBlock.unform(level, candidate, pos);
-                        }
-                    }
-                }
-            }
+            ControllerBlock.unformContaining(level, pos);
         }
         super.onRemove(state, level, pos, newState, isMoving);
     }
