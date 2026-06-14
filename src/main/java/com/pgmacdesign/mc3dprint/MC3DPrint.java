@@ -45,6 +45,7 @@ public class MC3DPrint {
         modEventBus.addListener(com.pgmacdesign.mc3dprint.integration.draconic.DraconicCompat::onCommonSetup);
         modEventBus.addListener(com.pgmacdesign.mc3dprint.integration.ae2.Ae2Compat::onCommonSetup);
         modEventBus.addListener(com.pgmacdesign.mc3dprint.integration.thermal.ThermalCompat::onCommonSetup);
+        modEventBus.addListener(com.pgmacdesign.mc3dprint.integration.tinkers.TinkersCompat::onCommonSetup);
         net.minecraftforge.common.MinecraftForge.EVENT_BUS.addListener(
                 com.pgmacdesign.mc3dprint.fu.FuEvents::onServerStarted);
         net.minecraftforge.common.MinecraftForge.EVENT_BUS.addListener(
