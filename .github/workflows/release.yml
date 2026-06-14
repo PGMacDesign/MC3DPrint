@@ -1,0 +1,50 @@
+name: Build & attach mod jar to release
+
+# Runs when you publish a GitHub Release. Builds the production (reobfuscated) jar —
+# the same one you'd drop into a modpack — and attaches it to that release.
+on:
+  release:
+    types: [published]
+
+# Required so the workflow can upload the jar as a release asset.
+permissions:
+  contents: write
+
+jobs:
+  build-and-attach:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Strip a leading "v" so tag v0.4.0 -> 0.4.0. This version is fed to Gradle so the
+      # jar (and the in-jar mod metadata) match the release tag without bumping
+      # gradle.properties first.
+      - name: Derive version from release tag
+        id: ver
+        run: echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+
+      - name: Set up JDK 17 (Forge 1.20.1)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      - name: Build mod jar
+        run: |
+          chmod +x ./gradlew
+          ./gradlew build -Pmod_version="${{ steps.ver.outputs.version }}" --no-daemon --stacktrace
+
+      - name: Show built artifacts
+        run: ls -la build/libs/
+
+      - name: Attach jar to the release
+        uses: softprops/action-gh-release@v2
+        with:
+          # Only one mc3dprint-*.jar is produced (no sources/dev jar), so this glob is the
+          # single production jar regardless of the exact version string.
+          files: build/libs/mc3dprint-*.jar
+          fail_on_unmatched_files: true
