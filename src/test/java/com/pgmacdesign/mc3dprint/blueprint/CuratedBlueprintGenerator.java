@@ -1001,10 +1001,14 @@ class CuratedBlueprintGenerator {
         walls(b, 1, 1, 5, 5, 1, 1, COBBLE);            // grounding course
         walls(b, 1, 1, 5, 5, 2, 5, SPRUCE_PLANKS);     // upper body
         corners(b, 1, 1, 5, 5, 1, 5, SPRUCE_LOG_Y);
-        door2(b, 3, 1, 1, "spruce", "N");
-        window2(b, 1, 3, 3, GLASS_PANE, null);
-        window2(b, 5, 3, 3, GLASS_PANE, null);
-        window2(b, 3, 3, 5, GLASS_PANE, null);
+        // Door on the WEST side wall, not the front: the sails are a centred cross on the
+        // front (north) face and their down-blade runs to the ground right where a front
+        // door would be, blocking the entrance. Real windmills put the door beside/below
+        // the sails, so enter from the side and leave the sail face clean.
+        door2(b, 1, 1, 3, "spruce", "W");
+        window2(b, 1, 3, 3, GLASS_PANE, null);  // west wall, transom above the door
+        window2(b, 5, 3, 3, GLASS_PANE, null);  // east wall
+        window2(b, 3, 3, 5, GLASS_PANE, null);  // back wall
         // conical cap (y=6..7): inward stair ring + slab cap
         for (int x = 1; x <= 5; x++) {
             b.set(x, 6, 1, bs("minecraft:spruce_stairs[facing=south,half=bottom,shape=straight]"));
