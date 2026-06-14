@@ -1,19 +1,18 @@
 ---
 name: mc3dp-mod-filament-unit-compat
 description: >-
-  Add Filament Unit (FU) value support for an optional Minecraft mod in MC3DPrint —
-  the soft-dependency compat hook that lets that mod's items wind into filament and
-  print on the tiered printer/fabricator. Use this whenever the user wants to add,
-  value, balance, or "support" another mod's items in MC3DPrint's FU/filament economy
-  — e.g. "add FU support for Mekanism", "value Immersive Engineering's alloys for
-  filament", "make EnderIO items printable", "wire up Botania for filament units",
-  "give Create's brass an FU tier", "support Thermal/AE2/Tinkers in the printer
-  economy". Triggers even when the user names a mod and talks about printing/winding/
-  tiers/filament without saying "compat". Handles ID research from the mod's source,
-  leaf-vs-derived classification, tier calibration against the vanilla anchors, the
-  integration/<mod>/<Mod>Compat.java hook, the docs/rebalance/<mod>.md research doc,
-  constructor wiring, the memory update, and build verification. Accepts an optional
-  target Minecraft version (defaults to the repo's current version).
+  Use this skill WHENEVER the user wants a third-party Minecraft mod's items to take part
+  in MC3DPrint's filament/printer economy — i.e. to give that mod's items Filament Unit
+  (FU) values and material tiers so they wind into filament and print on the tiered
+  printer/fabricator. Trigger on ANY request pairing a mod name (Mekanism, Immersive
+  Engineering, EnderIO, Thermal, Applied Energistics/AE2, Botania, Create, Powah, Silent
+  Gear, Ars Nouveau, Tinkers' Construct, Draconic Evolution, Mystical Agriculture, etc.)
+  with making its items printable, windable, valued, tiered, balanced, or "supported" —
+  including terse asks like "add FU support for Mekanism," "value IE's steel for
+  filament," "none of Powah's items print," or "wire up Botania." This is the default
+  path for adding any mod's FU values; don't hand-assign them without it. Accepts an
+  optional target Minecraft version. Skip ONLY for rebalancing VANILLA FU tiers (no mod
+  involved), debugging mod crashes/conflicts, and printer RF or upgrade-module mechanics.
 ---
 
 # MC3DPrint — Mod Filament Unit (FU) Compat
