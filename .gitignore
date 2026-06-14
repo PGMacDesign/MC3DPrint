@@ -29,3 +29,8 @@ logs/
 # Python tooling (tools/*.py generators)
 __pycache__/
 *.pyc
+
+# Secrets / local credentials (never commit)
+.env
+.env.*
+!.env.example
