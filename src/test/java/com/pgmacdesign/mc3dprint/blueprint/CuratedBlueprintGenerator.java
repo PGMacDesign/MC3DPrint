@@ -695,9 +695,9 @@ class CuratedBlueprintGenerator {
         }
         b.set(2, 0, 2, DIRT_PATH);
         b.set(2, 1, 2, CAMPFIRE); // lit campfire on the path centre
-        // log seats
+        // log seats (both on the north side, clear of the z=3..4 tent)
         b.set(1, 1, 1, OAK_LOG_X);
-        b.set(3, 1, 3, OAK_LOG_X);
+        b.set(3, 1, 1, OAK_LOG_X);
         // A-frame tent at the back (z=4)
         b.set(1, 1, 4, bs("minecraft:oak_stairs[facing=west,half=bottom,shape=straight]"));
         b.set(3, 1, 4, bs("minecraft:oak_stairs[facing=east,half=bottom,shape=straight]"));
@@ -759,9 +759,10 @@ class CuratedBlueprintGenerator {
         // goods on the counter
         b.set(1, 2, 1, BARREL);
         b.set(3, 2, 1, HAY);
-        // backed hanging lantern under the awning front lip (the front stair at
-        // (2,3,1) is the solid backing directly above — z=0 has no overhang).
-        b.set(2, 2, 1, HANGING_LANTERN);
+        // backed hanging lantern under the awning. It hangs from the solid wool at
+        // (2,4,2) — a half=top stair (the old (2,3,1) backing) has no bottom face for
+        // a lantern to attach to, so it would float; wool gives a real solid face.
+        b.set(2, 3, 2, HANGING_LANTERN);
         return b.build();
     }
 
@@ -832,8 +833,9 @@ class CuratedBlueprintGenerator {
             b.set(0, 10, z, bs("minecraft:quartz_stairs[facing=east,half=bottom,shape=straight]"));
             b.set(4, 10, z, bs("minecraft:quartz_stairs[facing=west,half=bottom,shape=straight]"));
         }
-        // apex: sea-lantern crown + end-rod finials
-        b.set(2, 10, 2, SEA_LANTERN);
+        // apex: stained-glass crown on the beam axis (a sea_lantern here is opaque and
+        // STOPS the beacon beam — stained glass lets it through and tints it) + end-rod finials
+        b.set(2, 10, 2, bs("minecraft:white_stained_glass"));
         b.set(2, 11, 2, END_ROD);
         b.set(0, 11, 0, END_ROD);
         b.set(4, 11, 0, END_ROD);
@@ -857,8 +859,10 @@ class CuratedBlueprintGenerator {
         window2(b, 6, 2, 4, GLASS_PANE, null);
         window2(b, 3, 2, 6, GLASS_PANE, null);
         door2(b, 3, 1, 0, "oak", "N");
-        wallTorch(b, 2, 3, 0, "north");
-        wallTorch(b, 4, 3, 0, "north");
+        // torches flanking the door, mounted on the inside of the north wall (facing
+        // south backs onto the z=0 plank — facing north at z=0 had no block to hang on)
+        wallTorch(b, 2, 3, 1, "south");
+        wallTorch(b, 4, 3, 1, "south");
         // plate course to seat the roof flush
         line(b, 4, 0, 0, 6, 0, OAK_PLANKS);
         line(b, 4, 0, 6, 6, 6, OAK_PLANKS);
@@ -934,13 +938,16 @@ class CuratedBlueprintGenerator {
         // two smokers (ovens) at the back
         b.set(1, 1, 4, SMOKER);
         b.set(2, 1, 4, SMOKER);
-        // brick oven mouth at the chimney base + brick chimney clearing the ridge
+        // brick oven mouth at the chimney base
         b.set(5, 1, 4, bs("minecraft:smoker[facing=west,lit=true]"));
-        pillar(b, 6, 4, 1, 5, BRICKS); // chimney on the back wall, rising past the gable
-        b.set(6, 6, 4, CAMPFIRE);       // smoking cap above the roof peak (y=6 = ridge level)
         // roof + closed gable ends
         gableRoofX(b, 0, 0, 6, 5, 4, "oak_stairs", OAK_SLAB_BOTTOM);
         gableEndFill(b, 0, 0, 6, 5, 4, OAK_PLANKS);
+        // brick chimney LAST so it punches through the east gable end (placed after the
+        // roof/gable-fill, the brick wins those cells instead of being buried by them),
+        // capped by a smoking campfire at the ridge peak (y=6 is the H=7 budget ceiling)
+        pillar(b, 6, 4, 1, 5, BRICKS);
+        b.set(6, 6, 4, CAMPFIRE);
         return b.build();
     }
 
@@ -963,8 +970,10 @@ class CuratedBlueprintGenerator {
         b.set(5, 2, 4, IRON_BARS);
         b.set(4, 1, 4, IRON_BARS);
         b.set(6, 1, 4, IRON_BARS);
-        // chimney venting the forge up to the roof line (H=6 budget tops out at y=5)
-        pillar(b, 5, 4, 1, 5, COBBLE);
+        // chimney venting the forge up to the roof line (H=6 budget tops out at y=5).
+        // Starts at y=2 so it CAPS the lava (5,1,4) rather than overwriting the source —
+        // the forge stays a glowing, iron-bar-caged lava cell, not dead cobble.
+        pillar(b, 5, 4, 2, 5, COBBLE);
         // furniture
         b.set(3, 1, 4, ANVIL);              // faces north (out the open front)
         b.set(1, 1, 4, BLAST_FURNACE);
@@ -1021,9 +1030,9 @@ class CuratedBlueprintGenerator {
         // right blade
         b.set(4, 4, 0, OAK_FENCE); b.set(5, 4, 0, OAK_FENCE); b.set(6, 4, 0, OAK_FENCE);
         b.set(4, 5, 0, WHITE_WOOL); b.set(5, 5, 0, WHITE_WOOL); b.set(6, 5, 0, WHITE_WOOL);
-        // interior (grain mill read)
-        b.set(2, 2, 4, COMPOSTER);
-        b.set(4, 2, 4, BARREL);
+        // interior (grain mill read) — on the y=0 floor (standing level y=1), not floating
+        b.set(2, 1, 4, COMPOSTER);
+        b.set(4, 1, 4, BARREL);
         return b.build();
     }
 
@@ -1038,19 +1047,23 @@ class CuratedBlueprintGenerator {
         floor(b, 0, 0, 0, 4, 8, WATER);
         // gentle symmetric deck profile per z-row (crown of y=2 at z=4)
         int[] deckY = {0, 1, 1, 2, 2, 2, 1, 1, 0};
-        BlueprintBlockState rampUp = bs("minecraft:stone_brick_stairs[facing=north,half=bottom,shape=straight]");
-        BlueprintBlockState rampDown = bs("minecraft:stone_brick_stairs[facing=south,half=bottom,shape=straight]");
+        // Stairs ascending toward +z use facing=south (the verified gableRoofX
+        // convention); ascending toward -z uses facing=north. The earlier code had
+        // these INVERTED and also overwrote the two end stairs with a flat cobble
+        // abutment, producing un-walkable 1-block ledges at both approaches — the very
+        // wooden_bridge defect this build was meant to fix. Now every height change is
+        // a stair you can walk up, ends included.
+        BlueprintBlockState rampUp = bs("minecraft:stone_brick_stairs[facing=south,half=bottom,shape=straight]");
+        BlueprintBlockState rampDown = bs("minecraft:stone_brick_stairs[facing=north,half=bottom,shape=straight]");
         for (int z = 0; z <= 8; z++) {
             int dy = deckY[z];
-            boolean rising = z < 4 && deckY[z] < deckY[Math.min(z + 1, 8)];
+            boolean rising = z < 4 && deckY[z] < deckY[z + 1];
             boolean falling = z > 4 && deckY[z] < deckY[z - 1];
             BlueprintBlockState surface;
             if (rising) surface = rampUp;
             else if (falling) surface = rampDown;
             else surface = STONE_BRICKS; // flat tread (and the crown)
             for (int x = 0; x <= 4; x++) b.set(x, dy, z, surface);
-            // cobble pier fill under the deck down to the water at the abutments
-            if (z == 0 || z == 8) for (int x = 0; x <= 4; x++) b.set(x, 0, z, COBBLE);
         }
         // parapet walls along both edges, one above the deck
         for (int z = 0; z <= 8; z++) {
@@ -1072,7 +1085,11 @@ class CuratedBlueprintGenerator {
         walls(b, 0, 0, 4, 4, 1, 6, COBBLE);
         corners(b, 0, 0, 4, 4, 1, 6, STONE_BRICKS); // same height — closes the gap
         door2(b, 2, 1, 0, "oak", "N");
-        pillar(b, 2, 1, 1, 6, LADDER_SOUTH); // ladder up the interior back-ish
+        // ladder up the interior, backed by the south wall (facing=north → attaches to
+        // (1,y,4)). The old (2,1) ladder backed onto the DOOR at (2,*,0), which is not a
+        // valid support; it also ran only to y=6, below the deck. Now it reaches y=7 and
+        // surfaces through a hatch in the platform.
+        pillar(b, 1, 3, 1, 7, bs("minecraft:ladder[facing=north,waterlogged=false]"));
         // lookout glazing (y=3) + arrow-slit iron bars (y=5)
         window2(b, 0, 3, 2, GLASS_PANE, null);
         window2(b, 4, 3, 2, GLASS_PANE, null);
@@ -1081,14 +1098,20 @@ class CuratedBlueprintGenerator {
         b.set(4, 5, 2, IRON_BARS);
         b.set(2, 5, 0, IRON_BARS);
         b.set(2, 5, 4, IRON_BARS);
-        // platform deck (y=7) — no floating battlement
-        floor(b, 7, 0, 0, 4, 4, OAK_PLANKS);
+        // platform deck (y=7) with a ladder hatch at (1,3) so you can climb out onto it
+        for (int x = 0; x <= 4; x++) {
+            for (int z = 0; z <= 4; z++) {
+                if (x == 1 && z == 3) continue; // ladder hatch
+                b.set(x, 7, z, OAK_PLANKS);
+            }
+        }
         // crenellations flush on the platform (y=8)
         crenellate(b, 8, 0, 0, 4, 4, COBBLE_WALL);
-        // light + door torches
+        // light + door torches (mounted on the INSIDE of the north wall — facing south
+        // backs onto the z=0 cobble; facing north at z=0 had no block to mount on)
         b.set(2, 8, 2, LANTERN);
-        wallTorch(b, 1, 3, 0, "north");
-        wallTorch(b, 3, 3, 0, "north");
+        wallTorch(b, 1, 3, 1, "south");
+        wallTorch(b, 3, 3, 1, "south");
         return b.build();
     }
 
@@ -1099,9 +1122,13 @@ class CuratedBlueprintGenerator {
         floor(b, 0, 2, 1, 6, 5, GRASS_BLOCK); // inner pen floor
         // timber-frame walls (kept low so the gambrel barn roof fits the H=7 budget)
         timberFrame(b, 0, 0, 8, 6, 1, 2, SPRUCE_PLANKS, STRIPPED_SPRUCE_Y, bs("minecraft:stripped_spruce_log[axis=x]"));
-        // big double doors centred on the front (z=0)
-        door2(b, 3, 1, 0, "spruce", "N");
-        door2(b, 5, 1, 0, "spruce", "N");
+        // big double doors on the front (z=0): two ADJACENT leaves with mirrored hinges,
+        // overwriting the timber stud timberFrame placed at (4,0). The old (3,0)+(5,0)
+        // pair left that stud standing between them, reading as two separate single doors.
+        b.set(4, 1, 0, bs("minecraft:spruce_door[facing=south,half=lower,hinge=left,open=false,powered=false]"));
+        b.set(4, 2, 0, bs("minecraft:spruce_door[facing=south,half=upper,hinge=left,open=false,powered=false]"));
+        b.set(5, 1, 0, bs("minecraft:spruce_door[facing=south,half=lower,hinge=right,open=false,powered=false]"));
+        b.set(5, 2, 0, bs("minecraft:spruce_door[facing=south,half=upper,hinge=right,open=false,powered=false]"));
         // windows on the long walls
         window2(b, 0, 2, 2, GLASS_PANE, null);
         window2(b, 0, 2, 4, GLASS_PANE, null);
@@ -1219,8 +1246,9 @@ class CuratedBlueprintGenerator {
                 b.set(x, y, 8, ((x + y) % 2 == 0) ? redstoneBlock : redstoneLamp);
             }
         }
-        b.set(2, 1, 7, bs("minecraft:lever[face=wall,facing=south,powered=false]"));
-        b.set(6, 1, 7, bs("minecraft:lever[face=wall,facing=south,powered=false]"));
+        // levers mounted ON the z=8 display wall (face=wall,facing=north backs onto z+1=8)
+        b.set(2, 1, 7, bs("minecraft:lever[face=wall,facing=north,powered=false]"));
+        b.set(6, 1, 7, bs("minecraft:lever[face=wall,facing=north,powered=false]"));
         // workbench / contraption diorama
         b.set(1, 1, 1, CRAFTING_TABLE);
         b.set(2, 1, 1, BARREL);
@@ -1398,6 +1426,9 @@ class CuratedBlueprintGenerator {
         b.set(1, 5, 1, GLOWSTONE);  // spire light behind a louvre
         // pyramid spire on the tower (y=9) + cross at the peak (y=10..11)
         pyramidRoof(b, 0, 0, 2, 2, 9, "stone_brick_stairs", CHISELED_STONE_BRICKS);
+        // fill the spire core (the y=9 ring leaves (1,9,1) hollow) so the cap and cross
+        // above rest on solid stone instead of floating over a 1-block air gap
+        b.set(1, 9, 1, CHISELED_STONE_BRICKS);
         b.set(1, 10, 1, DARK_OAK_FENCE);
         b.set(1, 11, 1, DARK_OAK_FENCE);
         b.set(0, 11, 1, DARK_OAK_FENCE); // cross arm
@@ -1434,8 +1465,17 @@ class CuratedBlueprintGenerator {
         }
         b.set(0, 2, 5, GLASS_PANE); b.set(0, 3, 5, GLASS_PANE);
         b.set(12, 2, 5, GLASS_PANE); b.set(12, 3, 5, GLASS_PANE);
-        // mid floor over the ground storey
-        floor(b, 5, 1, 1, 11, 9, SPRUCE_PLANKS);
+        // mid floor over the ground storey, with a stairwell hatch at (11,2) for a ladder
+        for (int x = 1; x <= 11; x++) {
+            for (int z = 1; z <= 9; z++) {
+                if (x == 11 && z == 2) continue; // ladder hatch up to the upper floor
+                b.set(x, 5, z, SPRUCE_PLANKS);
+            }
+        }
+        // ladder joining the two storeys — they were SEALED (no stairs/ladder anywhere),
+        // so the upper floor was unreachable. Backed by the east wall at (12,2)
+        // (facing=west); runs to y=6, the upper-floor standing level.
+        pillar(b, 11, 2, 1, 6, bs("minecraft:ladder[facing=west,waterlogged=false]"));
         // upper floor (y=5..8): timber-frame
         timberFrame(b, 0, 0, 12, 10, 5, 8, SPRUCE_PLANKS, STRIPPED_OAK_Y, STRIPPED_OAK_X);
         // two-tall upper windows above the ground ones
@@ -1462,6 +1502,10 @@ class CuratedBlueprintGenerator {
             }
             floor(b, 10, ax0, az0, ax1, az1, STONE_BRICK_SLAB_TOP);
         }
+        // re-assert the chimney top AFTER the roof so it pokes through instead of being
+        // capped by the hip ring (the ring overwrote (1,10,5)); y=10 is the H=11 ceiling
+        b.set(1, 9, 5, COBBLE);
+        b.set(1, 10, 5, COBBLE);
         // front dormer: a small gable with a glass pane cut into the front slope
         b.set(6, 9, 1, GLASS_PANE);
         b.set(5, 9, 1, bs("minecraft:stone_brick_stairs[facing=west,half=bottom,shape=straight]"));
@@ -1574,6 +1618,7 @@ class CuratedBlueprintGenerator {
         b.set(2, 1, 10, FLETCHING_TABLE);
         b.set(10, 1, 10, CARTOGRAPHY_TABLE);
         b.set(6, 1, 10, LECTERN);
+        b.set(8, 1, 10, COMPOSTER); // stall composter (spec §3.21)
         // low hip roof: 3 inward stair rings (y=6..8) then a flat green-terracotta cap (y=9)
         // — height-capped so the 13-span closes within the H=10 budget.
         {
@@ -1590,9 +1635,12 @@ class CuratedBlueprintGenerator {
             // flat terracotta cap over the remaining interior at y=9
             floor(b, 9, ax0, az0, ax1, az1, greenTerracotta);
         }
-        // centrepiece: ceiling bell on a chain at the hall centre. The hip-roof
-        // interior is open, so the chain climbs to the y=9 terracotta cap for backing.
-        pillar(b, 6, 6, 6, 8, CHAIN);
+        // centrepiece: ceiling bell at the hall centre. A ceiling bell needs a SOLID
+        // block directly above (a chain alone won't hold it), so hang it from an oak
+        // tie-block; the tie itself hangs from chains climbing to the y=9 terracotta cap.
+        b.set(6, 6, 6, OAK_LOG_Y); // solid mount directly above the bell
+        b.set(6, 7, 6, CHAIN);
+        b.set(6, 8, 6, CHAIN);
         b.set(6, 5, 6, BELL_CEILING);
         // lantern chains between columns — climb to the y=9 cap so they don't float
         pillar(b, 3, 3, 5, 8, CHAIN); b.set(3, 4, 3, HANGING_LANTERN);
@@ -1617,7 +1665,10 @@ class CuratedBlueprintGenerator {
         // door at base (north side, faces south) + ladder inside
         b.set(4, 1, 1, bs("minecraft:oak_door[facing=south,half=lower,hinge=left,open=false,powered=false]"));
         b.set(4, 2, 1, bs("minecraft:oak_door[facing=south,half=upper,hinge=left,open=false,powered=false]"));
-        pillar(b, 4, 3, 1, 11, LADDER_SOUTH);
+        // ladder backed by the wall ring at (3,7) — the old (4,3) ladder sat in the hollow
+        // centre attached to nothing (facing=south wanted a block at (4,2), interior air),
+        // so it couldn't be climbed. (3,7) is a solid concrete ring cell with no porthole.
+        pillar(b, 3, 6, 1, 11, bs("minecraft:ladder[facing=north,waterlogged=false]"));
         // glass portholes spiraling up
         b.set(7, 4, 4, GLASS);
         b.set(4, 6, 7, GLASS);
@@ -1645,7 +1696,18 @@ class CuratedBlueprintGenerator {
         floor(b, 0, 0, 0, 20, 20, COBBLE);
         // curtain wall (y=1..6), 2 thick, with cracked/mossy flecks
         walls(b, 0, 0, 20, 20, 1, 6, STONE_BRICKS);
-        walls(b, 1, 1, 19, 19, 1, 6, STONE_BRICKS); // inner skin → 2-thick
+        // inner skin → 2-thick, but leave the gatehouse passage OPEN on the north inner
+        // face (x=9..11, y=1..4) so the gate doors tunnel into the courtyard. A plain
+        // walls() call sealed the passage with solid stone, making the keep unenterable.
+        for (int y = 1; y <= 6; y++) {
+            for (int x = 1; x <= 19; x++) {
+                if (y <= 4 && x >= 9 && x <= 11) continue; // gate passage opening
+                b.set(x, y, 1, STONE_BRICKS);            // north inner face
+            }
+            line(b, y, 1, 19, 19, 19, STONE_BRICKS); // south inner face
+            line(b, y, 1, 1, 1, 19, STONE_BRICKS);   // west inner face
+            line(b, y, 19, 1, 19, 19, STONE_BRICKS); // east inner face
+        }
         b.set(0, 3, 7, CRACKED_STONE_BRICKS);
         b.set(20, 4, 13, MOSSY_STONE_BRICKS);
         b.set(7, 2, 0, MOSSY_STONE_BRICKS);
@@ -1681,8 +1743,10 @@ class CuratedBlueprintGenerator {
             b.set(tx, 8, tz + 1, IRON_BARS); // arrow slit
             crenellate(b, 11, tx, tz, tx + 2, tz + 2, STONE_BRICK_WALL);
         }
-        // central keep: 7×7 tower (x,z 7..13), y=1..14, tallest element
-        floor(b, 1, 7, 7, 13, 13, polishedAndesite);
+        // central keep: 7×7 tower (x,z 7..13), y=1..14, tallest element. Floor at y=0
+        // (flush with the courtyard) — at y=1 it was a raised step you couldn't walk onto,
+        // sealing the keep off through its own door.
+        floor(b, 0, 7, 7, 13, 13, polishedAndesite);
         for (int y = 1; y <= 14; y++) walls(b, 7, 7, 13, 13, y, y, STONE_BRICKS);
         door2(b, 10, 1, 7, "oak", "N");
         for (int z = 9; z <= 11; z += 2) {

@@ -902,6 +902,10 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             state = State.PAUSED_OUTPUT_FULL; // disc waits to eject; job already complete
             return;
         }
+        // Now that the last block has landed, recompute connection-dependent shapes
+        // against the finished neighborhood (see reconcilePlacedShapes). Runs once,
+        // here at real completion — not on the PAUSED_OUTPUT_FULL re-entries above.
+        reconcilePlacedShapes(serverLevel, cachedBlueprint);
         recordHistory(activeJob);
 
         if (skippedThisJob > 0) {
@@ -935,6 +939,43 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         state = State.IDLE;
         setChanged();
         syncToClients();
+    }
+
+    /**
+     * After the final block lands, recompute connection-dependent block shapes
+     * against the now-complete structure. During placement every block is set with
+     * {@link Block#UPDATE_KNOWN_SHAPE} so two-block pieces (beds, doors), supported
+     * blocks (crops, torches), and connecting blocks don't self-break before their
+     * partner/support/neighbor exists. The side effect is that connecting blocks —
+     * glass panes, iron bars, fences, walls, redstone, stair corners — stay frozen
+     * in their stored (usually default, unconnected) state, so a pane in a wall slot
+     * renders as a floating center stub instead of spanning to the blocks beside it.
+     * <p>
+     * This single end-of-job pass re-derives each placed block's shape from its
+     * finished neighbors — exactly what vanilla's {@code StructureTemplate.placeInWorld}
+     * does after a paste. By now every partner/support is present, so doors/beds/crops
+     * stay intact while panes/bars/fences connect correctly. {@code UPDATE_SUPPRESS_DROPS}
+     * keeps anything that re-derives to air (it won't, since supports exist) from
+     * dropping items, and {@code UPDATE_CLIENTS} pushes the corrected render.
+     */
+    private void reconcilePlacedShapes(ServerLevel serverLevel, Blueprint blueprint) {
+        if (placementOrder == null || blueprint == null) {
+            return;
+        }
+        for (PlacementEntry entry : placementOrder) {
+            BlockPos pos = worldPosFor(entry.local(), blueprint);
+            BlockState current = serverLevel.getBlockState(pos);
+            BlockState reconciled = Block.updateFromNeighbourShapes(current, serverLevel, pos);
+            // Connecting blocks reconcile to their connected shape; an UNSUPPORTED
+            // attachment (a torch/ladder/lantern with no backing) reconciles to AIR.
+            // Guard that case: we never delete a block here — a mis-supported fixture
+            // is a blueprint data defect to fix at the source, not something the
+            // printer should silently erase. So skip no-op and to-air results.
+            if (reconciled != current && !reconciled.isAir()) {
+                serverLevel.setBlock(pos, reconciled,
+                        Block.UPDATE_CLIENTS | Block.UPDATE_SUPPRESS_DROPS);
+            }
+        }
     }
 
     public void cancelActiveJob() {
