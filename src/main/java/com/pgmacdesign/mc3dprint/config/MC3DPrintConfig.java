@@ -74,8 +74,11 @@ public final class MC3DPrintConfig {
 
         builder.comment("Scanner").push("scanner");
         T1_SCANNER_MAX_EDGE = builder
-                .comment("Tier 1 Scanner: maximum scan size per axis")
-                .defineInRange("t1MaxEdge", 7, 1, 256);
+                .comment("Scanner: maximum scan size per axis. The effective cap is the lesser of",
+                        "this and the largest buildable printer footprint (T8=33 when Draconic",
+                        "Evolution is installed, otherwise T7=23), so you can scan anything you",
+                        "could print. Default matches the T8 ceiling; lower it for a smaller scanner.")
+                .defineInRange("t1MaxEdge", 33, 1, 256);
         builder.pop();
 
         builder.comment("Filament Winder").push("winder");
