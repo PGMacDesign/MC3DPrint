@@ -41,10 +41,10 @@ jobs:
       - name: Show built artifacts
         run: ls -la build/libs/
 
+      # Upload to the release that triggered this run. Only one mc3dprint-*.jar is produced
+      # (no sources/dev jar), so the glob is the single production jar. --clobber lets a
+      # re-run replace the asset instead of failing.
       - name: Attach jar to the release
-        uses: softprops/action-gh-release@v2
-        with:
-          # Only one mc3dprint-*.jar is produced (no sources/dev jar), so this glob is the
-          # single production jar regardless of the exact version string.
-          files: build/libs/mc3dprint-*.jar
-          fail_on_unmatched_files: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ github.event.release.tag_name }}" build/libs/mc3dprint-*.jar --clobber
