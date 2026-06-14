@@ -52,13 +52,19 @@ Many tech mods define the same material. Pin it to the SAME tier/value everywher
 printed cheaply under one mod's tier and consumed under another's. Running list — extend it when
 you anchor a new common:
 
-| Material | Tier | ~FU | First anchored in |
+| Material | Tier | ~FU | Anchored in (reuse these exact values) |
 |---|:--:|---:|---|
-| steel (ingot) | T3 | ~25 | Tinkers' (`tconstruct:steel_ingot`) |
+| steel (ingot) | T3 | ~25 | Tinkers' + Mekanism — confirmed cross-mod |
+| bronze (ingot) | T3 | ~22 | Tinkers' + Mekanism |
 | cobalt (ingot/raw) | T4 | ~30 | Tinkers' (`tconstruct:cobalt_ingot`) |
-| (add electrum, invar, constantan, bronze, signalum, lumium, enderium as mods land) | | | Thermal valued tin/lead/silver/nickel T2; signalum/lumium T4; enderium T5 |
+| tin (raw/ingot) | T2 | ~18 | Thermal + Mekanism |
+| lead (raw/ingot) | T2 | ~18 | Thermal + Mekanism |
+| osmium (raw/ingot) | T2 | ~18 | Mekanism |
+| signalum / lumium | T4 | 35 / 40 | Thermal |
+| enderium | T5 | ~90 | Thermal |
+| (add electrum, invar, constantan as mods land) | | | Thermal valued silver/nickel T2 |
 
-When EnderIO / IE / Mekanism add their own steel, reuse T3 ~25. Same for any shared alloy.
+When EnderIO / IE add their own steel/bronze, reuse the values above. Same for any shared alloy.
 
 ## Tier ceiling
 `FuValueRegistry.clamp` bounds tier to 1–8 and FU to ≥1. T8 normally needs a modded endgame
