@@ -27,6 +27,11 @@
       "type": "patchouli:text",
       "title": "Lower Tiers Cost More",
       "text": "Lower-tier machines pay a higher FU multiplier per block — a Tier 1 printer costs more per block than a Tier 8 Fabricator.$(br2)Printing always costs a little $(l)more$() than the matter is worth. Stack $(l)4 Efficiency modules$() to reach exact break-even (1:1); you can never print matter for less than it's worth. Per-tier efficiencies are in the config."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Printing Food",
+      "text": "Food has FU values too, so a printer in $(l)item mode$() can print meals — bread and basics low, cooked food and golden food higher. Handy when you're short on supplies but flush with filament.$(br2)Food $(l)can't be wound back$() into FU — printing food is a one-way sink, not a loop."
     }
   ]
 }

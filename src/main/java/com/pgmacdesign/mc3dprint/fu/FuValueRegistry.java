@@ -223,18 +223,22 @@ public final class FuValueRegistry {
 
     public static List<String> defaultEntries() {
         return List.of(
-                // 1 FU @ T1 — bulk fill
+                // ===== T1 — bulk / infinite (trivially gathered) =====
                 "minecraft:cobblestone=1@1", "minecraft:dirt=1@1", "minecraft:gravel=1@1",
-                "minecraft:sand=1@1", "minecraft:soul_sand=1@1", "minecraft:soul_soil=1@1",
-                "minecraft:clay_ball=1@1", "minecraft:netherrack=1@1",
-                // 3 FU @ T1 — stone family & wood
-                "minecraft:stone=3@1", "minecraft:sandstone=3@1", "minecraft:smooth_stone=3@1",
-                "minecraft:stone_bricks=3@1", "minecraft:andesite=3@1", "minecraft:diorite=3@1",
-                "minecraft:granite=3@1", "minecraft:calcite=3@1", "minecraft:tuff=3@1",
+                "minecraft:sand=1@1", "minecraft:red_sand=1@1", "minecraft:soul_sand=1@1",
+                "minecraft:soul_soil=1@1", "minecraft:clay_ball=1@1", "minecraft:netherrack=1@1",
+                "minecraft:deepslate=1@1", "minecraft:cobbled_deepslate=1@1", "minecraft:tuff=1@1",
+                "minecraft:dripstone_block=1@1", "minecraft:pointed_dripstone=1@1", "minecraft:mud=1@1",
+                "minecraft:snow_block=1@1", "minecraft:ice=1@1",
+                "minecraft:coal=2@1", "minecraft:moss_block=2@1",
+                // stone family & wood (3 FU)
+                "minecraft:stone=3@1", "minecraft:smooth_stone=3@1", "minecraft:stone_bricks=3@1",
+                "minecraft:andesite=3@1", "minecraft:diorite=3@1", "minecraft:granite=3@1",
+                "minecraft:calcite=3@1", "minecraft:sandstone=3@1", "minecraft:red_sandstone=3@1",
+                "minecraft:basalt=3@1", "minecraft:smooth_basalt=3@1", "minecraft:blackstone=3@1",
                 "#minecraft:logs=3@1", "#minecraft:planks=3@1",
-                // 5 FU @ T1 — processed building blocks
-                "minecraft:glass=5@1", "minecraft:terracotta=5@1", "#minecraft:wool=5@1",
-                "minecraft:nether_bricks=5@1", "minecraft:quartz_block=5@1",
+                // processed building (5 FU)
+                "minecraft:glass=5@1", "minecraft:terracotta=5@1", "minecraft:nether_bricks=5@1",
                 "minecraft:white_concrete=5@1", "minecraft:orange_concrete=5@1",
                 "minecraft:magenta_concrete=5@1", "minecraft:light_blue_concrete=5@1",
                 "minecraft:yellow_concrete=5@1", "minecraft:lime_concrete=5@1",
@@ -243,30 +247,59 @@ public final class FuValueRegistry {
                 "minecraft:purple_concrete=5@1", "minecraft:blue_concrete=5@1",
                 "minecraft:brown_concrete=5@1", "minecraft:green_concrete=5@1",
                 "minecraft:red_concrete=5@1", "minecraft:black_concrete=5@1",
-                // 10 FU @ T2 — base materials (gems/ingots are bases, not derived)
+
+                // ===== T2 — early ores / dimension entry (nuggets = ingot/9, lossy by design) =====
+                "minecraft:end_stone=5@2", "minecraft:packed_ice=5@2", "minecraft:magma_block=5@2",
                 "minecraft:copper_ingot=10@2", "minecraft:amethyst_shard=10@2", "minecraft:lapis_lazuli=10@2",
-                // 15-20 FU @ T2 — metals (nuggets = ingot/9 rounded DOWN, lossy by design: 2026-06-11)
                 "minecraft:gold_ingot=15@2", "minecraft:iron_ingot=20@2",
                 "minecraft:gold_nugget=1@2", "minecraft:iron_nugget=2@2",
-                // ~30 FU @ T3
-                "minecraft:redstone=4@3", "minecraft:slime_ball=30@3", "minecraft:magma_cream=30@3",
-                // coal: a base T1 value so coal_block DERIVES to 18@1 (9 coal) instead
-                // of being unvalued. (coal_block's explicit entry was removed in favor
-                // of derivation — see docs/FU-VALUES-AND-COMPAT.md)
-                "minecraft:coal=2@1",
-                // 50 FU @ T4 — emerald (villager-renewable, stays the T4 gem)
-                "minecraft:emerald=50@4",
-                // 50 FU @ T5 — diamond (mined; gated above emerald per 2026-06-11 decision)
-                "minecraft:diamond=50@5",
-                // T6 — netherite family (ancient_debris, scrap, ingot all T6;
-                // netherite_block derives from 9x ingot -> 4500@6)
+
+                // ===== T3 — processing + early-game friction (wool/string are a real early gate) =====
+                "minecraft:redstone=4@3", "minecraft:quartz=5@3", "minecraft:string=8@3",
+                "minecraft:obsidian=10@3", "minecraft:crying_obsidian=15@3", "minecraft:shroomlight=10@3",
+                "minecraft:glowstone=20@3", "minecraft:slime_ball=30@3", "#minecraft:wool=30@3",
+                // utility overrides (cheap mats, high automation power — pinned above derivation)
+                "minecraft:hopper=100@3", "minecraft:bookshelf=40@3",
+                // basic food (print-to-eat unlock; all food is winder-blacklisted)
+                "minecraft:bread=15@3", "minecraft:apple=10@3", "minecraft:baked_potato=12@3",
+                "minecraft:cookie=8@3", "minecraft:dried_kelp=8@3",
+                "minecraft:mushroom_stew=15@3", "minecraft:beetroot_soup=15@3",
+
+                // ===== T4 — renewable-valuable =====
+                "minecraft:emerald=50@4", "minecraft:magma_cream=30@4",
+                "minecraft:blaze_rod=40@4", "minecraft:ghast_tear=50@4", "minecraft:totem_of_undying=200@4",
+                "minecraft:prismarine_shard=8@4", "minecraft:prismarine_crystals=12@4",
+                // chorus is abundance-capped at T4 (a T6 chorus spool could print netherite)
+                "minecraft:chorus_fruit=8@4", "minecraft:popped_chorus_fruit=10@4",
+                "minecraft:sticky_piston=80@4",
+                // hearty food
+                "minecraft:cooked_beef=20@4", "minecraft:cooked_porkchop=20@4", "minecraft:cooked_chicken=18@4",
+                "minecraft:cooked_mutton=18@4", "minecraft:cooked_rabbit=18@4", "minecraft:cooked_cod=15@4",
+                "minecraft:cooked_salmon=18@4", "minecraft:golden_carrot=40@4", "minecraft:pumpkin_pie=20@4",
+                "minecraft:rabbit_stew=30@4", "minecraft:suspicious_stew=20@4",
+
+                // ===== T5 — deep mining / monument =====
+                "minecraft:diamond=50@5", "minecraft:ender_pearl=40@5", "minecraft:sea_lantern=50@5",
+                "minecraft:sponge=60@5", "minecraft:sculk=15@5", "minecraft:sculk_vein=15@5",
+                "minecraft:sculk_catalyst=40@5", "minecraft:sculk_sensor=40@5", "minecraft:sculk_shrieker=40@5",
+                "minecraft:shulker_shell=80@5", "minecraft:golden_apple=300@5",
+
+                // ===== T6 — netherite + high-value finite =====
                 "minecraft:netherite_ingot=500@6", "minecraft:netherite_scrap=125@6",
-                "minecraft:ancient_debris=125@6",
+                "minecraft:ancient_debris=125@6", "minecraft:trident=150@6", "minecraft:nautilus_shell=80@6",
+                "minecraft:elytra=2000@6", "minecraft:enchanted_golden_apple=1500@6",
+
+                // ===== T7 — boss / heavy-grind (wither_skeleton_skull stays UNPRINTABLE on purpose) =====
                 "minecraft:nether_star=1500@7",
-                "minecraft:dragon_egg=2500@7");
-        // NOTE: storage/material blocks (diamond_block, iron_block, ...) are no
-        // longer hardcoded — they DERIVE from their crafting recipe (9x or 4x the
-        // base material) at the constituent's tier. See defaultEntries() history
-        // and docs/FU-VALUES-AND-COMPAT.md. coal_block derives from coal above.
+
+                // ===== T8 — finite trophies (draconium added via DE compat when loaded) =====
+                "minecraft:echo_shard=500@8", "minecraft:heart_of_the_sea=800@8");
+        // Derivation fills the rest: storage blocks (9x/4x base), stairs/slabs/walls,
+        // tools, beacon (via nether_star), conduit (via heart_of_the_sea), quartz_block
+        // (4x quartz), purpur/end_rod (via popped_chorus_fruit), etc.
+        // UNPRINTABLE (deliberately unvalued — strict mode refuses them): dragon_egg
+        // (1 per world), wither_skeleton_skull (would mass-spawn withers -> nether stars),
+        // and survival-unobtainables (bedrock, spawner, reinforced_deepslate,
+        // budding_amethyst, command blocks, barrier, ...). See docs/rebalance/rebalance-plan.md.
     }
 }

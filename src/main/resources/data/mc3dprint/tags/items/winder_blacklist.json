@@ -1,6 +1,27 @@
 {
   "replace": false,
   "values": [
-    "minecraft:stick"
+    "minecraft:stick",
+    "#minecraft:planks",
+    "minecraft:bread",
+    "minecraft:apple",
+    "minecraft:baked_potato",
+    "minecraft:cookie",
+    "minecraft:dried_kelp",
+    "minecraft:mushroom_stew",
+    "minecraft:beetroot_soup",
+    "minecraft:cooked_beef",
+    "minecraft:cooked_porkchop",
+    "minecraft:cooked_chicken",
+    "minecraft:cooked_mutton",
+    "minecraft:cooked_rabbit",
+    "minecraft:cooked_cod",
+    "minecraft:cooked_salmon",
+    "minecraft:golden_carrot",
+    "minecraft:pumpkin_pie",
+    "minecraft:rabbit_stew",
+    "minecraft:suspicious_stew",
+    "minecraft:golden_apple",
+    "minecraft:enchanted_golden_apple"
   ]
 }

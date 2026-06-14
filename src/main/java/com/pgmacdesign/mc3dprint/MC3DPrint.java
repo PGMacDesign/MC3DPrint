@@ -40,6 +40,8 @@ public class MC3DPrint {
         // recipe-derived FU valuation: bind live recipes on datapack sync (server)
         // and consume cross-mod FU registrations sent over IMC.
         modEventBus.addListener(com.pgmacdesign.mc3dprint.fu.FuEvents::onInterModProcess);
+        // Tier-8 draconium values, registered only when Draconic Evolution is present.
+        modEventBus.addListener(com.pgmacdesign.mc3dprint.integration.draconic.DraconicCompat::onCommonSetup);
         net.minecraftforge.common.MinecraftForge.EVENT_BUS.addListener(
                 com.pgmacdesign.mc3dprint.fu.FuEvents::onServerStarted);
         net.minecraftforge.common.MinecraftForge.EVENT_BUS.addListener(
