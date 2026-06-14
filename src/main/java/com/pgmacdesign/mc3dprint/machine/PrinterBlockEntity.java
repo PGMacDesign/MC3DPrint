@@ -1247,18 +1247,36 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
 
     @Override
     public net.minecraft.world.phys.AABB getRenderBoundingBox() {
+        // The renderer draws well outside the machine's own block: a build-volume gantry
+        // during a job, a ghost preview, and — for a formed multiblock — a raised frame
+        // of posts/gantry plus perimeter spool reels EVERY frame, idle or not. This cull
+        // box must enclose all of it; if it doesn't, the whole render is culled the moment
+        // this box leaves the view frustum — which is exactly when you look straight at the
+        // tall parts and the machine's own 1-block AABB drops out of view (the reported
+        // "gantry/bars vanish when looked at directly, fine in peripheral vision").
+        net.minecraft.world.phys.AABB box = new net.minecraft.world.phys.AABB(worldPosition);
         if (activeJob != null) {
             BlockPos size = activeJob.size();
-            return new net.minecraft.world.phys.AABB(activeJob.origin(),
-                    activeJob.origin().offset(size.getX(), size.getY(), size.getZ()))
-                    .minmax(new net.minecraft.world.phys.AABB(worldPosition));
+            // +1 on Y: the gantry/head ride just above the volume's top (gantryY = maxY+0.25)
+            box = box.minmax(new net.minecraft.world.phys.AABB(activeJob.origin(),
+                    activeJob.origin().offset(size.getX(), size.getY() + 1, size.getZ())));
+        } else if (clientPreviewOrigin != null && clientPreviewSize != null) {
+            box = box.minmax(new net.minecraft.world.phys.AABB(clientPreviewOrigin,
+                    clientPreviewOrigin.offset(clientPreviewSize)));
         }
-        if (clientPreviewOrigin != null && clientPreviewSize != null) {
-            return new net.minecraft.world.phys.AABB(clientPreviewOrigin,
-                    clientPreviewOrigin.offset(clientPreviewSize))
-                    .minmax(new net.minecraft.world.phys.AABB(worldPosition));
+        var blockState = getBlockState();
+        if (blockState.hasProperty(com.pgmacdesign.mc3dprint.machine.multiblock.ControllerBlock.FORMED)
+                && blockState.getValue(com.pgmacdesign.mc3dprint.machine.multiblock.ControllerBlock.FORMED)) {
+            // Mirrors PrinterRenderer.renderFormedStructure: posts span +/-half blocks out
+            // and rise to topY = 3 + half; spool reels push to the same perimeter. Cover it
+            // with a block of headroom to spare.
+            int half = com.pgmacdesign.mc3dprint.machine.multiblock.MultiblockPattern.baseEdge(tier()) / 2;
+            box = box.minmax(new net.minecraft.world.phys.AABB(
+                    worldPosition.getX() - half, worldPosition.getY(), worldPosition.getZ() - half,
+                    worldPosition.getX() + half + 1, worldPosition.getY() + 4.0 + half,
+                    worldPosition.getZ() + half + 1));
         }
-        return super.getRenderBoundingBox();
+        return box;
     }
 
     private void syncToClients() {
