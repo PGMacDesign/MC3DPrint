@@ -19,6 +19,7 @@ public final class ClientSetup {
         event.enqueueWork(() -> {
             MenuScreens.register(ModMenuTypes.TIER1_PRINTER.get(), PrinterScreen::new);
             MenuScreens.register(ModMenuTypes.FILAMENT_WINDER.get(), WinderScreen::new);
+            MenuScreens.register(ModMenuTypes.SIMPLE_GENERATOR.get(), SimpleGeneratorScreen::new);
         });
     }
 

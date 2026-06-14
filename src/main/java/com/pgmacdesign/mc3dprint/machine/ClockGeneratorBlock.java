@@ -4,8 +4,7 @@ import com.pgmacdesign.mc3dprint.registry.ModBlockEntities;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
-import net.minecraft.sounds.SoundEvents;
-import net.minecraft.sounds.SoundSource;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Containers;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
@@ -22,6 +21,7 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraftforge.common.capabilities.ForgeCapabilities;
+import net.minecraftforge.network.NetworkHooks;
 
 import javax.annotation.Nullable;
 
@@ -47,31 +47,10 @@ public class ClockGeneratorBlock extends BaseEntityBlock {
     @Override
     public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player,
                                  InteractionHand hand, BlockHitResult hit) {
-        if (!(level.getBlockEntity(pos) instanceof ClockGeneratorBlockEntity generator)) {
-            return InteractionResult.PASS;
+        if (!level.isClientSide && level.getBlockEntity(pos) instanceof ClockGeneratorBlockEntity generator) {
+            NetworkHooks.openScreen((ServerPlayer) player, generator, pos);
         }
-        if (level.isClientSide) {
-            return InteractionResult.SUCCESS;
-        }
-        ItemStack held = player.getItemInHand(hand);
-        if (!held.isEmpty()) {
-            if (!ClockGeneratorBlockEntity.isFuel(held)) {
-                player.displayClientMessage(Component.translatable("message.mc3dprint.generator_not_fuel"), true);
-                return InteractionResult.CONSUME;
-            }
-            int burnTicks = generator.addFuel(held);
-            if (burnTicks > 0) {
-                player.displayClientMessage(Component.translatable("message.mc3dprint.generator_fueled",
-                        burnTicks / 1200), true);
-                level.playSound(null, pos, SoundEvents.FURNACE_FIRE_CRACKLE, SoundSource.BLOCKS, 0.6F, 1.0F);
-            } else {
-                player.displayClientMessage(Component.translatable("message.mc3dprint.generator_fuel_full"), true);
-            }
-            return InteractionResult.CONSUME;
-        }
-        player.displayClientMessage(Component.translatable("message.mc3dprint.generator_status",
-                generator.burnTicksRemaining() / 1200, generator.storedEnergy()), true);
-        return InteractionResult.CONSUME;
+        return InteractionResult.sidedSuccess(level.isClientSide);
     }
 
     @Override

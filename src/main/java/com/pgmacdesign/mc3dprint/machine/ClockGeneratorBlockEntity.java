@@ -4,6 +4,12 @@ import com.pgmacdesign.mc3dprint.config.MC3DPrintConfig;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.MenuProvider;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.ContainerData;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.level.Level;
@@ -29,12 +35,21 @@ import static com.pgmacdesign.mc3dprint.registry.ModBlockEntities.CLOCK_GENERATO
  * burning, pushes it to adjacent machines, and exposes an extract-only energy
  * capability for cables. Fuel goes in by hand (right-click) or hopper.
  */
-public class ClockGeneratorBlockEntity extends BlockEntity {
+public class ClockGeneratorBlockEntity extends BlockEntity implements MenuProvider {
     /** Buffer holds this many ticks of generation so brief disconnects don't void RF. */
     private static final int BUFFER_TICKS = 200;
 
+    public static final int DATA_ENERGY = 0;
+    public static final int DATA_MAX_ENERGY = 1;
+    public static final int DATA_BURN_REMAINING = 2;
+    public static final int DATA_BURN_TOTAL = 3;
+    public static final int DATA_RATE = 4;
+    public static final int DATA_COUNT = 5;
+
     private int stored;
     private int burnRemaining;
+    /** Boosted burn time of the currently-igniting fuel item; 0 when not burning. Drives the GUI flame fill. */
+    private int burnTotal;
 
     private final ItemStackHandler fuel = new ItemStackHandler(1) {
         @Override
@@ -103,7 +118,7 @@ public class ClockGeneratorBlockEntity extends BlockEntity {
         return ForgeHooks.getBurnTime(stack, RecipeType.SMELTING) > 0;
     }
 
-    private static int capacity() {
+    public static int capacity() {
         return ratePerTick() * BUFFER_TICKS;
     }
 
@@ -113,6 +128,45 @@ public class ClockGeneratorBlockEntity extends BlockEntity {
 
     public int burnTicksRemaining() {
         return burnRemaining;
+    }
+
+    public int burnTicksTotal() {
+        return burnTotal;
+    }
+
+    /** RF/t the generator is producing right now (0 when not burning). */
+    public int currentRate() {
+        return burnRemaining > 0 ? ratePerTick() : 0;
+    }
+
+    public ContainerData containerData() {
+        return new SplitContainerData(DATA_COUNT, this::dataValue);
+    }
+
+    private int dataValue(int index) {
+        return switch (index) {
+            case DATA_ENERGY -> stored;
+            case DATA_MAX_ENERGY -> capacity();
+            case DATA_BURN_REMAINING -> burnRemaining;
+            case DATA_BURN_TOTAL -> burnTotal;
+            case DATA_RATE -> currentRate();
+            default -> 0;
+        };
+    }
+
+    public ItemStackHandler fuel() {
+        return fuel;
+    }
+
+    @Override
+    public Component getDisplayName() {
+        return getBlockState().getBlock().getName();
+    }
+
+    @Nullable
+    @Override
+    public AbstractContainerMenu createMenu(int windowId, Inventory playerInventory, Player player) {
+        return new SimpleGeneratorMenu(windowId, playerInventory, this);
     }
 
     /** Inserts one fuel item from the held stack; returns its boosted burn time, or 0 if rejected. */
@@ -140,6 +194,7 @@ public class ClockGeneratorBlockEntity extends BlockEntity {
             ItemStack next = fuel.extractItem(0, 1, false);
             if (!next.isEmpty()) {
                 burnRemaining = ForgeHooks.getBurnTime(next, RecipeType.SMELTING) * burnMultiplier();
+                burnTotal = burnRemaining; // remember the full burn for the GUI flame fill
                 // burnable containers (lava bucket) leave their empty container behind
                 ItemStack remainder = next.getCraftingRemainingItem();
                 if (!remainder.isEmpty() && fuel.getStackInSlot(0).isEmpty()) {
@@ -151,6 +206,9 @@ public class ClockGeneratorBlockEntity extends BlockEntity {
         if (burnRemaining > 0) {
             burnRemaining--;
             stored = Math.min(stored + ratePerTick(), capacity());
+            if (burnRemaining <= 0) {
+                burnTotal = 0; // fuel spent — empty the flame indicator
+            }
         }
 
         for (Direction direction : Direction.values()) {
@@ -197,6 +255,7 @@ public class ClockGeneratorBlockEntity extends BlockEntity {
         super.saveAdditional(tag);
         tag.putInt("Energy", stored);
         tag.putInt("BurnRemaining", burnRemaining);
+        tag.putInt("BurnTotal", burnTotal);
         tag.put("Fuel", fuel.serializeNBT());
     }
 
@@ -205,6 +264,7 @@ public class ClockGeneratorBlockEntity extends BlockEntity {
         super.load(tag);
         stored = Math.max(0, tag.getInt("Energy"));
         burnRemaining = Math.max(0, tag.getInt("BurnRemaining"));
+        burnTotal = Math.max(0, tag.getInt("BurnTotal"));
         if (tag.contains("Fuel")) {
             fuel.deserializeNBT(tag.getCompound("Fuel"));
         }
