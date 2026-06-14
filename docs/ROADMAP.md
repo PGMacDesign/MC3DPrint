@@ -1,13 +1,19 @@
 # MC3DPrint — Roadmap & Outstanding Items
 
-_Last updated: 2026-06-13 · v0.2.0 · HEAD `9199401` · 62 GameTests passing · deployed to Prism._
+_Last updated: 2026-06-13 · **v0.3.0** · HEAD `31a65f0` · 65 GameTests passing · deployed to Prism._
 
-**Recently shipped (2026-06-13):** (a) **FU efficiency rework** — printing is lossy by
-design, reaching exact 1:1 break-even at the max Efficiency modules; upgrades now capped
-at 4 per type (`upgrades.maxPerType`). (b) **Curated blueprint set rebuilt** — workstream
-#3 below is essentially done (23 faithful builds T3–T7, systemic defects fixed, refresh-
-on-change install, a dump/validate tool). (c) **3 pipeline skills** added under
-`.claude/skills/` (`mc3dp-find-buildings` / `-create-blueprint` / `-validate-blueprint`).
+**Recently shipped (2026-06-13):** FU efficiency rework (break-even at max Efficiency
+modules, 4/type cap); curated blueprint set rebuilt (23 builds + dump/validate tool) +
+3 `mc3dp-*` pipeline skills; netherite→T6; winder blacklist; T5 multiblock corners =
+diamond; print-bug fixes (itemless blocks print, captured-state placement, obstruction
+on disc-load); **comprehensive vanilla FU tier rebalance** (food printing, abundance
+caps, naturally-spawned blocks, utility overrides, unprintables, draconium T8 — see
+`docs/rebalance/`); **AE2 + Thermal modded FU compat** (soft-dep, invisible when absent);
+**released v0.3.0** (jar at `6b1155d`, vanilla only).
+
+**⚠ OPEN:** version bump for the modded compat — repo HEAD has AE2/Thermal but is still
+labeled `0.3.0`; user deciding **0.3.1 vs 0.4.0**, then bump `gradle.properties` + rebuild.
+Next workstream is **UI cleanup** (printer/winder GUI polish). Rebalance amounts are tunable.
 
 MC3DPrint is a Forge **1.20.1** tech mod: "WorldEdit for survival." Scan a build
 with the Structure Scanner → save it to a Blueprint Disc → print it anywhere with
