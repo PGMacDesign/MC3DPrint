@@ -60,9 +60,13 @@ you anchor a new common:
 | tin (raw/ingot) | T2 | ~18 | Thermal + Mekanism |
 | lead (raw/ingot) | T2 | ~18 | Thermal + Mekanism |
 | osmium (raw/ingot) | T2 | ~18 | Mekanism |
+| aluminum (raw/ingot) | T2 | ~18 | IE (Thermal/Mekanism also define) |
+| silver / nickel (raw/ingot) | T2 | ~18 | Thermal + IE |
+| constantan (ingot) | T3 | ~20 | IE (Arc/Alloy; Thermal also defines) |
+| electrum (ingot) | T3 | ~20 | IE (Arc/Alloy; Thermal also defines) |
 | signalum / lumium | T4 | 35 / 40 | Thermal |
 | enderium | T5 | ~90 | Thermal |
-| (add electrum, invar, constantan as mods land) | | | Thermal valued silver/nickel T2 |
+| zinc (raw/ingot) | T2 | ~18 | Create |
 
 When EnderIO / IE add their own steel/bronze, reuse the values above. Same for any shared alloy.
 
