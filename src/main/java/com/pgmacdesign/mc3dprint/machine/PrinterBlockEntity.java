@@ -351,12 +351,12 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         if (value.isPresent()) {
             return applyEfficiency(value.get().fu());
         }
-        // Itemless structural blocks (farmland, crops, water, wall torches…) are free
-        // matter — there's no item to obtain, so no FU to charge. Other unpriced blocks
-        // (permissive mode only — strict mode refuses them up front in tryStartJob) cost
+        // Structural matter (farmland, crops, water, wall torches…) is free — there's
+        // no obtainable-as-shown item to charge for. Other unpriced blocks (permissive
+        // mode only — strict mode refuses them up front in tryStartJob) cost
         // unknownBlockFu, denominated at the machine's tier so a low-tier machine can't
         // print them cheaply.
-        if (isStructuralItemless(state)) {
+        if (isStructuralMatter(state)) {
             return 0;
         }
         return applyEfficiency(MC3DPrintConfig.UNKNOWN_BLOCK_FU.get());
@@ -384,20 +384,45 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         if (value.isPresent()) {
             return value.get().tier() <= tier.number();
         }
-        // Itemless structural blocks (farmland, crops, water, wall torches, redstone
-        // wire, fire…) have no obtainable item, so they can't be an FU-exploit vector —
-        // always printable as free matter (this is what makes farms/decorated builds
-        // print whole). An itemed-but-unpriced block still respects strict mode (the
-        // scan-expensive / print-cheap guard).
-        if (isStructuralItemless(resolvedState)) {
+        // Structural matter (farmland, crops, water, wall torches, redstone wire, fire…)
+        // is an in-world-only state with no obtainable-as-shown item, so it can't be an
+        // FU-exploit vector — always printable as free matter (this is what makes
+        // farms/decorated builds print whole). An itemed-but-unpriced solid block still
+        // respects strict mode (the scan-expensive / print-cheap guard).
+        if (isStructuralMatter(resolvedState)) {
             return true;
         }
         return MC3DPrintConfig.UNKNOWN_BLOCKS_PRINTABLE.get();
     }
 
-    /** A non-air block with no item form — structural/decorative, never obtainable as an item. */
-    private static boolean isStructuralItemless(BlockState state) {
-        return !state.isAir() && state.getBlock().asItem() == Items.AIR;
+    /**
+     * Whether a (resolved) block is "structural matter" — an in-world-only state that
+     * isn't survival-obtainable as the depicted block, so it carries no FU and prints
+     * free (like /paste). Three families:
+     * <ul>
+     *   <li><b>itemless</b> blocks whose {@code asItem()} is AIR (water, fire, …);</li>
+     *   <li><b>planted growth</b> — {@link BushBlock} descendants (crops, stems, nether
+     *       wart, saplings, flowers): their item is a seed/sapling, never the depicted
+     *       grown {@code age=N} block;</li>
+     *   <li><b>tilled ground</b> — farmland / dirt-path: their {@code asItem()} exists
+     *       but no loot ever drops it (you get dirt), so it's not really obtainable.</li>
+     * </ul>
+     * Crucially this keys on block <i>type</i>, not on the seed/food item's price, so it
+     * stays correct once recipe derivation values {@code carrot}/{@code potato}/etc. The
+     * anti-exploit gate is untouched: an unpriced <i>itemed solid</i> (a modded ore a pack
+     * forgot to value) is none of these families, so strict mode still refuses it.
+     */
+    private static boolean isStructuralMatter(BlockState state) {
+        if (state.isAir()) {
+            return false;
+        }
+        if (state.getBlock().asItem() == Items.AIR) {
+            return true; // water, fire, wall torches, redstone wire, …
+        }
+        Block block = state.getBlock();
+        return block instanceof net.minecraft.world.level.block.BushBlock     // crops/stems/saplings/flowers/wart
+                || block instanceof net.minecraft.world.level.block.FarmBlock      // farmland
+                || block instanceof net.minecraft.world.level.block.DirtPathBlock; // grass/dirt path
     }
 
     private void recordSkippedBlock(BlockState resolvedState) {

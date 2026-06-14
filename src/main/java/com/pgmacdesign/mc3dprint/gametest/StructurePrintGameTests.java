@@ -304,6 +304,37 @@ public class StructurePrintGameTests {
         });
     }
 
+    @GameTest(template = "empty5", timeoutTicks = 300)
+    public static void printsFarmlandAndCropsAndControl(GameTestHelper helper) {
+        // Regression: the "Wheat Farm" blueprint printed its itemed perimeter but
+        // left the inner field empty — farmland[moisture=7] (y=0) and the crops
+        // wheat/carrots/potatoes (y=1) never landed, even though water (also
+        // itemless) prints fine. This is the minimal repro: a stone control plus a
+        // farmland floor with wheat planted on top. All three must end up in world.
+        BlockPos printerPos = new BlockPos(2, 1, 2);
+        PrinterBlockEntity printer = poweredPrinter(helper, printerPos);
+        Blueprint blueprint = Blueprint.builder("gametest-farm", 2, 2, 1)
+                .set(0, 0, 0, BlueprintBlockState.parse("minecraft:stone")) // control floor
+                .set(1, 0, 0, BlueprintBlockState.parse("minecraft:farmland[moisture=7]"))
+                .set(1, 1, 0, BlueprintBlockState.parse("minecraft:wheat[age=7]"))
+                .build();
+        printer.inventory().setStackInSlot(PrinterBlockEntity.SLOT_TEMPLATE, discFor(helper, blueprint));
+
+        // origin = printer + (-1, 1, 0) for a 2x2x1 blueprint:
+        //   stone    -> (1,2,2)
+        //   farmland -> (2,2,2)
+        //   wheat    -> (2,3,2)
+        helper.succeedWhen(() -> {
+            helper.assertBlockPresent(Blocks.STONE, new BlockPos(1, 2, 2));
+            helper.assertBlockPresent(Blocks.FARMLAND, new BlockPos(2, 2, 2));
+            helper.assertBlockPresent(Blocks.WHEAT, new BlockPos(2, 3, 2));
+            ItemStack output = printer.inventory().getStackInSlot(PrinterBlockEntity.SLOT_OUTPUT);
+            if (!(output.getItem() instanceof BlueprintDiscItem)) {
+                throw new GameTestAssertException("disc should eject after printing farmland + crops");
+            }
+        });
+    }
+
     @GameTest(template = "empty5", timeoutTicks = 20)
     public static void discTierIsTheHighestBlockTier(GameTestHelper helper) {
         // one diamond block among stone -> the disc's tier is the diamond block's
