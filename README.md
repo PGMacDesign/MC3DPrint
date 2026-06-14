@@ -35,7 +35,7 @@ it. As of the current balance pass, **netherite is Tier 6** (it moved up from
 Tier 5). Tier 5's multiblock corners are **Diamond Blocks**; Tier 8's corners are
 **Awakened Draconium** (Draconic Evolution).
 
-### FU cost derivation
+### Filament Unit cost derivation
 
 Each block's FU cost — and its material tier — is derived from its recipe graph
 (crafting, plus optionally smelting and stonecutting). A diamond block costs what
