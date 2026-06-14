@@ -17,12 +17,11 @@ Units (FU)**. T1–T4 = single printer blocks; T5–T8 = N×N multiblock fabrica
 
 Two rules that bite if skipped:
 
-1. **Deploy = replace, never duplicate.** Copy the fresh jar over the existing one in the
-   Prism mods folder — never leave two `mc3dprint-*.jar`:
-   `~/Library/Application Support/PrismLauncher/instances/1.20.1/minecraft/mods/`
+1. **Deploy = replace, never duplicate.** Copy the fresh jar into your test instance's
+   `mods/` folder, replacing any existing `mc3dprint-*.jar` — never leave two.
 2. **After ANY FU/economy change, delete stale config.** The `fuValues` list does **not**
-   merge new defaults into an existing toml. Delete both `run/config/mc3dprint-common.toml`
-   (dev) and the Prism `config/mc3dprint-common.toml`, or your changes won't load.
+   merge new defaults into an existing toml. Delete the dev `run/config/mc3dprint-common.toml`
+   **and** the `mc3dprint-common.toml` in your game instance's `config/`, or changes won't load.
 
 ## Architecture (`src/main/java/com/pgmacdesign/mc3dprint/`)
 
