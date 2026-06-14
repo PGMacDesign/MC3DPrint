@@ -507,26 +507,33 @@ def remote_terminal():
 
 
 def clock_generator():
+    # Simple Generator: a cyan RF energy core above an ember-lit fuel grate — it
+    # burns furnace fuel into RF. (No clock face; the old name was a remnant of when
+    # this was the "clock generator". Filename kept so the cube_all model resolves.)
     img = new(S); px = s_acc(img)
     s_frame(px)
-    # a clock-faced energy core: dark dial + cyan hands + ticks
-    cx, cy = 8, 8
-    for dy in range(-4, 5):
-        for dx in range(-4, 5):
+    ember_hot, ember_mid, ember_deep = (0xFF, 0xD2, 0x66), (0xF0, 0x92, 0x2E), (0xB8, 0x4A, 0x15)
+    # energy core — radial cyan glow, upper-centre (the RF output)
+    cx, cy = 8, 6
+    for dy in range(-3, 4):
+        for dx in range(-3, 4):
             d = (dx * dx + dy * dy) ** 0.5
-            if d <= 4.3:
-                c = (0x10, 0x14, 0x1E)
-                if 3.4 <= d <= 4.3:
-                    c = BODY[3] if (dx < 0 or dy < 0) else BODY[4]  # bezel
+            if d <= 3.1:
+                c = GLOW[0] if d < 1.0 else GLOW[1] if d < 1.9 else GLOW[2] if d < 2.6 else GLOW[3]
                 put(px, cx + dx, cy + dy, c)
-    # tick marks
-    for (tx, ty) in [(cx, cy - 3), (cx + 3, cy), (cx, cy + 3), (cx - 3, cy)]:
-        put(px, tx, ty, BODY[2])
-    # cyan hands
-    put(px, cx, cy, GLOW[0])
-    put(px, cx, cy - 1, GLOW[2]); put(px, cx, cy - 2, GLOW[3])  # minute up
-    put(px, cx + 1, cy, GLOW[2]); put(px, cx + 2, cy, GLOW[3])  # hour right
-    quantize_to_palette(img, extra=[(0x10, 0x14, 0x1E)])
+    # cooling vents flanking the core
+    for vy in (4, 6, 8):
+        hline(px, 2, vy, 2, FRAME[3])
+        hline(px, 12, vy, 2, FRAME[3])
+    # fuel combustion grate at the base: ember glow behind dark vertical bars
+    rect(px, 3, 10, 10, 4, ember_deep)             # ember backplate
+    for gx in range(3, 13):
+        if (gx - 3) % 2 == 0:
+            vline(px, gx, 10, 4, FRAME[3])         # grate bars
+        else:
+            put(px, gx, 11, ember_hot)             # glowing gaps between bars
+            put(px, gx, 12, ember_mid)
+    quantize_to_palette(img, extra=[ember_hot, ember_mid, ember_deep, GLOW[3]])
     return img
 
 
