@@ -7,9 +7,9 @@
 
 ## Status
 - **Curated builds before Phase 2:** 29
-- **Phase 2 queue:** 103 · **Done:** 92 · **Blocked:** 2 · **Remaining:** 9
-- **Next up:** `basalt_pillar_cluster`
-- **Last completed:** `nether_wart_farm`
+- **Phase 2 queue:** 103 · **Done:** 93 · **Blocked:** 2 · **Remaining:** 8
+- **Next up:** `nether_hub_room`
+- **Last completed:** `basalt_pillar_cluster`
 
 ## Process (per build — follow exactly on resume)
 1. Pick the first unchecked `[ ]` build in queue order below.
@@ -141,7 +141,7 @@
 - [x] crimson_warped_hut (nylium/wart-block unvalued → two-tone via crimson/warped planks+stems)
 - [x] soul_outpost (soul_lantern + soul_campfire both print — valued via derivation)
 - [x] nether_wart_farm (nether_wart prints as structural crop on soul_sand)
-- [ ] basalt_pillar_cluster
+- [x] basalt_pillar_cluster
 - [ ] nether_hub_room
 - [ ] nether_fortress_bridge
 - [ ] blackstone_bastion_fragment
