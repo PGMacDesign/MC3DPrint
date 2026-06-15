@@ -293,6 +293,8 @@ class CuratedBlueprintGenerator {
         builds.put("dock_pier", dockPier());
         // Phase 2 — Category E (fishing_hut)
         builds.put("fishing_hut", fishingHut());
+        // Phase 2 — Category E (conduit_shrine)
+        builds.put("conduit_shrine", conduitShrine());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -13571,6 +13573,136 @@ class CuratedBlueprintGenerator {
         //    from a boat / the shallows.
         BlueprintBlockState stairN = bs("minecraft:spruce_stairs[facing=north,half=bottom,shape=straight]");
         b.set(cx, deckY, porchZ1, stairN); // step at the seaward lip (overlays deck plank)
+
+        return b.build();
+    }
+
+    /**
+     * §E Conduit Shrine. 7×7 footprint → builder(7, 7, 7). A compact submerged
+     * conduit shrine: a prismarine + prismarine-brick base ringed by a structural
+     * water moat (prints free), with the classic open prismarine activation FRAME
+     * (the hollow ring that powers a conduit) rising on four corner pillars, and a
+     * raised central pedestal carrying a sea-lantern mount. Symmetrical, shrine-like.
+     *
+     * <p>CONDUIT NOTE: {@code minecraft:conduit} is crafted from nautilus shells +
+     * heart of the sea, both LOOT-ONLY (no crafting/smelting recipe), so it derives
+     * NO FU value and would fail the curated-printability GameTest. Per the build
+     * conventions (we leave mobs/villagers/item-frames for the player to add), the
+     * shrine prints WITHOUT the conduit: the pedestal top is a prominent sea-lantern
+     * mount where the player places their own conduit. The printable identity is the
+     * prismarine frame + pedestal + sea-lantern glow — the bulk of the build.
+     *
+     * <p>PRINTABILITY: prismarine, prismarine_bricks, prismarine_brick_stairs/slabs,
+     * sea_lantern (all FU-valued from prismarine shards/crystals), and water
+     * (structural matter, prints free) — no unvalued blocks. No glass/iron-bar panes,
+     * so the render-integrity gate has nothing to enforce here. dark_prismarine is
+     * UNVALUED and deliberately AVOIDED (prismarine_bricks used for the dark accents).
+     * T5 footprint, T5 disc.
+     */
+    private static Blueprint conduitShrine() {
+        final int W = 7, H = 7, D = 7;
+        Blueprint.Builder b = Blueprint.builder("Conduit Shrine", W, H, D);
+        final int x0 = 0, x1 = W - 1, z0 = 0, z1 = D - 1; // x:0..6  z:0..6
+        final int cx = 3, cz = 3;                          // shrine centre
+
+        // Palette ---------------------------------------------------------------
+        BlueprintBlockState prismarine = bs("minecraft:prismarine");
+        BlueprintBlockState bricks     = bs("minecraft:prismarine_bricks");
+        BlueprintBlockState slabTop    = bs("minecraft:prismarine_brick_slab[type=top]");
+        BlueprintBlockState slabBottom = bs("minecraft:prismarine_brick_slab[type=bottom]");
+        // Inward-facing prismarine-brick stairs for the pedestal steps & frame eaves.
+        BlueprintBlockState stairN = bs("minecraft:prismarine_brick_stairs[facing=north,half=bottom,shape=straight]");
+        BlueprintBlockState stairS = bs("minecraft:prismarine_brick_stairs[facing=south,half=bottom,shape=straight]");
+        BlueprintBlockState stairE = bs("minecraft:prismarine_brick_stairs[facing=east,half=bottom,shape=straight]");
+        BlueprintBlockState stairW = bs("minecraft:prismarine_brick_stairs[facing=west,half=bottom,shape=straight]");
+
+        // ── 1) BASE (y=0) — a solid 7×7 prismarine seabed footing, walkable and
+        //    approachable. A prismarine-brick rim course wraps the outer ring so the
+        //    shrine reads as a dressed dais; sea-lantern uplights are set flush into
+        //    the floor on the four cardinal axes (glow up through the moat water).
+        floor(b, 0, x0, z0, x1, z1, prismarine);
+        // dressed prismarine-brick rim around the whole footprint edge
+        line(b, 0, x0, z0, x1, z0, bricks); // north rim
+        line(b, 0, x0, z1, x1, z1, bricks); // south rim
+        line(b, 0, x0, z0, x0, z1, bricks); // west rim
+        line(b, 0, x0, z1, x1, z1, bricks); // (east rim re-stated below)
+        line(b, 0, x1, z0, x1, z1, bricks); // east rim
+        // sea-lantern uplights flush in the floor on the four cardinal edges
+        b.set(cx, 0, z0, SEA_LANTERN); // north
+        b.set(cx, 0, z1, SEA_LANTERN); // south
+        b.set(x0, 0, cz, SEA_LANTERN); // west
+        b.set(x1, 0, cz, SEA_LANTERN); // east
+
+        // ── 2) SUBMERGING MOAT (y=1) — a structural WATER ring around the shrine so
+        //    it reads as submerged/coastal. Water fills the outer ring (one cell in
+        //    from the rim is the walkable approach edge); the 5×5 inner court (x,z ∈
+        //    [1..5]) stays a dry dais. Water is structural matter → prints free.
+        for (int x = x0; x <= x1; x++) {
+            for (int z = z0; z <= z1; z++) {
+                boolean outerRing = (x == x0 || x == x1 || z == z0 || z == z1);
+                if (outerRing) b.set(x, 1, z, WATER);
+            }
+        }
+        // four corner sea-lantern beacons rising one course out of the moat corners
+        // (each sits ON the brick base corner at y=1 → flanked by water, lit beacons).
+        b.set(x0, 1, z0, SEA_LANTERN);
+        b.set(x1, 1, z0, SEA_LANTERN);
+        b.set(x0, 1, z1, SEA_LANTERN);
+        b.set(x1, 1, z1, SEA_LANTERN);
+
+        // ── 3) DAIS APPROACH (y=1) — the inner 5×5 court is a raised prismarine-brick
+        //    dais one course above the seabed, walkable, ringed by stair "steps" on
+        //    the four cardinal faces so the shrine is climbable from the water edge.
+        floor(b, 1, x0 + 1, z0 + 1, x1 - 1, z1 - 1, bricks);
+        // cardinal approach steps: inward-facing prismarine-brick stairs at the dais
+        // edge midpoints (climb up from the moat onto the dais).
+        b.set(cx, 1, z0 + 1, stairN); // north step (faces in, +z back)
+        b.set(cx, 1, z1 - 1, stairS); // south step
+        b.set(x0 + 1, 1, cz, stairW); // west step
+        b.set(x1 - 1, 1, cz, stairE); // east step
+
+        // ── 4) ACTIVATION FRAME — the recognizable conduit-powering form: four
+        //    prismarine corner pillars at the inner-court corners rising y2..y4, tied
+        //    by a prismarine-brick top frame (the open ring that "powers" a conduit).
+        int fx0 = x0 + 1, fx1 = x1 - 1, fz0 = z0 + 1, fz1 = z1 - 1; // frame footprint = 5×5
+        // four corner pillars (prismarine shafts, the frame uprights)
+        pillar(b, fx0, fz0, 2, 4, prismarine);
+        pillar(b, fx1, fz0, 2, 4, prismarine);
+        pillar(b, fx0, fz1, 2, 4, prismarine);
+        pillar(b, fx1, fz1, 2, 4, prismarine);
+        // a prismarine-brick top frame ring tying the four pillars at y=4 (the open
+        // activation ring; the centre stays OPEN so the conduit mount shows through).
+        line(b, 4, fx0, fz0, fx1, fz0, bricks); // north beam
+        line(b, 4, fx0, fz1, fx1, fz1, bricks); // south beam
+        line(b, 4, fx0, fz0, fx0, fz1, bricks); // west beam
+        line(b, 4, fx1, fz0, fx1, fz1, bricks); // east beam
+        // sea-lantern keystones set into each beam midpoint (the frame glows).
+        b.set(cx, 4, fz0, SEA_LANTERN); // north keystone
+        b.set(cx, 4, fz1, SEA_LANTERN); // south keystone
+        b.set(fx0, 4, cz, SEA_LANTERN); // west keystone
+        b.set(fx1, 4, cz, SEA_LANTERN); // east keystone
+        // outward stair "eaves" flaring off each corner pillar top (y=4) so the frame
+        // reads as a dressed cornice, not a bare beam (stairs face out from centre).
+        b.set(fx0, 4, fz0, stairN); // NW eave hint
+        b.set(fx1, 4, fz0, stairN); // NE eave hint
+        b.set(fx0, 4, fz1, stairS); // SW eave hint
+        b.set(fx1, 4, fz1, stairS); // SE eave hint
+
+        // ── 5) CENTRAL PEDESTAL — a stepped prismarine pillar rising from the dais
+        //    to a sea-lantern MOUNT at the heart of the frame. This is where the
+        //    player places their own conduit (left empty per the conduit note above).
+        pillar(b, cx, cz, 2, 3, bricks);          // pedestal shaft (y2..y3)
+        // a prismarine-brick slab collar around the pedestal base (the dais altar lip)
+        for (int[] d : new int[][]{{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) {
+            b.set(cx + d[0], 2, cz + d[1], slabTop);
+        }
+        // sea-lantern mount on the pedestal top (y=4), centred inside the open frame —
+        // the conduit's seat. It glows at the shrine's heart even before a conduit is
+        // placed, and gives the player an obvious, lit spot to set their conduit on.
+        b.set(cx, 4, cz, SEA_LANTERN);
+        // a prismarine-brick slab canopy floating one course above the mount, capping
+        // the shrine apex (slabs flush above the lantern → the altar baldachin).
+        b.set(cx, 5, cz, slabBottom);
 
         return b.build();
     }

@@ -128,7 +128,9 @@ public final class CuratedBlueprints {
             // Phase 2 — Category E (dock_pier)
             "dock_pier",
             // Phase 2 — Category E (fishing_hut)
-            "fishing_hut");
+            "fishing_hut",
+            // Phase 2 — Category E (conduit_shrine)
+            "conduit_shrine");
 
     /**
      * Load a bundled curated blueprint straight from the mod's resources (no world
