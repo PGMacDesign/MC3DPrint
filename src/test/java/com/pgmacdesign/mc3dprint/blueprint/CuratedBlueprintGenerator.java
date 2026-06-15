@@ -2192,7 +2192,16 @@ class CuratedBlueprintGenerator {
         b.set(9, 2, 0, bs("minecraft:dark_oak_door[facing=south,half=upper,hinge=left,open=false,powered=false]"));
         b.set(11, 1, 0, bs("minecraft:dark_oak_door[facing=south,half=lower,hinge=right,open=false,powered=false]"));
         b.set(11, 2, 0, bs("minecraft:dark_oak_door[facing=south,half=upper,hinge=right,open=false,powered=false]"));
-        for (int y = 1; y <= 4; y++) b.set(10, y, 0, IRON_BARS); // portcullis bar centre
+        // Portcullis: a barred grate filling the upper half of the gateway (y=3..4,
+        // x=9..11), seated over the dark-oak door leaves below. Spanning the full
+        // 3-wide opening lets the end bars connect to the stone jambs (x=8/x=12 are
+        // solid wall) and to each other, so the grate actually renders. A lone
+        // centre column at y=1..2 (flanked only by the door leaves, which iron bars
+        // don't connect to) would render as an invisible stub, so the foot of the
+        // opening is left to the doors and the portcullis reads as a raised grate.
+        for (int y = 3; y <= 4; y++) {
+            for (int x = 9; x <= 11; x++) b.set(x, y, 0, IRON_BARS);
+        }
         line(b, 5, 9, 0, 11, 0, CHISELED_STONE_BRICKS); // gate arch
         // four corner towers (3×3, y=1..10, taller than the wall) crenellated
         int[][] towers = {{0, 0}, {18, 0}, {0, 18}, {18, 18}};
@@ -2452,26 +2461,51 @@ class CuratedBlueprintGenerator {
     }
 
     /**
-     * A traditional lattice window: a glass pane in the wall cell with a flanking
-     * pair of (closed, vertical) trapdoors on the two cells beside it along the
-     * wall, reading as a shōji-style lattice. {@code wallFace} is N/S/E/W (the
-     * face the window sits on — determines which axis the flankers run along and
-     * the trapdoor facing).
+     * A traditional shōji-style lattice window. The glass pane sits in the wall
+     * cell {@code (x,y,z)} and the two cells flanking it ALONG the wall are left as
+     * the solid wall block, so the pane connects to that wall on both in-line ends
+     * and therefore actually renders (a glass pane is an {@link net.minecraft.world.level.block.IronBarsBlock}
+     * — it draws its center post + an arm toward every horizontal neighbour it can
+     * connect to, and renders as an almost-invisible stub if it has ZERO
+     * connections). The decorative dark-oak "grille" trapdoors are placed on the
+     * OUTER face — one cell OUT from the wall, perpendicular to it — so they read
+     * as an exterior lattice over the glass WITHOUT replacing the pane's only
+     * connectable neighbours.
+     *
+     * <p>{@code wallFace} is N/S/E/W and names the exterior face the window sits on:
+     * it determines which axis the pane runs along (so the flanking wall cells line
+     * up with the pane) and which direction "out" is for the grille + its facing.
      */
     private static void latticeWindow(Blueprint.Builder b, int x, int y, int z, String wallFace) {
         b.set(x, y, z, GLASS_PANE);
         String face = wallFace.toUpperCase();
+        // alongX: the wall (and thus the pane's connectable run) runs along X, so
+        // the pane's in-line neighbours are at x±1 and the wall faces N/S (outer
+        // direction is ∓z). Otherwise the wall runs along Z (E/W faces, outer ∓x).
         boolean alongX = face.equals("N") || face.equals("S")
                 || face.equals("NORTH") || face.equals("SOUTH");
-        String td = alongX ? "north" : "east"; // trapdoor facing (cosmetic lattice)
+        // Outward normal: N → -z, S → +z, W → -x, E → +x. The grille trapdoors
+        // hang on this outer face, facing back toward the wall (cosmetic lattice).
+        int ox = 0, oz = 0;
+        String tdFacing;
+        switch (face) {
+            case "N": case "NORTH": oz = -1; tdFacing = "south"; break;
+            case "S": case "SOUTH": oz =  1; tdFacing = "north"; break;
+            case "W": case "WEST":  ox = -1; tdFacing = "east";  break;
+            default: /* E / EAST */ ox =  1; tdFacing = "west";  break;
+        }
         BlueprintBlockState trap =
-                bs("minecraft:dark_oak_trapdoor[facing=" + td + ",half=top,open=false,powered=false,waterlogged=false]");
+                bs("minecraft:dark_oak_trapdoor[facing=" + tdFacing + ",half=top,open=false,powered=false,waterlogged=false]");
+        // Grille on the outer face: one cell OUT from the wall, on the two cells
+        // that flank the pane along the wall axis. This leaves the in-wall cells at
+        // x±1 (alongX) / z±1 (alongZ) as solid wall so the pane keeps both of its
+        // horizontal connections — and the lattice still reads over the window.
         if (alongX) {
-            b.set(x - 1, y, z, trap);
-            b.set(x + 1, y, z, trap);
+            b.set(x - 1, y, z + oz, trap);
+            b.set(x + 1, y, z + oz, trap);
         } else {
-            b.set(x, y, z - 1, trap);
-            b.set(x, y, z + 1, trap);
+            b.set(x + ox, y, z - 1, trap);
+            b.set(x + ox, y, z + 1, trap);
         }
     }
 
@@ -2507,8 +2541,15 @@ class CuratedBlueprintGenerator {
         BlueprintBlockState acaciaLogY = bs("minecraft:acacia_log[axis=y]");
         BlueprintBlockState acaciaFence = bs("minecraft:acacia_fence");
         BlueprintBlockState acaciaSlabBottom = bs("minecraft:acacia_slab[type=bottom]");
-        BlueprintBlockState acaciaTrapdoor =
+        // Shutter leaves, hung on the wall face above/below each side window so they
+        // frame the glass WITHOUT replacing the pane's in-line wall neighbours (a 1-wide
+        // pane connects only to the wall cells beside it; trapdoors there would leave it
+        // a non-rendering stub). West/east faces sit at the footprint edge (x=0/x=8) so
+        // there is no outer cell to hang a beside-shutter on — vertical leaves it is.
+        BlueprintBlockState acaciaShutterTop =    // upper leaf (reads as a shutter head)
                 bs("minecraft:acacia_trapdoor[facing=north,half=top,open=false,powered=false,waterlogged=false]");
+        BlueprintBlockState acaciaShutterBottom = // lower leaf (reads as a sill)
+                bs("minecraft:acacia_trapdoor[facing=north,half=bottom,open=false,powered=false,waterlogged=false]");
         // 1) parametric acacia house: walkable y=0 floor, acacia wall ring y=1..4
         //    with acacia-log corners, hip roof, inward door, furnish set.
         house(b, 0, 0, 8, 8, 4, SAVANNA_ACACIA, true);
@@ -2533,10 +2574,12 @@ class CuratedBlueprintGenerator {
         // 4) acacia accents that validate the wider acacia palette on this build:
         //    open shade-beam slats spanning the interior just under the wall plate
         //    (a simple acacia-fence + slab pergola motif, kept ON the footprint so it
-        //    fits the 9×9 budget) and acacia-trapdoor shutters on the side windows.
+        //    fits the 9×9 budget) and acacia-trapdoor shutters framing the side windows.
         //    house() places the side windows at (0,2,4)/(8,2,4) and back at (4,2,8).
-        b.set(0, 2, 3, acaciaTrapdoor); b.set(0, 2, 5, acaciaTrapdoor); // west-window shutters
-        b.set(8, 2, 3, acaciaTrapdoor); b.set(8, 2, 5, acaciaTrapdoor); // east-window shutters
+        //    Shutters are stacked above/below each pane (not beside it) so the glass keeps
+        //    its z±1 wall neighbours and renders instead of becoming an invisible stub.
+        b.set(0, 3, 4, acaciaShutterTop); b.set(0, 1, 4, acaciaShutterBottom); // west-window shutters
+        b.set(8, 3, 4, acaciaShutterTop); b.set(8, 1, 4, acaciaShutterBottom); // east-window shutters
         // interior pergola/rafter accent: an acacia-slab beam under the plate on the
         // back half, carried by two short acacia-fence posts (open, walk-under).
         pillar(b, 2, 1, 1, 3, acaciaFence);
