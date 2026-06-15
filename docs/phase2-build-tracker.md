@@ -7,9 +7,9 @@
 
 ## Status
 - **Curated builds before Phase 2:** 29
-- **Phase 2 queue:** 103 · **Done:** 97 · **Blocked:** 2 · **Remaining:** 4
-- **Next up:** `end_stone_outpost`
-- **Last completed:** `purpur_tower`
+- **Phase 2 queue:** 103 · **Done:** 98 · **Blocked:** 2 · **Remaining:** 3
+- **Next up:** `chorus_garden`
+- **Last completed:** `end_stone_outpost`
 
 ## Process (per build — follow exactly on resume)
 1. Pick the first unchecked `[ ]` build in queue order below.
@@ -148,7 +148,7 @@
 
 ### D — End (5) · T7 materials; watch end-block values
 - [x] purpur_tower
-- [ ] end_stone_outpost
+- [x] end_stone_outpost (chorus unvalued → stylized purpur+end_rod chorus trees)
 - [ ] chorus_garden
 - [ ] shulker_box_vault
 - [ ] end_gateway_shrine
