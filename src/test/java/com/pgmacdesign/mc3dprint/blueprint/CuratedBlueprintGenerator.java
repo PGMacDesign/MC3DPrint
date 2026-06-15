@@ -248,6 +248,7 @@ class CuratedBlueprintGenerator {
         builds.put("storage_barrel_hall", storageBarrelHall());
         builds.put("brewing_room", brewingRoom());
         builds.put("super_smelter", superSmelter());
+        builds.put("smithy_workshop", smithyWorkshop());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -6553,6 +6554,147 @@ class CuratedBlueprintGenerator {
         for (int x = x0; x <= x1; x++) {
             b.set(x, 4, z1, smoothSlab);           // front roof eave (z=6) as a slab brow
         }
+
+        return b.build();
+    }
+
+    /**
+     * §G.smithy_workshop — an ENTERABLE stone-and-timber blacksmith's WORKSHOP,
+     * 7×9×6 (W×D×H) → builder(7, 6, 9). Distinct from the open-front {@code blacksmith}
+     * shop (a 7×6×6 lean-to): this is the enclosed, workstation-focused interior a
+     * survival player walks into to grind, smith, and stonecut.
+     *
+     * <p>The whole-build floor sits at {@code y=0} (walkable), walls rise {@code y=1..4},
+     * and a stone-brick ceiling closes the top at {@code y=5}. The interior above the
+     * floor is deliberately left unset (air-skip) so the player can enter through the
+     * north doorway and stand inside. Axes: x=W(0..6), y=up(0..5), z=depth(0..8);
+     * south (+z, z=8) is the back wall, north (z=0) is the entry face.
+     *
+     * <p>Every printed block is vanilla and FU-valued or itemless-structural:
+     * <ul>
+     *   <li><b>shell</b> — cobblestone lower courses + stone-brick upper courses,
+     *       smooth-stone floor, stone-brick ceiling, spruce-log corner posts and a
+     *       spruce-plank ceiling-beam grid (the "timber" half of stone+timber). All
+     *       derive or are valued (cobblestone/stone_bricks/smooth_stone/spruce_log/
+     *       spruce_planks).</li>
+     *   <li><b>caged-lava forge</b> (back-right corner) — a {@code lava} source sat on
+     *       {@code netherrack}, walled on its two open inner faces by {@code iron_bars}.
+     *       RENDER-SAFETY: every bar is flanked along a HORIZONTAL axis by either the
+     *       solid stone-brick wall behind it, another bar, or the netherrack/forge
+     *       frame, so each bar has a connecting neighbour and renders as a proper cage
+     *       (never an invisible stub — see {@code CuratedBlueprintRenderIntegrityGameTests}).
+     *       A cobblestone chimney CAPS the lava from y=2 up to the ceiling so the source
+     *       cell survives as a glowing, caged forge rather than being overwritten.</li>
+     *   <li><b>workstations</b> — {@code anvil}, {@code smithing_table}, {@code grindstone},
+     *       {@code stonecutter}, {@code blast_furnace}, {@code furnace} (all valued /
+     *       recipe-derived), arranged around the walls with a clear central walk lane.</li>
+     *   <li><b>storage + tool racks</b> — barrels along the west wall; tool "racks" are
+     *       {@code oak_wall_sign}s (item frames are ENTITIES and can't print, so the
+     *       wall-mounted display is a sign instead, per the build rules).</li>
+     *   <li><b>lighting</b> — a recessed {@code glowstone} in the ceiling centre plus a
+     *       chain-hung {@code lantern} over the anvil and two wall-backed lanterns.</li>
+     * </ul>
+     */
+    private static Blueprint smithyWorkshop() {
+        Blueprint.Builder b = Blueprint.builder("Smithy Workshop", 7, 6, 9);
+
+        BlueprintBlockState smoothStone = bs("minecraft:smooth_stone");           // floor (derives)
+        BlueprintBlockState netherrack  = bs("minecraft:netherrack");             // forge bed (1@1)
+        BlueprintBlockState stonecutter = bs("minecraft:stonecutter[facing=north]"); // derives (3 stone + iron)
+        // wall signs face INTO the room (away from the wall they hang on). A wall sign's
+        // facing = the direction it looks; it attaches to the block on the OPPOSITE side.
+        BlueprintBlockState oakWallSignN = bs("minecraft:oak_wall_sign[facing=north]"); // hangs on a south(+z) wall
+        BlueprintBlockState oakWallSignE = bs("minecraft:oak_wall_sign[facing=east]");  // hangs on a west(-x) wall
+        BlueprintBlockState oakWallSignW = bs("minecraft:oak_wall_sign[facing=west]");  // hangs on an east(+x) wall
+
+        int x0 = 0, x1 = 6, z0 = 0, z1 = 8;   // 7×9 footprint
+        int yB = 1, yT = 4;                   // wall course (y=1..4)
+        int doorX = 3;                        // north-wall doorway (centred)
+
+        // ── 1) SHELL: smooth-stone floor (y0), wall ring (y1..4), stone-brick ceiling (y5) ──
+        // roomShell lays the floor, the four-wall ring and the ceiling; the interior is
+        // left open per the air-skip rule so it's enterable. Walls are stone-brick by
+        // default here; the lower two courses are re-skinned to cobblestone below for the
+        // weathered stone+timber look.
+        roomShell(b, x0, 0, z0, x1, yT + 1, z1, STONE_BRICKS, smoothStone, STONE_BRICKS);
+
+        // ── 2) STONE+TIMBER SKIN: cobble lower courses (y=1..2) + spruce-log corner posts ──
+        // Re-skin the y=1..2 wall ring to cobblestone (leaving stone-brick at y=3..4) for
+        // the classic two-tone rustic forge wall. Corner posts are spruce logs the full
+        // wall height (they overwrite the corner cells with equal-height timber, no nub).
+        walls(b, x0, z0, x1, z1, yB, yB + 1, COBBLE);
+        corners(b, x0, z0, x1, z1, yB, yT, SPRUCE_LOG_Y);
+        // ceiling tie-beams: two spruce-plank beams spanning W under the ceiling for the
+        // exposed-rafter timber read (overwrite the y=4 wall-top course at z=3 and z=5).
+        line(b, yT, x0, 3, x1, 3, SPRUCE_PLANKS);
+        line(b, yT, x0, 5, x1, 5, SPRUCE_PLANKS);
+
+        // ── 3) NORTH-WALL DOORWAY (centred), opens inward ───────────────────
+        door2(b, doorX, yB, z0, "oak", "N");
+        // window slits flanking the forge glow: glass panes high on the side walls,
+        // each flanked along its wall axis (z±1) by solid wall cells so it connects
+        // and renders (never a stub). West wall (x=0) and east wall (x=6) at y=3, z=2.
+        window2(b, x0, 3, 2, GLASS_PANE, null);
+        window2(b, x1, 3, 2, GLASS_PANE, null);
+
+        // ── 4) CAGED-LAVA FORGE — back-right corner ─────────────────────────
+        // The forge heart: a lava source at (5,1,7), one cell in from the back (z=8)
+        // and east (x=6) shell walls. A netherrack hearth at floor level frames the
+        // open diagonal corner (4,1,6). The two OPEN inner faces — north (5,1,6) and
+        // west (4,1,7) — are walled by iron_bars so the player can't fall in but the
+        // glow shines through; the back and east faces are the solid stone-brick shell.
+        // RENDER-SAFETY (each iron_bars cell needs ONE connecting ±x/±z neighbour):
+        //   • (4,1,7) west bar  → +z neighbour (4,1,6) is netherrack (sturdy full face) ✓
+        //   • (5,1,6) north bar → +x neighbour (6,1,6) is the east stone-brick wall ✓
+        //                         and -x neighbour (4,1,6) is netherrack ✓
+        //   • (4,2,7) upper bar → -y is (4,1,7) bars, +z (4,2,6) is the upper north bar ✓
+        //   • (5,2,6) upper bar → +x (6,2,6) east wall, -x (4,2,6) upper west bar ✓
+        //   • (4,2,6) corner bar → connects to BOTH upper face bars (±x and ±z) ✓
+        b.set(5, yB, 7, LAVA);           // lava source (forge heart)
+        b.set(4, yB, 6, netherrack);     // hearth corner (diagonal, floor level)
+        // iron-bar cage on the two inner-facing faces, y=1..2:
+        b.set(4, yB, 7, IRON_BARS);      // west face, lower
+        b.set(4, yB + 1, 7, IRON_BARS);  // west face, upper
+        b.set(5, yB, 6, IRON_BARS);      // north face, lower
+        b.set(5, yB + 1, 6, IRON_BARS);  // north face, upper
+        b.set(4, yB + 1, 6, IRON_BARS);  // upper diagonal corner bar — ties both upper faces
+        // chimney: cobble pillar CAPPING the lava from y=2 to the ceiling (y=4) so the
+        // source cell at y=1 survives as a glowing, caged forge rather than dead stone.
+        pillar(b, 5, 7, yB + 1, yT, COBBLE);
+
+        // ── 5) WORKSTATIONS around the walls, central walk lane left clear ──
+        // Back wall (z=7, west of the forge): the heavy smithing line.
+        b.set(1, yB, 7, ANVIL);            // anvil, faces north (out toward the player)
+        b.set(2, yB, 7, SMITHING_TABLE);   // smithing table beside the anvil
+        b.set(3, yB, 7, BLAST_FURNACE);    // blast furnace
+        // East wall (x=5..6) — secondary heat + stonework
+        b.set(5, yB, 5, FURNACE);          // furnace mid-east wall
+        b.set(5, yB, 3, stonecutter);      // stonecutter for the masonry side of the smithy
+        // West wall (x=1) — finishing + storage
+        b.set(1, yB, 5, GRINDSTONE);       // grindstone (floor-mounted) for repairs
+        b.set(1, yB, 3, BARREL);           // material barrels
+        b.set(1, yB + 1, 3, BARREL);       // a second barrel stacked for capacity
+        b.set(1, yB, 2, CHEST);            // ingot chest near the door
+
+        // ── 6) TOOL RACKS = WALL SIGNS (item frames are entities, can't print) ──
+        // Wall-mounted "tool racks" rendered as oak wall signs (the printable stand-in
+        // for the item-frame display the build calls for). Each sign occupies an interior
+        // cell one block in front of a solid wall and faces into the room; the wall it
+        // attaches to is opposite its facing.
+        b.set(2, yB + 1, 7, oakWallSignN);  // hangs on back wall (2,*,8), above the smithing table
+        b.set(3, yB + 1, 7, oakWallSignN);  // hangs on back wall (3,*,8), above the blast furnace
+        b.set(1, yB + 1, 5, oakWallSignE);  // hangs on west wall (0,*,5), above the grindstone
+        b.set(5, yB + 1, 4, oakWallSignW);  // hangs on east wall (6,*,4), faces W into the room
+
+        // ── 7) LIGHTING — ceiling glowstone + a chain-hung lantern over the anvil ──
+        b.set(3, yT + 1, 4, GLOWSTONE);     // ceiling-centre light (y=5)
+        // lantern hung over the anvil (1,1,7): lantern at y=3, one chain link at y=4
+        // attaching up to the solid stone-brick ceiling at (1,5,6).
+        chainLantern(b, 1, yT - 1, 6, 1);   // lantern (1,3,6), chain (1,4,6) → ceiling (1,5,6)
+        // wall-backed lanterns flanking the door for the entry glow (sit on the floor
+        // against the side walls, just inside the threshold).
+        b.set(1, yB, 1, LANTERN);
+        b.set(5, yB, 1, LANTERN);
 
         return b.build();
     }

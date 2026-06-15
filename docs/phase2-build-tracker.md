@@ -7,9 +7,9 @@
 
 ## Status
 - **Curated builds before Phase 2:** 29
-- **Phase 2 queue:** 103 · **Done:** 46 · **Blocked:** 2 · **Remaining:** 55
-- **Next up:** `smithy_workshop`
-- **Last completed:** `super_smelter`
+- **Phase 2 queue:** 103 · **Done:** 47 · **Blocked:** 2 · **Remaining:** 54
+- **Next up:** `map_room`
+- **Last completed:** `smithy_workshop`
 
 ## Process (per build — follow exactly on resume)
 1. Pick the first unchecked `[ ]` build in queue order below.
@@ -87,7 +87,7 @@
 - [x] storage_barrel_hall
 - [x] brewing_room
 - [x] super_smelter
-- [ ] smithy_workshop
+- [x] smithy_workshop
 - [ ] map_room
 - [ ] library (Hard)
 

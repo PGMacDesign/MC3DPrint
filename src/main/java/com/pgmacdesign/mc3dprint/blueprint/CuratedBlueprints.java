@@ -73,7 +73,7 @@ public final class CuratedBlueprints {
             "park_bench_lamppost", "hedge_maze_segment", "hot_air_balloon",
             "dragon_statue",
             // Phase 2 — Category G (storage)
-            "storage_barrel_hall", "brewing_room", "super_smelter");
+            "storage_barrel_hall", "brewing_room", "super_smelter", "smithy_workshop");
 
     /**
      * Load a bundled curated blueprint straight from the mod's resources (no world
