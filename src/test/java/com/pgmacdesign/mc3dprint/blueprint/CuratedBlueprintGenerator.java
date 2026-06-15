@@ -307,6 +307,8 @@ class CuratedBlueprintGenerator {
         builds.put("sailing_ship", sailingShip());
         // Phase 2 — Category C (nether_portal_room)
         builds.put("nether_portal_room", netherPortalRoom());
+        // Phase 2 — Category C (crimson_warped_hut)
+        builds.put("crimson_warped_hut", crimsonWarpedHut());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -15068,6 +15070,142 @@ class CuratedBlueprintGenerator {
         // wall-flanking floor lanterns marking the dais approach (warm pools of light).
         b.set(2, 2, 6, LANTERN);
         b.set(x1 - 2, 2, 6, LANTERN);
+
+        return b.build();
+    }
+
+    /**
+     * Crimson &amp; Warped Hut. 7×7 footprint → builder(7, 8, 7). A small
+     * nether-wood hut that blends the two fungus-wood families: the WEST half is
+     * crimson (warm red) and the EAST half is warped (teal), split down the
+     * centre line so the two-tone "zoning guide" read is the signature. A
+     * nether-brick foundation grounds it, crimson/warped stem corner posts frame
+     * it, shroomlight insets give the warm nether glow, a crimson fungus-wood door
+     * faces inward on the north wall, and a peaked nether-wood gable roof (crimson
+     * stairs over the crimson half, warped over the warped half) closes the top.
+     *
+     * <p><b>Palette (all FU-valued or structural).</b> crimson/warped planks &amp;
+     * stems (via {@code #planks}/{@code #logs} tags), crimson/warped stairs &amp;
+     * slabs &amp; door (derive from planks), nether_bricks (+ stairs), shroomlight
+     * (the glow), glass blocks (render-safe windows), lantern. The candidate row
+     * mentions nylium/wart-block zoning, but {@code crimson_nylium},
+     * {@code warped_nylium}, {@code nether_wart_block} and {@code warped_wart_block}
+     * carry NO FU value (no recipe → unprintable in strict mode), so the two-tone
+     * "nether-wood zoning" look is rendered entirely with the FU-valued
+     * crimson/warped PLANK + STEM families instead — no BLOCKED path needed.
+     *
+     * <p>Layout (Y), footprint x=0..6 (W, crimson west / warped east), z=0..6 (D):
+     * <ul>
+     *   <li><b>y=0</b> — nether-brick foundation over the full 7×7 (walkable top).</li>
+     *   <li><b>y=1..4</b> — two-tone plank wall ring (crimson x≤3, warped x≥4) on
+     *       the centre split, with stem corner posts (crimson NW/SW, warped NE/SE),
+     *       a crimson door on the north wall, glass-block windows, and shroomlight
+     *       glow insets on the side walls.</li>
+     *   <li><b>y=5..</b> — a peaked nether-wood gable roof (ridge along X) with
+     *       closed gable ends; crimson stairs/slabs on the west half, warped on the
+     *       east, so the two-tone read carries up into the roof.</li>
+     *   <li>interior — a cozy red bed, crafting table, chest, and lanterns.</li>
+     * </ul>
+     */
+    private static Blueprint crimsonWarpedHut() {
+        Blueprint.Builder b = Blueprint.builder("Crimson & Warped Hut", 7, 9, 7);
+        final int x0 = 0, x1 = 6, z0 = 0, z1 = 6; // 7×7 footprint
+        final int cx = (x0 + x1) / 2;             // 3 — crimson/warped split (x≤3 crimson, x≥4 warped)
+        final int cz = (z0 + z1) / 2;             // 3
+        final int wallH = 4;                      // wall plate (roof seats at y=5)
+        final int roofY = wallH + 1;              // 5
+
+        // ── Palette (all vanilla nether-wood, all FU-valued or structural) ────────
+        BlueprintBlockState crimsonPlanks = bs("minecraft:crimson_planks");
+        BlueprintBlockState warpedPlanks  = bs("minecraft:warped_planks");
+        BlueprintBlockState crimsonStemY  = bs("minecraft:crimson_stem[axis=y]");
+        BlueprintBlockState warpedStemY   = bs("minecraft:warped_stem[axis=y]");
+        BlueprintBlockState netherBricks  = bs("minecraft:nether_bricks");
+        BlueprintBlockState shroomlight   = bs("minecraft:shroomlight");
+        BlueprintBlockState glass         = GLASS;
+
+        // helper: crimson on the west half (x≤cx), warped on the east half.
+        // (used so the two-tone split is consistent across walls + roof.)
+
+        // ── 1) FOUNDATION (y=0) — nether-brick slab over the full footprint ───────────
+        // Walkable surface = top of y=0; interior above is left OPEN (enterable).
+        floor(b, 0, x0, z0, x1, z1, netherBricks);
+
+        // ── 2) TWO-TONE WALL RING (y=1..wallH) — crimson west, warped east ────────────
+        // Build the whole ring per-cell so each wall cell takes the colour of its
+        // side of the centre split: x≤cx → crimson, x>cx → warped. Interior left
+        // unset (open/walkable). corners() would single-colour the posts, so we
+        // place the stem corner posts explicitly to match each corner's side.
+        for (int y = 1; y <= wallH; y++) {
+            for (int x = x0; x <= x1; x++) {
+                BlueprintBlockState mat = (x <= cx) ? crimsonPlanks : warpedPlanks;
+                b.set(x, y, z0, mat); // north face
+                b.set(x, y, z1, mat); // south face
+            }
+            for (int z = z0; z <= z1; z++) {
+                BlueprintBlockState matW = crimsonPlanks; // west face is the crimson side
+                BlueprintBlockState matE = warpedPlanks;  // east face is the warped side
+                b.set(x0, y, z, matW);
+                b.set(x1, y, z, matE);
+            }
+        }
+        // stem corner posts: crimson on the west corners, warped on the east.
+        pillar(b, x0, z0, 1, wallH, crimsonStemY); // NW
+        pillar(b, x0, z1, 1, wallH, crimsonStemY); // SW
+        pillar(b, x1, z0, 1, wallH, warpedStemY);  // NE
+        pillar(b, x1, z1, 1, wallH, warpedStemY);  // SE
+
+        // ── 3) DOOR (north wall z=0) — crimson fungus-wood door opening inward ────────
+        // The door (a passable 2-block state) overstamps the centre wall cell; the
+        // ring is broken only here, left open by writing the door, NOT by air.
+        door2(b, cx, 1, z0, "crimson", "N");
+
+        // ── 4) WINDOWS — glass BLOCKS (render-safe; seated flush in the plank frame) ──
+        // A pane flanked by solid plank cells along its wall axis. Using glass BLOCKS
+        // (not panes) per the render-safety rule. Mid-wall course = y=2.
+        int wy = 2;
+        window2(b, cx - 1, wy, z0, glass, null); // north, crimson side (west of door)
+        window2(b, cx + 1, wy, z0, glass, null); // north, warped side (east of door)
+        window2(b, x0, wy, cz, glass, null);     // west wall (crimson), centred
+        window2(b, x1, wy, cz, glass, null);     // east wall (warped), centred
+        window2(b, cx, wy, z1, glass, null);     // south (back) wall, centred on split
+
+        // ── 5) SHROOMLIGHT GLOW INSETS — the signature warm nether accents ────────────
+        // Recessed shroomlight blocks on the two side walls (full blocks, render-safe),
+        // flanked above & below by plank wall so they read as glowing insets. One on
+        // each side wall, offset from the windows so both show.
+        b.set(x0, 1, z0 + 2, shroomlight); // west wall low inset (crimson side)
+        b.set(x0, 1, z1 - 2, shroomlight);
+        b.set(x1, 1, z0 + 2, shroomlight); // east wall low inset (warped side)
+        b.set(x1, 1, z1 - 2, shroomlight);
+        // a shroomlight ridge accent under the gable peak gable-ends (added below in roof).
+
+        // ── 6) PEAKED NETHER-WOOD GABLE ROOF (ridge along X) — two-tone ───────────────
+        // gableRoofX builds a single-material gable; to keep the two-tone read we run
+        // it once for the crimson half (x=x0..cx) and once for the warped half
+        // (x=cx+1..x1), each with its own stair/slab, sharing the same z-span/yBase so
+        // the ridges line up into one continuous roof. Gable ends are closed per side.
+        BlueprintBlockState crimsonSlab = bs("minecraft:crimson_slab[type=bottom]");
+        BlueprintBlockState warpedSlab  = bs("minecraft:warped_slab[type=bottom]");
+        gableRoofX(b, x0, z0, cx, z1, roofY, "crimson_stairs", crimsonSlab);   // crimson west half
+        gableRoofX(b, cx + 1, z0, x1, z1, roofY, "warped_stairs", warpedSlab); // warped east half
+        // close the gable triangle ends: west end (x=x0) crimson, east end (x=x1) warped.
+        gableEndFill(b, x0, z0, x0, z1, roofY, crimsonPlanks); // west gable triangle
+        gableEndFill(b, x1, z0, x1, z1, roofY, warpedPlanks);  // east gable triangle
+        // shroomlight finial under the ridge peak at each gable end (warm glow, backed
+        // by the gable-end plank fill just placed → render-safe).
+        int peakY = gablePeakY(z0, z1, roofY);
+        b.set(x0, peakY, cz, shroomlight); // west gable peak glow
+        b.set(x1, peakY, cz, shroomlight); // east gable peak glow
+
+        // ── 7) COZY INTERIOR (standing floor = y=1) ───────────────────────────────────
+        // A red bed at the back (crimson side), crafting table + chest (warped side),
+        // and lanterns. All FU-valued / structural; placed off the doorway path.
+        bed(b, x0 + 1, 1, z1 - 1, "red", "south"); // red bed, head near south wall (crimson side)
+        b.set(x1 - 1, 1, z1 - 1, CRAFTING_TABLE);  // warped-side corner
+        b.set(x1 - 1, 1, z0 + 1, CHEST);           // warped-side front corner
+        b.set(cx, 1, cz, LANTERN);                 // central floor lantern
+        b.set(x0 + 1, 1, z0 + 1, LANTERN);         // crimson-side front-corner lantern
 
         return b.build();
     }
