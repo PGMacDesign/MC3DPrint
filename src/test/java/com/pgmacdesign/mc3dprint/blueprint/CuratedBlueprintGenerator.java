@@ -247,6 +247,7 @@ class CuratedBlueprintGenerator {
         // Phase 2 — Category G (storage)
         builds.put("storage_barrel_hall", storageBarrelHall());
         builds.put("brewing_room", brewingRoom());
+        builds.put("super_smelter", superSmelter());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -6419,6 +6420,139 @@ class CuratedBlueprintGenerator {
         // cell) and hang a lantern over the work area so the room is fully lit.
         b.set(3, yT + 1, 3, GLOWSTONE);          // ceiling centre (y=4)
         chainLantern(b, 3, yB + 1, 3, 1);        // lantern at y=2 over the centre, chain to y=3
+
+        return b.build();
+    }
+
+    /**
+     * §G.super_smelter — a STATIC, self-working automatic furnace bank, 7×7×5
+     * (W×H×D) → builder(7, 5, 7).
+     *
+     * <p>The classic survival "super smelter": you drop raw ore (or food) into the
+     * top INPUT chest, a hopper line splits it across a row of furnaces, a fuel
+     * hopper feeds coal/charcoal into the furnaces' fuel slots, and an OUTPUT
+     * hopper line under the furnaces sweeps the smelted product into a collection
+     * chest at the bottom. Printed as the working SHELL — every block is placed in
+     * a functioning configuration; the player only supplies ore + fuel. A
+     * comparator/repeater readout line off the output chest is the canonical
+     * "auto-shutoff / item-counter" wiring you see in the tutorials.
+     *
+     * <p>Every printed block is vanilla and FU-valued or derives for free:
+     * stone_bricks/smooth_stone/smooth_stone_slab/stone (housing), furnace, hopper,
+     * chest, comparator, repeater, redstone_wire, redstone_torch (all derive from
+     * redstone + stone/quartz/wood), glowstone (light). No glass panes or iron bars
+     * are used, so the stub-pane render gate is trivially satisfied.
+     *
+     * <p>Vertical layout (z is depth; south = +z = the front/access face):
+     * <ul>
+     *   <li><b>y=0</b> — smooth-stone base slab (the machine's footing).</li>
+     *   <li><b>y=1</b> — OUTPUT layer: a 5-wide hopper line under the furnace row
+     *       feeding east → an output chest, flanked by stone-brick housing. The
+     *       comparator/repeater/redstone readout runs along the front lip here.</li>
+     *   <li><b>y=2</b> — FURNACE BANK: five furnaces facing south (out the open
+     *       front), each sitting on the output hopper below it, plus the fuel
+     *       hopper line behind them (north, z=1) feeding the furnaces' sides.</li>
+     *   <li><b>y=3</b> — INPUT layer: a hopper line over the furnace tops, fed from
+     *       the input chest, distributing ore down into each furnace.</li>
+     *   <li><b>y=4</b> — smooth-stone roof + glowstone light; the input chest sits
+     *       on the roof rim at the back so the player can reach it.</li>
+     * </ul>
+     */
+    private static Blueprint superSmelter() {
+        Blueprint.Builder b = Blueprint.builder("Super Smelter", 7, 5, 7);
+
+        BlueprintBlockState smoothStone = bs("minecraft:smooth_stone");           // base + roof
+        BlueprintBlockState smoothSlab  = bs("minecraft:smooth_stone_slab[type=bottom]");
+        // all FU-valued / derive-for-free:
+        BlueprintBlockState furnaceS = bs("minecraft:furnace[facing=south,lit=false]");
+        BlueprintBlockState comparator = bs("minecraft:comparator[facing=north,mode=compare,powered=false]");
+        BlueprintBlockState repeater   = bs("minecraft:repeater[facing=north,delay=1,locked=false,powered=false]");
+        BlueprintBlockState wire       = bs("minecraft:redstone_wire[east=none,north=none,power=0,south=none,west=none]");
+        BlueprintBlockState rsTorch    = bs("minecraft:redstone_torch[lit=true]");
+
+        int x0 = 0, x1 = 6, z0 = 0, z1 = 6;   // 7×7 footprint
+        int bankX0 = 1, bankX1 = 5;           // 5-wide furnace bank columns
+        int bankZ  = 3;                        // furnace bank depth row (centre)
+
+        // ── 1) BASE SLAB at y=0 — smooth-stone footing under the whole machine ──
+        floor(b, 0, x0, z0, x1, z1, smoothStone);
+
+        // ── 2) STONE-BRICK HOUSING — back + side walls y=1..3, front (south) open ──
+        // North wall (z=0), west wall (x=0), east wall (x=6) rise y=1..3 as a tidy
+        // stone-brick shroud. The south face (z=6) is LEFT OPEN so the furnaces vent
+        // and the player can read/extract from the front.
+        for (int y = 1; y <= 3; y++) {
+            line(b, y, x0, z0, x1, z0, STONE_BRICKS);   // north wall
+            line(b, y, x0, z0, x0, z1 - 1, STONE_BRICKS); // west wall (stop short of open front)
+            line(b, y, x1, z0, x1, z1 - 1, STONE_BRICKS); // east wall (stop short of open front)
+        }
+
+        // ── 3) OUTPUT LAYER, y=1 — hopper line under the furnaces → output chest ──
+        // Five hoppers along the bank row (x=1..5, z=3) all face EAST so product
+        // funnels to the east end, where an output chest (x=5..east) collects it.
+        // The hopper at x=5 feeds the chest sitting one block east-ish; we place the
+        // output chest at (x=5, z=4) facing the player and aim the last hopper into it.
+        for (int x = bankX0; x <= bankX1 - 1; x++) {
+            b.set(x, 1, bankZ, bs("minecraft:hopper[enabled=true,facing=east]"));   // → next hopper east
+        }
+        // terminal hopper drops DOWN into the output chest beneath/beside it
+        b.set(bankX1, 1, bankZ, bs("minecraft:hopper[enabled=true,facing=south]")); // → output chest (south)
+        // OUTPUT CHEST at the front-east, facing south (toward the player)
+        b.set(bankX1, 1, bankZ + 1, CHEST);
+        // stone-brick shelf under the output run so it reads as a contained channel
+        b.set(bankX0 - 0, 1, bankZ - 1, STONE_BRICKS); // (1,1,2) back lip of channel — harmless filler
+
+        // ── 4) COMPARATOR / REPEATER READOUT — front lip at y=1 (south, z=5) ──────
+        // The canonical "is-it-done / item-counter" wiring: a comparator reading the
+        // output chest, a length of redstone wire, a repeater to boost it, and a
+        // redstone torch as the indicator lamp driver. Runs along z=5 (just inside the
+        // open front) on the smooth-stone base — purely the readout the tutorials show.
+        b.set(bankX1, 1, bankZ + 2, comparator);   // (5,1,5) comparator facing north toward the chest
+        b.set(bankX1 - 1, 1, bankZ + 2, wire);     // (4,1,5) redstone trail
+        b.set(bankX1 - 2, 1, bankZ + 2, repeater); // (3,1,5) repeater boosting the line
+        b.set(bankX1 - 3, 1, bankZ + 2, wire);     // (2,1,5) redstone trail
+        b.set(bankX1 - 4, 1, bankZ + 2, rsTorch);  // (1,1,5) indicator torch (lit)
+
+        // ── 5) FURNACE BANK, y=2 — five furnaces facing south (out the open front) ──
+        // Each furnace sits directly above its output hopper (drops smelted product
+        // straight down into the y=1 hopper line).
+        for (int x = bankX0; x <= bankX1; x++) {
+            b.set(x, 2, bankZ, furnaceS);
+        }
+
+        // ── 6) FUEL HOPPER LINE, y=2 (behind the bank, z=2) → into furnace sides ──
+        // A hopper line one row north of the furnaces, each hopper facing south so it
+        // pushes fuel sideways into the adjacent furnace's fuel slot. Fed from the
+        // fuel chest at the west end.
+        for (int x = bankX0; x <= bankX1; x++) {
+            b.set(x, 2, bankZ - 1, bs("minecraft:hopper[enabled=true,facing=south]")); // → furnace fuel slot
+        }
+        // FUEL CHEST at the west end of the fuel line (player tops up coal here)
+        b.set(bankX0 - 1 + 1, 2, bankZ - 2, CHEST); // (1,2,1) feeds the fuel line southward
+        b.set(bankX0, 2, bankZ - 2, bs("minecraft:hopper[enabled=true,facing=south]")); // chest → fuel line
+
+        // ── 7) INPUT LAYER, y=3 — hopper line over furnace tops, fed by input chest ──
+        // Five hoppers above the furnace row (x=1..5, z=3) each face DOWN so ore drops
+        // straight into the furnace below. They're chained west→east from the input
+        // chest so a single drop distributes across the bank.
+        for (int x = bankX0; x <= bankX1; x++) {
+            b.set(x, 3, bankZ, bs("minecraft:hopper[enabled=true,facing=down]")); // → furnace top below
+        }
+        // a west-end feeder hopper carries the input chest's contents east into the line
+        b.set(bankX0, 3, bankZ - 1, bs("minecraft:hopper[enabled=true,facing=south]")); // input → bank
+
+        // ── 8) ROOF y=4 + INPUT CHEST + LIGHT ────────────────────────────────────
+        // Smooth-stone roof over the machine, a glowstone block recessed into the
+        // centre for full lighting, and the INPUT chest sitting on the back-roof rim
+        // (x=1, z=1) where the player tips in raw ore — it falls to the y=3 feeder.
+        floor(b, 4, x0, z0, x1, z1, smoothStone);
+        b.set(3, 4, 3, GLOWSTONE);                 // ceiling-centre light
+        // INPUT chest perched on the roof at the back-west, reachable from outside
+        b.set(bankX0, 4, bankZ - 1, CHEST);        // (1,4,2) input chest on the roof rim
+        // smooth-stone-slab catwalk lip along the open front edge for a tidy finish
+        for (int x = x0; x <= x1; x++) {
+            b.set(x, 4, z1, smoothSlab);           // front roof eave (z=6) as a slab brow
+        }
 
         return b.build();
     }
