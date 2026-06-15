@@ -200,6 +200,7 @@ class CuratedBlueprintGenerator {
         // Per-biome starter house (§3.A)
         builds.put("desert_sandstone_house", desertSandstoneHouse());
         builds.put("desert_pyramid_shrine", desertPyramidShrine());
+        builds.put("taiga_log_cabin", taigaLogCabin());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -2876,6 +2877,77 @@ class CuratedBlueprintGenerator {
         // y=7 — chiseled-sandstone finial capstone at the apex
         b.set(cx, 7, cz, chiseledSandstone);
 
+        return b.build();
+    }
+
+    /**
+     * Taiga Log Cabin. 7×7 footprint → builder(7, 8, 7). A cozy spruce log cabin
+     * with a steep gable roof, spruce-log corner posts, glass-pane windows, an
+     * enterable interior, and a cobblestone chimney crowned by a lit campfire
+     * (the signature taiga "campfire-smoke chimney"). Built from the same
+     * palette-driven helpers as {@link #house} but with the geometry inlined so the
+     * footprint — which is square (7×7), and would otherwise get a {@link #hipRoof}
+     * from {@code house()} — gets the spec's STEEP GABLE roof instead.
+     *
+     * <p>Vanilla, FU-valued blocks only (the {@link #TAIGA_SPRUCE} palette family +
+     * cobblestone + a lit campfire), so every cell clears the printability gate.
+     * The campfire is an itemless-free-printing edge case in vanilla terms but a
+     * normal valued item here; either way it's a single placed block, no neighbour
+     * dependency, so it's render-safe.
+     *
+     * <p>Layout (Y), footprint x=0..6 (W), z=0..6 (depth), centre (3,3):
+     * <ul>
+     *   <li><b>y=0</b> — walkable spruce-plank foundation floor over the full 7×7.</li>
+     *   <li><b>y=1..4</b> — spruce-plank wall ring with spruce-log corner posts; a
+     *       door opens inward on the north wall (z=0); glass-pane windows centred on
+     *       the long walls and the back wall (each between two wall cells →
+     *       render-safe). Interior left unset (air-skip rule) so the cabin is
+     *       enterable.</li>
+     *   <li><b>y=4..7</b> — steep spruce gable roof ({@link #gableRoofX} ridge along
+     *       X) with closed gable ends ({@link #gableEndFill}).</li>
+     *   <li><b>chimney</b> — a cobblestone stack on the east wall (x=6,z=5) rising
+     *       from y=1 through the eave to y=8, with a firebox cobble base and a LIT
+     *       {@link #CAMPFIRE} on top emitting smoke (the taiga signature).</li>
+     *   <li><b>furnishings</b> (furnish=true equivalent) — a spruce/blue {@link #bed},
+     *       a crafting table, a chest, and a lantern on the y=1 floor.</li>
+     * </ul>
+     */
+    private static Blueprint taigaLogCabin() {
+        Blueprint.Builder b = Blueprint.builder("Taiga Log Cabin", 7, 9, 7);
+        Palette p = TAIGA_SPRUCE;
+        int wallH = 4;
+        int cx = 3, cz = 3;
+
+        // 1) walkable spruce-plank foundation floor at y=0
+        floor(b, 0, 0, 0, 6, 6, p.plankFloor);
+        // 2) spruce-plank wall ring y=1..4 with spruce-log corner posts (no nub)
+        walls(b, 0, 0, 6, 6, 1, wallH, p.wall);
+        corners(b, 0, 0, 6, 6, 1, wallH, p.logPillarY);
+        // 3) door centred on the north wall (z=0), opening inward (faces south)
+        door2(b, cx, 1, 0, p.doorWood, "N");
+        // 4) glass-pane windows at a mid-wall course (between two wall cells →
+        //    render-safe), one on each long wall and the back wall
+        int wy = 2;
+        window2(b, 0, wy, cz, p.windowPane, null); // west long wall
+        window2(b, 6, wy, cz, p.windowPane, null); // east long wall
+        window2(b, 1, wy, 0, p.windowPane, null);  // north wall, west of door
+        window2(b, 5, wy, 0, p.windowPane, null);  // north wall, east of door
+        window2(b, cx, wy, 6, p.windowPane, null); // south (back) wall, centre
+        // 5) steep spruce gable roof seated on the wall plate at y=wallH, ridge
+        //    along X; close the triangular gable ends so the attic isn't open
+        gableRoofX(b, 0, 0, 6, 6, wallH, p.roofStairName, p.roofSlab);
+        gableEndFill(b, 0, 0, 6, 6, wallH, p.wall);
+        // 6) cobblestone chimney on the east wall (x=6,z=5), rising past the eave;
+        //    a lit campfire on top gives the signature taiga campfire-smoke plume.
+        //    The stack overwrites the roof slope cells it passes through so it reads
+        //    as a continuous flue breaking the roofline.
+        pillar(b, 6, 5, 1, 7, COBBLE);
+        b.set(6, 8, 5, CAMPFIRE);                  // lit campfire = chimney smoke
+        // 7) minimal interior furnishings on the walkable y=1 floor
+        bed(b, 1, 1, 5, p.bedColor, "south");      // blue bed, head at z=5
+        b.set(5, 1, 5, CRAFTING_TABLE);
+        b.set(1, 1, 1, CHEST);
+        b.set(5, 1, 1, p.lightBlock);              // lantern in the front corner
         return b.build();
     }
 }

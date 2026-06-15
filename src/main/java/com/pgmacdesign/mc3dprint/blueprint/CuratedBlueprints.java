@@ -55,7 +55,7 @@ public final class CuratedBlueprints {
             // Phase 1 pilot builds — group 2 (remaining bank archetypes)
             "savanna_acacia_villa", "tiered_fountain", "wall_battlement_segment",
             // Per-biome starter houses (§3.A)
-            "desert_sandstone_house", "desert_pyramid_shrine");
+            "desert_sandstone_house", "desert_pyramid_shrine", "taiga_log_cabin");
 
     /**
      * Load a bundled curated blueprint straight from the mod's resources (no world
