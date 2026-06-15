@@ -318,6 +318,8 @@ class CuratedBlueprintGenerator {
         builds.put("nether_hub_room", netherHubRoom());
         // Phase 2 — Category C (nether_fortress_bridge)
         builds.put("nether_fortress_bridge", netherFortressBridge());
+        // Phase 2 — Category C (blackstone_bastion_fragment)
+        builds.put("blackstone_bastion_fragment", blackstoneBastionFragment());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -16004,6 +16006,206 @@ class CuratedBlueprintGenerator {
         b.set(cx, deckY + 1, 4, netherWart);
         b.set(cx, deckY, 8, soulSand);
         b.set(cx, deckY + 1, 8, netherWart);
+
+        return b.build();
+    }
+
+    /**
+     * Category C — blackstone_bastion_fragment. 11×11 footprint → builder(11, 11, 11):
+     * a broken FRAGMENT of a nether bastion remnant — the imposing dark
+     * polished-blackstone fortress architecture with the signature gold "treasure"
+     * accents, basalt buttress pillars, hanging chains, and a deliberately RUINED
+     * south-east edge so it reads as a chunk of a larger ruin, not a finished room.
+     *
+     * <p>AXES: x=W (0..10, east), y=up (0..10), z=depth (0..10, south). The fragment is
+     * a partial enclosure: thick polished-blackstone-brick ramparts ring the north
+     * (z=0) and west (x=0) sides at full height, while the south (z=10) and east (x=10)
+     * walls are progressively BROKEN — collapsing toward the south-east corner, which is
+     * gone entirely (cells skipped, never air-set). A raised walkable platform/walkway
+     * sits behind the north & west ramparts; chains hang from the surviving wall stubs.
+     *
+     * <p>GILDED SUBSTITUTION: {@code gilded_blackstone} is loot-only / UNVALUED (no
+     * recipe → fails the printability gate), so it is NOT used. The bastion's gold-veined
+     * "treasure" walls are recreated with polished_blackstone / polished_blackstone_bricks
+     * inlaid with {@code gold_block} accents — dark blackstone masonry studded with gold
+     * reads as the gilded treasure-vault aesthetic.
+     *
+     * <p>PALETTE (all FU-valued or structural): blackstone, polished_blackstone,
+     * polished_blackstone_bricks (+stairs/slab/wall), cracked_polished_blackstone_bricks,
+     * chiseled_polished_blackstone, basalt (axis), polished_basalt, smooth_basalt,
+     * gold_block (the metal/treasure accent — derives from ingots, valued), magma_block,
+     * glowstone, shroomlight, chains (render-safe — not bars), soul_lantern / lantern,
+     * netherrack/gravel (rubble). No glass panes or iron bars, so the stub-pane render
+     * gate is a non-issue. Chains hang from solid wall blocks above them.
+     *
+     * <p>WALKABLE: the platform behind the north & west ramparts (y=4 surface) is solid
+     * and traversable; the rampart merlons sit flush on the wall top via {@link
+     * #crenellate}. The broken edge and the missing SE corner are left OPEN (skipped).
+     */
+    private static Blueprint blackstoneBastionFragment() {
+        Blueprint.Builder b = Blueprint.builder("Blackstone Bastion Fragment", 11, 11, 11);
+        final int x0 = 0, x1 = 10, z0 = 0, z1 = 10; // 11×11 footprint
+
+        // ── Palette (all vanilla, all FU-valued or structural) ────────────────
+        BlueprintBlockState blackstone   = bs("minecraft:blackstone");
+        BlueprintBlockState polBS        = bs("minecraft:polished_blackstone");
+        BlueprintBlockState polBricks    = bs("minecraft:polished_blackstone_bricks");
+        BlueprintBlockState crackedBricks= bs("minecraft:cracked_polished_blackstone_bricks");
+        BlueprintBlockState chiseledBS   = bs("minecraft:chiseled_polished_blackstone");
+        BlueprintBlockState bsWall       = bs("minecraft:polished_blackstone_brick_wall");
+        BlueprintBlockState bsSlabTop    = bs("minecraft:polished_blackstone_brick_slab[type=top]");
+        BlueprintBlockState basaltY      = bs("minecraft:basalt[axis=y]");
+        BlueprintBlockState polBasalt    = bs("minecraft:polished_basalt[axis=y]");
+        BlueprintBlockState smoothBasalt = bs("minecraft:smooth_basalt");
+        BlueprintBlockState gold         = bs("minecraft:gold_block");
+        BlueprintBlockState magma        = bs("minecraft:magma_block");
+        BlueprintBlockState glowstone    = GLOWSTONE;
+        BlueprintBlockState shroomlight  = bs("minecraft:shroomlight");
+        BlueprintBlockState netherrack   = bs("minecraft:netherrack");
+        BlueprintBlockState gravel       = bs("minecraft:gravel");
+        // polished-blackstone-brick stairs for the ruined rampart steps + broken eaves.
+        BlueprintBlockState stairN = bs("minecraft:polished_blackstone_brick_stairs[facing=north,half=bottom,shape=straight]");
+        BlueprintBlockState stairE = bs("minecraft:polished_blackstone_brick_stairs[facing=east,half=bottom,shape=straight]");
+
+        // ── 1) PLINTH FOUNDATION (y=0) — the bastion bedrock platform ─────────────
+        // A solid polished-blackstone-brick base fills the whole footprint EXCEPT the
+        // missing south-east corner (the fragment broke away there). Rubble flecks of
+        // blackstone/cracked/netherrack/gravel scatter across it so the floor reads as
+        // ancient scorched masonry, not a clean tile.
+        for (int x = x0; x <= x1; x++) {
+            for (int z = z0; z <= z1; z++) {
+                // missing SE corner: a triangular bite where the fragment sheared off.
+                if (x + z > 16) continue; // skip → open void (never air-set)
+                b.set(x, 0, z, polBricks);
+            }
+        }
+        // weathering / rubble flecks on the base
+        b.set(3, 0, 2, blackstone);
+        b.set(7, 0, 1, crackedBricks);
+        b.set(2, 0, 6, blackstone);
+        b.set(5, 0, 4, crackedBricks);
+        b.set(1, 0, 8, netherrack);
+        b.set(8, 0, 3, gravel);
+        b.set(4, 0, 7, blackstone);
+
+        // ── 2) BASALT BUTTRESS PILLARS — the surviving corner/edge buttresses ─────
+        // Tall basalt pillars buttress the standing ramparts. NW corner is the tallest
+        // (most intact), the others step down toward the broken SE. Polished-basalt caps
+        // crown each surviving buttress. (The SE buttress is GONE — never placed.)
+        pillar(b, x0, z0, 1, 8, basaltY);  b.set(x0, 9, z0, polBasalt);  // NW (tallest, intact)
+        pillar(b, x1, z0, 1, 7, basaltY);  b.set(x1, 8, z0, polBasalt);  // NE
+        pillar(b, x0, z1, 1, 6, basaltY);  b.set(x0, 7, z1, polBasalt);  // SW (lower)
+        // mid-span buttresses on the long intact faces for the monumental rhythm
+        pillar(b, x0, 5, 1, 6, basaltY);   b.set(x0, 7, 5, smoothBasalt); // west mid
+        pillar(b, 5, z0, 1, 6, basaltY);   b.set(5, 7, z0, smoothBasalt); // north mid
+
+        // ── 3) RAMPART WALLS (y=1..6) — thick polished-blackstone-brick fortress walls ─
+        // The NORTH (z=0) and WEST (x=0) faces stand at full height — the surviving
+        // ramparts. The SOUTH (z=10) and EAST (x=10) faces are BROKEN: their height
+        // collapses as it approaches the missing SE corner, leaving a ragged ruined edge.
+        // North wall (z=0): full height x=0..10, y=1..6.
+        for (int x = x0; x <= x1; x++) {
+            pillar(b, x, z0, 1, 6, polBricks);
+        }
+        // West wall (x=0): full height z=0..10, y=1..6.
+        for (int z = z0; z <= z1; z++) {
+            pillar(b, x0, z, 1, 6, polBricks);
+        }
+        // East wall (x=10): RUINED — height tapers down as z grows toward the SE void.
+        // Standing only where the plinth survives (x+z<=16 ⇒ z<=6 at x=10).
+        for (int z = z0; z <= 6; z++) {
+            int top = 6 - z;           // 6 at z=0 → collapses to 0 by z=6
+            if (top >= 1) pillar(b, x1, z, 1, top, polBricks);
+        }
+        // South wall (z=10): RUINED — same taper from the surviving SW side eastward.
+        for (int x = x0; x <= 6; x++) {
+            int top = 6 - x;           // 6 at x=0 → collapses to 0 by x=6
+            if (top >= 1) pillar(b, x, z1, 1, top, polBricks);
+        }
+        // GOLD "TREASURE" INLAY — the gilded-bastion read: gold blocks studded into the
+        // dark masonry of the standing ramparts at a mid-height band (y=3), in a regular
+        // rhythm. This recreates the gilded_blackstone gold veining WITHOUT using the
+        // unvalued loot block. Chiseled-blackstone pilasters frame the gold studs.
+        for (int x = x0; x <= x1; x += 2) {
+            b.set(x, 3, z0, (x % 4 == 0) ? gold : chiseledBS); // north rampart gold band
+        }
+        for (int z = z0; z <= z1; z += 2) {
+            b.set(x0, 3, z, (z % 4 == 0) ? gold : chiseledBS); // west rampart gold band
+        }
+        // a few extra gold inlays low on the wall (treasure-vault corner cache)
+        b.set(1, 2, z0, gold);
+        b.set(x0, 2, 1, gold);
+        b.set(3, 5, z0, gold);
+        b.set(x0, 5, 3, gold);
+        // weathering flecks (cracked) on the ramparts — battle-scarred masonry
+        b.set(4, 2, z0, crackedBricks);
+        b.set(x0, 4, 6, crackedBricks);
+        b.set(8, 4, z0, crackedBricks);
+        b.set(x0, 2, 8, crackedBricks);
+
+        // ── 4) RAISED WALKWAY / FIGHTING PLATFORM (y=1..3 fill, y=4 surface) ───────
+        // Behind the north & west ramparts, a solid raised platform you can stand and
+        // walk on — the bastion's interior fighting floor. It fills the NW quadrant
+        // corner (x=1..3, z=1..3 → blackstone core) up to a polished-blackstone walking
+        // surface at y=4, stepped down to the open courtyard by a stair lip.
+        solid(b, 1, 1, 1, 3, 3, 3, blackstone);          // platform core (walkable mass)
+        floor(b, 4, 1, 1, 3, 3, polBS);                  // walking surface (y=4 top)
+        // gold inlay set into the platform surface — the treasure cache underfoot
+        b.set(2, 4, 2, gold);
+        // stair lip stepping DOWN off the platform's south & east edges into the court
+        for (int x = 1; x <= 3; x++) b.set(x, 4, 4, stairN); // south edge step-down
+        for (int z = 1; z <= 3; z++) b.set(4, 4, z, stairE); // east edge step-down
+
+        // ── 5) CRENELLATED PARAPET (y=7) — flush merlons on the standing rampart tops ─
+        // The north & west wall tops end at y=6; crenellate at y=7 places the merlons
+        // flush. Crenellate the full footprint perimeter — the broken south/east cells
+        // simply land on the missing wall (still placed at y=7 they'd float), so instead
+        // we crenellate ONLY the two standing faces by hand to avoid floating merlons.
+        int idx = 0;
+        for (int x = x0; x <= x1; x++) { if (idx++ % 3 != 2) b.set(x, 7, z0, bsWall); } // north merlons
+        idx = 0;
+        for (int z = z0 + 1; z <= z1; z++) { if (idx++ % 3 != 2) b.set(x0, 7, z, bsWall); } // west merlons
+        // wall-walk slab behind the parapet so the rampart top is walkable (y=7 inner)
+        for (int x = 1; x <= x1 - 1; x++) b.set(x, 7, z0 + 1, bsSlabTop);
+        for (int z = 1; z <= z1 - 1; z++) b.set(x0 + 1, 7, z, bsSlabTop);
+
+        // ── 6) HANGING CHAINS — the signature bastion chains, off the surviving walls ─
+        // Chains are render-safe (not bars). Each hangs from a solid wall block above it
+        // down into the interior. A soul-lantern caps the longest chain (the warm
+        // bastion glow), and shorter bare chains dress the ruined edges.
+        // Long chain + soul lantern from the north rampart inner face.
+        b.set(3, 5, z0 + 1, CHAIN);
+        b.set(3, 4, z0 + 1, CHAIN);
+        b.set(3, 3, z0 + 1, bs("minecraft:soul_lantern[hanging=true]"));
+        // chain + hanging lantern from the west rampart inner face.
+        b.set(1, 5, 6, CHAIN); // (x=1) under the west wall top
+        b.set(1, 4, 6, bs("minecraft:lantern[hanging=true]"));
+        // bare dressing chains hanging off the broken east-wall stub (z=2,3 still tall)
+        b.set(x1, 4, 2, CHAIN);
+        b.set(x1 - 1, 3, 1, CHAIN);
+
+        // ── 7) GLOW POCKETS — lava-light glow nestled in the rubble & ruined base ─────
+        // Magma blocks and a glowstone/shroomlight pocket light the fragment from within,
+        // the molten-nether read. Tucked into the open courtyard floor and the broken
+        // edge so they don't block the walkway.
+        b.set(6, 0, 2, magma);
+        b.set(2, 0, 4, magma);
+        b.set(5, 0, 6, glowstone);
+        b.set(7, 0, 4, shroomlight);
+        // a couple of standing lanterns on the wall-walk for the parapet glow
+        b.set(5, 8, z0, bs("minecraft:lantern[hanging=false]"));   // atop the north-mid buttress cap
+        b.set(x0, 8, 5, bs("minecraft:lantern[hanging=false]"));   // atop the west-mid buttress cap
+
+        // ── 8) RUINED RUBBLE PILE — collapsed masonry spilling toward the broken SE ───
+        // A low mound of fallen polished/cracked blocks and basalt chunks heaps up where
+        // the south-east corner sheared away, selling the "fragment" read. Single lumps,
+        // air-skip leaves the rest open → scattered debris, not a second floor.
+        b.set(6, 1, 5, crackedBricks);
+        b.set(7, 1, 4, blackstone);
+        b.set(5, 1, 6, basaltY);
+        b.set(6, 2, 5, crackedBricks);   // a taller stub of the collapse
+        b.set(8, 1, 2, polBS);
+        b.set(7, 1, 3, blackstone);
 
         return b.build();
     }
