@@ -295,6 +295,8 @@ class CuratedBlueprintGenerator {
         builds.put("fishing_hut", fishingHut());
         // Phase 2 — Category E (conduit_shrine)
         builds.put("conduit_shrine", conduitShrine());
+        // Phase 2 — Category E (ocean_ruins)
+        builds.put("ocean_ruins", oceanRuins());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -13703,6 +13705,191 @@ class CuratedBlueprintGenerator {
         // a prismarine-brick slab canopy floating one course above the mount, capping
         // the shrine apex (slabs flush above the lantern → the altar baldachin).
         b.set(cx, 5, cz, slabBottom);
+
+        return b.build();
+    }
+
+    /**
+     * §E Ocean Ruins. 9×9 footprint → builder(9, 6, 9). A sunken, ruined
+     * stone-brick structure in the vanilla ocean-ruins idiom: deliberately
+     * BROKEN walls (uneven heights with gaps), a half-buried floor of sand +
+     * gravel, a few standing pillar stubs, a fallen lintel beam, an exposed
+     * "treasure" nook (a chest), and scattered rubble — all submerged in a
+     * structural WATER pool. The key read is RUIN: asymmetric, weathered, NOT a
+     * clean building (direct technique precedent: {@link #jungleTempleRuin} /
+     * {@link #ruinPillar} — break a wall by SKIPPING cells, never by setting air).
+     *
+     * <p>PALETTE (all FU-valued vanilla, or structural/free): stone_bricks +
+     * cracked_stone_bricks + mossy_stone_bricks + chiseled_stone_bricks (+stairs/
+     * slabs/walls), cobblestone + mossy_cobblestone, gravel, sand, sandstone, and
+     * a single {@link #CHEST} as the treasure. The submerging pool is structural
+     * {@link #WATER} (prints free). No glass panes / iron bars / froglight, so the
+     * render-integrity gate has nothing lone to enforce. dark_prismarine, kelp,
+     * seagrass, coral, sea_pickle and suspicious_sand/_gravel are UNVALUED and
+     * deliberately AVOIDED. T5 footprint, T1 disc.
+     *
+     * <p>AXES: x=W (0..8, east), y=up, z=depth (0..8, south). The structure leans
+     * its surviving mass to the NW; the SE quadrant is collapsed (open gaps + a
+     * rubble pile). The treasure nook sits in the sheltered NW interior corner.
+     */
+    private static Blueprint oceanRuins() {
+        final int W = 9, H = 6, D = 9;
+        Blueprint.Builder b = Blueprint.builder("Ocean Ruins", W, H, D);
+        final int x0 = 0, x1 = W - 1, z0 = 0, z1 = D - 1; // x:0..8  z:0..8
+
+        // weathered stone family (all FU-valued); reused weatheredWall() mixer.
+        BlueprintBlockState stone        = STONE_BRICKS;
+        BlueprintBlockState cracked      = CRACKED_STONE_BRICKS;
+        BlueprintBlockState mossyBrick   = MOSSY_STONE_BRICKS;
+        BlueprintBlockState chiseled     = CHISELED_STONE_BRICKS;
+        BlueprintBlockState cobble       = COBBLE;
+        BlueprintBlockState mossyCobble  = MOSSY_COBBLE;
+        BlueprintBlockState sand         = bs("minecraft:sand");
+        BlueprintBlockState gravel       = bs("minecraft:gravel");
+        BlueprintBlockState brickWall    = STONE_BRICK_WALL;
+        BlueprintBlockState slabBottom   = STONE_BRICK_SLAB_BOTTOM;
+        BlueprintBlockState stairN = bs("minecraft:stone_brick_stairs[facing=north,half=bottom,shape=straight]");
+        BlueprintBlockState stairE = bs("minecraft:stone_brick_stairs[facing=east,half=bottom,shape=straight]");
+        BlueprintBlockState mossyStairW = bs("minecraft:mossy_stone_brick_stairs[facing=west,half=bottom,shape=straight]");
+
+        // ── 1) SEABED FLOOR (y=0) — a half-buried floor of sand + gravel mottled
+        //    over weathered stone-brick paving. The drift is heaviest in the
+        //    collapsed SE quadrant (more sand/gravel where the structure failed),
+        //    thinning toward the surviving NW masonry. A few floor cells are left
+        //    OPEN (skipped) so the seabed reads scoured/uneven, not a clean slab.
+        for (int x = x0; x <= x1; x++) {
+            for (int z = z0; z <= z1; z++) {
+                // scour pits — small skipped gaps in the SE drift (read as washouts)
+                if ((x == 6 && z == 7) || (x == 7 && z == 5) || (x == 8 && z == 8)) continue;
+                boolean seQuadrant = (x >= 4 && z >= 4);
+                int k = (x * 5 + z * 3) % 7;
+                BlueprintBlockState mat;
+                if (seQuadrant) {
+                    // heavy sand/gravel drift burying the collapsed corner
+                    mat = (k % 2 == 0) ? sand : gravel;
+                } else if (k <= 1) {
+                    mat = gravel;                     // scattered gravel patches
+                } else if (k == 2) {
+                    mat = sand;                       // sand drift fingers
+                } else {
+                    // surviving weathered stone-brick paving (mossy/cracked mix)
+                    mat = (k == 3) ? mossyBrick : (k == 4 ? cracked : stone);
+                }
+                b.set(x, 0, z, mat);
+            }
+        }
+
+        // ── 2) BROKEN PERIMETER WALLS (y=1..3) — the surviving wall ring, built
+        //    course-by-course so the weathering varies with height and so whole
+        //    sections can be left collapsed (top courses / cells SKIPPED) for the
+        //    ruin silhouette. NW stays tallest; the south & east faces crumble down
+        //    toward the SE breach. weatheredWall() mixes mossy/cracked/mossy-brick.
+        for (int y = 1; y <= 3; y++) {
+            // NORTH face (z=z0): mostly intact, but a battered gap at x=6..7 above y1
+            for (int x = x0; x <= x1; x++) {
+                if (y >= 2 && (x == 6 || x == 7)) continue; // toppled north section
+                if (y == 3 && x == 2) continue;             // a single missing capstone
+                b.set(x, y, z0, weatheredWall(x, y, mossyCobble, cracked, mossyBrick));
+            }
+            // WEST face (x=x0): the best-preserved wall — full height except one spall
+            for (int z = z0; z <= z1; z++) {
+                if (y == 3 && z == 5) continue;             // a chipped-out merlon
+                if (y >= 2 && z >= 7) continue;             // SW corner crumbles low
+                b.set(x0, y, z, weatheredWall(z, y, mossyCobble, cracked, mossyBrick));
+            }
+            // EAST face (x=x1): heavily collapsed — only the lower NE stub survives
+            for (int z = z0; z <= z1; z++) {
+                if (y >= 2 && z >= 3) continue;             // most of the east wall is gone
+                if (y == 3 && z >= 1) continue;             // only the NE corner reaches y3
+                b.set(x1, y, z, weatheredWall(z, y, mossyCobble, cracked, mossyBrick));
+            }
+            // SOUTH face (z=z1): the breach — almost entirely fallen, a couple of stubs
+            for (int x = x0; x <= x1; x++) {
+                if (x >= 3) continue;                       // SE half of the south wall is rubble
+                if (y >= 2 && x >= 1) continue;             // only the SW corner post reaches up
+                b.set(x, y, z1, weatheredWall(x, y, mossyCobble, cracked, mossyBrick));
+            }
+        }
+
+        // chiseled corner pilasters — NW survives full height (the proud corner);
+        // the SW & NE are sheared low; the SE pilaster is gone entirely (rubble).
+        pillar(b, x0, z0, 1, 3, chiseled);  // NW — intact
+        pillar(b, x1, z0, 1, 2, chiseled);  // NE — sheared at y2
+        pillar(b, x0, z1, 1, 1, chiseled);  // SW — only a footing chunk
+        // (SE corner intentionally absent — it's the collapse)
+
+        // ── 3) STANDING PILLAR STUBS — two interior column drums that outlived the
+        //    roof, at differing broken heights (the classic ruin "stumps"). Material
+        //    degrades upward toward the break; each is capped by a worn slab/stair
+        //    suggesting the sheared cross-section.
+        // West-interior pillar (taller stub): y1..y3, snapped, slab-capped.
+        pillar(b, 2, 2, 1, 3, stone);
+        b.set(2, 3, 2, cracked);            // cracking at the break
+        b.set(2, 4, 2, slabBottom);         // worn slab cap (the snapped top)
+        // East-interior pillar (shorter stub): y1..y2 only, a stair fracture face.
+        pillar(b, 5, 2, 1, 2, mossyBrick);
+        b.set(5, 3, 2, stairN);             // jagged fracture lip overhanging north
+
+        // ── 4) FALLEN LINTEL — a toppled stone-brick beam lying flat across the
+        //    seabed (a roof beam that crashed down), bridging from the west pillar
+        //    base out toward the breach. Laid as a low course on y1 so it reads as
+        //    debris on the floor, with a mossy slab fragment broken off its end.
+        line(b, 1, 3, 4, 6, 4, cracked);    // the fallen beam (x=3..6 at z=4)
+        b.set(6, 1, 4, mossyCobble);        // shattered end lump
+        b.set(7, 1, 4, slabBottom);         // a slab shard flung past the end
+
+        // ── 5) TREASURE NOOK — the sheltered NW interior corner holds the exposed
+        //    "treasure": a chest tucked against the surviving west wall, framed by a
+        //    short stone-brick-wall lip and a chiseled back stone so it reads as a
+        //    deliberate alcove the player loots. Chest faces south (into the ruin).
+        b.set(1, 1, 1, CHEST);              // the treasure chest (faces south by default)
+        b.set(1, 1, 2, brickWall);          // wall lip framing the nook (south side)
+        b.set(2, 1, 1, brickWall);          // wall lip framing the nook (east side)
+        b.set(1, 2, 1, chiseled);           // chiseled back stone above the chest (alcove head)
+
+        // ── 6) SCATTERED RUBBLE — toppled cobble-wall stubs and fallen blocks marking
+        //    the collapse, fanned across the SE breach and floor. Wall stubs connect
+        //    horizontally to floor masonry / each other (WALLS tag) so nothing ships
+        //    as a lone stub; loose cobble/mossy lumps fill the debris pile.
+        b.set(5, 1, 5, brickWall);          // breach stub (south wall remnant)
+        b.set(4, 1, 6, mossyCobble);        // fallen block in the breach
+        b.set(6, 1, 6, cobble);             // rubble lump
+        b.set(5, 1, 6, mossyCobble);        // (connects the two for a debris cluster)
+        b.set(7, 1, 7, cobble);             // scattered SE rubble
+        b.set(3, 1, 7, mossyCobble);        // a fallen chunk near the south stubs
+        b.set(6, 2, 5, slabBottom);         // a toppled slab leaning on the breach stub
+        // a couple of stair "fragments" lying in the open — sheared masonry faces.
+        b.set(2, 1, 6, mossyStairW);        // fragment near the SW corner
+        b.set(4, 1, 2, stairE);             // fragment by the east-interior pillar
+
+        // ── 7) SUBMERGING WATER (y=1) — fill the ruin interior + breach with a
+        //    structural WATER layer so it reads SUNKEN. The Builder silently skips
+        //    air and offers no read-back, so we track which y=1 cells already hold
+        //    masonry/chest/rubble in a local occupancy grid and water ONLY the rest
+        //    (never overwriting standing blocks). WATER is structural → prints free.
+        boolean[][] occ1 = new boolean[W][D];
+        for (int[] c : new int[][]{
+                // perimeter wall cells standing at y=1 (mirror the §2 y==1 placements)
+                {x0,z0},{1,z0},{2,z0},{3,z0},{4,z0},{5,z0},{6,z0},{7,z0},{x1,z0}, // north
+                {x0,1},{x0,2},{x0,3},{x0,4},{x0,5},{x0,6},{x0,7},{x0,z1},          // west
+                {x1,z0},{x1,1},{x1,2},{x1,3},{x1,4},{x1,5},{x1,6},{x1,7},{x1,z1},  // east (y1 row)
+                {x0,z1},{1,z1},{2,z1},                                              // south stubs
+                // pilasters / pillar stubs / lintel / treasure / rubble at y=1
+                {2,2},{5,2},                                                        // interior pillars
+                {3,4},{4,4},{5,4},{6,4},{7,4},                                       // fallen lintel + shard
+                {1,1},{1,2},{2,1},                                                  // treasure nook
+                {5,5},{4,6},{6,6},{5,6},{7,7},{3,7},                                // rubble cluster
+                {2,6},{4,2}                                                         // stair fragments
+        }) {
+            occ1[c[0]][c[1]] = true;
+        }
+        for (int x = x0; x <= x1; x++) {
+            for (int z = z0; z <= z1; z++) {
+                if (!occ1[x][z]) {
+                    b.set(x, 1, z, WATER);
+                }
+            }
+        }
 
         return b.build();
     }
