@@ -311,6 +311,7 @@ class CuratedBlueprintGenerator {
         builds.put("crimson_warped_hut", crimsonWarpedHut());
         // Phase 2 — Category C (soul_outpost)
         builds.put("soul_outpost", soulOutpost());
+        builds.put("nether_wart_farm", netherWartFarm());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -15372,6 +15373,132 @@ class CuratedBlueprintGenerator {
         // ── 9) GUARD-ROOM FURNISHINGS — a chest + crafting table (off the door path) ──
         b.set(x1 - 1, 1, z0 + 1, CHEST);          // front-east corner chest
         b.set(x0 + 1, 1, zGuard - 1, CRAFTING_TABLE); // back-west guard-room corner
+
+        return b.build();
+    }
+
+    /**
+     * Category C — nether_wart_farm. 9×7 footprint → builder(9, 5, 7). A tidy
+     * nether-wart farm for brewing: rows of <b>soul-sand</b> planting beds growing
+     * ripe <b>nether_wart</b>, framed by a low <b>nether-brick</b> enclosure crowned
+     * with a <b>nether-brick fence</b> rail, nether-brick walkways between the rows,
+     * lantern + glowstone glow, a small brewing nook (brewing stand on a netherrack
+     * stand, a water cauldron, barrels of wart), and a fence-gate access on the front
+     * (south) wall. The rows of red nether-wart on soul-sand inside a nether-brick
+     * frame are the signature read.
+     *
+     * <p><b>Why this build is fully printable + render-safe.</b> Every block is a
+     * vanilla FU-valued block or structural-free matter:
+     * <ul>
+     *   <li><b>nether_wart</b> is a {@link net.minecraft.world.level.block.NetherWartBlock}
+     *       ⇒ a {@link net.minecraft.world.level.block.BushBlock} (a crop), so — like
+     *       wheat/mushroom/stem crops — it's <b>structural matter</b> and prints free
+     *       even in strict mode. We place the ripe planted CROP {@code nether_wart[age=3]}
+     *       directly on the FU-valued <b>soul_sand</b> beds — NOT the decorative
+     *       {@code nether_wart_block} (UNVALUED, no recipe).</li>
+     *   <li><b>soul_sand</b> (the bed), <b>nether_bricks</b> (+ chiseled, fence, stairs),
+     *       <b>netherrack</b>, <b>glowstone</b>, <b>lantern</b>, <b>brewing_stand</b>
+     *       (recipe-derived), <b>cauldron</b>/<b>water_cauldron</b> (derived; the water
+     *       inside is itemless-structural → free), <b>barrel</b>, <b>chest</b> are all
+     *       FU-valued or derive.</li>
+     *   <li>No glass panes / iron bars anywhere ⇒ the stub-pane render-integrity gate
+     *       can never apply. Fences are NOT panes/bars and reconcile at print time.</li>
+     * </ul>
+     *
+     * <p>Layout (south = +z is the "front"/access side; cx=4):
+     * <ul>
+     *   <li><b>y=0</b> — nether-brick foundation (9×7). The interior splits into three
+     *       <b>soul-sand planting beds</b> (z=1..5) at x=1,2 / x=4,5 / x=7 with
+     *       <b>nether-brick walkways</b> between them at x=3 and x=6 (and the rim).</li>
+     *   <li><b>y=1, beds</b> — ripe <b>nether_wart[age=3]</b> on every soul-sand bed
+     *       cell (the planted, harvest-ready crop; prints free).</li>
+     *   <li><b>y=1..2, frame</b> — a low nether-brick wall ring around the footprint with
+     *       chiseled nether-brick corner posts, a <b>nether-brick-fence</b> rail crowning
+     *       it at y=3, and a <b>fence gate</b> access in the south wall centre.</li>
+     *   <li><b>Brewing nook</b> — in the NE corner (open of the beds): a netherrack stand
+     *       carrying a <b>brewing_stand</b>, a <b>water cauldron</b> beside it, and
+     *       <b>barrels</b> + a <b>chest</b> for storing the harvested wart.</li>
+     *   <li><b>Lighting</b> — lanterns on the corner posts and a glowstone accent, so the
+     *       beds stay lit for the player (nether-wart growth doesn't need light).</li>
+     * </ul>
+     */
+    private static Blueprint netherWartFarm() {
+        Blueprint.Builder b = Blueprint.builder("Nether Wart Farm", 9, 5, 7);
+        final int x0 = 0, x1 = 8, z0 = 0, z1 = 6; // 9×7 footprint (W×L)
+        final int cx = (x0 + x1) / 2;             // 4 — centre column
+
+        // ── Palette (all vanilla, all FU-valued or structural) ────────────────
+        BlueprintBlockState netherBricks = bs("minecraft:nether_bricks");
+        BlueprintBlockState chiseledNB   = bs("minecraft:chiseled_nether_bricks");
+        BlueprintBlockState nbFence      = bs("minecraft:nether_brick_fence");
+        BlueprintBlockState netherrack   = bs("minecraft:netherrack");
+        BlueprintBlockState soulSand     = bs("minecraft:soul_sand");          // FU-valued — the planting bed
+        BlueprintBlockState netherWart   = bs("minecraft:nether_wart[age=3]"); // NetherWartBlock⇒BushBlock → structural-free
+        BlueprintBlockState glowstone    = GLOWSTONE;
+        BlueprintBlockState waterCauldron = bs("minecraft:water_cauldron[level=3]");
+        BlueprintBlockState brewingStand =
+                bs("minecraft:brewing_stand[has_bottle_0=false,has_bottle_1=false,has_bottle_2=false]");
+
+        // bed run along Z (front rim z=6 is the access/walkway; back rim z=0 is wall).
+        final int bedZ0 = 1, bedZ1 = 5;
+        // three planting beds with nether-brick walkways between them:
+        //   beds at x=1,2 (west) / x=4,5 (mid) / x=7 (east), walkways at x=3 and x=6.
+        final int[] bedXs = {1, 2, 4, 5, 7};
+
+        // ── 1) NETHER-BRICK FOUNDATION (y=0) over the full 9×7 footprint ──────────────
+        // Walkable surface = top of y=0. Walkways stay as the bare nether-brick floor;
+        // the bed columns get soul-sand overstamped on top below.
+        floor(b, 0, x0, z0, x1, z1, netherBricks);
+
+        // ── 2) SOUL-SAND PLANTING BEDS + RIPE NETHER-WART CROP ───────────────────────
+        // Overstamp soul-sand on the bed columns (z=1..5), then plant a ripe
+        // nether_wart on top of each bed cell. The crop is a BushBlock ⇒ structural-free
+        // (prints at no FU cost, like wheat/mushroom/stem crops on a valued substrate).
+        for (int bx : bedXs) {
+            for (int z = bedZ0; z <= bedZ1; z++) {
+                b.set(bx, 0, z, soulSand);       // planting bed (replaces the brick floor cell)
+                b.set(bx, 1, z, netherWart);     // ripe planted crop on top (free)
+            }
+        }
+
+        // ── 3) LOW NETHER-BRICK WALL RING (y=1..2) with a FENCE-RAIL CROWN ───────────
+        // A 2-high nether-brick ring frames the farm; chiseled-nether-brick corner posts
+        // rise to the same height for relief, and a nether-brick-fence rail crowns the
+        // top at y=3 (fences are NOT panes/bars → render-safe, reconcile at print time).
+        walls(b, x0, z0, x1, z1, 1, 2, netherBricks);
+        pillar(b, x0, z0, 1, 2, chiseledNB); // NW post
+        pillar(b, x1, z0, 1, 2, chiseledNB); // NE post
+        pillar(b, x0, z1, 1, 2, chiseledNB); // SW post
+        pillar(b, x1, z1, 1, 2, chiseledNB); // SE post
+        fenceRing(b, 3, x0, z0, x1, z1, nbFence); // fence rail crown around the rim
+
+        // ── 4) FENCE-GATE ACCESS (south wall centre) ─────────────────────────────────
+        // Overstamp the south-wall centre cells with a nether-brick fence gate so the
+        // player can walk into the rows from the front. The gate sits in the wall ring
+        // (y=1..2) at x=cx, breaking the ring only here (a passable connecting block).
+        b.set(cx, 1, z1, bs("minecraft:nether_brick_fence[in_wall=false,open=false]"));
+        b.set(cx, 2, z1, bs("minecraft:nether_brick_fence[in_wall=false,open=false]"));
+
+        // ── 5) BREWING NOOK — NE corner (clear of the bed path) ──────────────────────
+        // A netherrack stand carries the brewing stand; a water cauldron sits beside it
+        // for filling bottles; barrels + a chest store the harvested wart. All on the
+        // y=1 standing floor in the NE walkway corner (x=7..8 isn't a bed there — the
+        // east bed is only x=7; x=8 is the wall, so the nook tucks at x=7..6 near z=0..1).
+        b.set(6, 1, z0 + 1, netherrack);                 // brewing-stand pedestal
+        b.set(6, 2, z0 + 1, brewingStand);               // brewing stand on the stand
+        b.set(7, 1, z0 + 1, waterCauldron);              // filling cauldron beside it
+        b.set(6, 1, z0 + 2, BARREL);                     // wart-storage barrel
+        b.set(7, 1, z0 + 2, BARREL);                     // wart-storage barrel
+        b.set(cx + 1, 1, z0 + 1, CHEST);                 // collection chest near the nook
+
+        // ── 6) LIGHTING — lanterns on the corner posts + a glowstone accent ──────────
+        // Standing lanterns crown the four chiseled corner posts (on top of the y=2
+        // post, at y=3) so the rows are lit; a glowstone block accents the brewing nook.
+        b.set(x0, 3, z0, LANTERN); // NW post lantern
+        b.set(x1, 3, z0, LANTERN); // NE post lantern
+        b.set(x0, 3, z1, LANTERN); // SW post lantern
+        b.set(x1, 3, z1, LANTERN); // SE post lantern
+        b.set(6, 2, z0 + 2, glowstone); // glowstone glow over the brewing nook
 
         return b.build();
     }
