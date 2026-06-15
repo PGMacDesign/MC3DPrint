@@ -7,9 +7,9 @@
 
 ## Status
 - **Curated builds before Phase 2:** 29
-- **Phase 2 queue:** 103 · **Done:** 26 · **Blocked:** 2 · **Remaining:** 75
-- **Next up:** `koi_pond`
-- **Last completed:** `mushroom_farm`
+- **Phase 2 queue:** 103 · **Done:** 27 · **Blocked:** 2 · **Remaining:** 74
+- **Next up:** `gazebo`
+- **Last completed:** `koi_pond`
 
 ## Process (per build — follow exactly on resume)
 1. Pick the first unchecked `[ ]` build in queue order below.
@@ -65,7 +65,7 @@
 - [x] mushroom_farm
 
 ### I — Decorative micro / landmarks (17) · cheap volume, easy
-- [ ] koi_pond
+- [x] koi_pond
 - [ ] gazebo
 - [ ] pergola_garden
 - [ ] wishing_well

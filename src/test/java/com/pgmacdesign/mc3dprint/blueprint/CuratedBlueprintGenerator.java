@@ -226,6 +226,8 @@ class CuratedBlueprintGenerator {
         builds.put("fishery_pond", fisheryPond());
         builds.put("tree_farm", treeFarm());
         builds.put("mushroom_farm", mushroomFarm());
+        // Phase 2 — Category I (ornamental / garden)
+        builds.put("koi_pond", koiPond());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -5974,6 +5976,103 @@ class CuratedBlueprintGenerator {
         // oak wall signs on the south face flanking the chest (FU-valued, derived).
         b.set(wBedX, 1, z1, bs("minecraft:oak_wall_sign[facing=south]"));
         b.set(eBedX, 1, z1, bs("minecraft:oak_wall_sign[facing=south]"));
+
+        return b.build();
+    }
+
+    /**
+     * §I.koi_pond — an ORNAMENTAL koi pond, 7×7×3 (W×L×H) → builder(7, 3, 7).
+     *
+     * <p>A cottagecore garden water feature: a sunken water pool ringed by a
+     * stone-brick / cobblestone rim, dressed with stone-button "pebble" accents, a
+     * small arched stone bridge spanning the pond, fence-post lanterns at the
+     * corners, and a sparse touch of sugar-cane greenery. Purely decorative — no
+     * interior, no doors, no windows. Every block is vanilla and either FU-valued
+     * (stone bricks / cobble / stairs / slabs / walls / buttons / fences /
+     * lanterns / chains derive from stone or iron; sugar_cane=2@1) or structural
+     * matter (water), so every cell clears the printability gate. No glass panes
+     * or iron bars are used, so the render-integrity stub-pane gate never applies.
+     *
+     * <p>The "koi pond" garden references (lily pads / bamboo / dripleaf / seagrass
+     * / leaves / flowers) are all UNVALUED and would silently fail to print, so they
+     * are deliberately OMITTED. Greenery is rendered with a single short sugar-cane
+     * stalk (valued) and the stonework itself carries the ornament.
+     *
+     * <p>Layout (x=0..6 W, z=0..6 depth, y up; cx=cz=3):
+     * <ul>
+     *   <li><b>y=0</b> — a full 7×7 stone-brick base. The interior is carved to a
+     *       WATER disc (radius 2, centred at 3,3), leaving a one-cell stone-brick /
+     *       cobble rim around the pool. Water is structural → prints free.</li>
+     *   <li><b>y=0 rim accents</b> — stone <b>buttons</b> dotted on the flat rim as
+     *       scattered "pebbles", and four cobble corner footing pads.</li>
+     *   <li><b>y=1 edging</b> — a low stone-brick-wall ring around the OUTER edge of
+     *       the pool (contains the water visually) plus a stone-brick-slab coping run
+     *       on the outer rim corners.</li>
+     *   <li><b>Arched bridge</b> — a 1-wide stone-brick stair arch running along z at
+     *       x=cx, springing from the rim at y=1, cresting at y=2 over the pond centre,
+     *       and descending to the far rim — a walkable hump the way {@link #stoneBridge}
+     *       builds its crown.</li>
+     *   <li><b>Lanterns</b> — oak-fence lamp posts at the four outer corners with a
+     *       lantern resting on each cap (y=1 post, y=2 lantern; non-hanging, no backing
+     *       needed), lighting the garden.</li>
+     *   <li><b>Greenery</b> — a single sugar-cane stalk on a damp rim corner (valued,
+     *       render-safe), the only living accent.</li>
+     * </ul>
+     */
+    private static Blueprint koiPond() {
+        Blueprint.Builder b = Blueprint.builder("Koi Pond", 7, 3, 7);
+        int x0 = 0, x1 = 6, z0 = 0, z1 = 6;
+        int cx = 3, cz = 3;
+
+        // 1) STONE-BRICK BASE (7×7), then carve the interior to a WATER disc (r=2),
+        //    leaving a one-cell stone-brick rim around the pool. Water is structural.
+        floor(b, 0, x0, z0, x1, z1, STONE_BRICKS);
+        disc(b, 0, cx, cz, 2, WATER);
+
+        // 2) RIM PEBBLE ACCENTS — stone "buttons" dotted on the flat stone-brick rim
+        //    (they derive from stone → FU-valued). face=floor so they sit flat as pebbles.
+        BlueprintBlockState pebble = bs("minecraft:stone_button[face=floor,facing=north,powered=false]");
+        for (int[] p : new int[][]{{1, 1}, {5, 1}, {1, 5}, {5, 5}, {3, 0}, {0, 3}, {6, 3}, {3, 6}}) {
+            b.set(p[0], 0, p[1], pebble);
+        }
+        // cobble corner footing pads under the lamp posts (overwrite the brick base).
+        for (int[] c : new int[][]{{x0, z0}, {x1, z0}, {x0, z1}, {x1, z1}}) {
+            b.set(c[0], 0, c[1], COBBLE);
+        }
+
+        // 3) POOL EDGING — a low stone-brick-wall ring around the OUTER pool edge at
+        //    y=1 (the ring just inside the rim, radius 2), reading as a raised coping
+        //    that contains the water. circleRing draws the perimeter only.
+        circleRing(b, 1, cx, cz, 2, STONE_BRICK_WALL);
+
+        // 4) ARCHED STONE BRIDGE — a 1-wide span along z at x=cx. It springs from the
+        //    near rim, crests over the pond centre, and descends to the far rim. Stairs
+        //    ascending toward +z face south; descending toward -z face north (the
+        //    verified stoneBridge convention), so every height change is walkable.
+        BlueprintBlockState rampUp = bs("minecraft:stone_brick_stairs[facing=south,half=bottom,shape=straight]");
+        BlueprintBlockState rampDown = bs("minecraft:stone_brick_stairs[facing=north,half=bottom,shape=straight]");
+        // deck height by z-row across the bridge: rise 0→1→2 (crown at cz) →1→0.
+        int[] deckY = {0, 1, 2, 2, 2, 1, 0};
+        for (int z = z0; z <= z1; z++) {
+            int dy = deckY[z];
+            BlueprintBlockState surface;
+            if (z < cz && deckY[z] < deckY[z + 1]) surface = rampUp;        // rising toward crown
+            else if (z > cz && deckY[z] < deckY[z - 1]) surface = rampDown; // falling from crown
+            else surface = STONE_BRICK_SLAB_TOP;                           // flat tread / crown
+            b.set(cx, dy, z, surface);
+        }
+
+        // 5) LAMP POSTS — oak-fence post at each outer corner with a lantern on its cap.
+        //    Non-hanging lantern rests on the post top (no backing needed).
+        for (int[] c : new int[][]{{x0, z0}, {x1, z0}, {x0, z1}, {x1, z1}}) {
+            b.set(c[0], 1, c[1], OAK_FENCE);
+            b.set(c[0], 2, c[1], LANTERN);
+        }
+
+        // 6) GREENERY — a single short sugar-cane stalk on a rim corner cell adjacent to
+        //    the water (valued 2@1, render-safe). Sits on the stone-brick rim at x=2,z=0
+        //    (one cell out from the pool edge), one tall.
+        b.set(2, 1, 0, bs("minecraft:sugar_cane[age=0]"));
 
         return b.build();
     }
