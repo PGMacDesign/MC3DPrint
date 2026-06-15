@@ -228,6 +228,7 @@ class CuratedBlueprintGenerator {
         builds.put("mushroom_farm", mushroomFarm());
         // Phase 2 — Category I (ornamental / garden)
         builds.put("koi_pond", koiPond());
+        builds.put("gazebo", gazebo());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -6073,6 +6074,112 @@ class CuratedBlueprintGenerator {
         //    the water (valued 2@1, render-safe). Sits on the stone-brick rim at x=2,z=0
         //    (one cell out from the pool edge), one tall.
         b.set(2, 1, 0, bs("minecraft:sugar_cane[age=0]"));
+
+        return b.build();
+    }
+
+    /**
+     * Gazebo — an open garden shelter on a raised stone-brick/oak deck: four
+     * stripped-oak corner posts, open oak-fence railings on three sides with a
+     * walk-in entry gap at the front centre, and a peaked oak-stairs hip roof
+     * crowned by a hanging lantern at the apex. Enterable, open-sided.
+     * 7×7 footprint (T5), disc T1.
+     *
+     * <p>Vanilla, FU-valued blocks only — stone bricks, oak planks/slabs,
+     * stripped-oak logs, oak fence, oak stairs, lanterns, chain. No
+     * leaves/vines/flowers (UNVALUED). Glass panes are avoided here; the sides
+     * are intentionally open (railings only). Stairs/slabs derive from their
+     * base wood/stone, so every block is wound/printable.
+     *
+     * <p>Footprint x=0..6 (W), z=0..6 (depth); front is z=0.
+     * <ul>
+     *   <li>{@code y=0} stone-brick base slab over the whole 7×7 (the deck
+     *       footing; walkable ground = top of y=0).</li>
+     *   <li>{@code y=1} oak-plank deck floor inset one cell (x,z = 1..5) inside a
+     *       stone-brick-slab rim coping, so the deck reads as a raised platform
+     *       with a stone lip and an open front step at the entry.</li>
+     *   <li>{@code y=1..3} four stripped-oak corner posts + four edge-midpoint
+     *       posts; open oak-fence railings spanning the perimeter at waist height
+     *       (y=2), with the two front-centre cells left open as the entrance.</li>
+     *   <li>{@code y=4..7} oak-stairs hip roof seated on the posts, converging to
+     *       an oak-plank cap at the apex (y=7).</li>
+     *   <li>a hanging lantern on a chain dropped from the roof apex to light the
+     *       interior, plus four hanging eave lanterns under the corner brackets.</li>
+     * </ul>
+     */
+    private static Blueprint gazebo() {
+        final int W = 7, H = 8, D = 7;
+        Blueprint.Builder b = Blueprint.builder("Gazebo", W, H, D);
+        int x0 = 0, x1 = W - 1, z0 = 0, z1 = D - 1; // 0..6
+        int cx = 3, cz = 3;
+        BlueprintBlockState post = STRIPPED_OAK_Y;
+        BlueprintBlockState railing = OAK_FENCE;
+        BlueprintBlockState deckTrim = STONE_BRICK_SLAB_TOP;
+        int postTop = 3;   // posts y=1..3
+        int roofY = 4;     // lowest eave course
+
+        // 1) stone-brick base slab over the whole footprint (y=0 footing).
+        floor(b, 0, x0, z0, x1, z1, STONE_BRICKS);
+
+        // 2) raised oak-plank deck inset one cell (x,z = 1..5) at y=1, ringed by a
+        //    stone-brick-slab coping on the perimeter so the deck reads as a raised
+        //    platform with a stone lip. The front-centre rim cell (cx,z0) is left as
+        //    an open step into the gazebo.
+        floor(b, 1, x0 + 1, z0 + 1, x1 - 1, z1 - 1, OAK_PLANKS);
+        for (int x = x0; x <= x1; x++) {
+            if (x != cx) b.set(x, 1, z0, deckTrim); // front rim, gap at entry step
+            b.set(x, 1, z1, deckTrim);              // back rim
+        }
+        for (int z = z0 + 1; z <= z1 - 1; z++) {
+            b.set(x0, 1, z, deckTrim);              // west rim
+            b.set(x1, 1, z, deckTrim);              // east rim
+        }
+
+        // 3) eight stripped-oak posts: four corners + four edge midpoints, y=1..3.
+        int[][] posts = {
+                {x0, z0}, {x1, z0}, {x0, z1}, {x1, z1}, // corners
+                {cx, z0}, {cx, z1}, {x0, cz}, {x1, cz}  // edge midpoints
+        };
+        for (int[] q : posts) {
+            pillar(b, q[0], q[1], 1, postTop, post);
+        }
+
+        // 4) open oak-fence railings spanning between the posts at y=2 (waist
+        //    height). The FRONT centre — the two cells flanking the front mid-post
+        //    (cx-1,z0) and (cx+1,z0) — is left open as the walk-in entrance. Fences
+        //    self-reconcile their connections at print time.
+        for (int x = x0; x <= x1; x++) {
+            if (x != cx - 1 && x != cx + 1) b.set(x, 2, z0, railing); // front, entry gap
+            b.set(x, 2, z1, railing);                                  // back, full
+        }
+        for (int z = z0 + 1; z <= z1 - 1; z++) {
+            b.set(x0, 2, z, railing); // west rail
+            b.set(x1, 2, z, railing); // east rail
+        }
+        // re-stamp the post cells the rail loop overwrote (corners + front/side mids).
+        for (int[] q : posts) {
+            b.set(q[0], 2, q[1], post);
+        }
+
+        // 5) peaked oak-stairs hip roof seated on the posts, converging to an
+        //    oak-plank cap at the apex. For a 7-wide footprint the hip steps
+        //    0..6 → 1..5 → 2..4 → cap(3,3): courses at y=4,5,6 and the apex cap
+        //    at y=7.
+        hipRoof(b, x0, z0, x1, z1, roofY, "oak_stairs", OAK_PLANKS);
+
+        // 6) central hanging lantern: a chain dropped from just under the apex with
+        //    a lantern below it, lighting the open interior. Apex cap is at y=7; hang
+        //    a chain at y=6 and the lantern at y=5 (above head height, clear of the
+        //    deck).
+        b.set(cx, 6, cz, CHAIN);
+        b.set(cx, 5, cz, HANGING_LANTERN);
+
+        // 7) four hanging eave lanterns under the corner roof brackets (offset one
+        //    cell inward from each corner so they hang in the bay, backed by the
+        //    lowest eave ring at y=4).
+        for (int[] c : new int[][]{{x0 + 1, z0 + 1}, {x1 - 1, z0 + 1}, {x0 + 1, z1 - 1}, {x1 - 1, z1 - 1}}) {
+            b.set(c[0], 3, c[1], HANGING_LANTERN);
+        }
 
         return b.build();
     }
