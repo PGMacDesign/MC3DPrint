@@ -197,6 +197,8 @@ class CuratedBlueprintGenerator {
         builds.put("savanna_acacia_villa", savannaAcaciaVilla());
         builds.put("tiered_fountain", tieredFountain());
         builds.put("wall_battlement_segment", wallBattlementSegment());
+        // Per-biome starter house (§3.A)
+        builds.put("desert_sandstone_house", desertSandstoneHouse());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -2585,6 +2587,112 @@ class CuratedBlueprintGenerator {
         pillar(b, 2, 1, 1, 3, acaciaFence);
         pillar(b, 6, 1, 1, 3, acaciaFence);
         line(b, 4, 2, 1, 6, 1, acaciaSlabBottom);        // shade beam between the posts
+        return b.build();
+    }
+
+    /**
+     * Desert Sandstone House. 7×7 footprint → builder(7, 7, 7). A flat-roofed
+     * desert home in the {@link #DESERT_SANDSTONE} palette: cut-sandstone walls on
+     * a smooth-sandstone plinth, chiseled-sandstone corner pilasters, an acacia
+     * door + acacia-trapdoor window shutters, a terracotta accent course under the
+     * eave, and a low cut-sandstone parapet ringing the flat sandstone-slab roof —
+     * the silhouette that reads "desert" instead of the palette's default pitched
+     * roof. Enterable: walkable y=0 floor, open interior, inward-opening door.
+     *
+     * <p>Built from primitives (not {@link #house}) so the roof can be FLAT: the
+     * {@code house} helper auto-seats a hip roof on a near-square footprint, which
+     * is wrong for this archetype. Layout (Y), footprint x=0..6, z=0..6:
+     * <ul>
+     *   <li><b>y=0</b> — walkable smooth-sandstone foundation slab (full 7×7).</li>
+     *   <li><b>y=1..4</b> — cut-sandstone wall ring with chiseled-sandstone corner
+     *       pilasters (equal height, no nub); the bottom course (y=1) is
+     *       smooth-sandstone wainscot so the house sits on a visible stone base.</li>
+     *   <li><b>y=2</b> — glass-pane windows on all four walls, each flanked
+     *       horizontally by wall cells (render-safe, never a stub) and dressed with
+     *       acacia-trapdoor shutters stacked ABOVE/BELOW the pane (never beside it,
+     *       so the pane keeps its wall neighbours).</li>
+     *   <li><b>y=4</b> — a terracotta accent band on all four walls, the desert
+     *       colour pop just under the eave.</li>
+     *   <li><b>y=5</b> — flat roof: sandstone top-slabs over the full footprint, so
+     *       the interior is fully closed (no sky holes).</li>
+     *   <li><b>y=6</b> — a low parapet: a sandstone-wall crenellation ring on the
+     *       roof edge, giving the flat-roof desert/fort read.</li>
+     * </ul>
+     */
+    private static Blueprint desertSandstoneHouse() {
+        Blueprint.Builder b = Blueprint.builder("Desert Sandstone House", 7, 7, 7);
+        Palette p = DESERT_SANDSTONE;
+        BlueprintBlockState cutSandstone = p.wall;                 // cut_sandstone
+        BlueprintBlockState smoothSandstone = p.accentWall;        // smooth_sandstone
+        BlueprintBlockState chiseledSandstone = p.logPillarY;      // chiseled_sandstone (corner pilasters)
+        BlueprintBlockState sandstoneSlabTop = p.slabTop;          // sandstone_slab[type=top] (flat roof)
+        BlueprintBlockState sandstoneWall = bs("minecraft:sandstone_wall"); // parapet crenellation
+        BlueprintBlockState terracotta = bs("minecraft:terracotta");        // desert accent band
+        // Acacia-trapdoor shutters: hung on the wall face ABOVE and BELOW each pane
+        // (not beside it) so the 1-wide pane keeps its in-line wall neighbours and
+        // renders instead of becoming an invisible stub — same idiom as the villa.
+        BlueprintBlockState acaciaShutterTop =
+                bs("minecraft:acacia_trapdoor[facing=north,half=top,open=false,powered=false,waterlogged=false]");
+        BlueprintBlockState acaciaShutterBottom =
+                bs("minecraft:acacia_trapdoor[facing=north,half=bottom,open=false,powered=false,waterlogged=false]");
+
+        // 1) walkable foundation floor at y=0 (smooth-sandstone plinth)
+        floor(b, 0, 0, 0, 6, 6, smoothSandstone);
+        // 2) cut-sandstone wall ring y=1..4 with chiseled-sandstone corner pilasters
+        walls(b, 0, 0, 6, 6, 1, 4, cutSandstone);
+        corners(b, 0, 0, 6, 6, 1, 4, chiseledSandstone);
+        // 2a) smooth-sandstone wainscot on the bottom course (y=1), perimeter only,
+        //     skipping the door cell (3,0) so the doorway stays open; re-seat the
+        //     chiseled corner pilasters over the wainscot.
+        for (int x = 0; x <= 6; x++) {
+            if (x != 3) b.set(x, 1, 0, smoothSandstone); // north face (skip door)
+            b.set(x, 1, 6, smoothSandstone);             // south face
+        }
+        for (int z = 1; z <= 5; z++) {
+            b.set(0, 1, z, smoothSandstone);             // west face
+            b.set(6, 1, z, smoothSandstone);             // east face
+        }
+        b.set(0, 1, 0, chiseledSandstone);
+        b.set(6, 1, 0, chiseledSandstone);
+        b.set(0, 1, 6, chiseledSandstone);
+        b.set(6, 1, 6, chiseledSandstone);
+        // 3) door centred on the north wall (z=0), opening inward (faces south).
+        //    Spec calls for an acacia door for the desert accent — pass "acacia"
+        //    explicitly rather than the palette's default door wood (jungle).
+        door2(b, 3, 1, 0, "acacia", "N");
+        // 4) glass-pane windows at y=2, one centred-ish on each wall. Each pane sits
+        //    between two wall cells along its wall line (render-safe). North-wall panes
+        //    flank the door at x=1 and x=5.
+        window2(b, 1, 2, 0, p.windowPane, null); // north wall, west of door
+        window2(b, 5, 2, 0, p.windowPane, null); // north wall, east of door
+        window2(b, 0, 2, 3, p.windowPane, null); // west wall, centre
+        window2(b, 6, 2, 3, p.windowPane, null); // east wall, centre
+        window2(b, 3, 2, 6, p.windowPane, null); // south (back) wall, centre
+        // 4a) acacia-trapdoor shutters above/below each pane (not beside it)
+        int[][] panes = {{1, 0}, {5, 0}, {0, 3}, {6, 3}, {3, 6}};
+        for (int[] pn : panes) {
+            b.set(pn[0], 3, pn[1], acaciaShutterTop);    // upper leaf
+            b.set(pn[0], 1, pn[1], acaciaShutterBottom); // lower leaf
+        }
+        // 5) terracotta accent band on the top wall course (y=4), perimeter only,
+        //    keeping the chiseled corner pilasters exposed.
+        for (int x = 1; x <= 5; x++) {
+            b.set(x, 4, 0, terracotta); // north
+            b.set(x, 4, 6, terracotta); // south
+        }
+        for (int z = 1; z <= 5; z++) {
+            b.set(0, 4, z, terracotta); // west
+            b.set(6, 4, z, terracotta); // east
+        }
+        // 6) flat roof: sandstone top-slabs over the full footprint (interior closed)
+        flatRoof(b, 5, 0, 0, 6, 6, sandstoneSlabTop);
+        // 7) low parapet: a sandstone-wall crenellation ring on the roof edge
+        crenellate(b, 6, 0, 0, 6, 6, sandstoneWall);
+        // 8) minimal interior furnishings on the walkable y=1 floor
+        bed(b, 1, 1, 5, p.bedColor, "south"); // yellow bed, head at z=5
+        b.set(5, 1, 5, CHEST);
+        b.set(1, 1, 1, CRAFTING_TABLE);
+        b.set(5, 1, 1, p.lightBlock);         // lantern in the front corner
         return b.build();
     }
 
