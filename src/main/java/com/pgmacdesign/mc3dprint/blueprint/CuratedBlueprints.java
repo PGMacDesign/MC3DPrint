@@ -166,7 +166,9 @@ public final class CuratedBlueprints {
             // Phase 2 — Category D (chorus_garden)
             "chorus_garden",
             // Phase 2 — Category D (shulker_box_vault)
-            "shulker_box_vault");
+            "shulker_box_vault",
+            // Phase 2 — Category D (end_gateway_shrine)
+            "end_gateway_shrine");
 
     /**
      * Load a bundled curated blueprint straight from the mod's resources (no world

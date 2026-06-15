@@ -325,6 +325,7 @@ class CuratedBlueprintGenerator {
         builds.put("end_stone_outpost", endStoneOutpost());
         builds.put("chorus_garden", chorusGarden());
         builds.put("shulker_box_vault", shulkerBoxVault());
+        builds.put("end_gateway_shrine", endGatewayShrine());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -13760,6 +13761,184 @@ class CuratedBlueprintGenerator {
         b.set(1, yT, 1, END_ROD);        // back-west glow over the grille
         b.set(5, yT, 1, END_ROD);        // back-east glow over the grille
         chainLantern(b, cx, yT - 1, cz, 1); // aisle-centre lantern (chain to ceiling)
+
+        return b.build();
+    }
+
+    /**
+     * Category D — end_gateway_shrine. 11×11 footprint → builder(11, 7, 11), disc T7.
+     * The FINALE build: a grand, symmetrical END SHRINE framing an EMPTY central
+     * gateway mount — a ceremonial end-stone-brick + purpur platform with an OBSIDIAN
+     * central pad (where the player's End-gateway / return-portal would sit), purpur
+     * pillared corners, end-rod beacons radiating glow, a raised dais reached by
+     * cardinal steps, magenta/purple stained-glass accents, and an ornate
+     * obsidian/crying-obsidian frame ringing the central mount. The symmetrical purpur
+     * + end-stone + obsidian shrine with end-rod beacons around a central portal mount
+     * is the look — ceremonial and impressive.
+     *
+     * <p><b>THE GATEWAY IS A STATE BLOCK — NEVER PLACED.</b> {@code end_gateway} and
+     * {@code end_portal} are non-placeable state blocks (no item, no recipe → can't
+     * print), and the vanilla gateway is bedrock-framed but {@code bedrock} is
+     * unobtainable/unprintable. So the shrine frames an EMPTY central mount: an
+     * OBSIDIAN pad with the exact centre cell left as a prominent empty spot marked by
+     * a single END ROD (the glowing seat for the player's own gateway), exactly like
+     * {@link #conduitShrine} / {@link #netherPortalRoom} left the activated element for
+     * the player. No end_gateway/end_portal/bedrock anywhere.
+     *
+     * <p>SYMMETRY: fully symmetric on BOTH axes about the centre (cx,cz)=(5,5) —
+     * every placement is mirrored across x=5 and z=5. The dais is walkable and
+     * approachable from all four cardinals via stair steps.
+     *
+     * <p>LAYOUT (x=W 0..10, y=up 0..8, z=D 0..10):
+     * <ul>
+     *   <li><b>y0</b> — end-stone-brick platform over the whole 11×11 (walkable), with
+     *       a purpur ring inlay and an obsidian cross-aisle leading to the mount.</li>
+     *   <li><b>y1</b> — a raised end-stone-brick DAIS (9×9 inner court) one course up,
+     *       reached by inward-facing purpur-stair steps at the four cardinal mid-edges;
+     *       a purpur coping rim frames the dais edge.</li>
+     *   <li><b>CENTRAL MOUNT</b> — a 3×3 OBSIDIAN pad on the dais with crying-obsidian
+     *       corners, ringed at y2..y4 by an ornate obsidian frame with end-rod beacon
+     *       finials; the exact centre is an END-ROD-marked EMPTY seat for the gateway.</li>
+     *   <li><b>CORNER PILLARS</b> — four purpur-pillar columns at the inner-court
+     *       corners rising y1..y5, capped with end-rod beacons (the radiating glow).</li>
+     *   <li><b>GLASS ACCENTS</b> — magenta/purple stained-glass BLOCKS set flush into
+     *       the corner pillars and the central frame as ceremonial colour.</li>
+     * </ul>
+     *
+     * <p>RENDER-SAFETY: every glass is a full stained-glass BLOCK (never a pane), and
+     * there are NO panes or iron bars anywhere, so the stub-pane GameTest guard cannot
+     * trip. End rods are render-safe thin vertical accents (beacons + the centre seat).
+     *
+     * <p>PRINTABILITY: end_stone, end_stone_bricks (+stairs/slab/wall), purpur_block,
+     * purpur_pillar, purpur_stairs, purpur_slab, obsidian, crying_obsidian, end_rod,
+     * sea_lantern, magenta/purple stained_glass blocks are ALL FU-valued. The UNVALUED
+     * end_gateway/end_portal/bedrock/chorus_* are deliberately NOT used — the gateway
+     * seat is left empty for the player.
+     */
+    private static Blueprint endGatewayShrine() {
+        final int W = 11, H = 7, D = 11;
+        Blueprint.Builder b = Blueprint.builder("End Gateway Shrine", W, H, D);
+        final int x0 = 0, x1 = W - 1, z0 = 0, z1 = D - 1; // x:0..10  z:0..10
+        final int cx = 5, cz = 5;                          // shrine centre (both axes)
+
+        // ── Palette (all FU-valued End / structural blocks) ───────────────────
+        final BlueprintBlockState endStone      = bs("minecraft:end_stone");
+        final BlueprintBlockState endBricks      = bs("minecraft:end_stone_bricks");
+        final BlueprintBlockState endBrickWall   = bs("minecraft:end_stone_brick_wall");
+        final BlueprintBlockState endBrickSlabT  = bs("minecraft:end_stone_brick_slab[type=top]");
+        final BlueprintBlockState purpurBlock    = bs("minecraft:purpur_block");
+        final BlueprintBlockState purpurPillarY  = bs("minecraft:purpur_pillar[axis=y]");
+        final BlueprintBlockState purpurSlabT    = bs("minecraft:purpur_slab[type=top]");
+        final BlueprintBlockState obsidian       = bs("minecraft:obsidian");
+        final BlueprintBlockState crying         = bs("minecraft:crying_obsidian");
+        final BlueprintBlockState magentaGlass   = bs("minecraft:magenta_stained_glass");
+        final BlueprintBlockState purpleGlass    = bs("minecraft:purple_stained_glass");
+        final BlueprintBlockState seaLantern     = SEA_LANTERN;
+        // inward-facing purpur stairs for the four cardinal dais approach steps.
+        final BlueprintBlockState stepN = bs("minecraft:purpur_stairs[facing=north,half=bottom,shape=straight]"); // climbs +z
+        final BlueprintBlockState stepS = bs("minecraft:purpur_stairs[facing=south,half=bottom,shape=straight]"); // climbs -z
+        final BlueprintBlockState stepW = bs("minecraft:purpur_stairs[facing=west,half=bottom,shape=straight]");  // climbs +x
+        final BlueprintBlockState stepE = bs("minecraft:purpur_stairs[facing=east,half=bottom,shape=straight]");  // climbs -x
+
+        // inner court (the raised dais) = 9×9, x/z ∈ [1..9].
+        final int dx0 = 1, dz0 = 1, dx1 = 9, dz1 = 9;
+
+        // ── 1) GROUND PLATFORM (y=0) — end-stone-brick over the whole 11×11, walkable.
+        //    A purpur square ring inlay frames the platform edge (one cell in), and an
+        //    obsidian cross-aisle runs both cardinal axes to the central mount, so the
+        //    ceremonial approach reads from every direction. Symmetric on both axes.
+        floor(b, 0, x0, z0, x1, z1, endBricks);
+        // purpur ring inlay one course in from the edge (the dressed platform border).
+        line(b, 0, dx0, dz0, dx1, dz0, purpurBlock); // north inlay
+        line(b, 0, dx0, dz1, dx1, dz1, purpurBlock); // south inlay
+        line(b, 0, dx0, dz0, dx0, dz1, purpurBlock); // west inlay
+        line(b, 0, dx1, dz0, dx1, dz1, purpurBlock); // east inlay
+        // obsidian cross-aisle on both centre axes (ceremonial path to the mount).
+        line(b, 0, x0, cz, x1, cz, obsidian); // east-west aisle
+        line(b, 0, cx, z0, cx, z1, obsidian); // north-south aisle
+        // raw end-stone corner accents at the platform corners (chunky End-base read).
+        b.set(x0, 0, z0, endStone); b.set(x1, 0, z0, endStone);
+        b.set(x0, 0, z1, endStone); b.set(x1, 0, z1, endStone);
+
+        // ── 2) RAISED DAIS (y=1) — a 9×9 end-stone-brick court one course above the
+        //    platform, walkable, with a purpur-slab coping rim framing its edge so the
+        //    shrine reads as a dressed ceremonial dais. The four cardinal mid-edges are
+        //    left as STAIR steps (below) so the dais is climbable from every side.
+        floor(b, 1, dx0, dz0, dx1, dz1, endBricks);
+        // purpur-slab coping rim ringing the dais top edge (the trim line).
+        line(b, 1, dx0, dz0, dx1, dz0, purpurSlabT); // north rim
+        line(b, 1, dx0, dz1, dx1, dz1, purpurSlabT); // south rim
+        line(b, 1, dx0, dz0, dx0, dz1, purpurSlabT); // west rim
+        line(b, 1, dx1, dz0, dx1, dz1, purpurSlabT); // east rim
+        // cardinal approach STEPS: inward-facing purpur stairs at the dais edge midpoints
+        // (climb up from the platform onto the dais), overwriting the coping there.
+        b.set(cx, 1, dz0, stepN); // north step (faces in, climbs +z)
+        b.set(cx, 1, dz1, stepS); // south step (climbs -z)
+        b.set(dx0, 1, cz, stepW); // west step (climbs +x)
+        b.set(dx1, 1, cz, stepE); // east step (climbs -x)
+        // sea-lantern uplights flush in the dais floor flanking each step (the glow path).
+        b.set(cx - 1, 1, dz0 + 1, seaLantern); b.set(cx + 1, 1, dz0 + 1, seaLantern); // north pair
+        b.set(cx - 1, 1, dz1 - 1, seaLantern); b.set(cx + 1, 1, dz1 - 1, seaLantern); // south pair
+
+        // ── 3) CORNER PILLARS — four purpur-pillar columns at the inner-court corners
+        //    rising y1..y5, each capped with an END-ROD beacon (the radiating glow), with
+        //    a magenta/purple stained-glass BLOCK lantern inset partway up. Symmetric.
+        for (int[] c : new int[][]{{dx0, dz0}, {dx1, dz0}, {dx0, dz1}, {dx1, dz1}}) {
+            pillar(b, c[0], c[1], 1, 5, purpurPillarY);  // corner shaft
+            b.set(c[0], 3, c[1], (c[1] == dz0) ? magentaGlass : purpleGlass); // glass inset (mirrored colour by side)
+            b.set(c[0], 6, c[1], END_ROD);               // corner beacon finial
+        }
+        // an end-stone-brick-WALL coping kiss on the platform corners tying the pillars
+        // down to the ground (the proud corner posts), purely the dressed corner read.
+        b.set(x0, 1, z0, endBrickWall); b.set(x1, 1, z0, endBrickWall);
+        b.set(x0, 1, z1, endBrickWall); b.set(x1, 1, z1, endBrickWall);
+
+        // ── 4) END-ROD BEACONS — radiating glow on the four cardinal mid-edges of the
+        //    dais (between the corner pillars), standing on the dais rim so the shrine
+        //    glows outward in every direction. Symmetric on both axes.
+        b.set(cx, 2, dz0, END_ROD); // north beacon (rises off the step head)
+        b.set(cx, 2, dz1, END_ROD); // south beacon
+        b.set(dx0, 2, cz, END_ROD); // west beacon
+        b.set(dx1, 2, cz, END_ROD); // east beacon
+
+        // ── 5) CENTRAL GATEWAY MOUNT — a 3×3 OBSIDIAN pad on the dais (the gateway seat),
+        //    with crying-obsidian corners for the dripping End-portal accent. The exact
+        //    CENTRE cell is left as an END-ROD-marked EMPTY seat — this is where the
+        //    player's own End-gateway sits (end_gateway/end_portal/bedrock NEVER placed).
+        //    The pad sits on the dais top (raised to y=2 so it reads as a low altar pad).
+        for (int dx = -1; dx <= 1; dx++) {
+            for (int dz = -1; dz <= 1; dz++) {
+                boolean corner = (dx != 0 && dz != 0);
+                b.set(cx + dx, 2, cz + dz, corner ? crying : obsidian);
+            }
+        }
+        // the centre seat: an END ROD marking the empty gateway mount (the glowing seat).
+        // It rises off the obsidian centre pad at y=2 → the obvious spot for the gateway.
+        b.set(cx, 3, cz, END_ROD); // gateway seat marker (centre kept "empty" — player places their gateway here)
+
+        // ── 6) ORNATE GATEWAY FRAME — an obsidian frame ringing the central mount at
+        //    y3..y4, standing on the four diagonal crying-obsidian corner posts of the
+        //    pad. Four obsidian uprights rise from the pad corners; a crying-obsidian
+        //    keystone tops each on the cardinal mid-frame for the dripping-portal read,
+        //    and a magenta/purple stained-glass BLOCK accent seats on each cardinal head.
+        //    Fully symmetric — the ornate frame around the gateway spot.
+        // four corner uprights (on the crying-obsidian pad corners), y3..y4.
+        for (int[] c : new int[][]{{cx - 1, cz - 1}, {cx + 1, cz - 1}, {cx - 1, cz + 1}, {cx + 1, cz + 1}}) {
+            pillar(b, c[0], c[1], 3, 4, obsidian);
+        }
+        // crying-obsidian keystone heads tying the uprights at y5 over the pad corners.
+        for (int[] c : new int[][]{{cx - 1, cz - 1}, {cx + 1, cz - 1}, {cx - 1, cz + 1}, {cx + 1, cz + 1}}) {
+            b.set(c[0], 5, c[1], crying);
+        }
+        // cardinal stained-glass-BLOCK accents seated flush on the frame heads (colour),
+        // mirrored magenta (N/S) and purple (E/W) for the ceremonial two-tone.
+        b.set(cx, 4, cz - 1, magentaGlass); // north frame accent
+        b.set(cx, 4, cz + 1, magentaGlass); // south frame accent
+        b.set(cx - 1, 4, cz, purpleGlass);  // west frame accent
+        b.set(cx + 1, 4, cz, purpleGlass);  // east frame accent
+        // sea-lantern keystone capping the frame apex over the centre seat (the heart
+        // glow), floating one course above the END-ROD seat — never blocks the seat.
+        b.set(cx, 5, cz, seaLantern);
 
         return b.build();
     }
