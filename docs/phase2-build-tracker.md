@@ -153,5 +153,18 @@
 - [ ] shulker_box_vault
 - [ ] end_gateway_shrine
 
+## Notes — unvalued blocks found during the run (for a morning economy decision)
+These natural/decorative blocks have **no FU value and no recipe**, so builds can't use them
+(they silently won't print). Agents swapped them where possible; where one is a build's core
+identity it was BLOCKED. **Valuing them as cheap T1 naturals would unblock those builds and
+enrich nature/garden ones.** Your call (economy frozen until you approve):
+- **leaves** (all), **vines**, **bamboo** — canopies, hedges, pergolas, jungle/overgrown looks
+- **red/brown_mushroom_block, mushroom_stem, mycelium** — blocks mushroom_island_hut
+- **mud, mud_bricks, packed_mud, mangrove_roots, muddy_mangrove_roots** — swamp/mangrove texture
+- **\*_froglight** (ochre/verdant/pearlescent) — swamp/decor glow
+- **pink_petals** — cherry-blossom ground (swapped to pink_carpet)
+- **grass_block, dirt, podzol, coarse_dirt** — earthen roofs/ground (grass_block is allowlisted but still won't print)
+- already-known loot-only: **gilded_blackstone, bell, reinforced_deepslate**
+
 ## Blocked log
 - mushroom_island_hut — red/brown_mushroom_block, mushroom_stem, mycelium are unvalued (no recipe). Value them (cheap T1 natural) to build faithfully.
