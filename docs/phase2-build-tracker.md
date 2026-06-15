@@ -7,9 +7,9 @@
 
 ## Status
 - **Curated builds before Phase 2:** 29
-- **Phase 2 queue:** 103 · **Done:** 87 · **Blocked:** 2 · **Remaining:** 14
-- **Next up:** `sailing_ship`
-- **Last completed:** `aquarium`
+- **Phase 2 queue:** 103 · **Done:** 88 · **Blocked:** 2 · **Remaining:** 13
+- **Next up:** `nether_portal_room`
+- **Last completed:** `sailing_ship`
 
 ## Process (per build — follow exactly on resume)
 1. Pick the first unchecked `[ ]` build in queue order below.
@@ -134,7 +134,7 @@
 - [x] prismarine_monument_fragment
 - [x] underwater_dome_base
 - [x] aquarium (coral/kelp unvalued → valued concrete reef inside the glass water tank)
-- [ ] sailing_ship (Hard)
+- [x] sailing_ship (Hard)
 
 ### C — Nether (8) · watch gilded_blackstone (unvalued)
 - [ ] nether_portal_room
