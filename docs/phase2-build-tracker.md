@@ -7,9 +7,9 @@
 
 ## Status
 - **Curated builds before Phase 2:** 29
-- **Phase 2 queue:** 103 · **Done:** 83 · **Blocked:** 2 · **Remaining:** 18
-- **Next up:** `coral_garden`
-- **Last completed:** `ocean_ruins`
+- **Phase 2 queue:** 103 · **Done:** 84 · **Blocked:** 2 · **Remaining:** 17
+- **Next up:** `prismarine_monument_fragment`
+- **Last completed:** `coral_garden`
 
 ## Process (per build — follow exactly on resume)
 1. Pick the first unchecked `[ ]` build in queue order below.
@@ -130,7 +130,7 @@
 - [x] fishing_hut
 - [x] conduit_shrine (conduit block unvalued/loot-derived → left empty sea-lantern mount for player)
 - [x] ocean_ruins
-- [ ] coral_garden
+- [x] coral_garden (coral/kelp/sea_pickle unvalued → built as valued bright-concrete reef per "easiest path to color" intent)
 - [ ] prismarine_monument_fragment
 - [ ] underwater_dome_base
 - [ ] aquarium
