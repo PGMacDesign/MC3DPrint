@@ -291,6 +291,8 @@ class CuratedBlueprintGenerator {
         builds.put("dwarven_hall", dwarvenHall());
         // Phase 2 — Category E (dock_pier)
         builds.put("dock_pier", dockPier());
+        // Phase 2 — Category E (fishing_hut)
+        builds.put("fishing_hut", fishingHut());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -13378,6 +13380,197 @@ class CuratedBlueprintGenerator {
         //    boat. A single descending stair course at the south lip.
         BlueprintBlockState stairN = bs("minecraft:spruce_stairs[facing=north,half=bottom,shape=straight]");
         b.set(cx, deckY, z1, stairN);                        // step at the seaward lip (overlays deck plank)
+
+        return b.build();
+    }
+
+    /**
+     * Fishing Hut (Category E). 7×7 footprint → builder(7, H, 7). A cozy
+     * cottagecore LAKESIDE fishing hut: a small spruce/oak cabin raised on
+     * spruce-log pilings over the water's edge, fronted by a covered open porch
+     * /deck, capped with a pitched spruce gable roof, dressed with trapdoor
+     * shutters &amp; an awning, barrels and a smoker for the catch, a fishing-rod
+     * nook (props), hanging lanterns, and a little dock step down to the water.
+     *
+     * <p>Coordinates: x=0..6 (width, east), z=0..6 (depth, south), y up. The
+     * north rows (z=0..3) hold the enclosed cabin; the south rows (z=4..6) are
+     * the open covered porch reaching out over the water with a dock step at the
+     * south lip. The walkable deck surface is the TOP of the y={@code deckY}
+     * planks.
+     *
+     * <p>Layout (Y):
+     * <ul>
+     *   <li><b>y=0</b> — shallow {@code water} bed over the whole 7×7 (structural
+     *       → prints free), so the hut reads as founded over the lake edge.</li>
+     *   <li><b>y=1</b> — spruce-log piling posts on cobble footing pads, on a grid
+     *       under the deck (overwrites the water cell so the posts sit founded).</li>
+     *   <li><b>y=2</b> — spruce-plank deck over the full footprint (the walkable
+     *       floor of both the cabin and the porch).</li>
+     *   <li><b>y=3..6</b> — spruce-plank cabin wall ring on the north body
+     *       (z=0..3) with spruce-log corner posts, an oak-plank wainscot accent,
+     *       a south-facing door onto the porch, and render-safe glass-pane windows
+     *       (each flanked by wall cells) with oak-trapdoor shutters hung above
+     *       &amp; below; the porch (z=4..6) is OPEN — fence rails + corner posts
+     *       only, with a trapdoor awning over the porch front.</li>
+     *   <li><b>y=6..8</b> — spruce gable roof (ridge along X) over the cabin body,
+     *       closed gable ends; the porch is covered by a forward roof skirt.</li>
+     *   <li><b>furnishings</b> — barrels (the catch), a smoker, a crafting table,
+     *       a chest, a fishing-rod nook (a fence "rod" + a cauldron "bait bucket"),
+     *       hanging lanterns under the eaves, a campfire on a cobble hearth.</li>
+     * </ul>
+     *
+     * <p>Everything placed is FU-valued vanilla (spruce planks/logs/slabs/stairs/
+     * fences/fence-gate/trapdoors/door, oak planks/trapdoor, cobblestone, glass
+     * panes, barrels, chest, crafting table, smoker, campfire, cauldron, lanterns)
+     * or structural-free matter ({@code water} — the lake bed, prints free). Each
+     * glass pane is seated between two solid wall cells along its wall axis →
+     * render-safe (no lone-stub panes); trapdoor shutters are hung ABOVE/BELOW the
+     * pane, never beside it.
+     */
+    private static Blueprint fishingHut() {
+        final int W = 7, H = 10, D = 7;
+        Blueprint.Builder b = Blueprint.builder("Fishing Hut", W, H, D);
+        Palette p = TAIGA_SPRUCE; // spruce planks/logs/slabs/stairs, oak accents
+        BlueprintBlockState logY = p.logPillarY;             // spruce_log[axis=y]
+        BlueprintBlockState planks = p.plankFloor;           // spruce_planks
+        BlueprintBlockState fence = bs("minecraft:spruce_fence");
+        BlueprintBlockState fenceGate = bs("minecraft:spruce_fence_gate[facing=south,in_wall=false,open=true,powered=false]");
+
+        final int x0 = 0, x1 = W - 1, z0 = 0, z1 = D - 1;    // x:0..6  z:0..6
+        final int cx = (x0 + x1) / 2;                        // 3
+        final int deckY = 2;                                 // walkable surface = top of y=2 planks
+        final int padY = 0;                                  // cobble footing pads on the lake bed
+        final int pileY0 = 1, pileY1 = deckY - 1;            // log pilings y=1 (between pad and deck)
+        // cabin body occupies the north rows; the porch is the south rows.
+        final int bodyZ0 = z0, bodyZ1 = 3;                   // enclosed cabin z=0..3
+        final int wallBottom = deckY + 1;                    // walls rise from above the deck (y=3)
+        final int wallH = 6;                                 // wall plate (roof seats here)
+        final int roofY = wallH;                             // gable seats on the y=6 plate
+
+        // oak-trapdoor shutters (hung above/below each pane, never beside it)
+        BlueprintBlockState shutterTop =
+                bs("minecraft:oak_trapdoor[facing=north,half=top,open=false,powered=false,waterlogged=false]");
+        BlueprintBlockState shutterBottom =
+                bs("minecraft:oak_trapdoor[facing=north,half=bottom,open=false,powered=false,waterlogged=false]");
+        // oak-trapdoor awning over the porch front (top-half, closed, reads as a lip)
+        BlueprintBlockState awning =
+                bs("minecraft:oak_trapdoor[facing=south,half=top,open=false,powered=false,waterlogged=false]");
+
+        // ── 1) SHALLOW WATER BED (y=0) over the whole footprint (structural → free).
+        floor(b, 0, x0, z0, x1, z1, WATER);
+
+        // ── 2) PILING POSTS — cobble footing pads on the lake bed with spruce-log
+        //    pilings rising to just under the deck, on a grid under the footprint
+        //    (overwrites the water cell so the hut reads as founded over the water).
+        int[][] piles = {
+                {x0, z0}, {cx, z0}, {x1, z0},               // shore-edge row
+                {x0, bodyZ1}, {x1, bodyZ1},                 // cabin back corners
+                {x0, z1}, {cx, z1}, {x1, z1}                // porch seaward row
+        };
+        for (int[] s : piles) {
+            b.set(s[0], padY, s[1], ((s[0] + s[1]) % 2 == 0) ? COBBLE : MOSSY_COBBLE); // footing pad
+            pillar(b, s[0], s[1], pileY0, pileY1, logY); // log piling y=1
+        }
+
+        // ── 3) DECK (y=2) — spruce-plank walkable surface over the whole footprint
+        //    (the cabin floor AND the open porch deck).
+        floor(b, deckY, x0, z0, x1, z1, planks);
+        // oak-plank deck accent on the porch rows so the porch reads distinct.
+        floor(b, deckY, x0, bodyZ1 + 1, x1, z1, OAK_PLANKS);
+
+        // ── 4) CABIN WALL RING (y=3..6) on the north body (z=0..3), spruce planks
+        //    with spruce-log corner posts; an oak-plank wainscot on the base course.
+        walls(b, x0, bodyZ0, x1, bodyZ1, wallBottom, wallH, p.wall);
+        corners(b, x0, bodyZ0, x1, bodyZ1, wallBottom, wallH, logY);
+        // oak-plank wainscot on the bottom wall course (y=3), perimeter of the body.
+        for (int x = x0; x <= x1; x++) {
+            b.set(x, wallBottom, bodyZ0, OAK_PLANKS); // north face
+        }
+        for (int z = bodyZ0 + 1; z <= bodyZ1; z++) {
+            b.set(x0, wallBottom, z, OAK_PLANKS); // west face
+            b.set(x1, wallBottom, z, OAK_PLANKS); // east face
+        }
+        // re-seat the corner posts over the wainscot.
+        b.set(x0, wallBottom, bodyZ0, logY); b.set(x1, wallBottom, bodyZ0, logY);
+        b.set(x0, wallBottom, bodyZ1, logY); b.set(x1, wallBottom, bodyZ1, logY);
+
+        // ── 5) DOOR — south face of the cabin (z=bodyZ1) opening inward (faces
+        //    north), centred, so you step from the porch into the hut.
+        door2(b, cx, wallBottom, bodyZ1, p.doorWood, "S");
+
+        // ── 6) WINDOWS — render-safe glass panes (each flanked by wall cells along
+        //    its wall axis), with oak-trapdoor shutters hung ABOVE/BELOW each pane.
+        int wy = wallBottom + 1; // y=4, mid-wall
+        // north (shore) wall, two panes flanking centre
+        window2(b, cx - 1, wy, bodyZ0, p.windowPane, null);
+        window2(b, cx + 1, wy, bodyZ0, p.windowPane, null);
+        // west + east walls, centred between the corner post and the body back
+        int wz = (bodyZ0 + bodyZ1) / 2; // 1
+        window2(b, x0, wy, wz, p.windowPane, null);
+        window2(b, x1, wy, wz, p.windowPane, null);
+        // trapdoor shutters above & below each window pane (never beside it).
+        for (int[] w : new int[][]{{cx - 1, bodyZ0}, {cx + 1, bodyZ0}, {x0, wz}, {x1, wz}}) {
+            b.set(w[0], wy + 1, w[1], shutterTop);    // shutter above
+            b.set(w[0], wy - 1, w[1], shutterBottom); // shutter below
+        }
+
+        // ── 7) PORCH — open covered deck on the south rows (z=4..6): spruce-log
+        //    corner posts rising to the eave, fence railings along the open edges
+        //    (west, east, seaward), with a fence-gate boarding step on the seaward
+        //    edge. The shore-side of the porch (z=bodyZ1+1) is left OPEN onto the
+        //    cabin door. Each rail line is ≥2 fences → self-reconciling at print.
+        int porchZ0 = bodyZ1 + 1, porchZ1 = z1; // z=4..6
+        pillar(b, x0, porchZ0, wallBottom, wallH, logY); // porch posts up to the eave
+        pillar(b, x1, porchZ0, wallBottom, wallH, logY);
+        pillar(b, x0, porchZ1, wallBottom, wallH, logY);
+        pillar(b, x1, porchZ1, wallBottom, wallH, logY);
+        int railY = wallBottom; // y=3 railings on the porch edges
+        line(b, railY, x0, porchZ0, x0, porchZ1, fence); // west porch rail
+        line(b, railY, x1, porchZ0, x1, porchZ1, fence); // east porch rail
+        line(b, railY, x0, porchZ1, x1, porchZ1, fence); // seaward porch rail
+        b.set(cx, railY, porchZ1, fenceGate);            // seaward boarding gate
+
+        // ── 8) ROOF — spruce gable (ridge along X) over the whole footprint so the
+        //    porch is covered by the forward roof skirt; closed gable ends.
+        gableRoofX(b, x0, z0, x1, z1, roofY, p.roofStairName, p.roofSlab);
+        gableEndFill(b, x0, z0, x1, z1, roofY, p.wall);
+        // oak-trapdoor awning lip over the porch front (under the eave, seaward).
+        for (int x = x0 + 1; x <= x1 - 1; x++) {
+            b.set(x, wallH, porchZ1, awning);
+        }
+
+        // ── 9) FURNISHINGS — the working fishing hut:
+        //    Interior (cabin, standing floor = y=3):
+        b.set(x0 + 1, wallBottom, bodyZ1 - 1, BARREL);   // catch barrel (interior)
+        b.set(x0 + 1, wallBottom + 1, bodyZ1 - 1, BARREL); // stacked
+        b.set(x1 - 1, wallBottom, bodyZ1 - 1, CRAFTING_TABLE);
+        b.set(x1 - 1, wallBottom, bodyZ0 + 1, CHEST);    // tackle chest
+        b.set(x0 + 1, wallBottom, bodyZ0 + 1, SMOKER);   // smoker for the catch
+        b.set(cx, wallBottom, bodyZ0 + 1, p.lightBlock); // interior lantern on floor
+        //    Porch (deck, y=3): barrels + a fishing-rod nook + a campfire hearth.
+        b.set(x0 + 1, railY, porchZ1 - 1, BARREL);       // porch cargo barrel
+        b.set(x1 - 1, railY, porchZ1 - 1, BARREL);       // porch cargo barrel
+        b.set(x1 - 1, railY + 1, porchZ1 - 1, BARREL);   // stacked
+        // fishing-rod nook: a fence "rod" rising from the seaward rail with a
+        // cauldron "bait bucket" beside it (cottagecore prop read).
+        b.set(x0, railY + 1, porchZ1, fence);            // rod post atop the SW rail corner
+        b.set(x0 + 1, railY, porchZ1, CAULDRON);         // bait bucket beside it
+        // campfire on a cobble hearth pad on the porch centre (cook the catch).
+        b.set(cx, railY, porchZ0, COBBLE);               // hearth pad
+        b.set(cx, railY + 1, porchZ0, CAMPFIRE);         // lit cooking campfire
+
+        // ── 10) LANTERNS — hanging lanterns under the eaves (backed by the solid
+        //    roof/eave above) for the warm lakeside glow, plus an under-deck lantern
+        //    over the open water at the seaward lip.
+        b.set(x0 + 1, wallH - 1, porchZ0, HANGING_LANTERN); // under the porch eave (W)
+        b.set(x1 - 1, wallH - 1, porchZ0, HANGING_LANTERN); // under the porch eave (E)
+        b.set(cx, deckY - 1, porchZ1 - 1, HANGING_LANTERN); // under the deck over water
+
+        // ── 11) DOCK STEP — a short spruce-stair step down from the porch deck to
+        //    the water at the seaward lip centre, so the hut reads as accessible
+        //    from a boat / the shallows.
+        BlueprintBlockState stairN = bs("minecraft:spruce_stairs[facing=north,half=bottom,shape=straight]");
+        b.set(cx, deckY, porchZ1, stairN); // step at the seaward lip (overlays deck plank)
 
         return b.build();
     }
