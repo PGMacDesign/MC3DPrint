@@ -7,9 +7,9 @@
 
 ## Status
 - **Curated builds before Phase 2:** 29
-- **Phase 2 queue:** 103 · **Done:** 21 · **Blocked:** 1 · **Remaining:** 81
-- **Next up:** `animal_pen`
-- **Last completed:** `villager_trading_hall`
+- **Phase 2 queue:** 103 · **Done:** 22 · **Blocked:** 1 · **Remaining:** 80
+- **Next up:** `chicken_coop_auto`
+- **Last completed:** `animal_pen`
 
 ## Process (per build — follow exactly on resume)
 1. Pick the first unchecked `[ ]` build in queue order below.
@@ -57,7 +57,7 @@
 - [x] bamboo_farm
 - [x] kelp_farm
 - [x] villager_trading_hall
-- [ ] animal_pen
+- [x] animal_pen
 - [ ] chicken_coop_auto
 - [ ] bee_apiary
 - [ ] fishery_pond

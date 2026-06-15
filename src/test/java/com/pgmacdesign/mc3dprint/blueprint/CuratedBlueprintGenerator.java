@@ -221,6 +221,7 @@ class CuratedBlueprintGenerator {
         builds.put("bamboo_farm", bambooFarm());
         builds.put("kelp_farm", kelpFarm());
         builds.put("villager_trading_hall", villagerTradingHall());
+        builds.put("animal_pen", animalPen());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -5296,6 +5297,114 @@ class CuratedBlueprintGenerator {
         b.set(3, yB, 7, lantern);                        // west, beside the walkway end
         b.set(5, yB, 7, lantern);                        // east, beside the walkway end
         wallTorch(b, doorX, yT, z1 - 1, "north");        // on the south wall (z=8), faces north into hall
+
+        return b.build();
+    }
+
+    /**
+     * §F.animal_pen — a STATIC fenced animal pen with a corner shelter, 9×9×5
+     * (W×L×H) → builder(9, 5, 9).
+     *
+     * <p>The "beginner essential": a fenced enclosure the player drops animals into
+     * (cows/sheep/pigs/chickens). Printed as the working SHELL — fence perimeter,
+     * gate, a covered lean-to shelter in the NW corner, a water trough, a hay-bale
+     * feeder, and lighting. The PLAYER adds the animals after printing.
+     *
+     * <p><b>No grass floor.</b> Per the build conventions, the pen sits on the
+     * player's own terrain — we do NOT print {@code grass_block} (it's unvalued AND
+     * it's the player's ground). The pen interior cells at y=0 are left unset so the
+     * existing ground shows through; only the corner SHELTER gets a printed oak-plank
+     * floor (so animals can shelter on a dry wood surface) and the water trough is a
+     * sunken pool. Every printed block is vanilla and FU-valued (oak_fence,
+     * oak_fence_gate, oak_log, oak_planks, oak_slab, hay_block, lantern, torch derive
+     * for free) or structural-free matter (water prints free, {@code asItem()==AIR}).
+     *
+     * <p>Layout (south = +z is the "front"/access side with the gate; 9×9 = x0..8,
+     * z0..8):
+     * <ul>
+     *   <li><b>Fence perimeter, y=1</b> — {@link #fenceRing} of oak fence around the
+     *       full [0..8]×[0..8] edge, with a single <b>oak fence gate</b> on the south
+     *       face (x=4, z=8, facing=south) as the entrance. Fences/gates self-reconcile
+     *       their connection shapes at print time, and oak fence is a {@code FenceBlock}
+     *       (NOT an {@link net.minecraft.world.level.block.IronBarsBlock}), so the
+     *       stub-pane render gate doesn't apply.</li>
+     *   <li><b>Corner lean-to shelter, NW (x=0..3, z=0..3)</b> — an oak-plank floor at
+     *       y=0 (the only printed ground, dry standing room), four oak-log corner posts
+     *       y=1..2, oak-plank back (north, z=0) + side (west, x=0) walls y=1..2 to break
+     *       the wind, and an oak-slab roof at y=3 over the footprint. The east + south
+     *       faces stay open so animals can walk in. A hanging lantern under the roof
+     *       lights the shelter.</li>
+     *   <li><b>Water trough, y=0</b> — a 1×2 sunken water pool at (x=6, z=2..3), boxed
+     *       on its north/south ends with cobble at y=0 so it reads as a contained
+     *       trough. Water is structural and prints free; animals drink/path to it.</li>
+     *   <li><b>Hay-bale feeder, y=1</b> — two hay blocks at (x=6, z=6) and (x=7, z=6)
+     *       near the SE corner, the classic feed pile (hay derives from wheat, FU-valued).</li>
+     *   <li><b>Lighting</b> — fence-post lanterns on the two front (south) gate-flanking
+     *       posts and a torch atop a corner post, so the pen is lit and hostiles can't
+     *       spawn among the livestock.</li>
+     * </ul>
+     */
+    private static Blueprint animalPen() {
+        Blueprint.Builder b = Blueprint.builder("Animal Pen", 9, 5, 9);
+        // all vanilla, all FU-valued / structural-free (NO grass floor — player's terrain):
+        BlueprintBlockState fence  = OAK_FENCE;   // FU-valued; FenceBlock (NOT IronBars → no stub-pane gate)
+        BlueprintBlockState planks = OAK_PLANKS;  // shelter floor + walls
+        BlueprintBlockState postY  = OAK_LOG_Y;   // shelter corner posts
+        BlueprintBlockState slab   = OAK_SLAB_BOTTOM; // shelter roof
+        BlueprintBlockState cobble = COBBLE;      // trough end caps
+        BlueprintBlockState water  = WATER;       // structural → prints free
+        BlueprintBlockState hay    = HAY;         // FU-valued feeder
+
+        int x0 = 0, x1 = 8, z0 = 0, z1 = 8;       // 9×9 footprint
+        int gateX = 4;                            // south-face gate column
+
+        // ── 1) FENCE PERIMETER at y=1 (gate on the south face) ──────────────
+        // The pen sits on the player's terrain: no floor is printed under the open
+        // pen. The fence ring is the enclosure; the gate is the single entrance.
+        fenceRing(b, 1, x0, z0, x1, z1, fence);
+        // oak fence gate on the south wall (z=8), facing south (outward) — the
+        // entrance. Overwrites the fence cell fenceRing placed at (4,1,8).
+        b.set(gateX, 1, z1, bs("minecraft:oak_fence_gate[facing=south,open=false,in_wall=false,powered=false]"));
+
+        // ── 2) CORNER LEAN-TO SHELTER, NW (x=0..3, z=0..3) ──────────────────
+        int sx0 = 0, sx1 = 3, sz0 = 0, sz1 = 3;   // shelter footprint
+        // oak-plank floor at y=0 (the only printed ground — dry standing room)
+        floor(b, 0, sx0, sz0, sx1, sz1, planks);
+        // four oak-log corner posts, y=1..2
+        corners(b, sx0, sz0, sx1, sz1, 1, 2, postY);
+        // back (north, z=0) + side (west, x=0) walls, y=1..2 — wind-break; east + south
+        // faces stay open so animals walk in. (line() includes the shared corner cells,
+        // which the posts already occupy — air-skip-safe overwrites with planks/logs.)
+        for (int y = 1; y <= 2; y++) {
+            line(b, y, sx0, sz0, sx1, sz0, planks);   // north wall
+            line(b, y, sx0, sz0, sx0, sz1, planks);   // west wall
+        }
+        // re-assert the corner posts so the post material reads at the wall ends
+        corners(b, sx0, sz0, sx1, sz1, 1, 2, postY);
+        // oak-slab roof at y=3 over the shelter footprint
+        floor(b, 3, sx0, sz0, sx1, sz1, slab);
+        // hanging lantern under the roof centre (chain to the y=3 slab above)
+        b.set(2, 3, 1, CHAIN);
+        b.set(2, 2, 1, HANGING_LANTERN);
+
+        // ── 3) WATER TROUGH, y=0 — a 1×2 sunken pool, boxed at its ends ─────
+        b.set(6, 0, 2, water);
+        b.set(6, 0, 3, water);
+        b.set(6, 0, 1, cobble);   // north end cap
+        b.set(6, 0, 4, cobble);   // south end cap
+
+        // ── 4) HAY-BALE FEEDER, y=1 — the classic feed pile near the SE ────
+        b.set(6, 1, 6, hay);
+        b.set(7, 1, 6, hay);
+
+        // ── 5) LIGHTING — fence-post lanterns around the pen ────────────────
+        // Lanterns sit atop the fence posts flanking the south gate (x=3 and x=5, on
+        // the y=1 fence) at y=2 — vanilla lanterns place on a fence's top face — plus
+        // one atop the NE corner post. With the shelter's hanging lantern this lights
+        // the whole enclosure so no hostiles spawn among the livestock.
+        b.set(3, 2, z1, LANTERN);
+        b.set(5, 2, z1, LANTERN);
+        b.set(x1, 2, z0, LANTERN);  // atop the NE corner fence post
 
         return b.build();
     }
