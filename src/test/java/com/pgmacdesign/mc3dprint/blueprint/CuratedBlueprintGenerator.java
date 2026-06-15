@@ -314,6 +314,8 @@ class CuratedBlueprintGenerator {
         builds.put("nether_wart_farm", netherWartFarm());
         // Phase 2 — Category C (basalt_pillar_cluster)
         builds.put("basalt_pillar_cluster", basaltPillarCluster());
+        // Phase 2 — Category C (nether_hub_room)
+        builds.put("nether_hub_room", netherHubRoom());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -15648,6 +15650,187 @@ class CuratedBlueprintGenerator {
         b.set(2, 1, 4, magma);      // glow pocket west of centre
         b.set(6, 1, 6, glowstone);  // a brighter vent node toward the SE
         b.set(3, 1, 6, magma);      // SW glow pocket
+
+        return b.build();
+    }
+
+    /**
+     * Nether Hub Room. 9×9 footprint → builder(9, 9, 9). The classic survival
+     * nether-travel HUB: a compact, LOW blackstone + quartz room (nether hubs are
+     * built in the low-ceiling nether, so the walkway stays low and open) with
+     * FOUR obsidian portal frames — one on each cardinal wall (N/E/S/W) — fed by
+     * BLUE-ICE travel lanes that radiate from a central platform out to every
+     * portal. The four-portal cross + ice-road fast-travel surface is the
+     * signature meta build. Signs label the four directions.
+     *
+     * <p><b>Palette (all FU-valued or structural).</b> obsidian + crying_obsidian
+     * (the portal frames), polished_blackstone / blackstone / polished_blackstone_bricks
+     * / chiseled_polished_blackstone (room + trim), quartz family (quartz_block /
+     * smooth_quartz / quartz_pillar — the bright nether-hub accents), <b>blue_ice</b>
+     * (the radiating travel lanes — derives from packed_ice, which is FU-valued),
+     * glowstone + shroomlight + lanterns (lighting), chains, gold_block (centre
+     * inlay), oak_wall_sign (the N/E/S/W direction labels). All vanilla; none are
+     * unvalued. No nether_portal state block is placed — frame interiors are left
+     * AIR for the player to light.
+     *
+     * <p>Layout (footprint x=0..8 west→east, z=0..8 north→south, centre 4,4):
+     * <ul>
+     *   <li><b>y=0</b> — polished-blackstone hub floor with a blue-ice cross of
+     *       travel lanes (the x=4 column and z=4 row) running centre→each portal,
+     *       a gold-inlay centre tile, quartz corner trim, and a smooth-quartz hub
+     *       platform ring around the centre.</li>
+     *   <li><b>y=1..4</b> — a LOW blackstone wall ring (kept open/walkable) with
+     *       quartz-pillar corner posts and a polished-brick cornice, broken at each
+     *       cardinal centre by an obsidian portal frame.</li>
+     *   <li>4 obsidian portal frames (4-wide × 5-tall, 2×3 air interior) seated in
+     *       each cardinal wall, rising above the low walls as the tallest elements;
+     *       interiors NEVER written (air) so the player lights them.</li>
+     *   <li>glowstone/shroomlight glow nodes, hanging chain lanterns over the hub,
+     *       and oak wall-signs labelling N/E/S/W beside each portal.</li>
+     * </ul>
+     */
+    private static Blueprint netherHubRoom() {
+        final int W = 9, H = 9, D = 9;
+        Blueprint.Builder b = Blueprint.builder("Nether Hub Room", W, H, D);
+        final int x0 = 0, x1 = W - 1, z0 = 0, z1 = D - 1; // x:0..8  z:0..8
+        final int cx = (x0 + x1) / 2;                     // 4 — hub centre (X)
+        final int cz = (z0 + z1) / 2;                     // 4 — hub centre (Z)
+
+        // ── Palette (all vanilla, all FU-valued or structural) ────────────────
+        BlueprintBlockState obsidian   = bs("minecraft:obsidian");
+        BlueprintBlockState crying     = bs("minecraft:crying_obsidian");
+        BlueprintBlockState blackstone = bs("minecraft:blackstone");
+        BlueprintBlockState polBS      = bs("minecraft:polished_blackstone");
+        BlueprintBlockState polBSBrick = bs("minecraft:polished_blackstone_bricks");
+        BlueprintBlockState quartz     = bs("minecraft:quartz_block");
+        BlueprintBlockState smoothQ    = bs("minecraft:smooth_quartz");
+        BlueprintBlockState quartzPillY= bs("minecraft:quartz_pillar[axis=y]");
+        BlueprintBlockState blueIce    = bs("minecraft:blue_ice");
+        BlueprintBlockState gold       = bs("minecraft:gold_block");
+        BlueprintBlockState glowstone  = GLOWSTONE;
+        BlueprintBlockState shroomlight= bs("minecraft:shroomlight");
+
+        // ── 1) FLOOR (y=0) — polished-blackstone hub with a blue-ice travel cross ──
+        // Whole footprint polished blackstone, then the iconic blue-ice fast-travel
+        // lanes: a CROSS down the centre column (x=cx) and centre row (z=cz) running
+        // from the hub out to each of the four portals. The four corners get a quartz
+        // trim square so the bright nether-hub palette reads at floor level too.
+        floor(b, 0, x0, z0, x1, z1, polBS);
+        for (int z = z0; z <= z1; z++) b.set(cx, 0, z, blueIce);  // N↕S blue-ice lane (centre column)
+        for (int x = x0; x <= x1; x++) b.set(x, 0, cz, blueIce);  // W↔E blue-ice lane (centre row)
+        // quartz corner trim tiles (2×2 at each corner) — bright accents off the lanes.
+        for (int[] c : new int[][]{{x0, z0}, {x1 - 1, z0}, {x0, z1 - 1}, {x1 - 1, z1 - 1}}) {
+            floor(b, 0, c[0], c[1], c[0] + 1, c[1] + 1, quartz);
+        }
+        // central hub platform: a smooth-quartz ring framing the gold centre tile, so
+        // the ice lanes appear to spill out from a bright quartz dais at the crossing.
+        for (int[] d : new int[][]{{cx - 1, cz - 1}, {cx + 1, cz - 1}, {cx - 1, cz + 1}, {cx + 1, cz + 1}}) {
+            b.set(d[0], 0, d[1], smoothQ);
+        }
+        b.set(cx, 0, cz, gold);                                   // gold centre inlay (the hub crossing)
+
+        // ── 2) LOW WALL RING (y=1..4) — blackstone body, quartz posts, brick cornice ─
+        // A LOW ring (top at y=4) kept hollow so the hub interior is open/walkable. The
+        // body is blackstone; quartz-pillar posts sit at the four corners (the bright
+        // nether-hub corner read); a polished-brick cornice caps the wall top. CRUCIAL:
+        // the ring is NOT filled across the portal openings — each cardinal wall has a
+        // 2-wide gap at its centre (x∈[cx-1..cx] on N/S, z∈[cz-1..cz] on W/E) so the
+        // portal interiors stay AIR (the player walks the blue-ice lane straight out
+        // through each portal). We build the ring per-cell, skipping those gap cells.
+        final int wallTop = 4;                                   // LOW walls — top course y=4
+        for (int y = 1; y <= wallTop; y++) {
+            for (int x = x0; x <= x1; x++) {
+                if (x != cx - 1 && x != cx) {                    // skip N/S portal interior gap
+                    b.set(x, y, z0, blackstone);                 // north face
+                    b.set(x, y, z1, blackstone);                 // south face
+                }
+            }
+            for (int z = z0; z <= z1; z++) {
+                if (z != cz - 1 && z != cz) {                    // skip W/E portal interior gap
+                    b.set(x0, y, z, blackstone);                 // west face
+                    b.set(x1, y, z, blackstone);                 // east face
+                }
+            }
+        }
+        // quartz-pillar corner posts, full wall height — the bright corner buttresses.
+        pillar(b, x0, z0, 1, wallTop, quartzPillY);
+        pillar(b, x1, z0, 1, wallTop, quartzPillY);
+        pillar(b, x0, z1, 1, wallTop, quartzPillY);
+        pillar(b, x1, z1, 1, wallTop, quartzPillY);
+        // polished-brick cornice band along the wall top (y=4) tying the ring together
+        // (skip the same portal-gap cells so the openings stay clear up the full height).
+        for (int x = x0; x <= x1; x++) {
+            if (x != cx - 1 && x != cx) { b.set(x, wallTop, z0, polBSBrick); b.set(x, wallTop, z1, polBSBrick); }
+        }
+        for (int z = z0; z <= z1; z++) {
+            if (z != cz - 1 && z != cz) { b.set(x0, wallTop, z, polBSBrick); b.set(x1, wallTop, z, polBSBrick); }
+        }
+
+        // ── 3) THE FOUR OBSIDIAN PORTAL FRAMES (the centrepiece, one per wall) ────────
+        // Each frame is the standard nether-portal arch: a 4-wide × 5-tall obsidian
+        // rectangle with a 2×3 EMPTY interior (the player lights it). Frames sit ON the
+        // cardinal walls, centred on the matching blue-ice lane, rising ABOVE the low
+        // y=4 walls (frame top lintel at y=5, above the wall plate) so the portals are
+        // the tallest elements — exactly the low-room / tall-portal silhouette the meta
+        // build wants. Jambs at the cells flanking the 2-wide interior gap (so the frame
+        // = the wall opening); interior cells are NEVER written → air. Corner cells of
+        // each frame use crying_obsidian accents.
+        final int pyb = 1, pyt = 5;                              // base sill y=1, top lintel y=5 (5-tall)
+        // N & S portals: plane at z=z0 / z=z1, jambs at x=cx-2 & x=cx+1, interior x∈[cx-1..cx].
+        for (int pz : new int[]{z0, z1}) {
+            int pxl = cx - 2, pxr = cx + 1;                      // jambs flanking the interior gap
+            for (int y = pyb; y <= pyt; y++) {
+                boolean corner = (y == pyb || y == pyt);
+                b.set(pxl, y, pz, corner ? crying : obsidian);   // left jamb
+                b.set(pxr, y, pz, corner ? crying : obsidian);   // right jamb
+            }
+            for (int x = cx - 1; x <= cx; x++) {
+                b.set(x, pyb, pz, obsidian);                     // base sill
+                b.set(x, pyt, pz, obsidian);                     // top lintel
+            }
+            // interior x∈[cx-1..cx], y∈[pyb+1..pyt-1] left AIR (the portal void) — DO NOT set.
+        }
+        // W & E portals: plane at x=x0 / x=x1, jambs at z=cz-2 & z=cz+1, interior z∈[cz-1..cz].
+        for (int px : new int[]{x0, x1}) {
+            int pzl = cz - 2, pzr = cz + 1;                      // jambs flanking the interior gap
+            for (int y = pyb; y <= pyt; y++) {
+                boolean corner = (y == pyb || y == pyt);
+                b.set(px, y, pzl, corner ? crying : obsidian);   // left jamb
+                b.set(px, y, pzr, corner ? crying : obsidian);   // right jamb
+            }
+            for (int z = cz - 1; z <= cz; z++) {
+                b.set(px, pyb, z, obsidian);                     // base sill
+                b.set(px, pyt, z, obsidian);                     // top lintel
+            }
+            // interior z∈[cz-1..cz], y∈[pyb+1..pyt-1] left AIR (the portal void) — DO NOT set.
+        }
+
+        // ── 4) LIGHTING — glowstone/shroomlight glow nodes + hub chain lanterns ───────
+        // Glow nodes nestle into the wall ring (full blocks, render-safe) between the
+        // portals so each quadrant of the hub is lit; the centre crossing gets hanging
+        // chain lanterns, backed by the portal lintels / cornice above so the chains
+        // attach to solid blocks. Chains are not bars → render-safe with no neighbour.
+        for (int[] g : new int[][]{{x0 + 1, z0 + 1}, {x1 - 1, z0 + 1}, {x0 + 1, z1 - 1}, {x1 - 1, z1 - 1}}) {
+            b.set(g[0], 1, g[1], glowstone);                     // low corner glow node
+            b.set(g[0], 3, g[1], shroomlight);                   // upper corner shroomlight
+        }
+        // a floor lantern at each portal foot, marking the four travel-lane exits.
+        b.set(cx, 1, z0 + 1, LANTERN);                           // N portal foot
+        b.set(cx, 1, z1 - 1, LANTERN);                           // S portal foot
+        b.set(x0 + 1, 1, cz, LANTERN);                           // W portal foot
+        b.set(x1 - 1, 1, cz, LANTERN);                           // E portal foot
+
+        // ── 5) DIRECTION SIGNS — N/E/S/W wall-signs labelling each portal lane ────────
+        // oak_wall_signs (valued; item frames are entities and can't print). Each is
+        // mounted on the INBOARD face of its portal's left jamb (one cell into the hub
+        // from the obsidian frame), facing INTO the room so the traveller reads the
+        // destination beside each portal. A wall sign attaches to the block behind it,
+        // so each sits backed by the solid obsidian jamb: a facing=south sign hangs on
+        // the south face of the block to its north, etc. — render-safe (solid backing).
+        b.set(cx - 2, 2, z0 + 1, bs("minecraft:oak_wall_sign[facing=south]")); // "N" portal label (backed by N jamb)
+        b.set(cx - 2, 2, z1 - 1, bs("minecraft:oak_wall_sign[facing=north]")); // "S" portal label (backed by S jamb)
+        b.set(x0 + 1, 2, cz - 2, bs("minecraft:oak_wall_sign[facing=east]"));  // "W" portal label (backed by W jamb)
+        b.set(x1 - 1, 2, cz - 2, bs("minecraft:oak_wall_sign[facing=west]"));  // "E" portal label (backed by E jamb)
 
         return b.build();
     }

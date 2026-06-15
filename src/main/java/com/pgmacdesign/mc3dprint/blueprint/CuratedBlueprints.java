@@ -152,7 +152,9 @@ public final class CuratedBlueprints {
             // Phase 2 — Category C (nether_wart_farm)
             "nether_wart_farm",
             // Phase 2 — Category C (basalt_pillar_cluster)
-            "basalt_pillar_cluster");
+            "basalt_pillar_cluster",
+            // Phase 2 — Category C (nether_hub_room)
+            "nether_hub_room");
 
     /**
      * Load a bundled curated blueprint straight from the mod's resources (no world
