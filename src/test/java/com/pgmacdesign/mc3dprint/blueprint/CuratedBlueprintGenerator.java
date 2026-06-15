@@ -220,6 +220,7 @@ class CuratedBlueprintGenerator {
         builds.put("cactus_farm", cactusFarm());
         builds.put("bamboo_farm", bambooFarm());
         builds.put("kelp_farm", kelpFarm());
+        builds.put("villager_trading_hall", villagerTradingHall());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -5172,6 +5173,129 @@ class CuratedBlueprintGenerator {
         // ── 6) LABEL SIGNS on the south face flanking the chest ─────────────
         b.set(cx - 1, 1, wallZ1, bs("minecraft:oak_wall_sign[facing=south]"));
         b.set(cx + 1, 1, wallZ1, bs("minecraft:oak_wall_sign[facing=south]"));
+
+        return b.build();
+    }
+
+    /**
+     * §F.villager_trading_hall — a STATIC printable villager trading hall, 9×9×5
+     * (W×L×H) → builder(9, 5, 9).
+     *
+     * <p>The "#2 must-build mid-game" trade hall, printed as the working SHELL the
+     * player drops villagers into. We do NOT print villagers (entities aren't
+     * blocks); we print the architecture: an enterable stone-brick hall with a
+     * central N–S walkway and six barred villager bays (three per side), each
+     * carrying a {@link #bed} and a distinct job-site workstation so a captured
+     * villager takes on that profession. Every printed block is a vanilla
+     * FU-valued block — stone / stone_bricks / stone-brick slabs derive trivially;
+     * beds derive from wool+planks; <b>iron_bars</b> derive from iron; and the
+     * job-site stations (lectern, smithing_table, composter, blast_furnace,
+     * cartography_table, grindstone — plus the equally-valid fletching_table,
+     * barrel, smoker, stonecutter, loom, brewing_stand) derive from standard
+     * crafting recipes — or structural-free torch/lantern matter.
+     *
+     * <p>Render-integrity: each side's frontage is one continuous vertical run of
+     * <b>iron_bars</b> (z=1..6) anchored to the solid north wall (z=0) at its head
+     * and bar-to-bar all the way south. Every bar therefore has a connecting
+     * horizontal neighbour — the wall jamb or the next bar in the run — so the
+     * frontage renders as a real grate, never an invisible stub. The fronts face
+     * the central walkway, so the player sees each villager and trades through the
+     * bars.
+     *
+     * <p>How it's used once printed: the player walks in the north door, drops a
+     * villager into each barred bay, and the villager claims the workstation in
+     * that bay (taking its profession) and the bed (its home). The barred frontage
+     * keeps the villagers in place for trading.
+     *
+     * <p>Layout (north = z=0 is the entrance; central walkway at x=4):
+     * <ul>
+     *   <li><b>y=0</b> — stone floor (9×9), walkable.</li>
+     *   <li><b>Outer walls, y=1..3</b> — a stone-brick ring; a {@link #door2} in the
+     *       centre of the north wall (x=4, z=0) opens inward (facing south).</li>
+     *   <li><b>Central walkway, x=4, z=1..7</b> — left open (air-skip) so the hall is
+     *       enterable; the bays flank it east and west.</li>
+     *   <li><b>Barred frontage</b> — a continuous iron-bar wall on the x=3 plane
+     *       (west) and x=5 plane (east), y=1..2, z=1..6, anchored to the north
+     *       wall.</li>
+     *   <li><b>Three bays per side</b> — each 2-deep (z=1–2, z=3–4, z=5–6): a
+     *       {@link #bed} running along z in the outer column (x=1 west / x=7 east)
+     *       and a job-site workstation beside it (x=2 west / x=6 east).</li>
+     *   <li><b>Roof, y=4</b> — a stone-brick-slab (top half) cap over the footprint.</li>
+     *   <li><b>Lighting</b> — floor lanterns in the rear (z=7) corners + a wall torch
+     *       on the back wall keep the hall lit (no hostile spawns indoors).</li>
+     * </ul>
+     */
+    private static Blueprint villagerTradingHall() {
+        Blueprint.Builder b = Blueprint.builder("Villager Trading Hall", 9, 5, 9);
+        // all vanilla, all FU-valued or structural:
+        BlueprintBlockState stone   = bs("minecraft:stone");
+        BlueprintBlockState wall    = STONE_BRICKS;                 // outer ring
+        BlueprintBlockState roof    = STONE_BRICK_SLAB_TOP;         // y=4 slab cap (FU-valued slab)
+        BlueprintBlockState bars    = IRON_BARS;                    // frontage (connects to north wall + itself)
+        BlueprintBlockState lantern = LANTERN;                      // floor lantern (hanging=false)
+
+        int x0 = 0, x1 = 8, z0 = 0, z1 = 8;            // 9×9 footprint
+        int wFrontX = 3, eFrontX = 5;                  // barred-frontage planes (flank the x=4 walkway)
+        int yB = 1, yT = 3;                            // wall course height
+        int doorX = 4;                                 // north-wall doorway, central walkway
+
+        // ── 1) STONE FLOOR at y=0 ───────────────────────────────────────────
+        floor(b, 0, x0, z0, x1, z1, stone);
+
+        // ── 2) OUTER STONE-BRICK WALLS, y=1..3 ──────────────────────────────
+        walls(b, x0, z0, x1, z1, yB, yT, wall);
+
+        // ── 3) NORTH-WALL DOORWAY (central walkway), opens inward ───────────
+        // door2 writes a 2-block door state (lower+upper) over the wall cells,
+        // superseding the solid wall there — the only break in the ring.
+        door2(b, doorX, yB, z0, "oak", "N");
+
+        // ── 4) BARRED FRONTAGE, y=1..2, z=1..6 ──────────────────────────────
+        // One continuous iron-bar run per side, anchored to the solid north wall
+        // (z=0) and bar-to-bar all the way south, so every bar connects to a
+        // neighbour (wall or bar) and renders as a real grate — no invisible stubs.
+        for (int z = 1; z <= 6; z++) {
+            for (int y = yB; y <= yB + 1; y++) {        // y=1..2 (head-height view)
+                b.set(wFrontX, y, z, bars);            // west frontage
+                b.set(eFrontX, y, z, bars);            // east frontage
+            }
+        }
+
+        // ── 5) BAYS: bed + job-site workstation per bay ─────────────────────
+        // Three 2-deep bays per side (z=1–2, z=3–4, z=5–6). The bed runs along z in
+        // the outer column (x=1 west / x=7 east), head at the low-z end, foot at the
+        // high-z end (facing=north → foot at z+1); the workstation sits beside the
+        // bed in the inner column (x=2 west / x=6 east), against the bar frontage.
+        // Six distinct professions (a dropped-in villager claims the station):
+        //   W1 (z1–2): lectern (librarian)        E1 (z1–2): blast_furnace (armorer)
+        //   W2 (z3–4): smithing_table (toolsmith)  E2 (z3–4): cartography_table (cartographer)
+        //   W3 (z5–6): composter (farmer)          E3 (z5–6): grindstone (weaponsmith)
+        // (Other valid stations — fletching_table, barrel, smoker, stonecutter,
+        //  loom, brewing_stand — are equally FU-valued; the hall is extensible.)
+        int[] bayHeadZ = {1, 3, 5};                    // each bay's bed head (foot at +1)
+        BlueprintBlockState[] wStations = {LECTERN, SMITHING_TABLE, COMPOSTER};
+        BlueprintBlockState[] eStations = {BLAST_FURNACE, CARTOGRAPHY_TABLE, GRINDSTONE};
+        for (int i = 0; i < bayHeadZ.length; i++) {
+            int hz = bayHeadZ[i];
+            int sz = hz + 1;                           // station beside the bed foot
+            bed(b, 1, yB, hz, "white", "north");       // west bed (x=1, head z=hz, foot z=hz+1)
+            b.set(2, yB, sz, wStations[i]);            // west workstation
+            bed(b, 7, yB, hz, "white", "north");       // east bed (x=7, head z=hz, foot z=hz+1)
+            b.set(6, yB, sz, eStations[i]);            // east workstation
+        }
+
+        // ── 6) ROOF: stone-brick slab (top half) cap at y=4 ─────────────────
+        floor(b, 4, x0, z0, x1, z1, roof);
+
+        // ── 7) LIGHTING ─────────────────────────────────────────────────────
+        // Floor lanterns in the rear (z=7) back-strip corners — clear of the beds
+        // (which end at z=6) and the walkway — + a wall torch on the supported back
+        // (south) wall light the hall so no hostiles spawn around the villagers.
+        b.set(1, yB, 7, lantern);                        // west rear corner
+        b.set(7, yB, 7, lantern);                        // east rear corner
+        b.set(3, yB, 7, lantern);                        // west, beside the walkway end
+        b.set(5, yB, 7, lantern);                        // east, beside the walkway end
+        wallTorch(b, doorX, yT, z1 - 1, "north");        // on the south wall (z=8), faces north into hall
 
         return b.build();
     }
