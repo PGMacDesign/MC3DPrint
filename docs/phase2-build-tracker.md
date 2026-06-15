@@ -7,9 +7,9 @@
 
 ## Status
 - **Curated builds before Phase 2:** 29
-- **Phase 2 queue:** 103 · **Done:** 102 · **Blocked:** 1 · **Remaining:** 0 — unblocking the last 2 (economy decision made 2026-06-15)
-- **Next up:** `bee_apiary` (unblocked — honeycomb now valued)
-- **Last completed:** `mushroom_island_hut` (unblocked — mushroom blocks/mycelium now valued)
+- **Phase 2 queue:** 103 · **Done:** 103 · **Blocked:** 0 · **Remaining:** 0 — ✅ **FULLY COMPLETE** (132 curated total = 29 + 103)
+- **Next up:** _none — all builds done_
+- **Last completed:** `bee_apiary` (unblocked — honeycomb valued → beehive/honeycomb_block derive)
 
 ## Process (per build — follow exactly on resume)
 1. Pick the first unchecked `[ ]` build in queue order below.
@@ -59,7 +59,7 @@
 - [x] villager_trading_hall
 - [x] animal_pen
 - [x] chicken_coop_auto
-- [BLOCKED: needs beehive/honeycomb_block valued (no recipe; core to build)] bee_apiary
+- [x] bee_apiary (UNBLOCKED 2026-06-15: honeycomb=6@2 → beehive ~36@2 + honeycomb_block ~24@2 derive; bee_nest left unvalued, apiary uses crafted beehives)
 - [x] fishery_pond
 - [x] tree_farm
 - [x] mushroom_farm
