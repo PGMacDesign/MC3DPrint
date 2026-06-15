@@ -63,7 +63,7 @@ public final class CuratedBlueprints {
             "hobbit_hole", "treehouse",
             // Phase 2 — Category F (functional farms)
             "iron_farm", "mob_xp_tower", "sugarcane_farm_auto", "pumpkin_melon_farm",
-            "cactus_farm", "bamboo_farm");
+            "cactus_farm", "bamboo_farm", "kelp_farm");
 
     /**
      * Load a bundled curated blueprint straight from the mod's resources (no world
