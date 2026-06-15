@@ -64,7 +64,7 @@ public final class CuratedBlueprints {
             // Phase 2 — Category F (functional farms)
             "iron_farm", "mob_xp_tower", "sugarcane_farm_auto", "pumpkin_melon_farm",
             "cactus_farm", "bamboo_farm", "kelp_farm", "villager_trading_hall",
-            "animal_pen");
+            "animal_pen", "chicken_coop_auto");
 
     /**
      * Load a bundled curated blueprint straight from the mod's resources (no world
