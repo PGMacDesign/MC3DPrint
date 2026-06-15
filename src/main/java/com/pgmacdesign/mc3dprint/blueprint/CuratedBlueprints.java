@@ -140,7 +140,9 @@ public final class CuratedBlueprints {
             // Phase 2 — Category E (underwater_dome_base)
             "underwater_dome_base",
             // Phase 2 — Category E (aquarium)
-            "aquarium");
+            "aquarium",
+            // Phase 2 — Category E (sailing_ship)
+            "sailing_ship");
 
     /**
      * Load a bundled curated blueprint straight from the mod's resources (no world

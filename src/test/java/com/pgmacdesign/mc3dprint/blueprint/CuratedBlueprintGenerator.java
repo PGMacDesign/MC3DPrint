@@ -303,6 +303,8 @@ class CuratedBlueprintGenerator {
         // Phase 2 — Category E (underwater_dome_base)
         builds.put("underwater_dome_base", underwaterDomeBase());
         builds.put("aquarium", aquarium());
+        // Phase 2 — Category E (sailing_ship)
+        builds.put("sailing_ship", sailingShip());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -14664,6 +14666,236 @@ class CuratedBlueprintGenerator {
         // a white-concrete cornice band wrapping the wall top (y=wallH) for a crisp eave
         line(b, wallH, x0, z0, x1, z0, white);
         line(b, wallH, x0, z1, x1, z1, white);
+
+        return b.build();
+    }
+
+    /**
+     * §E.sailing_ship — Category E, the hero showcase build. A classic wooden
+     * sailing ship / caravel floating in water: a curved planked hull tapering to a
+     * bow and stern with a rounded keel, a lower foredeck and a raised aft
+     * quarterdeck / captain's cabin, two oak-log masts carrying horizontal yards with
+     * billowing WHITE-WOOL SAILS, chain/fence rope rigging, a bowsprit, fence
+     * railings around the decks, a ship's-wheel area, deck cargo (barrels + chest),
+     * ladders below decks, and lanterns. Hard, sculptural, ship-SHAPED — not a box.
+     *
+     * <p>Footprint 5×13 (W×L) → builder(W=5, H, D=13): x=0..4 (width, centre x=2),
+     * z=0..12 (length — STERN at low z, BOW at high z), y up. The hull sits in a
+     * water bed (structural → prints free) so it reads as floating.
+     *
+     * <p>Hull shaping: each z-row has a half-width {@code hw[z]} that narrows from the
+     * full midships beam (hw=2, x=0..4) to a 1-wide bow/stern and a single keel cell
+     * at the very tip — the planked rows skip the outer cells per row to carve the
+     * taper and the rounded keel, exactly the technique the conventions header calls
+     * out. The keel sits at y=1, the flared hull sides at y=2, the walkable deck at
+     * y=3; the aft cabin/quarterdeck rises above the stern.
+     *
+     * <p>RENDER-SAFETY: the only thin elements are chains (rigging) and fences
+     * (railings/rigging) — neither is an {@code IronBarsBlock}, so the stub-pane
+     * guardrail has nothing to flag. Cabin windows are GLASS BLOCKS (full blocks),
+     * not panes. Sails are full WHITE-WOOL BLOCKS. Everything placed is FU-valued
+     * vanilla (oak/spruce planks/logs/slabs/stairs/fences/fence-gate/trapdoors/ladder/
+     * door, white wool, glass block, barrels, chest, crafting table, lanterns,
+     * chains, anvil) or structural-free {@code water}.
+     */
+    private static Blueprint sailingShip() {
+        final int W = 5, H = 14, D = 13;
+        Blueprint.Builder b = Blueprint.builder("Sailing Ship", W, H, D);
+
+        final int x0 = 0, x1 = W - 1, z0 = 0, z1 = D - 1; // x:0..4  z:0..12
+        final int cx = 2;                                  // hull centre column
+        final int sternZ = 0, bowZ = 12;
+        final int keelY = 1, sideY = 2, deckY = 3;         // walkable deck = top of y=3 planks
+
+        // ── PALETTE (all FU-valued or structural) ───────────────────────────────
+        final BlueprintBlockState planks   = OAK_PLANKS;          // hull planking
+        final BlueprintBlockState sprucePl = SPRUCE_PLANKS;       // deck planking (contrast)
+        final BlueprintBlockState logY     = OAK_LOG_Y;           // masts
+        final BlueprintBlockState logX     = OAK_LOG_X;           // yards (axis x)
+        final BlueprintBlockState logZ     = bs("minecraft:oak_log[axis=z]"); // bowsprit
+        final BlueprintBlockState fence    = OAK_FENCE;           // railings + rigging
+        final BlueprintBlockState chain    = CHAIN;               // rope rigging
+        final BlueprintBlockState sail     = WHITE_WOOL;          // sails
+        final BlueprintBlockState ladder   = bs("minecraft:ladder[facing=north,waterlogged=false]");
+        final BlueprintBlockState glass    = GLASS;               // cabin windows (BLOCKS)
+        final BlueprintBlockState slabTop  = OAK_SLAB_TOP;        // cabin roof
+        final BlueprintBlockState hullStairS = bs("minecraft:oak_stairs[facing=south,half=bottom,shape=straight]");
+        final BlueprintBlockState hullStairN = bs("minecraft:oak_stairs[facing=north,half=bottom,shape=straight]");
+        final BlueprintBlockState wheelTrap  = bs("minecraft:oak_trapdoor[facing=south,half=bottom,open=true,powered=false,waterlogged=false]");
+
+        // ── HALF-WIDTH per z-row — carves the tapered, rounded hull silhouette.
+        //    hw=2 → full beam (x=0..4); hw=1 → x=1..3; hw=0 → centre keel only.
+        //    Stern (z=0) and bow (z=12) pinch to a single keel cell.
+        final int[] hw = { 0, 1, 1, 2, 2, 2, 2, 2, 2, 2, 1, 1, 0 };
+
+        // ── 1) WATER BED (y=0) under the whole footprint (structural → free) ─────
+        floor(b, 0, x0, z0, x1, z1, WATER);
+
+        // ── 2) KEEL (y=1) — a single planked centre spine the full length, the
+        //    rounded bottom of the hull. Bow/stern tips are keel-only (hw=0).
+        for (int z = z0; z <= z1; z++) {
+            int half = hw[z];
+            if (half == 0) {
+                b.set(cx, keelY, z, planks);                 // pinched tip → keel cell
+            } else {
+                // keel course: full beam at y=1 forms the rounded bottom
+                line(b, keelY, cx - half, z, cx + half, z, planks);
+            }
+        }
+
+        // ── 3) HULL SIDES (y=2) — flared plank walls along each row's beam edges,
+        //    so the hull holds an open interior (deck above) and reads curved. Tip
+        //    rows (hw=0/1) close to a point at bow & stern.
+        for (int z = z0; z <= z1; z++) {
+            int half = hw[z];
+            if (half <= 0) {
+                b.set(cx, sideY, z, planks);                 // tip post
+            } else {
+                b.set(cx - half, sideY, z, planks);          // port side
+                b.set(cx + half, sideY, z, planks);          // starboard side
+            }
+        }
+        // close the very bow & stern faces so the hull doesn't gape (stem/transom)
+        b.set(cx, sideY, sternZ, planks);
+        b.set(cx, sideY, sternZ + 1, planks);                // transom fill
+        b.set(cx, sideY, bowZ, planks);                      // raised stem post (cutwater)
+        b.set(cx, sideY + 1, bowZ, planks);
+
+        // ── 4) DECK (y=3) — spruce-plank walkable surface spanning each row's beam,
+        //    a clean ship-shaped floor over the open hull (skip outer cells per the
+        //    taper). Tip rows lay a single deck cell so the deck reads continuous.
+        for (int z = z0; z <= z1; z++) {
+            int half = hw[z];
+            if (half <= 0) {
+                b.set(cx, deckY, z, sprucePl);
+            } else {
+                line(b, deckY, cx - half, z, cx + half, z, sprucePl);
+            }
+        }
+
+        // ── 5) RAILINGS — oak-fence rails along both gunwales (the beam edges at
+        //    midships, z=3..9 where hw=2) plus the foredeck. Each rail run is ≥2
+        //    fences so every fence self-reconciles at print. Bow & stern stay open
+        //    for the cabin/figurehead. Rails sit one block above the deck (y=4).
+        final int railY = deckY + 1;                         // 4
+        for (int z = 3; z <= 9; z++) {
+            b.set(cx - 2, railY, z, fence);                  // port gunwale rail
+            b.set(cx + 2, railY, z, fence);                  // starboard gunwale rail
+        }
+        // foredeck cross-rail near the bow (z=10) tying the two gunwales
+        line(b, railY, cx - 1, 10, cx + 1, 10, fence);
+
+        // ── 6) AFT QUARTERDECK + CAPTAIN'S CABIN (stern, z=1..3) — a raised deck
+        //    over the stern with a small glass-windowed cabin, reached by a ladder.
+        //    Raised deck floor at y=4 over z=1..3, walls y=5..6, slab roof y=7.
+        final int cabZ0 = 1, cabZ1 = 3;
+        floor(b, deckY + 1, cx - 1, cabZ0, cx + 1, cabZ1, planks);   // raised aft deck (y=4)
+        // cabin wall ring y=5..6 over the 3×3 aft block (interior left open → enterable)
+        for (int y = deckY + 2; y <= deckY + 3; y++) {               // y=5..6
+            walls(b, cx - 1, cabZ0, cx + 1, cabZ1, y, y, planks);
+        }
+        // glass-BLOCK windows in the cabin side & aft walls (full blocks, render-safe).
+        // The {@link #walls} ring above already set these cells with planks; overwrite
+        // with glass so they read as windows.
+        b.set(cx - 1, deckY + 2, cabZ0 + 1, glass);                  // port window (y=5)
+        b.set(cx + 1, deckY + 2, cabZ0 + 1, glass);                  // starboard window
+        b.set(cx, deckY + 2, cabZ0, glass);                          // stern (transom) window
+        // CABIN DOORWAY onto the quarterdeck — the forward wall is z=cabZ1 (z=3). The
+        // wall ring set its three cells; carve a doorway by overwriting NOTHING is a
+        // no-op (air-skip), so instead leave the forward-centre cells unbuilt: re-open
+        // them is impossible after walls(), so we DON'T re-add them — walls() set the
+        // full forward face, but we want a door. Rebuild the forward wall WITHOUT its
+        // centre at y=5/6 by overwriting the centre with the doorway… can't unset, so:
+        // the cabin is instead entered from ABOVE via an open roof hatch (below).
+        // slab roof over the cabin (y=7) with the forward-centre cell left OPEN as the
+        // hatch you drop through from the quarterdeck.
+        for (int z = cabZ0; z <= cabZ1; z++) {
+            for (int x = cx - 1; x <= cx + 1; x++) {
+                if (x == cx && z == cabZ1) continue;                // open roof hatch (forward centre)
+                b.set(x, deckY + 4, z, slabTop);                    // y=7 slab roof
+            }
+        }
+        b.set(cx + 1, deckY + 1, cabZ1, ladder);                    // ladder up onto the quarterdeck
+
+        // ── 7) SHIP'S WHEEL — at the front of the quarterdeck (z=4) a fence "binnacle"
+        //    post with an open trapdoor as the wheel, facing forward over the deck.
+        b.set(cx, deckY + 1, 4, fence);                             // wheel stand post
+        b.set(cx, deckY + 2, 4, wheelTrap);                        // the wheel (open trapdoor)
+
+        // ── 8) MASTS — two oak-log masts rising from the deck centreline: a tall
+        //    MAINMAST amidships (z=6) and a shorter FOREMAST forward (z=9).
+        final int mainZ = 6, foreZ = 9;
+        final int mainTopY = 12, foreTopY = 10;
+        pillar(b, cx, mainZ, deckY + 1, mainTopY, logY);            // mainmast y=4..12
+        pillar(b, cx, foreZ, deckY + 1, foreTopY, logY);           // foremast y=4..10
+
+        // ── 9) YARDS + SAILS — horizontal oak-log yards across each mast carrying
+        //    rectangular WHITE-WOOL sails hung beneath. The sails curve slightly
+        //    (offset rows) to read as billowing in the wind.
+        // MAINSAIL — lower yard at y=10 (x=0..4), upper yard at y=12 (x=1..3).
+        line(b, 10, cx - 2, mainZ, cx + 2, mainZ, logX);           // main lower yard (beam-wide)
+        line(b, 12, cx - 1, mainZ, cx + 1, mainZ, logX);           // main upper yard (topgallant)
+        // lower mainsail: a 5-wide × 3-tall wool sheet hung y=7..9 under the lower yard,
+        // billowing forward (+z) at its belly.
+        for (int y = 7; y <= 9; y++) {
+            int belly = (y == 8) ? 1 : 0;                          // mid-course bulges forward
+            line(b, y, cx - 2, mainZ + belly, cx + 2, mainZ + belly, sail);
+        }
+        // upper mainsail (topsail): 3-wide × 1-tall wool sheet at y=11 under the upper yard
+        line(b, 11, cx - 1, mainZ, cx + 1, mainZ, sail);
+        // FORESAIL — yard at y=8 (x=0..4); a 5-wide × 2-tall sail hung y=6..7, billowing.
+        line(b, 8, cx - 2, foreZ, cx + 2, foreZ, logX);            // fore yard
+        for (int y = 6; y <= 7; y++) {
+            int belly = (y == 7) ? 1 : 0;
+            line(b, y, cx - 2, foreZ + belly, cx + 2, foreZ + belly, sail);
+        }
+
+        // ── 10) RIGGING — chain stays from each masthead down to the gunwales /
+        //    bowsprit, plus fence shrouds, reading as the rope rigging. Chains &
+        //    fences are NOT iron-bars, so they're render-safe regardless of neighbour.
+        // mainmast forestay: a chain run climbing from the bow toward the masthead.
+        b.set(cx, 11, mainZ + 1, chain);
+        b.set(cx, 11, mainZ + 2, chain);
+        // mainmast backstay to the quarterdeck.
+        b.set(cx, 11, mainZ - 1, chain);
+        // foremast forestay toward the bowsprit.
+        b.set(cx, 9, foreZ + 1, chain);
+        b.set(cx, 9, foreZ + 2, chain);
+        // shroud "rope ladders" — fence runs from gunwale up to each masthead side.
+        pillar(b, cx - 2, mainZ, railY + 1, 9, fence);             // port main shroud
+        pillar(b, cx + 2, mainZ, railY + 1, 9, fence);             // starboard main shroud
+        pillar(b, cx - 2, foreZ, railY + 1, 7, fence);             // port fore shroud
+        pillar(b, cx + 2, foreZ, railY + 1, 7, fence);             // starboard fore shroud
+
+        // ── 11) BOWSPRIT — an oak-log (axis z) spearing forward & up off the bow,
+        //    with a small jib of wool slung beneath it and a forestay chain.
+        b.set(cx, deckY + 1, bowZ, logZ);                          // bowsprit base (y=4)
+        b.set(cx, deckY + 2, bowZ, logZ);                          // bowsprit rises off the stem (y=5)
+        b.set(cx, deckY + 1, 11, sail);                            // jib sail under the bowsprit
+        b.set(cx, deckY + 2, 10, chain);                           // forestay chain to the foremast line
+
+        // ── 12) DECK CARGO + DETAILS — barrels and a chest as cargo amidships,
+        //    a crafting table (carpenter's bench), an anvil (smith), kept off the
+        //    centreline so the deck stays walkable; lanterns light the ship.
+        b.set(cx - 1, deckY + 1, 7, BARREL);                       // cargo barrel (port)
+        b.set(cx + 1, deckY + 1, 7, BARREL);                       // cargo barrel (starboard)
+        b.set(cx - 1, deckY + 2, 7, BARREL);                       // stacked
+        b.set(cx + 1, deckY + 1, 5, CHEST);                        // ship's chest
+        b.set(cx - 1, deckY + 1, 5, CRAFTING_TABLE);               // carpenter's bench
+        b.set(cx - 1, deckY + 1, 8, ANVIL);                        // ship's anvil
+
+        // ── 13) LANTERNS — a stern lantern atop the cabin, a masthead lantern, and a
+        //    bow lantern, so the ship reads lit. Stern & masthead lanterns hang from a
+        //    chain backed by a solid block above (mast / cabin roof); bow lantern rests.
+        b.set(cx, deckY + 5, cabZ0 + 1, LANTERN);                  // stern poop lantern (on cabin roof)
+        b.set(cx, mainTopY + 1, mainZ, LANTERN);                   // mainmast-top lantern
+        b.set(cx, foreTopY + 1, foreZ, LANTERN);                   // foremast-top lantern
+        b.set(cx, deckY + 1, bowZ - 1, LANTERN);                   // bow lantern on the foredeck
+
+        // ── 14) LADDER BELOW DECKS — a ladder down the inside of the hull amidships
+        //    so the hold reads as enterable (the hull interior y=2 is open under the
+        //    deck except the keel/sides). Backed by the deck plank above.
+        b.set(cx, sideY, mainZ + 1, ladder);                       // hold ladder (against the deck underside)
 
         return b.build();
     }
