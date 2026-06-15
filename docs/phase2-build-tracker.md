@@ -160,7 +160,7 @@ identity it was BLOCKED. **Valuing them as cheap T1 naturals would unblock those
 enrich nature/garden ones.** Your call (economy frozen until you approve):
 - **leaves** (all), **vines**, **bamboo** — canopies, hedges, pergolas, jungle/overgrown looks
 - **red/brown_mushroom_block, mushroom_stem, mycelium** — blocks mushroom_island_hut
-- **mud, mud_bricks, packed_mud, mangrove_roots, muddy_mangrove_roots** — swamp/mangrove texture
+- **mangrove_roots, muddy_mangrove_roots** — swamp texture (CORRECTION: mud / mud_bricks / packed_mud ARE valued — usable)
 - **\*_froglight** (ochre/verdant/pearlescent) — swamp/decor glow
 - **beehive, bee_nest, honeycomb_block, flowers** — block bee_apiary (honeycomb is shear/loot-only so honeycomb_block + beehive can't derive; bee_nest is worldgen-only). Apiary identity = hives + honeycomb + flowers, so no faithful build without them.
 - **pink_petals** — cherry-blossom ground (swapped to pink_carpet)
