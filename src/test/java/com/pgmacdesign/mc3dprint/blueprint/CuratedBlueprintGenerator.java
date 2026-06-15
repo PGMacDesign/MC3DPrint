@@ -231,6 +231,7 @@ class CuratedBlueprintGenerator {
         builds.put("gazebo", gazebo());
         builds.put("pergola_garden", pergolaGarden());
         builds.put("wishing_well", wishingWell());
+        builds.put("statue_pedestal", statuePedestal());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -1262,6 +1263,93 @@ class CuratedBlueprintGenerator {
         b.set(2, 4, 2, OAK_PLANKS); // crossbeam / chain anchor
         b.set(2, 3, 2, CHAIN);
         b.set(2, 2, 2, CAULDRON);   // the bucket
+        return b.build();
+    }
+
+    /**
+     * Phase 2 §I — Statue Pedestal. 5×5×11 (W×L×H) → builder(5,11,5). A heroic
+     * town-square knight/sentinel: a stepped stone-brick/quartz inscribed plinth,
+     * then a blocky humanoid figure (legs, torso, arms, head) in iron / smooth
+     * stone / andesite, one arm raised holding a sword. Decorative, not enterable.
+     *
+     * <p>AXES: x=W (0..4), z=depth (0..4). The figure faces the viewer at high z
+     * (its front is the z=2..3 side); the raised sword arm is on the west (x=0..1).
+     *
+     * <p>RENDER-SAFETY: the sword is a single {@code iron_bars} crossguard at the
+     * raised-hand height plus a stack of {@code end_rod} blade segments above it.
+     * A lone bars block with no HORIZONTAL neighbour prints as an invisible stub
+     * (see {@code CuratedBlueprintRenderIntegrityGameTests} — it only counts ±x/±z
+     * connections, NOT a bars cell stacked above/below). So the one crossguard cell
+     * is placed flush beside the raised iron-block hand (a sturdy full face → it
+     * connects and renders), and the blade itself uses {@code end_rod}, which is not
+     * an {@code IronBarsBlock} and so renders as a clean vertical rod regardless of
+     * neighbours — the spec's sanctioned non-bars blade.
+     */
+    private static Blueprint statuePedestal() {
+        Blueprint.Builder b = Blueprint.builder("Statue Pedestal", 5, 11, 5);
+        BlueprintBlockState smoothStone = bs("minecraft:smooth_stone");
+        BlueprintBlockState polishedAndesite = bs("minecraft:polished_andesite");
+        BlueprintBlockState chiseledQuartz = bs("minecraft:chiseled_quartz_block");
+        BlueprintBlockState quartzPillar = bs("minecraft:quartz_pillar[axis=y]");
+
+        // ── STEPPED PLINTH (y0..y2) ────────────────────────────────────────
+        // y0: full 5×5 stone-brick footing
+        floor(b, 0, 0, 0, 4, 4, STONE_BRICKS);
+        // a chiseled-stone-brick "inscription" course around the footing rim,
+        // front face (z=4) reads as the dedication panel
+        line(b, 0, 0, 4, 4, 4, CHISELED_STONE_BRICKS);
+        // y1: inset 4×4 (x,z = 0..3 offset to centre) stone-brick step with a
+        // chiseled-quartz front band — the bright dressed-stone tier
+        floor(b, 1, 1, 1, 3, 3, STONE_BRICKS);
+        line(b, 1, 1, 3, 3, 3, chiseledQuartz);
+        // y2: polished-andesite cap (the dressed pedestal top the figure stands on)
+        floor(b, 2, 1, 1, 3, 3, polishedAndesite);
+        // four quartz-pillar corner posts framing the cap, y1..y2 (plinth columns)
+        pillar(b, 1, 1, 1, 2, quartzPillar);
+        pillar(b, 3, 1, 1, 2, quartzPillar);
+        pillar(b, 1, 3, 1, 2, quartzPillar);
+        pillar(b, 3, 3, 1, 2, quartzPillar);
+
+        // ── HUMANOID FIGURE (y3..y9), centred on the cap, front toward +z ──
+        // Legs: two iron-block legs at x=1 and x=3, z=2, y3..y4
+        pillar(b, 1, 2, 3, 4, IRON_BLOCK);
+        pillar(b, 3, 2, 3, 4, IRON_BLOCK);
+        // a smooth-stone crotch/skirt tie at the leg tops so the legs read joined
+        b.set(2, 4, 2, smoothStone);
+
+        // Torso: a 3-wide × 3-tall iron/stone block (x=1..3, y5..y7, z=2) with a
+        // chiseled-quartz chest plate (the sentinel's breastplate) on the front.
+        solid(b, 1, 5, 2, 3, 7, 2, IRON_BLOCK);
+        b.set(2, 6, 2, chiseledQuartz);   // breastplate emblem, centred on the chest
+
+        // Arms hang off the torso sides. RIGHT arm (east, x=3) hangs down at the
+        // side: smooth-stone shoulder + iron forearm, y5..y6 at x=3, z=2 is already
+        // the torso edge — extend it outward one column so the silhouette reads as
+        // a distinct arm rather than a flat slab. Place the arm at x=3 with a hand
+        // block dropping to y4 (relaxed, at the side).
+        b.set(3, 5, 2, smoothStone);      // right shoulder
+        b.set(3, 4, 2, IRON_BLOCK);       // right hand at the side
+
+        // LEFT arm (west, x=1) is RAISED, holding the sword aloft. Shoulder at the
+        // torso, then the arm rises: smooth-stone upper arm (y6), iron forearm (y7),
+        // raised iron hand (y8). The hand is the sturdy anchor the blade connects to.
+        b.set(1, 6, 2, smoothStone);      // left shoulder/upper arm
+        b.set(1, 7, 2, IRON_BLOCK);       // left forearm (continues torso column)
+        b.set(1, 8, 2, IRON_BLOCK);       // raised left HAND — sword anchor
+
+        // Head: a single smooth-stone head on a polished-andesite neck, centred.
+        b.set(2, 8, 2, polishedAndesite); // neck
+        b.set(2, 9, 2, smoothStone);      // head
+
+        // ── SWORD, held aloft by the raised left hand ──────────────────────
+        // Rises at x=0 (just west of the raised hand at x=1). The crossguard cell
+        // (0,8,2) is iron_bars sitting horizontally flush against the iron-block
+        // hand (1,8,2) → sturdy full face → the bars connect and render (no stub).
+        // The blade above is end_rod — not an IronBarsBlock, so it renders as a
+        // clean vertical rod with no connection requirement.
+        b.set(0, 8, 2, IRON_BARS);        // crossguard / hilt — anchored to the hand
+        b.set(0, 9, 2, END_ROD);          // blade
+        b.set(0, 10, 2, END_ROD);         // blade tip
         return b.build();
     }
 
