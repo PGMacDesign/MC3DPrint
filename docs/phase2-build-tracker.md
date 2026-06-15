@@ -7,9 +7,9 @@
 
 ## Status
 - **Curated builds before Phase 2:** 29
-- **Phase 2 queue:** 103 · **Done:** 8 · **Blocked:** 0 · **Remaining:** 95
-- **Next up:** `mangrove_stilt_hut`
-- **Last completed:** `jungle_temple_ruin`
+- **Phase 2 queue:** 103 · **Done:** 9 · **Blocked:** 0 · **Remaining:** 94
+- **Next up:** `cherry_blossom_pavilion`
+- **Last completed:** `mangrove_stilt_hut`
 
 ## Process (per build — follow exactly on resume)
 1. Pick the first unchecked `[ ]` build in queue order below.
@@ -41,7 +41,7 @@
 - [x] snowy_alpine_chalet
 - [x] jungle_hut
 - [x] jungle_temple_ruin
-- [ ] mangrove_stilt_hut
+- [x] mangrove_stilt_hut
 - [ ] cherry_blossom_pavilion
 - [ ] badlands_mesa_dwelling
 - [ ] mushroom_island_hut

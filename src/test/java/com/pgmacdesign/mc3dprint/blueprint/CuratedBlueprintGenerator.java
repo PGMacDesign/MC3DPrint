@@ -207,6 +207,7 @@ class CuratedBlueprintGenerator {
         builds.put("snowy_alpine_chalet", snowyAlpineChalet());
         builds.put("jungle_hut", jungleHut());
         builds.put("jungle_temple_ruin", jungleTempleRuin());
+        builds.put("mangrove_stilt_hut", mangroveStiltHut());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -3512,6 +3513,120 @@ class CuratedBlueprintGenerator {
         b.set(x1 - 1, 1, z1, cobbleWall);     // stub where the south wall fell
         b.set(x1, 1, z1 - 1, cobbleWall);     // stub where the east wall fell
         b.set(x1 - 1, 1, z1 - 1, cobble);     // a fallen block inside the breach
+
+        return b.build();
+    }
+
+    /**
+     * Mangrove Stilt Hut. 7×7 footprint → builder(7, 11, 7). A swamp dwelling
+     * raised on mangrove-log stilts over open water, reached by a ladder up to a
+     * planked deck, lit by hanging lanterns under the eaves and below the deck.
+     *
+     * <p><b>Block choices (all FU-valued vanilla).</b> The candidate row asks for
+     * "mangrove planks/roots, mud brick, frog-light", but {@code mangrove_roots},
+     * {@code muddy_mangrove_roots}, {@code mud}, {@code mud_bricks},
+     * {@code packed_mud} and every {@code *_froglight} carry NO FU value (they'd
+     * silently drop in strict mode and trip the printability gate). So the swamp
+     * read is rendered with the FU-valued mangrove WOOD family ({@link #MANGROVE}
+     * palette — planks/logs/slabs/stairs, red bed) over a {@link #COBBLE} /
+     * {@link #MOSSY_COBBLE} stone footing, lit with {@link #LANTERN}/hanging
+     * lanterns in place of froglight, and standing in real {@link #WATER}
+     * (structural matter — prints free) below the deck. A stilt hut reads fine in
+     * mangrove wood, so nothing here needs the BLOCKED path.
+     *
+     * <p>Layout (Y), footprint x=0..6 (W), z=0..6 (depth), centre (3,3):
+     * <ul>
+     *   <li><b>y=0</b> — a 7×7 water surface (the hut sits "over water"), with a
+     *       mossy/plain cobble footing pad under each stilt so the posts read as
+     *       founded on the swamp bed rather than floating.</li>
+     *   <li><b>y=1..2</b> — eight mangrove-log stilts (4 corners + 4 edge mids)
+     *       rising out of the water to just under the deck, plus a full backing
+     *       post under the ladder column.</li>
+     *   <li><b>y=3</b> — the raised mangrove-plank deck (walkable surface), with a
+     *       ladder hatch left OPEN at the south access column.</li>
+     *   <li><b>y=4..6</b> — mangrove-plank wall ring with mangrove-log corner
+     *       posts, a north door opening inward, and render-safe glass-pane
+     *       windows flanked by wall cells.</li>
+     *   <li><b>y=7..</b> — a mangrove gable roof (ridge along X) with closed gable
+     *       ends.</li>
+     *   <li><b>access</b> — a south-facing ladder on the hatch column climbing
+     *       from the water (y=1) up onto the deck (y=3); hanging lanterns under
+     *       the deck and on the porch eave give the elevated-hut glow.</li>
+     * </ul>
+     */
+    private static Blueprint mangroveStiltHut() {
+        Blueprint.Builder b = Blueprint.builder("Mangrove Stilt Hut", 7, 11, 7);
+        Palette p = MANGROVE; // mangrove planks/logs/slabs/stairs, red bed, lantern
+        BlueprintBlockState logY = p.logPillarY; // mangrove_log[axis=y]
+
+        int x0 = 0, x1 = 6, z0 = 0, z1 = 6;
+        int cx = (x0 + x1) / 2; // 3
+        int cz = (z0 + z1) / 2; // 3
+        int deckY = 3;          // raised platform (walkable surface = top of y=3)
+        int wallBottom = 4;     // walls rise from above the deck
+        int wallH = 6;          // wall plate (roof seats at y=7)
+        int roofY = wallH + 1;  // 7
+
+        // 1) water surface over the whole footprint — the hut stands "over water".
+        //    WATER is structural matter (prints free), so the swamp reads true.
+        floor(b, 0, x0, z0, x1, z1, WATER);
+
+        // 2) cobble footing pads on the swamp bed under each stilt (mossy/plain mix),
+        //    overwriting the water cell so the posts sit founded rather than floating.
+        int[][] stilts = {
+                {x0, z0}, {x1, z0}, {x0, z1}, {x1, z1}, // corners
+                {cx, z0}, {cx, z1}, {x0, cz}, {x1, cz}  // edge midpoints
+        };
+        for (int[] s : stilts) {
+            b.set(s[0], 0, s[1], ((s[0] + s[1]) % 2 == 0) ? COBBLE : MOSSY_COBBLE); // footing pad
+            pillar(b, s[0], s[1], 1, deckY - 1, logY); // mangrove-log stilt y=1..2
+        }
+
+        // 3) mangrove-plank deck at y=3 (the raised walkable floor), with a ladder
+        //    hatch left OPEN at the south access column (cx, z1-1).
+        int hatchX = cx, hatchZ = z1 - 1; // (3,5)
+        for (int x = x0; x <= x1; x++) {
+            for (int z = z0; z <= z1; z++) {
+                if (x == hatchX && z == hatchZ) continue; // ladder hatch — leave open
+                b.set(x, deckY, z, p.plankFloor);
+            }
+        }
+
+        // 4) mangrove-plank wall ring y=4..6 with mangrove-log corner posts
+        walls(b, x0, z0, x1, z1, wallBottom, wallH, p.wall);
+        corners(b, x0, z0, x1, z1, wallBottom, wallH, logY);
+
+        // 5) north door (z=z0) opening inward (faces south) + render-safe windows.
+        //    Each pane is flanked by wall cells along its wall axis → connects.
+        door2(b, cx, wallBottom, z0, p.doorWood, "N");
+        int wy = wallBottom + 1; // y=5, mid-wall
+        window2(b, cx - 1, wy, z0, p.windowPane, null); // north, west of door
+        window2(b, cx + 1, wy, z0, p.windowPane, null); // north, east of door
+        window2(b, x0, wy, cz, p.windowPane, null);     // west wall, centred
+        window2(b, x1, wy, cz, p.windowPane, null);     // east wall, centred
+
+        // 6) mangrove gable roof (ridge along X) seated on the wall plate, closed ends.
+        gableRoofX(b, x0, z0, x1, z1, roofY, p.roofStairName, p.roofSlab);
+        gableEndFill(b, x0, z0, x1, z1, roofY, p.wall);
+
+        // 7) ladder access: the south stilt column at (cx, z1) is a full mangrove-log
+        //    backing post y=1..2, so a south-facing ladder on the hatch column
+        //    (cx, z1-1) backs onto it and climbs from the water up to the deck.
+        pillar(b, cx, z1, 1, deckY - 1, logY); // full backing post for the ladder rungs
+        b.set(hatchX, 1, hatchZ, LADDER_SOUTH); // rung y=1 (at water level)
+        b.set(hatchX, 2, hatchZ, LADDER_SOUTH); // rung y=2 → climb out onto deck at y=3
+
+        // 8) hanging lanterns under the deck (the over-water glow), backed by the
+        //    solid plank deck above them. Placed off the stilt cells so they hang free.
+        b.set(cx - 1, deckY - 1, cz, HANGING_LANTERN);
+        b.set(cx + 1, deckY - 1, cz, HANGING_LANTERN);
+
+        // 9) interior furnishings on the raised deck (standing floor = y=4)
+        bed(b, x0 + 1, wallBottom, z1 - 1, p.bedColor, "south"); // red bed at back
+        b.set(x1 - 1, wallBottom, z1 - 1, CRAFTING_TABLE);
+        b.set(x1 - 1, wallBottom, z0 + 1, CHEST);
+        b.set(x0 + 1, wallBottom, z0 + 1, p.lightBlock);         // lantern, front corner
+        b.set(cx, wallBottom, cz, p.lightBlock);                 // central lantern
 
         return b.build();
     }
