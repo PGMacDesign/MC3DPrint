@@ -158,7 +158,9 @@ public final class CuratedBlueprints {
             // Phase 2 — Category C (nether_fortress_bridge)
             "nether_fortress_bridge",
             // Phase 2 — Category C (blackstone_bastion_fragment)
-            "blackstone_bastion_fragment");
+            "blackstone_bastion_fragment",
+            // Phase 2 — Category D (purpur_tower)
+            "purpur_tower");
 
     /**
      * Load a bundled curated blueprint straight from the mod's resources (no world

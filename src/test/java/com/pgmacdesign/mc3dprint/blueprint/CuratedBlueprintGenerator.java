@@ -320,6 +320,8 @@ class CuratedBlueprintGenerator {
         builds.put("nether_fortress_bridge", netherFortressBridge());
         // Phase 2 — Category C (blackstone_bastion_fragment)
         builds.put("blackstone_bastion_fragment", blackstoneBastionFragment());
+        // Phase 2 — Category D (purpur_tower)
+        builds.put("purpur_tower", purpurTower());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -13045,6 +13047,207 @@ class CuratedBlueprintGenerator {
         b.set(8, 1, 0, deepslateWall);
         b.set(0, 1, 8, deepslateWall);
         b.set(8, 1, 8, deepslateWall);
+
+        return b.build();
+    }
+
+    /**
+     * Category D — purpur_tower. 9×9 footprint → builder(9, 24, 9), disc T7. An
+     * iconic END CITY tower: the recognizable purpur-block shaft rising from an
+     * end-stone-brick base, with the End City's signature stepped/tapered profile,
+     * purpur-pillar columns, end-rod lighting accents (the glowing white rods),
+     * open windows in magenta/purple stained glass, and a FLARED top platform —
+     * the cantilevered loot-deck the elytra ships dock against. The purpur +
+     * end-stone-brick + end-rod palette and the End City silhouette are the look.
+     *
+     * <p>LAYOUT (cx=cz=4, x/z in 0..8, y in 0..23):
+     * <ul>
+     *   <li>y0 — end-stone-bricks foundation slab, full 9×9; an end-stone skirt
+     *       fleck on the cardinals for the chunky End-base read.</li>
+     *   <li>y1..3 — END-STONE-BRICK PLINTH: a 7×7 (x/z 1..7) base ring with an
+     *       end-stone-brick-wall plinth corner kiss; oak door on the north face;
+     *       an interior end-stone-brick finish floor (walkable, enterable).</li>
+     *   <li>y4..15 — the PURPUR SHAFT: a 7×7 hollow ring of purpur block with
+     *       PURPUR-PILLAR corner columns (axis=y) running the full height for the
+     *       End-City pier read, a purpur-block banding course every fourth row,
+     *       magenta/purple stained-GLASS-BLOCK windows on the cardinals, and
+     *       end-rod sconces flanking the door + climbing the body. An interior
+     *       ladder climbs the north wall to the flared-deck hatch.</li>
+     *   <li>y16..17 — the FLARE: purpur STAIRS cantilever OUTWARD off the shaft to
+     *       the full 9×9 footprint (the End-City corbel), a purpur-block lip course
+     *       caps the overhang, and a purpur-block deck floors the loot platform.</li>
+     *   <li>y18..20 — the TOP CAP ROOM: a slender 7×7 purpur-pillar/purpur-block
+     *       drum with purpur-stair crenel merlons, a purple-glass clerestory, and
+     *       FOUR END RODS standing at the corners (the glowing loot-tower beacons).</li>
+     *   <li>y21..23 — a purpur-slab pyramidal finial stepping in to a single
+     *       end-rod spire — the tower's glowing tip.</li>
+     * </ul>
+     *
+     * <p>RENDER-SAFETY: every window is a full stained-GLASS BLOCK (never a pane)
+     * so the stub-pane render guard cannot trip; there are NO panes or iron bars
+     * anywhere in this build. End rods are render-safe thin vertical accents and
+     * are used for the glowing white End-City rods.
+     *
+     * <p>PRINTABILITY: the whole purpur family (block / pillar / stairs / slab,
+     * all deriving via popped_chorus_fruit), end_stone + end_stone_bricks
+     * (+stairs/slab/wall), end_rod, oak door, lanterns/chains, and magenta/purple
+     * stained glass are all FU-valued or recipe-derived — no unvalued blocks. (The
+     * unvalued chorus_plant/flower and state blocks are deliberately NOT used.)
+     */
+    private static Blueprint purpurTower() {
+        final int cx = 4, cz = 4;
+        Blueprint.Builder b = Blueprint.builder("Purpur Tower", 9, 24, 9);
+
+        // Palette ---------------------------------------------------------------
+        BlueprintBlockState purpurBlock    = bs("minecraft:purpur_block");
+        BlueprintBlockState purpurPillar   = bs("minecraft:purpur_pillar[axis=y]");
+        BlueprintBlockState endBricks      = bs("minecraft:end_stone_bricks");
+        BlueprintBlockState endStone       = bs("minecraft:end_stone");
+        BlueprintBlockState endBrickWall   = bs("minecraft:end_stone_brick_wall");
+        BlueprintBlockState purpleGlass    = bs("minecraft:purple_stained_glass");
+        BlueprintBlockState magentaGlass   = bs("minecraft:magenta_stained_glass");
+        BlueprintBlockState purpurSlabTop  = bs("minecraft:purpur_slab[type=top]");
+        BlueprintBlockState ladderN        = bs("minecraft:ladder[facing=north,waterlogged=false]");
+        // Purpur stairs for the End-City flare corbel: bottom-half, facing OUTWARD
+        // on each face so the tread cantilevers away from the shaft.
+        BlueprintBlockState flareN = bs("minecraft:purpur_stairs[facing=north,half=bottom,shape=straight]");
+        BlueprintBlockState flareS = bs("minecraft:purpur_stairs[facing=south,half=bottom,shape=straight]");
+        BlueprintBlockState flareW = bs("minecraft:purpur_stairs[facing=west,half=bottom,shape=straight]");
+        BlueprintBlockState flareE = bs("minecraft:purpur_stairs[facing=east,half=bottom,shape=straight]");
+        // Top-half purpur stairs as crenel merlons on the cap drum.
+        BlueprintBlockState merlonN = bs("minecraft:purpur_stairs[facing=south,half=top,shape=straight]");
+        BlueprintBlockState merlonS = bs("minecraft:purpur_stairs[facing=north,half=top,shape=straight]");
+        BlueprintBlockState merlonW = bs("minecraft:purpur_stairs[facing=east,half=top,shape=straight]");
+        BlueprintBlockState merlonE = bs("minecraft:purpur_stairs[facing=west,half=top,shape=straight]");
+
+        // shaft footprint: a 7×7 ring, x/z in 1..7 (cardinal mid = 4)
+        final int sx0 = 1, sz0 = 1, sx1 = 7, sz1 = 7;
+
+        // 1) FOUNDATION (y0) — end-stone-bricks slab over the whole 9×9 footprint,
+        //    with raw end-stone flecks on the cardinals for a chunky End-base read.
+        floor(b, 0, 0, 0, 8, 8, endBricks);
+        b.set(cx, 0, 0, endStone);
+        b.set(cx, 0, 8, endStone);
+        b.set(0, 0, cz, endStone);
+        b.set(8, 0, cz, endStone);
+
+        // 2) END-STONE-BRICK PLINTH (y1..3) — a 7×7 base ring; raw end-stone corner
+        //    quoins for the chiseled-base read; an interior finish floor (walkable).
+        for (int y = 1; y <= 3; y++) {
+            walls(b, sx0, sz0, sx1, sz1, y, y, endBricks);
+        }
+        corners(b, sx0, sz0, sx1, sz1, 1, 3, endStone); // raw end-stone quoins
+        floor(b, 1, sx0 + 1, sz0 + 1, sx1 - 1, sz1 - 1, endBricks); // interior floor
+        // end-stone-brick-wall plinth corner kiss on the 9×9 footprint (street base)
+        b.set(0, 1, 0, endBrickWall);
+        b.set(8, 1, 0, endBrickWall);
+        b.set(0, 1, 8, endBrickWall);
+        b.set(8, 1, 8, endBrickWall);
+
+        // 3) PURPUR SHAFT (y4..15) — a 7×7 hollow purpur-block ring with purpur-pillar
+        //    corner columns running the full height, a banding course every 4th row,
+        //    and end-rod sconces. This is the iconic End-City purpur shaft.
+        for (int y = 4; y <= 15; y++) {
+            walls(b, sx0, sz0, sx1, sz1, y, y, purpurBlock);
+        }
+        // purpur-pillar corner columns (the End-City corner piers)
+        pillar(b, sx0, sz0, 4, 15, purpurPillar);
+        pillar(b, sx1, sz0, 4, 15, purpurPillar);
+        pillar(b, sx0, sz1, 4, 15, purpurPillar);
+        pillar(b, sx1, sz1, 4, 15, purpurPillar);
+
+        // arched oak door on the north cardinal (faces south into the shaft); the
+        // door cells (y1..2) overwrite the plinth wall so you can walk in, with an
+        // end-stone keystone capping the opening.
+        door2(b, cx, 1, 0, "oak", "N");
+        b.set(cx, 3, 0, endStone); // keystone over the doorway
+
+        // magenta/purple stained-GLASS-BLOCK windows seated FLUSH on the shaft-ring
+        // cardinal faces (x=1, x=7, z=1, z=7), two courses high so they read as
+        // End-City lancet openings (full blocks → never stub panes).
+        for (int y = 8; y <= 9; y++) {
+            b.set(sx0, y, cz, purpleGlass);  // west ring face (x=1)
+            b.set(sx1, y, cz, magentaGlass); // east ring face (x=7)
+            b.set(cx, y, sz0, magentaGlass); // north ring face (z=1)
+            b.set(cx, y, sz1, purpleGlass);  // south ring face (z=7)
+        }
+        // a lower magenta window band (y5) on the side cardinals for a two-tier look
+        b.set(sx0, 5, cz, magentaGlass);
+        b.set(sx1, 5, cz, magentaGlass);
+        b.set(cx, 5, sz1, magentaGlass);
+
+        // end-rod sconces flanking the door on the lower body, and end-rod accents
+        // climbing the shaft corners (the glowing End-City rods).
+        b.set(cx - 2, 5, sz0, END_ROD);
+        b.set(cx + 2, 5, sz0, END_ROD);
+        b.set(sx0, 11, cz, END_ROD);
+        b.set(sx1, 11, cz, END_ROD);
+        b.set(cx, 11, sz1, END_ROD);
+
+        // 4) THE FLARE (y16..17) — purpur STAIRS cantilever OUTWARD off the 7×7 shaft
+        //    to the full 9×9 footprint (the End-City corbel/loot-deck overhang), then
+        //    a purpur-block lip caps the overhang and a purpur deck floors the platform.
+        // y16: corbel stairs flicking outward on the 9×9 perimeter.
+        for (int x = 0; x <= 8; x++) { b.set(x, 16, 0, flareN); b.set(x, 16, 8, flareS); }
+        for (int z = 0; z <= 8; z++) { b.set(0, 16, z, flareW); b.set(8, 16, z, flareE); }
+        // y16 deck: purpur-block floor over the 9×9 platform (with a ladder hatch),
+        // so the cantilever reads as a solid loot deck you can stand on.
+        for (int x = 1; x <= 7; x++) {
+            for (int z = 1; z <= 7; z++) {
+                if (x == cx && z == sz0 + 1) continue; // ladder hatch (just inside north)
+                b.set(x, 16, z, purpurBlock);
+            }
+        }
+        // y17: purpur-block lip course ringing the 9×9 deck edge (the platform parapet
+        // base), leaving the interior open as the loot-deck headroom.
+        walls(b, 0, 0, 8, 8, 17, 17, purpurBlock);
+
+        // 5) TOP CAP ROOM (y18..20) — a slender 7×7 purpur drum (the upper loot
+        //    chamber the elytra ships dock against): purpur-pillar corner posts, a
+        //    purple-glass clerestory, and FOUR END RODS at the corners as beacons.
+        for (int y = 18; y <= 20; y++) {
+            walls(b, sx0, sz0, sx1, sz1, y, y, purpurBlock);
+        }
+        pillar(b, sx0, sz0, 18, 20, purpurPillar);
+        pillar(b, sx1, sz0, 18, 20, purpurPillar);
+        pillar(b, sx0, sz1, 18, 20, purpurPillar);
+        pillar(b, sx1, sz1, 18, 20, purpurPillar);
+        // purple-glass clerestory windows on the cardinals (full blocks)
+        b.set(cx, 19, sz0, purpleGlass);
+        b.set(cx, 19, sz1, purpleGlass);
+        b.set(sx0, 19, cz, purpleGlass);
+        b.set(sx1, 19, cz, purpleGlass);
+        // end-rod beacons standing on the cap corners (the glowing loot-tower tips)
+        b.set(sx0, 21, sz0, END_ROD);
+        b.set(sx1, 21, sz0, END_ROD);
+        b.set(sx0, 21, sz1, END_ROD);
+        b.set(sx1, 21, sz1, END_ROD);
+        // purpur-stair crenel merlons crowning the cap drum (2-up rhythm on each face)
+        for (int x = sx0; x <= sx1; x += 2) { b.set(x, 21, sz0, merlonN); b.set(x, 21, sz1, merlonS); }
+        for (int z = sz0; z <= sz1; z += 2) { b.set(sx0, 21, z, merlonW); b.set(sx1, 21, z, merlonE); }
+
+        // 6) PYRAMIDAL FINIAL (y21..23) — a compact purpur-slab cap over the cap-drum
+        //    interior, stepping inward to a single end-rod spire (the tower's glowing
+        //    tip). Fits inside height 24 (max y index 23). The merlons/corner rods at
+        //    y21 sit on the drum RING (x/z 1,7); this cap rides the INTERIOR (x/z 2..6).
+        // y21: purpur-slab ring over the 5×5 interior (x/z 2..6).
+        for (int x = sx0 + 1; x <= sx1 - 1; x++) {
+            b.set(x, 21, sz0 + 1, purpurSlabTop);
+            b.set(x, 21, sz1 - 1, purpurSlabTop);
+        }
+        for (int z = sz0 + 1; z <= sz1 - 1; z++) {
+            b.set(sx0 + 1, 21, z, purpurSlabTop);
+            b.set(sx1 - 1, 21, z, purpurSlabTop);
+        }
+        // y22: purpur apex block over the 3×3 inner core, capped to a centre cell.
+        b.set(cx, 22, cz, purpurBlock);
+        // y23: glowing end-rod spire finial — the tower's tip.
+        b.set(cx, 23, cz, END_ROD);
+
+        // interior ladder: climbs the north wall line from the base up through the
+        // flare-deck hatch, backed by the ring wall behind it (facing=north attaches
+        // to (cx, y, sz0) which is solid purpur/end-stone the whole way up).
+        pillar(b, cx, sz0 + 1, 1, 16, ladderN);
 
         return b.build();
     }
