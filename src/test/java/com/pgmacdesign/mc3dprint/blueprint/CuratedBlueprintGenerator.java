@@ -223,6 +223,7 @@ class CuratedBlueprintGenerator {
         builds.put("villager_trading_hall", villagerTradingHall());
         builds.put("animal_pen", animalPen());
         builds.put("chicken_coop_auto", chickenCoopAuto());
+        builds.put("fishery_pond", fisheryPond());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -5046,6 +5047,116 @@ class CuratedBlueprintGenerator {
         // oak wall signs on the south face flanking the chest (FU-valued, derived).
         b.set(wMudX, 1, z1, bs("minecraft:oak_wall_sign[facing=south]"));
         b.set(eMudX, 1, z1, bs("minecraft:oak_wall_sign[facing=south]"));
+
+        return b.build();
+    }
+
+    /**
+     * §F.fishery_pond — a lakeside fishing shack on stilts over a water pond, 7×7×8
+     * (W×L×H) → builder(7, 8, 7). The "lakeside trend" decor build: a structural
+     * water pool, a spruce dock/deck raised over it, an enterable spruce fishing hut
+     * (walls, door, render-safe windows, flat spruce-slab roof), barrels for the
+     * catch, net-drying fence racks on the open dock, and lanterns for the glow.
+     *
+     * <p>All blocks are vanilla and FU-valued or structural-free: spruce
+     * planks/logs/slabs/stairs/fence + barrels + lanterns are FU-valued; {@code water}
+     * is structural matter ({@code asItem()==AIR}) so the pond prints free. No
+     * gate-flagged blocks; window panes are flanked by wall cells on the same wall
+     * axis so the render-integrity stub-pane gate never applies.
+     *
+     * <p>Layout (south = +z is the dock/access side; the hut sits at the north half):
+     * <ul>
+     *   <li><b>y=0</b> — water pond (7×7), structural. Cobble footing pads overwrite
+     *       the water under each stilt so the posts read as founded, not floating.</li>
+     *   <li><b>Stilts, y=1..2</b> — spruce logs rising from the footings up to the
+     *       deck plate.</li>
+     *   <li><b>Deck, y=3</b> — spruce planks over the north 5-deep half (the hut floor
+     *       + a covered porch), plus a 2-wide dock finger reaching south into the open
+     *       pond. The southmost dock edge is left open to the water for fishing.</li>
+     *   <li><b>Hut, y=4..6</b> — a 5×5 spruce-plank wall ring with spruce-log corner
+     *       posts on the north footprint, a south-facing door opening inward, and
+     *       render-safe glass-pane windows.</li>
+     *   <li><b>Roof, y=7</b> — a flat spruce-slab (top) roof over the hut — the shack's
+     *       low pitched cap.</li>
+     *   <li><b>Net-drying racks</b> — spruce-fence frames on the open dock, with a
+     *       horizontal fence cross-rail reading as a hung net.</li>
+     *   <li><b>Furnishings</b> — barrels (the catch), a crafting table, lanterns inside
+     *       and a hanging lantern under the deck over the water.</li>
+     * </ul>
+     */
+    private static Blueprint fisheryPond() {
+        Blueprint.Builder b = Blueprint.builder("Fishery Pond", 7, 8, 7);
+        Palette p = TAIGA_SPRUCE; // spruce planks/logs/slabs/stairs, glass panes, lanterns
+        BlueprintBlockState logY = p.logPillarY; // spruce_log[axis=y]
+        BlueprintBlockState fence = bs("minecraft:spruce_fence"); // net-rack frames (FU-valued)
+
+        int x0 = 0, x1 = 6, z0 = 0, z1 = 6;
+        int cx = (x0 + x1) / 2; // 3
+        int deckY = 3;          // raised walkable surface = top of the y=3 deck
+        int wallBottom = 4;     // walls rise above the deck
+        int wallH = 6;          // wall plate
+        int roofY = wallH + 1;  // 7 (flat slab cap)
+
+        // hut occupies the north 5×5 (z=0..4); the dock finger reaches south (z=5..6).
+        int hutX0 = 1, hutX1 = 5, hutZ0 = 0, hutZ1 = 4;
+
+        // 1) WATER POND over the whole footprint (structural → prints free).
+        floor(b, 0, x0, z0, x1, z1, WATER);
+
+        // 2) COBBLE FOOTING PADS + SPRUCE-LOG STILTS under the hut corners, the hut's
+        //    south edge midpoints, and the dock finger — overwriting the water cell so
+        //    the posts sit founded. Stilts climb y=1..deckY-1 (y=1..2).
+        int[][] stilts = {
+                {hutX0, hutZ0}, {hutX1, hutZ0}, {hutX0, hutZ1}, {hutX1, hutZ1}, // hut corners
+                {cx, hutZ0}, {cx, hutZ1},                                        // hut N/S mids
+                {cx - 1, z1}, {cx + 1, z1}                                       // dock finger tip
+        };
+        for (int[] s : stilts) {
+            b.set(s[0], 0, s[1], ((s[0] + s[1]) % 2 == 0) ? COBBLE : MOSSY_COBBLE); // footing pad
+            pillar(b, s[0], s[1], 1, deckY - 1, logY); // log stilt y=1..2
+        }
+
+        // 3) SPRUCE-PLANK DECK at y=3. The hut footprint (z=0..4) is fully decked; a
+        //    2-wide dock finger (x=cx-1..cx+1, z=5..6) reaches south over the open
+        //    pond. The southmost row (z=6) edge is the fishing lip.
+        floor(b, deckY, hutX0, hutZ0, hutX1, hutZ1, p.plankFloor); // hut floor + porch
+        floor(b, deckY, cx - 1, z1 - 1, cx + 1, z1, p.plankFloor); // dock finger (z=5..6)
+
+        // 4) HUT WALL RING y=4..6 with spruce-log corner posts (5×5 on the north half).
+        walls(b, hutX0, hutZ0, hutX1, hutZ1, wallBottom, wallH, p.wall);
+        corners(b, hutX0, hutZ0, hutX1, hutZ1, wallBottom, wallH, logY);
+
+        // 5) SOUTH DOOR (front, faces the dock) opening inward + render-safe windows.
+        //    Each pane is flanked by wall cells along its wall axis → connects, so no
+        //    stub-pane gate. The door sits in the south wall at the dock side.
+        door2(b, cx, wallBottom, hutZ1, p.doorWood, "S");
+        int wy = wallBottom + 1; // y=5, mid-wall
+        window2(b, hutX0, wy, hutZ0 + 2, p.windowPane, null); // west wall, centred
+        window2(b, hutX1, wy, hutZ0 + 2, p.windowPane, null); // east wall, centred
+        window2(b, cx - 1, wy, hutZ0, p.windowPane, null);    // north wall, west of centre
+        window2(b, cx + 1, wy, hutZ0, p.windowPane, null);    // north wall, east of centre
+
+        // 6) FLAT SPRUCE-SLAB ROOF (top slabs) at y=7 — the shack's low cap.
+        flatRoof(b, roofY, hutX0, hutZ0, hutX1, hutZ1, p.slabTop);
+
+        // 7) NET-DRYING RACKS on the open dock: two spruce-fence posts on the dock
+        //    finger with a horizontal fence cross-rail between their tops, reading as
+        //    a hung drying net. Posts climb from the deck (y=4..5); rail at y=5.
+        pillar(b, cx - 1, z1, deckY + 1, deckY + 2, fence); // west rack post
+        pillar(b, cx + 1, z1, deckY + 1, deckY + 2, fence); // east rack post
+        b.set(cx, deckY + 2, z1, fence);                    // cross-rail (the "net")
+
+        // 8) FURNISHINGS on the hut floor (standing floor = y=4):
+        b.set(hutX0 + 1, wallBottom, hutZ0 + 1, BARREL);        // catch barrel, NW corner
+        b.set(hutX1 - 1, wallBottom, hutZ0 + 1, BARREL);        // catch barrel, NE corner
+        b.set(hutX1 - 1, wallBottom, hutZ1 - 1, CRAFTING_TABLE); // crafting table
+        b.set(hutX0 + 1, wallBottom, hutZ1 - 1, p.lightBlock);   // interior lantern
+        b.set(cx, wallBottom, hutZ0 + 1, BARREL);               // back-wall barrel
+
+        // 9) DOCK LANTERNS: a standing lantern on the dock lip and a hanging lantern
+        //    under the deck over the open water (backed by the solid plank deck above).
+        b.set(cx, deckY + 1, z1, LANTERN);          // lantern on the dock tip
+        b.set(cx, deckY - 1, z1 - 1, HANGING_LANTERN); // hangs under the deck over water
 
         return b.build();
     }

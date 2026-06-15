@@ -7,9 +7,9 @@
 
 ## Status
 - **Curated builds before Phase 2:** 29
-- **Phase 2 queue:** 103 · **Done:** 23 · **Blocked:** 2 · **Remaining:** 78
-- **Next up:** `fishery_pond`
-- **Last completed:** `bee_apiary (BLOCKED)`
+- **Phase 2 queue:** 103 · **Done:** 24 · **Blocked:** 2 · **Remaining:** 77
+- **Next up:** `tree_farm`
+- **Last completed:** `fishery_pond`
 
 ## Process (per build — follow exactly on resume)
 1. Pick the first unchecked `[ ]` build in queue order below.
@@ -60,7 +60,7 @@
 - [x] animal_pen
 - [x] chicken_coop_auto
 - [BLOCKED: needs beehive/honeycomb_block valued (no recipe; core to build)] bee_apiary
-- [ ] fishery_pond
+- [x] fishery_pond
 - [ ] tree_farm
 - [ ] mushroom_farm
 
