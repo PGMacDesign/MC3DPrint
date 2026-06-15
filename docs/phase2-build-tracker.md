@@ -7,9 +7,9 @@
 
 ## Status
 - **Curated builds before Phase 2:** 29
-- **Phase 2 queue:** 103 · **Done:** 86 · **Blocked:** 2 · **Remaining:** 15
-- **Next up:** `aquarium`
-- **Last completed:** `underwater_dome_base`
+- **Phase 2 queue:** 103 · **Done:** 87 · **Blocked:** 2 · **Remaining:** 14
+- **Next up:** `sailing_ship`
+- **Last completed:** `aquarium`
 
 ## Process (per build — follow exactly on resume)
 1. Pick the first unchecked `[ ]` build in queue order below.
@@ -133,7 +133,7 @@
 - [x] coral_garden (coral/kelp/sea_pickle unvalued → built as valued bright-concrete reef per "easiest path to color" intent)
 - [x] prismarine_monument_fragment
 - [x] underwater_dome_base
-- [ ] aquarium
+- [x] aquarium (coral/kelp unvalued → valued concrete reef inside the glass water tank)
 - [ ] sailing_ship (Hard)
 
 ### C — Nether (8) · watch gilded_blackstone (unvalued)
