@@ -309,6 +309,8 @@ class CuratedBlueprintGenerator {
         builds.put("nether_portal_room", netherPortalRoom());
         // Phase 2 — Category C (crimson_warped_hut)
         builds.put("crimson_warped_hut", crimsonWarpedHut());
+        // Phase 2 — Category C (soul_outpost)
+        builds.put("soul_outpost", soulOutpost());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -15206,6 +15208,170 @@ class CuratedBlueprintGenerator {
         b.set(x1 - 1, 1, z0 + 1, CHEST);           // warped-side front corner
         b.set(cx, 1, cz, LANTERN);                 // central floor lantern
         b.set(x0 + 1, 1, z0 + 1, LANTERN);         // crimson-side front-corner lantern
+
+        return b.build();
+    }
+
+    /**
+     * Category C — soul_outpost. 7×9 footprint → builder(7, 8, 9). A small
+     * fortified soul-themed watch-post: a blackstone &amp; basalt guard structure on a
+     * soul-soil / soul-sand ground, lit entirely by the eerie BLUE soul-fire glow —
+     * soul campfires as braziers and soul lanterns on chains. The signature read is
+     * that cold blue light pooling against the dark blackstone. Layout splits along
+     * Z: an enclosed, enterable GUARD ROOM at the front (z=0..3) with a soul-wood
+     * door, glass-block slit windows, and a flat blackstone-slab roof; and an open
+     * walled PARAPET / lookout at the back (z=4..8) with a crenellated blackstone
+     * crown, soul-campfire braziers, and basalt pillar accents at the corners.
+     *
+     * <p><b>Palette (all FU-valued or structural).</b> blackstone +
+     * polished_blackstone + polished_blackstone_bricks + chiseled_polished_blackstone
+     * (+ slabs/stairs/walls — all derive from blackstone), basalt / polished_basalt /
+     * smooth_basalt, soul_soil + soul_sand (the ground), chains (derive from iron),
+     * glass BLOCKS (render-safe windows), lantern, and — for the soul-fire mood —
+     * soul_lantern, soul_torch, and soul_campfire. Those three soul-light blocks are
+     * tested by the GameTest printability gate; if any is flagged unprintable they
+     * fall back to the regular lantern / torch / campfire (the dark-outpost look
+     * survives either way). soul_fire itself is a state block (can't place) — the
+     * visible blue flame is delivered by soul campfires instead.
+     *
+     * <p>Layout (Y), footprint x=0..6 (W), z=0..8 (D, front guard room z=0..3 /
+     * back parapet z=4..8):
+     * <ul>
+     *   <li><b>y=0</b> — soul-soil / soul-sand checkered ground over the full 7×9
+     *       (walkable top), with a polished-blackstone-brick threshold at the door.</li>
+     *   <li><b>y=1..4</b> — blackstone wall ring around the whole footprint with
+     *       basalt pillar corners; a soul-wood door faces inward on the north wall,
+     *       glass-block slit windows on the guard-room walls, and soul-lantern / soul-
+     *       torch sconces giving the blue glow. The guard room (z=0..3) is roofed at
+     *       y=5 by a blackstone slab; the back bay (z=4..8) stays open as a lookout.</li>
+     *   <li><b>y=5</b> — crenellated polished-blackstone-wall parapet crown around the
+     *       open back bay, basalt pillars rising one course past it as accents, and
+     *       soul-campfire braziers on the parapet deck for the soul-fire flame.</li>
+     *   <li>interior — guard-room standing floor at y=1: a chest, crafting table, and
+     *       a soul-lantern; a hanging soul-lantern on a chain lights the lookout.</li>
+     * </ul>
+     */
+    private static Blueprint soulOutpost() {
+        Blueprint.Builder b = Blueprint.builder("Soul Outpost", 7, 8, 9);
+        final int x0 = 0, x1 = 6, z0 = 0, z1 = 8; // 7×9 footprint
+        final int cx = (x0 + x1) / 2;             // 3 — centre line
+        final int zGuard = 3;                     // guard room is z=0..3; parapet is z=4..8
+        final int wallH = 4;                      // wall plate (roof / parapet seat at y=5)
+
+        // ── Palette (all vanilla, all FU-valued or structural) ────────────────
+        BlueprintBlockState blackstone   = bs("minecraft:blackstone");
+        BlueprintBlockState polBS        = bs("minecraft:polished_blackstone");
+        BlueprintBlockState polBSBrick   = bs("minecraft:polished_blackstone_bricks");
+        BlueprintBlockState chiseledPB   = bs("minecraft:chiseled_polished_blackstone");
+        BlueprintBlockState polBSWall    = bs("minecraft:polished_blackstone_wall");
+        BlueprintBlockState basaltY      = bs("minecraft:basalt[axis=y]");
+        BlueprintBlockState polBasalt    = bs("minecraft:polished_basalt[axis=y]");
+        BlueprintBlockState smoothBasalt = bs("minecraft:smooth_basalt");
+        BlueprintBlockState soulSoil     = bs("minecraft:soul_soil");
+        BlueprintBlockState soulSand     = bs("minecraft:soul_sand");
+        BlueprintBlockState blackstoneSlabT = bs("minecraft:blackstone_slab[type=top]");
+        BlueprintBlockState glass        = GLASS;
+        // soul-fire light blocks — TESTED by the printability gate; swapped to the
+        // regular variants below if the GameTest flags any of them unprintable.
+        BlueprintBlockState soulLanternHang = bs("minecraft:soul_lantern[hanging=true]");
+        BlueprintBlockState soulLanternStand = bs("minecraft:soul_lantern[hanging=false]");
+        BlueprintBlockState soulCampfire = bs("minecraft:soul_campfire[lit=true,facing=north,signal_fire=false,waterlogged=false]");
+
+        // ── 1) GROUND (y=0) — soul-soil / soul-sand checker over the full 7×9 ─────────
+        // Walkable surface = top of y=0; interior above is left OPEN (enterable). The
+        // checker gives the eerie soul-floor read; a polished-brick threshold marks the
+        // door, and a smooth-basalt apron lines the parapet deck edge.
+        for (int x = x0; x <= x1; x++) {
+            for (int z = z0; z <= z1; z++) {
+                b.set(x, 0, z, ((x + z) % 2 == 0) ? soulSoil : soulSand);
+            }
+        }
+        b.set(cx, 0, z0, polBSBrick); // door threshold (north wall centre)
+
+        // ── 2) WALL RING (y=1..wallH) — blackstone body, basalt pillar corners ───────
+        // Hollow blackstone ring around the WHOLE footprint (interior left open/walkable),
+        // with a polished-blackstone plinth course (y=1) for relief and a polished-brick
+        // cornice (y=wallH) tying the top together. Basalt corner pillars frame it.
+        walls(b, x0, z0, x1, z1, 1, wallH, blackstone);
+        line(b, 1, x0, z0, x1, z0, polBS); // plinth course on each face
+        line(b, 1, x0, z1, x1, z1, polBS);
+        line(b, 1, x0, z0, x0, z1, polBS);
+        line(b, 1, x1, z0, x1, z1, polBS);
+        line(b, wallH, x0, z0, x1, z0, polBSBrick); // top cornice on each face
+        line(b, wallH, x0, z1, x1, z1, polBSBrick);
+        line(b, wallH, x0, z0, x0, z1, polBSBrick);
+        line(b, wallH, x1, z0, x1, z1, polBSBrick);
+        // basalt corner pillars (full wall height) — the fortified-post accent.
+        pillar(b, x0, z0, 1, wallH, basaltY); // NW
+        pillar(b, x1, z0, 1, wallH, basaltY); // NE
+        pillar(b, x0, z1, 1, wallH, polBasalt); // SW (back lookout corners use polished basalt)
+        pillar(b, x1, z1, 1, wallH, polBasalt); // SE
+        // mid-wall basalt pilasters on the long (east/west) walls at the guard/parapet split.
+        pillar(b, x0, zGuard, 1, wallH, smoothBasalt);
+        pillar(b, x1, zGuard, 1, wallH, smoothBasalt);
+        // chiseled accents flanking the door on the north face.
+        b.set(cx - 1, wallH, z0, chiseledPB);
+        b.set(cx + 1, wallH, z0, chiseledPB);
+
+        // ── 3) DOOR (north wall z=0) — soul-wood-substitute door opening inward ───────
+        // The door (a passable 2-block state) overstamps the centre wall cell; the ring
+        // is broken only here, left open by writing the door, NOT by air. (Crimson wood
+        // door — a nether-wood door that reads with the dark palette.)
+        door2(b, cx, 1, z0, "crimson", "N");
+
+        // ── 4) GLASS-BLOCK SLIT WINDOWS — render-safe (full blocks, not panes) ───────
+        // Recessed glass BLOCKS on the guard-room walls, each seated flush in the
+        // blackstone frame (solid cells flank it on its wall axis). Mid-wall course y=2.
+        int wy = 2;
+        window2(b, x0, wy, z0 + 1, glass, null);  // west guard-room slit
+        window2(b, x1, wy, z0 + 1, glass, null);  // east guard-room slit
+        window2(b, cx - 1, wy, z0, glass, null);  // north wall, west of door
+        window2(b, cx + 1, wy, z0, glass, null);  // north wall, east of door
+
+        // ── 5) GUARD-ROOM ROOF (y=5, z=0..zGuard) — flat blackstone-slab cap ─────────
+        // The front guard room is enclosed; a blackstone top-slab roof seats on the
+        // y=wallH wall plate over z=0..zGuard. The interior below (y=1..wallH) is left
+        // OPEN so the room is enterable through the door.
+        floor(b, 5, x0, z0, x1, zGuard, blackstoneSlabT);
+
+        // ── 6) PARAPET / LOOKOUT (open back bay z=4..z1) — crenellated crown ──────────
+        // The back bay stays open-topped as a walled lookout. A crenellated polished-
+        // blackstone-wall parapet crowns the open back walls (the three open faces:
+        // west/east/south of the back bay) flush on the wall plate at y=5. The split
+        // line at z=zGuard is the guard-room back wall (already solid below the roof).
+        // West & east parapet runs (z=zGuard..z1):
+        int idx = 0;
+        for (int z = zGuard; z <= z1; z++) { if (idx++ % 3 != 2) { b.set(x0, 5, z, polBSWall); b.set(x1, 5, z, polBSWall); } }
+        // South (back) parapet run (x=x0..x1):
+        idx = 0;
+        for (int x = x0; x <= x1; x++) { if (idx++ % 3 != 2) b.set(x, 5, z1, polBSWall); }
+        // basalt corner pillars rise one course past the parapet as lookout accents.
+        b.set(x0, 5, z1, basaltY); // SW accent (overstamps any crenel cell at the corner)
+        b.set(x1, 5, z1, basaltY); // SE accent
+        b.set(x0, 5, zGuard + 1, smoothBasalt); // mid-run west accent
+        b.set(x1, 5, zGuard + 1, smoothBasalt); // mid-run east accent
+
+        // ── 7) SOUL-FIRE BRAZIERS — the signature blue flame on the lookout deck ─────
+        // Soul campfires sit on the open parapet deck (the soul-soil ground at y=0 is
+        // the deck floor for the back bay). Placed in the open corners of the lookout,
+        // clear of the door path, casting the cold blue glow against the blackstone.
+        b.set(x0 + 1, 1, z1 - 1, soulCampfire); // SW lookout brazier
+        b.set(x1 - 1, 1, z1 - 1, soulCampfire); // SE lookout brazier
+
+        // ── 8) SOUL LANTERNS — chain-hung + standing, for the blue ambient pool ──────
+        // A standing soul lantern marks the guard-room interior; a hanging soul lantern
+        // drops on a chain from the guard-room roof slab (a solid block exists at y=5
+        // above it) to light the room. Chains are render-safe (no neighbour needed).
+        b.set(cx, 1, z0 + 2, soulLanternStand);       // guard-room floor soul lantern
+        b.set(cx, 4, z0 + 2, CHAIN);                  // chain off the roof slab at y=5
+        b.set(cx, 3, z0 + 2, soulLanternHang);        // hanging soul lantern in the room
+        // a standing soul lantern atop each front basalt corner pillar (on the cornice).
+        b.set(x0, wallH + 1, z0, soulLanternStand);
+        b.set(x1, wallH + 1, z0, soulLanternStand);
+
+        // ── 9) GUARD-ROOM FURNISHINGS — a chest + crafting table (off the door path) ──
+        b.set(x1 - 1, 1, z0 + 1, CHEST);          // front-east corner chest
+        b.set(x0 + 1, 1, zGuard - 1, CRAFTING_TABLE); // back-west guard-room corner
 
         return b.build();
     }
