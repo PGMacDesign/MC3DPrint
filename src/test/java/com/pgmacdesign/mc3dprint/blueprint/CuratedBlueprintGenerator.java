@@ -224,6 +224,7 @@ class CuratedBlueprintGenerator {
         builds.put("animal_pen", animalPen());
         builds.put("chicken_coop_auto", chickenCoopAuto());
         builds.put("fishery_pond", fisheryPond());
+        builds.put("tree_farm", treeFarm());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -5157,6 +5158,144 @@ class CuratedBlueprintGenerator {
         //    under the deck over the open water (backed by the solid plank deck above).
         b.set(cx, deckY + 1, z1, LANTERN);          // lantern on the dock tip
         b.set(cx, deckY - 1, z1 - 1, HANGING_LANTERN); // hangs under the deck over water
+
+        return b.build();
+    }
+
+    /**
+     * §F.tree_farm — a STATIC automatic tree farm, 7×7×6 (W×L×H)
+     * → builder(7, 6, 7).
+     *
+     * <p>The "most efficient farm", printed as the working STRUCTURE the player
+     * plants into. The trunk <b>logs</b> and the canopy <b>leaves</b> are the
+     * <em>output</em> the tree grows itself once printed + grown — and leaves are
+     * UNVALUED (no producing recipe; not structural matter), so we <b>never place
+     * leaves</b> and we don't pre-place logs either: the tree makes its own. We print
+     * the mechanism in vanilla FU-valued / structural-free blocks only.
+     *
+     * <p>The planting grid is a 3×3 of <b>dirt</b> grow-pads (FU-valued 1@1) on a
+     * raised stone base; the player drops an <b>oak sapling</b> on each — saplings are
+     * {@link net.minecraft.world.level.block.BushBlock} descendants, so they're
+     * <b>structural-free</b> (their item is the sapling seed, never the grown tree) and
+     * we pre-place them at y=2 so the build reads as a planted grove. Each pad is fed
+     * by a <b>dispenser</b> (bonemeal in the player's loadout) aimed up at the sapling
+     * for the bone-meal growth-assist; an <b>observer</b> on the back wall watches each
+     * grow-column and a <b>piston</b> above it knocks the grown trunk loose for harvest.
+     * A <b>hopper</b> floor under the grid funnels the dropped logs into a
+     * <b>chest</b> at the south edge, with a <b>redstone</b> ribbon tying observer →
+     * piston. Every printed block is vanilla FU-valued (dirt 1@1, stone, cobble,
+     * hopper 100@3, dispenser/observer/piston derive from crafting, redstone 4@3, chest
+     * derives) or structural-free matter (oak saplings = BushBlock → print free;
+     * redstone_wire is structural). No leaves, no pre-placed logs, no gate-flagged block.
+     *
+     * <p>How it works once printed + planted: the player drops an oak sapling on each
+     * dirt pad and triggers the dispensers (bone meal) to fast-grow the trees; as a
+     * trunk grows into the cell an observer faces, the observer pulses, firing the
+     * piston that pops the new log loose. The broken log falls onto the hopper floor,
+     * which feeds the collection chest. (Mirrors the shipped cactus/bamboo/pumpkin
+     * static-shell pattern: a grow grid flanked by an observer/piston harvest wall over
+     * a hopper-fed chest.)
+     *
+     * <p>Layout (south = +z is the "front"/access side; cx=3):
+     * <ul>
+     *   <li><b>y=0</b> — stone foundation (7×7). A central 3×3 <b>hopper floor</b>
+     *       (x=2..4, z=2..4) catches the broken logs and chains them south into the
+     *       collection chest at the south edge.</li>
+     *   <li><b>Collection chest, y=0</b> — tucked at the south edge (x=cx, z=6, facing
+     *       north); the hopper floor empties into it.</li>
+     *   <li><b>Dirt grow-pads, y=1</b> — a 3×3 of <b>dirt</b> directly over the hopper
+     *       floor (x=2..4, z=2..4): the player plants an oak sapling on each.</li>
+     *   <li><b>Oak saplings, y=2</b> — pre-planted on every dirt pad (structural-free)
+     *       so the grove reads as planted; the tree grows up from here.</li>
+     *   <li><b>Harvest wall, y=2..3</b> — on the north back wall (x=2..4, z=1) a stone
+     *       base at y=1 carries an <b>observer</b> at y=2 facing south into the grow
+     *       column (watching the trunk grow into its face) and a <b>piston</b> at y=3
+     *       above it facing south to knock the new log loose toward the hopper floor. A
+     *       <b>redstone-dust</b> ribbon at y=4 on the piston-top ties each observer's
+     *       back output across to fire its piston.</li>
+     *   <li><b>Bone-meal dispensers, y=1</b> — on the south rim (x=2..4, z=5) a row of
+     *       <b>dispensers</b> facing north at the grow columns, loaded with bone meal
+     *       for the player's growth-assist (a button/lever press fast-grows the
+     *       saplings).</li>
+     *   <li><b>End walls + label signs</b> — cobble end caps (z=0, z=6) box the grid;
+     *       oak wall signs on the south face label the build.</li>
+     * </ul>
+     */
+    private static Blueprint treeFarm() {
+        Blueprint.Builder b = Blueprint.builder("Tree Farm", 7, 6, 7);
+        // all vanilla, all FU-valued / structural-free (NO leaves, NO pre-placed logs — the tree grows them):
+        BlueprintBlockState stone   = bs("minecraft:stone");
+        BlueprintBlockState cobble  = COBBLE;
+        BlueprintBlockState dirt    = bs("minecraft:dirt");                 // FU-valued (1@1) — the grow-pad
+        BlueprintBlockState sapling = bs("minecraft:oak_sapling[stage=0]"); // SaplingBlock extends BushBlock → structural-free
+        BlueprintBlockState chest   = bs("minecraft:chest[facing=north,type=single,waterlogged=false]");
+        BlueprintBlockState redDust = bs("minecraft:redstone_wire[east=none,west=none,north=none,south=none,power=0]"); // structural
+
+        int x0 = 0, x1 = 6, z0 = 0, z1 = 6;            // 7×7 footprint
+        int cx = 3;                                    // centre column
+        int gx0 = 2, gx1 = 4;                          // 3×3 grow-grid X span (x=2..4)
+        int gz0 = 2, gz1 = 4;                          // 3×3 grow-grid Z span (z=2..4)
+
+        // ── 1) STONE FOUNDATION at y=0, with the central 3×3 HOPPER FLOOR ────
+        floor(b, 0, x0, z0, x1, z1, stone);
+        // hopper floor under the grow grid (x=2..4, z=2..4); each hopper points
+        // north→south down the chain toward the chest at the south edge. The front
+        // (z=4) row feeds the chest; the rows behind feed forward into it.
+        for (int z = gz0; z <= gz1; z++) {
+            for (int x = gx0; x <= gx1; x++) {
+                // chain the catch south: every hopper faces toward the +z (south) chest.
+                b.set(x, 0, z, bs("minecraft:hopper[enabled=true,facing=south]"));
+            }
+        }
+
+        // ── 2) COLLECTION CHEST at the SOUTH end, y=0 ───────────────────────
+        // The hopper chain terminates at the chest tucked at the south edge (z=6),
+        // facing north so its front reads inward toward the grid.
+        b.set(cx, 0, z1, chest);
+
+        // ── 3) DIRT GROW-PADS (y=1) + OAK SAPLINGS (y=2) ────────────────────
+        // A 3×3 of dirt directly over the hopper floor; the player plants an oak
+        // sapling on each. We pre-place the saplings (structural-free) so the grove
+        // reads as planted; the tree grows up from y=3.
+        for (int z = gz0; z <= gz1; z++) {
+            for (int x = gx0; x <= gx1; x++) {
+                b.set(x, 1, z, dirt);       // grow-pad
+                b.set(x, 2, z, sapling);    // pre-planted oak sapling (BushBlock → free)
+            }
+        }
+
+        // ── 4) HARVEST WALL on the NORTH back row (z=1): observer + piston ──
+        // For each grow column (x=2..4) a stone base at y=1 carries an observer at y=2
+        // facing south into the grow column (watching the trunk grow into its face) and
+        // a piston at y=3 above it facing south to knock the new log loose toward the
+        // hopper floor. A redstone-dust ribbon at y=4 rides on the piston-top, carrying
+        // each observer's back-output across to fire its piston.
+        int wallZ = gz0 - 1;                           // z=1, one row north of the grid
+        for (int x = gx0; x <= gx1; x++) {
+            b.set(x, 1, wallZ, stone);                                            // observer/piston base
+            b.set(x, 2, wallZ, bs("minecraft:observer[facing=south,powered=false]"));
+            b.set(x, 3, wallZ, bs("minecraft:piston[facing=south,extended=false]"));
+            b.set(x, 4, wallZ, redDust);
+        }
+
+        // ── 5) BONE-MEAL DISPENSER ROW on the SOUTH rim (z=5), y=1 ──────────
+        // A row of dispensers facing north at the grow columns, loaded with bone meal
+        // for the player's growth-assist. (Dispenser is a standard cobble+bow+redstone
+        // recipe → FU-derived. Its bone-meal contents are NBT, not a block, so they
+        // don't affect printing.)
+        int dispZ = gz1 + 1;                           // z=5, one row south of the grid
+        for (int x = gx0; x <= gx1; x++) {
+            b.set(x, 1, dispZ, bs("minecraft:dispenser[facing=north,triggered=false]"));
+        }
+
+        // ── 6) END WALLS (box the grid) + LABEL SIGNS ───────────────────────
+        // Cobble end caps at z=0 and z=6 across the grid span close the ends so the
+        // farm reads as a contained planter bed.
+        line(b, 1, gx0, z0, gx1, z0, cobble);   // north end cap, y=1
+        line(b, 1, gx0, z1, gx1, z1, cobble);   // south end cap, y=1
+        // oak wall signs on the south face flanking the chest (FU-valued, derived).
+        b.set(gx0, 1, z1, bs("minecraft:oak_wall_sign[facing=south]"));
+        b.set(gx1, 1, z1, bs("minecraft:oak_wall_sign[facing=south]"));
 
         return b.build();
     }
