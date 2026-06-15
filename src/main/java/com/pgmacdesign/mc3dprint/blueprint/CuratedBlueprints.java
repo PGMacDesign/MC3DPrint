@@ -136,7 +136,9 @@ public final class CuratedBlueprints {
             // Phase 2 — Category E (coral_garden)
             "coral_garden",
             // Phase 2 — Category E (prismarine_monument_fragment)
-            "prismarine_monument_fragment");
+            "prismarine_monument_fragment",
+            // Phase 2 — Category E (underwater_dome_base)
+            "underwater_dome_base");
 
     /**
      * Load a bundled curated blueprint straight from the mod's resources (no world

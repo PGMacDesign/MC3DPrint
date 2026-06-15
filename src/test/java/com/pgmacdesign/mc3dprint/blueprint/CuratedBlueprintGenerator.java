@@ -300,6 +300,8 @@ class CuratedBlueprintGenerator {
         // Phase 2 — Category E (coral_garden)
         builds.put("coral_garden", coralGarden());
         builds.put("prismarine_monument_fragment", prismarineMonumentFragment());
+        // Phase 2 — Category E (underwater_dome_base)
+        builds.put("underwater_dome_base", underwaterDomeBase());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -14278,6 +14280,148 @@ class CuratedBlueprintGenerator {
             b.set(wx0 - 1, 2, pz, stairW); // west buttress feet flaring out (-x)
             b.set(wx1 + 1, 2, pz, stairE); // east buttress feet flaring out (+x)
         }
+
+        return b.build();
+    }
+
+    /**
+     * §E Underwater Dome Base. 11×11 footprint → builder(11, 9, 11). A sleek
+     * submerged habitat: a prismarine + white-concrete circular foundation ring on
+     * the seabed, a transparent GLASS hemisphere over a dry, walkable interior
+     * (white-concrete floor, sea-lantern lighting, a couple of furnishings), an
+     * iron-trapdoor airlock hatch, and the whole thing hugged by structural WATER
+     * so it reads as sitting on the ocean floor with a dry glass interior.
+     *
+     * <p>THE DOME IS THE HERO. It is built from full {@code light_blue_stained_glass}
+     * BLOCKS via {@link #dome} (stacked ring SHELLS, hollow interior) — never panes.
+     * Full glass blocks are sturdy and never render as invisible stubs, so the
+     * render-integrity gate ({@code CuratedBlueprintRenderIntegrityGameTests}) has
+     * no lone pane to enforce. The interior under the dome is LEFT AS AIR (air-skip
+     * rule) so it is dry and enterable; water is placed ONLY in the perimeter/exterior
+     * cells, never inside the shell, so the interior never floods.
+     *
+     * <p>PALETTE (all FU-valued vanilla, or structural/free): light_blue_stained_glass
+     * + glass (dome + viewport), white_concrete + light_gray_concrete (floor/ring),
+     * prismarine + prismarine_bricks (+slab) (foundation), sea_lantern (lighting),
+     * iron_block + iron_bars + iron_trapdoor (airlock tube), chain, and structural
+     * {@link #WATER} (prints free). No glass PANES, so nothing can stub. dark_prismarine,
+     * coral, kelp, sea_pickle are UNVALUED and deliberately AVOIDED.
+     *
+     * <p>AXES: x=W (0..10, east), y=up, z=depth (0..10, south). Centre (5,5).
+     * The dome springs at y=2 with radius 4 (apex at y=6); the foundation ring sits
+     * at y=0..1; the airlock tube climbs the north edge.
+     */
+    private static Blueprint underwaterDomeBase() {
+        final int W = 11, H = 9, D = 11;
+        Blueprint.Builder b = Blueprint.builder("Underwater Dome Base", W, H, D);
+        final int x0 = 0, x1 = W - 1, z0 = 0, z1 = D - 1; // x:0..10  z:0..10
+        final int cx = 5, cz = 5;                          // base centre
+        final int r = 4;                                   // dome / ring radius
+
+        // Palette ---------------------------------------------------------------
+        final BlueprintBlockState prismarine = bs("minecraft:prismarine");
+        final BlueprintBlockState bricks     = bs("minecraft:prismarine_bricks");
+        final BlueprintBlockState brickSlabTop = bs("minecraft:prismarine_brick_slab[type=top]");
+        final BlueprintBlockState whiteConcrete = bs("minecraft:white_concrete");
+        final BlueprintBlockState lightGrayConcrete = bs("minecraft:light_gray_concrete");
+        final BlueprintBlockState domeGlass = bs("minecraft:light_blue_stained_glass");
+        final BlueprintBlockState ironBlock = IRON_BLOCK;
+        final BlueprintBlockState ironBars  = IRON_BARS;
+        final BlueprintBlockState ironTrapdoorTop =
+                bs("minecraft:iron_trapdoor[facing=north,half=top,open=false,powered=false,waterlogged=false]");
+
+        // ── 1) SEABED FOUNDATION (y=0) — a solid 11×11 prismarine seabed footing the
+        //    whole base rests on (structural stone read), with a dressed prismarine-
+        //    brick rim wrapping the outer edge (the foundation lip on the ocean floor).
+        floor(b, 0, x0, z0, x1, z1, prismarine);
+        line(b, 0, x0, z0, x1, z0, bricks); // north rim
+        line(b, 0, x0, z1, x1, z1, bricks); // south rim
+        line(b, 0, x0, z0, x0, z1, bricks); // west rim
+        line(b, 0, x1, z0, x1, z1, bricks); // east rim
+
+        // ── 2) SUBMERGING WATER (y=1) — a structural WATER ring around the foundation
+        //    so the base reads as submerged on the seabed. Water fills ONLY the outer
+        //    perimeter ring; everything inside that ring stays the dry habitat. Water
+        //    is structural matter → prints free, and is never placed inside the dome.
+        for (int x = x0; x <= x1; x++) {
+            for (int z = z0; z <= z1; z++) {
+                boolean outerRing = (x == x0 || x == x1 || z == z0 || z == z1);
+                if (outerRing) b.set(x, 1, z, WATER);
+            }
+        }
+
+        // ── 3) FOUNDATION RING (y=1) — the circular base ring the dome springs from:
+        //    a prismarine + white-concrete ring (radius 4, centred 5,5) sitting one
+        //    course above the seabed. The ring is two-tone — prismarine perimeter with
+        //    a white-concrete inner band — so the foundation reads as a dressed plinth.
+        circleRing(b, 1, cx, cz, r, prismarine);     // outer foundation ring (the dome footing)
+        circleRing(b, 1, cx, cz, r - 1, whiteConcrete); // inner white-concrete band
+
+        // ── 4) DRY INTERIOR FLOOR (y=1) — a filled white-concrete deck across the inner
+        //    disc (radius r-1) so the habitat has a clean, walkable, DRY floor. This is
+        //    laid AFTER the rings (last-write-wins) so the inner disc is solid concrete;
+        //    a light-gray-concrete inlay marks a tidy central plaza. The interior ABOVE
+        //    this floor (y=2..) is left as AIR so the habitat is dry and enterable.
+        disc(b, 1, cx, cz, r - 1, whiteConcrete);
+        disc(b, 1, cx, cz, 1, lightGrayConcrete); // small central plaza inlay
+        b.set(cx, 1, cz, SEA_LANTERN);            // flush floor uplight at the plaza centre
+
+        // ── 5) GLASS DOME (y=2..6) — THE HERO. A hemispherical shell of full
+        //    light-blue-stained-glass BLOCKS via dome(): stacked ring SHELLS from the
+        //    springing course (y=2, radius 4) up to the apex (y=6). Full glass blocks are
+        //    sturdy and never stub (unlike panes), so this is a clean transparent dome
+        //    that always renders. The shell is hollow → the interior stays open air.
+        dome(b, cx, cz, 2, r, domeGlass);
+        // CLOSE THE APEX: dome()'s ring schedule jumps from a radius-3 ring (y=5) to a
+        // lone centre block (y=6), leaving an open ring-gap just under the apex (the
+        // "open roof near the apex" pitfall). Cap it with a small filled glass DISC at
+        // y=6 (radius 2) so the dome reads fully closed. This is the ROOF cap — it sits
+        // above the open interior, so it does not flood or fill the habitat.
+        disc(b, 6, cx, cz, 2, domeGlass);
+
+        // ── 6) DOME VIEWPORTS + APEX OCULUS — clear-glass accents in the tinted shell
+        //    for contrast: a clear apex oculus and four clear cardinal viewports. All are
+        //    full glass BLOCKS (over-stamp the tinted shell), so they stay render-safe.
+        b.set(cx, 6, cz, GLASS);          // clear apex oculus (over-stamp the dome cap)
+        b.set(cx, 2, cz - r, GLASS);      // north viewport (clear panel in the tinted shell)
+        b.set(cx, 2, cz + r, GLASS);      // south viewport
+        b.set(cx - r, 2, cz, GLASS);      // west viewport
+        b.set(cx + r, 2, cz, GLASS);      // east viewport
+
+        // ── 7) AIRLOCK TUBE (north edge) — the entry: a short iron-framed access shaft
+        //    rising from the seabed at the north foundation edge into the dome interior.
+        //    Iron-block jambs flank an iron-bars window pair (the bars connect to each
+        //    other + the iron-block jambs → never stub), capped by an iron-trapdoor hatch.
+        final int ax = cx, az = cz - (r - 1); // airlock at the north inner-ring edge (5,1 region)
+        // iron-block jambs either side of the entry on the foundation ring
+        pillar(b, ax - 1, az, 1, 3, ironBlock);
+        pillar(b, ax + 1, az, 1, 3, ironBlock);
+        // iron-bars window/grille in the airlock throat (connects to the iron jambs)
+        b.set(ax, 2, az, ironBars);
+        b.set(ax, 3, az, ironBars);
+        // iron-trapdoor hatch capping the airlock (the dive hatch)
+        b.set(ax, 4, az, ironTrapdoorTop);
+        // a chain handhold dropping from the hatch into the habitat
+        b.set(ax, 1, az + 1, CHAIN);
+
+        // ── 8) INTERIOR FURNISHINGS — a few livable details on the dry floor: a sea-
+        //    lantern lighting ring set flush at the four inner-ring cardinals (the habitat
+        //    glow), a small prismarine-brick console/table with a sea-lantern lamp, and a
+        //    bed in the sleeping nook. All sit on the white-concrete floor; nothing floods.
+        // sea-lantern floor lighting ring (flush inlays at the inner-ring cardinals)
+        b.set(cx, 1, cz - (r - 2), SEA_LANTERN);
+        b.set(cx, 1, cz + (r - 2), SEA_LANTERN);
+        b.set(cx - (r - 2), 1, cz, SEA_LANTERN);
+        b.set(cx + (r - 2), 1, cz, SEA_LANTERN);
+        // a low prismarine-brick console with a sea-lantern lamp (the observation desk)
+        b.set(cx + 2, 2, cz, bricks);
+        b.set(cx + 2, 3, cz, brickSlabTop);   // desktop slab (flush on the brick base)
+        b.set(cx + 1, 2, cz, SEA_LANTERN);    // desk lamp beside the console
+        // a bed in the sleeping nook (south-west interior), facing north into the room
+        bed(b, cx - 2, 2, cz - 1, "light_blue", "north");
+        // a couple of seats: prismarine-brick stools flanking the console
+        b.set(cx + 2, 2, cz - 1, brickSlabTop);
+        b.set(cx + 2, 2, cz + 1, brickSlabTop);
 
         return b.build();
     }
