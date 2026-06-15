@@ -267,6 +267,7 @@ class CuratedBlueprintGenerator {
         builds.put("greenhouse", greenhouse());
         // Phase 2 — Category B (modern / contemporary)
         builds.put("modern_concrete_house", modernConcreteHouse());
+        builds.put("modern_pool_deck", modernPoolDeck());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -10385,6 +10386,145 @@ class CuratedBlueprintGenerator {
         b.set(x0 + 3, deckY, cz, SEA_LANTERN);
         b.set(cx, deckY, cz, SEA_LANTERN);
         b.set(x1 - 3, deckY, cz, SEA_LANTERN);
+
+        return b.build();
+    }
+
+    /**
+     * §B.66 Modern Pool Deck — an open-air leisure deck: a sunken rectangular pool
+     * (water, structural) lined with prismarine + quartz, ringed by a quartz /
+     * smooth-stone deck, with stair-and-slab loungers, a render-safe GLASS-block
+     * railing, a small smooth-quartz bar/cabana corner, sea-lantern uplights set
+     * into the pool floor, and potted greenery. 9×9 footprint (T5), disc T1.
+     *
+     * <p><b>Axis mapping.</b> Footprint W×L = 9×9 → builder {@code (W=9, H=4, L=9)}:
+     * x = width 0..8, z = depth 0..8, y = up 0..3.
+     *
+     * <p><b>Vertical scheme (bottom-up, last-write-wins, air-skip).</b>
+     * <ul>
+     *   <li>{@code y=0} — ground course. The whole footprint is a solid base:
+     *       smooth-stone under the perimeter deck and a prismarine-lined POOL FLOOR
+     *       under the sunken 5×5 center. Sea-lantern uplights are set flush into the
+     *       pool floor so they glow up through the water.</li>
+     *   <li>{@code y=1} — surface level. Perimeter = quartz-block / smooth-quartz-slab
+     *       decking (the walkable top). Center = WATER (the pool surface, flush with
+     *       the deck → a true sunken pool). The water sits one course ABOVE its
+     *       prismarine floor, exactly a one-deep sunken basin.</li>
+     *   <li>{@code y=1..2} — props on the deck: stair+slab loungers, a GLASS-block
+     *       perimeter railing (render-safe — solid blocks, never panes), a quartz
+     *       bar/cabana in the NE corner with a slab counter + cabana posts, and
+     *       potted plants. A {@code y=3} cabana slab roof caps the corner.</li>
+     * </ul>
+     *
+     * <p><b>Render-safe railing.</b> The railing is GLASS BLOCKS (not panes), set
+     * as a low (1-course) parapet around the deck edge with gaps left for access,
+     * so the render-integrity gate passes trivially (glass blocks aren't
+     * {@code IronBarsBlock}).
+     *
+     * <p><b>Palette (all vanilla, FU-valued or structural).</b> quartz_block /
+     * smooth_quartz / quartz_stairs / quartz_slab (derive from quartz=5@3),
+     * smooth_stone (3@1), prismarine + prismarine_bricks (derive
+     * from prismarine_shard=8@4 / crystals=12@4), glass (5@1), sea_lantern (50@5),
+     * water (structural), potted_* greenery.
+     */
+    private static Blueprint modernPoolDeck() {
+        final int W = 9, H = 4, D = 9;
+        Blueprint.Builder b = Blueprint.builder("Modern Pool Deck", W, H, D);
+        int x0 = 0, x1 = W - 1, z0 = 0, z1 = D - 1; // x:0..8  z:0..8
+
+        // sunken pool footprint: a 5×5 basin centered in the 9×9 deck (inset 2 cells
+        // on every side → pool x∈[2..6], z∈[2..6]). The 2-cell-wide deck rings it.
+        int px0 = 2, px1 = 6, pz0 = 2, pz1 = 6;
+
+        // Palette ---------------------------------------------------------------
+        BlueprintBlockState deckBase   = bs("minecraft:smooth_stone");            // y=0 base under the deck
+        BlueprintBlockState deckTop    = bs("minecraft:quartz_block");            // y=1 walkable deck surface
+        BlueprintBlockState deckTrim   = bs("minecraft:smooth_quartz_slab[type=top]"); // slab coping accent
+        BlueprintBlockState poolFloor  = bs("minecraft:prismarine");              // pool basin floor
+        BlueprintBlockState poolLining = bs("minecraft:prismarine_bricks");       // pool wall lining (basin sides)
+        BlueprintBlockState railGlass  = GLASS;                                   // render-safe railing (BLOCKS)
+        BlueprintBlockState barTop     = bs("minecraft:smooth_quartz");           // cabana / bar mass
+        BlueprintBlockState barCounter = bs("minecraft:quartz_slab[type=top]");   // bar counter slab
+        BlueprintBlockState cabanaRoof = bs("minecraft:smooth_quartz_slab[type=bottom]"); // cabana roof slab
+
+        // 1) GROUND COURSE (y=0) — solid base over the whole footprint: smooth-stone
+        //    under the perimeter deck, prismarine POOL FLOOR under the sunken center.
+        floor(b, 0, x0, z0, x1, z1, deckBase);                 // full base
+        floor(b, 0, px0, pz0, px1, pz1, poolFloor);            // over-stamp the pool floor
+        // sea-lantern uplights set flush into the pool floor (glow up through water):
+        // four set in from the basin corners + one in the dead center.
+        b.set(px0 + 1, 0, pz0 + 1, SEA_LANTERN);
+        b.set(px1 - 1, 0, pz0 + 1, SEA_LANTERN);
+        b.set(px0 + 1, 0, pz1 - 1, SEA_LANTERN);
+        b.set(px1 - 1, 0, pz1 - 1, SEA_LANTERN);
+        b.set((px0 + px1) / 2, 0, (pz0 + pz1) / 2, SEA_LANTERN);
+
+        // 2) SURFACE COURSE (y=1) — perimeter quartz deck (the walkable top), and
+        //    WATER filling the pool center so its surface is flush with the deck.
+        floor(b, 1, x0, z0, x1, z1, deckTop);                  // quartz deck over everything…
+        floor(b, 1, px0, pz0, px1, pz1, WATER);                // …then water over the pool cells
+        // prismarine-brick basin lining: re-stamp the pool's outer ring of floor cells
+        // as the basin-wall course at y=0 so the sunken edge reads as a lined pool wall.
+        line(b, 0, px0, pz0, px1, pz0, poolLining); // basin north wall
+        line(b, 0, px0, pz1, px1, pz1, poolLining); // basin south wall
+        line(b, 0, px0, pz0, px0, pz1, poolLining); // basin west wall
+        line(b, 0, px1, pz0, px1, pz1, poolLining); // basin east wall
+
+        // 3) DECK COPING (y=1) — a smooth-quartz top-slab trim ring lining the inner
+        //    pool edge (between deck and water), the bright modern reveal around the
+        //    waterline. (Top slabs sit at the deck surface; you can still walk it.)
+        for (int x = px0 - 1; x <= px1 + 1; x++) {
+            b.set(x, 1, pz0 - 1, deckTrim);
+            b.set(x, 1, pz1 + 1, deckTrim);
+        }
+        for (int z = pz0 - 1; z <= pz1 + 1; z++) {
+            b.set(px0 - 1, 1, z, deckTrim);
+            b.set(px1 + 1, 1, z, deckTrim);
+        }
+
+        // 4) GLASS RAILING (y=2) — a low 1-course GLASS-BLOCK parapet around the deck
+        //    edge, with a gap left on the south (front) face for access. Solid glass
+        //    blocks → render-safe (no stub panes). Sits on the deck top at y=2.
+        for (int x = x0; x <= x1; x++) {
+            b.set(x, 2, z0, railGlass);                        // north railing (full)
+            if (x < 3 || x > 5) b.set(x, 2, z1, railGlass);    // south railing (center gap = entry)
+        }
+        for (int z = z0 + 1; z <= z1 - 1; z++) {
+            b.set(x0, 2, z, railGlass);                        // west railing
+            b.set(x1, 2, z, railGlass);                        // east railing
+        }
+
+        // 5) LOUNGERS — two stair+slab sun chairs on the west deck strip facing the
+        //    pool (east). A chair = a stairs (seat-back, facing away from sitter) with
+        //    a top-slab footrest in front. They sit on the 2-wide deck at x=0..1, z.
+        BlueprintBlockState chairBack = bs("minecraft:quartz_stairs[facing=east,half=bottom,shape=straight]");
+        for (int cz : new int[]{pz0, pz1}) {                   // one aligned to each pool end
+            b.set(x0, 2, cz, chairBack);                       // seat-back stair against west rail
+            b.set(x0 + 1, 2, cz, bs("minecraft:quartz_slab[type=bottom]")); // footrest slab
+        }
+        // re-assert the west railing cells the chairs overwrote at z=pz0,pz1 one cell
+        // higher so the rail stays continuous behind the loungers.
+        b.set(x0, 3, pz0, railGlass);
+        b.set(x0, 3, pz1, railGlass);
+
+        // 6) BAR / CABANA — a small smooth-quartz bar in the NE corner: a 2×1 counter
+        //    mass with a top-slab counter, two cabana corner posts, and a slab roof.
+        b.set(x1 - 1, 2, z0 + 1, barTop);                      // bar mass (back)
+        b.set(x1, 2, z0 + 1, barTop);
+        b.set(x1 - 1, 2, z0 + 2, barCounter);                  // counter lip (front)
+        b.set(x1, 2, z0 + 2, barCounter);
+        // cabana posts rise from the bar to a slab roof
+        pillar(b, x1 - 1, z0 + 1, 3, 3, barTop);
+        pillar(b, x1, z0 + 1, 3, 3, barTop);
+        b.set(x1 - 1, 3, z0 + 2, cabanaRoof);                  // roof slab over the counter
+        b.set(x1, 3, z0 + 2, cabanaRoof);
+
+        // 7) GREENERY — potted plants on the deck corners (structural-safe variants
+        //    already proven in the curated set). One by the entry gap, two on the
+        //    front deck strip flanking the pool.
+        b.set(x0 + 1, 2, z1, bs("minecraft:potted_bamboo"));
+        b.set(x1 - 1, 2, z1, bs("minecraft:potted_fern"));
+        b.set(x0 + 1, 2, z0 + 1, bs("minecraft:potted_cactus"));
 
         return b.build();
     }

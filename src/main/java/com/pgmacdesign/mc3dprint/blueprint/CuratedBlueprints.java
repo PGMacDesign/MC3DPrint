@@ -92,7 +92,9 @@ public final class CuratedBlueprints {
             // Phase 2 — Category H (greenhouse)
             "greenhouse",
             // Phase 2 — Category B (modern_concrete_house)
-            "modern_concrete_house");
+            "modern_concrete_house",
+            // Phase 2 — Category B (modern_pool_deck)
+            "modern_pool_deck");
 
     /**
      * Load a bundled curated blueprint straight from the mod's resources (no world
