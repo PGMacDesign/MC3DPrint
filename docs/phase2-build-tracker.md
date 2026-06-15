@@ -7,9 +7,9 @@
 
 ## Status
 - **Curated builds before Phase 2:** 29
-- **Phase 2 queue:** 103 · **Done:** 36 · **Blocked:** 2 · **Remaining:** 65
-- **Next up:** `scarecrow`
-- **Last completed:** `cemetery_plot`
+- **Phase 2 queue:** 103 · **Done:** 37 · **Blocked:** 2 · **Remaining:** 64
+- **Next up:** `flower_shop`
+- **Last completed:** `scarecrow`
 
 ## Process (per build — follow exactly on resume)
 1. Pick the first unchecked `[ ]` build in queue order below.
@@ -75,7 +75,7 @@
 - [x] garden_archway
 - [x] ruin_pillar
 - [x] cemetery_plot
-- [ ] scarecrow
+- [x] scarecrow
 - [ ] flower_shop
 - [ ] food_stall
 - [ ] park_bench_lamppost

@@ -237,6 +237,7 @@ class CuratedBlueprintGenerator {
         builds.put("garden_archway", gardenArchway());
         builds.put("ruin_pillar", ruinPillar());
         builds.put("cemetery_plot", cemeteryPlot());
+        builds.put("scarecrow", scarecrow());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -6838,6 +6839,73 @@ class CuratedBlueprintGenerator {
             b.set(c[0], 0, c[1], crackedBrick); // plinth (sits on ground at y0)
             b.set(c[0], 1, c[1], flowerPot);    // empty planter pot atop the plinth
         }
+
+        return b.build();
+    }
+
+    /**
+     * Scarecrow — a farm straw-man on a cross frame: a hay-bale body stacked on a
+     * fence post, outstretched oak-fence arms forming the shoulder crossbar, a
+     * white-wool "straw" head, and an oak-trapdoor sun-hat brim crowning it. A
+     * tilled-farmland patch underfoot grounds it as a field guardian, with a stub
+     * of wheat at the base reading as scattered straw.
+     *
+     * <p>NOTE: pumpkin / carved_pumpkin / jack_o_lantern are UNVALUED in the FU
+     * economy (unprintable), so this build deliberately uses a <b>wool head</b> +
+     * <b>hay body</b> + <b>trapdoor hat</b> straw-man read instead of the classic
+     * pumpkin head — a cross + hat + hay torso reads unmistakably as a scarecrow.
+     *
+     * <p>Vanilla, FU-valued blocks only — farmland (structural-itemless, free),
+     * wheat (structural-itemless, free), oak fence, hay block, white wool, oak
+     * trapdoor (derives from oak planks). No glass panes / iron bars → no
+     * render-integrity stub risk; the outstretched fence arms connect to the
+     * centre fence post (and are explicitly fine as "arms").
+     *
+     * <p>Footprint x=0..2 (W=3), z=0 (D=1), y=0..5 (H=6). Front faces z=0.
+     * <ul>
+     *   <li>{@code y=0} a tilled-farmland strip (the field the scarecrow guards);
+     *       a wheat stalk beside the post reads as straw at its feet.</li>
+     *   <li>{@code y=1} hay-bale lower body seated on the farmland.</li>
+     *   <li>{@code y=2} hay-bale torso.</li>
+     *   <li>{@code y=3} oak-fence neck/shoulders, with outstretched oak-fence arms
+     *       at x=0 and x=2 forming the crossbar the straw-man hangs from.</li>
+     *   <li>{@code y=4} white-wool "straw" head on the post.</li>
+     *   <li>{@code y=5} an oak trapdoor (half=bottom) capping the head as a floppy
+     *       sun-hat brim.</li>
+     * </ul>
+     */
+    private static Blueprint scarecrow() {
+        final int W = 3, H = 6, D = 1;
+        Blueprint.Builder b = Blueprint.builder("Scarecrow", W, H, D);
+        final int cx = 1, z = 0;
+
+        // 1) FIELD UNDERFOOT — a tilled-farmland strip the guardian stands in.
+        //    Farmland is itemless-structural → prints free, grounds the scene.
+        floor(b, 0, 0, z, W - 1, z, FARMLAND);
+
+        // 2) STRAW AT ITS FEET — a wheat stalk beside the post base reads as loose
+        //    straw (itemless-structural → free). Placed off-centre so it doesn't
+        //    fight the body column.
+        b.set(0, 1, z, WHEAT);
+
+        // 3) HAY-BALE BODY — two bales stacked on the centre cell form the torso.
+        b.set(cx, 1, z, HAY); // lower body
+        b.set(cx, 2, z, HAY); // upper torso
+
+        // 4) FENCE FRAME — the centre post continues up as the neck/shoulders, with
+        //    outstretched oak-fence arms forming the scarecrow's crossbar. The arms
+        //    connect to the centre post, so they render as proper extended arms.
+        b.set(cx, 3, z, OAK_FENCE);     // neck / shoulders (the cross hub)
+        b.set(0, 3, z, OAK_FENCE);      // left arm (outstretched)
+        b.set(W - 1, 3, z, OAK_FENCE);  // right arm (outstretched)
+
+        // 5) HEAD — a white-wool "straw" head atop the fence neck.
+        b.set(cx, 4, z, WHITE_WOOL);
+
+        // 6) HAT — an oak trapdoor (half=bottom) sits flat on the head as a
+        //    wide-brim sun-hat. Trapdoor derives from oak planks → FU-valued; no
+        //    pane/bar so no render-integrity stub risk.
+        b.set(cx, 5, z, bs("minecraft:oak_trapdoor[facing=north,half=bottom,open=false,powered=false,waterlogged=false]"));
 
         return b.build();
     }
