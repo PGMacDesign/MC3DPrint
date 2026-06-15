@@ -273,6 +273,7 @@ class CuratedBlueprintGenerator {
         builds.put("japanese_tea_house", japaneseTeaHouse());
         builds.put("zen_garden", zenGarden());
         builds.put("japanese_dojo", japaneseDojo());
+        builds.put("mediterranean_terracotta_villa", mediterraneanTerracottaVilla());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -3979,6 +3980,173 @@ class CuratedBlueprintGenerator {
         b.set(bx0, ey, bz1, brkS); b.set(bx1, ey, bz1, brkS);
         // the hip roof proper, seated on the wall plate
         hipRoof(b, x0, z0, x1, z1, ey, ROOF, roofSlab);
+
+        return b.build();
+    }
+
+    /**
+     * Mediterranean Terracotta Villa. 11×9 footprint → builder(11, H, 9), T6.
+     * A warm, sunny whitewashed villa in the bricksblocks Mediterranean style: a
+     * white-concrete/terracotta body on a stone-brick plinth, a four-sided
+     * brick-stair TILE ROOF (the terracotta-clay tile look — vanilla has no
+     * terracotta stairs, so brick_stairs is the established substitute, same as the
+     * {@link #BADLANDS_TERRACOTTA} palette) ridged and accented with
+     * orange_glazed_terracotta, stone-brick-stair ARCHED openings, dark-oak
+     * shutters/beams, glass windows, lanterns, and a small front PERGOLA terrace.
+     *
+     * <p>Built from primitives (not {@link #house}) so the roof is a proper hip
+     * tile roof rather than the palette default, and so the arches/pergola can be
+     * authored explicitly. Axes: x=W(0..10), y=up, z=L(0..8). Enterable: walkable
+     * y=0 floor, open interior, inward-opening door.
+     *
+     * <p>Layout (Y):
+     * <ul>
+     *   <li><b>y=0</b> — walkable stone-brick foundation plinth (full 11×9).</li>
+     *   <li><b>y=1..4</b> — whitewashed white-concrete wall ring on an inset 9×7
+     *       body, with white-terracotta corner pilasters; the bottom course (y=1)
+     *       is a stone-brick wainscot so the villa sits on a visible stone base.</li>
+     *   <li><b>y=2</b> — glass windows on all four walls, each flanked along its
+     *       wall line by wall cells (render-safe), with dark-oak-trapdoor shutters
+     *       stacked ABOVE/BELOW each pane (never beside it, so the pane keeps its
+     *       in-line neighbours and renders).</li>
+     *   <li><b>y=3</b> — stone-brick-stair arch heads springing over the door and
+     *       the two front windows (the Mediterranean arched-opening read).</li>
+     *   <li><b>y=4</b> — dark-oak beam plate course (exposed timber) + an
+     *       orange_glazed_terracotta accent band just under the eave.</li>
+     *   <li><b>y=5</b> — deep eave bracket ring + the brick-stair hip tile roof,
+     *       ridge-capped with orange_glazed_terracotta tiles.</li>
+     *   <li>FRONT TERRACE — a dark-oak pergola (fence posts + slab/log beams) on a
+     *       stone-brick apron in front of the door, with a hanging lantern.</li>
+     * </ul>
+     */
+    private static Blueprint mediterraneanTerracottaVilla() {
+        final int W = 11, L = 9, H = 11;
+        Blueprint.Builder b = Blueprint.builder("Mediterranean Terracotta Villa", W, H, L);
+
+        // body inset by 1 cell so the roof eave bracket clears the footprint edge
+        final int x0 = 1, x1 = 9, z0 = 1, z1 = 7, wallTop = 4;
+        final int cx = (x0 + x1) / 2;   // 5
+        final int cz = (z0 + z1) / 2;   // 4
+
+        BlueprintBlockState whitewash = bs("minecraft:white_concrete");       // whitewashed wall
+        BlueprintBlockState pilaster  = bs("minecraft:white_terracotta");     // corner pilasters
+        BlueprintBlockState wainscot  = STONE_BRICKS;                          // stone-brick base course
+        BlueprintBlockState accent    = bs("minecraft:orange_glazed_terracotta"); // warm tile accent
+        BlueprintBlockState beamX     = bs("minecraft:dark_oak_log[axis=x]");  // exposed beam along X
+        BlueprintBlockState beamZ     = bs("minecraft:dark_oak_log[axis=z]");  // exposed beam along Z
+        BlueprintBlockState pergPost  = DARK_OAK_FENCE;                        // pergola posts
+        BlueprintBlockState pergBeam  = bs("minecraft:dark_oak_slab[type=bottom]"); // pergola rafters
+        BlueprintBlockState roofTile  = bs("minecraft:brick_slab[type=bottom]");    // hip cap (terracotta tile)
+        final String ROOF = "brick_stairs";                                    // tile-roof stairs
+        // dark-oak trapdoor shutters, hung above/below each pane (never beside it)
+        BlueprintBlockState shutterTop =
+                bs("minecraft:dark_oak_trapdoor[facing=north,half=top,open=false,powered=false,waterlogged=false]");
+        BlueprintBlockState shutterBottom =
+                bs("minecraft:dark_oak_trapdoor[facing=north,half=bottom,open=false,powered=false,waterlogged=false]");
+
+        // ── 1) PLINTH (y=0) — full 11×9 stone-brick foundation, walkable ────────
+        floor(b, 0, 0, 0, W - 1, L - 1, wainscot);
+
+        // ── 2) WHITEWASHED WALL RING (y=1..4) on the inset 9×7 body ─────────────
+        floor(b, 0, x0, z0, x1, z1, whitewash);            // finished floor over the plinth
+        walls(b, x0, z0, x1, z1, 1, wallTop, whitewash);
+        corners(b, x0, z0, x1, z1, 1, wallTop, pilaster);  // white-terracotta corner pilasters
+        // stone-brick wainscot on the bottom course (y=1), perimeter only, skipping
+        // the door cell (cx,z0) so the doorway stays open; re-seat the pilasters.
+        for (int x = x0; x <= x1; x++) {
+            if (x != cx) b.set(x, 1, z0, wainscot);        // north face (skip door)
+            b.set(x, 1, z1, wainscot);                     // south face
+        }
+        for (int z = z0 + 1; z <= z1 - 1; z++) {
+            b.set(x0, 1, z, wainscot);                     // west face
+            b.set(x1, 1, z, wainscot);                     // east face
+        }
+        b.set(x0, 1, z0, pilaster); b.set(x1, 1, z0, pilaster);
+        b.set(x0, 1, z1, pilaster); b.set(x1, 1, z1, pilaster);
+
+        // ── 3) DOOR (north wall, z=z0) — inward-opening dark-oak ───────────────
+        door2(b, cx, 1, z0, "dark_oak", "N");
+
+        // ── 4) GLASS WINDOWS (y=2) — render-safe, flanked by wall cells ────────
+        // Each pane sits between two solid wall cells along its wall line, and gets
+        // dark-oak-trapdoor shutters stacked above/below (not beside it).
+        int[][] panes = {
+                {cx - 2, z0}, {cx + 2, z0},   // north (front) wall, flanking the door
+                {x0, cz},     {x1, cz},       // west / east walls, centred
+                {cx - 2, z1}, {cx + 2, z1},   // south (back) wall
+        };
+        for (int[] pn : panes) {
+            window2(b, pn[0], 2, pn[1], GLASS_PANE, null);
+            b.set(pn[0], 3, pn[1], shutterTop);    // upper leaf
+            b.set(pn[0], 1, pn[1], shutterBottom); // lower leaf
+        }
+
+        // ── 5) STONE-BRICK-STAIR ARCH HEADS (y=3) over the front openings ──────
+        // A two-stair arch springing inward over each front opening (door + the two
+        // flanking windows), the Mediterranean arched read. Stairs face inward and
+        // sit on the wall line; the keystone cell stays whitewash (already placed).
+        int[] archCols = {cx - 2, cx, cx + 2};
+        for (int axc : archCols) {
+            b.set(axc - 1, 3, z0, bs("minecraft:" + ROOF + "[facing=east,half=top,shape=straight]"));
+            b.set(axc + 1, 3, z0, bs("minecraft:" + ROOF + "[facing=west,half=top,shape=straight]"));
+        }
+
+        // ── 6) DARK-OAK BEAM PLATE (y=4) + ORANGE ACCENT BAND (y=4) ────────────
+        // Exposed dark-oak tie-beams ring the wall plate; an orange_glazed_terracotta
+        // band sits on the front/back faces for the warm tile pop just under the eave.
+        line(b, wallTop, x0, z0, x1, z0, beamX); line(b, wallTop, x0, z1, x1, z1, beamX);
+        line(b, wallTop, x0, z0, x0, z1, beamZ); line(b, wallTop, x1, z0, x1, z1, beamZ);
+        corners(b, x0, z0, x1, z1, 1, wallTop, pilaster); // re-assert pilasters over beams
+        for (int x = x0 + 1; x <= x1 - 1; x++) {
+            b.set(x, wallTop, z0, accent);  // front accent band
+            b.set(x, wallTop, z1, accent);  // back accent band
+        }
+
+        // ── 7) BRICK-STAIR HIP TILE ROOF (y=5) with a deep eave bracket ────────
+        // An outward-facing under-bracket ring one course below the eave at the
+        // footprint edge (the deep terracotta-tile overhang), then a four-sided
+        // brick-stair hip roof seated on the wall plate, ridge-capped with
+        // orange_glazed_terracotta tiles.
+        int ey = wallTop + 1;                          // y=5 eave course
+        BlueprintBlockState brkN = bs("minecraft:" + ROOF + "[facing=north,half=top,shape=straight]");
+        BlueprintBlockState brkS = bs("minecraft:" + ROOF + "[facing=south,half=top,shape=straight]");
+        BlueprintBlockState brkW = bs("minecraft:" + ROOF + "[facing=west,half=top,shape=straight]");
+        BlueprintBlockState brkE = bs("minecraft:" + ROOF + "[facing=east,half=top,shape=straight]");
+        int bx0 = 0, bx1 = W - 1, bz0 = 0, bz1 = L - 1;
+        for (int x = bx0; x <= bx1; x++) {
+            b.set(x, ey - 1, bz0, brkN);
+            b.set(x, ey - 1, bz1, brkS);
+        }
+        for (int z = bz0; z <= bz1; z++) {
+            b.set(bx0, ey - 1, z, brkW);
+            b.set(bx1, ey - 1, z, brkE);
+        }
+        // the hip roof proper, seated on the wall plate (cap = orange tile read)
+        hipRoof(b, x0, z0, x1, z1, ey, ROOF, accent);
+        // ridge-line accent: orange glazed tiles down the centre of the cap row.
+        // The hip cap for a 9×7 body lands at y = ey + 3 along the central ridge
+        // (x0+1..x1-1 narrows to the centre); paint the central x-line with tiles.
+        b.set(cx, ey + 3, cz, accent);
+
+        // ── 8) FRONT PERGOLA TERRACE (on the apron in front of the door) ───────
+        // Dark-oak fence posts at the two front-apron corners carry dark-oak-slab
+        // rafters spanning toward the wall, with a hanging lantern between them —
+        // the small Mediterranean pergola/terrace. Sits on the z=0 stone apron.
+        pillar(b, cx - 2, 0, 1, 3, pergPost); pillar(b, cx + 2, 0, 1, 3, pergPost);
+        for (int x = cx - 2; x <= cx + 2; x++) {
+            b.set(x, 3, 0, pergBeam);          // rafter run along the front
+        }
+        b.set(cx - 2, 4, 0, beamX); b.set(cx + 2, 4, 0, beamX); // beam caps over the posts
+        b.set(cx, 3, 0, CHAIN); b.set(cx, 2, 0, HANGING_LANTERN); // terrace lantern
+
+        // ── 9) MINIMAL INTERIOR FURNISHINGS (walkable y=1 floor) ───────────────
+        bed(b, x0 + 1, 1, z1 - 1, "white", "south"); // white bed, head near back wall
+        b.set(x1 - 1, 1, z1 - 1, CRAFTING_TABLE);
+        b.set(x1 - 1, 1, z0 + 1, CHEST);
+        b.set(x0 + 1, 1, z0 + 1, LANTERN);           // interior lantern
+        // two hanging lanterns from the wall plate, clear of the standing space
+        b.set(x0 + 1, wallTop, cz, CHAIN); b.set(x0 + 1, wallTop - 1, cz, HANGING_LANTERN);
+        b.set(x1 - 1, wallTop, cz, CHAIN); b.set(x1 - 1, wallTop - 1, cz, HANGING_LANTERN);
 
         return b.build();
     }

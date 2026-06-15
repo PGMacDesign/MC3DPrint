@@ -7,9 +7,9 @@
 
 ## Status
 - **Curated builds before Phase 2:** 29
-- **Phase 2 queue:** 103 · **Done:** 69 · **Blocked:** 2 · **Remaining:** 32
-- **Next up:** `mediterranean_terracotta_villa`
-- **Last completed:** `japanese_dojo`
+- **Phase 2 queue:** 103 · **Done:** 70 · **Blocked:** 2 · **Remaining:** 31
+- **Next up:** `greek_quartz_temple`
+- **Last completed:** `mediterranean_terracotta_villa`
 
 ## Process (per build — follow exactly on resume)
 1. Pick the first unchecked `[ ]` build in queue order below.
@@ -114,7 +114,7 @@
 - [x] japanese_tea_house
 - [x] zen_garden
 - [x] japanese_dojo
-- [ ] mediterranean_terracotta_villa
+- [x] mediterranean_terracotta_villa
 - [ ] greek_quartz_temple
 - [ ] roman_bath_house
 - [ ] fantasy_wizard_tower
