@@ -260,6 +260,7 @@ class CuratedBlueprintGenerator {
         builds.put("tavern_inn", tavernInn());
         builds.put("apothecary_shop", apothecaryShop());
         builds.put("gatehouse", gatehouse());
+        builds.put("guard_tower", guardTower());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -2996,6 +2997,105 @@ class CuratedBlueprintGenerator {
         b.set(5, 4, 1, CHAIN); b.set(5, 3, 1, HANGING_LANTERN); // front-right
         b.set(3, 4, 5, CHAIN); b.set(3, 3, 5, HANGING_LANTERN); // back-left
         b.set(5, 4, 5, CHAIN); b.set(5, 3, 5, HANGING_LANTERN); // back-right
+
+        return b.build();
+    }
+
+    /**
+     * Category H — guard_tower. 5×5×13 (W×L×H) → builder(5,13,5). A slim ROUND
+     * corner-sentinel tower (distinct from the square cobble {@link #watchtower}):
+     * a stone-brick {@link #circleRing} shaft (centre 2,2, r=2 → octagonal 5×5 with
+     * the four corners open), an interior {@link #ladder}/pillar climbing the full
+     * shaft and surfacing through a hatch onto a battlement deck, arrow-slit
+     * {@code iron_bars} on the cardinal faces, a crenellated parapet crown, a small
+     * stone-brick-stair roofed lookout over the deck, a brazier (lit campfire) at the
+     * top and a lantern below it, and an oak door at the base.
+     *
+     * <p>RENDER-SAFETY: every {@code iron_bars} arrow slit sits IN the shaft ring on a
+     * cardinal cell, so its two along-ring stone-brick neighbours present sturdy faces
+     * → each bar connects and renders (no stub). The deck-railing bars at the parapet
+     * each abut a stone-brick-wall merlon or the ring below them.
+     *
+     * <p>PRINTABILITY: stone bricks / stairs / slabs / walls (all derive from stone
+     * bricks), ladder, oak planks/trapdoor, iron bars, lantern, and a lit campfire are
+     * all FU-valued or recipe-derived — no unvalued or known-gap blocks.
+     */
+    private static Blueprint guardTower() {
+        Blueprint.Builder b = Blueprint.builder("Guard Tower", 5, 13, 5);
+        final int cx = 2, cz = 2, r = 2;
+        // ladder backed by the SOUTH ring wall: facing=north attaches to the block at
+        // z+1, i.e. the solid ring cell (cx, y, cz+1) directly behind it.
+        BlueprintBlockState ladderN = bs("minecraft:ladder[facing=north,waterlogged=false]");
+
+        // --- base: stone-brick disc footing (r=2) at y=0 ---
+        disc(b, 0, cx, cz, r, STONE_BRICKS);
+
+        // --- round shaft (y=1..8): octagonal stone-brick ring, weathered flecks ---
+        for (int y = 1; y <= 8; y++) {
+            circleRing(b, y, cx, cz, r, STONE_BRICKS);
+        }
+        b.set(0, 4, cz, CRACKED_STONE_BRICKS); // weathering on the west face
+        b.set(cx, 6, 0, MOSSY_STONE_BRICKS);   // ...and the north face
+        b.set(4, 2, cz, MOSSY_STONE_BRICKS);   // ...and the east face
+
+        // --- door at the base (north cardinal cell, faces south into the shaft) ---
+        door2(b, cx, 1, 0, "oak", "N");
+
+        // --- interior ladder up the full shaft, backed by the south ring wall ---
+        // climbs y=1..9 and surfaces through the deck hatch carved at (cx, 9, cz).
+        pillar(b, cx, cz, 1, 9, ladderN);
+
+        // --- arrow-slit iron bars on the cardinal faces, two courses (y=3, y=6) ---
+        // each sits on a ring cell flanked along-ring by sturdy stone bricks → renders.
+        for (int y : new int[]{3, 6}) {
+            b.set(0, y, cz, IRON_BARS); // west slit
+            b.set(4, y, cz, IRON_BARS); // east slit
+            b.set(cx, y, 4, IRON_BARS); // south slit (north face carries the door)
+        }
+
+        // --- battlement deck (y=9): oak-plank floor over the ring interior, with a
+        // ladder hatch at the centre so you climb out onto the deck ---
+        for (int x = 0; x <= 4; x++) {
+            for (int z = 0; z <= 4; z++) {
+                double d = Math.sqrt((x - cx) * (x - cx) + (z - cz) * (z - cz));
+                if (d > r + 0.5) continue;          // outside the round footprint
+                if (x == cx && z == cz) continue;   // ladder hatch
+                b.set(x, 9, z, OAK_PLANKS);
+            }
+        }
+
+        // --- crenellated parapet crown (y=10) flush on the ring, plus iron-bars
+        // safety railing in the crenels so the gaps read as a guarded walk ---
+        circleRing(b, 10, cx, cz, r, STONE_BRICK_WALL);
+        // knock the four cardinal wall cells down to bars (arrow ports / railing); each
+        // bar abuts the stone-brick-wall merlons on either side along the ring.
+        b.set(0, 10, cz, IRON_BARS);
+        b.set(4, 10, cz, IRON_BARS);
+        b.set(cx, 10, 0, IRON_BARS);
+        b.set(cx, 10, 4, IRON_BARS);
+
+        // --- roofed lookout: four corner posts + a stone-brick-stair roof cap so the
+        // deck is sheltered while staying enterable (posts only at the ring cardinals) ---
+        pillar(b, 0, cz, 10, 11, STONE_BRICKS);
+        pillar(b, 4, cz, 10, 11, STONE_BRICKS);
+        pillar(b, cx, 0, 10, 11, STONE_BRICKS);
+        pillar(b, cx, 4, 10, 11, STONE_BRICKS);
+        // pyramidal stair roof over the 5×5 cap at y=12 (eave stairs face inward), with a
+        // solid centre keystone.
+        b.set(1, 12, cz, bs("minecraft:stone_brick_stairs[facing=east,half=bottom,shape=straight]"));
+        b.set(3, 12, cz, bs("minecraft:stone_brick_stairs[facing=west,half=bottom,shape=straight]"));
+        b.set(cx, 12, 1, bs("minecraft:stone_brick_stairs[facing=south,half=bottom,shape=straight]"));
+        b.set(cx, 12, 3, bs("minecraft:stone_brick_stairs[facing=north,half=bottom,shape=straight]"));
+        b.set(cx, 12, cz, CHISELED_STONE_BRICKS); // roof keystone
+
+        // --- lookout brazier: a lit campfire on the deck, with a backed hanging
+        // lantern under the roof for night light (kept clear of the ladder hatch) ---
+        b.set(1, 10, 1, CAMPFIRE);                 // corner brazier on the deck (open cell)
+        b.set(cx, 11, 1, CHAIN);                   // chain off the north eave stair (cx,12,1)
+        b.set(cx, 10, 1, HANGING_LANTERN);         // lantern under the roof, clear of the hatch
+
+        // ground-level wall torch flanking the door (mounted on the inner north ring)
+        wallTorch(b, 1, 2, 1, "south");
 
         return b.build();
     }

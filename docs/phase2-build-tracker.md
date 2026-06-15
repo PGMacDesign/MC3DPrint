@@ -7,9 +7,9 @@
 
 ## Status
 - **Curated builds before Phase 2:** 29
-- **Phase 2 queue:** 103 · **Done:** 57 · **Blocked:** 2 · **Remaining:** 44
-- **Next up:** `guard_tower`
-- **Last completed:** `gatehouse`
+- **Phase 2 queue:** 103 · **Done:** 58 · **Blocked:** 2 · **Remaining:** 43
+- **Next up:** `drawbridge`
+- **Last completed:** `guard_tower`
 
 ## Process (per build — follow exactly on resume)
 1. Pick the first unchecked `[ ]` build in queue order below.
@@ -100,7 +100,7 @@
 - [x] tavern_inn
 - [x] apothecary_shop
 - [x] gatehouse
-- [ ] guard_tower
+- [x] guard_tower
 - [ ] drawbridge
 - [ ] portcullis_gate
 - [ ] stable_horse

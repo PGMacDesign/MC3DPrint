@@ -80,7 +80,9 @@ public final class CuratedBlueprints {
             "mineshaft_entrance", "railway_station", "tavern_inn",
             "apothecary_shop",
             // Phase 2 — Category H (gatehouse)
-            "gatehouse");
+            "gatehouse",
+            // Phase 2 — Category H (guard_tower)
+            "guard_tower");
 
     /**
      * Load a bundled curated blueprint straight from the mod's resources (no world
