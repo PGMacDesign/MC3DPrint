@@ -7,9 +7,9 @@
 
 ## Status
 - **Curated builds before Phase 2:** 29
-- **Phase 2 queue:** 103 · **Done:** 75 · **Blocked:** 2 · **Remaining:** 26
-- **Next up:** `copper_clocktower`
-- **Last completed:** `nordic_viking_longhouse`
+- **Phase 2 queue:** 103 · **Done:** 76 · **Blocked:** 2 · **Remaining:** 25
+- **Next up:** `modern_glass_villa`
+- **Last completed:** `copper_clocktower`
 
 ## Process (per build — follow exactly on resume)
 1. Pick the first unchecked `[ ]` build in queue order below.
@@ -120,7 +120,7 @@
 - [x] fantasy_wizard_tower
 - [x] victorian_townhouse
 - [x] nordic_viking_longhouse
-- [ ] copper_clocktower
+- [x] copper_clocktower
 - [ ] modern_glass_villa (Hard)
 - [ ] elven_treehouse (Hard)
 - [ ] dwarven_hall (Hard)
