@@ -322,6 +322,7 @@ class CuratedBlueprintGenerator {
         builds.put("blackstone_bastion_fragment", blackstoneBastionFragment());
         // Phase 2 — Category D (purpur_tower)
         builds.put("purpur_tower", purpurTower());
+        builds.put("end_stone_outpost", endStoneOutpost());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -13248,6 +13249,185 @@ class CuratedBlueprintGenerator {
         // flare-deck hatch, backed by the ring wall behind it (facing=north attaches
         // to (cx, y, sz0) which is solid purpur/end-stone the whole way up).
         pillar(b, cx, sz0 + 1, 1, 16, ladderN);
+
+        return b.build();
+    }
+
+    /**
+     * Category D — end_stone_outpost. 9×9 footprint → builder(9, 8, 9), disc T7. A
+     * small fortified End-base outpost sitting on an END-STONE island: an
+     * end-stone-brick + purpur GUARD POST in the back-west corner (enclosed,
+     * enterable, with a flat roof you climb onto as a LOOKOUT platform), a walled
+     * end-stone-brick ENCLOSURE around the rest of the island, purpur trim/coping,
+     * end-rod lighting (the glowing white rods), and a couple of stylized "CHORUS
+     * TREES" in the open yard. The end-stone + purpur + end-rod palette on a small
+     * fortified post is the look.
+     *
+     * <p>CHORUS-TREE STYLING (chorus_plant/chorus_flower are UNVALUED → never used):
+     * each stylized chorus tree is a purpur-PILLAR trunk (the purple chorus stem)
+     * rising from the end-stone yard, branching with a purpur-stair "fork" and
+     * topped with an END ROD tip (the glowing bulb) over a small purpur-slab cap.
+     * Two of these in the enclosure read as a little End chorus grove without any
+     * unvalued blocks.
+     *
+     * <p>LAYOUT (x=W 0..8, y=up 0..7, z=D 0..8; guard post in the back-west corner
+     * x=0..3 / z=5..8):
+     * <ul>
+     *   <li><b>y0</b> — END-STONE island ground over the whole 9×9 (walkable top),
+     *       with an end-stone-brick threshold at the gate and an end-stone-brick
+     *       path leading in. The interior yard above is left OPEN (enterable).</li>
+     *   <li><b>y1..3</b> — end-stone-brick ENCLOSURE wall ring around the 9×9, with
+     *       purpur-pillar corner quoins, an oak gate on the north (faces south in),
+     *       and glass-BLOCK slit windows. A purpur-slab coping caps the wall.</li>
+     *   <li><b>y4</b> — crenellated end-stone-brick-WALL parapet crown on the open
+     *       enclosure run, with end-rod merlon lights, leaving the yard open-topped.</li>
+     *   <li><b>GUARD POST</b> (x=0..3 / z=5..8) — a taller enclosed end-stone-brick
+     *       room (y1..4) with purpur trim, a glass-block window, an interior oak
+     *       door from the yard, a flat end-stone-brick-slab ROOF at y5, and an
+     *       end-rod-lit LOOKOUT crown (purpur-slab merlons) at y6 you stand on.</li>
+     *   <li><b>CHORUS TREES</b> — two stylized purpur-pillar+end-rod trees in the
+     *       open yard, plus end-rod ground sconces for the glow.</li>
+     * </ul>
+     *
+     * <p>RENDER-SAFETY: every window is a full GLASS BLOCK (never a pane) and there
+     * are NO panes or iron bars anywhere, so the stub-pane render guard cannot trip.
+     * End rods are render-safe thin vertical accents (the glowing End rods + chorus
+     * tips). Purpur stairs/slabs are full structural states.
+     *
+     * <p>PRINTABILITY: end_stone + end_stone_bricks (+slab/wall), the whole purpur
+     * family (block/pillar/stairs/slab — derive via popped_chorus_fruit), end_rod,
+     * oak door, glass block, lanterns/chains are all FU-valued or recipe-derived.
+     * The UNVALUED chorus_plant/chorus_flower (and state blocks) are deliberately
+     * NOT used — the "chorus trees" are stylized from purpur + end rods.
+     */
+    private static Blueprint endStoneOutpost() {
+        Blueprint.Builder b = Blueprint.builder("End Stone Outpost", 9, 8, 9);
+        final int x0 = 0, x1 = 8, z0 = 0, z1 = 8;   // 9×9 enclosure footprint
+        final int cx = (x0 + x1) / 2;               // 4 — north-gate centre line
+        final int wallH = 3;                        // enclosure wall plate (coping at y3, parapet y4)
+
+        // ── Palette (all vanilla, all FU-valued or structural) ────────────────
+        BlueprintBlockState endStone     = bs("minecraft:end_stone");
+        BlueprintBlockState endBricks     = bs("minecraft:end_stone_bricks");
+        BlueprintBlockState endBrickWall  = bs("minecraft:end_stone_brick_wall");
+        BlueprintBlockState endBrickSlabT = bs("minecraft:end_stone_brick_slab[type=top]");
+        BlueprintBlockState purpurBlock   = bs("minecraft:purpur_block");
+        BlueprintBlockState purpurPillar  = bs("minecraft:purpur_pillar[axis=y]");
+        BlueprintBlockState purpurSlabT   = bs("minecraft:purpur_slab[type=top]");
+        BlueprintBlockState glass         = GLASS;
+        // purpur-stair "forks" for the stylized chorus-tree branches (face outward).
+        BlueprintBlockState forkW = bs("minecraft:purpur_stairs[facing=west,half=top,shape=straight]");
+        BlueprintBlockState forkE = bs("minecraft:purpur_stairs[facing=east,half=top,shape=straight]");
+
+        // guard-post footprint (back-west corner): x=0..3, z=5..8.
+        final int gx0 = 0, gx1 = 3, gz0 = 5, gz1 = 8;
+        final int gWallH = 4;                       // taller post; flat roof at y5
+
+        // ── 1) GROUND (y0) — end-stone island over the whole 9×9 (walkable top) ──────
+        // The base sits on an end-stone ground layer; interior yard above is left OPEN.
+        floor(b, 0, x0, z0, x1, z1, endStone);
+        // end-stone-brick approach path + gate threshold down the north centre line.
+        for (int z = z0; z <= 3; z++) b.set(cx, 0, z, endBricks);
+
+        // ── 2) ENCLOSURE WALL RING (y1..wallH) — end-stone-brick body ────────────────
+        // Hollow end-stone-brick ring around the whole footprint (interior walkable),
+        // with purpur-pillar corner quoins for the fortified-post accent and a purpur-
+        // slab coping capping the wall top.
+        walls(b, x0, z0, x1, z1, 1, wallH, endBricks);
+        pillar(b, x0, z0, 1, wallH, purpurPillar); // NW quoin
+        pillar(b, x1, z0, 1, wallH, purpurPillar); // NE quoin
+        pillar(b, x0, z1, 1, wallH, purpurPillar); // SW quoin
+        pillar(b, x1, z1, 1, wallH, purpurPillar); // SE quoin
+        // purpur-slab coping course ringing the wall top (the trim line).
+        line(b, wallH, x0, z0, x1, z0, purpurSlabT);
+        line(b, wallH, x0, z1, x1, z1, purpurSlabT);
+        line(b, wallH, x0, z0, x0, z1, purpurSlabT);
+        line(b, wallH, x1, z0, x1, z1, purpurSlabT);
+
+        // ── 3) GATE (north wall z=0) — oak gate opening inward ───────────────────────
+        // The door (a passable 2-block state) overstamps the centre wall cell; the ring
+        // is broken only here, left open by writing the door, NOT by air. End-stone
+        // keystone caps the opening.
+        door2(b, cx, 1, z0, "oak", "N");
+        b.set(cx, 3, z0, endStone); // keystone over the gate
+
+        // ── 4) SLIT WINDOWS — render-safe GLASS BLOCKS (full blocks, not panes) ──────
+        // Recessed glass BLOCKS on the enclosure walls, each seated flush in the end-
+        // stone-brick frame (solid cells flank it on its wall axis). Mid-wall y=2.
+        window2(b, x1, 2, 2, glass, null);              // east wall slit (front)
+        window2(b, cx - 1, 2, z0, glass, null);         // north wall, west of gate
+        window2(b, cx + 1, 2, z0, glass, null);         // north wall, east of gate
+        window2(b, cx, 2, z1, glass, null);             // south wall slit
+
+        // ── 5) ENCLOSURE PARAPET (y4) — crenellated end-stone-brick crown ────────────
+        // The yard stays open-topped. A crenellated end-stone-brick-wall parapet crowns
+        // the OPEN enclosure runs (the east, south, and north wall faces NOT occupied
+        // by the guard post), flush on the wall plate at y4. End-rod merlon lights dot it.
+        int idx = 0;
+        for (int x = x0; x <= x1; x++) { if (idx++ % 3 != 2) b.set(x, 4, z0, endBrickWall); } // north run
+        idx = 0;
+        for (int x = x0; x <= x1; x++) { if (idx++ % 3 != 2) b.set(x, 4, z1, endBrickWall); } // south run
+        idx = 0;
+        for (int z = z0; z <= z1; z++) { if (idx++ % 3 != 2) b.set(x1, 4, z, endBrickWall); } // east run
+        // end-rod merlon lights standing on the parapet corners (the glowing rods).
+        b.set(x1, 5, z0, END_ROD); // NE corner light
+        b.set(x1, 5, z1, END_ROD); // SE corner light
+
+        // ── 6) GUARD POST (x=0..3 / z=5..8) — taller enclosed room + lookout ─────────
+        // A taller end-stone-brick room in the back-west corner. Its north (z=gz0) and
+        // east (x=gx1) faces are interior partitions facing the yard; the west/south
+        // faces ride the enclosure wall. Purpur-pillar corner posts; purpur trim band.
+        // Walls rise y1..gWallH; a flat end-stone-brick-slab roof seats at y5; an
+        // end-rod-lit purpur-slab merlon crown rides the roof as the LOOKOUT.
+        for (int y = 1; y <= gWallH; y++) {
+            walls(b, gx0, gz0, gx1, gz1, y, y, endBricks);
+        }
+        pillar(b, gx0, gz0, 1, gWallH, purpurPillar); // post NW (interior corner)
+        pillar(b, gx1, gz0, 1, gWallH, purpurPillar); // post NE (interior corner, on yard)
+        pillar(b, gx1, gz1, 1, gWallH, purpurPillar); // post SE
+        // purpur-block trim band on the post (y=gWallH cornice) for the End read.
+        line(b, gWallH, gx0, gz0, gx1, gz0, purpurBlock); // north (yard-facing) cornice
+        line(b, gWallH, gx1, gz0, gx1, gz1, purpurBlock); // east (yard-facing) cornice
+        // interior oak door from the yard on the post's north partition (faces south in).
+        door2(b, gx0 + 1, 1, gz0, "oak", "N");
+        // glass-block window on the post's yard-facing east wall.
+        window2(b, gx1, 2, gz0 + 1, glass, null);
+        // flat end-stone-brick-slab roof over the post (y5), seated on the y4 plate.
+        floor(b, 5, gx0, gz0, gx1, gz1, endBrickSlabT);
+        // LOOKOUT crown (y6): purpur-slab merlons around the roof edge with end-rod
+        // beacons at the corners — you climb onto the roof deck and stand the watch.
+        idx = 0;
+        for (int x = gx0; x <= gx1; x++) { if (idx++ % 2 == 0) { b.set(x, 6, gz0, purpurSlabT); b.set(x, 6, gz1, purpurSlabT); } }
+        idx = 0;
+        for (int z = gz0; z <= gz1; z++) { if (idx++ % 2 == 0) { b.set(gx0, 6, z, purpurSlabT); b.set(gx1, 6, z, purpurSlabT); } }
+        b.set(gx0, 6, gz0, END_ROD); // lookout corner beacons
+        b.set(gx1, 6, gz0, END_ROD);
+        b.set(gx0, 6, gz1, END_ROD);
+        b.set(gx1, 6, gz1, END_ROD);
+        // backed hanging lantern lighting the post interior (chain to the roof slab).
+        b.set(gx0 + 1, 4, gz0 + 2, CHAIN);            // chain off the y5 roof slab
+        b.set(gx0 + 1, 3, gz0 + 2, HANGING_LANTERN);  // hanging lantern in the room
+
+        // ── 7) STYLIZED CHORUS TREES — purpur-pillar trunks + end-rod tips ───────────
+        // Two little "chorus trees" in the open yard (NEVER chorus_plant/flower —
+        // unvalued). Each is a purpur-pillar stem rising from the end-stone yard, a
+        // purpur-stair branch fork, a purpur-slab bulb cap, and an END-ROD glowing tip.
+        // Tree A (front-east of the yard):
+        int ax = 6, az = 3;
+        pillar(b, ax, az, 1, 3, purpurPillar);   // trunk
+        b.set(ax - 1, 3, az, forkW);             // west branch fork
+        b.set(ax + 1, 3, az, forkE);             // east branch fork
+        b.set(ax, 4, az, purpurSlabT);           // bulb cap
+        b.set(ax, 5, az, END_ROD);               // glowing chorus tip
+        // Tree B (front-centre, shorter):
+        int bx = 5, bz = 6;
+        pillar(b, bx, bz, 1, 2, purpurPillar);   // trunk
+        b.set(bx, 3, bz, purpurSlabT);           // bulb cap
+        b.set(bx, 4, bz, END_ROD);               // glowing chorus tip
+
+        // ── 8) YARD GLOW — end-rod ground sconces flanking the gate path ─────────────
+        b.set(cx - 1, 1, 2, END_ROD); // gate-path west sconce
+        b.set(cx + 1, 1, 2, END_ROD); // gate-path east sconce
 
         return b.build();
     }

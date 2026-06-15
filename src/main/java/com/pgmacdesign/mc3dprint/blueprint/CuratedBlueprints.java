@@ -160,7 +160,9 @@ public final class CuratedBlueprints {
             // Phase 2 — Category C (blackstone_bastion_fragment)
             "blackstone_bastion_fragment",
             // Phase 2 — Category D (purpur_tower)
-            "purpur_tower");
+            "purpur_tower",
+            // Phase 2 — Category D (end_stone_outpost)
+            "end_stone_outpost");
 
     /**
      * Load a bundled curated blueprint straight from the mod's resources (no world
