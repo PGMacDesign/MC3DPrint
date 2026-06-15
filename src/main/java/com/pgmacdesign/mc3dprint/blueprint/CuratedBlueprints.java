@@ -82,7 +82,9 @@ public final class CuratedBlueprints {
             // Phase 2 — Category H (gatehouse)
             "gatehouse",
             // Phase 2 — Category H (guard_tower)
-            "guard_tower");
+            "guard_tower",
+            // Phase 2 — Category H (drawbridge)
+            "drawbridge");
 
     /**
      * Load a bundled curated blueprint straight from the mod's resources (no world

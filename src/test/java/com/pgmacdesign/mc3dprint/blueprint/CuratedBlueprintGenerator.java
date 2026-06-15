@@ -261,6 +261,7 @@ class CuratedBlueprintGenerator {
         builds.put("apothecary_shop", apothecaryShop());
         builds.put("gatehouse", gatehouse());
         builds.put("guard_tower", guardTower());
+        builds.put("drawbridge", drawbridge());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -3096,6 +3097,100 @@ class CuratedBlueprintGenerator {
 
         // ground-level wall torch flanking the door (mounted on the inner north ring)
         wallTorch(b, 1, 2, 1, "south");
+
+        return b.build();
+    }
+
+    /**
+     * Category H — drawbridge. 7×5×6 (W×L×H) → builder(7, 6, 5). A castle
+     * drawbridge crossing a moat: stone-brick gate abutments on each side
+     * (x=0..1 west, x=5..6 east), a structural {@code water} moat channel between
+     * them (x=2..4 at y=0), and a spruce-plank bridge deck (y=1) spanning the moat
+     * — shown LOWERED/walkable so you can cross. Spruce-fence handrails edge the
+     * deck; iron-bar reinforcement gratings sit IN each abutment inner face;
+     * hoist chains drop from gate-top crossbeams onto the deck; backed hanging
+     * lanterns light the crossing. Reads as a moat crossing with a timber bridge
+     * and lifting chains.
+     *
+     * <p>RENDER-SAFETY: every {@code iron_bars} cell is flanked along the SAME
+     * face (±z) by stone bricks, so each bar connects to a sturdy neighbour and
+     * renders (no stub). The grating sits at x=1 (west) / x=5 (east) — the inner
+     * abutment faces — between stone-brick uprights at z=1 and z=3.
+     *
+     * <p>PRINTABILITY: stone bricks/walls/stairs (derive from stone bricks),
+     * spruce planks/fence (derive from spruce logs), chain + iron bars (derive
+     * from iron), lantern (recipe-derived), and water (structural matter) — all
+     * FU-valued or structural; no unvalued or known-gap blocks.
+     */
+    private static Blueprint drawbridge() {
+        Blueprint.Builder b = Blueprint.builder("Drawbridge", 7, 6, 5);
+        // x: 0..1 = west abutment, 2..4 = moat span, 5..6 = east abutment.
+        // z: 0..4 (5 deep). Crossing runs along x.
+
+        // --- moat bed + structural water channel (y=0, x=2..4 across full depth) ---
+        floor(b, 0, 2, 0, 4, 4, WATER);
+
+        // --- stone-brick gate abutments on each bank (solid footing y=0) ---
+        floor(b, 0, 0, 0, 1, 4, STONE_BRICKS); // west bank
+        floor(b, 0, 5, 0, 6, 4, STONE_BRICKS); // east bank
+
+        // --- abutment gate walls: side uprights (z=0 and z=4 edges) rise y=1..4,
+        // the inner abutment face (x=1 west / x=5 east) is left open at deck level
+        // for the iron grating; outer columns (x=0 / x=6) anchor the structure ---
+        for (int z : new int[]{0, 4}) {
+            pillar(b, 0, z, 1, 4, STONE_BRICKS); // west outer
+            pillar(b, 1, z, 1, 4, STONE_BRICKS); // west inner upright (grating jamb)
+            pillar(b, 5, z, 1, 4, STONE_BRICKS); // east inner upright (grating jamb)
+            pillar(b, 6, z, 1, 4, STONE_BRICKS); // east outer
+        }
+        // weathering flecks on the bank faces
+        b.set(0, 2, 2, MOSSY_STONE_BRICKS);
+        b.set(6, 3, 2, CRACKED_STONE_BRICKS);
+
+        // --- centre grating jamb on each inner face (x=1/x=5, z=2), y=1..4: a solid
+        // stone-brick mullion that (a) splits the gate into two iron-bar slits and
+        // (b) gives both slits a sturdy z-neighbour so they render. ---
+        pillar(b, 1, 2, 1, 4, STONE_BRICKS);
+        pillar(b, 5, 2, 1, 4, STONE_BRICKS);
+
+        // --- gate crossbeams over each inner face (y=4, spanning the depth) so the
+        // hoist tackle and lanterns hang from something solid; chiseled keystone. ---
+        line(b, 4, 1, 0, 1, 4, STONE_BRICK_WALL); // west gate beam (inner jamb line)
+        line(b, 4, 5, 0, 5, 4, STONE_BRICK_WALL); // east gate beam
+        b.set(1, 4, 2, CHISELED_STONE_BRICKS);    // decorative keystone, west
+        b.set(5, 4, 2, CHISELED_STONE_BRICKS);    // decorative keystone, east
+
+        // --- iron-bar reinforcement gratings IN each inner abutment face (x=1/x=5),
+        // y=2..3, at z=1 and z=3. Each bar abuts the centre jamb (z=2) AND an edge
+        // upright (z=0/z=4) on its own x-face → two sturdy z-neighbours → it always
+        // renders connected (no stub). ---
+        for (int y = 2; y <= 3; y++) {
+            b.set(1, y, 1, IRON_BARS); // west grating, between z=0 upright and z=2 jamb
+            b.set(1, y, 3, IRON_BARS); // west grating, between z=2 jamb and z=4 upright
+            b.set(5, y, 1, IRON_BARS); // east grating
+            b.set(5, y, 3, IRON_BARS); // east grating
+        }
+
+        // --- LOWERED bridge deck: spruce planks spanning the moat (x=2..4) at y=1,
+        // flush with the bank tops so it's walkable end-to-end ---
+        floor(b, 1, 2, 0, 4, 4, SPRUCE_PLANKS);
+        // spruce-fence handrails along both deck edges (z=0 and z=4), one above the deck
+        BlueprintBlockState spruceFence = bs("minecraft:spruce_fence");
+        line(b, 2, 2, 0, 4, 0, spruceFence);
+        line(b, 2, 2, 4, 4, 4, spruceFence);
+
+        // --- timber hoist beam over the deck centre line (spruce log along x, z=2,
+        // y=4) carrying the lifting tackle from bank to bank ---
+        line(b, 4, 2, 2, 4, 2, bs("minecraft:spruce_log[axis=x]"));
+        // lifting chains: drop from the hoist beam at the moat edges (x=2 & x=4) down
+        // to the deck — the visible drawbridge tackle that hauls the span up. ---
+        pillar(b, 2, 2, 2, 3, CHAIN); // west chain to the deck
+        pillar(b, 4, 2, 2, 3, CHAIN); // east chain to the deck
+
+        // --- backed hanging lanterns at each gate centre, hung off the crossbeam
+        // keystone (chain link at y=3, lantern at y=2) lighting the crossing ---
+        b.set(1, 3, 2, CHAIN); b.set(1, 2, 2, HANGING_LANTERN); // west gate light
+        b.set(5, 3, 2, CHAIN); b.set(5, 2, 2, HANGING_LANTERN); // east gate light
 
         return b.build();
     }
