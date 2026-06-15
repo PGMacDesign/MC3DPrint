@@ -7,9 +7,9 @@
 
 ## Status
 - **Curated builds before Phase 2:** 29
-- **Phase 2 queue:** 103 · **Done:** 90 · **Blocked:** 2 · **Remaining:** 11
-- **Next up:** `soul_outpost`
-- **Last completed:** `crimson_warped_hut`
+- **Phase 2 queue:** 103 · **Done:** 91 · **Blocked:** 2 · **Remaining:** 10
+- **Next up:** `nether_wart_farm`
+- **Last completed:** `soul_outpost`
 
 ## Process (per build — follow exactly on resume)
 1. Pick the first unchecked `[ ]` build in queue order below.
@@ -139,7 +139,7 @@
 ### C — Nether (8) · watch gilded_blackstone (unvalued)
 - [x] nether_portal_room (portal frame only; player lights it)
 - [x] crimson_warped_hut (nylium/wart-block unvalued → two-tone via crimson/warped planks+stems)
-- [ ] soul_outpost
+- [x] soul_outpost (soul_lantern + soul_campfire both print — valued via derivation)
 - [ ] nether_wart_farm
 - [ ] basalt_pillar_cluster
 - [ ] nether_hub_room
