@@ -244,6 +244,8 @@ class CuratedBlueprintGenerator {
         builds.put("hedge_maze_segment", hedgeMazeSegment());
         builds.put("hot_air_balloon", hotAirBalloon());
         builds.put("dragon_statue", dragonStatue());
+        // Phase 2 — Category G (storage)
+        builds.put("storage_barrel_hall", storageBarrelHall());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -6176,6 +6178,124 @@ class CuratedBlueprintGenerator {
         b.set(3, yB, 7, lantern);                        // west, beside the walkway end
         b.set(5, yB, 7, lantern);                        // east, beside the walkway end
         wallTorch(b, doorX, yT, z1 - 1, "north");        // on the south wall (z=8), faces north into hall
+
+        return b.build();
+    }
+
+    /**
+     * §G.storage_barrel_hall — an ENTERABLE storage hall, 9×9×5 (W×L×H) →
+     * builder(9, 5, 9). The r/Minecraft "barrel wall" staple: a stone-brick
+     * {@link #roomShell} whose interior perimeter is lined with FLOOR-TO-CEILING
+     * barrel columns, framed by stripped-log structural posts, with oak-wall-sign
+     * labels facing the central walkway and chain-hung lanterns down the middle.
+     *
+     * <p>It prints EMPTY — every barrel is an empty container the player fills.
+     * The value is the organized, ready-to-use storage room, not its contents.
+     *
+     * <p><b>Why barrels stack into columns.</b> Unlike chests, a barrel opens even
+     * with a solid block directly above it (its lid faces the side you click), so a
+     * 3-high column of barrels is fully usable — every barrel still opens from the
+     * walkway side. That's the whole reason the barrel-wall build exists, and why
+     * the columns here run the full wall height (y=1..3) instead of a single course.
+     *
+     * <p>Layout (interior is x,z = 1..7, a 7×7 room; floor y0, walls y1..3, ceil y4):
+     * <ul>
+     *   <li><b>Walkway.</b> The central cross — column {@code x=4} and row {@code z=4}
+     *       — is left OPEN at standing height so you can walk in from the north door
+     *       and reach every wall. The interior floor at {@code y=0} is the walkable
+     *       surface (air-skip leaves the interior above it empty).</li>
+     *   <li><b>Barrel columns.</b> The interior perimeter ring (the cells just inside
+     *       the stone-brick wall, {@code x∈{1,7}} or {@code z∈{1,7}}) is filled with
+     *       barrels for the full wall height {@code y=1..3}, EXCEPT the four cells
+     *       where the walkway cross meets the ring (those stay open as aisles) and
+     *       the door approach. Each column is 3 barrels tall → a true barrel wall.</li>
+     *   <li><b>Stripped-log frame.</b> The four corners get full-height stripped-oak
+     *       posts (structural framing), and a stripped-oak tie course runs along the
+     *       wall top at {@code y=3} as a header beam, breaking up the barrel mass.</li>
+     *   <li><b>Sign labels.</b> Oak wall signs on the inner barrel faces flanking the
+     *       walkway aisles, facing the walker — the "item frame label" of the spec,
+     *       swapped to a wall sign because {@code item_frame} is a vanilla ENTITY with
+     *       no block id / FU value (it can't print), whereas {@code oak_wall_sign} is
+     *       a real FU-valued block that reads identically as a per-bay label.</li>
+     *   <li><b>Lighting.</b> Chain-hung lanterns from the ceiling down the walkway so
+     *       the hall is lit and mob-free.</li>
+     * </ul>
+     *
+     * <p>All blocks are vanilla and FU-valued or structural: barrel (derives from
+     * planks + slabs), stripped_oak_log, oak_wall_sign, stone_bricks, lantern, chain.
+     */
+    private static Blueprint storageBarrelHall() {
+        Blueprint.Builder b = Blueprint.builder("Storage Barrel Hall", 9, 5, 9);
+
+        BlueprintBlockState stone = bs("minecraft:stone");          // floor + ceiling read
+        int x0 = 0, x1 = 8, z0 = 0, z1 = 8;                          // 9×9 footprint
+        int yB = 1, yT = 3;                                          // wall course (y=1..3)
+        int cx = 4, cz = 4;                                          // walkway cross axes
+        int doorX = 4;                                               // north-wall doorway
+
+        // ── 1) SHELL: stone-brick walls, stone floor, stone-brick ceiling ───
+        // roomShell lays the floor (y0), the wall ring (y1..3), and the ceiling
+        // (y4); the interior is left open per the air-skip rule so it's enterable.
+        roomShell(b, x0, 0, z0, x1, yT + 1, z1, STONE_BRICKS, stone, STONE_BRICKS);
+
+        // ── 2) NORTH-WALL DOORWAY (on the walkway axis), opens inward ────────
+        door2(b, doorX, yB, z0, "oak", "N");
+
+        // ── 3) BARREL COLUMNS around the interior perimeter, y=1..3 ──────────
+        // The ring is the interior cells touching the wall (x∈{1,7} or z∈{1,7}).
+        // Skip the four walkway-mouth cells where the central cross meets the ring
+        // (x==cx on z∈{1,7}, z==cz on x∈{1,7}) so the player can reach the back
+        // walls, and skip the door-approach cell (x==doorX, z==1) so entry is clear.
+        int barrels = 0;
+        for (int x = 1; x <= 7; x++) {
+            for (int z = 1; z <= 7; z++) {
+                boolean onRing = (x == 1 || x == 7 || z == 1 || z == 7);
+                if (!onRing) continue;                               // interior stays open
+                boolean walkwayMouth = (x == cx && (z == 1 || z == 7))
+                        || (z == cz && (x == 1 || x == 7));
+                if (walkwayMouth) continue;                          // keep aisles open
+                if (x == doorX && z == 1) continue;                  // door approach clear
+                pillar(b, x, z, yB, yT, BARREL);                     // 3-high barrel column
+                barrels += 3;
+            }
+        }
+
+        // ── 4) STRIPPED-LOG STRUCTURAL FRAME ────────────────────────────────
+        // Full-height stripped-oak corner posts (replace the barrel/wall corner)
+        // so the room reads as timber-framed storage, plus a header tie beam along
+        // the wall top (y=3) breaking up the barrel mass into a banded wall.
+        corners(b, x0, z0, x1, z1, yB, yT, STRIPPED_OAK_Y);
+        line(b, yT, x0, z0, x1, z0, STRIPPED_OAK_X);                 // north header
+        line(b, yT, x0, z1, x1, z1, STRIPPED_OAK_X);                 // south header
+        line(b, yT, x0, z0, x0, z1, STRIPPED_OAK_X);                 // west header
+        line(b, yT, x1, z0, x1, z1, STRIPPED_OAK_X);                 // east header
+
+        // ── 5) SIGN LABELS on the barrel faces flanking each aisle ──────────
+        // Wall signs at eye level (y=2) on the barrel column faces that border the
+        // walkway aisles, facing the walker — the per-bay "item frame" labels. They
+        // sit on the inner face of the columns adjacent to each walkway mouth.
+        // West/east aisle (row z=cz): label the columns at z=cz±1 on x=1 and x=7,
+        // facing inward along the aisle.
+        b.set(1, yB + 1, cz - 1, bs("minecraft:oak_wall_sign[facing=south]"));
+        b.set(1, yB + 1, cz + 1, bs("minecraft:oak_wall_sign[facing=north]"));
+        b.set(7, yB + 1, cz - 1, bs("minecraft:oak_wall_sign[facing=south]"));
+        b.set(7, yB + 1, cz + 1, bs("minecraft:oak_wall_sign[facing=north]"));
+        // North/south aisle (column x=cx): label the columns at x=cx±1 on z=1 and z=7.
+        b.set(cx - 1, yB + 1, 1, bs("minecraft:oak_wall_sign[facing=east]"));
+        b.set(cx + 1, yB + 1, 1, bs("minecraft:oak_wall_sign[facing=west]"));
+        b.set(cx - 1, yB + 1, 7, bs("minecraft:oak_wall_sign[facing=east]"));
+        b.set(cx + 1, yB + 1, 7, bs("minecraft:oak_wall_sign[facing=west]"));
+
+        // ── 6) LIGHTING: chain-hung lanterns down the walkway ───────────────
+        // Hang from the ceiling (y4) on a single chain link (y3) to a lantern at y2,
+        // along the walkway cross so the open aisles are lit (mob-free interior).
+        // chainLantern(x,y,z,hangLen) puts the lantern at (x,y,z) and chains above.
+        int lanternY = yB + 1;                                       // y=2 (eye level)
+        chainLantern(b, cx, lanternY, 2, 1);                         // north walkway
+        chainLantern(b, cx, lanternY, 6, 1);                         // south walkway
+        chainLantern(b, 2, lanternY, cz, 1);                         // west walkway
+        chainLantern(b, 6, lanternY, cz, 1);                         // east walkway
+        chainLantern(b, cx, lanternY, cz, 1);                        // centre crossing
 
         return b.build();
     }

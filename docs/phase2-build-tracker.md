@@ -7,9 +7,9 @@
 
 ## Status
 - **Curated builds before Phase 2:** 29
-- **Phase 2 queue:** 103 · **Done:** 43 · **Blocked:** 2 · **Remaining:** 58
-- **Next up:** `storage_barrel_hall`
-- **Last completed:** `dragon_statue`
+- **Phase 2 queue:** 103 · **Done:** 44 · **Blocked:** 2 · **Remaining:** 57
+- **Next up:** `brewing_room`
+- **Last completed:** `storage_barrel_hall`
 
 ## Process (per build — follow exactly on resume)
 1. Pick the first unchecked `[ ]` build in queue order below.
@@ -84,7 +84,7 @@
 - [x] dragon_statue (Hard)
 
 ### G — Utility rooms (6) · functional shells
-- [ ] storage_barrel_hall
+- [x] storage_barrel_hall
 - [ ] brewing_room
 - [ ] super_smelter
 - [ ] smithy_workshop

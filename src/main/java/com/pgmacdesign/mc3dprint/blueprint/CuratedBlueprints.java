@@ -71,7 +71,9 @@ public final class CuratedBlueprints {
             "statue_pedestal", "obelisk", "stonehenge_ring", "garden_archway",
             "ruin_pillar", "cemetery_plot", "scarecrow", "flower_shop", "food_stall",
             "park_bench_lamppost", "hedge_maze_segment", "hot_air_balloon",
-            "dragon_statue");
+            "dragon_statue",
+            // Phase 2 — Category G (storage)
+            "storage_barrel_hall");
 
     /**
      * Load a bundled curated blueprint straight from the mod's resources (no world
