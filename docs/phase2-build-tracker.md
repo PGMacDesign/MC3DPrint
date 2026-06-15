@@ -7,9 +7,9 @@
 
 ## Status
 - **Curated builds before Phase 2:** 29
-- **Phase 2 queue:** 103 · **Done:** 33 · **Blocked:** 2 · **Remaining:** 68
-- **Next up:** `garden_archway`
-- **Last completed:** `stonehenge_ring`
+- **Phase 2 queue:** 103 · **Done:** 34 · **Blocked:** 2 · **Remaining:** 67
+- **Next up:** `ruin_pillar`
+- **Last completed:** `garden_archway`
 
 ## Process (per build — follow exactly on resume)
 1. Pick the first unchecked `[ ]` build in queue order below.
@@ -72,7 +72,7 @@
 - [x] statue_pedestal
 - [x] obelisk
 - [x] stonehenge_ring
-- [ ] garden_archway
+- [x] garden_archway
 - [ ] ruin_pillar
 - [ ] cemetery_plot
 - [ ] scarecrow

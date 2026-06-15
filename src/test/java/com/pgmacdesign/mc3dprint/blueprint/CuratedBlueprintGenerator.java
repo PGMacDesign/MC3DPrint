@@ -234,6 +234,7 @@ class CuratedBlueprintGenerator {
         builds.put("statue_pedestal", statuePedestal());
         builds.put("obelisk", obelisk());
         builds.put("stonehenge_ring", stonehengeRing());
+        builds.put("garden_archway", gardenArchway());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -6602,6 +6603,94 @@ class CuratedBlueprintGenerator {
             b.set(ax, 6, az, cap);
             b.set(bx, 6, bz, cap);
             ii++;
+        }
+
+        return b.build();
+    }
+
+    /**
+     * §I Garden Archway. 5×3 footprint → builder(5, 5, 3). A walk-through arched
+     * garden gateway: two stone-brick pillars (x=1 & x=3) on the gate plane (z=1)
+     * carry a stepped stone-brick-stair arch over a central path that runs straight
+     * through the x=2 opening along Z (north→south), so a player walks under the
+     * arch. Oak-fence side trellises flank each pillar (z=0 & z=2) and are rail-tied
+     * across their tops; a hanging lantern on a chain lights the passage from the
+     * keystone; empty flower-pot planters sit at the four outer corners; a dirt-path
+     * strip (structural → prints free) marks the walkway. Weathering is conveyed by
+     * mixing stone-brick / mossy-stone-brick / cracked-stone-brick. All blocks are
+     * vanilla and FU-valued (or recipe-derived: stairs/walls/mossy variants); no
+     * leaves/vines/flowers. Decorative landmark; T1 disc.
+     */
+    private static Blueprint gardenArchway() {
+        final int W = 5, H = 5, D = 3;
+        Blueprint.Builder b = Blueprint.builder("Garden Archway", W, H, D);
+        // Weathered stone palette — cycle so the masonry reads aged, not uniform.
+        BlueprintBlockState mossyBrick = MOSSY_STONE_BRICKS;
+        BlueprintBlockState crackedBrick = CRACKED_STONE_BRICKS;
+        // Stone-brick-stair voussoirs for the arch (spring inward over the opening).
+        BlueprintBlockState archWest = bs("minecraft:stone_brick_stairs[facing=east,half=bottom,shape=straight]");
+        BlueprintBlockState archEast = bs("minecraft:stone_brick_stairs[facing=west,half=bottom,shape=straight]");
+        // Flower-pot planter (empty pot is FU-valued; leaves/flowers are not).
+        BlueprintBlockState flowerPot = bs("minecraft:flower_pot");
+
+        int gateZ = 1;        // the gate plane: pillars + arch sit on z=1
+        int wPillarX = 1;     // west pillar column
+        int ePillarX = 3;     // east pillar column
+        int openX = 2;        // the walk-through opening column
+
+        // ── PATH (y0) ─────────────────────────────────────────────────────────
+        // A dirt-path strip straight down x=2 (z=0..2) marks the walkway. It is an
+        // itemless structural block → prints free and reads as a sunken garden path
+        // under the arch. No solid floor otherwise — the arch sits on the player's
+        // existing ground, framing the path.
+        path(b, openX, 0, D - 1);
+
+        // ── TWO STONE-BRICK PILLARS (y1..y3) ──────────────────────────────────
+        // The gateway jambs the arch springs from. Cracked-brick bases + chiseled
+        // mid-course + mossy crown so each pillar reads as weathered dressed stone.
+        b.set(wPillarX, 1, gateZ, crackedBrick);
+        b.set(wPillarX, 2, gateZ, CHISELED_STONE_BRICKS);
+        b.set(wPillarX, 3, gateZ, mossyBrick);
+        b.set(ePillarX, 1, gateZ, crackedBrick);
+        b.set(ePillarX, 2, gateZ, CHISELED_STONE_BRICKS);
+        b.set(ePillarX, 3, gateZ, mossyBrick);
+
+        // ── STEPPED ARCH (y3 springers → y4 keystone) ─────────────────────────
+        // Voussoir stairs spring inward from each pillar crown toward the opening,
+        // bridged by a stone-brick keystone over x=2. The opening (x=2, y=1..3)
+        // stays air, so the gateway is a true walk-through arch (head clearance =
+        // 3 blocks under the keystone). A worn mossy-stone-brick-slab cap crowns the
+        // keystone so the arch reads as a finished crest.
+        b.set(wPillarX, 4, gateZ, archWest);                   // west voussoir leaning over the gap
+        b.set(ePillarX, 4, gateZ, archEast);                   // east voussoir leaning over the gap
+        b.set(openX, 4, gateZ, STONE_BRICKS);                  // keystone bridging the two voussoirs
+        // The keystone (y4) is the crest — footprint H=5 caps at y=4, so no cap block
+        // sits above it; the two springer stairs + keystone form the finished arch.
+
+        // ── OAK-FENCE SIDE TRELLISES (y1..y2) ─────────────────────────────────
+        // Each pillar gains a flanking oak-fence trellis post on its z=0 and z=2
+        // faces (two tall). Each post connects horizontally to the solid stone-brick
+        // pillar cell at the same y (z=1), so no fence end floats — the trellis reads
+        // as a garden screen the player passes between. Oak fence (not glass-pane/
+        // iron-bars) → no render-integrity stub risk regardless.
+        for (int px : new int[]{wPillarX, ePillarX}) {
+            pillar(b, px, 0, 1, 2, OAK_FENCE);          // north trellis post (connects to pillar at z=1)
+            pillar(b, px, D - 1, 1, 2, OAK_FENCE);      // south trellis post (connects to pillar at z=1)
+        }
+
+        // ── HANGING LANTERN (under the keystone) ──────────────────────────────
+        // A chain hung from the keystone with a hanging lantern below it, dropped
+        // into the opening so it lights the passage without blocking head height.
+        b.set(openX, 3, gateZ, CHAIN);                  // chain hung off the keystone (y4) → y3
+        b.set(openX, 2, gateZ, HANGING_LANTERN);        // lantern at y2, clear of the y1 walk floor
+
+        // ── FLOWER-POT PLANTERS (y1, four outer corners) ──────────────────────
+        // Empty flower pots flank the gateway at the outer corners, raised on a
+        // single cracked-stone-brick plinth so they read as framing planters.
+        int[][] corners = {{0, 0}, {W - 1, 0}, {0, D - 1}, {W - 1, D - 1}};
+        for (int[] c : corners) {
+            b.set(c[0], 0, c[1], crackedBrick); // plinth (sits on ground at y0)
+            b.set(c[0], 1, c[1], flowerPot);    // empty planter pot atop the plinth
         }
 
         return b.build();
