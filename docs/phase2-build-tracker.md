@@ -7,9 +7,9 @@
 
 ## Status
 - **Curated builds before Phase 2:** 29
-- **Phase 2 queue:** 103 · **Done:** 93 · **Blocked:** 2 · **Remaining:** 8
-- **Next up:** `nether_hub_room`
-- **Last completed:** `basalt_pillar_cluster`
+- **Phase 2 queue:** 103 · **Done:** 94 · **Blocked:** 2 · **Remaining:** 7
+- **Next up:** `nether_fortress_bridge`
+- **Last completed:** `nether_hub_room`
 
 ## Process (per build — follow exactly on resume)
 1. Pick the first unchecked `[ ]` build in queue order below.
@@ -142,7 +142,7 @@
 - [x] soul_outpost (soul_lantern + soul_campfire both print — valued via derivation)
 - [x] nether_wart_farm (nether_wart prints as structural crop on soul_sand)
 - [x] basalt_pillar_cluster
-- [ ] nether_hub_room
+- [x] nether_hub_room (blue_ice prints; 4 unlit obsidian portal frames)
 - [ ] nether_fortress_bridge
 - [ ] blackstone_bastion_fragment
 
