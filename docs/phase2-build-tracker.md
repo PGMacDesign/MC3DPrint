@@ -7,9 +7,9 @@
 
 ## Status
 - **Curated builds before Phase 2:** 29
-- **Phase 2 queue:** 103 · **Done:** 73 · **Blocked:** 2 · **Remaining:** 28
-- **Next up:** `victorian_townhouse`
-- **Last completed:** `fantasy_wizard_tower`
+- **Phase 2 queue:** 103 · **Done:** 74 · **Blocked:** 2 · **Remaining:** 27
+- **Next up:** `nordic_viking_longhouse`
+- **Last completed:** `victorian_townhouse`
 
 ## Process (per build — follow exactly on resume)
 1. Pick the first unchecked `[ ]` build in queue order below.
@@ -118,7 +118,7 @@
 - [x] greek_quartz_temple
 - [x] roman_bath_house
 - [x] fantasy_wizard_tower
-- [ ] victorian_townhouse
+- [x] victorian_townhouse
 - [ ] nordic_viking_longhouse
 - [ ] copper_clocktower
 - [ ] modern_glass_villa (Hard)
