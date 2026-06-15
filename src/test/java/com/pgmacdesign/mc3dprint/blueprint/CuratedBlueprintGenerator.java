@@ -285,6 +285,8 @@ class CuratedBlueprintGenerator {
         builds.put("copper_clocktower", copperClocktower());
         // Phase 2 — Category B (modern_glass_villa)
         builds.put("modern_glass_villa", modernGlassVilla());
+        // Phase 2 — Category B (elven_treehouse)
+        builds.put("elven_treehouse", elvenTreehouse());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -12120,6 +12122,249 @@ class CuratedBlueprintGenerator {
         // Upper bedroom: a bed + bookshelf against the solid SE wall.
         bed(b, ux0 + 1, uFloorY + 1, uz1 - 1, "gray", "south");
         b.set(ux1 - 1, uFloorY + 1, uz1 - 1, BOOKSHELF);
+
+        return b.build();
+    }
+
+    /**
+     * Phase 2 — Category B. Elven Treehouse. 11×11 footprint (T6), disc T4.
+     *
+     * <p>A graceful LOTR-elven (Rivendell / Lothlórien flet) raised pavilion: an
+     * elevated walkable dwelling on slender birch + smooth-quartz columns, with white
+     * birch + quartz architecture, tall arched <b>blue stained-glass</b> windows, soft
+     * sea-lantern lighting, delicate birch-fence rails, and a sweeping peaked
+     * (hip) roof. Reads ethereal and elegant — a showcase fantasy build.
+     *
+     * <p><b>NO leaves / vines / azalea / moss</b> — those are UNVALUED and would be
+     * silently skipped (failing the printability gate). Following the {@link
+     * #treehouse()} precedent, the build's identity is the ELVEN ARCHITECTURE, not a
+     * leafy canopy: the four lift columns are slender birch-log + quartz "saplings"
+     * grown into pillars, and the only nature hint is a few <em>potted birch
+     * saplings</em> (structural, prints fine) on the deck corners. Everything else is
+     * vanilla FU-valued: birch wood family, smooth-/chiseled-/pillar-quartz + quartz
+     * stairs/slabs, blue &amp; light-blue stained-glass blocks + panes (dyed glass
+     * normalises to base {@code glass}/{@code glass_pane}), sea-lanterns, end-rods,
+     * chains, calcite (white accent), and water (structural) for a reflecting basin.
+     *
+     * <p>Layout (x=width E, y=up, z=depth S; footprint x:0..10, z:0..10):
+     * <ul>
+     *   <li><b>y=0</b> — calcite ground pad with a small central water reflecting
+     *       basin (structural water), quartz coping ring; the four lift columns root
+     *       here.</li>
+     *   <li><b>Columns, y=1..deckY</b> — four slender birch-log columns wrapped with a
+     *       quartz-pillar base, splaying birch-log brackets just under the deck (the
+     *       {@link #treehouse()} bough trick) so the platform reads as carried.</li>
+     *   <li><b>Deck, y=deckY=5</b> — an 11×11 birch-plank flet platform, minus the
+     *       four column cells and a south ladder hatch; a birch-fence guard rail one
+     *       course up rings the rim with a front-centre gap.</li>
+     *   <li><b>Pavilion, y=6..9</b> — an inset 7×7 enterable dwelling: smooth-quartz
+     *       wall ring with birch-log corner posts, a south birch door opening inward,
+     *       and tall arched blue stained-glass windows (full BLOCKS, render-safe) on
+     *       the side/back walls with light-blue accents.</li>
+     *   <li><b>Roof, y=10+</b> — a sweeping peaked birch-stair hip roof closing to a
+     *       quartz cap, with an end-rod finial — the elegant elven peak.</li>
+     *   <li>Sea-lantern uplights flush in the deck, chained hanging lanterns under the
+     *       eaves &amp; under-deck, end-rod accents — soft ethereal glow.</li>
+     *   <li><b>Access:</b> a south-facing birch ladder up a column to the open deck
+     *       hatch, then the pavilion door — fully enterable.</li>
+     * </ul>
+     */
+    private static Blueprint elvenTreehouse() {
+        final int W = 11, H = 16;
+        Blueprint.Builder b = Blueprint.builder("Elven Treehouse", W, H, W);
+        final int x0 = 0, x1 = W - 1, z0 = 0, z1 = W - 1; // 0..10
+        final int cx = 5, cz = 5;                          // footprint centre
+
+        // ── Palette (all vanilla, all FU-valued or structural) ────────────────
+        BlueprintBlockState colLog   = bs("minecraft:birch_log[axis=y]");        // column heartwood
+        BlueprintBlockState colQuartz= bs("minecraft:quartz_pillar[axis=y]");    // column quartz sleeve
+        BlueprintBlockState bracketX = bs("minecraft:stripped_birch_log[axis=x]"); // under-deck boughs E/W
+        BlueprintBlockState bracketZ = bs("minecraft:stripped_birch_log[axis=z]"); // under-deck boughs N/S
+        BlueprintBlockState deck     = bs("minecraft:birch_planks");             // flet platform
+        BlueprintBlockState rim      = bs("minecraft:quartz_slab[type=top]");    // deck-rim trim
+        BlueprintBlockState railing  = bs("minecraft:birch_fence");              // deck guard rail
+        BlueprintBlockState wall     = bs("minecraft:smooth_quartz");            // pavilion walls
+        BlueprintBlockState cornerY  = bs("minecraft:birch_log[axis=y]");        // pavilion corner posts
+        BlueprintBlockState pad      = bs("minecraft:calcite");                  // white ground pad
+        BlueprintBlockState coping   = bs("minecraft:quartz_slab[type=top]");    // basin coping
+        BlueprintBlockState blueGlass     = bs("minecraft:blue_stained_glass");       // tall arched windows
+        BlueprintBlockState ltBlueGlass   = bs("minecraft:light_blue_stained_glass"); // window accents
+        BlueprintBlockState blueGlassPane = bs("minecraft:blue_stained_glass_pane");   // upper transom panes
+        BlueprintBlockState finial   = END_ROD;                                  // roof finial / accents
+
+        // column centres: the four corners of the inset 7×7 pavilion footprint
+        int wx0 = 2, wx1 = 8, wz0 = 2, wz1 = 8;            // pavilion ring (7×7)
+        int[][] cols = {{wx0, wz0}, {wx1, wz0}, {wx0, wz1}, {wx1, wz1}};
+        int deckY = 5;                                     // raised flet (walkable top of y=5)
+        int wallBottom = deckY + 1;                        // 6
+        int wallH = deckY + 4;                             // 9 (wall plate; roof seats at y=10)
+        int roofY = wallH + 1;                             // 10
+        // south ladder climbs the SE column's south face: rungs sit just south of
+        // (wx1,wz1) so they back onto the solid column; the deck hatch is the same
+        // column so the player steps straight up onto the flet.
+        int ladderX = wx1, ladderZ = wz1 + 1;              // (8,9)
+        int hatchX = wx1, hatchZ = wz1 + 1;                // (8,9) hatch above the rungs
+
+        // ── 1) GROUND PAD + REFLECTING BASIN (y=0) ────────────────────────────
+        // A clean calcite pad grounds the columns; a small central water basin with a
+        // quartz coping ring reads as an elven reflecting pool beneath the flet.
+        floor(b, 0, x0, z0, x1, z1, pad);
+        // sunken 3×3 basin at centre: water on the pad, quartz coping ring one out.
+        solid(b, cx - 1, 0, cz - 1, cx + 1, 0, cz + 1, WATER);
+        for (int x = cx - 2; x <= cx + 2; x++) {           // coping ring around the basin
+            b.set(x, 0, cz - 2, coping);
+            b.set(x, 0, cz + 2, coping);
+        }
+        for (int z = cz - 1; z <= cz + 1; z++) {
+            b.set(cx - 2, 0, z, coping);
+            b.set(cx + 2, 0, z, coping);
+        }
+        // flush sea-lantern uplights in the pad at the four cardinals (glow up)
+        b.set(cx, 0, z0 + 1, SEA_LANTERN);
+        b.set(cx, 0, z1 - 1, SEA_LANTERN);
+        b.set(x0 + 1, 0, cz, SEA_LANTERN);
+        b.set(x1 - 1, 0, cz, SEA_LANTERN);
+
+        // ── 2) THE FOUR SLENDER LIFT COLUMNS (y=1..deckY) ─────────────────────
+        // Each column is a birch-log heart with a quartz-pillar sleeve at its base
+        // (y=1..2) → elegant white-footed birch posts that carry the flet.
+        for (int[] c : cols) {
+            pillar(b, c[0], c[1], 1, deckY, colLog);
+            b.set(c[0], 1, c[1], colQuartz);
+            b.set(c[0], 2, c[1], colQuartz);
+        }
+
+        // ── 3) UNDER-DECK BOUGHS (y=deckY-1) ──────────────────────────────────
+        // Stripped-birch brackets splay from each column toward the deck centre just
+        // below the platform (treehouse bough trick) so the flet reads as carried,
+        // not floating. Each runs one cell inward from its column.
+        int by = deckY - 1; // 4
+        line(b, by, wx0, cz, cx - 1, cz, bracketX);   // west pair → centre
+        line(b, by, wx1, cz, cx + 1, cz, bracketX);   // east pair → centre
+        line(b, by, cx, wz0, cx, cz - 1, bracketZ);   // north pair → centre
+        line(b, by, cx, wz1, cx, cz + 1, bracketZ);   // south pair → centre
+
+        // ── 4) THE RAISED FLET DECK (y=deckY) ─────────────────────────────────
+        // Full 11×11 birch-plank platform, MINUS the four column cells (logs already
+        // there) and the south ladder hatch (air-skipped so the player climbs out).
+        for (int x = x0; x <= x1; x++) {
+            for (int z = z0; z <= z1; z++) {
+                boolean isCol = false;
+                for (int[] c : cols) if (c[0] == x && c[1] == z) { isCol = true; break; }
+                if (isCol) continue;                       // column passes through
+                if (x == hatchX && z == hatchZ) continue;  // ladder hatch
+                b.set(x, deckY, z, deck);
+            }
+        }
+        // quartz-slab rim trim one course up around the very edge (raised lip read),
+        // leaving the front-centre cell open as the flush approach onto the flet.
+        for (int x = x0; x <= x1; x++) {
+            if (x != cx) b.set(x, deckY + 1, z0, rim); // north (front) rim, gap at centre
+            b.set(x, deckY + 1, z1, rim);              // south (back) rim
+        }
+        for (int z = z0 + 1; z <= z1 - 1; z++) {
+            b.set(x0, deckY + 1, z, rim);              // west rim
+            b.set(x1, deckY + 1, z, rim);              // east rim
+        }
+
+        // ── 5) DELICATE BIRCH-FENCE GUARD RAIL (y=deckY+1) ────────────────────
+        // A fence ring just inside the rim trim reads as a slender elven rail. Skip
+        // the hatch cell and the front-centre approach so neither is capped.
+        int railY = deckY + 1; // 6
+        for (int x = x0 + 1; x <= x1 - 1; x++) {
+            if (x != cx) b.set(x, railY, z0, railing);                 // front rail, gap at centre
+            if (!(x == hatchX && z1 == hatchZ)) b.set(x, railY, z1, railing); // back rail
+        }
+        for (int z = z0 + 1; z <= z1 - 1; z++) {
+            b.set(x0, railY, z, railing);                              // west rail
+            b.set(x1, railY, z, railing);                              // east rail
+        }
+
+        // ── 6) THE PAVILION (inset 7×7 dwelling on the flet) ──────────────────
+        // Smooth-quartz wall ring y=6..9 with birch-log corner posts (the columns
+        // already occupy the corners y=1..5; the posts continue them upward, so the
+        // pavilion sits on its own legs). Interior left open per air-skip → enterable.
+        walls(b, wx0, wz0, wx1, wz1, wallBottom, wallH, wall);
+        corners(b, wx0, wz0, wx1, wz1, wallBottom, wallH, cornerY);
+
+        // 6a) south birch door into the pavilion (faces north, opens inward). The
+        //     hatch is in the SE column line; the door is at the south-wall centre so
+        //     a player climbs the hatch, walks the deck, and enters through the door.
+        door2(b, cx, wallBottom, wz1, "birch", "S");
+
+        // 6b) TALL ARCHED BLUE STAINED-GLASS WINDOWS. Full BLOCKS (render-safe by
+        //     definition; no lone panes) fill a 2-high arch in each side/back bay,
+        //     flanked by quartz wall cells. Light-blue caps the arch apex for a
+        //     gradient elven-glass read. The transom course above uses blue panes
+        //     seated flush in connected runs (each pane has solid quartz neighbours
+        //     left/right along the wall line → connectable → render-safe).
+        int sillY = wallBottom + 1;     // 7 (window base)
+        int archY = wallBottom + 2;     // 8 (window apex / transom)
+        // helper-free inline: three bays per wall (off-centre + centre), blocks only.
+        int[] sideZ = {wz0 + 2, cz, wz1 - 2}; // window columns along E/W walls (z)
+        for (int z : sideZ) {
+            // west wall (x=wx0) and east wall (x=wx1): blue block sill + light-blue apex
+            b.set(wx0, sillY, z, blueGlass);
+            b.set(wx0, archY, z, ltBlueGlass);
+            b.set(wx1, sillY, z, blueGlass);
+            b.set(wx1, archY, z, ltBlueGlass);
+        }
+        int[] backX = {wx0 + 2, cx, wx1 - 2};  // window columns along N (back) wall (x)
+        for (int x : backX) {
+            b.set(x, sillY, wz0, blueGlass);
+            b.set(x, archY, wz0, ltBlueGlass);
+        }
+        // front (south) wall transom: blue panes flanking the door, each backed by a
+        // solid quartz wall cell on the outer side → connectable, render-safe.
+        b.set(cx - 2, sillY, wz1, blueGlassPane);
+        b.set(cx + 2, sillY, wz1, blueGlassPane);
+        b.set(cx - 2, archY, wz1, blueGlassPane);
+        b.set(cx + 2, archY, wz1, blueGlassPane);
+
+        // ── 7) SWEEPING PEAKED ROOF (birch-stair hip → quartz cap + finial) ───
+        // A four-sided hip roof gives the flowing peaked elven silhouette; it closes
+        // to a small smooth-quartz ridge cap, topped by an end-rod finial spire.
+        hipRoof(b, wx0, wz0, wx1, wz1, roofY, "birch_stairs", wall);
+        int peakY = roofY + 3; // 7-wide hip: 3 stepping courses (ax span 6 → ridge at +3)
+        b.set(cx, peakY + 1, cz, finial);     // end-rod finial spire above the cap
+
+        // ── 8) SOFT SEA-LANTERN / END-ROD LIGHTING ────────────────────────────
+        // Hanging lanterns on chains under the eaves at the four mid-walls (backed by
+        // the wall plate above), plus an interior chained lantern and under-deck glow.
+        chainLantern(b, cx, wallH - 1, wz0 + 1, 1);  // interior, chained to roof underside
+        // under-deck hanging lanterns at the four mid-edges (deck solid above them)
+        b.set(cx, deckY - 1, z0 + 1, HANGING_LANTERN);
+        b.set(cx, deckY - 1, z1 - 1, HANGING_LANTERN);
+        b.set(x0 + 1, deckY - 1, cz, HANGING_LANTERN);
+        b.set(x1 - 1, deckY - 1, cz, HANGING_LANTERN);
+        // end-rod accent uplights standing on the deck at the pavilion front corners
+        b.set(wx0, deckY + 1, wz1, finial);
+        b.set(wx1, deckY + 1, wz1, finial);
+
+        // ── 9) THE LADDER up the SE column to the deck hatch ──────────────────
+        // South-facing birch ladder rungs in the column just south of (wx1,wz1) climb
+        // y=1..deckY; a LADDER_SOUTH backs onto the block to its NORTH (the solid
+        // birch column at (wx1, y, wz1)), so every rung has a wall behind it. The deck
+        // hatch (left open in step 4) sits directly above → climbs onto the flet.
+        BlueprintBlockState ladder = bs("minecraft:birch_trapdoor[facing=north,half=top,open=false,powered=false,waterlogged=false]");
+        for (int y = 1; y <= deckY; y++) {
+            b.set(ladderX, y, ladderZ, LADDER_SOUTH); // rungs y=1..5 (top rung level with deck)
+        }
+        // a birch trapdoor caps the climb at the hatch lip (flush walk-out), placed at
+        // the deck edge cell just NORTH of the hatch so it doesn't block the opening.
+        b.set(ladderX, deckY, ladderZ - 1, ladder);
+
+        // ── 10) ENTERABLE INTERIOR (sparse, elegant; standing floor = top of deckY) ─
+        bed(b, wx0 + 1, wallBottom, wz0 + 1, "light_blue", "south"); // bed at back-left
+        b.set(wx1 - 1, wallBottom, wz0 + 1, BOOKSHELF);              // reading nook, back-right
+        b.set(wx0 + 1, wallBottom, wz1 - 1, LECTERN);               // lectern, front-left
+        b.set(wx1 - 1, wallBottom, wz1 - 1, SEA_LANTERN);           // floor sea-lantern, front-right
+
+        // ── 11) NATURE HINT (no leaves!) — potted birch saplings on the flet ──
+        // Structural potted saplings (prints fine, NOT leaves) at the front deck
+        // corners give a delicate hint of an elven garden without any unvalued foliage.
+        b.set(x0 + 1, deckY + 1, z0 + 1, bs("minecraft:potted_birch_sapling"));
+        b.set(x1 - 1, deckY + 1, z0 + 1, bs("minecraft:potted_birch_sapling"));
 
         return b.build();
     }
