@@ -270,6 +270,7 @@ class CuratedBlueprintGenerator {
         builds.put("modern_pool_deck", modernPoolDeck());
         builds.put("cottagecore_cottage", cottagecoreCottage());
         builds.put("torii_gate", toriiGate());
+        builds.put("japanese_tea_house", japaneseTeaHouse());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -3524,6 +3525,151 @@ class CuratedBlueprintGenerator {
         b.set(lx, 2, lz, bs("minecraft:stone_bricks")); // lantern body / fire box
         b.set(lx, 3, lz, LANTERN);                // the light (kasa beneath the cap)
         b.set(lx, 4, lz, darkSlabTop);            // little roof cap
+
+        return b.build();
+    }
+
+    /**
+     * Japanese Tea House (chashitsu). 9×9 footprint → builder(9, 16, 9). A compact,
+     * low, STILTED spruce-and-dark-oak tea house with white-wool shōji wall panels
+     * framed by dark-wood posts, a wraparound veranda (engawa) with a spruce-fence
+     * railing, a small tatami-look interior, a paper-screen sliding "door" opening
+     * onto the veranda, eave lanterns, and an upturned two-tier {@link #pagodaRoof}.
+     * Fully ENTERABLE — you step up onto the engawa and in through the screen.
+     *
+     * <p>Layout (centre {@code cx=cz=4}; everything seated on a stone plinth so the
+     * structure reads as raised on stilts):
+     * <ul>
+     *   <li><b>y=0 plinth</b> — full 9×9 stone-brick base (walkable ground).</li>
+     *   <li><b>Stilts</b> — short stripped-spruce-log posts at the veranda corners
+     *       and mid-edges, lifting the deck one course (the "stilted" look).</li>
+     *   <li><b>y=1 engawa deck</b> — a spruce-plank veranda over the whole 1..7
+     *       inner square; the room floor is the same deck.</li>
+     *   <li><b>y=2 railing</b> — a spruce-fence balustrade ringing the veranda edge
+     *       (x/z 1..7), broken at the north-centre for the step-up entrance.</li>
+     *   <li><b>Room shell</b> — a 5×5 room (x/z 2..6), walls y=2..4: white-wool
+     *       shōji infill framed by stripped-dark-oak corner posts + mid-wall studs,
+     *       with a dark-oak head/sill band. Render-safe shōji "windows" are white
+     *       wool flanked by wool, so nothing is a glass-pane stub.</li>
+     *   <li><b>Paper-screen door</b> — north wall, a spruce door opening inward onto
+     *       the engawa, flanked by white-wool screen panels.</li>
+     *   <li><b>Tatami interior</b> — white-carpet "mats" bordered by green carpet,
+     *       a low dark-oak slab table, and a hanging soul-lantern (lit + enterable).</li>
+     *   <li><b>Roof</b> — a two-tier upturned-eave {@link #pagodaRoof} (baseHalf=3,
+     *       so the lip reaches the 0..8 footprint edge WITHOUT clipping), seated
+     *       above the wall head; hanging lanterns dangle under its corner flicks.</li>
+     * </ul>
+     *
+     * <p>All blocks are FU-valued vanilla: spruce wood family, stripped dark-oak
+     * logs, white/green wool + carpet (wool tag value), dark-oak stairs/slabs,
+     * lanterns/chain, spruce fence. No glass panes are used as window stubs.
+     */
+    private static Blueprint japaneseTeaHouse() {
+        final int W = 9, H = 16;
+        final int cx = 4, cz = 4;
+        Blueprint.Builder b = Blueprint.builder("Japanese Tea House", W, H, W);
+
+        BlueprintBlockState shoji = WHITE_WOOL;                                  // paper-screen infill
+        BlueprintBlockState postY = bs("minecraft:stripped_dark_oak_log[axis=y]"); // dark-wood frame posts
+        BlueprintBlockState bandX = bs("minecraft:stripped_dark_oak_log[axis=x]"); // head/sill band along X
+        BlueprintBlockState bandZ = bs("minecraft:stripped_dark_oak_log[axis=z]"); // head/sill band along Z
+        BlueprintBlockState stilt = STRIPPED_SPRUCE_Y;                            // stilt posts
+        BlueprintBlockState deck = SPRUCE_PLANKS;                                 // engawa / room floor
+        BlueprintBlockState rail = bs("minecraft:spruce_fence");                  // engawa balustrade
+        BlueprintBlockState roofSlab = bs("minecraft:dark_oak_slab[type=bottom]"); // tier-interior cap
+        BlueprintBlockState tatami = bs("minecraft:white_carpet");               // tatami mat field
+        BlueprintBlockState tatamiBorder = bs("minecraft:green_carpet");         // mat border (heri)
+        final String ROOF = "dark_oak_stairs";
+
+        // ---- 1) stone-brick plinth (y=0), full 9×9 footprint, walkable ----------
+        floor(b, 0, 0, 0, W - 1, W - 1, STONE_BRICKS);
+
+        // ---- 2) stilts: short stripped-spruce posts lifting the engawa one course
+        // at the veranda corners and the mid-edge of each side (8 supports).
+        int v0 = 1, v1 = 7;                       // engawa (veranda) extent
+        for (int[] s : new int[][]{
+                {v0, v0}, {v1, v0}, {v0, v1}, {v1, v1}, // corners
+                {cx, v0}, {cx, v1}, {v0, cz}, {v1, cz}}) { // mid-edges
+            b.set(s[0], 1, s[1], stilt);
+        }
+
+        // ---- 3) engawa deck (y=1): spruce planks over the whole 7×7 inner square,
+        // the raised veranda + room floor in one plane (you step UP onto it).
+        floor(b, 1, v0, v0, v1, v1, deck);
+
+        // ---- 4) veranda railing (y=2): spruce-fence balustrade on the deck edge,
+        // laid cell-by-cell so the north-centre cell (cx,v0) is LEFT OPEN as the
+        // step-up entrance onto the engawa (can't "set air", so we just skip it).
+        for (int x = v0; x <= v1; x++) {
+            if (!(x == cx)) b.set(x, 2, v0, rail);   // north edge, gap at centre
+            b.set(x, 2, v1, rail);                   // south edge
+        }
+        for (int z = v0; z <= v1; z++) {
+            b.set(v0, 2, z, rail);                   // west edge
+            b.set(v1, 2, z, rail);                   // east edge
+        }
+
+        // ---- 5) room shell (x/z 2..6), walls y=2..4 -----------------------------
+        int r0 = 2, r1 = 6, rTop = 4;
+        // white-wool shōji infill on all four faces …
+        walls(b, r0, r0, r1, r1, 2, rTop, shoji);
+        // … framed by dark-oak corner posts and mid-wall studs (placed AFTER the
+        // wool so the frame wins the shared cells).
+        corners(b, r0, r0, r1, r1, 2, rTop, postY);
+        b.set(cx, 2, r0, postY); b.set(cx, 2, r1, postY);   // mid studs N/S (lower)
+        b.set(cx, rTop, r0, postY); b.set(cx, rTop, r1, postY);
+        b.set(r0, 2, cz, postY); b.set(r1, 2, cz, postY);   // mid studs W/E (lower)
+        b.set(r0, rTop, cz, postY); b.set(r1, rTop, cz, postY);
+        // dark-oak head band (y=4 plate) + sill band (y=2 base) for the timber look
+        line(b, rTop, r0, r0, r1, r0, bandX); line(b, rTop, r0, r1, r1, r1, bandX);
+        line(b, rTop, r0, r0, r0, r1, bandZ); line(b, rTop, r1, r0, r1, r1, bandZ);
+        // re-assert corner posts after the band overwrote the corners
+        corners(b, r0, r0, r1, r1, rTop, rTop, postY);
+
+        // ---- 6) paper-screen sliding door (north wall, z=r0) --------------------
+        // A spruce door opening inward onto the room, flanked by the wool screens
+        // (already placed by walls()). The mid-stud at (cx, *, r0) was set above; the
+        // door overwrites the lower two courses of that centre cell.
+        door2(b, cx, 2, r0, "spruce", "N");
+
+        // ---- 7) tatami-look interior floor (y=1, room interior x/z 3..5) --------
+        // white-carpet mat field with a green-carpet border (heri) ring around it.
+        floor(b, 1, r0 + 1, r0 + 1, r1 - 1, r1 - 1, tatami);   // 3..5 mats
+        fenceRingless(b, 1, r0 + 1, r0 + 1, r1 - 1, r1 - 1, tatamiBorder); // border ring
+        // a low tea table (dark-oak slab) dead-centre on the tatami
+        b.set(cx, 1, cz, roofSlab);
+        // a hanging soul-lantern from the ceiling plate, lit + clear of the table
+        b.set(cx, rTop, cz, CHAIN);
+        b.set(cx, rTop - 1, cz, SOUL_HANGING_LANTERN);
+
+        // ---- 8) two-tier upturned-eave pagoda roof ------------------------------
+        // First eave seats one course above the wall head (y=rTop=4 → ey=5). baseHalf
+        // =3, so the bracket lip reaches cx±4 = 0..8 (the footprint edge) without
+        // clipping. pagodaRoof lays both tiers + a small finial.
+        int ey = rTop + 1;                          // y=5
+        int[] halves = {3, 2};
+        for (int t = 0; t < halves.length; t++) {
+            int h = halves[t];
+            int top = pagodaEaveTier(b, cx, cz, ey, h, ROOF, roofSlab);
+            // eave lanterns dangling below this tier's four upturned corner lips
+            // (one course below the corner finger, at the half+1 diagonal).
+            int lx0 = cx - (h + 1), lx1 = cx + (h + 1), lz0 = cz - (h + 1), lz1 = cz + (h + 1);
+            b.set(lx0, ey - 2, lz0, HANGING_LANTERN);
+            b.set(lx1, ey - 2, lz0, HANGING_LANTERN);
+            b.set(lx0, ey - 2, lz1, HANGING_LANTERN);
+            b.set(lx1, ey - 2, lz1, HANGING_LANTERN);
+            if (t < halves.length - 1) {
+                // short drum between tiers, telescoped to the next tier footprint
+                int nh = halves[t + 1];
+                floor(b, top, cx - nh, cz - nh, cx + nh, cz + nh, roofSlab);
+                ey = top + 1;
+            } else {
+                ey = top;
+            }
+        }
+        // simple finial: a slab base + a lantern crown on the central axis
+        b.set(cx, ey, cz, roofSlab);
+        b.set(cx, ey + 1, cz, LANTERN);
 
         return b.build();
     }

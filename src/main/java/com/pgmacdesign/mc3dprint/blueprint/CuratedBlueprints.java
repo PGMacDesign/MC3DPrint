@@ -98,7 +98,9 @@ public final class CuratedBlueprints {
             // Phase 2 — Category B (cottagecore_cottage)
             "cottagecore_cottage",
             // Phase 2 — Category B (torii_gate)
-            "torii_gate");
+            "torii_gate",
+            // Phase 2 — Category B (japanese_tea_house)
+            "japanese_tea_house");
 
     /**
      * Load a bundled curated blueprint straight from the mod's resources (no world
