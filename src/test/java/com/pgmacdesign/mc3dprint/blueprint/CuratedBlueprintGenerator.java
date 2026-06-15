@@ -302,6 +302,7 @@ class CuratedBlueprintGenerator {
         builds.put("prismarine_monument_fragment", prismarineMonumentFragment());
         // Phase 2 — Category E (underwater_dome_base)
         builds.put("underwater_dome_base", underwaterDomeBase());
+        builds.put("aquarium", aquarium());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -14422,6 +14423,247 @@ class CuratedBlueprintGenerator {
         // a couple of seats: prismarine-brick stools flanking the console
         b.set(cx + 2, 2, cz - 1, brickSlabTop);
         b.set(cx + 2, 2, cz + 1, brickSlabTop);
+
+        return b.build();
+    }
+
+    /**
+     * §E aquarium. 11×9 footprint → builder(11, 8, 9). A public aquarium display
+     * building — a quartz-framed hall whose HERO is a large glass-walled water
+     * TANK you walk past, like the big curved fish tank at a real aquarium. The
+     * tank fills the back third of the hall: full glass BLOCK walls hold a body of
+     * structural WATER with a colourful valued reef inside (sand/gravel floor,
+     * bright-concrete "coral" mounds, prismarine accents, sea-lantern glow). The
+     * front of the hall is a DRY, walkable viewing gallery where visitors stand,
+     * with a tiled quartz facade, a central entrance, and sea-lantern ceiling
+     * lighting. The fish themselves are entities the player adds.
+     *
+     * <p>CORAL/KELP HANDLING — coral, coral fans, sea pickles, kelp, seagrass are
+     * UNVALUED and fail the printability gate, so NONE appear literally. The reef
+     * is rendered entirely from VALUED bright accents the same way
+     * {@link #coralGarden} does it: a sand/gravel tank floor, small bright
+     * {@code *_concrete} coral mounds (pink/cyan/lime/orange/yellow/etc., dyed
+     * concrete normalises to base FU), prismarine + sea-lantern + glowstone +
+     * end-rod glow. All colourful, all valued.
+     *
+     * <p>RENDER-SAFETY — every tank wall is a full {@code glass} / light-blue
+     * {@code stained_glass} BLOCK (full blocks hold water and never stub); there is
+     * NOT a single glass pane or iron bar in the build, so the stub-pane
+     * GameTest has nothing lone to flag. WATER is placed ONLY inside the glass tank
+     * box; the gallery in front stays dry air.
+     *
+     * <p>PALETTE — all FU-valued or structural/free: smooth_quartz, quartz_block,
+     * quartz_bricks, quartz_pillar, chiseled_quartz_block, quartz stairs/slabs,
+     * glass + light_blue/cyan stained_glass BLOCKS, white/light_gray concrete +
+     * bright dyed concrete, prismarine + prismarine_bricks, sea_lantern, glowstone,
+     * end_rod, sand/gravel/sandstone, and water (structural → prints free).
+     *
+     * <p>AXES: x=W (0..10, east), y=up (0..7), z=depth (0..8, south). Build order
+     * is bottom-up, last-write-wins, air-skip (gaps are left unset — never set air).
+     * T6 footprint, T2 disc.
+     */
+    private static Blueprint aquarium() {
+        final int W = 11, H = 8, D = 9;
+        Blueprint.Builder b = Blueprint.builder("Aquarium", W, H, D);
+        final int x0 = 0, x1 = W - 1, z0 = 0, z1 = D - 1; // x:0..10  z:0..8
+
+        // ── Palette (all FU-valued or structural) ───────────────────────────────
+        final BlueprintBlockState smoothQuartz = bs("minecraft:smooth_quartz");
+        final BlueprintBlockState quartzBlock  = bs("minecraft:quartz_block");
+        final BlueprintBlockState quartzBricks = bs("minecraft:quartz_bricks");
+        final BlueprintBlockState chiseled     = bs("minecraft:chiseled_quartz_block");
+        final BlueprintBlockState column       = bs("minecraft:quartz_pillar[axis=y]");
+        final BlueprintBlockState quartzSlabTop = bs("minecraft:smooth_quartz_slab[type=top]");
+        final BlueprintBlockState quartzSlabBot = bs("minecraft:smooth_quartz_slab[type=bottom]");
+        final BlueprintBlockState lightGray    = bs("minecraft:light_gray_concrete");
+        final BlueprintBlockState white        = bs("minecraft:white_concrete");
+        final BlueprintBlockState glass        = GLASS;
+        final BlueprintBlockState tintGlass    = bs("minecraft:light_blue_stained_glass");
+        final BlueprintBlockState cyanGlass    = bs("minecraft:cyan_stained_glass");
+        final BlueprintBlockState prismarine   = bs("minecraft:prismarine");
+        final BlueprintBlockState prisBricks   = bs("minecraft:prismarine_bricks");
+        final BlueprintBlockState sand         = bs("minecraft:sand");
+        final BlueprintBlockState gravel       = bs("minecraft:gravel");
+        final BlueprintBlockState sandstone    = bs("minecraft:sandstone");
+        // bright "coral" colours — dyed concrete normalises to base FU
+        final BlueprintBlockState pink      = bs("minecraft:pink_concrete");
+        final BlueprintBlockState orange    = bs("minecraft:orange_concrete");
+        final BlueprintBlockState lime      = bs("minecraft:lime_concrete");
+        final BlueprintBlockState cyan      = bs("minecraft:cyan_concrete");
+        final BlueprintBlockState lightBlue = bs("minecraft:light_blue_concrete");
+        final BlueprintBlockState yellow    = bs("minecraft:yellow_concrete");
+        final BlueprintBlockState[] coral = {pink, orange, lime, cyan, lightBlue, yellow};
+        // inward-facing quartz stairs for the entrance arch springers
+        final BlueprintBlockState stairE = bs("minecraft:quartz_stairs[facing=east,half=bottom,shape=straight]");
+        final BlueprintBlockState stairW = bs("minecraft:quartz_stairs[facing=west,half=bottom,shape=straight]");
+
+        // The hall is split front-to-back: the DRY viewing GALLERY occupies the
+        // front (z=1..3), and the glass water TANK fills the back (z=5..7). A
+        // chiseled-quartz coping band (z=4) is the rail you lean on between them.
+        final int wallH = 5;               // perimeter walls y=1..5
+        final int gz0 = 1, gz1 = 3;        // gallery floor band (dry, walkable)
+        final int tz0 = 5, tz1 = 7;        // tank interior band (glass box + water + reef)
+        final int tx0 = 1, tx1 = x1 - 1;   // tank spans x=1..9 (inset one cell from the side walls)
+
+        // ── 1) FOUNDATION FLOOR (y=0) — solid smooth-quartz slab across the whole
+        //    footprint (the gallery standing surface), with a light-gray-concrete
+        //    threshold strip at the entrance front and a tiled quartz facade band.
+        floor(b, 0, x0, z0, x1, z1, smoothQuartz);
+        // a light-gray "entrance mat" tile at the front-centre (the doorway threshold)
+        floor(b, 0, 4, z0, 6, z0, lightGray);
+        // chiseled-quartz tile accents checkered into the gallery floor (z=1..3) so the
+        // walkable gallery reads as a finished display-hall floor rather than blank.
+        for (int x = x0; x <= x1; x++) {
+            for (int z = gz0; z <= gz1; z++) {
+                if ((x + z) % 2 == 0) b.set(x, 0, z, quartzBricks);
+            }
+        }
+
+        // ── 2) PERIMETER WALLS (y=1..5) — quartz-brick hall walls. To leave the
+        //    3-wide front ENTRANCE throat open (x=4..6, y=1..3) we DON'T use walls()
+        //    on the front face there; instead we lay the back + side faces solid and
+        //    build the front face cell-by-cell, simply SKIPPING the throat (air-skip —
+        //    never set air). Quartz-pillar corner columns + a chiseled dado course.
+        for (int y = 1; y <= wallH; y++) {
+            line(b, y, x0, z1, x1, z1, quartzBricks); // south (back) face
+            line(b, y, x0, z0, x0, z1, quartzBricks); // west face
+            line(b, y, x1, z0, x1, z1, quartzBricks); // east face
+        }
+        corners(b, x0, z0, x1, z1, 1, wallH, column);
+        // chiseled-quartz dado course at y=1 around the back/side interior base (skirting)
+        line(b, 1, x0, z1, x1, z1, chiseled);
+        line(b, 1, x0, z0, x0, z1, chiseled);
+        line(b, 1, x1, z0, x1, z1, chiseled);
+
+        // ── 3) TILED FACADE + ENTRANCE (front, north z=0) — a quartz_block / chiseled
+        //    banded facade across the front, but SKIPPING the entrance throat (x=4..6
+        //    at y=1..3) so visitors walk straight in. The throat is left open purely by
+        //    never writing those cells (air-skip), not by setting air.
+        for (int y = 1; y <= wallH; y++) {
+            for (int x = x0; x <= x1; x++) {
+                boolean throat = (x >= 4 && x <= 6 && y <= 3); // the open doorway
+                if (throat) continue;                          // air-skip: leave open
+                BlueprintBlockState fc = (y == 1) ? chiseled
+                        : ((y % 2 == 0) ? quartzBlock : chiseled); // dado + banded facade
+                b.set(x, y, z0, fc);
+            }
+        }
+        // entrance jamb shafts (quartz columns either side of the throat) + a quartz-stair
+        // arch lintel with a chiseled keystone over the opening (all at the lintel course).
+        pillar(b, 3, z0, 1, 3, column); // west jamb shaft (x=3 already facade — re-stamp)
+        pillar(b, 7, z0, 1, 3, column); // east jamb shaft
+        b.set(4, 4, z0, stairE);        // left arch springer leaning to the keystone
+        b.set(6, 4, z0, stairW);        // right arch springer
+        b.set(5, 4, z0, chiseled);      // keystone over the entrance lintel
+        b.set(5, 5, z0, chiseled);      // raised keystone band above
+
+        // ── 5) THE TANK BOX (the HERO) — a glass-walled water tank filling the back
+        //    band (x=1..9, z=5..7), rising y=1..wallH. The four faces that aren't the
+        //    building's own back/side walls are full GLASS BLOCKS so visitors see
+        //    through into the water. Full blocks hold water and never stub (no panes).
+        // 5a) TANK BASE PAN (y=1) — a prismarine pan under the tank to seat the water
+        //     and reef (the dressed tank bottom), prismarine-brick lined at its rim.
+        floor(b, 1, tx0, tz0, tx1, tz1, prismarine);
+        line(b, 1, tx0, tz0, tx1, tz0, prisBricks); // tank front (gallery side) base rim
+        line(b, 1, tx0, tz0, tx0, tz1, prisBricks); // tank west base rim
+        line(b, 1, tx1, tz0, tx1, tz1, prisBricks); // tank east base rim
+        // 5b) TANK GLASS WALLS (y=2..wallH) — the viewing glazing. The FRONT face
+        //     (z=tz0-1 ... actually z=tz0 facing the gallery) and the two SIDE returns
+        //     are full glass blocks; the building's south/side walls back the rest.
+        for (int y = 2; y <= wallH; y++) {
+            // front glass wall (the pane visitors look through), tinted light-blue with
+            // clear viewing panels — all full BLOCKS.
+            for (int x = tx0; x <= tx1; x++) {
+                b.set(x, y, tz0, ((x % 2 == 0) ? glass : tintGlass));
+            }
+            // west + east glass return walls of the tank box
+            for (int z = tz0; z <= tz1; z++) {
+                b.set(tx0, y, z, tintGlass);
+                b.set(tx1, y, z, tintGlass);
+            }
+            // back face: the building's own south wall (z=8) already closes it; add an
+            // inner glass liner at z=tz1 so the reef reads as enclosed glazing too.
+            for (int x = tx0; x <= tx1; x++) {
+                b.set(x, y, tz1, ((x % 3 == 0) ? cyanGlass : tintGlass));
+            }
+        }
+        // a chiseled-quartz coping cap along the front glass top (the tank rail trim)
+        line(b, wallH, tx0, tz0, tx1, tz0, chiseled);
+
+        // ── 6) WATER + REEF INSIDE THE TANK — fill the glass box interior (the cells
+        //    strictly inside the four glass walls) with structural WATER (prints free),
+        //    then over-stamp a colourful VALUED reef on the tank floor. Water is placed
+        //    ONLY here; the gallery in front stays dry air.
+        // 6a) WATER body: the interior column x=tx0+1..tx1-1, z=tz0+1..tz1-1, y=2..wallH.
+        //     (Single-cell-deep tank in z would leave no interior; tz0..tz1 is 3 deep so
+        //     the interior z is just tz0+1==6. Fill that interior slab with water.)
+        for (int y = 2; y <= wallH; y++) {
+            for (int x = tx0 + 1; x <= tx1 - 1; x++) {
+                b.set(x, y, tz0 + 1, WATER);
+            }
+        }
+        // 6b) TANK SEABED (y=1) — over-stamp the prismarine pan interior with a mottled
+        //     sand/gravel/sandstone bed so the reef grows off a natural floor.
+        for (int x = tx0 + 1; x <= tx1 - 1; x++) {
+            int k = (x * 5) % 7;
+            BlueprintBlockState bedMat = (k <= 1) ? gravel : (k == 2 ? sandstone : sand);
+            b.set(x, 1, tz0 + 1, bedMat);
+        }
+        // 6c) CORAL MOUNDS — small bright-concrete heads rising off the bed inside the
+        //     water (full blocks, all valued). Varied colours/heights across the tank.
+        int[][] heads = {
+                {2, 2, 0}, // pink, west
+                {3, 3, 3}, // cyan
+                {5, 2, 1}, // orange, centre
+                {6, 2, 2}, // lime
+                {7, 3, 4}, // light-blue
+                {8, 2, 5}, // yellow, east
+        };
+        for (int[] h : heads) {
+            int hx = h[0], top = 1 + h[1], col = h[2];
+            pillar(b, hx, tz0 + 1, 2, top, coral[col % coral.length]);
+        }
+        // 6d) PRISMARINE ACCENTS + GLOW — a couple of prismarine outcrops and flush
+        //     sea-lantern / glowstone uplights nestled in the reef (the bright glow).
+        b.set(4, 2, tz0 + 1, prisBricks);
+        b.set(4, 3, tz0 + 1, prismarine);
+        b.set(2, 1, tz0 + 1, SEA_LANTERN); // floor uplight by the pink head
+        b.set(6, 1, tz0 + 1, GLOWSTONE);   // centre bed glow
+        b.set(8, 1, tz0 + 1, SEA_LANTERN); // east glow by the yellow head
+        // end-rod "fan coral" sprigs rising off two heads (thin verticals — safe)
+        b.set(3, 4, tz0 + 1, END_ROD);
+        b.set(7, 5, tz0 + 1, END_ROD);
+
+        // ── 7) GALLERY DETAIL (dry, front band z=1..3) — a low quartz-slab viewing
+        //    bench/rail along the tank coping (z=4) and a couple of chiseled plinths so
+        //    the gallery reads as a finished viewing space. All on the y=0 dry floor;
+        //    nothing here is water.
+        // chiseled-quartz coping/rail course along z=4 (between gallery and tank)
+        for (int x = x0; x <= x1; x++) {
+            b.set(x, 1, 4, chiseled);
+        }
+        // a quartz-slab leaning rail on top of the coping (the lean-on bar)
+        for (int x = 1; x <= x1 - 1; x++) {
+            b.set(x, 2, 4, quartzSlabBot);
+        }
+        // two info-plinths in the gallery (chiseled quartz pedestals visitors gather at)
+        b.set(2, 1, 2, chiseled);
+        b.set(8, 1, 2, chiseled);
+
+        // ── 8) ROOF (y=wallH+1 = 6) — a flat smooth-quartz-slab ceiling over the whole
+        //    hall, with a quartz-block cornice ring just below it (y=wallH already the
+        //    wall top). Sea-lantern panels recessed into the ceiling light the gallery
+        //    and the tank from above.
+        floor(b, 6, x0, z0, x1, z1, quartzSlabTop);
+        // recessed sea-lantern ceiling panels (over-stamp the slab roof at a grid) —
+        // two rows: one over the gallery, one over the tank, so both are lit.
+        for (int x = 2; x <= x1 - 1; x += 3) {
+            b.set(x, 6, 2, SEA_LANTERN); // gallery ceiling lights
+            b.set(x, 6, 6, SEA_LANTERN); // tank ceiling lights
+        }
+        // a white-concrete cornice band wrapping the wall top (y=wallH) for a crisp eave
+        line(b, wallH, x0, z0, x1, z0, white);
+        line(b, wallH, x0, z1, x1, z1, white);
 
         return b.build();
     }
