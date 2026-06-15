@@ -7,9 +7,9 @@
 
 ## Status
 - **Curated builds before Phase 2:** 29
-- **Phase 2 queue:** 103 · **Done:** 11 · **Blocked:** 1 · **Remaining:** 91
-- **Next up:** `hobbit_hole`
-- **Last completed:** `mushroom_island_hut (BLOCKED)`
+- **Phase 2 queue:** 103 · **Done:** 12 · **Blocked:** 1 · **Remaining:** 90
+- **Next up:** `treehouse`
+- **Last completed:** `hobbit_hole`
 
 ## Process (per build — follow exactly on resume)
 1. Pick the first unchecked `[ ]` build in queue order below.
@@ -45,7 +45,7 @@
 - [x] cherry_blossom_pavilion
 - [x] badlands_mesa_dwelling
 - [BLOCKED: needs mushroom blocks + mycelium valued (no recipe; core to build)] mushroom_island_hut
-- [ ] hobbit_hole
+- [x] hobbit_hole
 - [ ] treehouse
 
 ### F — Functional farms (14) · differentiator; watch for unvalued components

@@ -210,6 +210,7 @@ class CuratedBlueprintGenerator {
         builds.put("mangrove_stilt_hut", mangroveStiltHut());
         builds.put("cherry_blossom_pavilion", cherryBlossomPavilion());
         builds.put("badlands_mesa_dwelling", badlandsMesaDwelling());
+        builds.put("hobbit_hole", hobbitHole());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -3927,6 +3928,171 @@ class CuratedBlueprintGenerator {
         b.set(x1 - 1, wallBottom, z0 + 1, CHEST);
         b.set(x0 + 1, wallBottom, z0 + 1, p.lightBlock);         // lantern, front corner
         b.set(cx, wallBottom, cz, p.lightBlock);                 // central lantern
+
+        return b.build();
+    }
+
+    /**
+     * Hobbit Hole. 9×9 footprint → builder(9, 9, 7). A hillside hobbit hole whose
+     * IDENTITY is the round front facade: a big round dark-oak door set in a circular
+     * stone-brick + cobblestone arch, flanked by two round glass windows, with a cozy
+     * enterable room carved behind it. The grassy hill is NOT part of the build — the
+     * player prints the facade + room into their own hillside, so there is NO earthen
+     * mound, no grass_block/dirt/podzol/leaves/vines (all unvalued/allowlisted → they
+     * would silently not print). Everything here is vanilla, FU-valued (recipe-derived
+     * for the dark-oak wood family + door, hardcoded for stone_bricks/cobble/glass/
+     * terracotta).
+     *
+     * <p>The signature round facade is a VERTICAL circle in the X–Y plane at the front
+     * face (z=0). The library's {@link #disc}/{@link #circleRing} helpers work in the
+     * horizontal X–Z plane, so the round arch is generated inline with the same radial
+     * distance test ({@code dist ≤ r+0.5}) but oriented X–Y at fixed z — a faithful use
+     * of the radial convention for a vertical facade. The arch is a solid stone-brick
+     * disc (cobblestone ring rim) carved by the air-skip rule: the round door opening,
+     * the two round windows, and the room interior are simply left unwritten.
+     *
+     * <p>Layout, footprint x=0..8 (W=9), z=0..6 (depth=7), facade centred at cx=4,
+     * cy=4 (so the circle spans y=0..8, the full height):
+     * <ul>
+     *   <li><b>z=0 (front facade)</b> — a filled stone-brick disc (radius 4) ringed by a
+     *       cobblestone rim ({@code circleRing} math), terracotta trim accents at the
+     *       cardinal rim points. A big round dark-oak DOOR sits centred at the bottom
+     *       of the circle (cx=4, y=1..2), framed by a dark-oak-log arch jamb. Two round
+     *       GLASS windows (a 3-pane plus shape each) sit left/right of the door, each
+     *       pane flanked by solid stone-brick disc cells on both horizontal sides →
+     *       render-safe (no stub panes). A dark-oak-log lintel arches over the door.</li>
+     *   <li><b>z=1..6 (the room behind)</b> — a stone-brick wall ring with dark-oak-log
+     *       corner posts and a dark-oak plank back wall (z=6), so the room reads as a
+     *       timber-lined burrow dug into the hill. Walkable dark-oak plank floor at y=1;
+     *       a stone-brick + dark-oak plank low ceiling at y=6 closes the burrow. The
+     *       interior (y=2..5) is left unwritten → open and enterable through the round
+     *       door.</li>
+     *   <li><b>furnishings</b> — a cozy hobbit interior on the y=1 floor: a red
+     *       {@link #bed}, a bookshelf nook, a crafting table, a chest, a barrel pantry,
+     *       and lanterns. A terracotta hearth band warms the back wall.</li>
+     * </ul>
+     */
+    private static Blueprint hobbitHole() {
+        Blueprint.Builder b = Blueprint.builder("Hobbit Hole", 9, 9, 7);
+        // build-local materials (all vanilla, all FU-valued / recipe-derived)
+        BlueprintBlockState stoneBrick   = STONE_BRICKS;
+        BlueprintBlockState mossyBrick   = MOSSY_STONE_BRICKS;
+        BlueprintBlockState cobble       = COBBLE;
+        BlueprintBlockState darkOak      = DARK_OAK_PLANKS;
+        BlueprintBlockState darkOakLogY  = bs("minecraft:dark_oak_log[axis=y]");
+        BlueprintBlockState darkOakLogX  = bs("minecraft:dark_oak_log[axis=x]");
+        BlueprintBlockState terracotta   = bs("minecraft:terracotta");
+        BlueprintBlockState orangeTC     = bs("minecraft:orange_terracotta");
+        BlueprintBlockState brownTC      = bs("minecraft:brown_terracotta");
+        BlueprintBlockState glass        = GLASS;
+
+        int x0 = 0, x1 = 8;           // facade/room width
+        int z0 = 0;                   // front facade row (the round face)
+        int z1 = 6;                   // back wall (carved into the hill)
+        int cx = 4;                   // facade circle centre x
+        int cy = 4;                   // facade circle centre y (circle spans y=0..8)
+        int r  = 4;                   // facade radius
+        int floorY = 1;               // walkable dark-oak floor (top of y=1 plank course)
+        int ceilY  = 6;               // low burrow ceiling
+        int cz = (z0 + z1) / 2;       // 3, room centre depth
+
+        // ── 1) THE ROOM BEHIND (carved-into-hill burrow), z=1..z1 ────────────
+        // Built FIRST so the round facade (z=0) is never overwritten by it. The
+        // front of the room is the round facade itself (added in step 2), so the
+        // room's floor/walls/ceiling start at z=1.
+        // 1a) walkable dark-oak plank floor at y=floorY over z=1..z1
+        floor(b, floorY, x0, z0 + 1, x1, z1, darkOak);
+        // 1b) stone-brick side walls + dark-oak plank back wall, y=floorY+1..ceilY-1
+        for (int y = floorY + 1; y <= ceilY - 1; y++) {
+            line(b, y, x0, z0 + 1, x0, z1, stoneBrick); // west wall (x=0)
+            line(b, y, x1, z0 + 1, x1, z1, stoneBrick); // east wall (x=8)
+            line(b, y, x0, z1, x1, z1, darkOak);        // dark-oak plank back wall (z=6)
+        }
+        // dark-oak-log corner posts framing the burrow
+        pillar(b, x0, z1, floorY + 1, ceilY - 1, darkOakLogY);
+        pillar(b, x1, z1, floorY + 1, ceilY - 1, darkOakLogY);
+        pillar(b, x0, z0 + 1, floorY + 1, ceilY - 1, darkOakLogY);
+        pillar(b, x1, z0 + 1, floorY + 1, ceilY - 1, darkOakLogY);
+        // 1c) low burrow ceiling at y=ceilY over z=1..z1, edged with a stone-brick rim
+        floor(b, ceilY, x0, z0 + 1, x1, z1, darkOak);
+        line(b, ceilY, x0, z1, x1, z1, stoneBrick);
+
+        // ── 2) THE ROUND FRONT FACADE (vertical X–Y circle at z=0) ────────────
+        // Solid stone-brick disc, radius r, centred (cx,cy). Same radial distance
+        // test as disc()/circleRing() but oriented in the X–Y plane at fixed z.
+        // This IS the round front wall; the square corners of the 9×9 front are
+        // left as air (the facade reads round). The room floor (y=floorY) extends
+        // its front lip into z=0 under the door so the threshold is walkable.
+        for (int x = cx - r; x <= cx + r; x++) {
+            for (int y = cy - r; y <= cy + r; y++) {
+                if (y < 0) continue;                 // never below the print floor
+                double d = Math.sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy));
+                if (d <= r + 0.5) {
+                    // cobblestone rim on the outer ring, stone brick fill inside, a
+                    // mossy-brick speckle for an old, settled-into-the-hill read.
+                    BlueprintBlockState mat = (d > r - 0.5) ? cobble
+                            : (((x + y) % 5 == 0) ? mossyBrick : stoneBrick);
+                    b.set(x, y, z0, mat);
+                }
+            }
+        }
+        // terracotta trim accents at the four cardinal rim points (cottage colour)
+        b.set(cx, cy + r, z0, orangeTC);     // top of the arch
+        b.set(cx - r, cy, z0, brownTC);      // left rim
+        b.set(cx + r, cy, z0, brownTC);      // right rim
+
+        // ── 3) TWO ROUND GLASS WINDOWS flanking the door (set into the disc) ──
+        // Each pane keeps a solid stone-brick disc cell as a horizontal neighbour
+        // (left/right within the disc fill) → render-safe, no stub panes. Written
+        // BEFORE the door so nothing overwrites the door. The windows sit at the
+        // upper-mid of the disc, clear of the door jambs.
+        int[] winCx = { cx - 2, cx + 2 };  // window centre columns (inside r=4 disc)
+        int winCy = cy + 1;                // window centre height (upper-mid of circle)
+        for (int wc : winCx) {
+            // re-stamp the horizontal flankers solid FIRST (they may be cobble rim),
+            // then punch the 2-tall round glass port between them → render-safe.
+            b.set(wc - 1, winCy, z0, stoneBrick);
+            b.set(wc + 1, winCy, z0, stoneBrick);
+            b.set(wc - 1, winCy - 1, z0, stoneBrick);
+            b.set(wc + 1, winCy - 1, z0, stoneBrick);
+            b.set(wc, winCy, z0, glass);
+            b.set(wc, winCy - 1, z0, glass);
+        }
+
+        // ── 4) THE BIG ROUND DARK-OAK DOOR (centred, bottom of the circle) ────
+        // Written LAST so neither the disc fill nor the floor lip can overwrite it.
+        // Dark-oak-log jambs frame the opening; an arched dark-oak lintel caps it.
+        // The doorway threshold cell (cx, floorY, z0) gets a plank lip so the floor
+        // is continuous from the round door into the burrow.
+        b.set(cx, floorY, z0, darkOak);                  // (overwritten by door lower, but keeps lip if door fails)
+        b.set(cx - 1, floorY, z0, darkOakLogY);          // left jamb (post)
+        b.set(cx - 1, floorY + 1, z0, darkOakLogY);
+        b.set(cx + 1, floorY, z0, darkOakLogY);          // right jamb (post)
+        b.set(cx + 1, floorY + 1, z0, darkOakLogY);
+        // arched dark-oak lintel hugging the circle just above the doorway
+        b.set(cx - 1, floorY + 2, z0, darkOakLogX);
+        b.set(cx, floorY + 2, z0, darkOak);
+        b.set(cx + 1, floorY + 2, z0, darkOakLogX);
+        // the round door itself: lower at y=floorY, upper at y=floorY+1 (opens inward)
+        door2(b, cx, floorY, z0, "dark_oak", "N");
+
+        // ── 5) terracotta hearth band warming the back wall (cottage trim) ────
+        b.set(cx, floorY + 1, z1, terracotta);
+        b.set(cx, floorY + 2, z1, orangeTC);
+        b.set(cx - 1, floorY + 1, z1, brownTC);
+        b.set(cx + 1, floorY + 1, z1, brownTC);
+
+        // ── 6) cozy interior furnishings on the walkable y=floorY floor ──────
+        bed(b, x0 + 1, floorY + 1, z1 - 1, "red", "north");  // bed against the back-left
+        b.set(x1 - 1, floorY + 1, z1 - 1, BOOKSHELF);        // reading nook (back-right)
+        b.set(x1 - 1, floorY + 1, z1 - 2, BOOKSHELF);
+        b.set(x1 - 1, floorY + 1, z0 + 2, CRAFTING_TABLE);   // work corner (front-right)
+        b.set(x0 + 1, floorY + 1, z0 + 2, CHEST);            // storage (front-left)
+        b.set(x0 + 1, floorY + 1, z1 - 2, BARREL);           // pantry barrel
+        b.set(x0 + 2, floorY + 1, z0 + 1, LANTERN);          // floor lantern, front
+        b.set(x1 - 2, floorY + 1, z1 - 1, LANTERN);          // floor lantern, back
+        // a hanging lantern in the centre, chained to the burrow ceiling
+        chainLantern(b, cx, ceilY - 2, cz, 1);
 
         return b.build();
     }
