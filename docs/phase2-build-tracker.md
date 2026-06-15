@@ -7,9 +7,9 @@
 
 ## Status
 - **Curated builds before Phase 2:** 29
-- **Phase 2 queue:** 103 · **Done:** 96 · **Blocked:** 2 · **Remaining:** 5
-- **Next up:** `purpur_tower`
-- **Last completed:** `blackstone_bastion_fragment`
+- **Phase 2 queue:** 103 · **Done:** 97 · **Blocked:** 2 · **Remaining:** 4
+- **Next up:** `end_stone_outpost`
+- **Last completed:** `purpur_tower`
 
 ## Process (per build — follow exactly on resume)
 1. Pick the first unchecked `[ ]` build in queue order below.
@@ -147,7 +147,7 @@
 - [x] blackstone_bastion_fragment (gilded_blackstone unvalued → polished_blackstone + gold_block accents)
 
 ### D — End (5) · T7 materials; watch end-block values
-- [ ] purpur_tower
+- [x] purpur_tower
 - [ ] end_stone_outpost
 - [ ] chorus_garden
 - [ ] shulker_box_vault
