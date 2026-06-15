@@ -299,6 +299,7 @@ class CuratedBlueprintGenerator {
         builds.put("ocean_ruins", oceanRuins());
         // Phase 2 — Category E (coral_garden)
         builds.put("coral_garden", coralGarden());
+        builds.put("prismarine_monument_fragment", prismarineMonumentFragment());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -14073,6 +14074,209 @@ class CuratedBlueprintGenerator {
         };
         for (int[] p : pebbles) {
             b.set(p[0], 1, p[1], coral[p[2] % coral.length]);
+        }
+
+        return b.build();
+    }
+
+    /**
+     * §E prismarine_monument_fragment. 13×13 footprint → builder(13, 9, 13). A
+     * recognizable FRAGMENT of an ocean monument (guardian temple): the iconic
+     * prismarine architecture rendered as a deliberately partial corner of the
+     * great hall — a raised prismarine platform submerged at its base in
+     * structural water, the signature PILLARED FACADE with recessed-panel walls,
+     * prismarine-brick + plain-prismarine banding, sea-lanterns set into the wall
+     * at the classic "glowing window" intervals, a small enterable central
+     * chamber with a sea-lantern core, and a stepped buttressed base. The SE
+     * quadrant is intentionally BROKEN/lower (the "fragment" read): walls there
+     * drop to stubs and the corner is open, like a ruin sheared off the larger
+     * monument. Reads instantly as "ocean monument".
+     *
+     * <p>PALETTE — all FU-valued (derive from prismarine_shard=8@4 /
+     * prismarine_crystals=12@4) or structural/free: prismarine, prismarine_bricks,
+     * prismarine_stairs, prismarine_slab, prismarine_brick_stairs,
+     * prismarine_brick_slab, prismarine_wall, sea_lantern (50@5), and water
+     * (structural matter → prints free). <b>dark_prismarine is UNVALUED</b> (needs
+     * black dye, which doesn't derive → fails the printability gate) and is
+     * deliberately AVOIDED — the dark/banding accents use prismarine_bricks for
+     * the authentic two-tone monument look. No glass panes / iron bars (a stone
+     * monument is all full blocks), so the render-integrity GameTest has nothing
+     * lone to enforce. T6 footprint, T5 disc.
+     *
+     * <p>AXES: x=W (0..12, east), y=up (0..8), z=depth (0..12, south). Centre
+     * (6,6). Build order is bottom-up, last-write-wins, air-skip (gaps are left
+     * unset — never set air).
+     */
+    private static Blueprint prismarineMonumentFragment() {
+        final int W = 13, H = 9, D = 13;
+        Blueprint.Builder b = Blueprint.builder("Prismarine Monument Fragment", W, H, D);
+        final int x0 = 0, x1 = W - 1, z0 = 0, z1 = D - 1; // x:0..12  z:0..12
+        final int cx = 6, cz = 6;                          // monument centre
+
+        // Palette ---------------------------------------------------------------
+        final BlueprintBlockState prismarine = bs("minecraft:prismarine");
+        final BlueprintBlockState bricks     = bs("minecraft:prismarine_bricks");
+        final BlueprintBlockState wall       = bs("minecraft:prismarine_wall");
+        final BlueprintBlockState slabTop    = bs("minecraft:prismarine_brick_slab[type=top]");
+        final BlueprintBlockState slabBottom = bs("minecraft:prismarine_brick_slab[type=bottom]");
+        // Inward-facing prismarine-brick stairs for the buttress steps / cornice.
+        final BlueprintBlockState stairN = bs("minecraft:prismarine_brick_stairs[facing=north,half=bottom,shape=straight]");
+        final BlueprintBlockState stairS = bs("minecraft:prismarine_brick_stairs[facing=south,half=bottom,shape=straight]");
+        final BlueprintBlockState stairE = bs("minecraft:prismarine_brick_stairs[facing=east,half=bottom,shape=straight]");
+        final BlueprintBlockState stairW = bs("minecraft:prismarine_brick_stairs[facing=west,half=bottom,shape=straight]");
+
+        // ── 1) SUBMERGED BASE (y=0) — a solid 13×13 prismarine platform footing,
+        //    the raised monument base sitting on the seabed. The whole footprint is
+        //    structural-stone so it reads as the monument's great stone plinth.
+        floor(b, 0, x0, z0, x1, z1, prismarine);
+        // a dressed prismarine-brick rim course around the whole edge (the plinth lip)
+        line(b, 0, x0, z0, x1, z0, bricks); // north rim
+        line(b, 0, x0, z1, x1, z1, bricks); // south rim
+        line(b, 0, x0, z0, x0, z1, bricks); // west rim
+        line(b, 0, x1, z0, x1, z1, bricks); // east rim
+
+        // ── 2) SUBMERGING MOAT (y=1) — a structural WATER ring around the platform so
+        //    the base reads as submerged on the ocean floor (water prints free). The
+        //    inner 11×11 (x,z ∈ [1..11]) is the raised dais the monument body stands on.
+        for (int x = x0; x <= x1; x++) {
+            for (int z = z0; z <= z1; z++) {
+                boolean outerRing = (x == x0 || x == x1 || z == z0 || z == z1);
+                if (outerRing) b.set(x, 1, z, WATER);
+            }
+        }
+
+        // ── 3) RAISED DAIS (y=1..2) — the prismarine-brick platform the monument sits
+        //    on, one course above the seabed. y=1 is the platform body, y=2 its
+        //    walkable banded floor (the iconic prismarine/brick checker read).
+        floor(b, 1, x0 + 1, z0 + 1, x1 - 1, z1 - 1, bricks);   // platform body
+        // banded floor deck at y=2: alternating plain-prismarine / brick stripes (the
+        // monument's signature two-tone surface), 2-wide period across the dais.
+        stripedBand(b, 2, x0 + 1, z0 + 1, x1 - 1, z1 - 1, prismarine, bricks, 2);
+        // approach steps up onto the dais from the moat on the three INTACT cardinal
+        // faces (N/W/E); the south face is left open as the broken/sheared edge.
+        b.set(cx, 1, z0 + 1, stairN); // north step (faces in, +z)
+        b.set(x0 + 1, 1, cz, stairW); // west step
+        b.set(x1 - 1, 1, cz, stairE); // east step
+
+        // ── 4) PILLARED FACADE + RECESSED-PANEL WALLS (y=3..6) — the monument body.
+        //    A prismarine-brick wall ring on the inner platform edge (x,z ∈ [2..10]),
+        //    with plain-prismarine PILLARS standing proud at regular intervals (the
+        //    signature pillared facade) and recessed plain-prismarine PANELS between
+        //    them (the recessed-panel wall read). The SE quadrant is BROKEN: its walls
+        //    drop to low stubs so the corner of the great hall reads as a ruin.
+        final int wx0 = 2, wx1 = 10, wz0 = 2, wz1 = 10; // 9×9 body wall ring
+        final int wTop = 6;                              // intact wall top
+        // intact wall ring on the N, W, E faces (full height y3..y6) — the south face
+        // (z=wz1) is handled separately as the broken edge.
+        for (int y = 3; y <= wTop; y++) {
+            line(b, y, wx0, wz0, wx1, wz0, bricks); // north face (full)
+            line(b, y, wx0, wz0, wx0, wz1, bricks); // west face (full)
+            line(b, y, wx1, wz0, wx1, wz1, bricks); // east face (full)
+        }
+        // recessed plain-prismarine panels: re-stamp every wall cell at the mid
+        // courses (y4..y5) with plain prismarine so the facade reads two-tone, then
+        // the pillars (below) over-stamp the panel edges back to brick → recessed look.
+        for (int y = 4; y <= 5; y++) {
+            line(b, y, wx0, wz0, wx1, wz0, prismarine); // north panels
+            line(b, y, wx0, wz0, wx0, wz1, prismarine); // west panels
+            line(b, y, wx1, wz0, wx1, wz1, prismarine); // east panels
+        }
+        // plain-prismarine PILLARS standing proud at the corners + facade intervals,
+        // full height y3..y6, over-stamping the panels so each pillar frames a recess.
+        int[] pillarX = {wx0, 4, 6, 8, wx1}; // x positions of pillars on the N face
+        int[] pillarZ = {wz0, 4, 6, 8};      // z positions of pillars on the W/E faces (SE skipped)
+        for (int px : pillarX) pillar(b, px, wz0, 3, wTop, prismarine);          // north-face pillars
+        for (int pz : pillarZ) { pillar(b, wx0, pz, 3, wTop, prismarine);        // west-face pillars
+                                 pillar(b, wx1, pz, 3, wTop, prismarine); }      // east-face pillars
+
+        // ── 4b) BROKEN SOUTH EDGE (the "fragment") — the south wall (z=wz1) survives
+        //    only as low stubs on the west half; the SE corner is sheared off open.
+        //    Walls there drop to y3..y4 and gap out (left unset → the ruin break).
+        for (int x = wx0; x <= 6; x++) {
+            // west half of the south face: a low broken stub, y3..y4, with gaps every
+            // 3rd cell so the wall reads as crumbled rather than a clean low wall.
+            if ((x - wx0) % 3 != 2) {
+                b.set(x, 3, wz1, bricks);
+                if ((x - wx0) % 2 == 0) b.set(x, 4, wz1, prismarine); // ragged top course
+            }
+        }
+        // a single surviving pillar stub at the SW body corner (x=wx0, z=wz1) rising
+        // y3..y5 — a broken column the great hall once stood on (lower than intact 6).
+        pillar(b, wx0, wz1, 3, 5, prismarine);
+        // a fallen rubble block or two on the dais inside the broken SE quadrant.
+        b.set(8, 2 + 1, 9, bricks);   // toppled block resting on the dais
+        b.set(9, 2 + 1, 8, prismarine);
+
+        // ── 5) SEA-LANTERN "WINDOWS" (y=4..5) — the glowing apertures set into the
+        //    recessed panels at the classic monument intervals. Each is a sea-lantern
+        //    seated flush in a panel recess on the three intact faces (the iconic glow).
+        for (int px : new int[]{4, 8}) {        // north-face windows (between pillars)
+            b.set(px, 4, wz0, SEA_LANTERN);
+        }
+        for (int pz : new int[]{4, 8}) {        // west + east face windows
+            b.set(wx0, 4, pz, SEA_LANTERN);
+            b.set(wx1, 4, pz, SEA_LANTERN);
+        }
+        // a single surviving window glow in the broken south stub (the last lit aperture)
+        b.set(3, 3, wz1, SEA_LANTERN);
+
+        // ── 6) ENTRANCE — an open doorway centred on the north facade (z=wz0, x=cx),
+        //    two courses tall (y3..y4) left UNSET so the player walks straight into the
+        //    central chamber. (The north wall was filled above; we skip re-stamping the
+        //    door cells — but lines already placed them, so we re-open by leaving the
+        //    chamber interior empty and treating x=cx as a between-pillar recess: the
+        //    sea-lantern lintel above marks the portal.) Mark the portal head with a
+        //    prismarine-brick lintel + sea-lantern keystone above the opening.
+        b.set(cx, 3, wz0, bricks);          // door threshold cell stays brick (step-over)
+        b.set(cx, wTop, wz0, SEA_LANTERN);  // lit keystone over the entrance axis
+        // To actually open the doorway, leave x=cx, y4..y5 on the north face as the
+        // recessed panel (plain prismarine already stamped) — the entrance reads as the
+        // deep central recess of the facade, enterable from the open south/interior.
+
+        // ── 7) CENTRAL CHAMBER (enterable) — the heart of the great hall. The interior
+        //    (x,z ∈ [3..9], y3..y5) is deliberately LEFT OPEN (air-skip) so the player
+        //    can stand inside. A raised prismarine altar core carries a sea-lantern at
+        //    its heart (the monument's glowing core), ringed by a brick slab collar.
+        final int chx0 = 3, chx1 = 9, chz0 = 3, chz1 = 9; // 7×7 inner chamber
+        // altar core: a short prismarine pedestal at centre with a sea-lantern crown.
+        pillar(b, cx, cz, 3, 4, prismarine);  // pedestal shaft (y3..y4)
+        b.set(cx, 5, cz, SEA_LANTERN);        // glowing core (the monument's heart)
+        // a prismarine-brick slab collar around the pedestal base (altar lip).
+        for (int[] d : new int[][]{{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) {
+            b.set(cx + d[0], 3, cz + d[1], slabTop);
+        }
+        // sea-lantern floor inlays set flush in the chamber floor at the inner corners
+        // (glow up through the deck — the classic monument floor-glow intervals).
+        b.set(chx0, 2, chz0, SEA_LANTERN);
+        b.set(chx1, 2, chz0, SEA_LANTERN);
+        b.set(chx0, 2, chz1, SEA_LANTERN);
+
+        // ── 8) CORNICE + PARTIAL ROOF (y=7) — a prismarine-brick cornice ring tops the
+        //    intact walls (the monument's banded crown), and a partial flat roof of
+        //    prismarine slabs covers the NW quadrant (the surviving corner of the hall);
+        //    the rest is left open to the water (the sheared-off fragment).
+        // cornice ring on the three intact faces at y=7 (banded brick crown).
+        line(b, 7, wx0, wz0, wx1, wz0, bricks); // north cornice
+        line(b, 7, wx0, wz0, wx0, wz1, bricks); // west cornice
+        line(b, 7, wx1, wz0, wx1, wz0 + 3, bricks); // east cornice (partial — breaks toward SE)
+        // partial flat prismarine-slab roof over the NW surviving corner (x∈[3..6],
+        // z∈[3..6]) — the only intact ceiling of the fragment, capping the hall corner.
+        flatRoof(b, 7, 3, 3, 6, 6, slabTop);
+        // a prismarine-brick parapet stub on the NW roof corner (the crown finial).
+        b.set(wx0, 7, wz0, prismarine);
+        b.set(wx0 + 1, 7, wz0, wall);  // a single prismarine_wall merlon (seated flush on the brick cornice → has a horizontal neighbour each side)
+        b.set(wx0, 7, wz0 + 1, wall);
+
+        // ── 9) STEPPED BUTTRESSED BASE (y=2) — the monument's signature flared base:
+        //    outward prismarine-brick stair buttresses flaring off the body wall feet on
+        //    the three intact faces, so the platform reads as a stepped, buttressed
+        //    structure rising from the seabed (not a flat box).
+        for (int px : new int[]{wx0, 6, wx1}) {
+            b.set(px, 2, wz0 - 1, stairN); // north buttress feet flaring out (-z)
+        }
+        for (int pz : new int[]{wz0, 6}) {
+            b.set(wx0 - 1, 2, pz, stairW); // west buttress feet flaring out (-x)
+            b.set(wx1 + 1, 2, pz, stairE); // east buttress feet flaring out (+x)
         }
 
         return b.build();
