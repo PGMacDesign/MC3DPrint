@@ -7,9 +7,9 @@
 
 ## Status
 - **Curated builds before Phase 2:** 29
-- **Phase 2 queue:** 103 · **Done:** 80 · **Blocked:** 2 · **Remaining:** 21
-- **Next up:** `fishing_hut`
-- **Last completed:** `dock_pier`
+- **Phase 2 queue:** 103 · **Done:** 81 · **Blocked:** 2 · **Remaining:** 20
+- **Next up:** `conduit_shrine`
+- **Last completed:** `fishing_hut`
 
 ## Process (per build — follow exactly on resume)
 1. Pick the first unchecked `[ ]` build in queue order below.
@@ -127,7 +127,7 @@
 
 ### E — Ocean / water (9)
 - [x] dock_pier
-- [ ] fishing_hut
+- [x] fishing_hut
 - [ ] conduit_shrine
 - [ ] ocean_ruins
 - [ ] coral_garden
