@@ -287,6 +287,8 @@ class CuratedBlueprintGenerator {
         builds.put("modern_glass_villa", modernGlassVilla());
         // Phase 2 — Category B (elven_treehouse)
         builds.put("elven_treehouse", elvenTreehouse());
+        // Phase 2 — Category B (dwarven_hall)
+        builds.put("dwarven_hall", dwarvenHall());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -13012,6 +13014,256 @@ class CuratedBlueprintGenerator {
         b.set(8, 1, 0, deepslateWall);
         b.set(0, 1, 8, deepslateWall);
         b.set(8, 1, 8, deepslateWall);
+
+        return b.build();
+    }
+
+    /**
+     * Category B — dwarven_hall. 13×11 footprint → builder(13, 14, 11): a grand
+     * subterranean dwarven mead/throne hall in the Moria / Khazad-dûm idiom — a long
+     * monumental chamber carved from the mountain, with TWO ROWS of massive square
+     * stone-brick + deepslate PILLARS marching down a central aisle, deep relief
+     * walls (chiseled pilasters + polished-deepslate banding), gold-block and
+     * iron-block geometric "runic" banding, a STEPPED COFFERED CEILING, a raised
+     * THRONE DAIS at the far (south) end, brazier/lantern warm light, and a grand
+     * pillared entrance on the front (north) wall.
+     *
+     * <p>AXES: x=W (0..12), y=up (0..13), z=depth (0..10). The hall runs along Z;
+     * the central aisle is the open spine (x∈[5..7]) you walk straight down from the
+     * north entrance to the throne at the south. The two pillar rows flank the aisle
+     * at x∈[2..3] (west) and x∈[9..10] (east) — 2×2 monumental piers, freestanding,
+     * with deepslate plinths, stone-brick shafts, iron/gold capital banding, carrying
+     * deepslate tie-beams that the coffered ceiling rides on.
+     *
+     * <p>PALETTE (all FU-valued or structural): stone_bricks (+chiseled/cracked/mossy),
+     * deepslate_bricks / deepslate_tiles / polished_deepslate / chiseled_deepslate
+     * (+stairs/slab/wall), iron_block + gold_block (the metal accents — derive from
+     * ingots, both valued), iron_bars (entrance portcullis lintel, spans jamb-to-jamb;
+     * niche grates over glowstone, each flanked by solid wall → never a stub pane),
+     * glowstone / lantern / soul_lantern / chain, campfire (dais braziers). No glass
+     * panes, so the stub-pane gate is a non-issue; the only iron-bars are full grates
+     * with solid horizontal neighbours.
+     *
+     * <p>ENTERABLE: the aisle and the whole interior between the pillar rows is left
+     * OPEN (never written) so the player walks in through the north entrance, down the
+     * aisle, and up the dais steps. The ceiling closes overhead at y=11/12, well above
+     * head height.
+     */
+    private static Blueprint dwarvenHall() {
+        final int W = 13, H = 14, D = 11;
+        Blueprint.Builder b = Blueprint.builder("Dwarven Hall", W, H, D);
+        final int x0 = 0, x1 = W - 1, z0 = 0, z1 = D - 1; // x:0..12  z:0..10
+
+        // ── Palette (all vanilla, all FU-valued or structural) ────────────────
+        BlueprintBlockState stone      = STONE_BRICKS;
+        BlueprintBlockState chiseledSB = CHISELED_STONE_BRICKS;
+        BlueprintBlockState crackedSB  = CRACKED_STONE_BRICKS;
+        BlueprintBlockState mossySB    = MOSSY_STONE_BRICKS;
+        BlueprintBlockState dsBrick    = bs("minecraft:deepslate_bricks");
+        BlueprintBlockState dsTile     = bs("minecraft:deepslate_tiles");
+        BlueprintBlockState polDS      = bs("minecraft:polished_deepslate");
+        BlueprintBlockState chiseledDS = bs("minecraft:chiseled_deepslate");
+        BlueprintBlockState iron       = IRON_BLOCK;
+        BlueprintBlockState gold       = bs("minecraft:gold_block");
+        BlueprintBlockState glowstone  = GLOWSTONE;
+        // deepslate-brick stairs for the dais steps + entrance arch (inward-facing).
+        BlueprintBlockState dsStairN = bs("minecraft:deepslate_brick_stairs[facing=north,half=bottom,shape=straight]");
+        BlueprintBlockState dsStairS = bs("minecraft:deepslate_brick_stairs[facing=south,half=bottom,shape=straight]");
+        BlueprintBlockState dsStairE = bs("minecraft:deepslate_brick_stairs[facing=east,half=bottom,shape=straight]");
+        BlueprintBlockState dsStairW = bs("minecraft:deepslate_brick_stairs[facing=west,half=bottom,shape=straight]");
+
+        // ── 1) FLOOR (y=0) — stone-brick flagstones with a deepslate aisle spine ──
+        // Whole footprint stone bricks, then a polished-deepslate central aisle
+        // (x∈[5..7]) running the full depth, with a gold-block runic runner down its
+        // exact centre line (x=6) — the ceremonial path from entrance to throne.
+        floor(b, 0, x0, z0, x1, z1, stone);
+        floor(b, 0, 5, z0, 7, z1, polDS);
+        for (int z = z0; z <= z1; z++) {
+            b.set(6, 0, z, (z % 2 == 0) ? gold : chiseledDS); // dashed gold/chiseled runic runner
+        }
+        // weathering flecks (cracked/mossy) so the floor reads as ancient-carved.
+        b.set(2, 0, 4, crackedSB);
+        b.set(10, 0, 7, mossySB);
+        b.set(3, 0, 9, crackedSB);
+
+        // ── 2) WALL RING (y=1..9) — deep-relief stone-brick mountain walls ────────
+        // Stone-brick body (y=1..9) as a hollow ring (interior left OPEN/walkable),
+        // a deepslate-brick plinth course (y=1) on the wall line, a gold/iron runic
+        // banding course at mid-height (y=5), and a chiseled top cornice (y=9).
+        walls(b, x0, z0, x1, z1, 1, 9, stone);               // body (ring only — interior open)
+        line(b, 1, x0, z0, x1, z0, dsBrick);                 // plinth course on each face
+        line(b, 1, x0, z1, x1, z1, dsBrick);
+        line(b, 1, x0, z0, x0, z1, dsBrick);
+        line(b, 1, x1, z0, x1, z1, dsBrick);
+        // chiseled-stone-brick PILASTERS (relief) at regular z-intervals on both long
+        // walls, full height — the carved buttress rhythm.
+        for (int z : new int[]{2, 5, 8}) {
+            pillar(b, x0, z, 1, 9, chiseledSB);
+            pillar(b, x1, z, 1, 9, chiseledSB);
+        }
+        // runic banding: a gold/iron alternating course at y=5 around the whole ring.
+        for (int x = x0; x <= x1; x++) {
+            b.set(x, 5, z0, (x % 2 == 0) ? gold : iron);
+            b.set(x, 5, z1, (x % 2 == 0) ? gold : iron);
+        }
+        for (int z = z0; z <= z1; z++) {
+            b.set(x0, 5, z, (z % 2 == 0) ? iron : gold);
+            b.set(x1, 5, z, (z % 2 == 0) ? iron : gold);
+        }
+        // chiseled cornice band along the wall top (y=9) tying the relief together.
+        line(b, 9, x0, z0, x1, z0, chiseledSB);
+        line(b, 9, x0, z1, x1, z1, chiseledSB);
+        line(b, 9, x0, z0, x0, z1, chiseledSB);
+        line(b, 9, x1, z0, x1, z1, chiseledSB);
+        // weathering flecks on the walls (cracked/mossy) — carved-from-the-mountain.
+        b.set(0, 3, 3, crackedSB);
+        b.set(x1, 6, 6, mossySB);
+        b.set(0, 7, 8, crackedSB);
+        b.set(x1, 4, 2, crackedSB);
+
+        // ── 3) GLOWING NICHES — glowstone behind iron-bar grates on the long walls ─
+        // Each grate sits between two solid wall cells (vertically AND horizontally
+        // flanked by stone) so it always has a connectable neighbour — never a stub.
+        for (int z : new int[]{3, 7}) {
+            // west wall niche (x=0): glowstone recessed, iron-bar grate over it.
+            b.set(x0, 3, z, glowstone);
+            b.set(x0, 4, z, IRON_BARS);   // grate, flanked above (cornice path) & below by stone
+            b.set(x0, 6, z, glowstone);
+            // east wall niche (x=12)
+            b.set(x1, 3, z, glowstone);
+            b.set(x1, 4, z, IRON_BARS);
+            b.set(x1, 6, z, glowstone);
+        }
+
+        // ── 4) GRAND PILLARED ENTRANCE (north wall z=0) ───────────────────────────
+        // The front wall reads as a monumental dwarven PORTAL: chiseled jambs framing
+        // the centre, a gold lintel band across the head, an iron-bar portcullis grate
+        // spanning jamb-to-jamb, and a walk-through door at the centre so the hall is
+        // enterable. (walls() already filled the front face; we overstamp the frame.)
+        // chiseled jambs framing the portal (x=4 and x=8 on the front wall).
+        pillar(b, 4, z0, 1, 8, chiseledSB);
+        pillar(b, 8, z0, 1, 8, chiseledSB);
+        // gold lintel band across the portal head (y=7) + an iron portcullis grate
+        // below it (y=6) spanning the opening jamb-to-jamb (jambs at x=4 and x=8 →
+        // bars at x=5..7 each have a solid horizontal neighbour, so never a stub).
+        for (int x = 4; x <= 8; x++) b.set(x, 7, z0, gold);
+        for (int x = 5; x <= 7; x++) b.set(x, 6, z0, IRON_BARS); // grate spans jamb-to-jamb
+        // walk-through door at the portal centre so the hall is enterable.
+        door2(b, 6, 1, z0, "spruce", "N");               // door overstamps the wall at (6,1..2,0)
+        // flanking entrance braziers (iron-block pedestal + campfire) just inside.
+        b.set(4, 1, 1, iron);  b.set(4, 2, 1, CAMPFIRE);
+        b.set(8, 1, 1, iron);  b.set(8, 2, 1, CAMPFIRE);
+
+        // ── 5) THE TWO PILLAR ROWS — 2×2 monumental piers down the aisle ──────────
+        // West row at x∈{2,3}, east row at x∈{9,10}; three bays each at z∈{2,3 | 5,6 | 8}.
+        // Each pier: deepslate-tile plinth (y=1), stone-brick shaft (y=2..7), an
+        // iron/gold capital banding (y=8) and a chiseled-deepslate abacus (y=9) that
+        // the tie-beams seat on. Piers are FREESTANDING — the aisle between them is open.
+        int[][] piers = {
+            {2, 2}, {3, 2}, {2, 3}, {3, 3},      // west bay 1
+            {2, 5}, {3, 5}, {2, 6}, {3, 6},      // west bay 2
+            {2, 8}, {3, 8},                       // west bay 3 (front of dais)
+            {9, 2}, {10, 2}, {9, 3}, {10, 3},    // east bay 1
+            {9, 5}, {10, 5}, {9, 6}, {10, 6},    // east bay 2
+            {9, 8}, {10, 8},                      // east bay 3
+        };
+        for (int[] p : piers) {
+            int px = p[0], pz = p[1];
+            b.set(px, 1, pz, dsTile);            // plinth
+            pillar(b, px, pz, 2, 7, stone);      // shaft
+            b.set(px, 8, pz, (px + pz) % 2 == 0 ? gold : iron); // capital banding
+            b.set(px, 9, pz, chiseledDS);        // abacus / capital top
+        }
+        // pier-base accents: polished-deepslate trim ringing each 2×2 pier cluster
+        // at y=1 (a stepped plinth read) — only on the aisle-facing corners.
+        for (int pz : new int[]{2, 5, 8}) {
+            b.set(4, 1, pz, polDS);   // west pier aisle-side trim
+            b.set(8, 1, pz, polDS);   // east pier aisle-side trim
+        }
+
+        // ── 6) TIE-BEAMS + STEPPED COFFERED CEILING (y=10..12) ────────────────────
+        // Deepslate-brick tie-beams ride the pier abacuses at y=10, spanning across
+        // the hall (x) over each pier bay and along the rows (z), framing the coffers.
+        for (int pz : new int[]{2, 3, 5, 6, 8}) {
+            line(b, 10, 2, pz, 10, pz, dsBrick);   // cross-beam over the bay (west pier → east pier)
+        }
+        for (int px : new int[]{2, 3, 9, 10}) {
+            line(b, 10, px, 2, px, 8, dsBrick);    // longitudinal beam down each pier line
+        }
+        // perimeter wall-plate beam at y=10 tying the ceiling to the walls.
+        line(b, 10, x0, z0, x1, z0, dsBrick);
+        line(b, 10, x0, z1, x1, z1, dsBrick);
+        line(b, 10, x0, z0, x0, z1, dsBrick);
+        line(b, 10, x1, z0, x1, z1, dsBrick);
+        // COFFERED CEILING PANELS at y=11: a full stone-brick ceiling slab, then
+        // every other coffer panel SUNK one course (left open at y=11 and closed at
+        // y=12) so the ceiling reads as recessed square coffers between the beams.
+        floor(b, 11, x0, z0, x1, z1, stone);
+        // sink the coffer centres: clear is impossible (air-skip), so instead build
+        // the recessed look by stepping UP — place a chiseled coffer boss at y=12
+        // over each bay centre, and a gold rosette at the grand-aisle coffers.
+        for (int pz : new int[]{2, 5, 8}) {
+            // aisle coffer centre (x=6) — gilded rosette boss above the runic runner.
+            b.set(6, 12, pz, gold);
+            b.set(6, 11, pz, chiseledSB);   // restamp the aisle coffer as chiseled relief
+        }
+        // chiseled coffer bosses over the side bays (between pier lines and walls).
+        for (int pz : new int[]{2, 5, 8}) {
+            b.set(1, 12, pz, chiseledDS);
+            b.set(11, 12, pz, chiseledDS);
+        }
+        // a deepslate-tile capstone ridge along the very top centre (y=12) closing
+        // the coffered field over the aisle, leaving y=13 as clean headroom margin.
+        line(b, 12, 5, z0, 5, z1, dsTile);
+        line(b, 12, 7, z0, 7, z1, dsTile);
+
+        // ── 7) THRONE DAIS (far south, z∈[8..10]) ─────────────────────────────────
+        // A raised, stepped platform at the head of the hall. Two ascending steps
+        // (deepslate-brick stairs facing north, toward the approaching aisle) climb
+        // from the floor at z=8→9, onto a 2-high dais at z=10. The THRONE: a gold +
+        // chiseled-stone-brick seat backed by a tall iron/gold runic reredos, flanked
+        // by iron-block columns and campfire braziers.
+        // step 1 (z=8) at y=1, step 2 (z=9) at y=2 — full hall width of the aisle bay.
+        for (int x = 4; x <= 8; x++) {
+            b.set(x, 1, 8, dsStairN);            // lower step tread (faces the aisle)
+            b.set(x, 2, 9, dsStairN);            // upper step tread
+            b.set(x, 1, 9, dsBrick);             // riser fill under the upper step
+        }
+        // dais platform (z=10) raised to y=2: polished-deepslate floor with a gold inlay.
+        floor(b, 2, 3, 10, 9, 10, polDS);
+        b.set(5, 2, 10, gold);  b.set(7, 2, 10, gold);  // gold inlay flanking the seat
+        // tall runic REREDOS on the back wall (z=10) rising ABOVE the throne seat
+        // (y=5..8) so the seat below reads clean; the throne base/seat (set after
+        // this) own y=3..4 at the centre column. Flanking accents at y=3.
+        for (int y = 5; y <= 8; y++) {
+            b.set(6, y, z1, (y % 2 == 0) ? iron : gold);   // central runic pilaster on the back wall
+        }
+        b.set(5, 8, z1, gold); b.set(7, 8, z1, gold);      // reredos crown
+        b.set(4, 3, z1, iron); b.set(8, 3, z1, iron);      // flanking back-wall accents
+        // the THRONE seat at aisle centre (x=6): chiseled base, gold seat, stair arms.
+        // Written AFTER the reredos so the seat course is never overwritten.
+        b.set(6, 3, 10, chiseledSB);             // throne base block on the dais
+        b.set(6, 4, 10, gold);                   // gilded seat
+        b.set(5, 3, 10, dsStairE);               // left arm (faces east, in toward the seat)
+        b.set(7, 3, 10, dsStairW);               // right arm (faces west, in toward the seat)
+        // flanking iron-block columns + campfire braziers either side of the throne.
+        pillar(b, 4, 10, 3, 5, iron);
+        pillar(b, 8, 10, 3, 5, iron);
+        b.set(4, 6, 10, CAMPFIRE);               // brazier flame atop the left column
+        b.set(8, 6, 10, CAMPFIRE);               // brazier flame atop the right column
+
+        // ── 8) HALL LIGHTING — chain-hung lanterns from the tie-beams + pier sconces ─
+        // Chain lanterns drop from the y=10 cross-beams over each bay's aisle centre,
+        // backed solidly by the beam above (a block exists at y=10 over them).
+        for (int pz : new int[]{2, 5}) {
+            chainLantern(b, 6, 8, pz, 1);        // lantern at y=8, chain y=9, beam at y=10
+        }
+        // pier-mounted soul-lantern sconces on the aisle-facing pier faces (warm pools
+        // of light marking the colonnade) — placed on top of the pier capital region.
+        for (int pz : new int[]{2, 5, 8}) {
+            b.set(4, 4, pz, LANTERN);            // floor-standing lantern on the west aisle trim
+            b.set(8, 4, pz, LANTERN);            // east aisle trim
+        }
 
         return b.build();
     }

@@ -122,7 +122,9 @@ public final class CuratedBlueprints {
             // Phase 2 — Category B (modern_glass_villa)
             "modern_glass_villa",
             // Phase 2 — Category B (elven_treehouse)
-            "elven_treehouse");
+            "elven_treehouse",
+            // Phase 2 — Category B (dwarven_hall)
+            "dwarven_hall");
 
     /**
      * Load a bundled curated blueprint straight from the mod's resources (no world
