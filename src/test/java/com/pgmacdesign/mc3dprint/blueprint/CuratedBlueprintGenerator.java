@@ -264,6 +264,7 @@ class CuratedBlueprintGenerator {
         builds.put("drawbridge", drawbridge());
         builds.put("portcullis_gate", portcullisGate());
         builds.put("stable_horse", stableHorse());
+        builds.put("greenhouse", greenhouse());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -9991,6 +9992,201 @@ class CuratedBlueprintGenerator {
             b.set(7, 2, zl, LANTERN);
         }
         b.set(1, 3, 1, LANTERN);   // atop the tack-room barrel stack
+
+        return b.build();
+    }
+
+    /**
+     * Greenhouse — a spruce-framed glass house for growing crops. A 9×9 footprint
+     * (T5), disc T1. A stone-brick footing carries a spruce post-and-sill frame
+     * whose wall bays are filled with GLASS BLOCKS (not panes) and capped by a
+     * peaked GLASS GABLE roof, so the whole structure reads as a light-filled glass
+     * envelope. Inside: two raised farmland planter beds growing a mix of crops
+     * (wheat / carrots / potatoes / beetroots — all structural), a sunken water
+     * irrigation channel down the centre aisle (structural), spruce-slab shelves
+     * carrying flower_pots (FU-valued) and structural potted_* blooms, an oak door,
+     * and hanging lanterns. Enterable down the central aisle.
+     *
+     * <p><b>Render-safe glazing.</b> Every glazed surface — the four wall bays AND
+     * the gable roof — uses solid {@code glass} BLOCKS, never lone {@code glass_pane}
+     * cells, so the stub-pane render gate never applies (a glass block is not an
+     * {@code IronBarsBlock}). The frame's spruce posts and sills break the glass into
+     * window-like bays for the greenhouse look without risking an invisible stub.
+     *
+     * <p><b>Printability.</b> All blocks are vanilla FU-valued or structural:
+     * stone bricks / spruce frame / glass / oak door / flower_pot / lantern are
+     * FU-valued; farmland (FarmBlock), the crops (CropBlock→BushBlock), water
+     * (itemless), and potted_* (itemless) are structural → print free.
+     *
+     * <p>Footprint x=0..8 (W=9), z=0..8 (depth=9), y=0..7 (H=8):
+     * <ul>
+     *   <li>{@code y=0} stone-brick footing over the full 9×9; the central aisle
+     *       column (x=4) is dug as a water irrigation channel.</li>
+     *   <li>{@code y=1..4} spruce post-and-sill frame with GLASS-block wall bays;
+     *       an oak door centred on the north wall; raised farmland planter beds with
+     *       crops to either side of the aisle; spruce-slab shelves with flower-pots
+     *       and potted blooms.</li>
+     *   <li>{@code y=4..} a peaked GLASS gable roof (stepped glass blocks running
+     *       along X) on a spruce ridge beam; gable ends glazed too.</li>
+     * </ul>
+     */
+    private static Blueprint greenhouse() {
+        final int W = 9, H = 9, D = 9;
+        Blueprint.Builder b = Blueprint.builder("Greenhouse", W, H, D);
+        int x0 = 0, x1 = W - 1, z0 = 0, z1 = D - 1; // 0..8
+        int cx = 4, cz = 4;
+        int wallH = 4; // glass wall bays rise y=1..4
+
+        BlueprintBlockState postY = SPRUCE_LOG_Y;
+        BlueprintBlockState sill = SPRUCE_SLAB_TOP; // a finished sill/plate course look
+        BlueprintBlockState bedEdge = SPRUCE_SLAB_TOP;
+
+        // 1) STONE-BRICK FOOTING over the whole footprint (walkable y=0 surface).
+        floor(b, 0, x0, z0, x1, z1, STONE_BRICKS);
+
+        // 2) WATER IRRIGATION CHANNEL down the central aisle (x=cx, z=1..7), sunk
+        //    into the footing. Water is itemless → structural (prints free). The
+        //    aisle stays walkable along its planted edges; the channel is the
+        //    greenhouse's irrigation feature running between the two planter beds.
+        for (int z = 1; z <= z1 - 1; z++) {
+            b.set(cx, 0, z, WATER);
+        }
+
+        // 3) PLANTER BEDS — two raised farmland strips flanking the aisle, each
+        //    growing a rotating mix of crops. Farmland (FarmBlock) and the crops
+        //    (CropBlock) are structural → free. Beds sit at y=1 (one course up from
+        //    the footing) edged with spruce slabs so they read as raised planters.
+        BlueprintBlockState[] crops = {WHEAT, CARROTS, POTATOES, bs("minecraft:beetroots[age=3]")};
+        // west bed: x=1..2, east bed: x=6..7; both z=1..7, fed by the central channel.
+        int[][] beds = {{1, 2}, {6, 7}};
+        int cropIdx = 0;
+        for (int[] bed : beds) {
+            for (int x = bed[0]; x <= bed[1]; x++) {
+                for (int z = 1; z <= z1 - 1; z++) {
+                    b.set(x, 1, z, FARMLAND);            // moist farmland (structural)
+                    b.set(x, 2, z, crops[cropIdx % crops.length]); // crop atop (structural)
+                    cropIdx++;
+                }
+            }
+        }
+        // spruce-slab planter coping along the aisle edges of each bed (x=2 east face,
+        // x=6 west face) at y=1, so the beds read as built planters, not loose dirt.
+        for (int z = 1; z <= z1 - 1; z++) {
+            b.set(3, 1, z, bedEdge); // coping between west bed and aisle
+            b.set(5, 1, z, bedEdge); // coping between east bed and aisle
+        }
+
+        // 4) SPRUCE FRAME — corner posts + a sill/plate course, leaving the wall
+        //    bays for glass. Posts rise y=1..wallH at the four corners and at the
+        //    wall midpoints (x=cx on z-walls, z=cz on x-walls) to break the glass
+        //    into bays.
+        int[][] frameCols = {
+                {x0, z0}, {x1, z0}, {x0, z1}, {x1, z1}, // corners
+                {cx, z0}, {cx, z1}, {x0, cz}, {x1, cz}  // wall midpoints (mullions)
+        };
+
+        // 5) GLASS WALL BAYS — fill the four wall faces with GLASS BLOCKS y=1..wallH
+        //    (render-safe: solid blocks, no panes). The door opening on the north
+        //    wall (z=z0) is left UNSET so it stays open for the door.
+        for (int y = 1; y <= wallH; y++) {
+            for (int x = x0; x <= x1; x++) {
+                // north wall, skip the door cell (cx) which the door fills below
+                if (!(x == cx)) b.set(x, y, z0, GLASS);
+                b.set(x, y, z1, GLASS); // south wall
+            }
+            for (int z = z0 + 1; z <= z1 - 1; z++) {
+                b.set(x0, y, z, GLASS); // west wall
+                b.set(x1, y, z, GLASS); // east wall
+            }
+        }
+        // overlay the spruce mullions/posts so the frame reads through the glass.
+        for (int[] q : frameCols) {
+            pillar(b, q[0], q[1], 1, wallH, postY);
+        }
+        // a spruce sill course at y=1 around the base of the glass (skip door cell),
+        // and a spruce plate course at y=wallH around the top — the frame banding.
+        for (int x = x0; x <= x1; x++) {
+            if (x != cx) b.set(x, 1, z0, sill);
+            b.set(x, 1, z1, sill);
+            b.set(x, wallH, z0, SPRUCE_SLAB_TOP);
+            b.set(x, wallH, z1, SPRUCE_SLAB_TOP);
+        }
+        for (int z = z0 + 1; z <= z1 - 1; z++) {
+            b.set(x0, 1, z, sill);
+            b.set(x1, 1, z, sill);
+            b.set(x0, wallH, z, SPRUCE_SLAB_TOP);
+            b.set(x1, wallH, z, SPRUCE_SLAB_TOP);
+        }
+        // re-stamp the corner/mullion posts so the slab courses didn't clip them.
+        for (int[] q : frameCols) {
+            b.set(q[0], 1, q[1], postY);
+            b.set(q[0], wallH, q[1], postY);
+        }
+
+        // 6) OAK DOOR centred on the north wall (z=z0), opening inward (faces south).
+        //    The glass bay at (cx, *, z0) was left open above for it.
+        door2(b, cx, 1, z0, "oak", "N");
+
+        // 7) GLASS GABLE ROOF running along X (ridge parallel to X), built from solid
+        //    GLASS BLOCKS in a stepped gable so the whole roof glazes (render-safe).
+        //    Same step schedule as gableRoofX: north slope advances from z0, south
+        //    slope from z1, converging to a ridge; a spruce ridge beam caps it.
+        int ry = wallH;     // first roof course seats on the wall plate
+        int zn = z0, zs = z1;
+        while (zs - zn > 1) {
+            for (int x = x0; x <= x1; x++) {
+                b.set(x, ry, zn, GLASS);
+                b.set(x, ry, zs, GLASS);
+            }
+            zn++;
+            zs--;
+            ry++;
+        }
+        // ridge: a spruce-log beam (axis=x) so the apex reads as a built ridge, not
+        // floating glass; one centre row (zn==zs) or a 2-wide cap (zn+1==zs).
+        BlueprintBlockState ridgeBeam = bs("minecraft:spruce_log[axis=x]");
+        for (int x = x0; x <= x1; x++) {
+            b.set(x, ry, zn, ridgeBeam);
+            if (zs != zn) b.set(x, ry, zs, ridgeBeam);
+        }
+        // glaze the two triangular gable ends (x=x0 and x=x1) so the attic is closed
+        // with glass, not open sky. Walk the same step schedule and fill between the
+        // two converging slope rows.
+        for (int x : new int[]{x0, x1}) {
+            int gy = wallH;
+            int gzn = z0, gzs = z1;
+            while (gzs - gzn > 1) {
+                for (int z = gzn + 1; z <= gzs - 1; z++) {
+                    b.set(x, gy, z, GLASS);
+                }
+                gzn++;
+                gzs--;
+                gy++;
+            }
+        }
+
+        // 8) SHELVES + POTTED DISPLAYS — spruce-slab shelves along the back (south)
+        //    gable end carrying flower_pots (FU-valued, brick-derived) and structural
+        //    potted_* blooms (itemless → free). Mounted at y=2 over the back planter
+        //    coping so they read as a potting shelf without blocking the aisle.
+        b.set(1, 2, z1 - 1, bs("minecraft:flower_pot"));
+        b.set(2, 2, z1 - 1, bs("minecraft:potted_fern"));
+        b.set(6, 2, z1 - 1, bs("minecraft:potted_oxeye_daisy"));
+        b.set(7, 2, z1 - 1, bs("minecraft:flower_pot"));
+        // a couple of potted blooms flanking the door inside, on the sill course.
+        b.set(cx - 1, 2, z0 + 1, bs("minecraft:potted_dandelion"));
+        b.set(cx + 1, 2, z0 + 1, bs("minecraft:potted_poppy"));
+
+        // 9) LIGHTING — hanging lanterns on chains dropped from the spruce ridge beam
+        //    down the central aisle (z=cz), lighting it so crops grow and no hostiles
+        //    spawn. The ridge sits at y=ry (==H-1) over z=cz; hang a chain just under it
+        //    with a lantern below. ry is the apex course after the roof loop.
+        for (int x : new int[]{2, cx, 6}) {
+            chainLantern(b, x, ry - 2, cz, 1); // lantern at ry-2, chain at ry-1, backed by the ridge at ry
+        }
+        // a pair of standing lanterns on the corner-post sills for ground glow.
+        b.set(x0 + 1, 1, z0 + 1, LANTERN);
+        b.set(x1 - 1, 1, z0 + 1, LANTERN);
 
         return b.build();
     }
