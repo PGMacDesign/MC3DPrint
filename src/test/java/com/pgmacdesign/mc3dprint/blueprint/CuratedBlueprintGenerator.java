@@ -326,6 +326,8 @@ class CuratedBlueprintGenerator {
         builds.put("chorus_garden", chorusGarden());
         builds.put("shulker_box_vault", shulkerBoxVault());
         builds.put("end_gateway_shrine", endGatewayShrine());
+        // Phase 2 — Category A (mushroom_island_hut) — unblocked: mushroom blocks/mycelium now valued
+        builds.put("mushroom_island_hut", mushroomIslandHut());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -6508,6 +6510,159 @@ class CuratedBlueprintGenerator {
         b.set(x1 - 2, floorY + 1, z1 - 1, LANTERN);          // floor lantern, back
         // a hanging lantern in the centre, chained to the burrow ceiling
         chainLantern(b, cx, ceilY - 2, cz, 1);
+
+        return b.build();
+    }
+
+    /**
+     * Mushroom Island Hut (Category A, §A row "mushroom_island_hut") — 7×7 footprint
+     * → builder(7, 11, 7). A whimsical mushroom-island dwelling shaped like a giant
+     * toadstool: a {@code mushroom_stem} trunk/wall ring rises from a {@code mycelium}
+     * ground, capped by a domed, overhanging {@code red_mushroom_block} CAP speckled
+     * with {@code brown_mushroom_block} spots (the classic spotted toadstool look).
+     * Spruce supplies the door, window sills/trim, and a couple of accents; little
+     * structural-free mushrooms dot the mycelium. The mooshroom is an entity, so the
+     * player adds the cow — the giant-mushroom silhouette is the whole novelty.
+     *
+     * <p><b>Economy note.</b> {@code red_mushroom_block}, {@code brown_mushroom_block},
+     * and {@code mushroom_stem} are now FU-valued (5@2) and {@code mycelium} (2@1), so
+     * this build — previously blocked on those values — prints cleanly. The small
+     * {@code red_mushroom}/{@code brown_mushroom} are {@code MushroomBlock⇒BushBlock}
+     * crops (asItem can place, but they're itemless-structural-free like the
+     * {@link #mushroomFarm} caps) → print free; they're the little ground mushrooms.
+     *
+     * <p>Layout (Y), footprint x=0..6 (W), z=0..6 (depth), centre (3,3):
+     * <ul>
+     *   <li><b>y=0</b> — {@code mycelium} ground over the full 7×7, with a scatter of
+     *       little {@code red_mushroom}/{@code brown_mushroom} (free crops) at y=1 on
+     *       the open mycelium around the trunk.</li>
+     *   <li><b>y=1..4</b> — a roughly-circular {@code mushroom_stem} trunk/wall ring
+     *       (radius 2 about the centre) enclosing a hollow, enterable interior. A
+     *       spruce door opens inward on the north wall (z=0); render-safe GLASS-BLOCK
+     *       windows sit between stem cells on the E/W/S walls, each with a spruce-slab
+     *       sill. A spruce-plank finish floor lines the interior at y=1 (walkable).</li>
+     *   <li><b>y=5..8</b> — the toadstool CAP: a domed, OVERHANGING stack of solid
+     *       {@code red_mushroom_block} discs (base lip radius 3 reaching the full 7×7
+     *       footprint, narrowing to a rounded crown) speckled with
+     *       {@code brown_mushroom_block} spots. The lip overhangs the radius-2 stem so
+     *       the silhouette reads as a giant mushroom, and the dome closes the top so the
+     *       interior is roofed.</li>
+     *   <li><b>furnishings</b> — a red {@link #bed}, a barrel, a crafting table, and a
+     *       warm lantern on the walkable y=1 floor; a hanging lantern chained to the
+     *       cap underside for the cosy interior glow.</li>
+     * </ul>
+     */
+    private static Blueprint mushroomIslandHut() {
+        Blueprint.Builder b = Blueprint.builder("Mushroom Island Hut", 7, 11, 7);
+        // build-local materials — all FU-valued (mushroom blocks/stem 5@2, mycelium 2@1,
+        // spruce family) or itemless-structural-free (small mushrooms).
+        BlueprintBlockState mycelium  = bs("minecraft:mycelium");
+        BlueprintBlockState stem      = bs("minecraft:mushroom_stem");
+        BlueprintBlockState redCapBlk = bs("minecraft:red_mushroom_block");
+        BlueprintBlockState brownSpot = bs("minecraft:brown_mushroom_block");
+        BlueprintBlockState redSmall  = bs("minecraft:red_mushroom");   // BushBlock crop → free
+        BlueprintBlockState brownSmall= bs("minecraft:brown_mushroom"); // BushBlock crop → free
+        BlueprintBlockState glass     = GLASS;                          // glass BLOCKS (render-safe)
+        BlueprintBlockState sprucePlank = SPRUCE_PLANKS;
+        BlueprintBlockState spruceSlabTop = SPRUCE_SLAB_TOP;
+
+        int x0 = 0, x1 = 6, z0 = 0, z1 = 6; // 7×7
+        int cx = 3, cz = 3;                 // centre
+        int stemR = 2;                      // stem wall ring radius (≈5-wide trunk)
+        int floorY = 1;                     // walkable spruce floor (top of y=1)
+        int wallTop = 4;                    // stem rises y=1..4
+        int capBaseY = 5;                   // cap lip course (overhangs the stem)
+
+        // ── 1) MYCELIUM GROUND over the full 7×7 at y=0 ──────────────────────
+        floor(b, 0, x0, z0, x1, z1, mycelium);
+
+        // ── 2) STEM TRUNK / WALL RING (circular), y=1..wallTop ───────────────
+        // A radius-2 ring of mushroom_stem about (3,3) reads as a round toadstool
+        // trunk. The interior is left unset (air-skip) so the hut is enterable.
+        for (int y = floorY; y <= wallTop; y++) {
+            circleRing(b, y, cx, cz, stemR, stem);
+        }
+        // spruce-plank finish floor inside the trunk at y=floorY (walkable surface)
+        disc(b, floorY, cx, cz, stemR - 1, sprucePlank);
+
+        // ── 3) SPRUCE DOOR on the north wall (z=cz-stemR=1), opening inward ───
+        // The ring cell directly north of centre sits at (cx, *, cz-stemR) = (3,1).
+        // Re-stamp its jambs solid stem first, then carve the 2-high doorway.
+        int doorZ = cz - stemR; // z=1, the north-most ring cell column at x=cx
+        b.set(cx - 1, floorY, doorZ, stem); // left jamb (keep ring closed beside door)
+        b.set(cx + 1, floorY, doorZ, stem); // right jamb
+        b.set(cx - 1, floorY + 1, doorZ, stem);
+        b.set(cx + 1, floorY + 1, doorZ, stem);
+        door2(b, cx, floorY, doorZ, "spruce", "N"); // 2-block spruce door, opens south
+
+        // ── 4) RENDER-SAFE GLASS-BLOCK WINDOWS on E/W/S, with spruce sills ────
+        // Each window is a glass BLOCK set into a ring cell flanked by stem cells
+        // along the wall, so it always has a solid horizontal neighbour. The ring
+        // cell south of centre (cx, *, cz+stemR)=(3,5) and the cells east/west of
+        // centre (cx±stemR, *, cz)=(5/1,3) are the cardinal mid-wall openings.
+        int wy = floorY + 1; // y=2, mid-wall
+        // south window (z=5)
+        b.set(cx, wy, cz + stemR, glass);
+        b.set(cx, wy - 1, cz + stemR, spruceSlabTop); // spruce sill below
+        // west window (x=1)
+        b.set(cx - stemR, wy, cz, glass);
+        b.set(cx - stemR, wy - 1, cz, spruceSlabTop);
+        // east window (x=5)
+        b.set(cx + stemR, wy, cz, glass);
+        b.set(cx + stemR, wy - 1, cz, spruceSlabTop);
+
+        // ── 5) THE TOADSTOOL CAP — overhanging domed red_mushroom_block ──────
+        // Stacked SOLID discs of decreasing radius from the lip (y=capBaseY) up to a
+        // rounded crown. The base lip (r=3) reaches the full 7×7 footprint, so it
+        // overhangs the radius-2 stem — the giant-mushroom silhouette. Brown spots
+        // speckle the red cap for the classic spotted look. Each disc is solid so
+        // the cap also closes the roof over the hollow interior.
+        int[][] capLayers = {
+                {capBaseY,     3}, // y=5 — overhanging lip (full footprint)
+                {capBaseY + 1, 3}, // y=6 — cap body
+                {capBaseY + 2, 2}, // y=7 — shoulder
+                {capBaseY + 3, 1}, // y=8 — rounded crown
+        };
+        for (int[] layer : capLayers) {
+            int y = layer[0], r = layer[1];
+            disc(b, y, cx, cz, r, redCapBlk);
+            // speckle brown spots: a deterministic scatter over the red disc so the
+            // cap reads spotted (not solid red). (x*3+z*7) parity gives an even dapple.
+            for (int x = cx - r; x <= cx + r; x++) {
+                for (int z = cz - r; z <= cz + r; z++) {
+                    double d = Math.sqrt((x - cx) * (x - cx) + (z - cz) * (z - cz));
+                    if (d <= r + 0.5 && ((x * 3 + z * 7 + y) % 5 == 0)) {
+                        b.set(x, y, z, brownSpot);
+                    }
+                }
+            }
+        }
+
+        // ── 6) HANGING LANTERN under the cap for the cosy interior glow ──────
+        // The cap lip at y=capBaseY is solid over the centre, so a 1-chain hanging
+        // lantern below it lights the interior. Lantern lands at y=capBaseY-1=4.
+        chainLantern(b, cx, capBaseY - 1, cz, 1);
+
+        // ── 7) INTERIOR FURNISHINGS on the walkable y=floorY+1 standing floor ─
+        bed(b, cx - 1, floorY + 1, cz + 1, "red", "south");   // red bed, back-left
+        b.set(cx + 1, floorY + 1, cz + 1, CRAFTING_TABLE);    // work corner, back-right
+        b.set(cx + 1, floorY + 1, cz - 1, BARREL);            // storage barrel, front-right
+        b.set(cx - 1, floorY + 1, cz - 1, LANTERN);           // floor lantern, front-left
+
+        // ── 8) LITTLE MUSHROOMS on the open mycelium (structural-free crops) ──
+        // Small red/brown mushrooms dot the ground around the trunk for the
+        // mushroom-island charm. Placed at y=1 on open mycelium cells OUTSIDE the
+        // radius-2 trunk ring (the corners of the 7×7 the round trunk leaves bare).
+        int[][] littleSpots = {
+                {x0, 1, z0}, {x1, 1, z0}, {x0, 1, z1}, {x1, 1, z1}, // four corners
+                {x0, 1, cz}, {x1, 1, cz},                          // west/east mid-edge
+                {cx, 1, z1},                                       // south mid-edge (front of door is north)
+        };
+        boolean redToggle = true;
+        for (int[] s : littleSpots) {
+            b.set(s[0], s[1], s[2], redToggle ? redSmall : brownSmall);
+            redToggle = !redToggle;
+        }
 
         return b.build();
     }
