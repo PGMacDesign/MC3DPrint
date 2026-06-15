@@ -7,9 +7,9 @@
 
 ## Status
 - **Curated builds before Phase 2:** 29
-- **Phase 2 queue:** 103 · **Done:** 78 · **Blocked:** 2 · **Remaining:** 23
-- **Next up:** `dwarven_hall`
-- **Last completed:** `elven_treehouse`
+- **Phase 2 queue:** 103 · **Done:** 79 · **Blocked:** 2 · **Remaining:** 22
+- **Next up:** `dock_pier`
+- **Last completed:** `dwarven_hall`
 
 ## Process (per build — follow exactly on resume)
 1. Pick the first unchecked `[ ]` build in queue order below.
@@ -123,7 +123,7 @@
 - [x] copper_clocktower
 - [x] modern_glass_villa (Hard)
 - [x] elven_treehouse (Hard)
-- [ ] dwarven_hall (Hard)
+- [x] dwarven_hall (Hard)
 
 ### E — Ocean / water (9)
 - [ ] dock_pier
