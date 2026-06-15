@@ -346,6 +346,10 @@ public final class FuValueRegistry {
                 // sits at 5@1, so hardened concrete stays pricier than its powder.
                 "minecraft:white_concrete_powder=1@1",
                 "minecraft:coal=2@1", "minecraft:moss_block=2@1",
+                // mycelium: a dirt-variant ground block (no recipe; silk-touch + biome-gated).
+                // Valued as cheap T1 ground alongside dirt/moss_block so it's usable as terrain
+                // in any build without forcing a higher disc tier (mushroom blocks below are T2).
+                "minecraft:mycelium=2@1",
                 // farm crops / basic gatherables (2 FU): lets wheat→hay_block, sugar_cane→paper→book→
                 // enchanting_table/cartography_table, and flint→fletching_table all derive correctly
                 "minecraft:wheat=2@1", "minecraft:sugar_cane=2@1", "minecraft:flint=2@1",
@@ -373,6 +377,16 @@ public final class FuValueRegistry {
                 "minecraft:gold_nugget=1@2", "minecraft:iron_nugget=2@2",
                 // leather: farmable animal drop (needed so book→enchanting_table chain derives)
                 "minecraft:leather=8@2",
+                // huge-mushroom blocks (no recipe → direct value): giant-mushroom material, a step
+                // above basic T1 building blocks. Bonemeal-renewable but involved to farm; T2's
+                // ceiling (end_stone/packed_ice/magma_block ~5 FU) is all low-value, so no laundering.
+                "minecraft:red_mushroom_block=5@2", "minecraft:brown_mushroom_block=5@2",
+                "minecraft:mushroom_stem=5@2",
+                // honeycomb (the leaf): valuing the item lets beehive (6 planks + 3 honeycomb) and
+                // honeycomb_block (4 honeycomb) DERIVE through the recipe valuator — same pattern as
+                // dyes→stained glass. bee_nest stays unvalued (worldgen-only, no recipe; apiaries use
+                // crafted beehives). honeycomb is shear-farmed from a bee setup → T2.
+                "minecraft:honeycomb=6@2",
 
                 // ===== T3 — processing + early-game friction (wool/string are a real early gate) =====
                 "minecraft:redstone=4@3", "minecraft:quartz=5@3", "minecraft:string=8@3",
