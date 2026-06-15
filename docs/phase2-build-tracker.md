@@ -7,9 +7,9 @@
 
 ## Status
 - **Curated builds before Phase 2:** 29
-- **Phase 2 queue:** 103 · **Done:** 10 · **Blocked:** 0 · **Remaining:** 93
-- **Next up:** `badlands_mesa_dwelling`
-- **Last completed:** `cherry_blossom_pavilion`
+- **Phase 2 queue:** 103 · **Done:** 11 · **Blocked:** 0 · **Remaining:** 92
+- **Next up:** `mushroom_island_hut`
+- **Last completed:** `badlands_mesa_dwelling`
 
 ## Process (per build — follow exactly on resume)
 1. Pick the first unchecked `[ ]` build in queue order below.
@@ -43,7 +43,7 @@
 - [x] jungle_temple_ruin
 - [x] mangrove_stilt_hut
 - [x] cherry_blossom_pavilion
-- [ ] badlands_mesa_dwelling
+- [x] badlands_mesa_dwelling
 - [ ] mushroom_island_hut
 - [ ] hobbit_hole
 - [ ] treehouse

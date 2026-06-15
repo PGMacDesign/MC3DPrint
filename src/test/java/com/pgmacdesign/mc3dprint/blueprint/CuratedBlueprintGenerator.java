@@ -209,6 +209,7 @@ class CuratedBlueprintGenerator {
         builds.put("jungle_temple_ruin", jungleTempleRuin());
         builds.put("mangrove_stilt_hut", mangroveStiltHut());
         builds.put("cherry_blossom_pavilion", cherryBlossomPavilion());
+        builds.put("badlands_mesa_dwelling", badlandsMesaDwelling());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -3765,6 +3766,167 @@ class CuratedBlueprintGenerator {
             b.set(lx, 4, lz, CHAIN);
             b.set(lx, 3, lz, HANGING_LANTERN);
         }
+
+        return b.build();
+    }
+
+    /**
+     * Badlands Mesa Dwelling — a layered terracotta home built into a mesa cliff
+     * face, with banded terracotta strata, a red-sandstone footing, dark-oak
+     * accents, a stepped terracotta-slab roof, and a fenced balcony off the front.
+     * 9×7 footprint (T5), disc T1.
+     *
+     * <p>Vanilla, FU-valued blocks only. Dyed terracotta all normalises to base
+     * {@code terracotta} (FU-valued, T1); the cut/smooth/chiseled {@code
+     * red_sandstone} variants derive from {@code red_sandstone} (FU-valued, T1) via
+     * recipes (same as the desert build's sandstone family); dark-oak logs/planks/
+     * fence/door/slab/stairs are all valued. No raw {@code red_sand} or {@code sand}
+     * (those risk the unvalued/structural edge — the brief says swap them out), no
+     * leaves/vines/bamboo.
+     *
+     * <p>The "built into the mesa" read comes from a TALL solid terracotta back wall
+     * (the north z=0 face) standing two courses above the rest of the structure, as
+     * if the dwelling is carved into the rising cliff; the banded strata (orange →
+     * white → light-gray → red terracotta by y-course) echo the mesa's natural
+     * sediment layers.
+     *
+     * <p>Section structure (footprint x=0..8 W, z=0..6 depth):
+     * <ul>
+     *   <li>{@code y=0} red-sandstone footing slab over the whole footprint (walkable
+     *       ground = top of y=0); a cut-red-sandstone plinth ring one course up.</li>
+     *   <li>{@code y=1} smooth-red-sandstone finish floor inside the plinth.</li>
+     *   <li>{@code y=2..6} banded terracotta wall ring (one colour per course) with
+     *       dark-oak corner posts; a north (front, z=0) dark-oak door opening inward,
+     *       a south (z=6, balcony) door, and render-safe glass-pane windows flanked
+     *       by wall cells.</li>
+     *   <li>{@code y=7} stepped terracotta-slab roof over the body + a chiseled
+     *       red-sandstone parapet course on the back/cliff edge.</li>
+     *   <li>tall solid terracotta cliff-face back wall (z=0) rising to y=8 so the
+     *       dwelling reads as set into a mesa scarp.</li>
+     *   <li>a dark-oak-fenced balcony cantilevered off the south (z=6) wall, reached
+     *       through the south door; furnished, enterable interior.</li>
+     * </ul>
+     */
+    private static Blueprint badlandsMesaDwelling() {
+        Blueprint.Builder b = Blueprint.builder("Badlands Mesa Dwelling", 9, 10, 7);
+        Palette p = BADLANDS_TERRACOTTA; // terracotta walls, red bed → orange here
+        // build-local materials (all vanilla, all FU-valued / recipe-derived)
+        BlueprintBlockState redSand        = bs("minecraft:red_sandstone");          // T1 footing
+        BlueprintBlockState cutRedSand     = bs("minecraft:cut_red_sandstone");      // plinth ring
+        BlueprintBlockState smoothRedSand  = bs("minecraft:smooth_red_sandstone");   // finish floor / trim
+        BlueprintBlockState chiseledRedSand= bs("minecraft:chiseled_red_sandstone"); // parapet
+        BlueprintBlockState terracotta     = bs("minecraft:terracotta");             // base band
+        BlueprintBlockState orangeTC       = bs("minecraft:orange_terracotta");
+        BlueprintBlockState whiteTC        = bs("minecraft:white_terracotta");
+        BlueprintBlockState lightGrayTC    = bs("minecraft:light_gray_terracotta");
+        BlueprintBlockState redTC          = bs("minecraft:red_terracotta");
+        BlueprintBlockState brownTC        = bs("minecraft:brown_terracotta");
+        // NB: vanilla has NO terracotta slab — the stepped roof uses red-sandstone
+        // top-slabs (derive from red_sandstone, FU-valued T1) which read as the next
+        // mesa shelf; the recessed upper terrace stays solid terracotta.
+        BlueprintBlockState roofSlabTop    = bs("minecraft:red_sandstone_slab[type=top]");
+        BlueprintBlockState darkOakSlabTop = bs("minecraft:dark_oak_slab[type=top]");
+        BlueprintBlockState darkOakPost    = bs("minecraft:dark_oak_log[axis=y]");
+        BlueprintBlockState darkOakFence   = bs("minecraft:dark_oak_fence");
+
+        // Body inset to z=1..5 (depth 5) so the balcony (z=6) and the cliff-face back
+        // wall (z=0) fit inside the fixed 9×7 footprint. Walls span the full width.
+        int x0 = 0, x1 = 8, z0 = 1, z1 = 5;
+        int cliffZ = 0;        // the mesa-scarp back wall row (front of the build)
+        int balconyZ = 6;      // cantilevered balcony deck row
+        int floorY = 1;        // walkable finish floor on the red-sandstone plinth
+        int wallBottom = 2;    // walls rise above the finish floor
+        int wallH = 6;         // wall plate (roof seats at y=7)
+        int roofY = wallH + 1; // 7
+        int cx = (x0 + x1) / 2; // 4
+        int cz = (z0 + z1) / 2; // 3
+
+        // band colour by wall course (mesa sediment strata, low→high)
+        BlueprintBlockState[] bands = {orangeTC, brownTC, whiteTC, lightGrayTC, redTC};
+
+        // 1) red-sandstone footing over the whole body at y=0 (walkable ground)
+        floor(b, 0, x0, z0, x1, z1, redSand);
+        // 1b) cut-red-sandstone plinth ring one course up (y=1) — the masonry base
+        walls(b, x0, z0, x1, z1, floorY, floorY, cutRedSand);
+        // 1c) smooth-red-sandstone finish floor inside the plinth at y=1 (walkable)
+        floor(b, floorY, x0 + 1, z0 + 1, x1 - 1, z1 - 1, smoothRedSand);
+
+        // 2) banded terracotta wall ring y=2..6, a different terracotta colour per
+        //    course (the mesa strata), with dark-oak corner posts over all courses.
+        for (int y = wallBottom; y <= wallH; y++) {
+            BlueprintBlockState band = bands[(y - wallBottom) % bands.length];
+            walls(b, x0, z0, x1, z1, y, y, band);
+        }
+        corners(b, x0, z0, x1, z1, wallBottom, wallH, darkOakPost);
+        // 2b) intermediate dark-oak studs every 3 cells down both long walls so the
+        //     banding reads as framed panels.
+        for (int x = x0 + 3; x <= x1 - 3; x += 3) {
+            pillar(b, x, z0, wallBottom, wallH, darkOakPost);
+            pillar(b, x, z1, wallBottom, wallH, darkOakPost);
+        }
+
+        // 3) doors: front (north z=z0) opening inward (south), and a south (z1) door
+        //    onto the balcony opening inward (north). Re-stamp banding overwritten
+        //    nothing — doors are 2-block states placed over the wall cells.
+        door2(b, cx, wallBottom, z0, "dark_oak", "N");
+        door2(b, cx, wallBottom, z1, "dark_oak", "S");
+
+        // 4) glass-pane windows at a mid-wall course (each flanked by wall cells →
+        //    render-safe). North wall flanks the door; long walls between studs.
+        int wy = wallBottom + 2; // y=4
+        window2(b, cx - 1, wy, z0, p.windowPane, smoothRedSand); // north, west of door (+ sill)
+        window2(b, cx + 1, wy, z0, p.windowPane, smoothRedSand); // north, east of door (+ sill)
+        window2(b, x0, wy, cz, p.windowPane, null);              // west long wall
+        window2(b, x1, wy, cz, p.windowPane, null);              // east long wall
+        window2(b, cx - 1, wy, z1, p.windowPane, null);          // south, west of balcony door
+        window2(b, cx + 1, wy, z1, p.windowPane, null);          // south, east of balcony door
+
+        // 5) stepped terracotta-slab roof over the body at y=roofY, then a recessed
+        //    upper terrace one course higher on the back (cliff) half so the roofline
+        //    steps UP toward the mesa scarp (the layered-mesa-home silhouette).
+        flatRoof(b, roofY, x0, z0, x1, z1, roofSlabTop);
+        // recessed upper step: a smaller terracotta-slab deck on the back half,
+        // ringed by a chiseled-red-sandstone parapet (reads as the next sediment shelf)
+        floor(b, roofY + 1, x0 + 1, z0, x1 - 1, cz, redTC);
+        crenellate(b, roofY + 2, x0 + 1, z0, x1 - 1, cz, chiseledRedSand);
+
+        // 6) the mesa-scarp BACK WALL (north z=cliffZ): a tall solid terracotta strata
+        //    column standing two courses proud of the roof, so the dwelling reads as
+        //    carved into a rising cliff. Banded by y like the walls.
+        for (int y = 0; y <= roofY + 1; y++) {
+            BlueprintBlockState band = y < wallBottom
+                    ? cutRedSand
+                    : bands[(y - wallBottom) % bands.length];
+            for (int x = x0; x <= x1; x++) {
+                b.set(x, y, cliffZ, band);
+            }
+        }
+        // dark-oak corner posts framing the scarp face at the build edges
+        pillar(b, x0, cliffZ, 0, roofY + 1, darkOakPost);
+        pillar(b, x1, cliffZ, 0, roofY + 1, darkOakPost);
+
+        // 7) dark-oak-fenced balcony cantilevered off the south wall (z1) onto z=6 at
+        //    floor-plate height; reachable through the south door.
+        for (int x = cx - 2; x <= cx + 2; x++) {
+            b.set(x, wallBottom - 1, balconyZ, darkOakSlabTop); // deck slab (top = flush walk)
+            b.set(x, wallBottom - 1, z1, darkOakSlabTop);       // bridge the wall→balcony gap
+        }
+        // dark-oak-fence railing along the open balcony edge. The deck is one row deep
+        // (z=balconyZ; the z1 row is the under-wall bridge slab), so the railing is a
+        // single run along the south/front + the two end cells at z=balconyZ. The
+        // railings sit on the deck row ONLY — never on the wall row z1 — so they don't
+        // punch fence-holes into the south wall; the deck stays walkable through the
+        // south door over the solid bridge slab. Fences self-reconcile at print time.
+        for (int x = cx - 2; x <= cx + 2; x++) {
+            b.set(x, wallBottom, balconyZ, darkOakFence); // south + end rails (front edge)
+        }
+
+        // 8) interior furnishings on the walkable y=2 floor
+        bed(b, x0 + 1, wallBottom, z1 - 1, p.bedColor, "south"); // orange bed at back
+        b.set(x1 - 1, wallBottom, z1 - 1, CRAFTING_TABLE);
+        b.set(x1 - 1, wallBottom, z0 + 1, CHEST);
+        b.set(x0 + 1, wallBottom, z0 + 1, p.lightBlock);         // lantern, front corner
+        b.set(cx, wallBottom, cz, p.lightBlock);                 // central lantern
 
         return b.build();
     }
