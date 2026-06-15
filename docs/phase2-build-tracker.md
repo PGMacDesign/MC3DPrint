@@ -7,9 +7,9 @@
 
 ## Status
 - **Curated builds before Phase 2:** 29
-- **Phase 2 queue:** 103 · **Done:** 23 · **Blocked:** 1 · **Remaining:** 79
-- **Next up:** `bee_apiary`
-- **Last completed:** `chicken_coop_auto`
+- **Phase 2 queue:** 103 · **Done:** 23 · **Blocked:** 2 · **Remaining:** 78
+- **Next up:** `fishery_pond`
+- **Last completed:** `bee_apiary (BLOCKED)`
 
 ## Process (per build — follow exactly on resume)
 1. Pick the first unchecked `[ ]` build in queue order below.
@@ -59,7 +59,7 @@
 - [x] villager_trading_hall
 - [x] animal_pen
 - [x] chicken_coop_auto
-- [ ] bee_apiary
+- [BLOCKED: needs beehive/honeycomb_block valued (no recipe; core to build)] bee_apiary
 - [ ] fishery_pond
 - [ ] tree_farm
 - [ ] mushroom_farm
@@ -162,9 +162,11 @@ enrich nature/garden ones.** Your call (economy frozen until you approve):
 - **red/brown_mushroom_block, mushroom_stem, mycelium** — blocks mushroom_island_hut
 - **mud, mud_bricks, packed_mud, mangrove_roots, muddy_mangrove_roots** — swamp/mangrove texture
 - **\*_froglight** (ochre/verdant/pearlescent) — swamp/decor glow
+- **beehive, bee_nest, honeycomb_block, flowers** — block bee_apiary (honeycomb is shear/loot-only so honeycomb_block + beehive can't derive; bee_nest is worldgen-only). Apiary identity = hives + honeycomb + flowers, so no faithful build without them.
 - **pink_petals** — cherry-blossom ground (swapped to pink_carpet)
 - **grass_block, dirt, podzol, coarse_dirt** — earthen roofs/ground (grass_block is allowlisted but still won't print)
 - already-known loot-only: **gilded_blackstone, bell, reinforced_deepslate**
 
 ## Blocked log
 - mushroom_island_hut — red/brown_mushroom_block, mushroom_stem, mycelium are unvalued (no recipe). Value them (cheap T1 natural) to build faithfully.
+- bee_apiary — beehive, bee_nest, honeycomb_block are unvalued and underivable (honeycomb is shear/loot-only → no leaf to derive from; bee_nest is worldgen-only). These ARE the apiary's identity, so an empty wooden frame isn't an apiary. Value honeycomb (leaf) → honeycomb_block/beehive derive; bee_nest still needs a direct value.
