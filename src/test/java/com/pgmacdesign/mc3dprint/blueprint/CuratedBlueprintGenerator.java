@@ -230,6 +230,7 @@ class CuratedBlueprintGenerator {
         builds.put("koi_pond", koiPond());
         builds.put("gazebo", gazebo());
         builds.put("pergola_garden", pergolaGarden());
+        builds.put("wishing_well", wishingWell());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -1224,6 +1225,43 @@ class CuratedBlueprintGenerator {
         // backed hanging lantern over the water (chain up to the slab)
         b.set(2, 4, 2, CHAIN);
         b.set(2, 3, 2, HANGING_LANTERN);
+        return b.build();
+    }
+
+    /**
+     * Wishing Well (cottagecore). 5×5×7 (W×L×H) → builder(5,7,5). A mossy-cobble ring
+     * around a visible 3×3 water core, four oak posts, a peaked oak-plank/stair shingled
+     * roof with closed gable ends, and a chain dropping a cauldron "bucket" over the water.
+     * Distinct from {@link #well()}: this adds the roof + bucket-on-rope. Not enterable.
+     */
+    private static Blueprint wishingWell() {
+        Blueprint.Builder b = Blueprint.builder("Wishing Well", 5, 7, 5);
+        BlueprintBlockState mossyWall = bs("minecraft:mossy_cobblestone_wall");
+        // mossy base (y=0): 5×5 with a 3×3 visible water core flush with the rim
+        floor(b, 0, 0, 0, 4, 4, MOSSY_COBBLE);
+        for (int x = 1; x <= 3; x++) {
+            for (int z = 1; z <= 3; z++) {
+                b.set(x, 0, z, WATER);
+            }
+        }
+        // mossy-cobble coping ring (y=1): perimeter walls only, centre open over water
+        fenceRing(b, 1, 0, 0, 4, 4, mossyWall);
+        // four oak posts at the corners, y=1..3
+        pillar(b, 0, 0, 1, 3, OAK_FENCE);
+        pillar(b, 4, 0, 1, 3, OAK_FENCE);
+        pillar(b, 0, 4, 1, 3, OAK_FENCE);
+        pillar(b, 4, 4, 1, 3, OAK_FENCE);
+        // plank plate (y=4) tying the post tops together — the roof eave + chain anchor
+        fenceRing(b, 4, 0, 0, 4, 4, OAK_PLANKS);
+        // peaked, shingled oak roof over the plate with closed gable ends (peak y=6)
+        gableRoofX(b, 0, 0, 4, 4, 4, "oak_stairs", OAK_SLAB_BOTTOM);
+        gableEndFill(b, 0, 0, 4, 4, 4, OAK_PLANKS);
+        // bucket-on-rope: an oak crossbeam under the ridge anchors a chain that drops a
+        // cauldron "bucket" over the water. Chain needs a solid block above to read as
+        // hanging; the (2,4,2) plank crossbeam (centre of the plate) provides it.
+        b.set(2, 4, 2, OAK_PLANKS); // crossbeam / chain anchor
+        b.set(2, 3, 2, CHAIN);
+        b.set(2, 2, 2, CAULDRON);   // the bucket
         return b.build();
     }
 
