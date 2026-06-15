@@ -193,6 +193,10 @@ class CuratedBlueprintGenerator {
         builds.put("cherry_grove_cottage", cherryGroveCottage());
         builds.put("enchanting_room", enchantingRoom());
         builds.put("japanese_pagoda", japanesePagoda());
+        // Phase 1 pilot builds — group 2 (remaining bank archetypes)
+        builds.put("savanna_acacia_villa", savannaAcaciaVilla());
+        builds.put("tiered_fountain", tieredFountain());
+        builds.put("wall_battlement_segment", wallBattlementSegment());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -2288,6 +2292,161 @@ class CuratedBlueprintGenerator {
         b.set(8, 6, 0, HANGING_LANTERN);
         b.set(0, 6, 8, HANGING_LANTERN);
         b.set(8, 6, 8, HANGING_LANTERN);
+        return b.build();
+    }
+
+    // =====================================================================
+    //  PHASE 1 PILOT BUILDS — group 2  (validate remaining bank archetypes)
+    //  docs/blueprint-candidates.md — savanna villa / fountain / battlement
+    // =====================================================================
+
+    /**
+     * Savanna Acacia Villa. 9×9 footprint → builder(9, 10, 9). A low-slung,
+     * furnished, enterable acacia house on a cut-sandstone base — driven by the
+     * parametric {@link #house} helper with the {@link #SAVANNA_ACACIA} palette
+     * (validates that {@link #house} generalises across palettes: the wall ring,
+     * acacia-log corner posts, hip roof, inward-opening door and furnish set all
+     * come straight from the palette, identical geometry to the cherry cottage in
+     * a wholly different material family).
+     *
+     * <p>The "cut-sandstone base" the spec calls for is layered on AFTER the
+     * {@link #house} call: the y=0 plank floor is overwritten with cut sandstone
+     * (so the foundation/standing surface reads as masonry, still walkable), a
+     * 1-block cut-sandstone apron rings the footprint at y=0, and the bottom wall
+     * course (y=1) gets a smooth-sandstone wainscot so the house sits visibly on a
+     * stone plinth. 9×9 is square (|W−L|≤1) so {@link #house} seats a
+     * {@link #hipRoof}; over a 9-wide span it rises 4 courses (peak ≈ y=8), well
+     * inside the H=10 budget. A short acacia-fence pergola accent runs off the
+     * front-left corner (the optional porch touch). All blocks are FU-valued
+     * vanilla (acacia wood family, cut/smooth sandstone, glass panes).
+     */
+    private static Blueprint savannaAcaciaVilla() {
+        Blueprint.Builder b = Blueprint.builder("Savanna Acacia Villa", 9, 10, 9);
+        BlueprintBlockState cutSandstone = bs("minecraft:cut_sandstone");
+        BlueprintBlockState smoothSandstone = bs("minecraft:smooth_sandstone");
+        BlueprintBlockState acaciaLogY = bs("minecraft:acacia_log[axis=y]");
+        BlueprintBlockState acaciaFence = bs("minecraft:acacia_fence");
+        BlueprintBlockState acaciaSlabBottom = bs("minecraft:acacia_slab[type=bottom]");
+        BlueprintBlockState acaciaTrapdoor =
+                bs("minecraft:acacia_trapdoor[facing=north,half=top,open=false,powered=false,waterlogged=false]");
+        // 1) parametric acacia house: walkable y=0 floor, acacia wall ring y=1..4
+        //    with acacia-log corners, hip roof, inward door, furnish set.
+        house(b, 0, 0, 8, 8, 4, SAVANNA_ACACIA, true);
+        // 2) cut-sandstone base: overwrite the y=0 plank floor with masonry so the
+        //    foundation/standing surface reads as a cut-sandstone plinth (walkable).
+        floor(b, 0, 0, 0, 8, 8, cutSandstone);
+        // 3) smooth-sandstone wainscot on the bottom wall course (y=1) so the house
+        //    sits visibly on a stone base. Perimeter only; skip the door cell
+        //    (4,1,0) so the doorway stays open, then re-seat the acacia corner posts.
+        for (int x = 0; x <= 8; x++) {
+            if (x != 4) b.set(x, 1, 0, smoothSandstone); // north face (skip door)
+            b.set(x, 1, 8, smoothSandstone);             // south face
+        }
+        for (int z = 1; z <= 7; z++) {
+            b.set(0, 1, z, smoothSandstone);             // west face
+            b.set(8, 1, z, smoothSandstone);             // east face
+        }
+        b.set(0, 1, 0, acaciaLogY); // corner posts stay timber over the wainscot
+        b.set(8, 1, 0, acaciaLogY);
+        b.set(0, 1, 8, acaciaLogY);
+        b.set(8, 1, 8, acaciaLogY);
+        // 4) acacia accents that validate the wider acacia palette on this build:
+        //    open shade-beam slats spanning the interior just under the wall plate
+        //    (a simple acacia-fence + slab pergola motif, kept ON the footprint so it
+        //    fits the 9×9 budget) and acacia-trapdoor shutters on the side windows.
+        //    house() places the side windows at (0,2,4)/(8,2,4) and back at (4,2,8).
+        b.set(0, 2, 3, acaciaTrapdoor); b.set(0, 2, 5, acaciaTrapdoor); // west-window shutters
+        b.set(8, 2, 3, acaciaTrapdoor); b.set(8, 2, 5, acaciaTrapdoor); // east-window shutters
+        // interior pergola/rafter accent: an acacia-slab beam under the plate on the
+        // back half, carried by two short acacia-fence posts (open, walk-under).
+        pillar(b, 2, 1, 1, 3, acaciaFence);
+        pillar(b, 6, 1, 1, 3, acaciaFence);
+        line(b, 4, 2, 1, 6, 1, acaciaSlabBottom);        // shade beam between the posts
+        return b.build();
+    }
+
+    /**
+     * Tiered Fountain. 5×5 footprint → builder(5, 5, 5). A 2-tier stone-brick
+     * fountain that validates the radial/decorative archetype: the round basins
+     * are laid with the {@link #disc}/{@link #circleRing} helpers, the rims use
+     * stone-brick slabs/stairs, and the pools are water source blocks (water is
+     * itemless structural matter → prints free).
+     *
+     * <p>Layout (Y), centre (cx,cz)=(2,2):
+     * <ul>
+     *   <li><b>y=0</b> — lower pool: a stone-brick {@link #disc} (r=2) fills the
+     *       5×5 base, then the inner {@link #disc} (r=1) is replaced with water so
+     *       the wide bottom basin holds a ring of water inside a stone rim.</li>
+     *   <li><b>y=1</b> — lower rim: a stone-brick {@link #circleRing} (r=2) walls
+     *       the lower pool so the water is contained; the corners fall outside the
+     *       ring (radial), giving the round read.</li>
+     *   <li><b>y=2</b> — pedestal: a single stone-brick column at the centre lifts
+     *       the upper basin (the cascade source height).</li>
+     *   <li><b>y=3</b> — upper basin floor: a stone-brick {@link #disc} (r=1) — a
+     *       3×3 plus-shaped pad — with a water source at its centre that cascades
+     *       down the pedestal into the lower pool (reads as 2 tiers).</li>
+     *   <li><b>y=4</b> — a low stone-brick-wall lip ringing the upper basin edge so
+     *       the top tier is a visible raised bowl.</li>
+     * </ul>
+     */
+    private static Blueprint tieredFountain() {
+        Blueprint.Builder b = Blueprint.builder("Tiered Fountain", 5, 5, 5);
+        int cx = 2, cz = 2;
+        // y=0 lower pool: full stone-brick disc, inner disc carved to water
+        disc(b, 0, cx, cz, 2, STONE_BRICKS);
+        disc(b, 0, cx, cz, 1, WATER);                 // inner water ring + centre
+        // y=1 lower rim: stone-brick ring contains the lower pool's water
+        circleRing(b, 1, cx, cz, 2, STONE_BRICKS);
+        // y=2 pedestal: central stone-brick column lifting the upper basin
+        b.set(cx, 2, cz, STONE_BRICKS);
+        // y=3 upper basin floor: small stone-brick disc (3×3 plus pad) + water source
+        disc(b, 3, cx, cz, 1, STONE_BRICKS);
+        b.set(cx, 3, cz, WATER);                       // cascade source → falls to lower pool
+        // y=4 upper basin lip: a stone-brick-wall ring around the top tier edge
+        for (int[] d : new int[][]{{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) {
+            b.set(cx + d[0], 4, cz + d[1], STONE_BRICK_WALL);
+        }
+        return b.build();
+    }
+
+    /**
+     * Wall Battlement Segment. 9×3 footprint → builder(9, 5, 3). A TILEABLE
+     * curtain-wall run validating the tileable-segment archetype + {@link
+     * #crenellate}: a solid stone-brick wall body with a walkway on top and merlons
+     * along both long edges. Designed so copies placed end-to-end (offset by 9 in
+     * x) tile flush — the wall body spans the full x=0..8 width at a CONSTANT height
+     * and the merlon rhythm is continuous, so the seam between two segments reads as
+     * one unbroken battlement.
+     *
+     * <p>Layout (Y), footprint x=0..8 (W), z=0..2 (depth, the wall thickness):
+     * <ul>
+     *   <li><b>y=0..2</b> — solid stone-brick wall body, full width, 3 deep, 3 tall
+     *       (a {@link #solid} block) — flat top so the walkway is level and ends
+     *       align at any tiling offset.</li>
+     *   <li><b>y=3</b> — walkway deck: a stone-brick-slab (top) surface over the
+     *       full footprint, the patrol path.</li>
+     *   <li><b>y=4</b> — {@link #crenellate} merlons flush on both long edges (z=0
+     *       and z=2), the 2-up/1-gap rhythm, leaving the z=1 walkway centre open to
+     *       stand on. A stone-brick-wall ladder-free run; ends align so segments
+     *       chain.</li>
+     * </ul>
+     *
+     * <p>Constant height (peak y=4) and a body that fills the whole 0..8 x-span are
+     * what make it tile flush — there is no taper, gable, or end cap to break the
+     * seam when a second copy is printed at x=9.
+     */
+    private static Blueprint wallBattlementSegment() {
+        Blueprint.Builder b = Blueprint.builder("Wall Battlement Segment", 9, 5, 3);
+        // 1) solid wall body: full width x=0..8, depth z=0..2, height y=0..2 (flat top)
+        solid(b, 0, 0, 0, 8, 2, 2, STONE_BRICKS);
+        // a touch of texture so it doesn't read as a flat slab — cracked/mossy flecks
+        b.set(2, 1, 0, CRACKED_STONE_BRICKS);
+        b.set(6, 2, 2, MOSSY_STONE_BRICKS);
+        // 2) walkway deck (y=3): stone-brick top-slab patrol path over the body
+        floor(b, 3, 0, 0, 8, 2, STONE_BRICK_SLAB_TOP);
+        // 3) merlons (y=4) flush on the walkway: crenellate the full footprint so the
+        //    2-up/1-gap rhythm runs both long edges and tiles continuously at x=9.
+        crenellate(b, 4, 0, 0, 8, 2, STONE_BRICK_WALL);
         return b.build();
     }
 }

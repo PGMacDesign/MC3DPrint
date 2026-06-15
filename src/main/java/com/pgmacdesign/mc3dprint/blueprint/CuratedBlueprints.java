@@ -51,7 +51,9 @@ public final class CuratedBlueprints {
             "church", "manor_house", "copper_observatory", "emerald_market_hall",
             "lighthouse", "castle_keep",
             // Phase 0 pilot builds (validate the parametric helper library)
-            "cherry_grove_cottage", "enchanting_room", "japanese_pagoda");
+            "cherry_grove_cottage", "enchanting_room", "japanese_pagoda",
+            // Phase 1 pilot builds — group 2 (remaining bank archetypes)
+            "savanna_acacia_villa", "tiered_fountain", "wall_battlement_segment");
 
     /**
      * Load a bundled curated blueprint straight from the mod's resources (no world
