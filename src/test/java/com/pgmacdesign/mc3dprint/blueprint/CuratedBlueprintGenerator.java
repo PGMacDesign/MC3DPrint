@@ -204,6 +204,7 @@ class CuratedBlueprintGenerator {
         builds.put("taiga_spruce_longhouse", taigaSpruceLonghouse());
         // Phase 2 — Category A
         builds.put("snowy_igloo", snowyIgloo());
+        builds.put("snowy_alpine_chalet", snowyAlpineChalet());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -3126,6 +3127,136 @@ class CuratedBlueprintGenerator {
         // 4) interior furnishings on the y=0 floor
         bed(b, cx, 1, cz - 1, "light_blue", "north"); // head at back, foot toward door
         b.set(cx + 1, 1, cz + 1, LANTERN);            // floor lantern, off-centre
+
+        return b.build();
+    }
+
+    /**
+     * snowy_alpine_chalet — Category A, build 6/103. A steep-roofed alpine chalet:
+     * the recognizable Swiss/snowy-mountain house with a stone-brick base, spruce +
+     * stripped-spruce timber-frame walls, a steep snow-laden gable roof with
+     * overhanging eaves, and a small fenced balcony tucked under the south eave.
+     * Vanilla blocks only, all FU-valued (snow_block, stone bricks/slab, spruce
+     * planks/logs/stairs/slabs/fence, glass panes — dyed/normalised values fine).
+     *
+     * <p>Footprint 9×7×9 (W×L×H): builder(9, 9, 7) — x=0..8 (W=9, ridge axis),
+     * z=0..6 (depth=7); a steep X-ridge gable peaks at y=8. Sits in the T5 band.
+     * The chalet BODY is inset to z=1..5 so the deep eaves (z=0 / z=6) and the
+     * cantilevered balcony (z=6) fall inside the fixed 9×7 footprint.
+     *
+     * <p>Construction, honouring the air-skip / hollow-enterable rules:
+     * <ul>
+     *   <li><b>y=0</b> — a solid stone-brick footing slab over the body (x=0..8,
+     *       z=1..5); its top face is the walkable ground floor. A stone-brick plinth
+     *       ring rises one course (y=1) around the body perimeter for the chalet's
+     *       masonry base, with a spruce-plank finish floor laid inside it (walkable
+     *       surface = top of y=1).</li>
+     *   <li><b>y=2..5</b> — spruce-plank wall ring on the plinth, with stripped-spruce
+     *       corner posts and intermediate stripped-spruce studs every 2 cells (the
+     *       alpine timber-frame look). A door opens inward on the north wall and one
+     *       onto the balcony on the south wall; glass-pane windows sit between studs,
+     *       each flanked by wall cells → render-safe. The interior is left unset so the
+     *       chalet is one open, enterable room.</li>
+     *   <li><b>eaves</b> — a deep overhanging spruce-slab soffit one cell out from each
+     *       long wall at the roof base (z=0 and z=6), the alpine snow-shedding overhang.</li>
+     *   <li><b>y=6..8</b> — a STEEP spruce-stair gable roof ({@link #gableRoofX}, ridge
+     *       along the long X axis, seated on the y=6 wall plate over the body z=1..5,
+     *       peaking at y=8) with a snow-block ridge cap and closed gable ends
+     *       ({@link #gableEndFill}) — and a layer of snow-block "snow load" draped over
+     *       the lowest stair course of each slope, the chalet's signature.</li>
+     *   <li><b>balcony</b> — a small spruce-slab deck cantilevered off the south wall at
+     *       floor-plate height (y=2) over z=6, railed with a spruce-fence ring; reachable
+     *       through the south-wall door so it's a real, enterable balcony.</li>
+     *   <li><b>furnishings</b> — a light-blue {@link #bed} against the back wall, a
+     *       crafting table, a chest, and lanterns for a cosy alpine interior.</li>
+     * </ul>
+     */
+    private static Blueprint snowyAlpineChalet() {
+        Blueprint.Builder b = Blueprint.builder("Snowy Alpine Chalet", 9, 9, 7);
+        Palette p = SNOWY; // spruce + snow-block trim, spruce logs, light-blue bed
+        // build-local materials (all vanilla, all FU-valued)
+        BlueprintBlockState snow = bs("minecraft:snow_block");
+        BlueprintBlockState strippedY = bs("minecraft:stripped_spruce_log[axis=y]");
+        BlueprintBlockState spruceFence = bs("minecraft:spruce_fence");
+
+        // Body inset to z=1..5 (depth 5) so eaves (z=0 / z=6) and balcony (z=6) fit
+        // inside the fixed 9×7 footprint. Ridge runs the full width x=0..8.
+        int x0 = 0, x1 = 8, z0 = 1, z1 = 5;
+        int eaveN = z0 - 1, eaveS = z1 + 1; // 0 and 6 — within bounds
+        int floorY = 1;        // walkable spruce floor sits on the stone-brick plinth
+        int wallBottom = 2;    // walls rise from above the finish floor
+        int wallH = 5;         // wall plate (roof seats at y=6, one above the plate)
+        int roofBase = wallH + 1; // y=6
+        int cx = (x0 + x1) / 2;   // 4
+        int cz = (z0 + z1) / 2;   // 3
+
+        // 1) stone-brick footing over the body at y=0 (walkable ground)
+        floor(b, 0, x0, z0, x1, z1, STONE_BRICKS);
+        // 1b) stone-brick plinth ring one course up (y=1) — the masonry base
+        walls(b, x0, z0, x1, z1, floorY, floorY, STONE_BRICKS);
+        // 1c) spruce-plank finish floor inside the plinth at y=1 (walkable surface)
+        floor(b, floorY, x0 + 1, z0 + 1, x1 - 1, z1 - 1, p.plankFloor);
+
+        // 2) spruce-plank wall ring y=2..5 with stripped-spruce corner posts
+        walls(b, x0, z0, x1, z1, wallBottom, wallH, p.wall);
+        corners(b, x0, z0, x1, z1, wallBottom, wallH, strippedY);
+        // 2b) intermediate stripped-spruce studs every 2 cells down both long walls
+        for (int x = x0 + 2; x <= x1 - 2; x += 2) {
+            pillar(b, x, z0, wallBottom, wallH, strippedY);
+            pillar(b, x, z1, wallBottom, wallH, strippedY);
+        }
+
+        // 3) door centred on the north wall (z=z0), opening inward (faces south)
+        door2(b, cx, wallBottom, z0, p.doorWood, "N");
+        // 3b) south-wall door onto the balcony, opening inward (faces north)
+        door2(b, cx, wallBottom, z1, p.doorWood, "S");
+
+        // 4) glass-pane windows at a mid-wall course (each flanked by wall cells →
+        //    render-safe). North wall flanks the door; long walls between studs.
+        int wy = wallBottom + 1; // y=3
+        window2(b, cx - 1, wy, z0, p.windowPane, null); // north, west of door
+        window2(b, cx + 1, wy, z0, p.windowPane, null); // north, east of door
+        for (int z = z0 + 1; z <= z1 - 1; z += 2) {
+            window2(b, x0, wy, z, p.windowPane, null);  // west long wall
+            window2(b, x1, wy, z, p.windowPane, null);  // east long wall
+        }
+
+        // 5) deep overhanging eave soffit: a spruce-slab course one cell out from each
+        //    long wall at the roof base (the alpine snow-shedding overhang).
+        for (int x = x0; x <= x1; x++) {
+            b.set(x, roofBase, eaveN, p.slabBottom); // north eave lip (z=0)
+            b.set(x, roofBase, eaveS, p.slabBottom); // south eave lip (z=6)
+        }
+
+        // 6) STEEP spruce gable roof seated on the wall plate at y=roofBase over the
+        //    body (z0..z1), ridge along the long X axis; snow-block ridge cap, closed
+        //    gable ends.
+        gableRoofX(b, x0, z0, x1, z1, roofBase, p.roofStairName, snow);
+        gableEndFill(b, x0, z0, x1, z1, roofBase, p.wall);
+        // 6b) snow load: drape snow blocks over the lowest stair course of each slope
+        //     (one cell up the eave) so the roof reads as snow-laden.
+        for (int x = x0; x <= x1; x++) {
+            b.set(x, roofBase + 1, z0, snow); // snow on the north eave course
+            b.set(x, roofBase + 1, z1, snow); // snow on the south eave course
+        }
+
+        // 7) small fenced balcony cantilevered off the south wall (z1) onto z=6 at
+        //    floor-plate height; reachable via the south door.
+        int bz = eaveS;                  // balcony deck row, z=6 (one cell south of wall)
+        for (int x = cx - 1; x <= cx + 1; x++) {
+            b.set(x, wallBottom - 1, bz, p.slabTop); // deck slab (top half = flush walk)
+        }
+        // spruce-fence railing around the open balcony edges (the wall closes the back)
+        b.set(cx - 1, wallBottom, bz, spruceFence); // west rail
+        b.set(cx,     wallBottom, bz, spruceFence); // south rail (front)
+        b.set(cx + 1, wallBottom, bz, spruceFence); // east rail
+
+        // 8) interior furnishings on the walkable y=2 floor
+        bed(b, x0 + 1, wallBottom, z1 - 1, p.bedColor, "south"); // light-blue bed at back
+        b.set(x1 - 1, wallBottom, z1 - 1, CRAFTING_TABLE);
+        b.set(x1 - 1, wallBottom, z0 + 1, CHEST);
+        b.set(x0 + 1, wallBottom, z0 + 1, p.lightBlock);         // lantern, front corner
+        b.set(cx, wallBottom, cz, p.lightBlock);                 // central lantern
 
         return b.build();
     }

@@ -7,9 +7,9 @@
 
 ## Status
 - **Curated builds before Phase 2:** 29
-- **Phase 2 queue:** 103 · **Done:** 5 · **Blocked:** 0 · **Remaining:** 98
-- **Next up:** `snowy_alpine_chalet`
-- **Last completed:** `snowy_igloo`
+- **Phase 2 queue:** 103 · **Done:** 6 · **Blocked:** 0 · **Remaining:** 97
+- **Next up:** `jungle_hut`
+- **Last completed:** `snowy_alpine_chalet`
 
 ## Process (per build — follow exactly on resume)
 1. Pick the first unchecked `[ ]` build in queue order below.
@@ -38,7 +38,7 @@
 - [x] taiga_log_cabin
 - [x] taiga_spruce_longhouse
 - [x] snowy_igloo
-- [ ] snowy_alpine_chalet
+- [x] snowy_alpine_chalet
 - [ ] jungle_hut
 - [ ] jungle_temple_ruin
 - [ ] mangrove_stilt_hut
