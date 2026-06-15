@@ -251,6 +251,8 @@ class CuratedBlueprintGenerator {
         builds.put("smithy_workshop", smithyWorkshop());
         builds.put("map_room", mapRoom());
         builds.put("library", library());
+        // Phase 2 — Category H (infrastructure / civic / defensive)
+        builds.put("sky_bridge_segment", skyBridgeSegment());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -7053,6 +7055,87 @@ class CuratedBlueprintGenerator {
         // ── 13) ENTRY LIGHTING — lanterns flanking the door ─────────────────
         b.set(2, 1, 1, LANTERN);
         b.set(8, 1, 1, LANTERN);
+
+        return b.build();
+    }
+
+    /**
+     * §H.sky_bridge_segment — a TILEABLE suspended stone-brick walkway, 5×12×6
+     * (W×L×H) → builder(5, 6, 12). "The most-searched build type": a clean span
+     * you print over and over to chain a long elevated bridge across a ravine or
+     * between sky islands.
+     *
+     * <p><b>Tiling contract.</b> The segment is authored so identical copies butt
+     * end-to-end along +z with no seam: the deck height is a constant (y=4), the
+     * twin stone-brick-wall railings run every z-row along both long edges
+     * (x=0/x=4), and the support + lantern rhythm is keyed to the ABSOLUTE z index
+     * with period 4 over a length of 12 (a clean 3 periods). A copy placed at z=12
+     * continues that rhythm exactly: arch struts land at z=0,4,8 → 12,16,20 (even
+     * 4-spacing across the join) and under-deck lanterns at z=2,6,10 → 14,18,22.
+     * There are deliberately NO end caps — neither z=0 nor z=11 closes off — so two
+     * copies read as one continuous bridge.
+     *
+     * <p>Layout (centre lane cx=2; W = x0..4, L = z0..11, H = y0..5):
+     * <ul>
+     *   <li><b>Deck (y=4)</b> — a solid 5-wide stone-brick walkway spanning the
+     *       whole length; the only walkable surface, flat so it tiles flush.</li>
+     *   <li><b>Railings (y=5)</b> — a stone-brick wall on each long edge (x=0 and
+     *       x=4) at every z, an unbroken parapet that connects across the seam.</li>
+     *   <li><b>Arch struts (z=0,4,8)</b> — under each strut row, twin stone-brick
+     *       piers drop from the deck to y=0 at the edges (x=0/x=4), and a shallow
+     *       transverse soffit arch of {@code half=top} stone-brick stairs (curling
+     *       inward from each pier) plus a stone-brick keystone hangs beneath the
+     *       deck at y=3, giving the suspended-span silhouette. Struts only every
+     *       4th row leave open air between them (the "sky" gaps).</li>
+     *   <li><b>Lanterns (z=2,6,10)</b> — a hanging lantern tucked under each deck
+     *       edge (y=3, backed by the solid deck at y=4), lighting the underside on
+     *       the off-beat between struts so the lit rhythm also tiles.</li>
+     * </ul>
+     *
+     * <p>Vanilla blocks only, all FU-valued and disc-T1: stone_bricks and its
+     * stairs/walls derive from stone bricks; the lantern derives from iron nuggets
+     * + torch. No glass panes or iron bars, so the stub-pane render gate is moot.
+     */
+    private static Blueprint skyBridgeSegment() {
+        Blueprint.Builder b = Blueprint.builder("Sky Bridge Segment", 5, 6, 12);
+        int x0 = 0, x1 = 4;           // 5-wide deck
+        int z0 = 0, z1 = 11;          // 12-long span (3 × period-4)
+        int deckY = 4;                // constant deck height (tiles flush)
+        int railY = deckY + 1;        // 5
+        // inward-curling soffit stairs for the transverse under-deck arch
+        BlueprintBlockState archW = bs("minecraft:stone_brick_stairs[facing=east,half=top,shape=straight]");
+        BlueprintBlockState archE = bs("minecraft:stone_brick_stairs[facing=west,half=top,shape=straight]");
+
+        // ── 1) DECK (y=4) — solid 5×12 stone-brick walkway ──────────────────
+        floor(b, deckY, x0, z0, x1, z1, STONE_BRICKS);
+
+        // ── 2) RAILINGS (y=5) — twin stone-brick-wall parapets, every z-row ──
+        for (int z = z0; z <= z1; z++) {
+            b.set(x0, railY, z, STONE_BRICK_WALL);
+            b.set(x1, railY, z, STONE_BRICK_WALL);
+        }
+
+        // ── 3) ARCH STRUTS (z % 4 == 0) — piers + transverse soffit arch ────
+        for (int z = z0; z <= z1; z++) {
+            if (z % 4 != 0) continue;
+            // twin piers drop from just under the deck to the base at both edges
+            pillar(b, x0, z, 0, deckY - 1, STONE_BRICKS);
+            pillar(b, x1, z, 0, deckY - 1, STONE_BRICKS);
+            // shallow transverse soffit arch under the deck (y=3): stairs curl
+            // inward from each pier, stone-brick keystone in the centre lane
+            b.set(1, deckY - 1, z, archW);
+            b.set(3, deckY - 1, z, archE);
+            b.set(2, deckY - 1, z, STONE_BRICKS); // keystone
+        }
+
+        // ── 4) UNDER-DECK LANTERNS (z % 4 == 2) — lit off-beat, backed by deck
+        for (int z = z0; z <= z1; z++) {
+            if (z % 4 != 2) continue;
+            // hanging lantern one cell under each deck edge; the solid deck at
+            // y=4 is the backing the hanging lantern attaches to.
+            b.set(x0, deckY - 1, z, HANGING_LANTERN);
+            b.set(x1, deckY - 1, z, HANGING_LANTERN);
+        }
 
         return b.build();
     }

@@ -7,9 +7,9 @@
 
 ## Status
 - **Curated builds before Phase 2:** 29
-- **Phase 2 queue:** 103 · **Done:** 49 · **Blocked:** 2 · **Remaining:** 52
-- **Next up:** `sky_bridge_segment`
-- **Last completed:** `library`
+- **Phase 2 queue:** 103 · **Done:** 50 · **Blocked:** 2 · **Remaining:** 51
+- **Next up:** `road_path_segment`
+- **Last completed:** `sky_bridge_segment`
 
 ## Process (per build — follow exactly on resume)
 1. Pick the first unchecked `[ ]` build in queue order below.
@@ -92,7 +92,7 @@
 - [x] library (Hard)
 
 ### H — Infrastructure / civic / defensive (13)
-- [ ] sky_bridge_segment
+- [x] sky_bridge_segment
 - [ ] road_path_segment
 - [ ] aqueduct_segment
 - [ ] mineshaft_entrance
