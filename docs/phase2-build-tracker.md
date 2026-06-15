@@ -7,9 +7,9 @@
 
 ## Status
 - **Curated builds before Phase 2:** 29
-- **Phase 2 queue:** 103 · **Done:** 95 · **Blocked:** 2 · **Remaining:** 6
-- **Next up:** `blackstone_bastion_fragment`
-- **Last completed:** `nether_fortress_bridge`
+- **Phase 2 queue:** 103 · **Done:** 96 · **Blocked:** 2 · **Remaining:** 5
+- **Next up:** `purpur_tower`
+- **Last completed:** `blackstone_bastion_fragment`
 
 ## Process (per build — follow exactly on resume)
 1. Pick the first unchecked `[ ]` build in queue order below.
@@ -144,7 +144,7 @@
 - [x] basalt_pillar_cluster
 - [x] nether_hub_room (blue_ice prints; 4 unlit obsidian portal frames)
 - [x] nether_fortress_bridge
-- [ ] blackstone_bastion_fragment
+- [x] blackstone_bastion_fragment (gilded_blackstone unvalued → polished_blackstone + gold_block accents)
 
 ### D — End (5) · T7 materials; watch end-block values
 - [ ] purpur_tower
