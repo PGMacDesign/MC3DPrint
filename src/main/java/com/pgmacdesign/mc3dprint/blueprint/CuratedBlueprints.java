@@ -108,7 +108,9 @@ public final class CuratedBlueprints {
             // Phase 2 — Category B (mediterranean_terracotta_villa)
             "mediterranean_terracotta_villa",
             // Phase 2 — Category B (greek_quartz_temple)
-            "greek_quartz_temple");
+            "greek_quartz_temple",
+            // Phase 2 — Category B (roman_bath_house)
+            "roman_bath_house");
 
     /**
      * Load a bundled curated blueprint straight from the mod's resources (no world

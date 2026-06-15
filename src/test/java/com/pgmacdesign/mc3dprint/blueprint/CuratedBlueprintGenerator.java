@@ -275,6 +275,7 @@ class CuratedBlueprintGenerator {
         builds.put("japanese_dojo", japaneseDojo());
         builds.put("mediterranean_terracotta_villa", mediterraneanTerracottaVilla());
         builds.put("greek_quartz_temple", greekQuartzTemple());
+        builds.put("roman_bath_house", romanBathHouse());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -4278,6 +4279,182 @@ class CuratedBlueprintGenerator {
         final int roofBase = 9;
         gableRoofX(b, 0, 0, W - 1, D - 1, roofBase, "quartz_stairs", slabTop);
         gableEndFill(b, 0, 0, W - 1, D - 1, roofBase, smoothQuartz);
+
+        return b.build();
+    }
+
+    /**
+     * §B.74 Roman Bath House. 13×9 footprint (T6), disc T5 → builder(13, 8, 9):
+     * x = width 0..12, z = depth 0..8, y = up 0..7. A quartz + smooth-stone columned
+     * bath complex (a "thermae"): two tiled sunken bathing POOLS (prismarine /
+     * prismarine_bricks lining + WATER, sea-lantern uplights set flush in the pool
+     * floor so they glow up through the water), a colonnade of quartz_pillar columns
+     * down both long sides (quartz-stair base + chiseled-quartz capital), an
+     * entablature ring tying the colonnade together, statuary niches recessed into the
+     * back wall, an arched quartz-stair entrance on the front, and chain-hung lanterns.
+     * Walkable and enterable — the front wall is an open colonnade, not a solid wall.
+     *
+     * <p><b>Vertical scheme (bottom-up, last-write-wins, air-skip).</b>
+     * <ul>
+     *   <li>{@code y=0} — solid smooth-stone stylobate over the whole footprint;
+     *       prismarine POOL FLOORS over-stamped under the two sunken basins, with
+     *       sea-lantern uplights set flush into them and a prismarine-brick basin-wall
+     *       lining ringing each pool's floor edge.</li>
+     *   <li>{@code y=1} — surface course: smooth-stone walkable floor over the deck,
+     *       WATER filling the two pool cells (flush with the deck → true sunken pools),
+     *       and a quartz coping ring around each waterline.</li>
+     *   <li>{@code y=2..5} — the colonnade: quartz_pillar shafts down both long walls
+     *       on a quartz-stair base ring (y2), capped by chiseled-quartz capitals (y6);
+     *       smooth-stone end walls with backed glass-pane windows and statuary niches.</li>
+     *   <li>{@code y=6..7} — a smooth-quartz entablature ring over the capitals and a
+     *       flat smooth-quartz-slab roof over the (partially) covered colonnade aisles,
+     *       leaving the central pool court open to the sky.</li>
+     * </ul>
+     *
+     * <p><b>Palette (all vanilla, FU-valued or structural).</b> smooth_stone (3@1),
+     * quartz_block / smooth_quartz / chiseled_quartz_block / quartz_pillar /
+     * quartz_stairs / smooth_quartz_slab (all derive from nether quartz=5@3),
+     * prismarine + prismarine_bricks (derive from prismarine_shard=8@4 /
+     * crystals=12@4 — NOT dark_prismarine, which is unvalued/gate-flagged),
+     * sea_lantern (50@5), water (structural), glass_pane (backed → render-safe),
+     * lantern + chain (hanging lanterns over the court).
+     */
+    private static Blueprint romanBathHouse() {
+        final int W = 13, H = 8, D = 9;
+        Blueprint.Builder b = Blueprint.builder("Roman Bath House", W, H, D);
+        int x0 = 0, x1 = W - 1, z0 = 0, z1 = D - 1; // x:0..12  z:0..8
+
+        // Palette ---------------------------------------------------------------
+        BlueprintBlockState smoothStone  = bs("minecraft:smooth_stone");
+        BlueprintBlockState quartz       = bs("minecraft:quartz_block");
+        BlueprintBlockState smoothQuartz = bs("minecraft:smooth_quartz");
+        BlueprintBlockState chiseled     = bs("minecraft:chiseled_quartz_block");
+        BlueprintBlockState column       = bs("minecraft:quartz_pillar[axis=y]");
+        BlueprintBlockState slabTop      = bs("minecraft:smooth_quartz_slab[type=top]");
+        BlueprintBlockState slabBottom   = bs("minecraft:smooth_quartz_slab[type=bottom]");
+        BlueprintBlockState poolFloor    = bs("minecraft:prismarine");
+        BlueprintBlockState poolLining   = bs("minecraft:prismarine_bricks");
+        // Inward-facing quartz stairs for the stylobate skirt, column bases & arch.
+        BlueprintBlockState stairN = bs("minecraft:quartz_stairs[facing=north,half=bottom,shape=straight]");
+        BlueprintBlockState stairS = bs("minecraft:quartz_stairs[facing=south,half=bottom,shape=straight]");
+        BlueprintBlockState stairE = bs("minecraft:quartz_stairs[facing=east,half=bottom,shape=straight]");
+        BlueprintBlockState stairW = bs("minecraft:quartz_stairs[facing=west,half=bottom,shape=straight]");
+
+        // Two sunken pools, one each side of a central walkway. Each pool is a 3-wide
+        // basin: west pool x∈[2..4], east pool x∈[8..10]; both z∈[2..6]. The walkway
+        // (x∈[5..7]) and the perimeter aisle ring the pools.
+        int wpx0 = 2, wpx1 = 4, epx0 = 8, epx1 = 10, pz0 = 2, pz1 = 6;
+
+        // 1) STYLOBATE (y=0) — solid smooth-stone footing over the whole footprint,
+        //    then prismarine pool floors over-stamped under the two basins.
+        floor(b, 0, x0, z0, x1, z1, smoothStone);
+        floor(b, 0, wpx0, pz0, wpx1, pz1, poolFloor);
+        floor(b, 0, epx0, pz0, epx1, pz1, poolFloor);
+        // prismarine-brick basin-wall lining: re-stamp each pool's outer floor ring.
+        for (int[] p : new int[][]{{wpx0, wpx1}, {epx0, epx1}}) {
+            int px0 = p[0], px1 = p[1];
+            line(b, 0, px0, pz0, px1, pz0, poolLining);
+            line(b, 0, px0, pz1, px1, pz1, poolLining);
+            line(b, 0, px0, pz0, px0, pz1, poolLining);
+            line(b, 0, px1, pz0, px1, pz1, poolLining);
+        }
+        // sea-lantern uplights set flush into each pool floor (glow up through water).
+        b.set(wpx0 + 1, 0, pz0 + 1, SEA_LANTERN);
+        b.set(wpx0 + 1, 0, pz1 - 1, SEA_LANTERN);
+        b.set(epx1 - 1, 0, pz0 + 1, SEA_LANTERN);
+        b.set(epx1 - 1, 0, pz1 - 1, SEA_LANTERN);
+
+        // 2) SURFACE COURSE (y=1) — smooth-stone walkable floor over everything, then
+        //    WATER filling the pool cells (flush → true sunken pools).
+        floor(b, 1, x0, z0, x1, z1, smoothStone);
+        floor(b, 1, wpx0, pz0, wpx1, pz1, WATER);
+        floor(b, 1, epx0, pz0, epx1, pz1, WATER);
+        // chiseled-quartz central walkway band between the pools (the bright spine).
+        floor(b, 1, 5, z0, 7, z1, chiseled);
+        // quartz coping top-slabs ringing each waterline (walkable reveal).
+        for (int[] p : new int[][]{{wpx0, wpx1}, {epx0, epx1}}) {
+            int px0 = p[0], px1 = p[1];
+            for (int x = px0 - 1; x <= px1 + 1; x++) {
+                b.set(x, 1, pz0 - 1, slabTop);
+                b.set(x, 1, pz1 + 1, slabTop);
+            }
+            for (int z = pz0 - 1; z <= pz1 + 1; z++) {
+                b.set(px0 - 1, 1, z, slabTop);
+                b.set(px1 + 1, 1, z, slabTop);
+            }
+        }
+
+        // 3) END WALLS (west x=0, east x=12) — smooth-stone, y2..y5, with backed
+        //    glass-pane windows (each pane sits between two solid wall cells → no
+        //    stub) and recessed chiseled-quartz statuary niches.
+        for (int wallX : new int[]{x0, x1}) {
+            pillar(b, wallX, z0, 2, 5, smoothStone);
+            line(b, 2, wallX, z0, wallX, z1, smoothStone);
+            for (int y = 2; y <= 5; y++) line(b, y, wallX, z0, wallX, z1, smoothStone);
+            // backed glass-pane windows at y=4, z=2 and z=6 (flanked vertically by wall).
+            b.set(wallX, 4, 2, GLASS_PANE);
+            b.set(wallX, 4, 6, GLASS_PANE);
+            // statuary niche: a chiseled-quartz plinth at z=4 with a sea-lantern halo behind.
+            b.set(wallX, 2, 4, chiseled);
+            b.set(wallX, 3, 4, SEA_LANTERN);
+        }
+
+        // 4) BACK WALL (south z=8) — smooth-stone, y2..y5, with two more statuary niches.
+        for (int y = 2; y <= 5; y++) line(b, y, x0, z1, x1, z1, smoothStone);
+        for (int nx : new int[]{3, 9}) {
+            b.set(nx, 2, z1, chiseled);   // niche plinth
+            b.set(nx, 3, z1, SEA_LANTERN); // niche backlight
+            b.set(nx, 4, z1, GLASS_PANE);  // niche aperture (backed above/below by wall)
+        }
+
+        // 5) COLONNADE — quartz_pillar columns marching down both long walls. Front
+        //    (north z=0) and rear-aisle columns frame the open court. Each column: a
+        //    quartz-stair base flare at y2, a quartz_pillar shaft y2..y5, a
+        //    chiseled-quartz capital y6.
+        int[] colX = {1, 4, 6, 8, 11};
+        for (int cx : colX) {
+            for (int cz : new int[]{z0, z1}) {
+                pillar(b, cx, cz, 2, 5, column);
+                b.set(cx, 6, cz, chiseled); // capital
+            }
+        }
+        // stair-base flares hugging the four CORNER columns (front + back) for the
+        // stepped Roman base read.
+        b.set(colX[0] + 1, 2, z0, stairW);
+        b.set(colX[colX.length - 1] - 1, 2, z0, stairE);
+        b.set(colX[0] + 1, 2, z1, stairW);
+        b.set(colX[colX.length - 1] - 1, 2, z1, stairE);
+
+        // 6) ARCHED ENTRANCE — a central arch on the front (north z=0): two quartz-stair
+        //    springers over the x=5..7 opening at y=5, meeting a chiseled-quartz keystone
+        //    at x=6. The opening below (x=5..7, y2..4) is left OPEN → walk straight in.
+        b.set(5, 5, z0, stairE);   // left springer leans toward keystone
+        b.set(7, 5, z0, stairW);   // right springer
+        b.set(6, 6, z0, chiseled); // keystone, raised one course above the springers
+
+        // 7) ENTABLATURE (y=6) — a smooth-quartz architrave ring over the capitals,
+        //    tying the colonnade together. Front/back faces alternate chiseled (mutule)
+        //    and smooth-quartz for a Doric read; the end walls match. Skip x=6 on the
+        //    front so the keystone shows above the arch.
+        for (int x = x0; x <= x1; x++) {
+            if (x != 6) b.set(x, 6, z0, (x % 2 == 0) ? chiseled : smoothQuartz);
+            b.set(x, 6, z1, (x % 2 == 0) ? chiseled : smoothQuartz);
+        }
+        for (int z = z0; z <= z1; z++) {
+            b.set(x0, 6, z, smoothQuartz);
+            b.set(x1, 6, z, smoothQuartz);
+        }
+
+        // 8) ROOF — flat smooth-quartz-slab over the two colonnade AISLES (the strips
+        //    above the pools), leaving the central walkway court (x∈[5..7]) open to the
+        //    sky. y=7 top-slab so the entablature reads as a cornice below it.
+        flatRoof(b, 7, x0, z0, 4, z1, slabTop);    // west aisle roof
+        flatRoof(b, 7, 8, z0, x1, z1, slabTop);    // east aisle roof
+
+        // 9) LANTERNS — chain-hung lanterns over each pool, backed up to the aisle roof
+        //    slab (a solid block exists at y7 above them).
+        chainLantern(b, wpx0 + 1, 5, (pz0 + pz1) / 2, 1); // west pool lantern, chains y6
+        chainLantern(b, epx1 - 1, 5, (pz0 + pz1) / 2, 1); // east pool lantern
 
         return b.build();
     }
