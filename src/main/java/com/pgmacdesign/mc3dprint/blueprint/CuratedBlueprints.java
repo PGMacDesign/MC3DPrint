@@ -69,7 +69,8 @@ public final class CuratedBlueprints {
             // Phase 2 — Category I (ornamental / garden)
             "koi_pond", "gazebo", "pergola_garden", "wishing_well",
             "statue_pedestal", "obelisk", "stonehenge_ring", "garden_archway",
-            "ruin_pillar", "cemetery_plot", "scarecrow", "flower_shop", "food_stall");
+            "ruin_pillar", "cemetery_plot", "scarecrow", "flower_shop", "food_stall",
+            "park_bench_lamppost");
 
     /**
      * Load a bundled curated blueprint straight from the mod's resources (no world

@@ -7,9 +7,9 @@
 
 ## Status
 - **Curated builds before Phase 2:** 29
-- **Phase 2 queue:** 103 · **Done:** 39 · **Blocked:** 2 · **Remaining:** 62
-- **Next up:** `park_bench_lamppost`
-- **Last completed:** `food_stall`
+- **Phase 2 queue:** 103 · **Done:** 40 · **Blocked:** 2 · **Remaining:** 61
+- **Next up:** `hedge_maze_segment`
+- **Last completed:** `park_bench_lamppost`
 
 ## Process (per build — follow exactly on resume)
 1. Pick the first unchecked `[ ]` build in queue order below.
@@ -78,7 +78,7 @@
 - [x] scarecrow
 - [x] flower_shop
 - [x] food_stall
-- [ ] park_bench_lamppost
+- [x] park_bench_lamppost
 - [ ] hedge_maze_segment
 - [ ] hot_air_balloon
 - [ ] dragon_statue (Hard)

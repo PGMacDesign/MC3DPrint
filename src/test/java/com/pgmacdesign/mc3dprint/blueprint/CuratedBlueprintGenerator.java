@@ -240,6 +240,7 @@ class CuratedBlueprintGenerator {
         builds.put("scarecrow", scarecrow());
         builds.put("flower_shop", flowerShop());
         builds.put("food_stall", foodStall());
+        builds.put("park_bench_lamppost", parkBenchLamppost());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -1562,6 +1563,75 @@ class CuratedBlueprintGenerator {
         b.set(3, 2, 0, OAK_LOG_Y);
         b.set(3, 3, 0, STRIPPED_OAK_Y);             // snapped, bleached crown
         b.set(2, 2, 0, deadBush);                   // a dead branch nub beside the trunk
+
+        return b.build();
+    }
+
+    /**
+     * §I Park Bench &amp; Lamppost. 5×3 footprint → builder(5,6,3). A classic park
+     * scene: a slab-and-stair bench (oak-stair armrests + oak-slab seat on stone-brick
+     * wall legs, with an oak-trapdoor / oak-sign backrest) beside a wrought-iron-look
+     * lamppost (a chiseled-stone-brick base under a stone-brick-wall shaft, a chiseled
+     * cap, a trapdoor "flare" shade, and a lantern head), all set on a small
+     * stone-brick / dirt-path plot. A small decorative prop pairing — T1 disc.
+     *
+     * <p>Vanilla, FU-valued blocks only (stairs/slabs/walls/trapdoors/lantern/sign all
+     * derive a value or are itemless-structural). NO glass/iron-bars panes anywhere, so
+     * the render-integrity stub-pane gate never applies. Axes: x=W(0..4), y=up(0..5),
+     * z=depth(0..2); the bench sits on the west half (x=0..2) and the lamppost stands
+     * on the east edge (x=4).
+     */
+    private static Blueprint parkBenchLamppost() {
+        Blueprint.Builder b = Blueprint.builder("Park Bench & Lamppost", 5, 6, 3);
+        BlueprintBlockState seatStairW =
+                bs("minecraft:oak_stairs[facing=south,half=bottom,shape=outer_left]");
+        BlueprintBlockState seatStairE =
+                bs("minecraft:oak_stairs[facing=south,half=bottom,shape=outer_right]");
+        BlueprintBlockState backrestTrapdoor =
+                bs("minecraft:oak_trapdoor[facing=south,half=top,open=false,powered=false,waterlogged=false]");
+        BlueprintBlockState flareW =
+                bs("minecraft:oak_trapdoor[facing=west,half=bottom,open=true,powered=false,waterlogged=false]");
+        BlueprintBlockState flareN =
+                bs("minecraft:oak_trapdoor[facing=north,half=bottom,open=true,powered=false,waterlogged=false]");
+        BlueprintBlockState flareS =
+                bs("minecraft:oak_trapdoor[facing=south,half=bottom,open=true,powered=false,waterlogged=false]");
+
+        // ── GROUND PLOT (y0) ───────────────────────────────────────────────
+        // 5×3 stone-brick paving with a dirt-path strip down the centre row (z=1),
+        // suggesting a garden walkway running between the bench and the lamppost.
+        floor(b, 0, 0, 0, 4, 2, STONE_BRICKS);
+        line(b, 0, 0, 1, 4, 1, DIRT_PATH);
+
+        // ── PARK BENCH (west half, x=0..2; sitter faces +z/south) ──────────
+        // Legs: short stone-brick-wall posts under the two ends of the seat (z=1).
+        b.set(0, 1, 1, STONE_BRICK_WALL);            // west leg
+        b.set(2, 1, 1, STONE_BRICK_WALL);            // east leg
+        // Seat (y=2, z=1): an oak-slab plank across the middle with chamfered
+        // oak-stair armrests at each end so the bench reads as a proper seat.
+        b.set(0, 2, 1, seatStairW);                  // west armrest (outer-left corner stair)
+        b.set(1, 2, 1, OAK_SLAB_BOTTOM);             // seat plank
+        b.set(2, 2, 1, seatStairE);                  // east armrest (outer-right corner stair)
+        // Backrest (z=0): an upright oak-trapdoor board spanning the seat, capped by
+        // a standing oak sign in the middle as the park-bench name plaque.
+        b.set(0, 2, 0, backrestTrapdoor);
+        b.set(1, 2, 0, backrestTrapdoor);
+        b.set(2, 2, 0, backrestTrapdoor);
+        b.set(1, 3, 0, bs("minecraft:oak_sign[rotation=8]")); // plaque, facing the path
+
+        // ── LAMPPOST (east edge, x=4, z=1) ─────────────────────────────────
+        // Chiseled-stone-brick base, a stone-brick-wall shaft (the wrought-iron pole),
+        // a chiseled cap, an oak-trapdoor "flare" shade fanning out under the head,
+        // and a standing lantern as the lamp itself.
+        b.set(4, 1, 1, CHISELED_STONE_BRICKS);       // ornamental base
+        b.set(4, 2, 1, STONE_BRICK_WALL);            // shaft
+        b.set(4, 3, 1, STONE_BRICK_WALL);            // shaft
+        b.set(4, 4, 1, CHISELED_STONE_BRICKS);       // cap the lamp head sits on
+        // Trapdoor flare shade fanning out from the cap (3 in-volume sides; west toward
+        // the bench, plus north/south). Open trapdoors → angled "lamp shade" panels.
+        b.set(3, 4, 1, flareW);                      // west flare (over the path toward the bench)
+        b.set(4, 4, 0, flareN);                      // north flare
+        b.set(4, 4, 2, flareS);                      // south flare
+        b.set(4, 5, 1, LANTERN);                     // lamp head, standing on the cap
 
         return b.build();
     }
