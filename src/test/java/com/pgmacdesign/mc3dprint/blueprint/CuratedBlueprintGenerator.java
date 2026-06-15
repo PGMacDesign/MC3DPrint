@@ -232,6 +232,7 @@ class CuratedBlueprintGenerator {
         builds.put("pergola_garden", pergolaGarden());
         builds.put("wishing_well", wishingWell());
         builds.put("statue_pedestal", statuePedestal());
+        builds.put("obelisk", obelisk());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -1350,6 +1351,67 @@ class CuratedBlueprintGenerator {
         b.set(0, 8, 2, IRON_BARS);        // crossguard / hilt — anchored to the hand
         b.set(0, 9, 2, END_ROD);          // blade
         b.set(0, 10, 2, END_ROD);         // blade tip
+        return b.build();
+    }
+
+    /**
+     * §I Obelisk. 3×3 footprint → builder(3,16,3). A slender four-sided landmark
+     * monolith (Cleopatra's-Needle silhouette): a stepped smooth-stone base with a
+     * chiseled-stone-brick inscription course, a tall 3×3 dressed-stone shaft framed
+     * by chiseled-brick corner columns and girdled by a blackstone+gold inscription
+     * band, then a setback course feeding a gilded 4-sided pyramidal capstone that
+     * converges to a {@code gold_block} tip. Tall, solid, not enterable. T3 disc.
+     */
+    private static Blueprint obelisk() {
+        Blueprint.Builder b = Blueprint.builder("Obelisk", 3, 16, 3);
+        BlueprintBlockState smoothStone = bs("minecraft:smooth_stone");
+        BlueprintBlockState blackstone = bs("minecraft:blackstone");
+        BlueprintBlockState goldBlock = bs("minecraft:gold_block");
+
+        // ── STEPPED STONE BASE (y0..y3) ────────────────────────────────────
+        // y0: full 3×3 smooth-stone footing
+        floor(b, 0, 0, 0, 2, 2, smoothStone);
+        // y1: a chiseled-stone-brick inscription course wrapping the base rim
+        floor(b, 1, 0, 0, 2, 2, CHISELED_STONE_BRICKS);
+        // y2..y3: smooth-stone plinth, the dressed-stone body the shaft rises from
+        floor(b, 2, 0, 0, 2, 2, smoothStone);
+        floor(b, 3, 0, 0, 2, 2, STONE_BRICKS);
+
+        // ── TAPERING SHAFT (y4..y11) ───────────────────────────────────────
+        // The shaft fills the 3×3 footprint as a solid smooth-stone column; the
+        // four corner cells are swapped to chiseled stone bricks so every face
+        // reads as a dressed, faceted edge (the four-sided monolith look).
+        for (int y = 4; y <= 11; y++) {
+            floor(b, y, 0, 0, 2, 2, smoothStone);
+            b.set(0, y, 0, CHISELED_STONE_BRICKS); // NW corner column
+            b.set(2, y, 0, CHISELED_STONE_BRICKS); // NE corner column
+            b.set(0, y, 2, CHISELED_STONE_BRICKS); // SW corner column
+            b.set(2, y, 2, CHISELED_STONE_BRICKS); // SE corner column
+        }
+        // Inscription band at y7: a full 3×3 blackstone girdle with a gold-block
+        // centre on each of the four faces — the gilded dedication band.
+        floor(b, 7, 0, 0, 2, 2, blackstone);
+        b.set(1, 7, 0, goldBlock); // north face centre
+        b.set(1, 7, 2, goldBlock); // south face centre
+        b.set(0, 7, 1, goldBlock); // west face centre
+        b.set(2, 7, 1, goldBlock); // east face centre
+
+        // ── SETBACK + GILDED PYRAMIDAL CAPSTONE (y12..y15) ─────────────────
+        // y12: a chiseled-stone-brick neck course the pyramidion springs from.
+        floor(b, 12, 0, 0, 2, 2, CHISELED_STONE_BRICKS);
+        // y13: four blackstone-stair slopes facing inward around a smooth-stone
+        // core — the start of the four-sided gilded cap.
+        b.set(1, 13, 1, goldBlock); // core
+        b.set(1, 13, 0, bs("minecraft:blackstone_stairs[facing=south,half=bottom,shape=straight]"));
+        b.set(1, 13, 2, bs("minecraft:blackstone_stairs[facing=north,half=bottom,shape=straight]"));
+        b.set(0, 13, 1, bs("minecraft:blackstone_stairs[facing=east,half=bottom,shape=straight]"));
+        b.set(2, 13, 1, bs("minecraft:blackstone_stairs[facing=west,half=bottom,shape=straight]"));
+        // (the four base corners of the cap stay open → the pyramidion reads as a
+        //  4-sided point, not a flat block)
+        // y14: a gold-block course narrowing to the apex
+        b.set(1, 14, 1, goldBlock);
+        // y15: the gilded tip — a single gold block crowning the monument
+        b.set(1, 15, 1, goldBlock);
         return b.build();
     }
 
