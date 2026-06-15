@@ -250,6 +250,7 @@ class CuratedBlueprintGenerator {
         builds.put("super_smelter", superSmelter());
         builds.put("smithy_workshop", smithyWorkshop());
         builds.put("map_room", mapRoom());
+        builds.put("library", library());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -6849,6 +6850,209 @@ class CuratedBlueprintGenerator {
         // wall-backed lanterns flanking the door for the entry glow
         b.set(1, yB, 1, LANTERN);
         b.set(5, yB, 1, LANTERN);
+
+        return b.build();
+    }
+
+    /**
+     * §G.library — a GRAND LIBRARY: a tall, enterable two-storey reading hall.
+     * 11×11 footprint → builder(11, 14, 11); disc T1. Vanilla, FU-valued blocks
+     * only: stone bricks, dark-oak planks/logs/stairs/slabs/fence, bookshelf,
+     * chiseled_bookshelf, lectern, ladder, carpet, glass, chain + lantern.
+     *
+     * <p>The build reads as a grand hall: a stone-brick shell with dark-oak log
+     * framing, floor-to-gallery bookshelf + chiseled-bookshelf walls, a U-shaped
+     * second-floor mezzanine (dark-oak-fence railings around an open central
+     * atrium) reached by a ladder, reading nooks (lecterns over carpet runners),
+     * tall glass windows down both long walls, hanging chandeliers (chains +
+     * lanterns) over the atrium, and a peaked dark-oak gable roof.
+     *
+     * <p>Section structure (y from the ground up, H=14 → y 0..13):
+     * <ul>
+     *   <li>{@code y=0} dark-oak-plank floor (the walkable ground-storey surface).</li>
+     *   <li>{@code y=1..7} stone-brick wall ring with dark-oak-log corner posts +
+     *       mid-wall pilasters; a centred north doorway opening inward; tall glass
+     *       windows down both long walls (panes flanked by wall → render-safe).</li>
+     *   <li>{@code y=1..3} ground storey: bookshelf / chiseled-bookshelf stacks
+     *       lining the side walls, lectern reading nooks on carpet runners, a
+     *       central aisle; a ladder climbs the SE corner to the mezzanine.</li>
+     *   <li>{@code y=4} U-shaped mezzanine plank floor (the central atrium is left
+     *       open so the hall reads double-height), {@code y=5} dark-oak-fence
+     *       railing around the atrium edge + a ladder hatch.</li>
+     *   <li>{@code y=5..7} upper storey: more bookshelf stacks on the gallery, lit
+     *       by the upper windows.</li>
+     *   <li>{@code y=8} dark-oak tie-beams span the hall; hanging chandeliers
+     *       (chain + lantern) drop from them over the atrium.</li>
+     *   <li>{@code y=8..13} dark-oak gable roof (ridge along X) with closed gable
+     *       ends, peaking at y=13 (the H=14 ceiling).</li>
+     * </ul>
+     */
+    private static Blueprint library() {
+        Blueprint.Builder b = Blueprint.builder("Grand Library", 11, 14, 11);
+
+        BlueprintBlockState darkOakLogY = bs("minecraft:dark_oak_log[axis=y]");
+        BlueprintBlockState darkOakLogX = bs("minecraft:dark_oak_log[axis=x]");
+        BlueprintBlockState darkOakFence = DARK_OAK_FENCE;
+        BlueprintBlockState darkOakSlabBottom = bs("minecraft:dark_oak_slab[type=bottom]");
+        BlueprintBlockState darkOakSlabTop = bs("minecraft:dark_oak_slab[type=top]");
+        BlueprintBlockState redCarpet = bs("minecraft:red_carpet");
+        BlueprintBlockState ladderE = bs("minecraft:ladder[facing=east,waterlogged=false]");
+        // chiseled bookshelf facing into the room from the wall it backs onto
+        BlueprintBlockState chiseledN = bs("minecraft:chiseled_bookshelf[facing=north,slot_0_occupied=false,slot_1_occupied=false,slot_2_occupied=false,slot_3_occupied=false,slot_4_occupied=false,slot_5_occupied=false]");
+        BlueprintBlockState chiseledE = bs("minecraft:chiseled_bookshelf[facing=east,slot_0_occupied=false,slot_1_occupied=false,slot_2_occupied=false,slot_3_occupied=false,slot_4_occupied=false,slot_5_occupied=false]");
+        BlueprintBlockState chiseledW = bs("minecraft:chiseled_bookshelf[facing=west,slot_0_occupied=false,slot_1_occupied=false,slot_2_occupied=false,slot_3_occupied=false,slot_4_occupied=false,slot_5_occupied=false]");
+        BlueprintBlockState lecternE = bs("minecraft:lectern[facing=east,has_book=false,powered=false]");
+        BlueprintBlockState lecternW = bs("minecraft:lectern[facing=west,has_book=false,powered=false]");
+
+        int x0 = 0, x1 = 10, z0 = 0, z1 = 10;   // 11×11 footprint
+        int cx = (x0 + x1) / 2;                  // 5
+        int cz = (z0 + z1) / 2;                  // 5
+        int wallH = 7;                           // wall plate (roof seats at y=8)
+        int mezzY = 4;                           // mezzanine floor level
+        int roofY = wallH + 1;                   // 8
+
+        // ── 1) FLOOR (y=0) — dark-oak plank ground-storey surface ───────────
+        floor(b, 0, x0, z0, x1, z1, DARK_OAK_PLANKS);
+
+        // ── 2) WALL RING (y=1..7) — stone brick + dark-oak-log corner posts ──
+        walls(b, x0, z0, x1, z1, 1, wallH, STONE_BRICKS);
+        corners(b, x0, z0, x1, z1, 1, wallH, darkOakLogY);
+        // mid-wall pilasters (dark-oak log) breaking up the long (west/east) faces —
+        // visual framing AND solid pane flankers for the windows set either side.
+        pillar(b, x0, cz, 1, wallH, darkOakLogY);
+        pillar(b, x1, cz, 1, wallH, darkOakLogY);
+        // a header band of dark-oak log along the north/south wall tops (y=wallH)
+        line(b, wallH, x0, z0, x1, z0, darkOakLogX);
+        line(b, wallH, x0, z1, x1, z1, darkOakLogX);
+
+        // ── 3) NORTH DOORWAY (centred) opening inward ───────────────────────
+        door2(b, cx, 1, z0, "dark_oak", "N");
+
+        // ── 4) TALL GLASS WINDOWS down both long walls (render-safe panes) ──
+        // Each pane sits in a wall cell flanked horizontally by stone-brick wall
+        // (or the centre log pilaster), so it always has a connectable neighbour.
+        // Two 2-tall windows per long wall, set either side of the mid pilaster.
+        for (int z : new int[]{2, 3, 7, 8}) {
+            for (int y = 3; y <= 5; y++) {
+                window2(b, x0, y, z, GLASS_PANE, null); // west long wall
+                window2(b, x1, y, z, GLASS_PANE, null); // east long wall
+            }
+        }
+        // front (north) clerestory windows either side of the door
+        for (int x : new int[]{2, 8}) {
+            window2(b, x, 4, z0, GLASS_PANE, null);
+            window2(b, x, 5, z0, GLASS_PANE, null);
+        }
+        // back (south) wall windows flanking the centre
+        for (int x : new int[]{3, 7}) {
+            for (int y = 3; y <= 5; y++) {
+                window2(b, x, y, z1, GLASS_PANE, null);
+            }
+        }
+
+        // ── 5) GROUND-STOREY BOOKSHELF WALLS (y=1..3) ───────────────────────
+        // Floor-to-gallery bookshelf + chiseled-bookshelf stacks lining the side
+        // walls (x=1 west run, x=9 east run), kept off the window columns and the
+        // ladder corner. Chiseled shelves face into the hall.
+        for (int z = 2; z <= 8; z++) {
+            if (z == 5) continue;                 // leave the mid pilaster column clear
+            if (z == 8) continue;                 // SE corner reserved for the ladder
+            b.set(1, 1, z, BOOKSHELF);
+            b.set(1, 2, z, BOOKSHELF);
+            b.set(1, 3, z, chiseledE);            // faces east into the hall
+            b.set(9, 1, z, BOOKSHELF);
+            b.set(9, 2, z, BOOKSHELF);
+            b.set(9, 3, z, chiseledW);            // faces west into the hall
+        }
+        // back-wall bookshelf bank (south, z=9 inner) flanking the centre
+        for (int x : new int[]{2, 8}) {
+            b.set(x, 1, 9, BOOKSHELF);
+            b.set(x, 2, 9, BOOKSHELF);
+            b.set(x, 3, 9, chiseledN);            // faces north into the hall
+        }
+
+        // ── 6) READING NOOKS — lecterns over red-carpet runners (y=1) ───────
+        // Carpet is a thin block that occupies the cell ABOVE the plank floor (y=1).
+        // Two runners (x=3, x=7 columns) frame the central aisle; lecterns (atlas
+        // stands) sit at the ends of each runner, angled inward toward the aisle.
+        // The ends carry the lecterns, so the carpet runs only on the cells between.
+        for (int z = 4; z <= 6; z++) {
+            b.set(3, 1, z, redCarpet);            // west runner
+            b.set(7, 1, z, redCarpet);            // east runner
+        }
+        b.set(3, 1, 3, lecternE);                 // west nook lectern faces east
+        b.set(7, 1, 3, lecternW);                 // east nook lectern faces west
+        b.set(3, 1, 7, lecternE);
+        b.set(7, 1, 7, lecternW);
+
+        // ── 7) MEZZANINE (y=4) — U-shaped gallery, open central atrium ──────
+        // A plank gallery floor around three sides (west, east, south runs) two
+        // cells deep; the centre is left OPEN so the hall reads double-height.
+        // A ladder hatch is left open at the SE access column.
+        int hatchX = 8, hatchZ = 8;               // ladder hatch (SE)
+        for (int x = 1; x <= 9; x++) {
+            for (int z = 1; z <= 9; z++) {
+                boolean onGallery = (x <= 2) || (x >= 8) || (z >= 8);
+                if (!onGallery) continue;          // open atrium
+                if (x == hatchX && z == hatchZ) continue; // ladder hatch
+                b.set(x, mezzY, z, DARK_OAK_PLANKS);
+            }
+        }
+        // ── 8) MEZZANINE RAILING (y=5) — dark-oak fence around the atrium edge
+        // Fence posts ring the inner edge of the gallery (where it meets the open
+        // atrium) so the player doesn't walk off. The inner edge runs along
+        // x=2 / x=8 (between gallery and atrium) and z=7 (south gallery lip).
+        for (int z = 1; z <= 7; z++) {
+            b.set(2, mezzY + 1, z, darkOakFence);  // west gallery inner rail
+            b.set(8, mezzY + 1, z, darkOakFence);  // east gallery inner rail
+        }
+        for (int x = 2; x <= 8; x++) {
+            b.set(x, mezzY + 1, 7, darkOakFence);  // south gallery inner rail
+        }
+        // re-open the hatch + an access gap in the rail so the ladder is reachable
+        b.set(hatchX, mezzY + 1, 7, darkOakSlabBottom); // step off the ladder onto the gallery
+
+        // ── 9) LADDER — SE corner, climbs y=1..3 to the mezzanine hatch ─────
+        // Backed by the east stone-brick wall: ladder faces east → attaches to the
+        // block at (hatchX+1, *, hatchZ) = (9, *, 8), which is the wall ring.
+        for (int y = 1; y <= mezzY - 1; y++) {
+            b.set(hatchX, y, hatchZ, ladderE);
+        }
+
+        // ── 10) UPPER-STOREY BOOKSHELVES (y=5..6) on the gallery ───────────
+        // Bookshelf stacks along the gallery back the upper windows; chiseled
+        // shelves face the atrium so the gallery reads as more stacks.
+        for (int z = 2; z <= 7; z++) {
+            if (z == 5) continue;                  // mid pilaster
+            b.set(1, 5, z, BOOKSHELF);
+            b.set(1, 6, z, chiseledE);
+            b.set(9, 5, z, BOOKSHELF);
+            b.set(9, 6, z, chiseledW);
+        }
+        for (int x : new int[]{3, 7}) {
+            b.set(x, 5, 9, BOOKSHELF);
+            b.set(x, 6, 9, chiseledN);
+        }
+
+        // ── 11) TIE-BEAMS (y=8) + CHANDELIERS over the atrium ───────────────
+        // Dark-oak log tie-beams span the hall at the wall plate; chandeliers
+        // (chain up to the beam, hanging lantern below) drop over the open atrium.
+        for (int z : new int[]{3, 5, 7}) {
+            line(b, roofY, x0, z, x1, z, darkOakLogX);
+        }
+        // chandeliers hang under the z=5 tie-beam over the central atrium
+        for (int x : new int[]{4, 6}) {
+            chainLantern(b, x, roofY - 3, 5, 2);   // lantern y=5, chains y=6..7 → beam y=8
+        }
+        chainLantern(b, cx, roofY - 4, 5, 3);      // taller central chandelier (lantern y=4)
+
+        // ── 12) GABLE ROOF (y=8..13) — dark oak, ridge along X, closed ends ─
+        gableRoofX(b, x0, z0, x1, z1, roofY, "dark_oak_stairs", darkOakSlabTop);
+        gableEndFill(b, x0, z0, x1, z1, roofY, STONE_BRICKS);
+
+        // ── 13) ENTRY LIGHTING — lanterns flanking the door ─────────────────
+        b.set(2, 1, 1, LANTERN);
+        b.set(8, 1, 1, LANTERN);
 
         return b.build();
     }

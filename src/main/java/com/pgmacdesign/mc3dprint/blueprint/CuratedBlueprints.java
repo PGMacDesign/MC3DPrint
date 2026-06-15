@@ -74,7 +74,7 @@ public final class CuratedBlueprints {
             "dragon_statue",
             // Phase 2 — Category G (storage)
             "storage_barrel_hall", "brewing_room", "super_smelter", "smithy_workshop",
-            "map_room");
+            "map_room", "library");
 
     /**
      * Load a bundled curated blueprint straight from the mod's resources (no world

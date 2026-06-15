@@ -7,9 +7,9 @@
 
 ## Status
 - **Curated builds before Phase 2:** 29
-- **Phase 2 queue:** 103 · **Done:** 48 · **Blocked:** 2 · **Remaining:** 53
-- **Next up:** `library`
-- **Last completed:** `map_room`
+- **Phase 2 queue:** 103 · **Done:** 49 · **Blocked:** 2 · **Remaining:** 52
+- **Next up:** `sky_bridge_segment`
+- **Last completed:** `library`
 
 ## Process (per build — follow exactly on resume)
 1. Pick the first unchecked `[ ]` build in queue order below.
@@ -89,7 +89,7 @@
 - [x] super_smelter
 - [x] smithy_workshop
 - [x] map_room
-- [ ] library (Hard)
+- [x] library (Hard)
 
 ### H — Infrastructure / civic / defensive (13)
 - [ ] sky_bridge_segment
