@@ -281,6 +281,8 @@ class CuratedBlueprintGenerator {
         builds.put("victorian_townhouse", victorianTownhouse());
         // Phase 2 — Category B (nordic_viking_longhouse)
         builds.put("nordic_viking_longhouse", nordicVikingLonghouse());
+        // Phase 2 — Category B (copper_clocktower)
+        builds.put("copper_clocktower", copperClocktower());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -12253,6 +12255,246 @@ class CuratedBlueprintGenerator {
         b.set(x1 - 1, wallBottom, z0 + 4, p.lightBlock);
         b.set(x0 + 1, wallBottom, z1 - 4, p.lightBlock);
         b.set(x1 - 1, wallBottom, z1 - 4, p.lightBlock);
+
+        return b.build();
+    }
+
+    /**
+     * Category B — copper_clocktower. 9×9 footprint, tall (→ builder(9,26,9)),
+     * disc T2. A town clocktower that pairs visually with {@link #copperObservatory}:
+     * the same copper-and-deepslate language, here as a rising banded shaft instead
+     * of a dome. Uses the FULL copper oxidation family (cut → exposed → weathered →
+     * oxidized cut copper, plus copper stairs for the spire) as patina'd masonry
+     * banding; deepslate (bricks/tiles/polished/cobbled, + wall/stairs) for the base,
+     * corner pilasters and clock detailing; quartz/white-concrete clock faces.
+     *
+     * <p>LAYOUT (cx=cz=4, x/z in 0..8, y in 0..25):
+     * <ul>
+     *   <li>y0 — deepslate-brick foundation slab, full 9×9.</li>
+     *   <li>y1..3 — deepslate plinth: a 7×7 (x/z 1..7) deepslate-tile base with a
+     *       polished-deepslate plinth cap course; oak door on the north face; an
+     *       interior deepslate-tile finish floor (walkable, enterable).</li>
+     *   <li>y4..15 — the SHAFT: a 7×7 hollow ring banded through every copper
+     *       oxidation stage (4-course repeat cut→exposed→weathered→oxidized) with
+     *       deepslate-brick corner pilasters running the full height. An interior
+     *       ladder climbs the north wall to the belfry hatch.</li>
+     *   <li>y11..13 — CLOCK FACES on all four cardinal faces (see below).</li>
+     *   <li>y16..19 — the BELFRY: an open copper-block louvered lantern stage sitting
+     *       on a copper floor deck (with a ladder hatch), oxidized-copper corner posts,
+     *       iron-bar louver grates spanning jamb-to-jamb on each face, and four
+     *       chain-hung lanterns.</li>
+     *   <li>y20..23 — a tapering copper (cut-copper-stairs) PYRAMIDAL SPIRE roof,
+     *       weathered→oxidized gradient upward, topped at y24 with a lightning-rod
+     *       finial (the historically-correct copper-tower lightning conductor).</li>
+     * </ul>
+     *
+     * <p>CLOCK FACES — rendered with PRINTABLE BLOCKS ONLY (no item-frame clocks).
+     * On each cardinal face, at the wall plane, a 3×3 dial of white concrete is inset
+     * into the shaft ring (y11..13, three columns wide), framed by a one-cell ring of
+     * cut copper (the rim sits on the courses just outside the dial: y10 below, y14
+     * above, and the flanking shaft cells left/right of the dial). The dial's centre
+     * cell carries a deepslate-tile "hub", and the up + side cells of the dial read as
+     * the clock HANDS against the white field. Because every clock-face cell is a FULL
+     * BLOCK (concrete / copper / deepslate), there are NO panes or bars in the dial —
+     * so the stub-pane render guard cannot trip on the clock at all.
+     *
+     * <p>RENDER-SAFETY: the only {@link net.minecraft.world.level.block.IronBarsBlock}
+     * cells are the belfry louvers, and each is placed as a FULL-WIDTH grate spanning
+     * its face from one copper corner post to the other (x=1..7 or z=1..7), so every
+     * bar abuts either the sturdy corner-post block or another bar — none is a lone
+     * stub. (Same jamb-to-jamb grate technique as the gatehouse portcullis.)
+     *
+     * <p>PRINTABILITY: the whole copper family (every oxidation + cut + stair variant,
+     * all normalising to base copper cost), deepslate bricks/tiles/polished/cobbled
+     * (+wall/stairs), white concrete, oak door, iron bars, lanterns/chains, and the
+     * lightning rod are all FU-valued or recipe-derived — no unvalued blocks.
+     */
+    private static Blueprint copperClocktower() {
+        final int cx = 4, cz = 4;
+        Blueprint.Builder b = Blueprint.builder("Copper Clocktower", 9, 26, 9);
+
+        // Palette ---------------------------------------------------------------
+        BlueprintBlockState deepslateBricks   = bs("minecraft:deepslate_bricks");
+        BlueprintBlockState deepslateTiles    = bs("minecraft:deepslate_tiles");
+        BlueprintBlockState polishedDeepslate = bs("minecraft:polished_deepslate");
+        BlueprintBlockState cobbledDeepslate  = bs("minecraft:cobbled_deepslate");
+        BlueprintBlockState deepslateWall     = bs("minecraft:deepslate_brick_wall");
+        BlueprintBlockState copperBlock       = bs("minecraft:copper_block");
+        // NB: plain (non-cut) oxidized_copper is NOT FU-valued in this mod (only the
+        // CUT oxidation variants + copper_block derive), so the printability gate
+        // rejects it. Use oxidized_cut_copper (== copperPatina(3)) for the same green
+        // patina read while staying valued. (Economy is frozen — swap, don't value.)
+        BlueprintBlockState oxidizedCopper    = bs("minecraft:oxidized_cut_copper");
+        BlueprintBlockState whiteConcrete     = bs("minecraft:white_concrete");
+        BlueprintBlockState ladderN           = bs("minecraft:ladder[facing=north,waterlogged=false]");
+        // The four copper-oxidation cut variants, banded in order up the shaft.
+        BlueprintBlockState[] band = {
+                copperPatina(0), // cut_copper
+                copperPatina(1), // exposed_cut_copper
+                copperPatina(2), // weathered_cut_copper
+                copperPatina(3)  // oxidized_cut_copper
+        };
+
+        // shaft footprint: a 7×7 ring, x/z in 1..7 (cardinal mid = 4)
+        final int sx0 = 1, sz0 = 1, sx1 = 7, sz1 = 7;
+
+        // 1) FOUNDATION (y0) — deepslate-brick slab over the whole 9×9 footprint,
+        //    rough cobbled-deepslate skirt one cell in for a weathered base read.
+        floor(b, 0, 0, 0, 8, 8, deepslateBricks);
+        // 2) DEEPSLATE PLINTH (y1..3) — a 7×7 base course: tiles with a polished cap.
+        for (int y = 1; y <= 2; y++) {
+            walls(b, sx0, sz0, sx1, sz1, y, y, deepslateTiles);
+        }
+        walls(b, sx0, sz0, sx1, sz1, 3, 3, polishedDeepslate); // plinth cap course
+        corners(b, sx0, sz0, sx1, sz1, 1, 3, deepslateBricks); // crisp plinth corners
+        // interior finish floor at y1 (walkable; the rest of the shaft is hollow)
+        floor(b, 1, sx0 + 1, sz0 + 1, sx1 - 1, sz1 - 1, deepslateTiles);
+        // weathering flecks on the plinth faces
+        b.set(sx0, 2, cz, cobbledDeepslate);
+        b.set(sx1, 1, cz, cobbledDeepslate);
+
+        // 3) SHAFT (y4..15) — banded copper-oxidation masonry ring, cycling all four
+        //    cut-copper patina stages every course, with deepslate-brick corner
+        //    pilasters running the full shaft height for the masonry pier read.
+        for (int y = 4; y <= 15; y++) {
+            walls(b, sx0, sz0, sx1, sz1, y, y, band[(y - 4) % 4]);
+        }
+        corners(b, sx0, sz0, sx1, sz1, 4, 15, deepslateBricks); // corner pilasters
+
+        // arched oak door on the north cardinal (faces south into the shaft); a
+        // polished-deepslate keystone caps the opening, and the door cells (y1..2)
+        // overwrite the plinth wall so you can walk in.
+        door2(b, cx, 1, 0, "oak", "N");
+        b.set(cx, 3, 0, polishedDeepslate); // keystone over the doorway
+
+        // 4) CLOCK FACES (y11..13) on all four cardinal faces. Each dial is a 3×3
+        //    white-concrete field set INTO the shaft ring, framed by cut copper, with
+        //    a deepslate-tile hub + hands. Full blocks only → no panes in the clock.
+        //    The four faces, given as {wall-cell coordinate generator}:
+        //      north z=0: cells (cx-1..cx+1, y, 0)
+        //      south z=8: cells (cx-1..cx+1, y, 8)
+        //      west  x=0: cells (0, y, cz-1..cz+1)
+        //      east  x=8: cells (8, y, cz-1..cz+1)
+        //    NB: the shaft ring is x/z 1..7, so the cardinal faces of the SHAFT are
+        //    at x=1, x=7, z=1, z=7 — the clock dials are mounted flush on THOSE ring
+        //    faces (not the 9×9 foundation edge), so they sit in the masonry.
+        final int clockMidY = 12;
+        // north face of the shaft ring = z=1; south = z=7; west = x=1; east = x=7.
+        // dial centre column/row is the cardinal (cx / cz).
+        // --- north & south dials (vary X) ---
+        for (int faceZ : new int[]{sz0, sz1}) { // z=1 (north), z=7 (south)
+            // copper frame: ring just outside the 3×3 dial on the same face
+            for (int x = cx - 2; x <= cx + 2; x++) {
+                b.set(x, 10, faceZ, copperBlock); // frame top
+                b.set(x, 14, faceZ, copperBlock); // frame bottom
+            }
+            for (int y = 10; y <= 14; y++) {
+                b.set(cx - 2, y, faceZ, copperBlock); // frame left
+                b.set(cx + 2, y, faceZ, copperBlock); // frame right
+            }
+            // 3×3 white dial
+            for (int y = 11; y <= 13; y++) {
+                for (int x = cx - 1; x <= cx + 1; x++) {
+                    b.set(x, y, faceZ, whiteConcrete);
+                }
+            }
+            // deepslate hands: hub + the 12-o'clock and 3-o'clock arms
+            b.set(cx, clockMidY, faceZ, deepslateTiles);   // hub
+            b.set(cx, clockMidY + 1, faceZ, deepslateTiles); // up arm (top)
+            b.set(cx + 1, clockMidY, faceZ, deepslateTiles); // side arm
+        }
+        // --- west & east dials (vary Z) ---
+        for (int faceX : new int[]{sx0, sx1}) { // x=1 (west), x=7 (east)
+            for (int z = cz - 2; z <= cz + 2; z++) {
+                b.set(faceX, 10, z, copperBlock);
+                b.set(faceX, 14, z, copperBlock);
+            }
+            for (int y = 10; y <= 14; y++) {
+                b.set(faceX, y, cz - 2, copperBlock);
+                b.set(faceX, y, cz + 2, copperBlock);
+            }
+            for (int y = 11; y <= 13; y++) {
+                for (int z = cz - 1; z <= cz + 1; z++) {
+                    b.set(faceX, y, z, whiteConcrete);
+                }
+            }
+            b.set(faceX, clockMidY, cz, deepslateTiles);
+            b.set(faceX, clockMidY + 1, cz, deepslateTiles);
+            b.set(faceX, clockMidY, cz + 1, deepslateTiles);
+        }
+
+        // 5) BELFRY (y16..19) — open louvered lantern stage on a copper deck.
+        //    A copper-block floor at y16 (with a ladder hatch) caps the shaft and
+        //    floors the belfry; oxidized-copper corner posts y16..19; the four faces
+        //    between the posts are open arches filled with FULL-WIDTH iron-bar louver
+        //    grates (each spans corner-to-corner so every bar connects → no stub).
+        for (int x = sx0; x <= sx1; x++) {
+            for (int z = sz0; z <= sz1; z++) {
+                if (x == cx && z == sz0 + 1) continue; // ladder hatch (just inside north)
+                b.set(x, 16, z, copperBlock);
+            }
+        }
+        // oxidized-copper corner posts of the belfry
+        pillar(b, sx0, sz0, 16, 19, oxidizedCopper);
+        pillar(b, sx1, sz0, 16, 19, oxidizedCopper);
+        pillar(b, sx0, sz1, 16, 19, oxidizedCopper);
+        pillar(b, sx1, sz1, 16, 19, oxidizedCopper);
+        // copper plate course at the belfry head (y19) tying the posts together
+        walls(b, sx0, sz0, sx1, sz1, 19, 19, copperBlock);
+        // iron-bar louver grates: full-width on each face, y17..18 (two courses),
+        // leaving y16-floor and the y19 plate as the frame. Each grate spans the
+        // inner cells between the corner posts (x=2..6 or z=2..6) AND touches the
+        // posts at the ends, so every bar abuts a sturdy copper neighbour.
+        for (int y = 17; y <= 18; y++) {
+            for (int x = sx0 + 1; x <= sx1 - 1; x++) {
+                b.set(x, y, sz0, IRON_BARS); // north louvers
+                b.set(x, y, sz1, IRON_BARS); // south louvers
+            }
+            for (int z = sz0 + 1; z <= sz1 - 1; z++) {
+                b.set(sx0, y, z, IRON_BARS); // west louvers
+                b.set(sx1, y, z, IRON_BARS); // east louvers
+            }
+        }
+        // four chain-hung lanterns in the belfry corners, backed by the y19 plate
+        b.set(sx0 + 1, 18, sz0 + 1, CHAIN); b.set(sx0 + 1, 17, sz0 + 1, HANGING_LANTERN);
+        b.set(sx1 - 1, 18, sz0 + 1, CHAIN); b.set(sx1 - 1, 17, sz0 + 1, HANGING_LANTERN);
+        b.set(sx0 + 1, 18, sz1 - 1, CHAIN); b.set(sx0 + 1, 17, sz1 - 1, HANGING_LANTERN);
+        b.set(sx1 - 1, 18, sz1 - 1, CHAIN); b.set(sx1 - 1, 17, sz1 - 1, HANGING_LANTERN);
+
+        // interior ladder: climbs the north wall line from the base up through the
+        // belfry hatch, backed by the ring wall behind it (facing=north → attaches to
+        // (cx, y, sz0) which is solid copper/deepslate the whole way up).
+        pillar(b, cx, sz0 + 1, 1, 16, ladderN);
+
+        // 6) PYRAMIDAL COPPER SPIRE (y20..) — a tapering cut-copper-stair roof over the
+        //    7×7 belfry top, weathered (level 2) climbing to oxidized (level 3) near the
+        //    apex, topped with a lightning-rod finial.
+        {
+            int ax0 = sx0, az0 = sz0, ax1 = sx1, az1 = sz1, y = 20, step = 0;
+            while (ax1 - ax0 > 1 && az1 - az0 > 1) {
+                int lvl = (step == 0) ? 2 : 3; // weathered first course, oxidized above
+                BlueprintBlockState north = copperStair(lvl, "south", "bottom");
+                BlueprintBlockState south = copperStair(lvl, "north", "bottom");
+                BlueprintBlockState west = copperStair(lvl, "east", "bottom");
+                BlueprintBlockState east = copperStair(lvl, "west", "bottom");
+                for (int x = ax0; x <= ax1; x++) { b.set(x, y, az0, north); b.set(x, y, az1, south); }
+                for (int z = az0; z <= az1; z++) { b.set(ax0, y, z, west); b.set(ax1, y, z, east); }
+                ax0++; az0++; ax1--; az1--; y++; step++;
+            }
+            // cap the remaining ridge with oxidized copper, then the finial
+            for (int x = ax0; x <= ax1; x++) {
+                for (int z = az0; z <= az1; z++) {
+                    b.set(x, y, z, oxidizedCopper);
+                }
+            }
+            b.set(cx, y + 1, cz, LIGHTNING_ROD); // finial / lightning conductor
+        }
+
+        // a deepslate-brick-wall railing kiss on the plinth corners (street furniture)
+        b.set(0, 1, 0, deepslateWall);
+        b.set(8, 1, 0, deepslateWall);
+        b.set(0, 1, 8, deepslateWall);
+        b.set(8, 1, 8, deepslateWall);
 
         return b.build();
     }
