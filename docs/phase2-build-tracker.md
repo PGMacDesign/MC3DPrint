@@ -7,9 +7,9 @@
 
 ## Status
 - **Curated builds before Phase 2:** 29
-- **Phase 2 queue:** 103 · **Done:** 100 · **Blocked:** 2 · **Remaining:** 1
-- **Next up:** `end_gateway_shrine`
-- **Last completed:** `shulker_box_vault`
+- **Phase 2 queue:** 103 · **Done:** 101 · **Blocked:** 2 · **Remaining:** 0 — ✅ **QUEUE COMPLETE**
+- **Next up:** _none — all builds done_
+- **Last completed:** `end_gateway_shrine`
 
 ## Process (per build — follow exactly on resume)
 1. Pick the first unchecked `[ ]` build in queue order below.
@@ -151,7 +151,7 @@
 - [x] end_stone_outpost (chorus unvalued → stylized purpur+end_rod chorus trees)
 - [x] chorus_garden (chorus_plant/flower unvalued → stylized purpur+end_rod chorus grove)
 - [x] shulker_box_vault (shulker boxes print + colors normalize; iron-bar grilles span jamb-to-jamb)
-- [ ] end_gateway_shrine
+- [x] end_gateway_shrine (gateway is a state block → shrine frames an empty obsidian mount for the player)
 
 ## Notes — unvalued blocks found during the run (for a morning economy decision)
 These natural/decorative blocks have **no FU value and no recipe**, so builds can't use them
