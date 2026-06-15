@@ -7,9 +7,9 @@
 
 ## Status
 - **Curated builds before Phase 2:** 29
-- **Phase 2 queue:** 103 · **Done:** 88 · **Blocked:** 2 · **Remaining:** 13
-- **Next up:** `nether_portal_room`
-- **Last completed:** `sailing_ship`
+- **Phase 2 queue:** 103 · **Done:** 89 · **Blocked:** 2 · **Remaining:** 12
+- **Next up:** `crimson_warped_hut`
+- **Last completed:** `nether_portal_room`
 
 ## Process (per build — follow exactly on resume)
 1. Pick the first unchecked `[ ]` build in queue order below.
@@ -137,7 +137,7 @@
 - [x] sailing_ship (Hard)
 
 ### C — Nether (8) · watch gilded_blackstone (unvalued)
-- [ ] nether_portal_room
+- [x] nether_portal_room (portal frame only; player lights it)
 - [ ] crimson_warped_hut
 - [ ] soul_outpost
 - [ ] nether_wart_farm
