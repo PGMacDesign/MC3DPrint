@@ -114,7 +114,9 @@ public final class CuratedBlueprints {
             // Phase 2 — Category B (fantasy_wizard_tower)
             "fantasy_wizard_tower",
             // Phase 2 — Category B (victorian_townhouse)
-            "victorian_townhouse");
+            "victorian_townhouse",
+            // Phase 2 — Category B (nordic_viking_longhouse)
+            "nordic_viking_longhouse");
 
     /**
      * Load a bundled curated blueprint straight from the mod's resources (no world

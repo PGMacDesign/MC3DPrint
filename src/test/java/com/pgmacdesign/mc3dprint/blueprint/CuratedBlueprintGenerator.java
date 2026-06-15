@@ -279,6 +279,8 @@ class CuratedBlueprintGenerator {
         builds.put("fantasy_wizard_tower", fantasyWizardTower());
         // Phase 2 — Category B (victorian_townhouse)
         builds.put("victorian_townhouse", victorianTownhouse());
+        // Phase 2 — Category B (nordic_viking_longhouse)
+        builds.put("nordic_viking_longhouse", nordicVikingLonghouse());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -12071,6 +12073,186 @@ class CuratedBlueprintGenerator {
         chainLantern(b, cx, 15, cz, 0);  // story-3 ceiling lamp
         b.set(cx - 2, 7, cz, BOOKSHELF); // a study shelf upstairs
         b.set(cx + 2, 7, cz, BOOKSHELF);
+
+        return b.build();
+    }
+
+    /**
+     * nordic_viking_longhouse — Phase 2, Category B. A long Norse mead-hall /
+     * Viking longhouse: the centrepiece of a medieval cluster. Spec
+     * {@code 11×15 → T7 | disc T3 | spruce, stone brick, hay, shields}. Big and
+     * impressive — a long, low-walled timber hall under a tall, steep spruce-shingle
+     * gable roof with a hay-thatch ridge crown.
+     *
+     * <p>Vanilla, FU-valued / structural blocks only — the {@link #TAIGA_SPRUCE}
+     * spruce family (planks/logs/stairs/slabs/door), a stone-brick + cobblestone
+     * footing course, hay blocks (valued via wheat), a lit campfire hearth, lanterns,
+     * and dyed wall banners. The spec's "shields displayed on item frames" can't print
+     * (item frames are entities), so the heraldry is rendered as dyed
+     * {@code *_wall_banner}s hung on the long interior walls (dyed → normalise to the
+     * base banner FU value) — a row of "shields" down the hall, exactly as a longhouse
+     * would display them. No other unvalued swaps were needed.
+     *
+     * <p>Footprint x=0..10 (W=11, width), z=0..14 (L=15, the long axis), H=13
+     * (y=0..12). The grand entrance is centred on the north gable end (z=0, x=5).
+     * <ul>
+     *   <li><b>y=0</b> — solid cobblestone footing over the whole 11×15 (the low
+     *       stone/cobble base the hall sits on); its top face is the sub-floor.</li>
+     *   <li><b>y=1</b> — spruce-plank finish floor (walkable surface = top of y=1);
+     *       a central earth-and-cobble hearth strip is laid in at the firepit.</li>
+     *   <li><b>y=2..3</b> — a low STONE-BRICK base course wrapping the wall ring (the
+     *       spec's "low stone-brick base course"), overlaid by the timber frame.</li>
+     *   <li><b>y=2..5</b> — spruce-plank timber-framed wall ring (wall plate at y=5)
+     *       with carved spruce-log corner posts and intermediate spruce-log studs
+     *       every 2 cells down the long walls (the longhouse beam rhythm); a grand
+     *       2-wide timber doorway opens inward on the north gable end; glass-BLOCK
+     *       windows sit flush between studs down both long walls (full blocks, not
+     *       lone panes → render-safe). Interior left unset (air-skip) so the long
+     *       central aisle is one open, tall, enterable space.</li>
+     *   <li><b>y=5..12</b> — a tall, steep spruce-stair gable roof ({@link #gableRoofX}
+     *       ridge along the long X axis, seated on the y=5 plate, peaking at y=12) with
+     *       closed gable ends ({@link #gableEndFill}); the ridge course is HAY blocks
+     *       for the thatch-look crown, with extra hay accents on the upper slopes.</li>
+     *   <li><b>chimney / smoke louver</b> — a cobblestone flue rises from the hearth and
+     *       pokes through the roof slope, capped with a stone-brick wall vent.</li>
+     *   <li><b>furnishings</b> — a long communal hall: a central long firepit
+     *       ({@link #CAMPFIRE} flanked by cobble hearth stones), a {@link #bed} at each
+     *       gable end, banquet barrels/chests/crafting along the aisle, the banner
+     *       "shields" down the walls, and lanterns lighting the hall.</li>
+     * </ul>
+     */
+    private static Blueprint nordicVikingLonghouse() {
+        final int W = 11, H = 13, D = 15;
+        Blueprint.Builder b = Blueprint.builder("Nordic Viking Longhouse", W, H, D);
+        Palette p = TAIGA_SPRUCE;
+        final int x0 = 0, x1 = W - 1, z0 = 0, z1 = D - 1; // x:0..10  z:0..14
+        final int cx = (x0 + x1) / 2; // 5
+        final int cz = (z0 + z1) / 2; // 7
+        final int floorY = 1;     // walkable spruce floor on the cobble footing
+        final int wallBottom = 2; // walls rise from above the finish floor
+        final int wallH = 5;      // wall plate (roof seats here); peak = 5+7 = 12
+
+        // build-local materials (all vanilla; spruce family + stone/cobble + hay)
+        BlueprintBlockState strippedSpruceX = bs("minecraft:stripped_spruce_log[axis=x]");
+
+        // 1) cobblestone footing over the whole footprint at y=0 (the low base)
+        floor(b, 0, x0, z0, x1, z1, COBBLE);
+        // 2) spruce-plank finish floor at y=1 (walkable surface)
+        floor(b, floorY, x0, z0, x1, z1, p.plankFloor);
+
+        // 3) LOW STONE-BRICK BASE COURSE (y=2..3) under the timber frame: a 2-tall
+        //    stone-brick wall ring gives the hall its masonry footing look.
+        walls(b, x0, z0, x1, z1, wallBottom, wallBottom + 1, STONE_BRICKS);
+        // 4) SPRUCE TIMBER-FRAME WALL RING (y=2..5): plank field with spruce-log
+        //    corner posts and intermediate studs every 2 cells along the long walls.
+        walls(b, x0, z0, x1, z1, wallBottom, wallH, p.wall);
+        corners(b, x0, z0, x1, z1, wallBottom, wallH, p.logPillarY);
+        for (int x = x0 + 2; x <= x1 - 2; x += 2) {
+            pillar(b, x, z0, wallBottom, wallH, p.logPillarY);
+            pillar(b, x, z1, wallBottom, wallH, p.logPillarY);
+        }
+        // intermediate studs down the long walls (west x0, east x1) every 2 z-cells
+        for (int z = z0 + 2; z <= z1 - 2; z += 2) {
+            pillar(b, x0, z, wallBottom, wallH, p.logPillarY);
+            pillar(b, x1, z, wallBottom, wallH, p.logPillarY);
+        }
+        // re-assert the low stone-brick base on the corner/stud columns so the
+        // masonry footing reads continuous (overwrite the bottom 2 log courses).
+        for (int z = z0; z <= z1; z++) {
+            b.set(x0, wallBottom, z, STONE_BRICKS);
+            b.set(x0, wallBottom + 1, z, STONE_BRICKS);
+            b.set(x1, wallBottom, z, STONE_BRICKS);
+            b.set(x1, wallBottom + 1, z, STONE_BRICKS);
+        }
+        for (int x = x0; x <= x1; x++) {
+            b.set(x, wallBottom, z0, STONE_BRICKS);
+            b.set(x, wallBottom + 1, z0, STONE_BRICKS);
+            b.set(x, wallBottom, z1, STONE_BRICKS);
+            b.set(x, wallBottom + 1, z1, STONE_BRICKS);
+        }
+        // tie-beam rail along the wall plate (stripped-spruce log, axis=x) for the
+        // timber-frame look on the long walls.
+        line(b, wallH, x0, z0, x1, z0, strippedSpruceX);
+        line(b, wallH, x0, z1, x1, z1, strippedSpruceX);
+
+        // 5) GRAND ENTRANCE on the north gable end (z=0): a 2-wide timber doorway
+        //    centred at x=cx-? — use a double door (cx and cx-1) opening inward,
+        //    flanked by spruce-log jambs.
+        door2(b, cx, wallBottom, z0, p.doorWood, "N");
+        door2(b, cx - 1, wallBottom, z0, p.doorWood, "N");
+        pillar(b, cx - 2, z0, wallBottom, wallH, p.logPillarY); // left jamb
+        pillar(b, cx + 1, z0, wallBottom, wallH, p.logPillarY); // right jamb
+        // entrance lintel beam over the grand door (stripped-spruce, axis=x)
+        b.set(cx - 1, wallH, z0, strippedSpruceX);
+        b.set(cx, wallH, z0, strippedSpruceX);
+
+        // 6) WINDOWS — glass BLOCKS (full blocks, render-safe) seated flush in the
+        //    bays between studs down both long walls, mid-wall course y=4.
+        int wy = wallBottom + 2; // y=4 (above the y=2..3 stone base)
+        for (int z = z0 + 1; z <= z1 - 1; z += 2) {
+            b.set(x0, wy, z, GLASS); // west long wall
+            b.set(x1, wy, z, GLASS); // east long wall
+        }
+        // a pair of windows flanking the door on the south gable end (z=z1)
+        b.set(cx - 1, wy, z1, GLASS);
+        b.set(cx + 1, wy, z1, GLASS);
+
+        // 7) TALL STEEP GABLE ROOF: spruce stairs, ridge along X seated at y=wallH,
+        //    peaking at y=12; HAY ridge crown for the thatch look. Closed gable ends.
+        gableRoofX(b, x0, z0, x1, z1, wallH, p.roofStairName, HAY);
+        gableEndFill(b, x0, z0, x1, z1, wallH, p.wall);
+        // hay-bale thatch accents draped along the two courses just below the ridge
+        // (the slope rows at zn=5/zs=9 and zn=6/zs=8, which sit at y=10 and y=11).
+        for (int x = x0; x <= x1; x++) {
+            b.set(x, 10, 5, HAY); b.set(x, 10, 9, HAY);
+            b.set(x, 11, 6, HAY); b.set(x, 11, 8, HAY);
+        }
+
+        // 8) CENTRAL LONG FIREPIT / HEARTH on the aisle: a lit campfire over a cobble
+        //    hearth pad, flanked by cobble. Set on the walkable floor (y=2).
+        b.set(cx, floorY, cz, COBBLE);           // hearth pad sub-tile
+        b.set(cx, wallBottom, cz, CAMPFIRE);     // the firepit
+        b.set(cx - 1, wallBottom, cz, COBBLE);
+        b.set(cx + 1, wallBottom, cz, COBBLE);
+        b.set(cx, wallBottom, cz - 1, COBBLE);
+        b.set(cx, wallBottom, cz + 1, COBBLE);
+
+        // 9) CHIMNEY / SMOKE LOUVER: a cobble flue rising from beside the hearth up
+        //    through the north roof slope, capped with a stone-brick wall vent so
+        //    smoke "escapes" above the ridge line of that bay.
+        int chimX = cx, chimZ = z0 + 4; // poke through the north slope (z=4 → slope y=9)
+        pillar(b, chimX, chimZ, wallBottom, 10, COBBLE);
+        b.set(chimX, 11, chimZ, STONE_BRICK_WALL); // louver vent atop the flue
+
+        // 10) FURNISHINGS — a long communal hall:
+        // a bed at each gable end (heads to the centre)
+        bed(b, x0 + 2, wallBottom, z0 + 2, p.bedColor, "south"); // north-west end
+        bed(b, x1 - 2, wallBottom, z1 - 2, p.bedColor, "north"); // south-east end
+        // banquet line down the aisle near the south end
+        b.set(x0 + 1, wallBottom, cz + 3, BARREL);
+        b.set(x1 - 1, wallBottom, cz + 3, CHEST);
+        b.set(x0 + 1, wallBottom, z0 + 2, CRAFTING_TABLE);
+        b.set(x1 - 1, wallBottom, z0 + 2, BARREL);
+
+        // 11) "SHIELDS" — dyed wall banners hung down the long interior walls
+        //     (substitute for the spec's item-frame shields; item frames are entities
+        //     and can't print, banners can). Hung on the wall cells facing inward:
+        //     west wall (x=x0) → facing=east; east wall (x=x1) → facing=west.
+        String[] bannerColors = {"red", "blue", "yellow", "white", "green"};
+        int bi = 0;
+        for (int z = z0 + 2; z <= z1 - 2; z += 3) {
+            String wc = bannerColors[bi % bannerColors.length];
+            String ec = bannerColors[(bi + 2) % bannerColors.length];
+            b.set(x0, wallBottom + 1, z, bs("minecraft:" + wc + "_wall_banner[facing=east]"));
+            b.set(x1, wallBottom + 1, z, bs("minecraft:" + ec + "_wall_banner[facing=west]"));
+            bi++;
+        }
+
+        // 12) LIGHTING — lanterns along the aisle so the hall reads lit.
+        b.set(x0 + 1, wallBottom, z0 + 4, p.lightBlock);
+        b.set(x1 - 1, wallBottom, z0 + 4, p.lightBlock);
+        b.set(x0 + 1, wallBottom, z1 - 4, p.lightBlock);
+        b.set(x1 - 1, wallBottom, z1 - 4, p.lightBlock);
 
         return b.build();
     }
