@@ -201,6 +201,7 @@ class CuratedBlueprintGenerator {
         builds.put("desert_sandstone_house", desertSandstoneHouse());
         builds.put("desert_pyramid_shrine", desertPyramidShrine());
         builds.put("taiga_log_cabin", taigaLogCabin());
+        builds.put("taiga_spruce_longhouse", taigaSpruceLonghouse());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -2948,6 +2949,105 @@ class CuratedBlueprintGenerator {
         b.set(5, 1, 5, CRAFTING_TABLE);
         b.set(1, 1, 1, CHEST);
         b.set(5, 1, 1, p.lightBlock);              // lantern in the front corner
+        return b.build();
+    }
+
+    /**
+     * Taiga Spruce Longhouse. 9×7 footprint → builder(9, 9, 7). A long, low
+     * Nordic-style spruce longhouse on a raised cobblestone footing, with a
+     * spruce-log timber frame, an open communal interior (one big hall, no
+     * internal walls), glass-pane windows down both long walls, a door on a
+     * short end, and a long X-ridge gable roof crowned with a HAY-BALE ridge so
+     * it reads as a thatch-look roof (the spec's "hay thatch" cue). Inlined
+     * rather than calling {@link #house} so the cobble footing, the extra
+     * timber-frame posts, and the hay ridge are placed explicitly.
+     *
+     * <p>Vanilla, FU-valued blocks only — the {@link #TAIGA_SPRUCE} palette
+     * family (spruce planks/logs/stairs/slabs, glass panes), cobblestone footing,
+     * and hay blocks (a valued, farmable resource). Every cell clears the
+     * printability gate; the only connecting blocks are the long-wall window
+     * panes, each flanked by wall cells on both sides → render-safe.
+     *
+     * <p>Layout (Y), footprint x=0..8 (W=9, the long axis), z=0..6 (depth=7),
+     * door centred on the north short wall at x=4:
+     * <ul>
+     *   <li><b>y=0</b> — a solid cobblestone footing slab over the full 9×7
+     *       (the "stilted/cobblestone footing" the longhouse sits on); its top
+     *       face is the walkable floor.</li>
+     *   <li><b>y=1</b> — a spruce-plank finish floor laid on the footing so the
+     *       interior reads as a timber hall, not bare stone (walkable surface =
+     *       top of y=1; walls + interior props start at y=2).</li>
+     *   <li><b>y=2..5</b> — spruce-plank wall ring with spruce-log corner posts
+     *       AND intermediate spruce-log studs every 2 cells along the long walls
+     *       (the longhouse timber-frame beam look); a door opens inward on the
+     *       north short wall; glass-pane windows run down both long walls between
+     *       stud bays. Interior left unset (air-skip rule) so the hall is one
+     *       open, enterable space.</li>
+     *   <li><b>y=5..8</b> — a spruce gable roof ({@link #gableRoofX} ridge along
+     *       the long X axis, seated on the y=5 wall plate, peaking at y=8) with
+     *       closed gable ends ({@link #gableEndFill}); the ridge course is HAY
+     *       blocks for the thatch-look crown.</li>
+     *   <li><b>furnishings</b> — a long communal hall: a spruce/blue {@link #bed}
+     *       at each end, a central long fire pit ({@link #CAMPFIRE} flanked by
+     *       cobble), a crafting table, a chest, and lanterns.</li>
+     * </ul>
+     */
+    private static Blueprint taigaSpruceLonghouse() {
+        Blueprint.Builder b = Blueprint.builder("Taiga Spruce Longhouse", 9, 9, 7);
+        Palette p = TAIGA_SPRUCE;
+        int x0 = 0, x1 = 8, z0 = 0, z1 = 6;
+        int floorY = 1;        // walkable spruce floor sits on the cobble footing
+        int wallBottom = 2;    // walls rise from above the finish floor
+        int wallH = 5;         // wall plate (roof seats here)
+        int cx = (x0 + x1) / 2; // 4
+        int cz = (z0 + z1) / 2; // 3
+
+        // 1) cobblestone footing over the whole footprint at y=0
+        floor(b, 0, x0, z0, x1, z1, COBBLE);
+        // 2) spruce-plank finish floor on top of the footing at y=1 (walkable)
+        floor(b, floorY, x0, z0, x1, z1, p.plankFloor);
+        // 3) spruce-plank wall ring y=2..5 with spruce-log corner posts
+        walls(b, x0, z0, x1, z1, wallBottom, wallH, p.wall);
+        corners(b, x0, z0, x1, z1, wallBottom, wallH, p.logPillarY);
+        // 3b) intermediate spruce-log studs every 2 cells down both long walls
+        //     (the timber-frame beam rhythm); corners already posted above.
+        for (int x = x0 + 2; x <= x1 - 2; x += 2) {
+            pillar(b, x, z0, wallBottom, wallH, p.logPillarY);
+            pillar(b, x, z1, wallBottom, wallH, p.logPillarY);
+        }
+        // 4) door centred on the north short wall (z=0), opening inward (south)
+        door2(b, cx, wallBottom, z0, p.doorWood, "N");
+        // 5) glass-pane windows at a mid-wall course (each cell flanked by wall
+        //    cells on both sides → render-safe).
+        int wy = wallBottom + 1; // y=3
+        // north short wall (z=z0): two windows flanking the central door
+        window2(b, cx - 1, wy, z0, p.windowPane, null);
+        window2(b, cx + 1, wy, z0, p.windowPane, null);
+        // long walls (west x=x0, east x=x1): a window in the bay between each
+        //    pair of studs, mid-wall (odd z columns avoid the corner posts).
+        for (int z = z0 + 1; z <= z1 - 1; z += 2) {
+            window2(b, x0, wy, z, p.windowPane, null); // west long wall
+            window2(b, x1, wy, z, p.windowPane, null); // east long wall
+        }
+        // south short wall (z=z1): two windows flanking centre
+        window2(b, cx - 1, wy, z1, p.windowPane, null);
+        window2(b, cx + 1, wy, z1, p.windowPane, null);
+        // 6) spruce gable roof seated on the wall plate at y=wallH, ridge along
+        //    the long X axis; HAY-block ridge cap for the thatch-look crown.
+        gableRoofX(b, x0, z0, x1, z1, wallH, p.roofStairName, HAY);
+        gableEndFill(b, x0, z0, x1, z1, wallH, p.wall);
+        // 7) communal hall furnishings on the walkable y=2 floor:
+        //    a bed at each long end, a central long fire pit, table, chest, lights.
+        bed(b, x0 + 1, wallBottom, z1 - 1, p.bedColor, "south"); // west-end bed
+        bed(b, x1 - 1, wallBottom, z1 - 1, p.bedColor, "south"); // east-end bed
+        // central long fire pit: a lit campfire flanked by cobble hearth stones
+        b.set(cx, wallBottom, cz, CAMPFIRE);
+        b.set(cx - 1, wallBottom, cz, COBBLE);
+        b.set(cx + 1, wallBottom, cz, COBBLE);
+        b.set(x0 + 1, wallBottom, z0 + 1, CRAFTING_TABLE);
+        b.set(x1 - 1, wallBottom, z0 + 1, CHEST);
+        b.set(x0 + 1, wallBottom, cz, p.lightBlock); // lantern, west
+        b.set(x1 - 1, wallBottom, cz, p.lightBlock); // lantern, east
         return b.build();
     }
 }
