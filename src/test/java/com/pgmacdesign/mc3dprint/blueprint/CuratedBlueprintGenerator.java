@@ -242,6 +242,7 @@ class CuratedBlueprintGenerator {
         builds.put("food_stall", foodStall());
         builds.put("park_bench_lamppost", parkBenchLamppost());
         builds.put("hedge_maze_segment", hedgeMazeSegment());
+        builds.put("hot_air_balloon", hotAirBalloon());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -7321,5 +7322,147 @@ class CuratedBlueprintGenerator {
         b.set(4, wallH, 4, CHAIN);  b.set(4, wallH - 1, 4, HANGING_LANTERN);
 
         return b.build();
+    }
+
+    /**
+     * hot_air_balloon — Category I, build 44/103. A tall decorative landmark: a
+     * large rounded patterned-wool envelope tapering to a neck, with a small wooden
+     * basket gondola slung below it on fence-and-chain rigging, lit by lanterns.
+     *
+     * <p>Footprint 9×9 (W×D), {@code builder(9, 15, 9)} — x=0..8 (W), z=0..8 (D),
+     * centred on (cx,cz)=(4,4); a tall envelope peaks at y=14. T5 footprint band,
+     * disc T1. The basket sits at the bottom, the envelope dominates the top, the
+     * two coupled by suspension lines — so it reads unmistakably as a balloon.
+     *
+     * <p>Vanilla, FU-valued blocks only. The envelope uses three wool colours
+     * (red / white / blue) painted in vertical gores by angular sector → the
+     * classic striped-balloon pattern; dyed wool normalises to the base wool FU
+     * value so every colour is wound/printable. The basket is oak planks + oak
+     * fence rim, the rigging is oak fences and chains, lit by lanterns. No glass
+     * panes / iron bars anywhere, so the render-integrity stub-pane gate never
+     * applies. All wool/oak/fence/chain/lantern blocks are FU-valued.
+     *
+     * <p>Construction (bottom-up), honouring the air-skip / hollow rules:
+     * <ul>
+     *   <li><b>y=0..2 BASKET</b> — a 3×3 oak-plank gondola at x=3..5,z=3..5: a
+     *       solid plank floor at y=0, plank side walls at y=1 (interior left open
+     *       → it reads as a basket you could stand in), and an oak-fence rim
+     *       around the top lip at y=2.</li>
+     *   <li><b>y=3..6 RIGGING</b> — four suspension lines rising from the basket's
+     *       top corners: oak fence for the lower run (y=3..5) then chain (y=6) up
+     *       toward the envelope neck, so the basket visibly hangs from the balloon.</li>
+     *   <li><b>y=7..14 ENVELOPE</b> — a hollow onion/teardrop wool shell: stacked
+     *       rings tapering from a 1-radius neck (y=7) out to the full 4-radius
+     *       bulge (y=10) and back in to a 1-wide crown (y=14), each ring's cells
+     *       coloured by angular sector into red/white/blue vertical stripes. A
+     *       solid wool disc caps the very top (y=14) and a wool disc closes the
+     *       neck floor (y=7) so the envelope reads as a closed balloon, not a tube.</li>
+     *   <li><b>lanterns</b> — a hanging lantern slung under the envelope neck on a
+     *       chain (the burner glow), plus two lanterns on the basket rim corners.</li>
+     * </ul>
+     */
+    private static Blueprint hotAirBalloon() {
+        final int W = 9, H = 15, D = 9;
+        Blueprint.Builder b = Blueprint.builder("Hot Air Balloon", W, H, D);
+
+        final int cx = 4, cz = 4;
+
+        // three balloon-stripe wool colours (all dyed wool → normalise to base FU)
+        final BlueprintBlockState woolA = bs("minecraft:red_wool");
+        final BlueprintBlockState woolB = bs("minecraft:white_wool");
+        final BlueprintBlockState woolC = bs("minecraft:blue_wool");
+        final BlueprintBlockState[] stripe = { woolA, woolB, woolC };
+
+        // ── BASKET (gondola) — 3×3 oak-plank box at x=3..5, z=3..5 ─────────────
+        final int bx0 = 3, bx1 = 5, bz0 = 3, bz1 = 5;
+        // y=0: solid plank floor
+        floor(b, 0, bx0, bz0, bx1, bz1, OAK_PLANKS);
+        // y=1: plank side walls (interior left open → enterable basket)
+        walls(b, bx0, bz0, bx1, bz1, 1, 1, OAK_PLANKS);
+        // y=2: oak-fence rim around the top lip
+        fenceRing(b, 2, bx0, bz0, bx1, bz1, OAK_FENCE);
+
+        // ── RIGGING — suspension lines from the four basket top corners ───────
+        // fence run y=3..5 then a chain link y=6, climbing toward the neck.
+        final int[][] corners = {{bx0, bz0}, {bx1, bz0}, {bx0, bz1}, {bx1, bz1}};
+        for (int[] c : corners) {
+            pillar(b, c[0], c[1], 3, 5, OAK_FENCE);
+            b.set(c[0], 6, c[1], CHAIN);
+        }
+
+        // ── ENVELOPE — hollow onion/teardrop wool shell, striped by sector ────
+        // ring radius per envelope course y=7..14 (neck → bulge → crown).
+        // index 0 → y=7 … index 7 → y=14.
+        final int[] ringR = {1, 2, 3, 4, 4, 3, 2, 1};
+        final int yEnv0 = 7;
+        for (int i = 0; i < ringR.length; i++) {
+            int y = yEnv0 + i;
+            int r = ringR[i];
+            paintRing(b, y, cx, cz, r, stripe);
+        }
+        // close the neck floor (y=7) and the crown (y=14) with solid wool discs so
+        // the envelope reads as a sealed balloon rather than an open tube.
+        paintDisc(b, yEnv0, cx, cz, ringR[0], stripe);
+        paintDisc(b, yEnv0 + ringR.length - 1, cx, cz, ringR[ringR.length - 1], stripe);
+
+        // ── LANTERNS — burner glow under the neck + basket-rim lights ─────────
+        // a chain link just below the neck centre carrying a hanging lantern (the
+        // balloon's burner), backed by the solid neck-floor disc above it.
+        b.set(cx, 6, cz, CHAIN);
+        b.set(cx, 5, cz, HANGING_LANTERN);
+        // two non-hanging lanterns resting on opposite basket-rim corners.
+        b.set(bx0, 3, bz0, LANTERN);
+        b.set(bx1, 3, bz1, LANTERN);
+
+        return b.build();
+    }
+
+    /**
+     * A perimeter wool ring (like {@link #circleRing}) whose cells are coloured by
+     * angular sector into vertical stripes — used for the hot-air-balloon envelope.
+     * Cell colour = {@code palette[sector]} where {@code sector} is the angle from
+     * the ring centre split into {@code palette.length} gores, so the stripes line
+     * up vertically across stacked rings into balloon gores.
+     */
+    private static void paintRing(Blueprint.Builder b, int y, int cx, int cz, int r,
+                                  BlueprintBlockState[] palette) {
+        if (r <= 0) {
+            b.set(cx, y, cz, palette[0]);
+            return;
+        }
+        for (int x = cx - r; x <= cx + r; x++) {
+            for (int z = cz - r; z <= cz + r; z++) {
+                double d = Math.sqrt((x - cx) * (x - cx) + (z - cz) * (z - cz));
+                if (d <= r + 0.5 && d > r - 0.5) {
+                    b.set(x, y, z, palette[sectorIndex(x - cx, z - cz, palette.length)]);
+                }
+            }
+        }
+    }
+
+    /** Filled-disc variant of {@link #paintRing} (closes the envelope neck/crown). */
+    private static void paintDisc(Blueprint.Builder b, int y, int cx, int cz, int r,
+                                  BlueprintBlockState[] palette) {
+        if (r <= 0) {
+            b.set(cx, y, cz, palette[0]);
+            return;
+        }
+        for (int x = cx - r; x <= cx + r; x++) {
+            for (int z = cz - r; z <= cz + r; z++) {
+                double d = Math.sqrt((x - cx) * (x - cx) + (z - cz) * (z - cz));
+                if (d <= r + 0.5) {
+                    b.set(x, y, z, palette[sectorIndex(x - cx, z - cz, palette.length)]);
+                }
+            }
+        }
+    }
+
+    /** Maps an offset (dx,dz) from a ring centre to one of {@code n} angular gores. */
+    private static int sectorIndex(int dx, int dz, int n) {
+        double angle = Math.atan2(dz, dx) + Math.PI; // 0 .. 2π
+        int idx = (int) (angle / (2 * Math.PI) * n);
+        if (idx >= n) idx = n - 1;
+        if (idx < 0) idx = 0;
+        return idx;
     }
 }

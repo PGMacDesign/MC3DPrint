@@ -7,9 +7,9 @@
 
 ## Status
 - **Curated builds before Phase 2:** 29
-- **Phase 2 queue:** 103 · **Done:** 41 · **Blocked:** 2 · **Remaining:** 60
-- **Next up:** `hot_air_balloon`
-- **Last completed:** `hedge_maze_segment`
+- **Phase 2 queue:** 103 · **Done:** 42 · **Blocked:** 2 · **Remaining:** 59
+- **Next up:** `dragon_statue`
+- **Last completed:** `hot_air_balloon`
 
 ## Process (per build — follow exactly on resume)
 1. Pick the first unchecked `[ ]` build in queue order below.
@@ -80,7 +80,7 @@
 - [x] food_stall
 - [x] park_bench_lamppost
 - [x] hedge_maze_segment
-- [ ] hot_air_balloon
+- [x] hot_air_balloon
 - [ ] dragon_statue (Hard)
 
 ### G — Utility rooms (6) · functional shells
