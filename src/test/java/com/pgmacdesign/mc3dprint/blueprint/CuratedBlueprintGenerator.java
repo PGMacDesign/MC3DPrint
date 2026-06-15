@@ -324,6 +324,7 @@ class CuratedBlueprintGenerator {
         builds.put("purpur_tower", purpurTower());
         builds.put("end_stone_outpost", endStoneOutpost());
         builds.put("chorus_garden", chorusGarden());
+        builds.put("shulker_box_vault", shulkerBoxVault());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -13598,6 +13599,167 @@ class CuratedBlueprintGenerator {
         b.set(8, 1, 4, END_ROD);                 // E glow
         b.set(5, 1, 3, END_ROD);                 // centre-N glow among the trees
         b.set(7, 1, 8, END_ROD);                 // SE corner glow
+
+        return b.build();
+    }
+
+    /**
+     * Category D — shulker_box_vault. 7×7 footprint → builder(7, 6, 7), disc T7. An
+     * organized End-themed STORAGE VAULT: an end-stone-brick + purpur room whose three
+     * back walls are lined with neat shelving banks of colour-coded SHULKER BOXES
+     * behind iron-bar SECURITY GRILLES, with a central aisle, a north entrance, and
+     * end-rod + lantern lighting. The wall of multi-coloured shulker boxes caged behind
+     * iron bars in a purpur vault is the look.
+     *
+     * <p>LAYOUT (x=W 0..6, y=up 0..5, z=D 0..6; interior x/z 1..5):
+     * <ul>
+     *   <li><b>y0</b> — end-stone-brick floor over the whole 7×7 (walkable); a purpur
+     *       central-aisle runner down the z axis (x=3) reads as the vault gangway.</li>
+     *   <li><b>SHELL</b> — {@link #roomShell} end-stone-brick walls (y1..4) + ceiling
+     *       (y5); purpur-pillar corner quoins; a purpur-slab coping line on the wall
+     *       top; a centred north (z=0) oak door opening inward.</li>
+     *   <li><b>SHELVING BANKS</b> — three banks of shulker boxes, each a 3-wide × 3-tall
+     *       grid (x or z = 1..5 interior span) seated AGAINST a back wall: WEST bank on
+     *       x=1, EAST bank on x=5, SOUTH bank on z=5. Each box column uses a different
+     *       dye colour per shelf for the labelled-storage read (all colours normalise to
+     *       the base shulker_box FU value, so they print identically).</li>
+     *   <li><b>IRON-BAR GRILLES</b> — a full iron-bar grid stands ONE cell in front of
+     *       each shelf bank, filling the framed opening jamb-to-jamb (x or z 2..4, y1..3)
+     *       so every bar abuts the purpur-pillar/end-stone frame or a neighbour bar on a
+     *       horizontal side — never a lone/floating bar (the render gate stays green).</li>
+     *   <li><b>AISLE + LIGHTING</b> — the central cross (x=3 and z=3 interior lanes) is
+     *       left OPEN as the walkable aisle; end-rod sconces flank the door and the back
+     *       grilles, and a chain-hung lantern lights the aisle centre.</li>
+     * </ul>
+     *
+     * <p>RENDER-SAFETY: the only iron bars are the three FULL grille grids, each filling
+     * a framed opening so every bar connects horizontally to the frame or a neighbour —
+     * no lone/floating bars and no air-flanked vertical bar columns. Windows (if any) are
+     * full GLASS BLOCKS, never panes. End rods are render-safe thin verticals.
+     *
+     * <p>PRINTABILITY: end_stone_bricks (+slab), purpur_block / purpur_pillar /
+     * purpur_slab (derive via popped_chorus_fruit), shulker_box (derives via
+     * shulker_shell; ALL colour variants normalise to it), iron_bars (via iron), end_rod,
+     * oak door, lanterns/chains are all FU-valued or recipe-derived. No UNVALUED End
+     * blocks (chorus_plant/flower, dragon_egg, end_gateway) are used.
+     */
+    private static Blueprint shulkerBoxVault() {
+        Blueprint.Builder b = Blueprint.builder("Shulker Box Vault", 7, 6, 7);
+        final int x0 = 0, x1 = 6, z0 = 0, z1 = 6;   // 7×7 footprint
+        final int yB = 1, yT = 4;                   // wall course (y=1..4); ceiling y5
+        final int cx = 3, cz = 3;                   // aisle cross axes
+        final int doorX = 3;                        // north-wall doorway (centred)
+
+        // ── Palette (all vanilla, all FU-valued or recipe-derived) ───────────────
+        BlueprintBlockState endBricks    = bs("minecraft:end_stone_bricks");
+        BlueprintBlockState purpurBlock  = bs("minecraft:purpur_block");
+        BlueprintBlockState purpurPillar = bs("minecraft:purpur_pillar[axis=y]");
+        BlueprintBlockState purpurSlabT  = bs("minecraft:purpur_slab[type=top]");
+        // colour-coded shulker boxes, one dye per shelf course (all normalise to the
+        // base shulker_box FU value — they print identically; the colours are purely
+        // the labelled-storage read). [up] faces match a box sitting on a shelf.
+        BlueprintBlockState[] shelfRow = {
+                bs("minecraft:red_shulker_box[facing=up]"),
+                bs("minecraft:yellow_shulker_box[facing=up]"),
+                bs("minecraft:lime_shulker_box[facing=up]"),
+                bs("minecraft:light_blue_shulker_box[facing=up]"),
+                bs("minecraft:purple_shulker_box[facing=up]"),
+                bs("minecraft:magenta_shulker_box[facing=up]"),
+                bs("minecraft:orange_shulker_box[facing=up]"),
+                bs("minecraft:cyan_shulker_box[facing=up]"),
+                bs("minecraft:blue_shulker_box[facing=up]"),
+        };
+
+        // ── 1) SHELL: end-stone-brick floor (y0), wall ring (y1..4), ceiling (y5) ─
+        // roomShell lays the floor, the four-wall ring and the ceiling; the interior is
+        // left open per the air-skip rule so it's enterable.
+        roomShell(b, x0, 0, z0, x1, yT + 1, z1, endBricks, endBricks, endBricks);
+
+        // ── 2) PURPUR CORNER QUOINS + COPING + NORTH-WALL DOORWAY ────────────────
+        // Full-height purpur-pillar corner posts (overwrite the corner cells, no nub),
+        // a purpur-slab coping line ringing the wall top (the End trim line), and a
+        // centred north doorway opening inward.
+        pillar(b, x0, z0, yB, yT, purpurPillar); // NW quoin
+        pillar(b, x1, z0, yB, yT, purpurPillar); // NE quoin
+        pillar(b, x0, z1, yB, yT, purpurPillar); // SW quoin
+        pillar(b, x1, z1, yB, yT, purpurPillar); // SE quoin
+        line(b, yT, x0, z0, x1, z0, purpurSlabT); // north coping
+        line(b, yT, x0, z1, x1, z1, purpurSlabT); // south coping
+        line(b, yT, x0, z0, x0, z1, purpurSlabT); // west coping
+        line(b, yT, x1, z0, x1, z1, purpurSlabT); // east coping
+        door2(b, doorX, yB, z0, "oak", "N");
+        b.set(doorX, yT - 1, z0, purpurBlock); // purpur keystone over the doorway
+
+        // ── 3) PURPUR AISLE RUNNER (y0) — the central vault gangway ──────────────
+        // Re-skin the floor down the z axis (x=cx) with purpur blocks so the aisle
+        // reads as the gangway leading from the door to the back shelving.
+        for (int z = z0; z <= z1; z++) b.set(cx, 0, z, purpurBlock);
+
+        // ── 4) SHELVING BANKS — colour-coded shulker boxes against three back walls ─
+        // Each bank is a 3-wide × 3-tall grid (interior span 2..4) seated flush AGAINST
+        // a back wall: WEST on x=1, EAST on x=5, SOUTH on z=5. The box colours cycle
+        // through shelfRow per cell for the labelled-storage look (all print as the base
+        // shulker_box). The aisle cross (x=cx, z=cz) is kept clear in front of them.
+        int shulkers = 0;
+        // WEST bank (x=1), spans z=2..4, y=1..3.
+        for (int z = 2; z <= 4; z++) {
+            for (int y = yB; y <= yB + 2; y++) {
+                b.set(1, y, z, shelfRow[(z + y) % shelfRow.length]);
+                shulkers++;
+            }
+        }
+        // EAST bank (x=5), spans z=2..4, y=1..3.
+        for (int z = 2; z <= 4; z++) {
+            for (int y = yB; y <= yB + 2; y++) {
+                b.set(5, y, z, shelfRow[(z + y + 3) % shelfRow.length]);
+                shulkers++;
+            }
+        }
+        // SOUTH bank (z=5), spans x=2..4, y=1..3.
+        for (int x = 2; x <= 4; x++) {
+            for (int y = yB; y <= yB + 2; y++) {
+                b.set(x, y, 5, shelfRow[(x + y + 6) % shelfRow.length]);
+                shulkers++;
+            }
+        }
+
+        // ── 5) IRON-BAR SECURITY GRILLES — full grids spanning jamb-to-jamb ──────
+        // One full iron-bar grid stands ONE cell IN FRONT of each shelf bank, filling
+        // the framed opening so every bar abuts the end-stone-brick/purpur frame or a
+        // neighbour bar on a horizontal side — never a lone/floating bar. RENDER-SAFE.
+        // WEST grille (x=2) covers the west bank: spans z=2..4, y=1..3. The z=2/z=4
+        // edge bars abut the solid wall ring at z=1/z=5; z=3 bridges between them. The
+        // y-direction is vertical (no horizontal connection needed there) but each bar
+        // has a horizontal neighbour along z, so the grid is fully connected.
+        for (int z = 2; z <= 4; z++) {
+            for (int y = yB; y <= yB + 2; y++) {
+                b.set(2, y, z, IRON_BARS);
+            }
+        }
+        // EAST grille (x=4) covers the east bank: spans z=2..4, y=1..3.
+        for (int z = 2; z <= 4; z++) {
+            for (int y = yB; y <= yB + 2; y++) {
+                b.set(4, y, z, IRON_BARS);
+            }
+        }
+        // SOUTH grille (z=4) covers the south bank: spans x=2..4, y=1..3. The x=2/x=4
+        // edge bars cross the WEST/EAST grilles (also bars at x=2/x=4) so they connect,
+        // and x=3 bridges between — every bar has a horizontal neighbour.
+        for (int x = 2; x <= 4; x++) {
+            for (int y = yB; y <= yB + 2; y++) {
+                b.set(x, y, 4, IRON_BARS);
+            }
+        }
+
+        // ── 6) LIGHTING — end-rod sconces + a chain-hung aisle lantern ───────────
+        // End-rod sconces standing on the floor flank the door inside the entrance and
+        // glow over the back grilles; a chain-hung lantern off the ceiling lights the
+        // aisle centre. The aisle cross stays open as the walkable gangway.
+        b.set(doorX - 1, 1, 1, END_ROD); // entrance west sconce
+        b.set(doorX + 1, 1, 1, END_ROD); // entrance east sconce
+        b.set(1, yT, 1, END_ROD);        // back-west glow over the grille
+        b.set(5, yT, 1, END_ROD);        // back-east glow over the grille
+        chainLantern(b, cx, yT - 1, cz, 1); // aisle-centre lantern (chain to ceiling)
 
         return b.build();
     }
