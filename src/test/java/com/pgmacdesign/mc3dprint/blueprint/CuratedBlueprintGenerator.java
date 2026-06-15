@@ -268,6 +268,7 @@ class CuratedBlueprintGenerator {
         // Phase 2 — Category B (modern / contemporary)
         builds.put("modern_concrete_house", modernConcreteHouse());
         builds.put("modern_pool_deck", modernPoolDeck());
+        builds.put("cottagecore_cottage", cottagecoreCottage());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -3333,6 +3334,106 @@ class CuratedBlueprintGenerator {
         b.set(4, 1, 1, bs("minecraft:flower_pot"));
         // A potted cherry-pink bloom on the back windowsill for the cherry theme.
         b.set(3, 2, 5, bs("minecraft:potted_pink_tulip"));
+        return b.build();
+    }
+
+    /**
+     * Cottagecore Cottage (Phase 2 §B). 7×7 footprint → builder(7, 8, 7). A
+     * storybook perennial cottage: a mossy-cobble base course under warm oak walls
+     * with spruce-log corner posts, a steep spruce gable roof (thatch read) over a
+     * mossy-cobble ridge, flower-box windows (interior slab sill + potted bloom by
+     * each window), a covered front-entry stoop with a slab awning, and
+     * hay/barrel/lantern accents around a furnished, ENTERABLE interior.
+     *
+     * <p>Geometry. Body is x=0..6, z=0..6. The walkable interior floor is oak
+     * planks at y=0; walls rise y=1..4 (wallH=4); a {@link #gableRoofX} (ridge
+     * along X, slopes facing ±Z) seats at y=4 and peaks at y=7 — hence sizeY=8.
+     * The three closed walls use the {@link #walls} ring; the FRONT (north, z=0)
+     * wall is laid manually so the centre cell (x=3) can be left OPEN for the
+     * {@link #door2} (air-skip: a doorway is made by NOT writing the wall, then
+     * writing the 2-block door) and the porch stoop reads cleanly.
+     *
+     * <p>Render-safety. Every {@link GLASS_PANE} window replaces a single wall
+     * cell and stays flanked by solid wall on both horizontal sides (the potted
+     * flower boxes sit on the INTERIOR sill, never in a pane's neighbour cell), so
+     * each pane has a connecting neighbour and never prints as a stub.
+     *
+     * <p>All blocks are vanilla FU-valued or structural: mossy_cobblestone (moss
+     * is valued; the slab/wall derive), oak/spruce wood, glass panes, hay, barrel,
+     * composter, lanterns, flower_pot/potted_* (itemless-structural — NO loose
+     * flowers/leaves), and fence porch posts.
+     */
+    private static Blueprint cottagecoreCottage() {
+        Blueprint.Builder b = Blueprint.builder("Cottagecore Cottage", 7, 8, 7);
+        final int wallH = 4;
+        BlueprintBlockState mossyCobbleSlab = bs("minecraft:mossy_cobblestone_slab[type=bottom]");
+        BlueprintBlockState awningStair = bs("minecraft:spruce_stairs[facing=south,half=top,shape=straight]");
+
+        // 1) Walkable plank floor at y=0 (top face = standing surface).
+        floor(b, 0, 0, 0, 6, 6, OAK_PLANKS);
+
+        // 2) Walls. Base course (y=1) mossy cobble; oak planks y=2..wallH; spruce-log
+        //    corner posts the full height. The three rear/side faces use the ring
+        //    helper; the FRONT (z=0) face is laid by hand so x=3 stays open for the door.
+        // -- side (west x=0, east x=6) and back (south z=6) faces --
+        for (int y = 1; y <= wallH; y++) {
+            BlueprintBlockState mat = (y == 1) ? MOSSY_COBBLE : OAK_PLANKS;
+            line(b, y, 0, 0, 0, 6, mat); // west face
+            line(b, y, 6, 0, 6, 6, mat); // east face
+            line(b, y, 0, 6, 6, 6, mat); // south (back) face
+            // -- front (north z=0) face, leaving x=3 open as the doorway --
+            for (int x = 0; x <= 6; x++) {
+                if (x == 3) continue; // doorway gap (air-skip)
+                b.set(x, y, 0, mat);
+            }
+        }
+        corners(b, 0, 0, 6, 6, 1, wallH, SPRUCE_LOG_Y);
+
+        // 3) Front door (centred, opening inward = south) + covered entry stoop:
+        //    a spruce-stair awning above the door and a mossy-cobble doorstep mat.
+        door2(b, 3, 1, 0, "oak", "N");      // occupies (3, y=1..2, 0)
+        b.set(3, 3, 0, OAK_PLANKS);          // close the wall above the door head
+        b.set(3, wallH, 1, awningStair);     // little eave awning over the entry (interior side, top stair)
+        b.set(3, 1, 1, mossyCobbleSlab);     // worn doorstep mat just inside
+        // porch fence posts flanking the entry, with hanging lanterns
+        pillar(b, 1, 0, 1, wallH - 1, OAK_FENCE);
+        pillar(b, 5, 0, 1, wallH - 1, OAK_FENCE);
+        b.set(1, wallH, 0, OAK_SLAB_BOTTOM); // post-cap backing for the lantern
+        b.set(5, wallH, 0, OAK_SLAB_BOTTOM);
+
+        // 4) Flower-box windows. One glass pane per long wall (west/east) + back
+        //    wall, mid-height (y=3), each flanked by solid wall → render-safe. The
+        //    flower box (oak-slab sill + potted bloom) sits on the INTERIOR side one
+        //    cell in, so it never becomes the pane's horizontal neighbour.
+        int wy = 3;
+        // west window (x=0, z=3); box on the interior sill at (1, *, 3)
+        window2(b, 0, wy, 3, GLASS_PANE, null);
+        b.set(1, 1, 3, OAK_SLAB_BOTTOM);
+        b.set(1, 2, 3, bs("minecraft:potted_oxeye_daisy"));
+        // east window (x=6, z=3); box at (5, *, 3)
+        window2(b, 6, wy, 3, GLASS_PANE, null);
+        b.set(5, 1, 3, OAK_SLAB_BOTTOM);
+        b.set(5, 2, 3, bs("minecraft:potted_cornflower"));
+        // back window (x=3, z=6); box at (3, *, 5)
+        window2(b, 3, wy, 6, GLASS_PANE, null);
+        b.set(3, 1, 5, OAK_SLAB_BOTTOM);
+        b.set(3, 2, 5, bs("minecraft:potted_poppy"));
+
+        // 5) Steep spruce gable roof (ridge along X) on a mossy-cobble ridge cap;
+        //    closed gable ends so the attic reads solid.
+        gableRoofX(b, 0, 0, 6, 6, wallH, "spruce_stairs", mossyCobbleSlab);
+        gableEndFill(b, 0, 0, 6, 6, wallH, OAK_PLANKS);
+
+        // 6) Furnished, enterable interior on the standing floor (y=1), kept clear of
+        //    the door cell (3,0)/(3,1) walk-in path and the window boxes.
+        bed(b, 1, 1, 5, "red", "south");       // head at z=5 (back-left), foot z=4
+        b.set(5, 1, 5, CRAFTING_TABLE);         // work corner
+        b.set(5, 1, 1, COMPOSTER);              // cottagecore garden accent
+        b.set(1, 1, 1, BARREL);                 // pantry barrel by the entry
+        b.set(2, 1, 1, HAY);                    // hay accent
+        b.set(4, 1, 1, LANTERN);                // floor lantern lighting the entry
+        b.set(2, 1, 5, bs("minecraft:flower_pot")); // bedside empty pot
+
         return b.build();
     }
 
