@@ -346,6 +346,9 @@ public final class FuValueRegistry {
                 // sits at 5@1, so hardened concrete stays pricier than its powder.
                 "minecraft:white_concrete_powder=1@1",
                 "minecraft:coal=2@1", "minecraft:moss_block=2@1",
+                // farm crops / basic gatherables (2 FU): lets wheat→hay_block, sugar_cane→paper→book→
+                // enchanting_table/cartography_table, and flint→fletching_table all derive correctly
+                "minecraft:wheat=2@1", "minecraft:sugar_cane=2@1", "minecraft:flint=2@1",
                 // stone family & wood (3 FU)
                 "minecraft:stone=3@1", "minecraft:smooth_stone=3@1", "minecraft:stone_bricks=3@1",
                 "minecraft:andesite=3@1", "minecraft:diorite=3@1", "minecraft:granite=3@1",
@@ -368,6 +371,8 @@ public final class FuValueRegistry {
                 "minecraft:copper_ingot=10@2", "minecraft:amethyst_shard=10@2", "minecraft:lapis_lazuli=10@2",
                 "minecraft:gold_ingot=15@2", "minecraft:iron_ingot=20@2",
                 "minecraft:gold_nugget=1@2", "minecraft:iron_nugget=2@2",
+                // leather: farmable animal drop (needed so book→enchanting_table chain derives)
+                "minecraft:leather=8@2",
 
                 // ===== T3 — processing + early-game friction (wool/string are a real early gate) =====
                 "minecraft:redstone=4@3", "minecraft:quartz=5@3", "minecraft:string=8@3",

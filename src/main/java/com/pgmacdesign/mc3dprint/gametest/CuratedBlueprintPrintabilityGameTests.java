@@ -78,12 +78,10 @@ public class CuratedBlueprintPrintabilityGameTests {
             // cosmetic-variant FU normalization (see FuValueRegistry.canonicalCosmeticVariant),
             // so they were removed from this set — the gate now verifies that fix and
             // re-fails if normalization ever regresses.
+            // NOTE: wheat=2@1, sugar_cane=2@1, flint=2@1 added to defaultEntries() — this
+            // resolves hay_block/target (via wheat), cartography_table/enchanting_table (via
+            // sugar_cane→paper→book), and fletching_table (via flint). Those 5 entries removed.
             "minecraft:grass_block",            // natural ground (campfire_site, barn) — value or make structural
-            "minecraft:hay_block",              // derives from wheat item, which is unvalued (barn/market/farm)
-            "minecraft:target",                 // redstone + hay; hay unvalued (redstone_workshop)
-            "minecraft:fletching_table",        // 4 planks + 2 flint; flint unvalued
-            "minecraft:cartography_table",      // 4 planks + 2 paper; paper unvalued
-            "minecraft:enchanting_table",       // 4 obsidian + 2 diamond + 1 book; book→paper unvalued (enchanting_room)
             "minecraft:gilded_blackstone",      // bastion loot, not craftable (no recipe to derive)
             "minecraft:bell"                    // village loot, not craftable in survival
     );
