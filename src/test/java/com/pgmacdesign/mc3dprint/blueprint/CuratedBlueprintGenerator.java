@@ -206,6 +206,7 @@ class CuratedBlueprintGenerator {
         builds.put("snowy_igloo", snowyIgloo());
         builds.put("snowy_alpine_chalet", snowyAlpineChalet());
         builds.put("jungle_hut", jungleHut());
+        builds.put("jungle_temple_ruin", jungleTempleRuin());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -3376,5 +3377,172 @@ class CuratedBlueprintGenerator {
         b.set(cx, wallBottom, cz, p.lightBlock);                 // central lantern
 
         return b.build();
+    }
+
+    /**
+     * Jungle Temple Ruin. 9×9 footprint → builder(9, 8, 9). An overgrown,
+     * partly-collapsed jungle stone temple: a stepped pyramid-ish silhouette with
+     * a small enterable chamber at the base and a weathered, ruined read achieved
+     * entirely with FU-valued stone families.
+     *
+     * <p><b>Why no vines/leaves/moss-block.</b> The candidate row calls for "vines"
+     * for the overgrown look, but {@code vines}, {@code leaves}, {@code moss_block},
+     * and {@code grass_block} carry NO FU value (they'd silently drop in strict mode
+     * and trip the printability gate). The "overgrown / weathered" look is therefore
+     * rendered with the FU-valued mossy/cracked stone families instead:
+     * {@link #MOSSY_COBBLE} and {@link #MOSSY_STONE_BRICKS} for the moss creep,
+     * {@link #CRACKED_STONE_BRICKS} for the spalled/cracked faces, plain
+     * {@link #COBBLE} for the rubble, and {@link #CHISELED_STONE_BRICKS} for the
+     * ornamental temple motif. A ruin reads convincingly in mossy/cracked stone
+     * alone, so nothing here needs the BLOCKED path.
+     *
+     * <p>Layout (Y), footprint x=0..8 (W), z=0..8 (depth), centre (4,4):
+     * <ul>
+     *   <li><b>y=0</b> — mossy/plain cobble foundation apron over the full 9×9, with
+     *       a scatter of rubble (mixed cobble variants) so the base reads weathered.</li>
+     *   <li><b>y=1..3</b> — base tier wall ring on the 9×9 footprint enclosing a
+     *       hollow 7×7 chamber (interior left unset = enterable). The ring is a
+     *       weathered mix (mossy cobble / cracked & mossy stone bricks) with chiseled
+     *       corner pilasters, a north doorway opening inward, and a partly-COLLAPSED
+     *       south-east section (top courses left off) so the silhouette reads as a
+     *       ruin rather than an intact box. Render-safe glass-pane "shrine windows"
+     *       sit between wall cells on the intact walls.</li>
+     *   <li><b>y=4</b> — chamber ceiling / step-0 deck: a weathered cobble cap with a
+     *       few cells left open (collapsed roof) so the ruin reads broken from above.</li>
+     *   <li><b>y=4..7</b> — three receding steps (7×7 → 5×5 → 3×3) of weathered stone
+     *       forming the stepped pyramid spine, each step edge banded in mossy/cracked
+     *       brick; a chiseled-stone-brick motif inlay crowns the 3×3 step and a single
+     *       chiseled finial caps the apex.</li>
+     *   <li><b>stepped entry</b> — a stone-brick-stair stair flight climbing the north
+     *       face up to the chamber doorway (walkable, via {@link #ramp}).</li>
+     *   <li><b>rubble</b> — toppled cobble-wall stubs at two corners and a fallen
+     *       block or two on the apron, reinforcing the collapsed read.</li>
+     * </ul>
+     */
+    private static Blueprint jungleTempleRuin() {
+        Blueprint.Builder b = Blueprint.builder("Jungle Temple Ruin", 9, 8, 9);
+        // weathered stone family — all vanilla, all FU-valued.
+        BlueprintBlockState mossyCobble = MOSSY_COBBLE;
+        BlueprintBlockState cobble = COBBLE;
+        BlueprintBlockState crackedBrick = CRACKED_STONE_BRICKS;
+        BlueprintBlockState mossyBrick = MOSSY_STONE_BRICKS;
+        BlueprintBlockState chiseledBrick = CHISELED_STONE_BRICKS;
+        BlueprintBlockState cobbleWall = COBBLE_WALL;
+        int x0 = 0, x1 = 8, z0 = 0, z1 = 8;
+        int cx = 4, cz = 4;
+
+        // y=0 — weathered cobble foundation apron over the full 9×9. A simple
+        // checker of mossy vs plain cobble gives a mottled, overgrown ground read.
+        for (int x = x0; x <= x1; x++) {
+            for (int z = z0; z <= z1; z++) {
+                b.set(x, 0, z, ((x + z) % 2 == 0) ? mossyCobble : cobble);
+            }
+        }
+
+        // y=1..3 — base tier wall ring (9×9) enclosing a hollow 7×7 chamber. Built
+        // course-by-course so the weathering varies by height and so the SE section
+        // can be left collapsed (top courses omitted) for the ruin silhouette.
+        for (int y = 1; y <= 3; y++) {
+            // north & west faces: intact, weathered brick/cobble mix
+            for (int x = x0; x <= x1; x++) {
+                b.set(x, y, z0, weatheredWall(x, y, mossyCobble, crackedBrick, mossyBrick));
+            }
+            for (int z = z0; z <= z1; z++) {
+                b.set(x0, y, z, weatheredWall(z, y, mossyCobble, crackedBrick, mossyBrick));
+            }
+            // east & south faces: collapse the upper courses on the SE quadrant.
+            for (int z = z0; z <= z1; z++) {
+                // east face (x=x1): drop y=3 for z>=5 (toppled corner)
+                if (!(y == 3 && z >= 5)) {
+                    b.set(x1, y, z, weatheredWall(z, y, mossyCobble, crackedBrick, mossyBrick));
+                }
+            }
+            for (int x = x0; x <= x1; x++) {
+                // south face (z=z1): drop y>=2 for x>=5 (collapsed wall section)
+                if (!(y >= 2 && x >= 5)) {
+                    b.set(x, y, z1, weatheredWall(x, y, mossyCobble, crackedBrick, mossyBrick));
+                }
+            }
+        }
+        // chiseled corner pilasters (the NW two stay full height; SE is rubble below)
+        pillar(b, x0, z0, 1, 3, chiseledBrick);
+        pillar(b, x1, z0, 1, 3, chiseledBrick);
+        pillar(b, x0, z1, 1, 3, chiseledBrick);
+        pillar(b, x1, z1, 1, 1, chiseledBrick); // SE pilaster broken off at y=1
+
+        // north doorway (z=z0), opening inward (faces south), at the foot of the steps
+        door2(b, cx, 1, z0, "jungle", "N");
+
+        // render-safe shrine windows on the intact walls (each pane between two wall
+        // cells along its wall line so it connects horizontally → render-safe).
+        window2(b, cx, 2, z0, GLASS_PANE, null);  // north (over the door lintel line)
+        window2(b, x0, 2, cz, GLASS_PANE, null);  // west wall, centred
+        window2(b, cx, 2, z1, GLASS_PANE, null);  // south wall, centred (intact half)
+
+        // y=4 — chamber ceiling / step-0 deck: weathered cobble cap over the 9×9,
+        // with a collapsed hole (a few cells left OPEN) so the roof reads broken.
+        for (int x = x0; x <= x1; x++) {
+            for (int z = z0; z <= z1; z++) {
+                if (x >= 5 && z >= 5) continue;                 // collapsed corner of the roof
+                if (x == cx && z == cz) continue;               // central oculus gap
+                b.set(x, 4, z, ((x + z) % 2 == 0) ? cobble : mossyCobble);
+            }
+        }
+
+        // y=4 step-1 ring sits ON the deck; build the receding pyramid spine as three
+        // solid weathered blocks (7×7 → 5×5 → 3×3), each banded on its edge.
+        // step 1: 7×7 solid at y=5, edge banded mossy/cracked
+        solid(b, 1, 5, 1, 7, 5, 7, cobble);
+        stepBand(b, 5, 1, 1, 7, 7, mossyBrick, crackedBrick);
+        // step 2: 5×5 solid at y=6
+        solid(b, 2, 6, 2, 6, 6, 6, cobble);
+        stepBand(b, 6, 2, 2, 6, 6, crackedBrick, mossyBrick);
+        // step 3: 3×3 solid at y=7 with a chiseled centre motif
+        solid(b, 3, 7, 3, 5, 7, 5, mossyCobble);
+        b.set(cx, 7, cz, chiseledBrick);
+
+        // stepped entry: a stone-brick-stair flight up the north face to the doorway.
+        // The doorway sits at y=1 (z=0); the steps climb from the apron up to it on
+        // the cells just outside the north wall. Place a short 1-wide walkable flight
+        // descending away from the door (so a player can walk up into the chamber).
+        b.set(cx, 0, 0, bs("minecraft:stone_brick_stairs[facing=south,half=bottom,shape=straight]"));
+
+        // rubble: toppled cobble-wall stubs marking the collapsed SE corner, plus a
+        // fallen block on the apron — reinforces the ruin read.
+        b.set(x1 - 1, 1, z1, cobbleWall);     // stub where the south wall fell
+        b.set(x1, 1, z1 - 1, cobbleWall);     // stub where the east wall fell
+        b.set(x1 - 1, 1, z1 - 1, cobble);     // a fallen block inside the breach
+
+        return b.build();
+    }
+
+    /**
+     * Weathering selector for {@link #jungleTempleRuin}: deterministically picks a
+     * mossy/cracked/plain stone variant from a cell's coordinates so the wall reads
+     * as a mottled ruin rather than a uniform texture. Pure function of (a, y).
+     */
+    private static BlueprintBlockState weatheredWall(int a, int y, BlueprintBlockState mossy,
+                                                     BlueprintBlockState cracked, BlueprintBlockState mossyBrick) {
+        int k = (a * 3 + y * 7) % 5;
+        if (k <= 1) return mossy;        // ~2/5 mossy cobble (overgrown)
+        if (k == 2) return cracked;      // ~1/5 cracked brick (spalled)
+        return mossyBrick;               // ~2/5 mossy stone brick
+    }
+
+    /**
+     * Edge band for a pyramid step in {@link #jungleTempleRuin}: rings the outer edge
+     * of the [x0..x1]×[z0..z1] block at height {@code y} with an alternating
+     * mossy/cracked weathered band so each receding step reads as worn masonry.
+     */
+    private static void stepBand(Blueprint.Builder b, int y, int x0, int z0, int x1, int z1,
+                                 BlueprintBlockState a, BlueprintBlockState bMat) {
+        for (int x = x0; x <= x1; x++) {
+            b.set(x, y, z0, ((x + y) % 2 == 0) ? a : bMat);
+            b.set(x, y, z1, ((x + y) % 2 == 0) ? bMat : a);
+        }
+        for (int z = z0 + 1; z <= z1 - 1; z++) {
+            b.set(x0, y, z, ((z + y) % 2 == 0) ? a : bMat);
+            b.set(x1, y, z, ((z + y) % 2 == 0) ? bMat : a);
+        }
     }
 }
