@@ -258,6 +258,7 @@ class CuratedBlueprintGenerator {
         builds.put("mineshaft_entrance", mineshaftEntrance());
         builds.put("railway_station", railwayStation());
         builds.put("tavern_inn", tavernInn());
+        builds.put("apothecary_shop", apothecaryShop());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -9246,6 +9247,160 @@ class CuratedBlueprintGenerator {
         // common-room head height, clear of the doors at cx and the windows.
         b.set(x1 - 3, upFloorY - 1, z0 + 1,
               bs("minecraft:oak_hanging_sign[rotation=8,attached=true,waterlogged=false]"));
+
+        return b.build();
+    }
+
+    /**
+     * apothecary_shop — Category H, build 58/103. A cozy timber-framed herbalist /
+     * apothecary shop: a glass shopfront onto the street, a brewing nook against the
+     * back wall (brewing stands over a counter, water cauldrons for filling bottles),
+     * shelves of potions (bookshelves + barrels) down the side walls, a sales counter
+     * by the door, "drying herbs" hung from a ceiling beam (potted_* blooms — itemless
+     * structural, so they print free), warm lantern light, and a gabled spruce roof.
+     *
+     * <p>Footprint 7×9 (W×L) → {@code builder(7, H, 9)} — x=0..6 (W=7, east is +x),
+     * z=0..8 (L=9 depth, south is +z). Disc T3, T5 footprint band. The FRONT of the
+     * shop faces NORTH (z=0): door + glass shopfront + awning. The brewing nook is at
+     * the BACK (south, z=8). Walls rise y=1..3 on a stone-brick plinth (y=0); the
+     * gable roof runs along X and peaks above that.
+     *
+     * <p>Vanilla, FU-valued / structural blocks only:
+     * <ul>
+     *   <li><b>Frame:</b> stone_bricks plinth, spruce timber-frame walls (planks +
+     *       stripped-spruce studs via {@link #timberFrame}), dark_oak corner posts.</li>
+     *   <li><b>Shopfront:</b> full {@code glass} blocks (NOT panes) — glass is FU-valued
+     *       and is a normal cube, so it is exempt from the stub-pane render gate. Where
+     *       a glass_pane IS used (the side/back windows) it is embedded in a plank run
+     *       so it always has a sturdy neighbour → render-safe.</li>
+     *   <li><b>Brewing nook:</b> brewing_stand (recipe-derived), water_cauldron
+     *       (cauldron derived; the water inside is itemless-structural → free),
+     *       smooth_stone counter.</li>
+     *   <li><b>Stock:</b> bookshelf (40@3), barrel (derives from planks+slabs).</li>
+     *   <li><b>Drying herbs:</b> potted_* blocks ({@code asItem()==AIR} → itemless
+     *       structural, print free) hung under a stripped-spruce ceiling beam. Loose
+     *       flowers/leaves are UNVALUED so they are deliberately NOT used — only the
+     *       potted variants, which read as bunches of herbs strung up to dry.</li>
+     *   <li><b>flower_pot</b> (empty, brick-derived → FU-valued) on the counter as an
+     *       herbalist's prop.</li>
+     *   <li><b>Light:</b> lantern + chain-backed hanging lanterns ({@link #chainLantern}).</li>
+     *   <li><b>Roof:</b> spruce_stairs gable ({@link #gableRoofX}) with closed gable
+     *       ends ({@link #gableEndFill}).</li>
+     * </ul>
+     */
+    private static Blueprint apothecaryShop() {
+        final int W = 7, D = 9;                 // 7 wide (x), 9 deep (z)
+        int x0 = 0, x1 = W - 1;                 // x = 0..6
+        int z0 = 0, z1 = D - 1;                 // z = 0..8  (z0=front/north, z1=back/south)
+        int wallH = 3;                          // walls y=1..3
+        int cx = (x0 + x1) / 2;                 // centre column (x=3)
+        int yBase = wallH + 1;                  // roof first course (y=4)
+        int peakY = gablePeakY(z0, z1, yBase);  // size the build to the roof peak
+        final int H = peakY + 1;
+        Blueprint.Builder b = Blueprint.builder("Apothecary Shop", W, H, D);
+
+        BlueprintBlockState darkOakLogY = bs("minecraft:dark_oak_log[axis=y]");
+        BlueprintBlockState smoothStone = bs("minecraft:smooth_stone");
+        BlueprintBlockState brewingStand =
+                bs("minecraft:brewing_stand[has_bottle_0=false,has_bottle_1=false,has_bottle_2=false]");
+        BlueprintBlockState waterCauldron = bs("minecraft:water_cauldron[level=3]");
+        BlueprintBlockState beam = STRIPPED_SPRUCE_Y; // ceiling beam for hanging herbs
+
+        // ── 1) PLINTH + FLOOR — stone-brick footing at y=0 (walkable surface = top of
+        //    y=0). Interior left open above per the air-skip rule → enterable.
+        floor(b, 0, x0, z0, x1, z1, STONE_BRICKS);
+        // A spruce-plank interior finish floor reads as a shop floor over the plinth's
+        // top is unnecessary (y=0 is the surface); a threshold strip just inside the
+        // door at z=1 gives a doormat feel.
+        line(b, 0, cx - 1, 1, cx + 1, 1, SPRUCE_PLANKS);
+
+        // ── 2) FRAME — dark-oak corner posts y=1..3 + spruce timber-frame on the three
+        //    SOLID walls (south/back z=8, west x=0, east x=6). The FRONT (north, z=0)
+        //    wall is left open here and becomes the glass shopfront in step 3.
+        corners(b, x0, z0, x1, z1, 1, wallH, darkOakLogY);
+        //    South (back) wall — full timber frame.
+        timberFrame(b, x0, z1, x1, z1, 1, wallH, SPRUCE_PLANKS, STRIPPED_SPRUCE_Y, STRIPPED_OAK_X);
+        //    West & east side walls — plank rings with stripped-spruce studs every 2.
+        for (int y = 1; y <= wallH; y++) {
+            line(b, y, x0, z0, x0, z1, SPRUCE_PLANKS); // west wall
+            line(b, y, x1, z0, x1, z1, SPRUCE_PLANKS); // east wall
+        }
+        for (int z = z0; z <= z1; z += 2) {
+            pillar(b, x0, z, 1, wallH, STRIPPED_SPRUCE_Y);
+            pillar(b, x1, z, 1, wallH, STRIPPED_SPRUCE_Y);
+        }
+
+        // ── 3) GLASS SHOPFRONT — the north wall (z=0). Dark-oak mullions at the door
+        //    jambs (x=2,x=4) plus the corner posts (x=0,x=6) divide the front into
+        //    glass bays. Uses FULL glass blocks (not panes), which are normal cubes →
+        //    exempt from the stub-pane render gate, and FU-valued.
+        pillar(b, 2, z0, 1, wallH, darkOakLogY); // left door jamb / mullion
+        pillar(b, 4, z0, 1, wallH, darkOakLogY); // right door jamb / mullion
+        for (int y = 1; y <= wallH; y++) {
+            b.set(1, y, z0, GLASS);              // left glass bay
+            b.set(5, y, z0, GLASS);              // right glass bay
+        }
+        b.set(cx, wallH, z0, GLASS);             // clerestory glass over the door
+        //    Door dead-centre, opening inward (north wall → faces south).
+        door2(b, cx, 1, z0, "spruce", "N");
+
+        // ── 4) SIDE & BACK WINDOWS — a glass pane mid-wall on each solid wall, embedded
+        //    in the plank run so its horizontal neighbours are sturdy plank faces →
+        //    render-safe (no stub panes).
+        window2(b, x0, 2, 2, GLASS_PANE, null);  // west wall window
+        window2(b, x1, 2, 2, GLASS_PANE, null);  // east wall window
+
+        // ── 5) GABLE ROOF — spruce-stairs gable running along X, closed gable ends,
+        //    a spruce-slab ridge. Sits on the wall plate at y=yBase.
+        gableRoofX(b, x0, z0, x1, z1, yBase, "spruce_stairs", SPRUCE_SLAB_BOTTOM);
+        gableEndFill(b, x0, z0, x1, z1, yBase, SPRUCE_PLANKS);
+
+        // ── 6) BREWING NOOK — back (south) wall, z1-1=7. A smooth-stone counter at y=1
+        //    spanning x=2..4 with three brewing stands on top (y=2): the classic
+        //    three-station brewing row. Two water cauldrons flank it at floor level for
+        //    filling bottles (the water inside is itemless-structural → prints free).
+        line(b, 1, 2, z1 - 1, 4, z1 - 1, smoothStone);
+        b.set(2, 2, z1 - 1, brewingStand);
+        b.set(3, 2, z1 - 1, brewingStand);
+        b.set(4, 2, z1 - 1, brewingStand);
+        b.set(1, 1, z1 - 1, waterCauldron);      // SW filling cauldron
+        b.set(5, 1, z1 - 1, waterCauldron);      // SE filling cauldron
+
+        // ── 7) POTION SHELVES — bookshelves + barrels of potions down the side walls.
+        //    Bookshelves at y=2 against the west/east walls toward the back; barrels at
+        //    floor level for reagent storage. Kept off the door approach (z=1 clear).
+        b.set(1, 2, z1 - 2, BOOKSHELF);
+        b.set(5, 2, z1 - 2, BOOKSHELF);
+        b.set(1, 1, z1 - 2, BARREL);
+        b.set(5, 1, z1 - 2, BARREL);
+        b.set(1, 1, 3, BARREL);                  // mid-shop west barrel
+        b.set(5, 1, 3, BARREL);                  // mid-shop east barrel
+        b.set(1, 2, 3, bs("minecraft:potted_azure_bluet")); // a bloom atop the west barrel
+
+        // ── 8) SALES COUNTER — an L of spruce slabs on a support course just inside the
+        //    shopfront, with a flower_pot prop and a chest. Slabs/chest derive →
+        //    FU-valued; no IronBars so no stub-pane risk. Leaves the door path clear.
+        b.set(1, 1, 2, SPRUCE_PLANKS); b.set(1, 2, 2, SPRUCE_SLAB_TOP);  // counter end
+        b.set(2, 1, 2, SPRUCE_PLANKS); b.set(2, 2, 2, SPRUCE_SLAB_TOP);  // counter run
+        b.set(2, 3, 2, bs("minecraft:flower_pot"));                      // herbalist's pot on the counter
+        b.set(5, 1, 2, CHEST);                                           // sales chest by the east bay
+
+        // ── 9) DRYING HERBS — a stripped-spruce ceiling beam across the shop at the
+        //    wall-top course (y=wallH=3) with "bunches" of drying herbs (potted_*
+        //    blooms) hung beneath it. potted_* are itemless-structural → print free,
+        //    and read as bundles of herbs strung up to dry. (Loose flowers/leaves are
+        //    UNVALUED → deliberately not used.)
+        line(b, wallH, x0, 4, x1, 4, beam);      // beam across the mid-shop (y=3, z=4)
+        b.set(1, wallH - 1, 4, bs("minecraft:potted_fern"));
+        b.set(2, wallH - 1, 4, bs("minecraft:potted_allium"));
+        b.set(4, wallH - 1, 4, bs("minecraft:potted_blue_orchid"));
+        b.set(5, wallH - 1, 4, bs("minecraft:potted_cornflower"));
+
+        // ── 10) LIGHTING — a hanging lantern slung under the centre of the ceiling beam
+        //    (the beam at (cx,3,4) is its solid support face), plus a standing lantern on
+        //    the brewing counter so the nook is lit.
+        b.set(cx, wallH - 1, 4, HANGING_LANTERN); // lantern hangs at y=2 under the beam
+        b.set(3, 3, z1 - 1, LANTERN);             // standing lantern on the brewing counter
 
         return b.build();
     }

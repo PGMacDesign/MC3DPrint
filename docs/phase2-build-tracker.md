@@ -7,9 +7,9 @@
 
 ## Status
 - **Curated builds before Phase 2:** 29
-- **Phase 2 queue:** 103 · **Done:** 55 · **Blocked:** 2 · **Remaining:** 46
-- **Next up:** `apothecary_shop`
-- **Last completed:** `tavern_inn`
+- **Phase 2 queue:** 103 · **Done:** 56 · **Blocked:** 2 · **Remaining:** 45
+- **Next up:** `gatehouse`
+- **Last completed:** `apothecary_shop`
 
 ## Process (per build — follow exactly on resume)
 1. Pick the first unchecked `[ ]` build in queue order below.
@@ -98,7 +98,7 @@
 - [x] mineshaft_entrance
 - [x] railway_station
 - [x] tavern_inn
-- [ ] apothecary_shop
+- [x] apothecary_shop
 - [ ] gatehouse
 - [ ] guard_tower
 - [ ] drawbridge
