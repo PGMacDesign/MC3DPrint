@@ -276,6 +276,7 @@ class CuratedBlueprintGenerator {
         builds.put("mediterranean_terracotta_villa", mediterraneanTerracottaVilla());
         builds.put("greek_quartz_temple", greekQuartzTemple());
         builds.put("roman_bath_house", romanBathHouse());
+        builds.put("fantasy_wizard_tower", fantasyWizardTower());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -4455,6 +4456,199 @@ class CuratedBlueprintGenerator {
         //    slab (a solid block exists at y7 above them).
         chainLantern(b, wpx0 + 1, 5, (pz0 + pz1) / 2, 1); // west pool lantern, chains y6
         chainLantern(b, epx1 - 1, 5, (pz0 + pz1) / 2, 1); // east pool lantern
+
+        return b.build();
+    }
+
+    /**
+     * Category B — fantasy_wizard_tower. 9×9 footprint → builder(9, 27, 9): a tall,
+     * round mage's tower in the classic spellcaster palette — a stone-brick &amp;
+     * deepslate-brick base, a tapering circular shaft that steps inward as it
+     * rises, arcane glowing windows in purple/blue stained glass, end-rod accents
+     * blazing on the body and parapet, and a tall conical "witch-hat" roof capped
+     * with an end-rod finial. Reads unmistakably as a wizard's tower.
+     *
+     * <p>Geometry (centre (4,4), height 27):
+     * <ul>
+     *   <li><b>Plinth</b> (y0): a deepslate-brick disc footing r=4, with a
+     *       cobbled-deepslate weathered ring stamped over it for a rough mage-keep
+     *       base.</li>
+     *   <li><b>Lower shaft</b> (y1..8, r=4): stone-brick ring with deepslate-brick
+     *       banding courses and cracked/mossy weathering flecks; arched door on the
+     *       north cardinal; tall arcane purple-glass windows on the cardinal faces;
+     *       end-rod sconces flanking the door.</li>
+     *   <li><b>Mid shaft</b> (y9..16, r=3): steps inward (the taper) — a corbel
+     *       stair ring marks the step-back; deepslate-brick ring with blue-glass
+     *       arcane windows; an oculus of glass on the south face.</li>
+     *   <li><b>Upper shaft</b> (y17..21, r=2): a slender deepslate-brick ring with
+     *       a magenta-glass lantern window, the wizard's study/observatory.</li>
+     *   <li><b>Parapet</b> (y22): a corbel ring widening back out to r=3 forming a
+     *       small balcony with a stone-brick-wall crenellated railing and end-rod
+     *       beacons at the cardinals.</li>
+     *   <li><b>Witch-hat roof</b> (y23..26): a tapering conical cap of deepslate
+     *       tiles stepping in to a point, topped by an end-rod spire finial.</li>
+     * </ul>
+     *
+     * <p>All windows are full stained-glass BLOCKS (not panes), so they can never
+     * render as stub panes regardless of neighbours. Interior is enterable: the
+     * walkable floor sits at the top of y0, the door gap is left open at y1..y2,
+     * and a ladder climbs the shaft to the study level. Brewing stand, bookshelves,
+     * a lectern, and an amethyst arcane focus furnish the wizard's quarters.
+     */
+    private static Blueprint fantasyWizardTower() {
+        final int cx = 4, cz = 4;
+        Blueprint.Builder b = Blueprint.builder("Fantasy Wizard Tower", 9, 27, 9);
+
+        // Palette ---------------------------------------------------------------
+        BlueprintBlockState deepslateBricks  = bs("minecraft:deepslate_bricks");
+        BlueprintBlockState cobbledDeepslate = bs("minecraft:cobbled_deepslate");
+        BlueprintBlockState crackedDeepslate = bs("minecraft:cracked_deepslate_bricks");
+        BlueprintBlockState deepslateTiles   = bs("minecraft:deepslate_tiles");
+        BlueprintBlockState polishedDeepslate = bs("minecraft:polished_deepslate");
+        BlueprintBlockState purpleGlass      = bs("minecraft:purple_stained_glass");
+        BlueprintBlockState blueGlass        = bs("minecraft:blue_stained_glass");
+        BlueprintBlockState magentaGlass     = bs("minecraft:magenta_stained_glass");
+        BlueprintBlockState amethyst         = bs("minecraft:amethyst_block");
+        BlueprintBlockState ladderN          = bs("minecraft:ladder[facing=north,waterlogged=false]");
+        // Stone-brick corbel stairs (top-half, outward-facing) for the step-back rings.
+        BlueprintBlockState corbelN = bs("minecraft:stone_brick_stairs[facing=north,half=top,shape=straight]");
+        BlueprintBlockState corbelS = bs("minecraft:stone_brick_stairs[facing=south,half=top,shape=straight]");
+        BlueprintBlockState corbelW = bs("minecraft:stone_brick_stairs[facing=west,half=top,shape=straight]");
+        BlueprintBlockState corbelE = bs("minecraft:stone_brick_stairs[facing=east,half=top,shape=straight]");
+
+        // 1) PLINTH (y0) — deepslate-brick disc footing r=4, rough cobbled ring over it.
+        disc(b, 0, cx, cz, 4, deepslateBricks);
+        circleRing(b, 0, cx, cz, 4, cobbledDeepslate);
+
+        // 2) LOWER SHAFT (y1..8, r=4) — stone-brick ring with deepslate banding.
+        for (int y = 1; y <= 8; y++) {
+            BlueprintBlockState band = (y % 4 == 0) ? deepslateBricks : STONE_BRICKS;
+            circleRing(b, y, cx, cz, 4, band);
+        }
+        // weathering flecks on a few faces
+        b.set(0, 3, cz, crackedDeepslate);   // west
+        b.set(8, 5, cz, MOSSY_STONE_BRICKS); // east
+        b.set(cx, 7, 0, crackedDeepslate);   // north
+
+        // arched door on the north cardinal (faces south into the shaft), opening at
+        // y1..y2 left open; a chiseled keystone caps the arch at y3.
+        door2(b, cx, 1, 0, "dark_oak", "N");
+        b.set(cx, 3, 0, CHISELED_STONE_BRICKS);
+
+        // tall arcane purple-glass windows (full blocks → never stub) on the three
+        // non-door cardinals, two courses high (y3..y4) so they read as lancet windows.
+        for (int y = 3; y <= 4; y++) {
+            b.set(0, y, cz, purpleGlass);  // west
+            b.set(8, y, cz, purpleGlass);  // east
+            b.set(cx, y, 8, purpleGlass);  // south
+        }
+        // end-rod sconces flanking the door, glowing on the lower body (y2, NE/NW of door)
+        b.set(cx - 2, 2, 1, END_ROD);
+        b.set(cx + 2, 2, 1, END_ROD);
+
+        // ground-floor interior: deepslate-tile finish floor (walkable top of y0 is the
+        // disc; lay a tidy tile floor at y0 inside the ring) and a wall torch by the door.
+        disc(b, 0, cx, cz, 3, deepslateTiles);
+        wallTorch(b, cx - 1, 2, 1, "south");
+
+        // 3) STEP-BACK CORBEL (y9) — outward-facing top-half stairs on the r=4 ring mark
+        //    the taper where the shaft narrows from r=4 to r=3. Place per-quadrant so
+        //    each face's stairs flick outward (lighthouse-gallery corbel pattern).
+        circleRing(b, 9, cx, cz, 4, corbelN); // base ring (the cardinal/quadrant overrides below set facings)
+        b.set(cx, 9, cz - 4, corbelN);
+        b.set(cx, 9, cz + 4, corbelS);
+        b.set(cx - 4, 9, cz, corbelW);
+        b.set(cx + 4, 9, cz, corbelE);
+        // a mid-floor deck at y9 so the shaft has a study landing (r=3 disc, ladder hatch)
+        for (int x = cx - 3; x <= cx + 3; x++) {
+            for (int z = cz - 3; z <= cz + 3; z++) {
+                double d = Math.sqrt((x - cx) * (x - cx) + (z - cz) * (z - cz));
+                if (d > 3 + 0.5) continue;
+                if (x == cx && z == cz + 1) continue; // ladder hatch (south of centre)
+                b.set(x, 9, z, polishedDeepslate);
+            }
+        }
+
+        // 4) MID SHAFT (y10..16, r=3) — deepslate-brick ring with blue-glass arcane
+        //    windows; this is the tapered middle story.
+        for (int y = 10; y <= 16; y++) {
+            BlueprintBlockState band = (y % 3 == 0) ? STONE_BRICKS : deepslateBricks;
+            circleRing(b, y, cx, cz, 3, band);
+        }
+        // blue-glass windows on the cardinals (y12..y13, full blocks)
+        for (int y = 12; y <= 13; y++) {
+            b.set(cx - 3, y, cz, blueGlass);
+            b.set(cx + 3, y, cz, blueGlass);
+            b.set(cx, y, cz - 3, blueGlass);
+            b.set(cx, y, cz + 3, blueGlass);
+        }
+        // end-rod accent torches climbing the body diagonally for an arcane glow
+        b.set(cx - 3, 11, cz - 1, END_ROD);
+        b.set(cx + 3, 14, cz + 1, END_ROD);
+
+        // 5) UPPER SHAFT (y17..21, r=2) — slender deepslate-brick observatory ring with a
+        //    magenta-glass lantern window on each cardinal.
+        for (int y = 17; y <= 21; y++) {
+            circleRing(b, y, cx, cz, 2, deepslateBricks);
+        }
+        for (int y = 18; y <= 19; y++) {
+            b.set(cx - 2, y, cz, magentaGlass);
+            b.set(cx + 2, y, cz, magentaGlass);
+            b.set(cx, y, cz - 2, magentaGlass);
+            b.set(cx, y, cz + 2, magentaGlass);
+        }
+        // observatory floor deck at y17 (r=2 disc) with a ladder hatch
+        for (int x = cx - 2; x <= cx + 2; x++) {
+            for (int z = cz - 2; z <= cz + 2; z++) {
+                double d = Math.sqrt((x - cx) * (x - cx) + (z - cz) * (z - cz));
+                if (d > 2 + 0.5) continue;
+                if (x == cx && z == cz + 1) continue; // ladder hatch
+                b.set(x, 17, z, polishedDeepslate);
+            }
+        }
+
+        // interior ladder: climbs the south wall line from the base up to the
+        // observatory, backed by the ring wall behind it (facing=north attaches to z+1).
+        pillar(b, cx, cz + 1, 1, 17, ladderN);
+
+        // 6) WIZARD'S QUARTERS — furnish the study landing (y10 floor) and the
+        //    observatory (y18 floor) with arcane props (all printable blocks).
+        b.set(cx - 2, 10, cz, BOOKSHELF);
+        b.set(cx + 2, 10, cz, BOOKSHELF);
+        b.set(cx - 2, 11, cz, BOOKSHELF);
+        b.set(cx + 2, 11, cz, BOOKSHELF);
+        b.set(cx, 10, cz - 2, LECTERN);
+        b.set(cx - 1, 10, cz - 2, bs("minecraft:brewing_stand[has_bottle_0=false,has_bottle_1=false,has_bottle_2=false]"));
+        // amethyst arcane focus on a pedestal in the observatory, glowing under end rods
+        b.set(cx, 18, cz, amethyst);
+        b.set(cx, 19, cz, END_ROD);
+
+        // 7) PARAPET (y22) — corbel back out to r=3 forming a balcony, with a
+        //    stone-brick-wall crenellated railing and end-rod beacons at the cardinals.
+        circleRing(b, 22, cx, cz, 3, corbelN); // a continuous corbel ring (facing varies cosmetically; one block ok)
+        // balcony deck (r=2 disc) so you can stand on the parapet
+        for (int x = cx - 2; x <= cx + 2; x++) {
+            for (int z = cz - 2; z <= cz + 2; z++) {
+                double d = Math.sqrt((x - cx) * (x - cx) + (z - cz) * (z - cz));
+                if (d > 2 + 0.5) continue;
+                if (x == cx && z == cz + 1) continue; // ladder hatch up onto the parapet
+                b.set(x, 22, z, polishedDeepslate);
+            }
+        }
+        circleRing(b, 23, cx, cz, 3, STONE_BRICK_WALL); // railing crown
+        // end-rod beacons standing on the railing at the cardinals (arcane spires)
+        b.set(cx - 3, 24, cz, END_ROD);
+        b.set(cx + 3, 24, cz, END_ROD);
+        b.set(cx, 24, cz - 3, END_ROD);
+        b.set(cx, 24, cz + 3, END_ROD);
+
+        // 8) WITCH-HAT ROOF (y23..26) — a tapering conical cap of deepslate tiles over
+        //    the r=2 observatory drum, stepping in to a point, capped by an end-rod
+        //    spire finial. Seated on the upper shaft (r=2 at y21) so it covers the drum.
+        disc(b, 23, cx, cz, 2, deepslateTiles);   // wide cap base
+        disc(b, 24, cx, cz, 1, deepslateTiles);   // narrowing
+        b.set(cx, 25, cz, deepslateTiles);        // peak block
+        b.set(cx, 26, cz, END_ROD);               // arcane spire finial
 
         return b.build();
     }
