@@ -7,9 +7,9 @@
 
 ## Status
 - **Curated builds before Phase 2:** 29
-- **Phase 2 queue:** 103 · **Done:** 16 · **Blocked:** 1 · **Remaining:** 86
-- **Next up:** `pumpkin_melon_farm`
-- **Last completed:** `sugarcane_farm_auto`
+- **Phase 2 queue:** 103 · **Done:** 17 · **Blocked:** 1 · **Remaining:** 85
+- **Next up:** `cactus_farm`
+- **Last completed:** `pumpkin_melon_farm`
 
 ## Process (per build — follow exactly on resume)
 1. Pick the first unchecked `[ ]` build in queue order below.
@@ -52,7 +52,7 @@
 - [x] iron_farm
 - [x] mob_xp_tower
 - [x] sugarcane_farm_auto
-- [ ] pumpkin_melon_farm
+- [x] pumpkin_melon_farm
 - [ ] cactus_farm
 - [ ] bamboo_farm
 - [ ] kelp_farm

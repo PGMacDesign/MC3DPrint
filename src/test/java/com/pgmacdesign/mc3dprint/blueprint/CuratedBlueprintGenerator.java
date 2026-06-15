@@ -216,6 +216,7 @@ class CuratedBlueprintGenerator {
         builds.put("iron_farm", ironFarm());
         builds.put("mob_xp_tower", mobXpTower());
         builds.put("sugarcane_farm_auto", sugarcaneFarmAuto());
+        builds.put("pumpkin_melon_farm", pumpkinMelonFarm());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -4675,6 +4676,128 @@ class CuratedBlueprintGenerator {
             pillar(b, eShelfX, z, 1, 3, stone);
             b.set(wShelfX, 4, z, redDust);
             b.set(eShelfX, 4, z, redDust);
+        }
+
+        // ── 5) END WALLS (box the channel) + LABEL SIGNS ─────────────────────
+        // Cobble end caps at z=0 and z=8 across the planting/channel span close the
+        // ends so the water channel reads as a contained trough.
+        line(b, 1, wWallX, z0, eWallX, z0, cobble);   // north end cap, y=1
+        line(b, 1, wWallX, z1, eWallX, z1, cobble);   // south end cap, y=1
+        // oak wall signs on the south face flanking the chest (FU-valued, derived).
+        b.set(wStripX, 1, z1, bs("minecraft:oak_wall_sign[facing=south]"));
+        b.set(eStripX, 1, z1, bs("minecraft:oak_wall_sign[facing=south]"));
+
+        return b.build();
+    }
+
+    /**
+     * §F.pumpkin_melon_farm — a STATIC automatic pumpkin/melon farm, 9×9×5 (W×L×H)
+     * → builder(9, 5, 9).
+     *
+     * <p>The "villager-trade staple" auto stem farm, printed as the working
+     * STRUCTURE. Pumpkin/melon stems are {@link net.minecraft.world.level.block.BushBlock}
+     * descendants, so — like crops and saplings — they're <b>structural-free</b> and
+     * print at no FU cost; their item is a seed, never the grown stem. We do NOT place
+     * any pumpkin/melon <em>produce</em> blocks (those would need an FU value and aren't
+     * how the farm works): the stems grow their own pumpkins/melons onto the bare
+     * <b>dirt grow-spaces</b> once printed, an observer beside each space detects the
+     * new block, and a piston shoves it onto the water channel that sweeps it into the
+     * collection chest.
+     *
+     * <p>Layout (south = +z is the "front"/access side; cx=4):
+     * <ul>
+     *   <li><b>y=0</b> — solid stone foundation (9×9). A <b>water channel</b> runs along
+     *       Z at x=cx (z=1..6): it both hydrates the flanking farmland and carries the
+     *       harvested gourd south to the hopper mouth.</li>
+     *   <li><b>Hopper + chest, y=0</b> — at the south end of the channel a hopper
+     *       (x=cx, z=7) feeds a collection chest tucked at the south edge (z=8, facing
+     *       north), so every gourd the channel delivers is collected.</li>
+     *   <li><b>Stem strips, y=1..2</b> — two <b>farmland</b> rows straddle the channel
+     *       at x=cx-1 (3) and x=cx+1 (5), z=1..7, each one block from water → always
+     *       hydrated. A <b>melon/pumpkin stem</b> (alternating down the row) sits on
+     *       every farmland cell at y=2, the planted stem.</li>
+     *   <li><b>Grow-spaces, y=1</b> — bare <b>dirt</b> rows one column further out at
+     *       x=cx-2 (2) and x=cx+2 (6): the empty cell at y=2 above each is where the
+     *       stem grows its gourd. (Itemless? No — dirt is FU-valued at 1@1.)</li>
+     *   <li><b>Harvest wall, y=2..3</b> — behind each grow-space (x=1 west / x=7 east)
+     *       an <b>observer</b> at y=2 faces inward at the grow cell, watching for the
+     *       gourd to appear; a <b>piston</b> at y=3 above it faces inward and shoves the
+     *       gourd off the dirt and toward the channel. A stone backing block at y=1
+     *       carries the column. Redstone dust on the y=4 cap ties observer-back →
+     *       piston so the pulse reaches it.</li>
+     *   <li><b>End walls + label signs</b> — cobble end caps (z=0 and z=8) box the
+     *       channel; oak wall signs on the south face label the build.</li>
+     * </ul>
+     */
+    private static Blueprint pumpkinMelonFarm() {
+        Blueprint.Builder b = Blueprint.builder("Auto Pumpkin/Melon Farm", 9, 5, 9);
+        // all vanilla, all FU-valued / structural-free:
+        BlueprintBlockState stone     = bs("minecraft:stone");
+        BlueprintBlockState cobble    = COBBLE;
+        BlueprintBlockState dirt      = bs("minecraft:dirt");               // FU-valued (1@1) → grow-space
+        BlueprintBlockState farmland  = FARMLAND;                           // FarmBlock → structural-free
+        BlueprintBlockState water     = WATER;                             // structural (asItem()==AIR) → prints free
+        BlueprintBlockState melonStem = bs("minecraft:melon_stem[age=7]");  // BushBlock → structural-free
+        BlueprintBlockState pumpkinStem = bs("minecraft:pumpkin_stem[age=7]"); // BushBlock → structural-free
+        BlueprintBlockState chest     = bs("minecraft:chest[facing=north,type=single,waterlogged=false]");
+        BlueprintBlockState redDust   = bs("minecraft:redstone_wire[east=none,west=none,north=none,south=none,power=0]"); // structural
+
+        int x0 = 0, x1 = 8, z0 = 0, z1 = 8;            // 9×9 footprint
+        int cx = 4;                                    // central water-channel column
+        int stripZ0 = 1, stripZ1 = 7;                  // planting / channel run along Z
+
+        // ── 1) STONE FOUNDATION at y=0, with the central WATER CHANNEL ───────
+        floor(b, 0, x0, z0, x1, z1, stone);
+        // central channel: water along Z at x=cx (z=1..6); the harvested gourd floats south.
+        for (int z = stripZ0; z <= stripZ1 - 1; z++) {
+            b.set(cx, 0, z, water);
+        }
+
+        // ── 2) HOPPER + COLLECTION CHEST at the SOUTH end, y=0 ───────────────
+        // The channel terminates over a hopper that feeds the chest. The hopper
+        // mouth (z=7) catches what the flow delivers; it points north into the
+        // chest tucked at the south edge (z=8), facing north so its front reads
+        // inward. (Air-skip means these overwrite the stone foundation cells.)
+        b.set(cx, 0, stripZ1, bs("minecraft:hopper[enabled=true,facing=north]")); // z=7 → feeds chest at z=8
+        b.set(cx, 0, z1, chest);                                                   // collection chest, faces north
+
+        // ── 3) STEM STRIPS (farmland + stems) + DIRT GROW-SPACES ─────────────
+        // Two farmland rows at x=cx-1 and x=cx+1 (3 and 5), each one block from
+        // water → hydrated. A melon/pumpkin stem (alternating) sits on every
+        // farmland cell. Bare dirt grow-spaces sit one column further out (2 and 6);
+        // the empty y=2 cell above each is where the stem grows its gourd.
+        int wStripX = cx - 1, eStripX = cx + 1;        // 3 and 5 (farmland + stem)
+        int wGrowX  = cx - 2, eGrowX  = cx + 2;        // 2 and 6 (dirt grow-spaces)
+        for (int z = stripZ0; z <= stripZ1; z++) {
+            b.set(wStripX, 1, z, farmland);
+            b.set(eStripX, 1, z, farmland);
+            // alternate melon / pumpkin stems down the rows for a mixed farm
+            boolean melon = (z % 2 == 0);
+            b.set(wStripX, 2, z, melon ? melonStem : pumpkinStem);
+            b.set(eStripX, 2, z, melon ? pumpkinStem : melonStem);
+            // dirt grow-spaces (y=2 above stays air → the gourd grows there)
+            b.set(wGrowX, 1, z, dirt);
+            b.set(eGrowX, 1, z, dirt);
+        }
+
+        // ── 4) HARVEST WALL: stone backing + observer + piston + redstone ────
+        // Behind each grow-space a stone pillar carries the observer (y=2, facing
+        // the grow cell, watching for the gourd) and the piston (y=3, facing inward
+        // to shove the gourd off the dirt toward the channel). West wall faces east,
+        // east wall faces west. A stone cap at y=3 above the piston gives the dust a
+        // floor, and a redstone-dust ribbon at y=4 ties each observer's back → piston.
+        int wWallX = cx - 3, eWallX = cx + 3;          // 1 and 7 (observer/piston columns)
+        for (int z = stripZ0; z <= stripZ1; z++) {
+            b.set(wWallX, 1, z, stone);
+            b.set(eWallX, 1, z, stone);
+            b.set(wWallX, 2, z, bs("minecraft:observer[facing=east,powered=false]"));
+            b.set(eWallX, 2, z, bs("minecraft:observer[facing=west,powered=false]"));
+            b.set(wWallX, 3, z, bs("minecraft:piston[facing=east,extended=false]"));
+            b.set(eWallX, 3, z, bs("minecraft:piston[facing=west,extended=false]"));
+            // redstone-dust ribbon at y=4 rides on the piston top, carrying the
+            // observer's back-output across to the piston (top floor = the piston body).
+            b.set(wWallX, 4, z, redDust);
+            b.set(eWallX, 4, z, redDust);
         }
 
         // ── 5) END WALLS (box the channel) + LABEL SIGNS ─────────────────────
