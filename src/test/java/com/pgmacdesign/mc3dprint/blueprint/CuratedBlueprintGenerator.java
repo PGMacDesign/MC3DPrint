@@ -269,6 +269,7 @@ class CuratedBlueprintGenerator {
         builds.put("modern_concrete_house", modernConcreteHouse());
         builds.put("modern_pool_deck", modernPoolDeck());
         builds.put("cottagecore_cottage", cottagecoreCottage());
+        builds.put("torii_gate", toriiGate());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -3433,6 +3434,96 @@ class CuratedBlueprintGenerator {
         b.set(2, 1, 1, HAY);                    // hay accent
         b.set(4, 1, 1, LANTERN);                // floor lantern lighting the entry
         b.set(2, 1, 5, bs("minecraft:flower_pot")); // bedside empty pot
+
+        return b.build();
+    }
+
+    /**
+     * §B Torii Gate. 7×3 footprint → builder(7, 10, 3). The iconic Japanese
+     * shrine gate: a free-standing vermilion-and-dark-wood landmark straddling a
+     * gravel approach path. Two vermilion pillars (red_concrete cladding over a
+     * stripped-dark-oak-log core, with dark-wood base/capital accents) carry TWO
+     * horizontal crossbeams running along X (the gate's width): the lower
+     * {@code nuki} tie-beam piercing the pillars, and the upper {@code kasagi}
+     * lintel that CURVES UP at both ends via outward-facing stairs (the signature
+     * upturned eaves). A small dark-wood {@code gakuzuka} plaque sits centred
+     * between the two beams. A stone lantern stands beside the gravel path that
+     * runs through the gate. Vermilion + dark-wood palette; vanilla-only,
+     * standalone, not enterable. T1 disc.
+     *
+     * <p>Axes: x = width (0..6), z = depth (0..2), pillars centred on z=1 so the
+     * gate reads as a thin plane you walk THROUGH along Z.
+     */
+    private static Blueprint toriiGate() {
+        final int W = 7, H = 10, D = 3;
+        Blueprint.Builder b = Blueprint.builder("Torii Gate", W, H, D);
+        final int cz = 1;                       // gate plane / path centre line
+        final int px0 = 1, px1 = 5;             // the two pillar columns
+        BlueprintBlockState vermilion = bs("minecraft:red_concrete");          // lacquered post cladding
+        BlueprintBlockState darkLogY = bs("minecraft:stripped_dark_oak_log[axis=y]"); // post core / base / capital
+        BlueprintBlockState darkBeamX = bs("minecraft:stripped_dark_oak_log[axis=x]"); // nuki tie-beam (along width)
+        BlueprintBlockState darkSlabTop = bs("minecraft:dark_oak_slab[type=top]");      // kasagi ridge cap
+        BlueprintBlockState plaque = bs("minecraft:dark_oak_planks");          // central gakuzuka plaque
+        BlueprintBlockState gravel = bs("minecraft:gravel");
+        BlueprintBlockState stone = bs("minecraft:stone");
+
+        // ── GRAVEL APPROACH PATH (y=0) ─────────────────────────────────────
+        // A full-depth gravel strip running through the gate along Z, the width
+        // of the gate, so the torii visibly straddles the path.
+        floor(b, 0, 0, 0, W - 1, D - 1, gravel);
+        // dark-stone footings directly under each pillar (the ishi-zue base stones)
+        b.set(px0, 0, cz, stone);
+        b.set(px1, 0, cz, stone);
+
+        // ── VERMILION PILLARS (y=1..6) ─────────────────────────────────────
+        // Each post: a dark-wood base course (y=1) and capital (y=6) bracketing a
+        // tall vermilion-lacquered shaft (y=2..5). Centred on the gate plane (z=1).
+        for (int px : new int[]{px0, px1}) {
+            b.set(px, 1, cz, darkLogY);            // ishibashira base stone collar
+            pillar(b, px, cz, 2, 5, vermilion);    // lacquered shaft
+            b.set(px, 6, cz, darkLogY);            // daiwa capital (post head)
+        }
+
+        // ── LOWER NUKI TIE-BEAM (y=5) ──────────────────────────────────────
+        // A dark stripped-log beam piercing horizontally THROUGH both pillars,
+        // tying them together. It runs the full inner span x=1..5 and pokes one
+        // cell past each post (x=0 / x=6) as the protruding beam ends (hana).
+        line(b, 5, 0, cz, W - 1, cz, darkBeamX);
+        // re-assert the vermilion shaft cell the beam passed over so the posts
+        // still read as solid vermilion where the beam crosses them.
+        b.set(px0, 5, cz, vermilion);
+        b.set(px1, 5, cz, vermilion);
+
+        // ── CENTRAL GAKUZUKA PLAQUE (y=6, x=3) ─────────────────────────────
+        // The small dark-wood tablet standing between the two beams, centred.
+        b.set(3, 6, cz, plaque);
+
+        // ── UPPER KASAGI LINTEL (y=7) WITH UPTURNED ENDS ───────────────────
+        // The crowning beam: a vermilion lintel spanning the posts, capped by a
+        // dark-wood slab "ridge", and CURVING UP at both ends — stairs facing
+        // outward at the tips give the signature upswept torii silhouette.
+        line(b, 7, px0, cz, px1, cz, vermilion);        // vermilion lintel body x=1..5
+        line(b, 8, px0, cz, px1, cz, darkSlabTop);      // dark-wood ridge cap above it
+        // upturned WEST end: a vermilion riser one cell out (x=0) climbing above
+        // the lintel, topped by an outward (west) facing stair = the curl-up tip.
+        b.set(0, 7, cz, vermilion);
+        b.set(0, 8, cz, vermilion);
+        b.set(0, 9, cz, bs("minecraft:dark_oak_stairs[facing=west,half=bottom,shape=straight]"));
+        // upturned EAST end (mirror, facing east).
+        b.set(W - 1, 7, cz, vermilion);
+        b.set(W - 1, 8, cz, vermilion);
+        b.set(W - 1, 9, cz, bs("minecraft:dark_oak_stairs[facing=east,half=bottom,shape=straight]"));
+
+        // ── STONE LANTERN (tōrō) BESIDE THE PATH ───────────────────────────
+        // A small stacked stone lantern at the front-right, off the gate plane so
+        // it reads as a path-side approach light: stone plinth → stone-brick body →
+        // a lit lantern crowned by a dark-wood slab "roof".
+        int lx = 5, lz = 0;                       // front-right corner, off the gate line
+        b.set(lx, 0, lz, gravel);                 // ensure it sits on the path apron
+        b.set(lx, 1, lz, stone);                  // plinth
+        b.set(lx, 2, lz, bs("minecraft:stone_bricks")); // lantern body / fire box
+        b.set(lx, 3, lz, LANTERN);                // the light (kasa beneath the cap)
+        b.set(lx, 4, lz, darkSlabTop);            // little roof cap
 
         return b.build();
     }

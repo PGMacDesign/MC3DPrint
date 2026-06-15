@@ -96,7 +96,9 @@ public final class CuratedBlueprints {
             // Phase 2 — Category B (modern_pool_deck)
             "modern_pool_deck",
             // Phase 2 — Category B (cottagecore_cottage)
-            "cottagecore_cottage");
+            "cottagecore_cottage",
+            // Phase 2 — Category B (torii_gate)
+            "torii_gate");
 
     /**
      * Load a bundled curated blueprint straight from the mod's resources (no world

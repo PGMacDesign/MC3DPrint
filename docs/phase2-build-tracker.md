@@ -7,9 +7,9 @@
 
 ## Status
 - **Curated builds before Phase 2:** 29
-- **Phase 2 queue:** 103 · **Done:** 65 · **Blocked:** 2 · **Remaining:** 36
-- **Next up:** `torii_gate`
-- **Last completed:** `cottagecore_cottage`
+- **Phase 2 queue:** 103 · **Done:** 66 · **Blocked:** 2 · **Remaining:** 35
+- **Next up:** `japanese_tea_house`
+- **Last completed:** `torii_gate`
 
 ## Process (per build — follow exactly on resume)
 1. Pick the first unchecked `[ ]` build in queue order below.
@@ -110,7 +110,7 @@
 - [x] modern_concrete_house
 - [x] modern_pool_deck
 - [x] cottagecore_cottage
-- [ ] torii_gate
+- [x] torii_gate
 - [ ] japanese_tea_house
 - [ ] zen_garden
 - [ ] japanese_dojo
