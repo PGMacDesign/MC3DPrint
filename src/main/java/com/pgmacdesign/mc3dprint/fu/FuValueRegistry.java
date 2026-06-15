@@ -75,7 +75,21 @@ public final class FuValueRegistry {
         if (base.isPresent()) {
             return base;
         }
-        return derive(item);
+        Optional<FuValue> derived = derive(item);
+        if (derived.isPresent()) {
+            return derived;
+        }
+        // FALLBACK: cosmetic colour/patina is free — a dyed/oxidized variant that
+        // can't be valued on its own resolves to its canonical sibling's (fu, tier)
+        // so e.g. red_wool == white_wool, oxidized_cut_copper == cut_copper. This is
+        // a last resort only: anything with its own explicit/API/derived value never
+        // reaches here, so no asserted tier value changes. Guarded so the canonical's
+        // own resolution can't loop back (canonicalOf(canonical) == canonical).
+        Item canonical = canonicalCosmeticVariant(item);
+        if (canonical != item) {
+            return valueOf(canonical, null);
+        }
+        return Optional.empty();
     }
 
     /**
@@ -132,6 +146,101 @@ public final class FuValueRegistry {
             valuator = new RecipeFuValuator<>(graph);
         }
         return valuator.valueOf(item);
+    }
+
+    // --- Cosmetic-variant canonicalization (colour / patina is free) ---
+
+    /**
+     * Lazily-built variant→canonical map. A coloured or oxidized block is purely
+     * cosmetic, so it must cost the same to print/wind as its canonical base. We
+     * use this only as a value-resolution FALLBACK (see {@link #valueOf(Item, ItemStack)}),
+     * never to override a value an item already has. Built from id strings via
+     * {@link ForgeRegistries} so ids that don't exist on this MC version (e.g. the
+     * 1.21 copper_bulb / copper_door family on 1.20.1) are simply skipped — no crash.
+     */
+    private static volatile Map<Item, Item> cosmeticCanonical;
+
+    /**
+     * The canonical (cosmetically-neutral) sibling of {@code item}, or {@code item}
+     * itself if it isn't a known colour/patina variant. {@code canonical(canonical)}
+     * is always the canonical (idempotent), so the fallback can't recurse forever.
+     */
+    public static Item canonicalCosmeticVariant(Item item) {
+        Map<Item, Item> map = cosmeticCanonical;
+        if (map == null) {
+            map = buildCosmeticCanonical();
+            cosmeticCanonical = map;
+        }
+        return map.getOrDefault(item, item);
+    }
+
+    private static synchronized Map<Item, Item> buildCosmeticCanonical() {
+        if (cosmeticCanonical != null) {
+            return cosmeticCanonical;
+        }
+        Map<Item, Item> map = new HashMap<>();
+
+        // The 16 vanilla dye colours (item-id prefixes).
+        String[] colors = {
+                "white", "orange", "magenta", "light_blue", "yellow", "lime",
+                "pink", "gray", "light_gray", "cyan", "purple", "blue",
+                "brown", "green", "red", "black"
+        };
+
+        // Colour families: every <color>_<suffix> -> the canonical base block.
+        // White is the canonical for wool/carpet/bed/banner/concrete(_powder);
+        // glass/glass_pane/terracotta/candle/shulker_box are themselves the base
+        // (the "<color>_" form is the variant, the bare form is canonical).
+        for (String color : colors) {
+            mapVariant(map, color + "_wool", "white_wool");
+            mapVariant(map, color + "_carpet", "white_carpet");
+            mapVariant(map, color + "_bed", "white_bed");
+            mapVariant(map, color + "_banner", "white_banner");
+            mapVariant(map, color + "_concrete", "white_concrete");
+            mapVariant(map, color + "_concrete_powder", "white_concrete_powder");
+            mapVariant(map, color + "_stained_glass", "glass");
+            mapVariant(map, color + "_stained_glass_pane", "glass_pane");
+            mapVariant(map, color + "_terracotta", "terracotta");
+            mapVariant(map, color + "_glazed_terracotta", "terracotta");
+            mapVariant(map, color + "_candle", "candle");
+            mapVariant(map, color + "_shulker_box", "shulker_box");
+        }
+
+        // Copper oxidation + wax: every exposed/weathered/oxidized and waxed form
+        // collapses to the plain, unwaxed, unoxidized base block.
+        String[] copperBases = {
+                "copper_block", "cut_copper", "cut_copper_stairs", "cut_copper_slab",
+                "chiseled_copper", "copper_grate", "copper_bulb",
+                "copper_door", "copper_trapdoor"
+        };
+        String[] oxidationPrefixes = {
+                "exposed_", "weathered_", "oxidized_",
+                "waxed_", "waxed_exposed_", "waxed_weathered_", "waxed_oxidized_"
+        };
+        for (String base : copperBases) {
+            for (String prefix : oxidationPrefixes) {
+                mapVariant(map, prefix + base, base);
+            }
+        }
+
+        return map;
+    }
+
+    /** Adds variantId→canonicalId to the map iff both ids resolve to real items on this MC version. */
+    private static void mapVariant(Map<Item, Item> map, String variantId, String canonicalId) {
+        Item variant = lookupItem(variantId);
+        Item canonical = lookupItem(canonicalId);
+        if (variant != null && canonical != null && variant != canonical) {
+            map.put(variant, canonical);
+        }
+    }
+
+    private static Item lookupItem(String path) {
+        ResourceLocation id = ResourceLocation.tryParse("minecraft:" + path);
+        if (id == null || !ForgeRegistries.ITEMS.containsKey(id)) {
+            return null;
+        }
+        return ForgeRegistries.ITEMS.getValue(id);
     }
 
     /**
@@ -230,6 +339,12 @@ public final class FuValueRegistry {
                 "minecraft:deepslate=1@1", "minecraft:cobbled_deepslate=1@1", "minecraft:tuff=1@1",
                 "minecraft:dripstone_block=1@1", "minecraft:pointed_dripstone=1@1", "minecraft:mud=1@1",
                 "minecraft:snow_block=1@1", "minecraft:ice=1@1",
+                // white_concrete_powder anchored as a canonical for cosmetic-variant
+                // normalization (the 16 dyed *_concrete_powder fall back to it). Can't
+                // derive (white dye is unvalued); valued by composition = 4 sand + 4
+                // gravel (both 1 FU) over 8 output ≈ 1 FU @ T1. white_concrete already
+                // sits at 5@1, so hardened concrete stays pricier than its powder.
+                "minecraft:white_concrete_powder=1@1",
                 "minecraft:coal=2@1", "minecraft:moss_block=2@1",
                 // stone family & wood (3 FU)
                 "minecraft:stone=3@1", "minecraft:smooth_stone=3@1", "minecraft:stone_bricks=3@1",

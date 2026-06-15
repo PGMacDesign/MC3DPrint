@@ -74,13 +74,10 @@ public class CuratedBlueprintPrintabilityGameTests {
             // --- INTENTIONAL (keep unvalued) ---
             "minecraft:reinforced_deepslate",   // diamond_vault decorative core; survival-unobtainable
             // --- PRE-LAUNCH ECONOMY GAPS (value the leaf or swap; then delete from here) ---
-            "minecraft:weathered_cut_copper",   // copper oxidation state, no recipe (copper_observatory)
-            "minecraft:exposed_cut_copper",     //   ""
-            "minecraft:oxidized_cut_copper",    //   ""
-            "minecraft:white_stained_glass",    // dyed glass — white dye leaf unvalued (beacon_spire)
-            "minecraft:yellow_stained_glass",   // dyed glass — yellow dye leaf unvalued
-            "minecraft:red_stained_glass",      // dyed glass — red dye leaf unvalued
-            "minecraft:green_terracotta",       // dyed terracotta — green dye leaf unvalued
+            // NOTE: dyed glass/terracotta and oxidized copper are now resolved via
+            // cosmetic-variant FU normalization (see FuValueRegistry.canonicalCosmeticVariant),
+            // so they were removed from this set — the gate now verifies that fix and
+            // re-fails if normalization ever regresses.
             "minecraft:grass_block",            // natural ground (campfire_site, barn) — value or make structural
             "minecraft:hay_block",              // derives from wheat item, which is unvalued (barn/market/farm)
             "minecraft:target",                 // redstone + hay; hay unvalued (redstone_workshop)
