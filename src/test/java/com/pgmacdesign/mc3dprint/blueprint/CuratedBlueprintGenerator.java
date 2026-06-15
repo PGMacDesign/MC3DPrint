@@ -256,6 +256,7 @@ class CuratedBlueprintGenerator {
         builds.put("road_path_segment", roadPathSegment());
         builds.put("aqueduct_segment", aqueductSegment());
         builds.put("mineshaft_entrance", mineshaftEntrance());
+        builds.put("railway_station", railwayStation());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -7462,6 +7463,171 @@ class CuratedBlueprintGenerator {
         b.set(1, 3, 3, HANGING_LANTERN);  // west eave lantern under the overhang
         b.set(3, 3, 3, HANGING_LANTERN);  // east eave lantern under the overhang
         b.set(0, 2, 4, bs("minecraft:oak_sign[rotation=8]")); // "MINE" plaque on the west apron lip
+
+        return b.build();
+    }
+
+    /**
+     * Phase 2 §H Railway Station. 13×9 footprint → builder(13, 9, 9). T6 printer,
+     * T2 disc — the minecart-network hub: a raised stone-brick platform running the
+     * full length, a twin rail line (one powered) alongside it, a pillared canopy /
+     * awning over the platform, a small ENTERABLE ticket booth with a counter and
+     * glazed windows, a stone-brick clock/signage tower, hanging lanterns, and
+     * stair-seat benches.
+     *
+     * <p>Orientation: the <b>track is the north strip</b> ({@code z=0..2}); the
+     * <b>platform with all the furniture is the south strip</b> ({@code z=3..8}). The
+     * platform top is a flat walkable surface at {@code y=2}; the rails sit one
+     * level lower at {@code y=1} so the platform reads as a raised quay you board
+     * trains from. The whole thing tiles edge-to-edge along the track axis (X): the
+     * rail line, the platform deck and the platform edge are identical every
+     * x-column, and the canopy posts sit on a period-4 rhythm so two stations
+     * placed end-to-end give one continuous line + platform with no doubled post.
+     *
+     * <p>Axes: x=W (0..12, the direction the rails run), y=up (0..8), z=depth
+     * (0..8; z=0 track edge → z=8 back of platform).
+     *
+     * <p>Vanilla blocks only, all FU-valued or structural, so every block clears the
+     * printability gate:
+     * <ul>
+     *   <li><b>stone / stone_bricks / chiseled_stone_bricks / smooth_stone</b> and
+     *       their stairs/slabs/walls — base pad, platform deck, edge, posts, booth,
+     *       tower; all derive from stone bricks (or are independently valued).</li>
+     *   <li><b>rail</b> (iron + stick) and <b>powered_rail</b> (gold + redstone +
+     *       stick) — both derive an FU value; every rail tile rides directly on the
+     *       SOLID y=0 stone pad below it, so the rails place and stay.</li>
+     *   <li><b>iron_block / iron_bars</b> — iron canopy posts and a render-safe bar
+     *       balustrade segment; both FU-valued.</li>
+     *   <li><b>glass_pane</b> — ticket-booth windows, each flanked on BOTH sides by a
+     *       solid stone-brick wall cell so the pane always has a horizontal
+     *       connection and never renders as a stub.</li>
+     *   <li><b>lantern</b> (hanging + standing), <b>oak_sign</b> — platform lighting
+     *       and the station name plaque; all FU-valued. No item frames / paintings
+     *       (those are entities, not blocks).</li>
+     * </ul>
+     *
+     * <p>Layout (north = track at z=0; 13×9 = x0..12, z0..8):
+     * <ul>
+     *   <li><b>Base pad (y=0)</b> — solid stone over the whole 13×9 footprint; the
+     *       rails ride on it and the platform sits on it.</li>
+     *   <li><b>Rail line (y=1, z=1 & z=2)</b> — a normal {@code rail} line at z=2 and
+     *       a {@code powered_rail} line at z=1, both running east-west the full
+     *       width and continuous across the tiling seam. z=0 is left as the open
+     *       trackside ballast (stone pad) so a train cab clears the platform.</li>
+     *   <li><b>Platform deck (y=1 fill, walkable top y=2)</b> — stone-brick fill over
+     *       z=3..8 raising the platform one block; a {@code chiseled_stone_bricks}
+     *       edge band runs along z=3 (the boarding edge) and a stone-brick-slab lip
+     *       caps z=3 at y=2 so the platform reads as a raised quay.</li>
+     *   <li><b>Canopy (posts y=3..4 at x=2,6,10 on z=4; awning y=5)</b> — iron-block
+     *       posts carry a stone-brick-slab awning over the platform (z=4..8), with a
+     *       stair eave on the trackside edge (z=3) so it shelters the boarding edge.</li>
+     *   <li><b>Ticket booth (x=0..3, z=5..8, enterable)</b> — a stone-brick room with
+     *       an oak door on its east wall opening inward, glazed windows (pane between
+     *       two solid wall cells) on the south & west walls, and a smooth-stone-slab
+     *       service counter under a window facing the platform. Interior left open.</li>
+     *   <li><b>Clock / signage tower (x=11, z=6..7)</b> — a slim stone-brick tower
+     *       rising to y=8, capped with a {@code chiseled_stone_bricks} clock face and
+     *       a lantern beacon; the tall vertical landmark that says "station".</li>
+     *   <li><b>Furniture & lighting</b> — stair-seat benches against the back wall
+     *       (z=8), hanging lanterns under the canopy, a standing lantern on the
+     *       platform, and an oak "STATION" sign by the booth door.</li>
+     * </ul>
+     */
+    private static Blueprint railwayStation() {
+        Blueprint.Builder b = Blueprint.builder("Railway Station", 13, 9, 9);
+        int x0 = 0, x1 = 12;          // 13-wide — the track/platform run along X
+        int z0 = 0, z1 = 8;           // 9-deep — z=0..2 track, z=3..8 platform
+        BlueprintBlockState stone   = bs("minecraft:stone");
+        BlueprintBlockState smoothSlabTop = SMOOTH_STONE_SLAB_TOP;
+        BlueprintBlockState rail    = bs("minecraft:rail[shape=east_west]");
+        BlueprintBlockState poweredRail = bs("minecraft:powered_rail[shape=east_west,powered=true,waterlogged=false]");
+        // canopy awning + eave (slab deck, stair drip edge facing the track / +z step)
+        BlueprintBlockState awningEave = bs("minecraft:stone_brick_stairs[facing=south,half=top,shape=straight]");
+
+        // ── 1) BASE PAD (y=0) — solid stone under the whole footprint ────────
+        floor(b, 0, x0, z0, x1, z1, stone);
+
+        // ── 2) RAIL LINE (y=1) — twin lines running the full width, tileable ──
+        // z=0 is open ballast (the y=0 stone shows) so a passing cab clears the
+        // platform; the powered line is z=1, the plain line z=2. Both ride the
+        // solid y=0 pad and run unbroken across the x-seam.
+        line(b, 1, x0, 1, x1, 1, poweredRail);   // powered_rail line at z=1
+        line(b, 1, x0, 2, x1, 2, rail);          // rail line at z=2
+
+        // ── 3) PLATFORM DECK (z=3..8) — raise one block, walkable top at y=2 ──
+        // Fill y=1 over the platform footprint (deck body), then the y=2 walking
+        // surface is the boarding edge band + the deck under everything else.
+        solid(b, x0, 1, 3, x1, 1, z1, STONE_BRICKS);   // platform body (y=1 fill)
+        floor(b, 2, x0, 4, x1, z1, STONE_BRICKS);       // walkable deck (z=4..8) at y=2
+        // boarding edge (z=3): a chiseled band at y=1 and a slab lip at y=2 so the
+        // platform reads as a raised quay you step up onto from the track side.
+        line(b, 1, x0, 3, x1, 3, CHISELED_STONE_BRICKS);
+        line(b, 2, x0, 3, x1, 3, STONE_BRICK_SLAB_TOP);
+
+        // ── 4) CANOPY — iron posts + stone-brick awning over the OPEN platform ──
+        // The awning shelters the open platform run (x=4..12); the ticket booth
+        // (x=0..3) stands free with its own taller roof, so the awning is NOT laid
+        // over the booth footprint (no double roof). Posts at x=4,8,12 on z=4 rise
+        // y=3..4 off the deck; the awning slab roof is at y=5 over z=4..8, with a
+        // stair drip-eave over the boarding edge (z=3) the full sheltered width.
+        int awnX0 = 4;                       // awning starts east of the booth
+        for (int px : new int[]{4, 8, 12}) {
+            pillar(b, px, 4, 3, 4, IRON_BLOCK);
+        }
+        floor(b, 5, awnX0, 4, x1, z1, STONE_BRICK_SLAB_TOP);   // awning deck over the open platform
+        for (int x = awnX0; x <= x1; x++) {
+            b.set(x, 5, 3, awningEave);                         // drip-eave over the boarding edge
+        }
+
+        // ── 5) TICKET BOOTH (x=0..3, z=5..8) — small ENTERABLE room ──────────
+        // Walls rise y=3..5 (so it pokes above the y=5 awning), a stone-brick floor
+        // at y=2 sits flush with the platform deck (already laid), interior open.
+        int bx0 = 0, bz0 = 5, bx1 = 3, bz1 = 8;
+        walls(b, bx0, bz0, bx1, bz1, 3, 5, STONE_BRICKS);
+        floor(b, 6, bx0, bz0, bx1, bz1, STONE_BRICK_SLAB_TOP);   // booth roof cap at y=6
+        // doorway on the EAST wall (x=3) opening inward (facing=west); leave y=3,4 open
+        door2(b, bx1, 3, 6, "oak", "E");
+        // windows: every glass pane is flanked by solid wall cells on BOTH sides
+        // along its wall run → it always has a horizontal connection (render-safe).
+        // North (platform-facing) booth wall is z=5; this is the ticket WINDOW the
+        // clerk serves through, facing the platform. Panes at x=1,2 are flanked by
+        // the x=0 and x=3 corner posts and by each other.
+        b.set(1, 4, bz0, GLASS_PANE);            // ticket window, flanked by x=0 wall + x=2 pane
+        b.set(2, 4, bz0, GLASS_PANE);            // ticket window, flanked by x=1 pane + x=3 wall
+        // West wall (x=0): a side window at z=6, flanked by the z=5 and z=7 wall cells.
+        b.set(bx0, 4, 6, GLASS_PANE);
+        // service counter INSIDE the booth, a smooth-stone slab run the clerk stands
+        // behind, just inside the ticket window (z=6, one row in from the z=5 wall).
+        b.set(1, 2, 6, smoothSlabTop);
+        b.set(2, 2, 6, smoothSlabTop);
+
+        // ── 6) CLOCK / SIGNAGE TOWER (x=11, z=6) — slim landmark to y=8 ───────
+        // A slim stone-brick column rising off the deck to the build's full height,
+        // with a chiseled "clock face" panel near the top and a lantern beacon cap.
+        pillar(b, 11, 6, 3, 7, STONE_BRICKS);
+        b.set(11, 6, 6, CHISELED_STONE_BRICKS);  // clock-face panel mid-shaft
+        b.set(11, 7, 6, GLOWSTONE);              // lit clock dial just below the cap
+        b.set(11, 8, 6, CHISELED_STONE_BRICKS);  // chiseled masonry cap (y=8 top)
+
+        // ── 7) FURNITURE + LIGHTING ──────────────────────────────────────────
+        // stair-seat benches along the back of the platform (z=8) FACING the track,
+        // i.e. facing=north so a sitter looks out toward the rails. They rest on the
+        // y=2 deck (their bottom at y=3).
+        BlueprintBlockState bench = bs("minecraft:stone_brick_stairs[facing=north,half=bottom,shape=straight]");
+        for (int bxs : new int[]{6, 8}) {
+            b.set(bxs, 3, z1, bench);
+        }
+        // a short render-safe iron-bar balustrade on the back edge: two bars side by
+        // side so each connects horizontally to the other (renders as a real railing).
+        b.set(4, 3, z1, IRON_BARS);
+        b.set(5, 3, z1, IRON_BARS);
+        // hanging lanterns under the awning (attach to the y=5 awning slab above them)
+        b.set(4, 4, 5, HANGING_LANTERN);
+        b.set(8, 4, 5, HANGING_LANTERN);
+        // a standing lantern on the platform deck by the tower base
+        b.set(11, 3, 5, LANTERN);
+        // oak "STATION" plaque standing on the platform deck beside the booth door
+        b.set(4, 3, 7, bs("minecraft:oak_sign[rotation=12]"));
 
         return b.build();
     }

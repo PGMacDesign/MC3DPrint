@@ -77,7 +77,7 @@ public final class CuratedBlueprints {
             "map_room", "library",
             // Phase 2 — Category H (infrastructure / civic / defensive)
             "sky_bridge_segment", "road_path_segment", "aqueduct_segment",
-            "mineshaft_entrance");
+            "mineshaft_entrance", "railway_station");
 
     /**
      * Load a bundled curated blueprint straight from the mod's resources (no world
