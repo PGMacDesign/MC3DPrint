@@ -7,9 +7,9 @@
 
 ## Status
 - **Curated builds before Phase 2:** 29
-- **Phase 2 queue:** 103 · **Done:** 67 · **Blocked:** 2 · **Remaining:** 34
-- **Next up:** `zen_garden`
-- **Last completed:** `japanese_tea_house`
+- **Phase 2 queue:** 103 · **Done:** 68 · **Blocked:** 2 · **Remaining:** 33
+- **Next up:** `japanese_dojo`
+- **Last completed:** `zen_garden`
 
 ## Process (per build — follow exactly on resume)
 1. Pick the first unchecked `[ ]` build in queue order below.
@@ -112,7 +112,7 @@
 - [x] cottagecore_cottage
 - [x] torii_gate
 - [x] japanese_tea_house
-- [ ] zen_garden
+- [x] zen_garden
 - [ ] japanese_dojo
 - [ ] mediterranean_terracotta_villa
 - [ ] greek_quartz_temple

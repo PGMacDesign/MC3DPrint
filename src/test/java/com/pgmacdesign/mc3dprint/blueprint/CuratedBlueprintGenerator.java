@@ -271,6 +271,7 @@ class CuratedBlueprintGenerator {
         builds.put("cottagecore_cottage", cottagecoreCottage());
         builds.put("torii_gate", toriiGate());
         builds.put("japanese_tea_house", japaneseTeaHouse());
+        builds.put("zen_garden", zenGarden());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -3670,6 +3671,154 @@ class CuratedBlueprintGenerator {
         // simple finial: a slab base + a lantern crown on the central axis
         b.set(cx, ey, cz, roofSlab);
         b.set(cx, ey + 1, cz, LANTERN);
+
+        return b.build();
+    }
+
+    /**
+     * Zen Garden (karesansui). 9×9 footprint → builder(9, 5, 9). A tranquil, flat
+     * Japanese dry garden — NOT an enterable structure. A raked smooth-sandstone /
+     * sand ground concentrically banded with gravel "ripples" around a few stone
+     * boulder islands, a stacked stone lantern (tōrō), a small arched wood bridge
+     * over a gravel dry-stream, a stepping-stone path, a tsukubai water basin, and a
+     * low stone-wall perimeter accented with clipped green-wool topiary "hedges".
+     *
+     * <p>AXES: x=W (0..8), z=depth (0..8); centre {@code cx=cz=4}. Everything sits in
+     * the y=0 ground plane with low accents at y=1..2 (bridge crown / lantern / topiary).
+     *
+     * <p>PALETTE NOTE — vanilla, FU-valued / structural only:
+     * <ul>
+     *   <li>Ground: {@code smooth_sandstone} bed + {@code sand} fill, banded with
+     *       {@code gravel} ripples (all valued); {@code andesite}/{@code stone}
+     *       stepping stones; a {@code water} disc basin (structural).</li>
+     *   <li>Boulders: {@code cobblestone} / {@code mossy_cobblestone} /
+     *       {@code andesite} mounds (valued).</li>
+     *   <li>Lantern: stone plinth → {@code cobblestone_wall} shaft → {@code lantern}
+     *       → stone-brick-slab roof.</li>
+     *   <li>Bridge: oak-stair arch (rampUp/rampDown) over a gravel dry-stream,
+     *       crowned by an oak slab — same verified ramp convention as {@link #koiPond}.</li>
+     *   <li>Hedge/greenery: {@code green_wool} topiary mounds (wool tag → valued).
+     *       NO bamboo / leaves / lily_pad (UNVALUED).</li>
+     * </ul>
+     *
+     * <p>RENDER-SAFETY: no glass panes / iron bars are used (no window stubs). The
+     * perimeter uses {@code stone_brick_wall} (WALLS tag); walls self-connect along
+     * the ring and need no special flanking. Stone buttons are floor-mounted "pebbles".
+     */
+    private static Blueprint zenGarden() {
+        final int W = 9, H = 5;
+        final int cx = 4, cz = 4;
+        Blueprint.Builder b = Blueprint.builder("Zen Garden", W, H, W);
+        int x0 = 0, x1 = W - 1, z0 = 0, z1 = W - 1; // 0..8
+
+        BlueprintBlockState bed = bs("minecraft:smooth_sandstone"); // raked sand base
+        BlueprintBlockState sand = bs("minecraft:sand");            // raked sand fill
+        BlueprintBlockState gravel = bs("minecraft:gravel");        // raked ripples / dry-stream
+        BlueprintBlockState andesite = bs("minecraft:andesite");    // boulder / stepping stone
+        BlueprintBlockState stone = bs("minecraft:stone");          // stepping stone / lantern plinth
+        BlueprintBlockState topiary = GREEN_WOOL;                   // clipped hedge mounds
+        BlueprintBlockState pebble =
+                bs("minecraft:stone_button[face=floor,facing=north,powered=false]");
+
+        // ── 1) GROUND BED (y=0) ────────────────────────────────────────────
+        // Full 9×9 smooth-sandstone bed (the raked "white sand" field), then sand
+        // banding so the surface reads as raked sand rather than flat stone.
+        floor(b, 0, x0, z0, x1, z1, bed);
+        // sand inner field (1..7) over the smooth-sandstone, leaving a 1-cell
+        // smooth-sandstone border as the garden's framing apron.
+        floor(b, 0, 1, 1, 7, 7, sand);
+
+        // ── 2) RAKED GRAVEL RIPPLES (y=0) ──────────────────────────────────
+        // Concentric gravel rings around the centre suggest the raked-sand ripple
+        // pattern flowing around the central boulder island. circleRing draws the
+        // perimeter only; r=3 then r=2 give two clean ripple bands.
+        circleRing(b, 0, cx, cz, 3, gravel);
+        circleRing(b, 0, cx, cz, 2, gravel);
+
+        // ── 3) DRY-STREAM (karesansui river) (y=0) ─────────────────────────
+        // A gravel "dry river" meandering along z at x=2 (the bridge crosses it).
+        line(b, 0, 2, 1, 2, 7, gravel);
+
+        // ── 4) BOULDER ISLANDS ─────────────────────────────────────────────
+        // Central island: a 3-tall andesite/cobble mound on the garden centre, the
+        // focal "mountain" the ripples flow around.
+        b.set(cx, 0, cz, andesite);
+        b.set(cx, 1, cz, MOSSY_COBBLE);
+        b.set(cx, 2, cz, andesite);                 // crown stone
+        b.set(cx - 1, 0, cz, COBBLE);               // skirt stones (low satellites)
+        b.set(cx + 1, 0, cz, andesite);
+        b.set(cx, 0, cz - 1, MOSSY_COBBLE);
+        // North-east smaller island: a 2-tall mossy boulder pair.
+        b.set(6, 0, 2, COBBLE);
+        b.set(6, 1, 2, MOSSY_COBBLE);
+        b.set(7, 0, 2, andesite);
+        // South-west single accent boulder.
+        b.set(2, 0, 6, MOSSY_COBBLE);
+        b.set(2, 1, 6, COBBLE);
+
+        // ── 5) STONE LANTERN (tōrō) ────────────────────────────────────────
+        // Stacked path-side lantern at the back-east (off the ripple field): stone
+        // plinth → cobble-wall shaft → lit lantern → stone-brick-slab roof cap.
+        int lx = 6, lz = 6;
+        b.set(lx, 0, lz, stone);                    // plinth foot (overwrites sand)
+        b.set(lx, 1, lz, COBBLE_WALL);              // shaft (WALLS tag → render-safe)
+        b.set(lx, 2, lz, LANTERN);                  // the light (fire box)
+        b.set(lx, 3, lz, STONE_BRICK_SLAB_TOP);     // little roof cap
+
+        // ── 6) ARCHED WOOD BRIDGE (over the dry-stream at x=2) ──────────────
+        // A 1-wide oak-stair span crossing the gravel dry-stream along z at x=2.
+        // Springs from z=2, crests at z=4 (y=1), descends to z=6 — the verified
+        // koiPond ramp convention (rising→facing south, falling→facing north), so
+        // every height change is walkable.
+        BlueprintBlockState rampUp =
+                bs("minecraft:oak_stairs[facing=south,half=bottom,shape=straight]");
+        BlueprintBlockState rampDown =
+                bs("minecraft:oak_stairs[facing=north,half=bottom,shape=straight]");
+        b.set(2, 0, 2, rampUp);                     // approach rise (z=2 → up toward crown)
+        b.set(2, 1, 3, rampUp);                     // climb to crown
+        b.set(2, 1, 4, OAK_SLAB_TOP);               // crown deck (flat tread over centre)
+        b.set(2, 1, 5, rampDown);                   // descend from crown
+        b.set(2, 0, 6, rampDown);                   // approach fall (z=6)
+        // low oak-fence handrails flanking the crown (one cell each side along x)
+        b.set(1, 1, 4, OAK_FENCE);
+        b.set(3, 1, 4, OAK_FENCE);
+
+        // ── 7) STEPPING-STONE PATH (tobi-ishi) ─────────────────────────────
+        // Flat stone/andesite stepping stones picking a diagonal route across the
+        // sand from the front-west toward the central island (already-set cells
+        // simply get re-stated as stone — they sit flush in the y=0 plane).
+        for (int[] s : new int[][]{{1, 7}, {2, 6}, {3, 5}, {1, 5}, {3, 3}}) {
+            b.set(s[0], 0, s[1], stone);
+        }
+        // a few scattered "pebble" buttons on the sand for texture.
+        for (int[] p : new int[][]{{5, 3}, {3, 6}, {5, 5}, {1, 3}}) {
+            b.set(p[0], 0, p[1], pebble);
+        }
+
+        // ── 8) TSUKUBAI WATER BASIN (front-east corner) ────────────────────
+        // A tiny 1-cell sunken water basin ringed by stone-brick wall coping — the
+        // ritual washing basin. Water is structural (prints free).
+        b.set(7, 0, 6, WATER);
+        b.set(7, 1, 6, COBBLE_WALL);                // basin spout post beside it (NE)
+        b.set(7, 0, 5, stone);                      // flat approach stone
+
+        // ── 9) PERIMETER HEDGE WALL + TOPIARY ──────────────────────────────
+        // A low stone-brick-wall fence ringing the garden edge (the enclosure), with
+        // clipped green-wool topiary mounds set at the four corners + edge midpoints
+        // as the "hedge" (green_wool = wool tag → FU-valued; NOT leaves/bamboo).
+        // The front-centre cell (cx,z0) is left open as the garden entrance.
+        for (int x = x0; x <= x1; x++) {
+            if (x != cx) b.set(x, 1, z0, STONE_BRICK_WALL); // back/front edge (z=0), gap at entry
+            b.set(x, 1, z1, STONE_BRICK_WALL);              // far edge (z=8)
+        }
+        for (int z = z0 + 1; z <= z1 - 1; z++) {
+            b.set(x0, 1, z, STONE_BRICK_WALL);              // west edge
+            b.set(x1, 1, z, STONE_BRICK_WALL);              // east edge
+        }
+        // green-wool topiary mounds capping the four corner posts (waist-high hedge).
+        for (int[] c : new int[][]{{x0, z0}, {x1, z0}, {x0, z1}, {x1, z1}}) {
+            b.set(c[0], 2, c[1], topiary);
+        }
 
         return b.build();
     }
