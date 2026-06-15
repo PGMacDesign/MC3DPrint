@@ -7,9 +7,9 @@
 
 ## Status
 - **Curated builds before Phase 2:** 29
-- **Phase 2 queue:** 103 · **Done:** 59 · **Blocked:** 2 · **Remaining:** 42
-- **Next up:** `portcullis_gate`
-- **Last completed:** `drawbridge`
+- **Phase 2 queue:** 103 · **Done:** 60 · **Blocked:** 2 · **Remaining:** 41
+- **Next up:** `stable_horse`
+- **Last completed:** `portcullis_gate`
 
 ## Process (per build — follow exactly on resume)
 1. Pick the first unchecked `[ ]` build in queue order below.
@@ -102,7 +102,7 @@
 - [x] gatehouse
 - [x] guard_tower
 - [x] drawbridge
-- [ ] portcullis_gate
+- [x] portcullis_gate
 - [ ] stable_horse
 - [ ] greenhouse
 

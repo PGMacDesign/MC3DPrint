@@ -262,6 +262,7 @@ class CuratedBlueprintGenerator {
         builds.put("gatehouse", gatehouse());
         builds.put("guard_tower", guardTower());
         builds.put("drawbridge", drawbridge());
+        builds.put("portcullis_gate", portcullisGate());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -3191,6 +3192,106 @@ class CuratedBlueprintGenerator {
         // keystone (chain link at y=3, lantern at y=2) lighting the crossing ---
         b.set(1, 3, 2, CHAIN); b.set(1, 2, 2, HANGING_LANTERN); // west gate light
         b.set(5, 3, 2, CHAIN); b.set(5, 2, 2, HANGING_LANTERN); // east gate light
+
+        return b.build();
+    }
+
+    /**
+     * Category H — portcullis_gate. 5×7×3 (W×up×depth) → builder(5, 7, 3). A
+     * standalone defensive gate prop: two solid stone-brick jambs flanking a
+     * 3-wide passage, a stone-brick-stair arched top, and a FULL iron-bar grate
+     * (the lowered portcullis) filling the entire opening — every bar anchored to
+     * the jambs and to its neighbours so the whole grate renders connected. Hoist
+     * chains rise from the grate top through the arch suggesting the lifting tackle,
+     * with chiseled-stone-brick keystone detailing and a pair of lanterns.
+     *
+     * <p>Layout (x=W 0..4, y=up 0..6, z=depth 0..2):
+     * <ul>
+     *   <li><b>Jambs.</b> x=0 (west) and x=4 (east) are solid stone-brick pillars
+     *       the full depth (z=0..2), y=1..6 — the towers the portcullis anchors to.
+     *       Their inner faces (toward x=2) present sturdy stone.</li>
+     *   <li><b>Opening.</b> x=1..3, z=0..2 — a 3-wide walk-through passage.</li>
+     *   <li><b>Arched top.</b> stone-brick stairs lean inward over the opening at
+     *       y=5 (west pair facing east, east pair facing west, apex haunch between),
+     *       a flat stone-brick lintel closes the crown at y=6 with a chiseled
+     *       keystone centre. Raised one course above the hoist so the chains clear.</li>
+     * </ul>
+     *
+     * <p><b>Portcullis (render-safe full grate).</b> Iron bars fill the front-face
+     * opening (z=0) across the full width x=1..3 at y=1..3 — a complete 3×3 grate.
+     * Every bar connects: the end columns (x=1, x=3) abut the solid stone jambs
+     * (x=0, x=4 present sturdy faces), and the centre column (x=2) bridges to both
+     * neighbours. No bar is a lone center-post stub. (Same jamb-to-jamb fix
+     * {@link #gatehouse} uses.) The grate at y=1 keeps the passage closed — this is
+     * a LOWERED portcullis, the gate shut.
+     *
+     * <p><b>Hoist.</b> A chain rises on each grate edge (x=1, x=3) from the grate
+     * top (y=4) toward the arch, reading as the lifting tackle hauling the
+     * portcullis; the y=5 arch voussoirs back the chains. The grate-back of the
+     * jambs makes the chains hang cleanly inside the opening.
+     *
+     * <p>PRINTABILITY: stone bricks / stairs (derive from stone bricks), chiseled
+     * stone bricks (recipe-derived), iron bars + chain (derive from iron), and
+     * lanterns (recipe-derived) — all FU-valued or recipe-derived, no unvalued or
+     * gate-flagged blocks. Vanilla only.
+     */
+    private static Blueprint portcullisGate() {
+        Blueprint.Builder b = Blueprint.builder("Portcullis Gate", 5, 7, 3);
+        // x: 0 = west jamb, 1..3 = opening, 4 = east jamb. z: 0..2 (3 deep). y: 0..6.
+
+        // --- footing course (y=0) under the whole prop so the jambs sit on stone ---
+        floor(b, 0, 0, 0, 4, 2, STONE_BRICKS);
+
+        // --- solid stone-brick jambs (full depth z=0..2), y=1..6 — the towers the
+        // portcullis anchors to; their inner faces are sturdy stone for the grate. ---
+        for (int z = 0; z <= 2; z++) {
+            pillar(b, 0, z, 1, 6, STONE_BRICKS); // west jamb
+            pillar(b, 4, z, 1, 6, STONE_BRICKS); // east jamb
+        }
+        // weathering flecks on the jamb outer faces
+        b.set(0, 2, 1, MOSSY_STONE_BRICKS);
+        b.set(4, 3, 1, CRACKED_STONE_BRICKS);
+        // chiseled-stone-brick base detailing on the inner jamb faces (front)
+        b.set(0, 1, 0, CHISELED_STONE_BRICKS);
+        b.set(4, 1, 0, CHISELED_STONE_BRICKS);
+
+        // --- arched top over the opening (x=1..3) on the front/back faces (z=0,z=2):
+        // stair voussoirs lean inward at y=5, a flat lintel crowns at y=6. Raised so
+        // it sits one course above the hoist chains (y=4) — no collision. ---
+        BlueprintBlockState archEast = bs("minecraft:stone_brick_stairs[facing=east,half=bottom,shape=straight]");
+        BlueprintBlockState archWest = bs("minecraft:stone_brick_stairs[facing=west,half=bottom,shape=straight]");
+        for (int z : new int[]{0, 2}) {
+            b.set(1, 5, z, archEast); // west voussoir rises toward the crown
+            b.set(3, 5, z, archWest); // east voussoir rises toward the crown
+            b.set(2, 5, z, STONE_BRICKS); // crown haunch at the apex
+            line(b, 6, 1, z, 3, z, STONE_BRICKS); // flat lintel closing the crown
+            b.set(2, 6, z, CHISELED_STONE_BRICKS); // decorative keystone
+        }
+        // arch crossbeam spanning the depth at the apex (y=6, x=2) ties the faces
+        // together; interior keystone
+        line(b, 6, 2, 0, 2, 2, STONE_BRICKS);
+        b.set(2, 6, 1, CHISELED_STONE_BRICKS);
+
+        // --- PORTCULLIS: full iron-bar grate filling the front opening (z=0),
+        // x=1..3 across, y=1..3 up. Every bar connects: x=1/x=3 abut the solid
+        // jambs (x=0/x=4 sturdy faces); x=2 bridges to both. No stub. Grate is
+        // DOWN (y=1 closed) — the gate is shut. ---
+        for (int y = 1; y <= 3; y++) {
+            for (int x = 1; x <= 3; x++) {
+                b.set(x, y, 0, IRON_BARS);
+            }
+        }
+
+        // --- hoist tackle: a chain rises on each grate edge from the grate top
+        // (y=4) toward the arch, the lifting mechanism hauling the portcullis. The
+        // y=5 arch voussoirs sit directly above and back the chains. ---
+        b.set(1, 4, 0, CHAIN);
+        b.set(3, 4, 0, CHAIN);
+
+        // --- lanterns flanking the passage mouth, hung inside the opening on
+        // chains off the y=5/6 arch (chain at y=4, lantern at y=3) ---
+        b.set(1, 4, 1, CHAIN); b.set(1, 3, 1, HANGING_LANTERN); // west passage light
+        b.set(3, 4, 1, CHAIN); b.set(3, 3, 1, HANGING_LANTERN); // east passage light
 
         return b.build();
     }
