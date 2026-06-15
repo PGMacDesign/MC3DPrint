@@ -257,6 +257,7 @@ class CuratedBlueprintGenerator {
         builds.put("aqueduct_segment", aqueductSegment());
         builds.put("mineshaft_entrance", mineshaftEntrance());
         builds.put("railway_station", railwayStation());
+        builds.put("tavern_inn", tavernInn());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -9023,6 +9024,228 @@ class CuratedBlueprintGenerator {
         // WHISKERS / chin barbels — short chains hanging off the lower jaw. The jaw
         // slab at (cx,5,10) is the solid anchor above each chain link so it hangs.
         b.set(cx, 4, 10, CHAIN);
+
+        return b.build();
+    }
+
+    /**
+     * §H.tavern_inn — Category H, build 57/103. A two-story timber-framed
+     * tavern/inn: the recognizable medieval roadhouse with a ground-floor common
+     * room (bar counter, ale barrels, brewing keg, a caged-lava fireplace with a
+     * cobble chimney, and tables) and an upper floor of guest bedrooms, joined by
+     * an interior stair. Vanilla blocks only, all FU-valued or structural matter.
+     *
+     * <p>Footprint 11×13×17 (W×L×H) → builder(11, 17, 13): x=0..10 (W=11, the gable
+     * ridge axis), z=0..12 (depth=13). Two 4-high stories on a stone footing close
+     * under a spruce gable roof peaking at y=16. Sits in the T6 band (disc T3).
+     *
+     * <p>Construction, honouring the air-skip / hollow-enterable rules:
+     * <ul>
+     *   <li><b>y=0</b> — solid stone-brick footing over the whole footprint; its top
+     *       face is the walkable ground floor.</li>
+     *   <li><b>Ground story, y=1..5</b> — a {@link #timberFrame} wall ring (spruce
+     *       planks + dark-oak log studs/rails) with dark-oak corner posts. A
+     *       double-door entry on the north (z=0) wall opens inward; render-safe glass
+     *       windows sit between studs on the long and back walls. Inside: a spruce-slab
+     *       bar counter with barrels behind it, a brewing keg (cauldron + barrel), a
+     *       caged-lava fireplace (lava boxed by iron bars / cobble with a chimney that
+     *       rises through the roof), and two stair-seat tables.</li>
+     *   <li><b>Floor break, y=6</b> — a spruce-plank ceiling/upper floor over the
+     *       whole footprint EXCEPT a 1-cell stair hatch, so the two floors connect.
+     *       An oak stair run climbs the south-west corner from y=1 to the hatch.</li>
+     *   <li><b>Upper story, y=7..10</b> — a second {@link #timberFrame} ring with its
+     *       own windows; the interior is split by a spruce-plank partition into two
+     *       guest bedrooms, each with a {@link #bed}, a lantern, and a window.</li>
+     *   <li><b>Roof, y=10..16</b> — a spruce {@link #gableRoofX} with
+     *       {@link #gableEndFill} closed gable ends; the cobble chimney pokes through
+     *       the north slope. Hanging tavern sign + chain lanterns dress the front
+     *       eave.</li>
+     * </ul>
+     *
+     * <p>Every glass pane is flanked along its wall run by solid wall cells (or other
+     * panes chaining back to a corner post), so each has a horizontal connection and
+     * is render-safe (no stub panes). The fireplace lava is fully boxed so it can't
+     * flow at print time.
+     */
+    private static Blueprint tavernInn() {
+        Blueprint.Builder b = Blueprint.builder("Tavern Inn", 11, 17, 13);
+        int x0 = 0, x1 = 10;          // 11-wide (gable ridge along X)
+        int z0 = 0, z1 = 12;          // 13-deep
+        int cx = (x0 + x1) / 2;       // 5
+        int cz = (z0 + z1) / 2;       // 6
+
+        // timber-frame palette: spruce-plank infill + dark-oak log frame (the
+        // classic tavern look), dark-oak corner posts, dark-oak doors.
+        BlueprintBlockState planks   = SPRUCE_PLANKS;
+        BlueprintBlockState studY    = bs("minecraft:dark_oak_log[axis=y]");
+        BlueprintBlockState studX    = bs("minecraft:dark_oak_log[axis=x]");
+        BlueprintBlockState postY    = bs("minecraft:dark_oak_log[axis=y]");
+        BlueprintBlockState floorMat = SPRUCE_PLANKS;
+        BlueprintBlockState footing  = STONE_BRICKS;
+        BlueprintBlockState cobble   = COBBLE;
+        BlueprintBlockState pane     = GLASS_PANE;
+
+        int g0 = 1, g1 = 5;           // ground story walls y=1..5
+        int upFloorY = 6;             // upper floor / ground ceiling at y=6
+        int u0 = 7, u1 = 10;          // upper story walls y=7..10 (plate at y=10)
+
+        // ── 1) FOOTING (y=0) — walkable stone-brick ground floor ─────────────
+        floor(b, 0, x0, z0, x1, z1, footing);
+
+        // ── 2) GROUND STORY (y=1..5) — timber-frame ring + dark-oak corners ──
+        timberFrame(b, x0, z0, x1, z1, g0, g1, planks, studY, studX);
+        corners(b, x0, z0, x1, z1, g0, g1, postY);
+
+        // double-door entry centred on the north wall (z=0), opening inward (south).
+        // door2 leaves both door cells; the flanking cells stay solid wall.
+        door2(b, cx - 1, g0, z0, "dark_oak", "N");
+        door2(b, cx + 1, g0, z0, "dark_oak", "N");
+        // the cell between the two doors (cx) keeps its wall block (a mullion post);
+        // overwrite it with a dark-oak post so the twin doors read as one wide entry.
+        pillar(b, cx, z0, g0, g0 + 1, postY);
+
+        // ground-floor windows at a mid-wall course y=3. Each pane is flanked along
+        // its wall run by solid wall/stud cells → render-safe.
+        int gwy = 3;
+        // north wall (z0): a pane either side of the door cluster (x=2 and x=8),
+        // each flanked by the corner post / a stud and by wall cells.
+        b.set(x0 + 2, gwy, z0, pane);
+        b.set(x1 - 2, gwy, z0, pane);
+        // long walls (west x0, east x1): windows in the bays at odd z (clear of the
+        // studs that sit at even z), flanked above/below and left/right by wall.
+        for (int z = z0 + 3; z <= z1 - 3; z += 2) {
+            b.set(x0, gwy, z, pane); // west long wall
+            b.set(x1, gwy, z, pane); // east long wall
+        }
+        // south (back) wall (z1): two panes flanking centre.
+        b.set(cx - 2, gwy, z1, pane);
+        b.set(cx + 2, gwy, z1, pane);
+
+        // ── 3) GROUND-FLOOR FURNISHINGS (on the y=1 walkable floor) ──────────
+        // Bar counter: a spruce-slab-topped run along the back-east, with barrels
+        // behind it as the cellar stock. Counter at z = z1-2, x = cx..x1-1.
+        for (int x = cx; x <= x1 - 1; x++) {
+            b.set(x, g0, z1 - 2, SPRUCE_SLAB_TOP); // counter top (slab → bar height)
+            b.set(x, g0, z1 - 1, BARREL);          // ale barrels behind the bar
+        }
+        // brewing keg: a cauldron + a stacked barrel beside the bar (the "keg").
+        b.set(cx - 1, g0, z1 - 1, CAULDRON);
+        b.set(cx - 2, g0, z1 - 1, BARREL);
+
+        // Fireplace on the WEST wall (x0), centred in z: a caged-lava hearth boxed
+        // by cobble so the lava can't flow, with a chimney rising through the roof.
+        int fz = cz;
+        // hearth surround: cobble box one cell in from the wall around the lava cell
+        b.set(x0 + 1, g0, fz - 1, cobble);
+        b.set(x0 + 1, g0, fz + 1, cobble);
+        b.set(x0 + 1, g0 + 1, fz - 1, cobble);
+        b.set(x0 + 1, g0 + 1, fz + 1, cobble);
+        b.set(x0, g0, fz, cobble);           // back of the hearth (replaces wall plank)
+        b.set(x0, g0 + 1, fz, cobble);
+        // lava firebox at the hearth mouth, boxed: iron-bar grate fronts it and a
+        // cobble cap closes the top so the lava is fully enclosed and can't spread.
+        b.set(x0 + 1, g0, fz, LAVA);
+        b.set(x0 + 1, g0 + 2, fz, cobble);   // cap over the lava
+        // cobble jambs flanking the grate (z=fz±1 at the mouth column x0+2) give the
+        // iron bars a sturdy full face on both sides → it renders (no stub) and the
+        // firebox front reads as a hearth grate set in masonry.
+        b.set(x0 + 2, g0, fz - 1, cobble);
+        b.set(x0 + 2, g0, fz + 1, cobble);
+        b.set(x0 + 2, g0, fz, IRON_BARS);    // grate (now flanked N/S by cobble → connects)
+        // chimney: a cobble flue rising from the hearth up through the roof line.
+        pillar(b, x0 + 1, fz, g0 + 3, 15, cobble);
+
+        // Two tables: a stripped-spruce post under a spruce top slab, flanked by
+        // stair "stools" — placed in the open east common-room area.
+        int[] tableZ = { z0 + 3, z0 + 6 };
+        for (int tz : tableZ) {
+            b.set(x1 - 2, g0, tz, STRIPPED_SPRUCE_Y);    // table leg/pedestal
+            b.set(x1 - 2, g0 + 1, tz, SPRUCE_SLAB_TOP);  // table top
+            // stair stools facing the table
+            b.set(x1 - 3, g0, tz, bs("minecraft:spruce_stairs[facing=east,half=bottom,shape=straight]"));
+            b.set(x1 - 1, g0, tz, bs("minecraft:spruce_stairs[facing=west,half=bottom,shape=straight]"));
+        }
+        // a couple of floor lanterns light the common room
+        b.set(x0 + 2, g0, z0 + 2, LANTERN);
+        b.set(x1 - 1, g0, z1 - 2, LANTERN);
+
+        // ── 4) FLOOR BREAK (y=6) — upper floor with a stair hatch ────────────
+        // interior STAIR run climbing the south-west corner (column x=x0+1) from the
+        // ground floor up to the upper deck: one spruce stair per z-row, facing north
+        // (so you climb toward -z), rising y=1..5 across z = z1 .. z1-4. The top step
+        // is at (x0+1, 5, z1-4) → you emerge standing at deck height over z1-5.
+        int stairTopZ = z1 - 4;   // 8
+        for (int i = 0; i <= 4; i++) {
+            int sz = z1 - i;
+            int sy = g0 + i;
+            b.set(x0 + 1, sy, sz, bs("minecraft:spruce_stairs[facing=north,half=bottom,shape=straight]"));
+        }
+        // spruce-plank deck over the whole footprint; the hatch (column x=x0+1 at the
+        // top of the stairs, z = stairTopZ and the cell one north of it) is left UNSET
+        // so you can walk up off the stair onto the upper floor.
+        for (int x = x0; x <= x1; x++) {
+            for (int z = z0; z <= z1; z++) {
+                if (x == x0 + 1 && (z == stairTopZ || z == stairTopZ - 1)) continue; // stair hatch
+                b.set(x, upFloorY, z, floorMat);
+            }
+        }
+
+        // ── 5) UPPER STORY (y=7..10) — timber-frame ring + guest bedrooms ────
+        timberFrame(b, x0, z0, x1, z1, u0, u1, planks, studY, studX);
+        corners(b, x0, z0, x1, z1, u0, u1, postY);
+        // chimney continues through the upper ring (already a cobble pillar to y=15,
+        // but ensure the upper-wall cell it passes stays cobble, not plank).
+        b.set(x0 + 1, u0, cz, cobble); b.set(x0 + 1, u0 + 1, cz, cobble);
+        b.set(x0 + 1, u1, cz, cobble);
+
+        // upper-floor windows at y=9 (one below the plate), render-safe (flanked).
+        int uwy = 9;
+        // north & south walls: a pane either side of centre
+        b.set(cx - 2, uwy, z0, pane);
+        b.set(cx + 2, uwy, z0, pane);
+        b.set(cx - 2, uwy, z1, pane);
+        b.set(cx + 2, uwy, z1, pane);
+        // long walls: windows in odd-z bays (clear of even-z studs)
+        for (int z = z0 + 3; z <= z1 - 3; z += 2) {
+            b.set(x0, uwy, z, pane);
+            b.set(x1, uwy, z, pane);
+        }
+
+        // interior partition splitting the upper floor into two guest bedrooms,
+        // running along X at z=cz (skip the chimney cell so it isn't doubled, and
+        // leave a 1-cell doorway gap at x=cx so both rooms are reachable from the
+        // stair landing). The partition is a plank wall y=7..9 (head clearance under
+        // the gable above y=10).
+        for (int x = x0 + 1; x <= x1 - 1; x++) {
+            if (x == cx) continue;            // doorway gap between the rooms
+            if (x == x0 + 1) continue;        // leave the chimney/landing column clear
+            for (int y = u0; y <= u1 - 1; y++) {
+                b.set(x, y, cz, planks);
+            }
+        }
+        // guest bedrooms: a bed + a floor lantern in each room (on the y=7 floor).
+        // North room (z0 side): bed head at z0+1 facing north (foot at z0+2).
+        bed(b, x1 - 1, u0, z0 + 1, "red", "north");
+        b.set(x0 + 2, u0, z0 + 1, LANTERN);
+        // South room (z1 side): bed head at z1-1 facing south (foot at z1-2).
+        bed(b, x1 - 1, u0, z1 - 1, "red", "south");
+        b.set(x1 - 1, u0, cz + 1, LANTERN);
+
+        // ── 6) ROOF (y=10..16) — spruce gable, closed ends, chimney pokes out ─
+        gableRoofX(b, x0, z0, x1, z1, u1, "spruce_stairs", SPRUCE_SLAB_BOTTOM);
+        gableEndFill(b, x0, z0, x1, z1, u1, planks);
+        // the chimney already rises to y=15 (above the north-slope roof line at the
+        // hearth's z), so it pokes through the roof; cap it with a top slab cowl.
+        b.set(x0 + 1, 16, cz, SPRUCE_SLAB_TOP);
+
+        // ── 7) HANGING TAVERN SIGN over the entry foyer ──────────────────────
+        // A hanging oak sign welcoming guests, hung from the underside of the upper
+        // floor just inside the entry (no exterior cell exists at z=-1, and punching
+        // the wall would leave a hole). The upper-floor deck at (x1-3, upFloorY,
+        // z0+1) is the solid anchor; a hanging sign drops one cell below it at the
+        // common-room head height, clear of the doors at cx and the windows.
+        b.set(x1 - 3, upFloorY - 1, z0 + 1,
+              bs("minecraft:oak_hanging_sign[rotation=8,attached=true,waterlogged=false]"));
 
         return b.build();
     }
