@@ -236,6 +236,7 @@ class CuratedBlueprintGenerator {
         builds.put("stonehenge_ring", stonehengeRing());
         builds.put("garden_archway", gardenArchway());
         builds.put("ruin_pillar", ruinPillar());
+        builds.put("cemetery_plot", cemeteryPlot());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -1469,6 +1470,95 @@ class CuratedBlueprintGenerator {
         b.set(1, 6, 0, stoneBrickStairN);       // fracture lip overhanging north
         b.set(0, 6, 1, stoneBrickStairE);       // fracture lip overhanging west
         b.set(1, 7, 1, STONE_BRICK_SLAB_BOTTOM); // worn slab cap — the broken shaft top
+
+        return b.build();
+    }
+
+    /**
+     * Phase 2 §I — Cemetery Plot. 5×5×4 (W×L×H) → builder(5,4,5). A small walled
+     * graveyard: a low stone-brick wall perimeter with an iron-bar gate on the front
+     * (z=4), two stone-brick "cross" headstones, a slab grave-marker, two coarse-dirt
+     * grave mounds, a gravel path, a dead oak-log stump, dead bushes, and lanterns on
+     * the front gate posts. Decorative, not enterable. T1 disc.
+     *
+     * <p>AXES: x=W (0..4), z=depth (0..4). The gate faces the viewer at z=4; the two
+     * mounds + headstones occupy the interior; the dead stump sits in the back corner.
+     *
+     * <p>PALETTE NOTE: the row lists podzol + cobwebs, both UNVALUED (strict-mode
+     * unprintable) — omitted. The graveyard ground uses grass_block (a known economy
+     * gap, exempt) with gravel + coarse_dirt accents (both FU-valued) instead, and
+     * dead_bush (a BushBlock → structural/free) supplies the withered foliage.
+     *
+     * <p>RENDER-SAFETY: the gate uses {@code iron_bars}, which renders as an invisible
+     * stub unless it has a connecting HORIZONTAL neighbour (another bars/pane, a WALLS
+     * block, or a sturdy full face). Every gate bar is flanked by a stone-brick-wall
+     * gate post (WALLS tag → connects) or another bar that chains back to a post, so no
+     * bar ships as a stub (see {@code CuratedBlueprintRenderIntegrityGameTests}).
+     */
+    private static Blueprint cemeteryPlot() {
+        Blueprint.Builder b = Blueprint.builder("Cemetery Plot", 5, 4, 5);
+        BlueprintBlockState gravel = bs("minecraft:gravel");
+        BlueprintBlockState coarseDirt = bs("minecraft:coarse_dirt");
+        BlueprintBlockState deadBush = bs("minecraft:dead_bush");
+        BlueprintBlockState stoneButton = bs("minecraft:stone_button[face=floor,facing=north,powered=false]");
+
+        // ── GROUND (y0) ────────────────────────────────────────────────────
+        // 5×5 grassy plot with a gravel approach path running up the centre (x=2)
+        // from the front gate, and two coarse-dirt grave mounds flanking it.
+        floor(b, 0, 0, 0, 4, 4, GRASS_BLOCK);
+        line(b, 0, 2, 4, 2, 2, gravel);          // gravel path from gate (z=4) inward
+        // two raised grave mounds (coarse dirt) — west grave + east grave
+        b.set(1, 0, 1, coarseDirt);
+        b.set(1, 0, 2, coarseDirt);
+        b.set(3, 0, 1, coarseDirt);
+        b.set(3, 0, 2, coarseDirt);
+
+        // ── PERIMETER WALL (y1) ────────────────────────────────────────────
+        // Low stone-brick wall around the plot, with a one-cell gate gap on the
+        // front face (z=4) at x=2 for the iron-bar gate.
+        line(b, 1, 0, 0, 4, 0, STONE_BRICK_WALL);   // back face (z=0)
+        line(b, 1, 0, 0, 0, 4, STONE_BRICK_WALL);   // west face (x=0)
+        line(b, 1, 4, 0, 4, 4, STONE_BRICK_WALL);   // east face (x=4)
+        // front face (z=4): walls either side of the central gate gap at x=2
+        b.set(0, 1, 4, STONE_BRICK_WALL);
+        b.set(1, 1, 4, STONE_BRICK_WALL);           // west gate post (flanks the bars)
+        b.set(3, 1, 4, STONE_BRICK_WALL);           // east gate post (flanks the bars)
+        b.set(4, 1, 4, STONE_BRICK_WALL);
+
+        // ── IRON-BAR GATE (y1) ─────────────────────────────────────────────
+        // A single bars cell in the gate gap, flanked west+east by wall posts
+        // (WALLS tag → both connect) so it renders as a proper gate, not a stub.
+        b.set(2, 1, 4, IRON_BARS);
+
+        // ── GATE LANTERNS (y2) ─────────────────────────────────────────────
+        // Lanterns capping the two front gate posts to light the entrance.
+        b.set(1, 2, 4, LANTERN);
+        b.set(3, 2, 4, LANTERN);
+
+        // ── HEADSTONES (cross silhouettes) ─────────────────────────────────
+        // West grave: a stone-brick cross — upright pillar y1..y3 with a stone-button
+        // crossbar suggestion, set at the head (z=1) of the west mound.
+        b.set(1, 1, 1, STONE_BRICKS);               // headstone base
+        b.set(1, 2, 1, STONE_BRICKS);               // upright
+        b.set(1, 3, 1, STONE_BRICK_SLAB_BOTTOM);    // weathered cap
+        b.set(0, 2, 1, stoneButton);                // crossarm nub (west)
+        b.set(2, 2, 1, stoneButton);                // crossarm nub (east)
+        // East grave: a simpler cracked-stone-brick + slab marker (a leaning headstone).
+        b.set(3, 1, 1, CRACKED_STONE_BRICKS);       // headstone
+        b.set(3, 2, 1, STONE_BRICK_SLAB_BOTTOM);    // slab cap
+
+        // ── WITHERED FOLIAGE ───────────────────────────────────────────────
+        // Dead bushes scattered on the mounds + a back-corner patch (free/structural).
+        b.set(1, 1, 2, deadBush);                   // on west mound foot
+        b.set(3, 1, 2, deadBush);                   // on east mound foot
+
+        // ── DEAD TREE STUMP (back-east corner) ─────────────────────────────
+        // A short bare oak-log stump with a stripped-log "broken top" — the
+        // atmospheric dead tree. Sits clear of the graves in the NE corner.
+        b.set(3, 1, 0, OAK_LOG_Y);
+        b.set(3, 2, 0, OAK_LOG_Y);
+        b.set(3, 3, 0, STRIPPED_OAK_Y);             // snapped, bleached crown
+        b.set(2, 2, 0, deadBush);                   // a dead branch nub beside the trunk
 
         return b.build();
     }
