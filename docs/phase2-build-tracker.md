@@ -7,9 +7,9 @@
 
 ## Status
 - **Curated builds before Phase 2:** 29
-- **Phase 2 queue:** 103 · **Done:** 101 · **Blocked:** 2 · **Remaining:** 0 — ✅ **QUEUE COMPLETE**
-- **Next up:** _none — all builds done_
-- **Last completed:** `end_gateway_shrine`
+- **Phase 2 queue:** 103 · **Done:** 102 · **Blocked:** 1 · **Remaining:** 0 — unblocking the last 2 (economy decision made 2026-06-15)
+- **Next up:** `bee_apiary` (unblocked — honeycomb now valued)
+- **Last completed:** `mushroom_island_hut` (unblocked — mushroom blocks/mycelium now valued)
 
 ## Process (per build — follow exactly on resume)
 1. Pick the first unchecked `[ ]` build in queue order below.
@@ -44,7 +44,7 @@
 - [x] mangrove_stilt_hut
 - [x] cherry_blossom_pavilion
 - [x] badlands_mesa_dwelling
-- [BLOCKED: needs mushroom blocks + mycelium valued (no recipe; core to build)] mushroom_island_hut
+- [x] mushroom_island_hut (UNBLOCKED 2026-06-15: mushroom blocks/stem=5@2, mycelium=2@1 valued)
 - [x] hobbit_hole
 - [x] treehouse
 
