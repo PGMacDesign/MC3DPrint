@@ -241,6 +241,7 @@ class CuratedBlueprintGenerator {
         builds.put("flower_shop", flowerShop());
         builds.put("food_stall", foodStall());
         builds.put("park_bench_lamppost", parkBenchLamppost());
+        builds.put("hedge_maze_segment", hedgeMazeSegment());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -1632,6 +1633,112 @@ class CuratedBlueprintGenerator {
         b.set(4, 4, 0, flareN);                      // north flare
         b.set(4, 4, 2, flareS);                      // south flare
         b.set(4, 5, 1, LANTERN);                     // lamp head, standing on the cap
+
+        return b.build();
+    }
+
+    /**
+     * Phase 2 §I Hedge Maze Segment. 9&times;9 footprint &rarr; builder(9, 4, 9). T1 disc.
+     *
+     * <p>A single TILEABLE tile of a castle-garden hedge maze: clipped topiary
+     * hedge walls forming maze passages, gravel walkways with a dirt-path spine,
+     * a stone-brick edging border framing the plot, and a sea-lantern topiary lamp
+     * capping the NW corner hedge. Print copies edge-to-edge to grow a maze of any
+     * size — the layout is symmetric under {@code x↔8-x} and {@code z↔8-z} and the
+     * border opens at each edge MIDPOINT ({@code x=4} / {@code z=4}), so a tile's
+     * x=8 column mirrors the next tile's x=0 column and the midpoint gates line up
+     * into continuous through-passages across every seam.
+     *
+     * <p>NOTE on hedges: vanilla {@code leaves} are UNVALUED (unprintable in strict
+     * mode), so the hedges are built from {@link #GREEN_WOOL} — a dyed wool that
+     * normalises to the base wool FU cost and reads as a clipped topiary hedge.
+     * Gravel ({@code 1@1}), stone bricks, dirt-path (structural), and the sea
+     * lantern are all FU-valued/structural, so every cell clears the printability
+     * gate. No glass/iron-bars panes anywhere, so the render-integrity stub-pane
+     * gate never applies.
+     *
+     * <p>Hedge footprint (9&times;9, {@code h}=hedge, {@code .}=passage), rows z=0..8:
+     * <pre>
+     *   h h h h . h h h h
+     *   h . . . . . . . h
+     *   h . h h . h h . h
+     *   h . h . . . h . h
+     *   . . . . h . . . .
+     *   h . h . . . h . h
+     *   h . h h . h h . h
+     *   h . . . . . . . h
+     *   h h h h . h h h h
+     * </pre>
+     *
+     * <p>Layout (Y), footprint x=0..8 &times; z=0..8:
+     * <ul>
+     *   <li><b>y=0</b> — ground deck. Every cell is paved: hedge cells and the
+     *       perimeter ring get stone-brick edging (a clean footing the hedges sit
+     *       on and the border frame); passage cells get gravel walkway; the central
+     *       N&ndash;S and E&ndash;W passage spines (x=4 / z=4) are dirt-path so the
+     *       through-routes read as the main walks.</li>
+     *   <li><b>y=1..3</b> — the maze hedges: {@link #GREEN_WOOL} pillars, a uniform
+     *       3 tall at every {@code h} cell, so the hedge height is consistent and
+     *       tiles flush.</li>
+     *   <li><b>corner lamp</b> — the NW corner hedge (0,0) is capped at its top
+     *       course with a {@link #SEA_LANTERN} topiary lamp; corners are identical
+     *       across tiles, so this reads as a regular lamp grid when the maze tiles.</li>
+     * </ul>
+     */
+    private static Blueprint hedgeMazeSegment() {
+        Blueprint.Builder b = Blueprint.builder("Hedge Maze Segment", 9, 4, 9);
+        BlueprintBlockState gravel = bs("minecraft:gravel");
+
+        // Hedge mask: true = topiary hedge wall, false = open passage.
+        // Symmetric under x↔8-x and z↔8-z; border opens at the edge midpoints
+        // (x=4 / z=4) so adjacent tiles share continuous through-passages.
+        boolean[][] hedge = new boolean[9][9]; // [z][x]
+        String[] rows = {
+                "hhhh.hhhh",
+                "h.......h",
+                "h.hh.hh.h",
+                "h.h...h.h",
+                "....h....",
+                "h.h...h.h",
+                "h.hh.hh.h",
+                "h.......h",
+                "hhhh.hhhh",
+        };
+        for (int z = 0; z <= 8; z++) {
+            for (int x = 0; x <= 8; x++) {
+                hedge[z][x] = rows[z].charAt(x) == 'h';
+            }
+        }
+
+        // ── GROUND DECK (y=0) ──────────────────────────────────────────────
+        // Hedge cells + the perimeter ring → stone-brick edging (footing/border).
+        // Passages → gravel; central spines (x==4 || z==4) → dirt-path walk.
+        for (int z = 0; z <= 8; z++) {
+            for (int x = 0; x <= 8; x++) {
+                boolean perimeter = (x == 0 || x == 8 || z == 0 || z == 8);
+                if (hedge[z][x] || perimeter) {
+                    b.set(x, 0, z, STONE_BRICKS);
+                } else if (x == 4 || z == 4) {
+                    b.set(x, 0, z, DIRT_PATH);   // main through-walk spine
+                } else {
+                    b.set(x, 0, z, gravel);      // side passage walkway
+                }
+            }
+        }
+
+        // ── HEDGE WALLS (y=1..3) ───────────────────────────────────────────
+        // Uniform 3-tall green-wool topiary at every hedge cell.
+        for (int z = 0; z <= 8; z++) {
+            for (int x = 0; x <= 8; x++) {
+                if (hedge[z][x]) {
+                    pillar(b, x, z, 1, 3, GREEN_WOOL);
+                }
+            }
+        }
+
+        // ── CORNER LAMP ────────────────────────────────────────────────────
+        // Cap the NW corner hedge's top course with a sea-lantern topiary lamp.
+        b.set(0, 3, 0, SEA_LANTERN);
 
         return b.build();
     }
