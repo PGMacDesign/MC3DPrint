@@ -7,9 +7,9 @@
 
 ## Status
 - **Curated builds before Phase 2:** 29
-- **Phase 2 queue:** 103 · **Done:** 85 · **Blocked:** 2 · **Remaining:** 16
-- **Next up:** `underwater_dome_base`
-- **Last completed:** `prismarine_monument_fragment`
+- **Phase 2 queue:** 103 · **Done:** 86 · **Blocked:** 2 · **Remaining:** 15
+- **Next up:** `aquarium`
+- **Last completed:** `underwater_dome_base`
 
 ## Process (per build — follow exactly on resume)
 1. Pick the first unchecked `[ ]` build in queue order below.
@@ -132,7 +132,7 @@
 - [x] ocean_ruins
 - [x] coral_garden (coral/kelp/sea_pickle unvalued → built as valued bright-concrete reef per "easiest path to color" intent)
 - [x] prismarine_monument_fragment
-- [ ] underwater_dome_base
+- [x] underwater_dome_base
 - [ ] aquarium
 - [ ] sailing_ship (Hard)
 
