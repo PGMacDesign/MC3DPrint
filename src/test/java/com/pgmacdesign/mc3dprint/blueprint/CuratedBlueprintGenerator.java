@@ -254,6 +254,7 @@ class CuratedBlueprintGenerator {
         // Phase 2 — Category H (infrastructure / civic / defensive)
         builds.put("sky_bridge_segment", skyBridgeSegment());
         builds.put("road_path_segment", roadPathSegment());
+        builds.put("aqueduct_segment", aqueductSegment());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -7211,6 +7212,116 @@ class CuratedBlueprintGenerator {
         // torch-crowned. One per tile at z=0 so the lamp rhythm continues evenly
         // across the z=4↔z=0 seam.
         light(b, 0, 0, 1, 2, STONE_BRICK_WALL);
+
+        return b.build();
+    }
+
+    /**
+     * Phase 2 §H Aqueduct Segment. 7×9 footprint → builder(7, 9, 9). T1 disc.
+     *
+     * <p>A single TILEABLE bay of a Roman aqueduct: tall arched stone-brick piers
+     * carrying an elevated water channel on top. Three transverse piers (full
+     * 7-wide stone-brick legs) stand at z=0, z=4 and z=8, with a rounded arch
+     * opening cut through each 3-deep bay between them; an unbroken stone-brick
+     * trough runs across the top carrying a water source down its whole length.
+     * Print copies edge-to-edge along the channel axis (Z) to carry water any
+     * distance: the piers sit on a period-4 rhythm so the z=8 pier of one tile
+     * coincides with the z=0 pier of the next (no doubled pier), the deck/trough
+     * floor and channel walls are identical every z-row, and the water lane is
+     * continuous across the z=8↔z=0 seam — so the aqueduct reads as one
+     * arcade and the water flows unbroken from tile to tile.
+     *
+     * <p>Axes: x=W (0..6, across the arcade), y=up (0..8), z=depth (0..8, the
+     * direction the channel runs). The structure is solid-bodied (piers span the
+     * full width), so the arches read from the side AND you can see straight
+     * through each bay along X.
+     *
+     * <p>Vanilla blocks only, all FU-valued or structural, so every block clears
+     * the printability gate: stone_bricks and its stairs/walls/slabs all derive
+     * from stone bricks; mossy- and cracked-stone-bricks are independently valued
+     * weathering variants; water is an itemless structural block (prints free,
+     * {@code asItem()==AIR}). No glass panes or iron bars anywhere, so the
+     * render-integrity stub-pane gate never applies.
+     *
+     * <p>Layout (Y), footprint x=0..6 × z=0..8:
+     * <ul>
+     *   <li><b>Piers (z=0,4,8), y=0..5</b> — a solid stone-brick leg spanning the
+     *       full width at each pier row, weathered with mossy/cracked flecks so the
+     *       masonry reads aged. These are the only blocks reaching the ground; the
+     *       bays between them are open air below the arch.</li>
+     *   <li><b>Arch soffit (y=5), each bay</b> — a rounded opening under the deck:
+     *       {@code half=top} stone-brick stairs spring inward from each pier
+     *       (facing=south at the z-row beside the lower pier, facing=north at the
+     *       z-row beside the upper pier), bridged by a stone-brick keystone over the
+     *       bay centre. The centre column of each bay (the keystone cell aside) is
+     *       left open down to the ground, giving the tall walk-through arch.</li>
+     *   <li><b>Channel floor (y=6)</b> — a solid stone-brick deck over the full
+     *       7×9, the watertight base of the trough (and the soffit's backing). Flat,
+     *       so it tiles flush.</li>
+     *   <li><b>Channel walls (y=7)</b> — a stone-brick wall on each long edge (x=0
+     *       and x=6) at every z, an unbroken parapet/curb that contains the water and
+     *       connects across the seam, lightly weathered.</li>
+     *   <li><b>Water (y=7), lane x=1..5</b> — a water source filling the trough
+     *       between the walls for the full length, the running channel. Continuous
+     *       across the z=8↔z=0 seam so the water never breaks.</li>
+     * </ul>
+     */
+    private static Blueprint aqueductSegment() {
+        Blueprint.Builder b = Blueprint.builder("Aqueduct Segment", 7, 9, 9);
+        int x0 = 0, x1 = 6;           // 7-wide arcade
+        int z0 = 0, z1 = 8;           // 9-long span — piers at z=0,4,8 (period 4 → flush)
+        int pierTop = 5;              // piers rise y=0..5; arch springs at y=5
+        int deckY = 6;                // channel floor (trough base) deck
+        int wallY = 7;                // channel walls + water lane
+        // inward-curling soffit stairs for the longitudinal under-deck arch (Z-Y plane)
+        BlueprintBlockState archLo = bs("minecraft:stone_brick_stairs[facing=south,half=top,shape=straight]");
+        BlueprintBlockState archHi = bs("minecraft:stone_brick_stairs[facing=north,half=top,shape=straight]");
+
+        // ── 1) PIERS (z=0,4,8) — solid full-width stone-brick legs, weathered ──
+        for (int z = z0; z <= z1; z += 4) {
+            solid(b, x0, 0, z, x1, pierTop, z, STONE_BRICKS);
+        }
+        // weathering flecks on the piers so the masonry reads aged, not uniform
+        b.set(1, 1, 0, CRACKED_STONE_BRICKS);
+        b.set(5, 2, 0, MOSSY_STONE_BRICKS);
+        b.set(2, 3, 4, MOSSY_STONE_BRICKS);
+        b.set(4, 1, 4, CRACKED_STONE_BRICKS);
+        b.set(1, 2, 8, MOSSY_STONE_BRICKS);
+        b.set(5, 4, 8, CRACKED_STONE_BRICKS);
+
+        // ── 2) ARCH SOFFITS — rounded opening under the deck in each 3-deep bay ──
+        // For each pier-to-pier bay [zp+1 .. zp+3], stairs spring inward from the
+        // piers at the springline (y=pierTop) and a keystone bridges the centre,
+        // across the full width. The bay centre stays open to the ground.
+        for (int zp = z0; zp < z1; zp += 4) {
+            int zLo = zp + 1;             // row beside the lower pier (zp)
+            int zKey = zp + 2;            // bay centre — keystone row
+            int zHi = zp + 3;             // row beside the upper pier (zp+4)
+            for (int x = x0; x <= x1; x++) {
+                b.set(x, pierTop, zLo, archLo);          // springer curling toward centre
+                b.set(x, pierTop, zHi, archHi);          // springer curling toward centre
+                b.set(x, pierTop, zKey, STONE_BRICKS);   // keystone bridging the arch
+            }
+        }
+
+        // ── 3) CHANNEL FLOOR (y=6) — solid stone-brick trough base over the deck ─
+        floor(b, deckY, x0, z0, x1, z1, STONE_BRICKS);
+
+        // ── 4) CHANNEL WALLS (y=7) — twin stone-brick curbs containing the water ─
+        for (int z = z0; z <= z1; z++) {
+            b.set(x0, wallY, z, STONE_BRICK_WALL);
+            b.set(x1, wallY, z, STONE_BRICK_WALL);
+        }
+        // a little weathering on the curb so it ages with the piers
+        b.set(x0, wallY, 2, MOSSY_STONE_BRICKS);
+        b.set(x1, wallY, 6, MOSSY_STONE_BRICKS);
+
+        // ── 5) WATER (y=7) — the running channel between the curbs, full length ──
+        for (int z = z0; z <= z1; z++) {
+            for (int x = x0 + 1; x <= x1 - 1; x++) {
+                b.set(x, wallY, z, WATER);
+            }
+        }
 
         return b.build();
     }

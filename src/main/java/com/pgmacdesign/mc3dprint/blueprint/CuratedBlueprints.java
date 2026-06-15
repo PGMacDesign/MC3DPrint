@@ -76,7 +76,7 @@ public final class CuratedBlueprints {
             "storage_barrel_hall", "brewing_room", "super_smelter", "smithy_workshop",
             "map_room", "library",
             // Phase 2 — Category H (infrastructure / civic / defensive)
-            "sky_bridge_segment", "road_path_segment");
+            "sky_bridge_segment", "road_path_segment", "aqueduct_segment");
 
     /**
      * Load a bundled curated blueprint straight from the mod's resources (no world

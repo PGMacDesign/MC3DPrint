@@ -7,9 +7,9 @@
 
 ## Status
 - **Curated builds before Phase 2:** 29
-- **Phase 2 queue:** 103 · **Done:** 51 · **Blocked:** 2 · **Remaining:** 50
-- **Next up:** `aqueduct_segment`
-- **Last completed:** `road_path_segment`
+- **Phase 2 queue:** 103 · **Done:** 52 · **Blocked:** 2 · **Remaining:** 49
+- **Next up:** `mineshaft_entrance`
+- **Last completed:** `aqueduct_segment`
 
 ## Process (per build — follow exactly on resume)
 1. Pick the first unchecked `[ ]` build in queue order below.
@@ -94,7 +94,7 @@
 ### H — Infrastructure / civic / defensive (13)
 - [x] sky_bridge_segment
 - [x] road_path_segment
-- [ ] aqueduct_segment
+- [x] aqueduct_segment
 - [ ] mineshaft_entrance
 - [ ] railway_station
 - [ ] tavern_inn
