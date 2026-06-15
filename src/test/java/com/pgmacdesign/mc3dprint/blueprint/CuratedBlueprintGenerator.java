@@ -259,6 +259,7 @@ class CuratedBlueprintGenerator {
         builds.put("railway_station", railwayStation());
         builds.put("tavern_inn", tavernInn());
         builds.put("apothecary_shop", apothecaryShop());
+        builds.put("gatehouse", gatehouse());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -2906,6 +2907,96 @@ class CuratedBlueprintGenerator {
         // gatehouse passage lanterns on chains
         b.set(9, 5, 1, CHAIN); b.set(9, 4, 1, HANGING_LANTERN);
         b.set(11, 5, 1, CHAIN); b.set(11, 4, 1, HANGING_LANTERN);
+        return b.build();
+    }
+
+    /**
+     * Castle gatehouse (§3.H) — 9(W) × 11(up) × 7(depth), disc T1, vanilla only.
+     *
+     * <p>Twin square stone-brick towers (west x=0..2, east x=6..8) flank a 3-wide
+     * walk-through archway (x=3..5) tunneling the full depth z=0..6 at y=1..3. The
+     * tower inner walls (x=2 and x=6) are solid stone the whole height — they are the
+     * jambs the portcullis anchors to.
+     *
+     * <p><b>Portcullis (render-safe iron grate).</b> An iron-bars grate fills the
+     * front face (z=0) across the full 3-wide opening, raised to y=2..4 so you can
+     * walk under it at y=1 (true walk-through gate). Spanning the full width is what
+     * makes every bar render: the end columns (x=3, x=5) sit against the solid stone
+     * jambs (x=2 / x=6 present a sturdy face), and the centre column (x=4) connects to
+     * both neighbours — so no bar is left as an invisible center-post stub. (Same fix
+     * castle_keep uses: a lone bar flanked only by air/doors renders as a stub; a grate
+     * anchored jamb-to-jamb does not.) A chain hangs from the arch lintel to the grate
+     * top on each side, reading as the portcullis hoist.
+     *
+     * <p>Crenellated battlements cap both towers and the gate span. The west tower
+     * holds an upper guardroom (floor at y=6, ceiling open to its battlement) lit by a
+     * chain-hung lantern, with arrow-slit windows (single glass panes flanked by stone)
+     * on the outer faces. Wall-mounted lanterns flank the passage mouth.
+     */
+    private static Blueprint gatehouse() {
+        Blueprint.Builder b = Blueprint.builder("Gatehouse", 9, 11, 7);
+        // footing
+        floor(b, 0, 0, 0, 8, 6, COBBLE);
+
+        // --- twin towers: solid-walled square shells, y=1..7 (taller than the gate span) ---
+        // West tower (x=0..2) and east tower (x=6..8), each spanning the full depth z=0..6.
+        for (int y = 1; y <= 7; y++) {
+            walls(b, 0, 0, 2, 6, y, y, STONE_BRICKS); // west tower shell
+            walls(b, 6, 0, 8, 6, y, y, STONE_BRICKS); // east tower shell
+        }
+        // weathering flecks on the outer faces
+        b.set(0, 3, 4, CRACKED_STONE_BRICKS);
+        b.set(8, 4, 2, MOSSY_STONE_BRICKS);
+        b.set(1, 1, 0, MOSSY_STONE_BRICKS);
+
+        // --- gate span between the towers (x=3..5) ---
+        // Front/back lintels above the opening close the curtain between the towers
+        // at y=4..5 (the opening itself is y=1..3). The jambs are the tower walls x=2/x=6.
+        for (int y = 4; y <= 5; y++) {
+            line(b, y, 3, 0, 5, 0, STONE_BRICKS); // front lintel
+            line(b, y, 3, 6, 5, 6, STONE_BRICKS); // back lintel
+        }
+        b.set(4, 5, 0, CHISELED_STONE_BRICKS); // decorative keystone, front
+        b.set(4, 5, 6, CHISELED_STONE_BRICKS); // decorative keystone, back
+        // span ceiling over the passage (y=6) so the battlement above has a floor to sit on
+        floor(b, 6, 3, 0, 5, 6, STONE_BRICKS);
+
+        // --- PORTCULLIS: full-width iron grate on the front face (z=0), raised to y=2..4 ---
+        // y=1 is left open so the gate is walk-through. Every bar connects: end columns
+        // (x=3,x=5) abut the stone jambs (x=2,x=6); the centre column (x=4) bridges them.
+        for (int y = 2; y <= 4; y++) {
+            for (int x = 3; x <= 5; x++) {
+                b.set(x, y, 0, IRON_BARS);
+            }
+        }
+        // hoist chains from the lintel keystone down onto the grate top, one per jamb side
+        b.set(3, 5, 0, CHAIN);
+        b.set(5, 5, 0, CHAIN);
+
+        // --- battlements ---
+        crenellate(b, 8, 0, 0, 2, 6, STONE_BRICK_WALL); // west tower top
+        crenellate(b, 8, 6, 0, 8, 6, STONE_BRICK_WALL); // east tower top
+        crenellate(b, 7, 3, 0, 5, 6, STONE_BRICK_WALL); // gate span top (one course lower)
+
+        // --- west tower upper guardroom (floor y=6, lit; open to its y=8 battlement) ---
+        floor(b, 6, 0, 0, 2, 6, STONE_BRICKS); // guardroom floor / passage ceiling
+        // arrow-slit windows: a single glass pane flanked horizontally by stone (the
+        // tower wall cells on either side present sturdy faces, so each pane renders).
+        window2(b, 0, 4, 2, GLASS_PANE, null); // west outer face
+        window2(b, 0, 4, 4, GLASS_PANE, null); // west outer face
+        // chain-hung lantern from the guardroom's battlement crossbeam
+        b.set(1, 7, 3, OAK_LOG_X);     // tie-beam to back the chain
+        b.set(1, 6, 3, CHAIN);
+        b.set(1, 5, 3, HANGING_LANTERN);
+        // climb into the guardroom
+        pillar(b, 1, 1, 1, 5, LADDER_SOUTH);
+
+        // --- passage-mouth lighting: hanging lanterns just inside both ends ---
+        b.set(3, 4, 1, CHAIN); b.set(3, 3, 1, HANGING_LANTERN); // front-left
+        b.set(5, 4, 1, CHAIN); b.set(5, 3, 1, HANGING_LANTERN); // front-right
+        b.set(3, 4, 5, CHAIN); b.set(3, 3, 5, HANGING_LANTERN); // back-left
+        b.set(5, 4, 5, CHAIN); b.set(5, 3, 5, HANGING_LANTERN); // back-right
+
         return b.build();
     }
 

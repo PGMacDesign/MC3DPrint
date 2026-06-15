@@ -78,7 +78,9 @@ public final class CuratedBlueprints {
             // Phase 2 — Category H (infrastructure / civic / defensive)
             "sky_bridge_segment", "road_path_segment", "aqueduct_segment",
             "mineshaft_entrance", "railway_station", "tavern_inn",
-            "apothecary_shop");
+            "apothecary_shop",
+            // Phase 2 — Category H (gatehouse)
+            "gatehouse");
 
     /**
      * Load a bundled curated blueprint straight from the mod's resources (no world
