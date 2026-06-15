@@ -312,6 +312,8 @@ class CuratedBlueprintGenerator {
         // Phase 2 — Category C (soul_outpost)
         builds.put("soul_outpost", soulOutpost());
         builds.put("nether_wart_farm", netherWartFarm());
+        // Phase 2 — Category C (basalt_pillar_cluster)
+        builds.put("basalt_pillar_cluster", basaltPillarCluster());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -15499,6 +15501,153 @@ class CuratedBlueprintGenerator {
         b.set(x0, 3, z1, LANTERN); // SW post lantern
         b.set(x1, 3, z1, LANTERN); // SE post lantern
         b.set(6, 2, z0 + 2, glowstone); // glowstone glow over the brewing nook
+
+        return b.build();
+    }
+
+    /**
+     * Category C — basalt_pillar_cluster. 9×9 footprint → builder(9, 14, 9). A
+     * natural-looking <b>basalt-delta</b> terrain feature: an asymmetric cluster of
+     * tall, thin <b>basalt</b> columns of varied heights (the iconic delta pillars)
+     * rising from a rugged <b>blackstone/basalt</b> ground shot through with
+     * <b>magma-block</b> glow pockets and <b>gravel</b>/<b>netherrack</b> accents.
+     * Polished- and smooth-basalt fleck the taller spires for the weathered, banded
+     * delta look. This is a LANDSCAPE decoration — not a building, not enterable.
+     *
+     * <p><b>Why this build is fully printable + render-safe.</b> Every block is a
+     * vanilla FU-valued block or structural-free matter:
+     * <ul>
+     *   <li><b>basalt</b>/<b>smooth_basalt</b>/<b>blackstone</b> (3@T1),
+     *       <b>polished_basalt</b>/<b>polished_blackstone</b> (recipe-derived),
+     *       <b>gravel</b>/<b>netherrack</b> (1@T1), <b>magma_block</b> (5@T2),
+     *       <b>glowstone</b> (20@T3) — all FU-valued.</li>
+     *   <li>NO lava (itemless-structural is unreliable for the glow) — the orange
+     *       glow comes entirely from <b>magma_block</b> (always prints) with a couple
+     *       of glowstone nodes nestled low among the pillars.</li>
+     *   <li>All full blocks — no glass panes / iron bars anywhere, so the stub-pane
+     *       render-integrity gate can never apply.</li>
+     * </ul>
+     *
+     * <p><b>Organic, not a grid.</b> The ground is a hand-scattered mix (deterministic
+     * but irregular per-cell), and the pillars sit at hand-picked (x,z) with hand-picked
+     * heights — clustered toward the centre, thinning at the edges, NO two the same
+     * height — so the dump reads as a delta column field, not a lattice.
+     *
+     * <p>AXES: x=W (0..8), z=depth (0..8); y=up. Ground surface is the top of y=0
+     * (with a few raised rubble lumps at y=1). Pillars rise from y=1.
+     */
+    private static Blueprint basaltPillarCluster() {
+        Blueprint.Builder b = Blueprint.builder("Basalt Pillar Cluster", 9, 14, 9);
+        final int x0 = 0, x1 = 8, z0 = 0, z1 = 8; // 9×9 footprint
+
+        // ── Palette (all vanilla, all FU-valued) ──────────────────────────────
+        BlueprintBlockState basaltY      = bs("minecraft:basalt[axis=y]");
+        BlueprintBlockState basaltX      = bs("minecraft:basalt[axis=x]");
+        BlueprintBlockState smoothBasalt = bs("minecraft:smooth_basalt");
+        BlueprintBlockState polBasalt    = bs("minecraft:polished_basalt[axis=y]");
+        BlueprintBlockState blackstone   = bs("minecraft:blackstone");
+        BlueprintBlockState polBS        = bs("minecraft:polished_blackstone");
+        BlueprintBlockState gravel       = bs("minecraft:gravel");
+        BlueprintBlockState netherrack   = bs("minecraft:netherrack");
+        BlueprintBlockState magma        = bs("minecraft:magma_block");
+        BlueprintBlockState glowstone    = bs("minecraft:glowstone");
+
+        // ── 1) RUGGED GROUND (y=0) — full 9×9 blackstone-delta floor ──────────────
+        // A coherent ground layer covers the whole footprint so pillars sit on solid
+        // delta rock. The surface mix is hand-scattered (not a regular checker): mostly
+        // blackstone + basalt, with gravel/netherrack patches and a few magma-glow
+        // pockets between where the pillars will cluster. Pattern is irregular by
+        // design — read it as scorched, broken basalt-delta ground.
+        // Per-cell base material picked from a fixed, deliberately uneven map:
+        //   B=blackstone  b=basalt(y)  g=gravel  n=netherrack  m=magma  s=smooth_basalt
+        // Row order is z=0 (north/back) → z=8 (south/front).
+        String[] ground = {
+            "BbBgBnBbB", // z=0
+            "bBmBbBgBb", // z=1
+            "BgBbsBbnB", // z=2
+            "bBbBmBbBb", // z=3
+            "gBmBbBmBg", // z=4  (centre row — magma pockets flank the core)
+            "BbBbBsBbB", // z=5
+            "bnBbmBbgb", // z=6
+            "BbgBbBnBb", // z=7
+            "BgBnBbBgB", // z=8
+        };
+        for (int z = z0; z <= z1; z++) {
+            String row = ground[z];
+            for (int x = x0; x <= x1; x++) {
+                BlueprintBlockState mat;
+                switch (row.charAt(x)) {
+                    case 'b': mat = basaltY;      break;
+                    case 'g': mat = gravel;       break;
+                    case 'n': mat = netherrack;   break;
+                    case 'm': mat = magma;        break;
+                    case 's': mat = smoothBasalt; break;
+                    default:  mat = blackstone;   break; // 'B'
+                }
+                b.set(x, 0, z, mat);
+            }
+        }
+
+        // ── 2) RAISED RUBBLE LUMPS (y=1) — a few low mounds for relief ─────────────
+        // A handful of single-block lumps perch on the ground between pillars so the
+        // terrain isn't dead-flat. Air-skip leaves everything else open → reads as
+        // scattered debris, not a second floor.
+        b.set(2, 1, 1, basaltX);       // toppled basalt chunk (horizontal grain)
+        b.set(6, 1, 2, blackstone);    // rubble lump
+        b.set(1, 1, 5, smoothBasalt);  // weathered slump
+        b.set(7, 1, 6, basaltX);       // fallen column fragment lying flat
+        b.set(4, 1, 7, blackstone);    // front rubble mound
+        b.set(3, 1, 3, magma);         // a low glow pocket nestled among the bases
+
+        // ── 3) THE PILLAR FIELD — tall, thin basalt columns of varied heights ─────
+        // Hand-placed (x,z) with hand-picked top-Y, all rising from y=1. NO two are the
+        // same height; the tallest cluster toward the centre and the field thins at the
+        // edges, so it reads as an organic delta column stand. Each pillar is a single
+        // 1×1 stack (the iconic thin delta spire). A scatter use smooth/polished basalt
+        // accent courses for the banded, weathered look; a couple are capped with a
+        // contrasting block so the silhouette varies.
+        //
+        // pillar(b, x, z, y0, y1, mat) fills y0..y1 inclusive at (x,z).
+
+        // --- Tall central spires (the dramatic core columns) ---
+        pillar(b, 4, 4, 1, 12, basaltY);                 // tallest — dead-centre, y top=12
+        b.set(4, 6, 4, polBasalt);                        // banded accent partway up
+        b.set(4, 9, 4, smoothBasalt);                     // upper band
+        b.set(4, 13, 4, smoothBasalt);                    // weathered cap above the basalt top
+
+        pillar(b, 3, 5, 1, 9, basaltY);                  // second spire, slightly shorter, offset
+        b.set(3, 5, 5, polBasalt);                        // band
+
+        pillar(b, 5, 3, 1, 10, basaltY);                 // NE-of-centre spire
+        b.set(5, 7, 3, smoothBasalt);                     // band
+
+        // --- Mid-height columns ringing the core (irregular spacing) ---
+        pillar(b, 2, 3, 1, 6, basaltY);                  // west-back stub
+        pillar(b, 6, 5, 1, 7, basaltY);                  // east column
+        b.set(6, 4, 5, polBasalt);                        // band
+        pillar(b, 5, 6, 1, 5, basaltY);                  // south-of-centre short column
+        pillar(b, 3, 2, 1, 4, basaltY);                  // back-left squat pillar
+        pillar(b, 6, 2, 1, 8, basaltY);                  // tall NE column away from core
+        b.set(6, 5, 2, smoothBasalt);                     // band
+
+        // --- Short outer stubs (the field thinning toward the edges) ---
+        pillar(b, 1, 2, 1, 3, basaltY);                  // NW stub
+        pillar(b, 7, 4, 1, 4, basaltY);                  // E stub
+        pillar(b, 2, 7, 1, 5, basaltY);                  // SW column
+        pillar(b, 5, 8, 1, 3, basaltY);                  // S-edge stub
+        pillar(b, 7, 7, 1, 6, basaltY);                  // SE column
+        b.set(7, 4, 7, polBasalt);                        // band on the SE column
+        pillar(b, 1, 6, 1, 2, basaltY);                  // SW corner nub
+        pillar(b, 4, 1, 1, 4, basaltY);                  // N-edge stub
+        pillar(b, 8, 5, 1, 2, polBasalt);                // E-edge polished nub (varied material)
+
+        // ── 4) GLOW DETAIL — low magma/glowstone nodes nestled among the bases ────
+        // A couple of glow blocks sit DOWN in the cluster (y=1) between pillars, so the
+        // orange light pools at the floor of the delta the way magma vents do. These
+        // overstamp open ground cells (no pillar there) — kept clear of pillar footings.
+        b.set(2, 1, 4, magma);      // glow pocket west of centre
+        b.set(6, 1, 6, glowstone);  // a brighter vent node toward the SE
+        b.set(3, 1, 6, magma);      // SW glow pocket
 
         return b.build();
     }

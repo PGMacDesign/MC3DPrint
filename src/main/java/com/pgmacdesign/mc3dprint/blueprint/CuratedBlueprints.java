@@ -150,7 +150,9 @@ public final class CuratedBlueprints {
             // Phase 2 — Category C (soul_outpost)
             "soul_outpost",
             // Phase 2 — Category C (nether_wart_farm)
-            "nether_wart_farm");
+            "nether_wart_farm",
+            // Phase 2 — Category C (basalt_pillar_cluster)
+            "basalt_pillar_cluster");
 
     /**
      * Load a bundled curated blueprint straight from the mod's resources (no world
