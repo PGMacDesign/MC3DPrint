@@ -7,9 +7,9 @@
 
 ## Status
 - **Curated builds before Phase 2:** 29
-- **Phase 2 queue:** 103 · **Done:** 79 · **Blocked:** 2 · **Remaining:** 22
-- **Next up:** `dock_pier`
-- **Last completed:** `dwarven_hall`
+- **Phase 2 queue:** 103 · **Done:** 80 · **Blocked:** 2 · **Remaining:** 21
+- **Next up:** `fishing_hut`
+- **Last completed:** `dock_pier`
 
 ## Process (per build — follow exactly on resume)
 1. Pick the first unchecked `[ ]` build in queue order below.
@@ -126,7 +126,7 @@
 - [x] dwarven_hall (Hard)
 
 ### E — Ocean / water (9)
-- [ ] dock_pier
+- [x] dock_pier
 - [ ] fishing_hut
 - [ ] conduit_shrine
 - [ ] ocean_ruins
