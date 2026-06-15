@@ -199,6 +199,7 @@ class CuratedBlueprintGenerator {
         builds.put("wall_battlement_segment", wallBattlementSegment());
         // Per-biome starter house (§3.A)
         builds.put("desert_sandstone_house", desertSandstoneHouse());
+        builds.put("desert_pyramid_shrine", desertPyramidShrine());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -2778,6 +2779,103 @@ class CuratedBlueprintGenerator {
         // 3) merlons (y=4) flush on the walkway: crenellate the full footprint so the
         //    2-up/1-gap rhythm runs both long edges and tiles continuously at x=9.
         crenellate(b, 4, 0, 0, 8, 2, STONE_BRICK_WALL);
+        return b.build();
+    }
+
+    /**
+     * Desert Pyramid Shrine. 9×9 footprint → builder(9, 8, 9). A stepped
+     * sandstone pyramid that reads unmistakably as a vanilla desert temple: a
+     * wide cut-sandstone base ringing a small enterable chamber, then three
+     * receding solid steps converging to a chiseled-sandstone finial, with the
+     * signature orange/blue terracotta inlay motif on the base and step faces.
+     *
+     * <p>Vanilla blocks only. Cut/smooth/chiseled sandstone + sandstone slabs all
+     * derive from base sandstone (FU-valued); dyed terracotta normalises to the
+     * base terracotta cost — same palette family the desert_sandstone_house uses,
+     * so every block clears the printability gate.
+     *
+     * <p>Layout (Y), centre (cx,cz)=(4,4):
+     * <ul>
+     *   <li><b>y=0</b> — smooth-sandstone foundation apron filling the full 9×9.</li>
+     *   <li><b>y=1..2</b> — base tier: a cut-sandstone wall ring on the 9×9
+     *       footprint enclosing a hollow 7×7 chamber. A door opens inward on the
+     *       north wall (z=0); the interior is left unset (air-skip rule) so the
+     *       shrine is enterable. Chiseled-sandstone corner pilasters; a blue
+     *       terracotta accent course flanks the door on the front face.</li>
+     *   <li><b>y=3</b> — chamber ceiling / step-0 deck: a solid sandstone-slab
+     *       (top) cap over the full 9×9, closing the chamber and giving the first
+     *       step a flat top.</li>
+     *   <li><b>y=4</b> — step 1: a solid 7×7 cut-sandstone block (x=1..7), its
+     *       outer edge banded in orange terracotta (the receding step face).</li>
+     *   <li><b>y=5</b> — step 2: a solid 5×5 cut-sandstone block (x=2..6), edge
+     *       banded in orange terracotta.</li>
+     *   <li><b>y=6</b> — step 3: a solid 3×3 cut-sandstone block (x=3..5) with a
+     *       blue terracotta centre inlay reading as the temple's top motif.</li>
+     *   <li><b>y=7</b> — a single chiseled-sandstone finial capstone at (4,4).</li>
+     * </ul>
+     */
+    private static Blueprint desertPyramidShrine() {
+        Blueprint.Builder b = Blueprint.builder("Desert Pyramid Shrine", 9, 8, 9);
+        Palette p = DESERT_SANDSTONE;
+        BlueprintBlockState cutSandstone = p.wall;            // cut_sandstone
+        BlueprintBlockState smoothSandstone = p.accentWall;   // smooth_sandstone
+        BlueprintBlockState chiseledSandstone = p.logPillarY; // chiseled_sandstone
+        BlueprintBlockState sandstoneSlabTop = p.slabTop;     // sandstone_slab[type=top]
+        BlueprintBlockState orangeTerracotta = bs("minecraft:orange_terracotta");
+        BlueprintBlockState blueTerracotta = bs("minecraft:blue_terracotta");
+        int cx = 4, cz = 4;
+
+        // y=0 — smooth-sandstone foundation apron over the full 9×9 footprint
+        floor(b, 0, 0, 0, 8, 8, smoothSandstone);
+
+        // y=1..2 — base tier: cut-sandstone wall ring on the 9×9 footprint,
+        //          enclosing a hollow 7×7 chamber (interior left unset = enterable)
+        walls(b, 0, 0, 8, 8, 1, 2, cutSandstone);
+        corners(b, 0, 0, 8, 8, 1, 2, chiseledSandstone); // chiseled corner pilasters
+        // door centred on the north wall (z=0), opening inward (faces south)
+        door2(b, cx, 1, 0, "acacia", "N");
+        // blue terracotta accent course flanking the door on the front (north) face
+        b.set(2, 2, 0, blueTerracotta);
+        b.set(6, 2, 0, blueTerracotta);
+        // glass-pane windows centred on the three other walls (render-safe: each
+        // pane sits between two wall cells along its wall line)
+        window2(b, cx, 2, 8, p.windowPane, null); // south (back) wall
+        window2(b, 0, 2, cz, p.windowPane, null); // west wall
+        window2(b, 8, 2, cz, p.windowPane, null); // east wall
+
+        // y=3 — chamber ceiling / step-0 deck: solid sandstone-slab cap over 9×9
+        floor(b, 3, 0, 0, 8, 8, sandstoneSlabTop);
+
+        // y=4 — step 1: solid 7×7 cut-sandstone block, outer edge banded orange
+        solid(b, 1, 4, 1, 7, 4, 7, cutSandstone);
+        for (int x = 1; x <= 7; x++) {            // orange terracotta step face ring
+            b.set(x, 4, 1, orangeTerracotta);
+            b.set(x, 4, 7, orangeTerracotta);
+        }
+        for (int z = 2; z <= 6; z++) {
+            b.set(1, 4, z, orangeTerracotta);
+            b.set(7, 4, z, orangeTerracotta);
+        }
+
+        // y=5 — step 2: solid 5×5 cut-sandstone block, outer edge banded orange
+        solid(b, 2, 5, 2, 6, 5, 6, cutSandstone);
+        for (int x = 2; x <= 6; x++) {
+            b.set(x, 5, 2, orangeTerracotta);
+            b.set(x, 5, 6, orangeTerracotta);
+        }
+        for (int z = 3; z <= 5; z++) {
+            b.set(2, 5, z, orangeTerracotta);
+            b.set(6, 5, z, orangeTerracotta);
+        }
+
+        // y=6 — step 3: solid 3×3 cut-sandstone block with a blue terracotta
+        //        centre inlay (the temple's top motif)
+        solid(b, 3, 6, 3, 5, 6, 5, cutSandstone);
+        b.set(cx, 6, cz, blueTerracotta);
+
+        // y=7 — chiseled-sandstone finial capstone at the apex
+        b.set(cx, 7, cz, chiseledSandstone);
+
         return b.build();
     }
 }

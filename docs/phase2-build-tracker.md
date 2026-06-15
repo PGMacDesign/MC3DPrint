@@ -7,9 +7,9 @@
 
 ## Status
 - **Curated builds before Phase 2:** 29
-- **Phase 2 queue:** 103 · **Done:** 1 · **Blocked:** 0 · **Remaining:** 102
-- **Next up:** `desert_pyramid_shrine`
-- **Last completed:** `desert_sandstone_house`
+- **Phase 2 queue:** 103 · **Done:** 2 · **Blocked:** 0 · **Remaining:** 101
+- **Next up:** `taiga_log_cabin`
+- **Last completed:** `desert_pyramid_shrine`
 
 ## Process (per build — follow exactly on resume)
 1. Pick the first unchecked `[ ]` build in queue order below.
@@ -34,7 +34,7 @@
 
 ### A — Per-biome houses (14) · high value, safe, share `house()`
 - [x] desert_sandstone_house
-- [ ] desert_pyramid_shrine
+- [x] desert_pyramid_shrine
 - [ ] taiga_log_cabin
 - [ ] taiga_spruce_longhouse
 - [ ] snowy_igloo
