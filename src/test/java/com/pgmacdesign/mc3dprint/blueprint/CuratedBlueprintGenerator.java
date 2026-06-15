@@ -205,6 +205,7 @@ class CuratedBlueprintGenerator {
         // Phase 2 — Category A
         builds.put("snowy_igloo", snowyIgloo());
         builds.put("snowy_alpine_chalet", snowyAlpineChalet());
+        builds.put("jungle_hut", jungleHut());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -3253,6 +3254,122 @@ class CuratedBlueprintGenerator {
 
         // 8) interior furnishings on the walkable y=2 floor
         bed(b, x0 + 1, wallBottom, z1 - 1, p.bedColor, "south"); // light-blue bed at back
+        b.set(x1 - 1, wallBottom, z1 - 1, CRAFTING_TABLE);
+        b.set(x1 - 1, wallBottom, z0 + 1, CHEST);
+        b.set(x0 + 1, wallBottom, z0 + 1, p.lightBlock);         // lantern, front corner
+        b.set(cx, wallBottom, cz, p.lightBlock);                 // central lantern
+
+        return b.build();
+    }
+
+    /**
+     * Jungle Hut — an elevated jungle-platform hut on jungle-log stilts with a jungle
+     * gable canopy, fence accents, and a ladder up to the raised, enterable deck.
+     * 7×7 footprint (T5), disc T1. Vanilla, FU-valued blocks only: jungle
+     * logs/planks/slabs/stairs/fence/door, glass panes, ladder, lanterns, grass footing.
+     * (jungle_leaves + bamboo were swapped out — neither is FU-valued or structural.)
+     *
+     * <p>Section structure (y from the ground up):
+     * <ul>
+     *   <li>{@code y=0} grass footing under the stilts (so the build reads as set on
+     *       ground); the stilt posts rise from it.</li>
+     *   <li>{@code y=0..2} jungle-log stilts at the four corners + the four edge
+     *       midpoints, raising the platform clear of the ground.</li>
+     *   <li>{@code y=3} jungle-plank platform deck (the walkable raised floor) with a
+     *       ladder hatch left open at the south-edge access column.</li>
+     *   <li>{@code y=4..6} jungle-plank wall ring with jungle-log corner posts, a
+     *       north door opening inward, and render-safe glass-pane windows.</li>
+     *   <li>{@code y=7..10} jungle gable roof (ridge along X) closing the top — the
+     *       FU-valued stand-in for a leaf canopy (jungle_leaves carries no FU value).</li>
+     *   <li>jungle-fence accent posts flank the stilts (stand-in for the unvalued
+     *       bamboo); a ladder on the south stilt column climbs y=1..2 to the deck
+     *       hatch; hanging lanterns light the porch underside.</li>
+     * </ul>
+     */
+    private static Blueprint jungleHut() {
+        Blueprint.Builder b = Blueprint.builder("Jungle Hut", 7, 11, 7);
+        Palette p = JUNGLE; // jungle planks/logs/slabs/stairs, cyan bed, lantern
+        // build-local materials (all vanilla, all FU-valued / structural).
+        // NOTE: jungle_leaves and bamboo are NOT FU-valued and NOT structural matter,
+        // so they print as silent holes in strict mode (caught by the printability
+        // gate). The "jungle canopy + bamboo" look is therefore rendered with the
+        // FU-valued jungle WOOD family instead: a jungle gable roof for the canopy
+        // and jungle-fence posts for the bamboo accents.
+        BlueprintBlockState jungleFence = bs("minecraft:jungle_fence");
+        BlueprintBlockState logY = p.logPillarY; // jungle_log[axis=y]
+
+        int x0 = 0, x1 = 6, z0 = 0, z1 = 6;
+        int cx = (x0 + x1) / 2; // 3
+        int cz = (z0 + z1) / 2; // 3
+        int deckY = 3;          // raised platform (walkable surface = top of y=3)
+        int wallBottom = 4;     // walls rise from above the deck
+        int wallH = 6;          // wall plate (canopy seats at y=7)
+        int roofY = wallH + 1;  // 7
+
+        // 1) grass footing under the build so it sits on the ground (structural matter)
+        floor(b, 0, x0, z0, x1, z1, GRASS_BLOCK);
+
+        // 2) jungle-log stilts y=0..2 at the four corners + the four edge midpoints
+        int[][] stilts = {
+                {x0, z0}, {x1, z0}, {x0, z1}, {x1, z1}, // corners
+                {cx, z0}, {cx, z1}, {x0, cz}, {x1, cz}  // edge midpoints
+        };
+        for (int[] s : stilts) {
+            pillar(b, s[0], s[1], 1, deckY - 1, logY); // y=1..2 up to just below the deck
+        }
+        // 2b) jungle-fence accent posts beside the four corner stilts (stand in for the
+        //     bamboo growth — FU-valued and slim, so they read as jungle uprights).
+        for (int[] c : new int[][]{{x0, z0}, {x1, z0}, {x0, z1}, {x1, z1}}) {
+            int bx = c[0] == x0 ? x0 + 1 : x1 - 1;
+            int bz = c[1] == z0 ? z0 + 1 : z1 - 1;
+            pillar(b, bx, bz, 1, deckY - 1, jungleFence); // fence post beside each corner, under the deck
+        }
+
+        // 3) jungle-plank platform deck at y=3 (the raised walkable floor), with a
+        //    ladder hatch left OPEN at the south access column (cx, z1-1).
+        int hatchX = cx, hatchZ = z1 - 1; // (3,5)
+        for (int x = x0; x <= x1; x++) {
+            for (int z = z0; z <= z1; z++) {
+                if (x == hatchX && z == hatchZ) continue; // ladder hatch — leave open
+                b.set(x, deckY, z, p.plankFloor);
+            }
+        }
+
+        // 4) jungle-plank wall ring y=4..6 with jungle-log corner posts
+        walls(b, x0, z0, x1, z1, wallBottom, wallH, p.wall);
+        corners(b, x0, z0, x1, z1, wallBottom, wallH, logY);
+
+        // 5) north door (z=z0) opening inward (faces south) + render-safe windows.
+        //    Each pane is flanked by wall cells along its wall axis → connects.
+        door2(b, cx, wallBottom, z0, p.doorWood, "N");
+        int wy = wallBottom + 1; // y=5, mid-wall
+        window2(b, cx - 1, wy, z0, p.windowPane, null); // north, west of door
+        window2(b, cx + 1, wy, z0, p.windowPane, null); // north, east of door
+        window2(b, x0, wy, cz, p.windowPane, null);     // west wall, centred
+        window2(b, x1, wy, cz, p.windowPane, null);     // east wall, centred
+        window2(b, cx, wy, z1, p.windowPane, null);     // south (back) wall, centred
+
+        // 6) jungle canopy roof: a jungle gable roof (ridge along X) seated on the wall
+        //    plate, with closed gable ends — the FU-valued stand-in for a leaf canopy.
+        gableRoofX(b, x0, z0, x1, z1, roofY, p.roofStairName, p.roofSlab);
+        gableEndFill(b, x0, z0, x1, z1, roofY, p.wall);
+
+        // 7) ladder access: the south stilt column at (cx, z1) is solid jungle log
+        //    y=1..2 (full backing post), so a south-facing ladder on the hatch column
+        //    (cx, z1-1) backs onto it and climbs to the deck. Ladder faces south →
+        //    attaches to the block at (cx, *, z1).
+        pillar(b, cx, z1, 1, deckY - 1, logY); // full backing post for the ladder rungs
+        b.set(hatchX, 1, hatchZ, LADDER_SOUTH); // rung y=1, backed by (cx,z1) log
+        b.set(hatchX, 2, hatchZ, LADDER_SOUTH); // rung y=2 → climb out onto deck at y=3
+
+        // 9) hanging lanterns under the deck for the elevated-hut glow, backed by the
+        //    plank deck above them (deck at y=3 is solid over these cells). Placed off
+        //    the fence-post cells so they don't collide with the accent posts.
+        b.set(cx - 1, deckY - 1, cz, HANGING_LANTERN); // hangs from the deck underside
+        b.set(cx + 1, deckY - 1, cz, HANGING_LANTERN);
+
+        // 10) interior furnishings on the raised deck (standing floor = y=4)
+        bed(b, x0 + 1, wallBottom, z1 - 1, p.bedColor, "south"); // cyan bed at back
         b.set(x1 - 1, wallBottom, z1 - 1, CRAFTING_TABLE);
         b.set(x1 - 1, wallBottom, z0 + 1, CHEST);
         b.set(x0 + 1, wallBottom, z0 + 1, p.lightBlock);         // lantern, front corner
