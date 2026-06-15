@@ -7,9 +7,9 @@
 
 ## Status
 - **Curated builds before Phase 2:** 29
-- **Phase 2 queue:** 103 · **Done:** 99 · **Blocked:** 2 · **Remaining:** 2
-- **Next up:** `shulker_box_vault`
-- **Last completed:** `chorus_garden`
+- **Phase 2 queue:** 103 · **Done:** 100 · **Blocked:** 2 · **Remaining:** 1
+- **Next up:** `end_gateway_shrine`
+- **Last completed:** `shulker_box_vault`
 
 ## Process (per build — follow exactly on resume)
 1. Pick the first unchecked `[ ]` build in queue order below.
@@ -150,7 +150,7 @@
 - [x] purpur_tower
 - [x] end_stone_outpost (chorus unvalued → stylized purpur+end_rod chorus trees)
 - [x] chorus_garden (chorus_plant/flower unvalued → stylized purpur+end_rod chorus grove)
-- [ ] shulker_box_vault
+- [x] shulker_box_vault (shulker boxes print + colors normalize; iron-bar grilles span jamb-to-jamb)
 - [ ] end_gateway_shrine
 
 ## Notes — unvalued blocks found during the run (for a morning economy decision)
