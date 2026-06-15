@@ -265,6 +265,8 @@ class CuratedBlueprintGenerator {
         builds.put("portcullis_gate", portcullisGate());
         builds.put("stable_horse", stableHorse());
         builds.put("greenhouse", greenhouse());
+        // Phase 2 — Category B (modern / contemporary)
+        builds.put("modern_concrete_house", modernConcreteHouse());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -10187,6 +10189,202 @@ class CuratedBlueprintGenerator {
         // a pair of standing lanterns on the corner-post sills for ground glow.
         b.set(x0 + 1, 1, z0 + 1, LANTERN);
         b.set(x1 - 1, 1, z0 + 1, LANTERN);
+
+        return b.build();
+    }
+
+    /**
+     * Modern minimalist concrete house — Phase 2 Category B (§3.B, footprint
+     * 11×9 → T6, disc T1). The "WiederDude" archetype: a clean flat-roofed
+     * concrete box with full-height glazing, a parapet roof, dark-oak + quartz
+     * trim accents, an open-plan interior, and a small upper roof terrace.
+     *
+     * <p><b>Axis mapping.</b> Spec footprint is W×L = 11×9, so the builder is
+     * {@code builder(name, W=11, H=9, L=9)}: x=width 0..10, z=depth 0..8,
+     * y=up 0..8.
+     *
+     * <p><b>Render-safe glazing.</b> The full-height window walls are GLASS
+     * BLOCKS (not panes), broken into bays by concrete/quartz mullions — so they
+     * never render as stub panes and the render-integrity gate passes trivially
+     * (glass blocks aren't {@code IronBarsBlock}).
+     *
+     * <p><b>Palette (all vanilla, FU-valued or structural).</b>
+     * <ul>
+     *   <li>{@code light_gray_concrete} — foundation slab + roof deck;</li>
+     *   <li>{@code white_concrete} — primary wall mass + parapet;</li>
+     *   <li>{@code gray_concrete} — corner piers / mullions (the dark frame);</li>
+     *   <li>{@code glass} — full-height window bays + a clerestory band;</li>
+     *   <li>{@code dark_oak_planks}/{@code dark_oak_slab}/{@code dark_oak_log} —
+     *       trim band, entry surround, terrace decking;</li>
+     *   <li>{@code smooth_quartz}/{@code smooth_quartz_slab} — entry step +
+     *       parapet coping accent;</li>
+     *   <li>{@code sea_lantern} — recessed interior lighting;</li>
+     *   <li>furniture: {@code dark_oak_door}, {@code white_bed}, crafting table,
+     *       chest, bookshelf, {@code potted_*} greenery (structural).</li>
+     * </ul>
+     *
+     * <p>The interior above the floor is deliberately left unwritten (air-skip)
+     * so the player can walk in through the entry and stand inside — ENTERABLE.
+     */
+    private static Blueprint modernConcreteHouse() {
+        final int W = 11, H = 9, D = 9;
+        Blueprint.Builder b = Blueprint.builder("Modern Concrete House", W, H, D);
+        int x0 = 0, x1 = W - 1, z0 = 0, z1 = D - 1; // x:0..10  z:0..8
+        int cx = (x0 + x1) / 2; // 5
+        int cz = (z0 + z1) / 2; // 4
+        int wallH = 4;          // ground-floor walls rise y=1..4 (full-height glass bays)
+        int deckY = wallH + 1;  // flat roof deck at y=5
+        int parapetY = deckY + 1; // parapet ring at y=6 (1 course)
+
+        // Palette ---------------------------------------------------------------
+        BlueprintBlockState foundation = bs("minecraft:light_gray_concrete");
+        BlueprintBlockState wallMass   = bs("minecraft:white_concrete");
+        BlueprintBlockState frame      = bs("minecraft:gray_concrete"); // dark piers/mullions
+        BlueprintBlockState deck       = bs("minecraft:light_gray_concrete");
+        BlueprintBlockState parapet    = bs("minecraft:white_concrete");
+        BlueprintBlockState trim       = DARK_OAK_PLANKS;
+        BlueprintBlockState trimSlabBot = bs("minecraft:dark_oak_slab[type=bottom]");
+        BlueprintBlockState quartzSlabTop = bs("minecraft:smooth_quartz_slab[type=top]");
+
+        // Build order is strictly bottom-up and last-write-wins (Builder.set
+        // overwrites the cell), so we lay the GLASS curtain first, then over-stamp
+        // the solid mass, the frame grid, and the trim. No cell reads are needed.
+
+        // 1) FOUNDATION SLAB — light-gray concrete over the whole footprint, the
+        //    walkable y=0 surface (its top face is the interior floor).
+        floor(b, 0, x0, z0, x1, z1, foundation);
+
+        // 2) FULL-HEIGHT GLAZING — GLASS BLOCKS fill the entire wall ring y=1..wallH
+        //    first; the solid mass + frame below overwrite the cells that aren't
+        //    glass. Render-safe: solid blocks (not panes), so no stub-pane risk.
+        for (int y = 1; y <= wallH; y++) {
+            for (int x = x0; x <= x1; x++) {
+                b.set(x, y, z0, GLASS); // north (front)
+                b.set(x, y, z1, GLASS); // south (back)
+            }
+            for (int z = z0 + 1; z <= z1 - 1; z++) {
+                b.set(x0, y, z, GLASS); // west
+                b.set(x1, y, z, GLASS); // east
+            }
+        }
+
+        // 3) SOLID CONCRETE WALL MASS — over-stamp the glass with white concrete
+        //    where we want solid wall: a base plinth course (y=1) all around to
+        //    ground the glazing, plus a full-height feature wall plug on the
+        //    rear-west (SW) bay (the open-plan kitchen/service wall).
+        // base spandrel: y=1 ring (the door cell on the north wall is re-glazed
+        // / doored below, so writing it here is harmless and keeps the plinth even).
+        for (int x = x0; x <= x1; x++) {
+            b.set(x, 1, z0, wallMass); // north (front)
+            b.set(x, 1, z1, wallMass); // south (back)
+        }
+        for (int z = z0 + 1; z <= z1 - 1; z++) {
+            b.set(x0, 1, z, wallMass); // west
+            b.set(x1, 1, z, wallMass); // east
+        }
+        // rear-west solid wall plug (the feature wall): x=x0..x0+3 on the back wall
+        // (z=z1), full height, solid white concrete.
+        for (int y = 1; y <= wallH; y++) {
+            for (int x = x0; x <= x0 + 3; x++) {
+                b.set(x, y, z1, wallMass);
+            }
+            b.set(x0, y, z1 - 1, wallMass); // short return on the west wall
+        }
+
+        // 4) CORNER PIERS + WALL MULLIONS — gray-concrete frame columns over-stamped
+        //    on top of the glass/mass, rising the full wall height. The frame breaks
+        //    the glazing into clean bays so it reads as a curtain wall, not one
+        //    undivided sheet. Mullions sit at regular x/z intervals on each face.
+        int[][] piers = {
+                {x0, z0}, {x1, z0}, {x0, z1}, {x1, z1}, // four corners
+                {x0 + 3, z0}, {x0 + 7, z0},             // north-wall mullions (flank the door)
+                {x0 + 3, z1}, {x0 + 7, z1},             // south-wall mullions
+                {x0, cz}, {x1, cz}                      // east/west mid mullions
+        };
+        for (int[] p : piers) {
+            pillar(b, p[0], p[1], 1, wallH, frame);
+        }
+
+        // 5) DARK-OAK TRIM BAND — a crisp horizontal accent line at the top of the
+        //    wall (y=wallH) wrapping the whole box, the modern "fascia" reveal. It
+        //    overlays the frame/glass top course; the gray piers still poke through
+        //    at their cells (re-stamped below) for the grid look.
+        for (int x = x0; x <= x1; x++) {
+            b.set(x, wallH, z0, trim);
+            b.set(x, wallH, z1, trim);
+        }
+        for (int z = z0 + 1; z <= z1 - 1; z++) {
+            b.set(x0, wallH, z, trim);
+            b.set(x1, wallH, z, trim);
+        }
+        // re-stamp the corner piers above the trim so the grid corners stay gray.
+        for (int[] p : new int[][]{{x0, z0}, {x1, z0}, {x0, z1}, {x1, z1}}) {
+            b.set(p[0], wallH, p[1], frame);
+        }
+
+        // 6) FLAT ROOF DECK — light-gray concrete slab over the full footprint at
+        //    y=deckY. This is both the ceiling of the open-plan room and the floor
+        //    of the upper terrace.
+        floor(b, deckY, x0, z0, x1, z1, deck);
+
+        // 7) PARAPET + UPPER TERRACE — a 1-course white-concrete parapet rings the
+        //    roof edge at y=parapetY, with a smooth-quartz coping accent on the
+        //    front (north) face for the clean modern cap. The terrace itself is the
+        //    open deck inside the parapet; a dark-oak-slab seating ledge and a
+        //    couple of potted plants make it a usable roof terrace.
+        for (int x = x0; x <= x1; x++) {
+            b.set(x, parapetY, z0, parapet);
+            b.set(x, parapetY, z1, parapet);
+        }
+        for (int z = z0 + 1; z <= z1 - 1; z++) {
+            b.set(x0, parapetY, z, parapet);
+            b.set(x1, parapetY, z, parapet);
+        }
+        // quartz coping accent: cap the front (north) parapet run with smooth-quartz
+        // top slabs sitting on the parapet, the bright reveal against white.
+        for (int x = x0 + 1; x <= x1 - 1; x++) {
+            b.set(x, parapetY + 1, z0, quartzSlabTop);
+        }
+        // a low dark-oak terrace bench/ledge along the back parapet (interior side)
+        // and two potted plants — props that make the terrace read as a space.
+        for (int x = x0 + 2; x <= x1 - 2; x++) {
+            b.set(x, deckY + 1, z1 - 1, trimSlabBot); // bench seat just inside back parapet
+        }
+        b.set(x0 + 2, deckY + 1, z0 + 1, bs("minecraft:potted_bamboo"));
+        b.set(x1 - 2, deckY + 1, z0 + 1, bs("minecraft:potted_fern"));
+
+        // 8) ENTRY — a dark-oak door centred on the north (front) wall, opening
+        //    inward (faces south). A smooth-quartz entry step sits just outside,
+        //    and a dark-oak surround frames the opening (the gray mullions at x±2
+        //    already flank it). The glass bay at (cx, *, z0) was left open above.
+        door2(b, cx, 1, z0, "dark_oak", "N");
+        b.set(cx, wallH, z0, trim); // dark-oak lintel over the door (overrides glass cell)
+        // dark-oak reveal jambs hugging the door (overlay the base spandrel sides)
+        b.set(cx - 1, 1, z0, trim);
+        b.set(cx + 1, 1, z0, trim);
+
+        // 9) CLERESTORY / TRANSOM over the door — a single glass cell above the door
+        //    head keeps the entry bay glazed to the trim line (render-safe: it sits
+        //    directly below the dark-oak lintel and beside frame mullions → no stub).
+        //    (door occupies y=1,2; head trim at y=wallH; glaze the gap y=3..wallH-1)
+        for (int y = 3; y <= wallH - 1; y++) {
+            b.set(cx, y, z0, GLASS);
+        }
+
+        // 10) INTERIOR — open-plan furnishings on the y=1 floor. A modern living
+        //     space: a low bed in the rear corner, a desk (crafting table) + chest,
+        //     a bookshelf feature wall against the solid SW plug, and a sea-lantern
+        //     recessed in the ceiling for clean light. Kept sparse for crisp lines.
+        bed(b, x0 + 2, 1, z1 - 1, "white", "south");      // bed head near back wall
+        b.set(x0 + 1, 1, z1 - 1, BOOKSHELF);              // bookshelf against SW feature wall
+        b.set(x1 - 1, 1, z1 - 1, CRAFTING_TABLE);         // desk in the back-east corner
+        b.set(x1 - 1, 1, z1 - 2, CHEST);                  // storage beside it
+        b.set(x0 + 2, 1, z0 + 1, bs("minecraft:potted_oak_sapling")); // greenery by the entry
+        // recessed ceiling lights: sea lanterns set into the roof-deck course (y=deckY)
+        // down the centre line so they read as flush downlights over the open plan.
+        b.set(x0 + 3, deckY, cz, SEA_LANTERN);
+        b.set(cx, deckY, cz, SEA_LANTERN);
+        b.set(x1 - 3, deckY, cz, SEA_LANTERN);
 
         return b.build();
     }

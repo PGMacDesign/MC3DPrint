@@ -7,9 +7,9 @@
 
 ## Status
 - **Curated builds before Phase 2:** 29
-- **Phase 2 queue:** 103 · **Done:** 62 · **Blocked:** 2 · **Remaining:** 39
-- **Next up:** `modern_concrete_house`
-- **Last completed:** `greenhouse`
+- **Phase 2 queue:** 103 · **Done:** 63 · **Blocked:** 2 · **Remaining:** 38
+- **Next up:** `modern_pool_deck`
+- **Last completed:** `modern_concrete_house`
 
 ## Process (per build — follow exactly on resume)
 1. Pick the first unchecked `[ ]` build in queue order below.
@@ -107,7 +107,7 @@
 - [x] greenhouse
 
 ### B — Architectural styles (17)
-- [ ] modern_concrete_house
+- [x] modern_concrete_house
 - [ ] modern_pool_deck
 - [ ] cottagecore_cottage
 - [ ] torii_gate

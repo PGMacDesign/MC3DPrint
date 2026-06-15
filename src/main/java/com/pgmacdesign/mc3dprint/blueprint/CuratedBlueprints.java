@@ -90,7 +90,9 @@ public final class CuratedBlueprints {
             // Phase 2 — Category H (stable_horse)
             "stable_horse",
             // Phase 2 — Category H (greenhouse)
-            "greenhouse");
+            "greenhouse",
+            // Phase 2 — Category B (modern_concrete_house)
+            "modern_concrete_house");
 
     /**
      * Load a bundled curated blueprint straight from the mod's resources (no world
