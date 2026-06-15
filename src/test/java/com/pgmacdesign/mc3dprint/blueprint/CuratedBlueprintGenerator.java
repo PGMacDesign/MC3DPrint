@@ -249,6 +249,7 @@ class CuratedBlueprintGenerator {
         builds.put("brewing_room", brewingRoom());
         builds.put("super_smelter", superSmelter());
         builds.put("smithy_workshop", smithyWorkshop());
+        builds.put("map_room", mapRoom());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -6693,6 +6694,159 @@ class CuratedBlueprintGenerator {
         chainLantern(b, 1, yT - 1, 6, 1);   // lantern (1,3,6), chain (1,4,6) → ceiling (1,5,6)
         // wall-backed lanterns flanking the door for the entry glow (sit on the floor
         // against the side walls, just inside the threshold).
+        b.set(1, yB, 1, LANTERN);
+        b.set(5, yB, 1, LANTERN);
+
+        return b.build();
+    }
+
+    /**
+     * §G.map_room — an ENTERABLE cartography study, 7×7×6 (W×D×H) → builder(7, 6, 7).
+     *
+     * <p>A map-maker's study the survival player walks into to chart their world. Real
+     * map displays hang printed maps in ITEM FRAMES — but item frames are ENTITIES and
+     * can't print, so this build supplies the ROOM and a decorative MAP-THEMED back wall
+     * instead, and the player hangs their own maps in frames afterward. The centrepiece
+     * is a grid of dyed wall BANNERS (banners ARE blocks; dyed variants normalise to the
+     * base white_banner FU value) framed by dark-oak log trim — a "tapestry map wall" —
+     * and a COMPASS-ROSE floor laid in dyed wool / terracotta / concrete (all valued via
+     * the cosmetic-colour fallback).
+     *
+     * <p>The whole-build floor sits at {@code y=0} (walkable, carries the compass rose),
+     * walls rise {@code y=1..4}, and a dark-oak-plank ceiling closes the top at {@code y=5}.
+     * The interior above the floor is left unset (air-skip) so the player enters through
+     * the north doorway and stands inside. Axes: x=W(0..6), y=up(0..5), z=depth(0..6);
+     * south (+z, z=6) is the map-wall (back), north (z=0) is the entry face.
+     *
+     * <p>Every printed block is vanilla and FU-valued or itemless-structural:
+     * <ul>
+     *   <li><b>shell</b> — dark-oak-plank walls + floor + ceiling, dark-oak-log corner
+     *       posts (all derive / are valued).</li>
+     *   <li><b>map wall</b> (south, z=6) — a 5-wide × 3-tall grid of dyed
+     *       {@code wall_banner[facing=north]} (hang on the south wall, face into the room)
+     *       at x=1..5, y=2..4, framed by stripped-dark-oak-log trim. wall_banner's item is
+     *       the banner item, which is valued (dyed → white_banner).</li>
+     *   <li><b>compass-rose floor</b> — white-wool N–S and E–W axis lines through the
+     *       centre, a red-wool hub, and terracotta/concrete quadrant accents (dyed
+     *       cosmetic variants → valued bases).</li>
+     *   <li><b>furniture</b> — {@code cartography_table} (derives via paper), two
+     *       {@code lectern}s, {@code chiseled_bookshelf} + {@code bookshelf} along the
+     *       walls (all valued / recipe-derived); blue-carpet runners (dyed → white_carpet).</li>
+     *   <li><b>lighting</b> — recessed {@code glowstone} ceiling centre + a chain-hung
+     *       {@code lantern} over the cartography table and two wall-backed lanterns. No
+     *       glass panes or iron bars are used, so the stub-pane render gate is trivially
+     *       satisfied.</li>
+     * </ul>
+     */
+    private static Blueprint mapRoom() {
+        Blueprint.Builder b = Blueprint.builder("Map Room", 7, 6, 7);
+
+        BlueprintBlockState darkOakLogY = bs("minecraft:dark_oak_log[axis=y]");
+        BlueprintBlockState strippedDarkOakY = bs("minecraft:stripped_dark_oak_log[axis=y]");
+        BlueprintBlockState strippedDarkOakX = bs("minecraft:stripped_dark_oak_log[axis=x]");
+        BlueprintBlockState chiseledBookshelf = bs("minecraft:chiseled_bookshelf[facing=north,slot_0_occupied=false,slot_1_occupied=false,slot_2_occupied=false,slot_3_occupied=false,slot_4_occupied=false,slot_5_occupied=false]");
+        // furniture facing INTO the room from the wall they back onto
+        BlueprintBlockState lecternW = bs("minecraft:lectern[facing=west,has_book=false,powered=false]");
+        BlueprintBlockState lecternE = bs("minecraft:lectern[facing=east,has_book=false,powered=false]");
+        // compass-rose palette (dyed cosmetic variants → valued bases)
+        BlueprintBlockState whiteWool = bs("minecraft:white_wool");
+        BlueprintBlockState redWool = bs("minecraft:red_wool");
+        BlueprintBlockState blueTerracotta = bs("minecraft:blue_terracotta");
+        BlueprintBlockState lightBlueConcrete = bs("minecraft:light_blue_concrete");
+        BlueprintBlockState blueCarpet = bs("minecraft:blue_carpet");
+        // map-wall banner colours (dyed → normalise to white_banner; wall variant
+        // hangs on the +z wall and faces north into the room)
+        String[] bannerColors = {"red", "blue", "green", "yellow", "purple"};
+
+        int x0 = 0, x1 = 6, z0 = 0, z1 = 6;   // 7×7 footprint
+        int yB = 1, yT = 4;                   // wall course (y=1..4)
+        int cx = 3, cz = 3;                   // room centre
+        int doorX = 3;                        // north-wall doorway (centred)
+
+        // ── 1) SHELL: dark-oak-plank floor (y0), wall ring (y1..4), ceiling (y5) ──
+        // roomShell lays the floor, the four-wall ring and the ceiling; the interior is
+        // left open per the air-skip rule so it's enterable.
+        roomShell(b, x0, 0, z0, x1, yT + 1, z1, DARK_OAK_PLANKS, DARK_OAK_PLANKS, DARK_OAK_PLANKS);
+
+        // ── 2) DARK-OAK-LOG CORNER POSTS + NORTH-WALL DOORWAY ───────────────
+        // Full-height dark-oak-log corner posts (overwrite the corner cells, no nub),
+        // and a centred north doorway opening inward.
+        corners(b, x0, z0, x1, z1, yB, yT, darkOakLogY);
+        door2(b, doorX, yB, z0, "dark_oak", "N");
+
+        // ── 3) COMPASS-ROSE FLOOR (y=0) ─────────────────────────────────────
+        // Re-skin the dark-oak-plank floor with a compass rose: white-wool N–S axis
+        // (x=cx) and E–W axis (z=cz) lines spanning the interior, a red-wool hub at the
+        // centre, and terracotta/concrete diagonal accents in the four quadrants so the
+        // rose reads from above. All cells stay inside the interior (x,z ∈ 1..5).
+        line(b, 0, cx, 1, cx, 5, whiteWool);          // N–S axis
+        line(b, 0, 1, cz, 5, cz, whiteWool);          // E–W axis
+        b.set(cx, 0, cz, redWool);                    // hub
+        // diagonal accents one step out from the hub in each quadrant
+        b.set(cx - 1, 0, cz - 1, blueTerracotta);
+        b.set(cx + 1, 0, cz - 1, lightBlueConcrete);
+        b.set(cx - 1, 0, cz + 1, lightBlueConcrete);
+        b.set(cx + 1, 0, cz + 1, blueTerracotta);
+        // outer cardinal points (the rose's "tips") in red wool
+        b.set(cx, 0, 1, redWool);   // N tip
+        b.set(cx, 0, 5, redWool);   // S tip
+        b.set(1, 0, cz, redWool);   // W tip
+        b.set(5, 0, cz, redWool);   // E tip
+
+        // ── 4) MAP WALL (south, z=6) — banner tapestry framed by log trim ───
+        // A 5-wide × 3-tall grid of dyed wall banners at x=1..5, y=2..4 hung on the
+        // south wall (facing=north → look into the room). The wall_banner block's item
+        // is the banner item (dyed → white_banner FU value), so it prints. Vertical
+        // stripped-dark-oak-log trim columns flank the grid (x=0,6 already log-free at
+        // the corners; we add inner pilasters at the grid edges via the wall top header).
+        for (int gx = 1; gx <= 5; gx++) {
+            String color = bannerColors[gx - 1];
+            BlueprintBlockState wallBanner =
+                    bs("minecraft:" + color + "_wall_banner[facing=north]");
+            for (int gy = 2; gy <= 4; gy++) {
+                b.set(gx, gy, z1, wallBanner);
+            }
+        }
+        // stripped-log header beam capping the map wall (y=4 was overwritten by the top
+        // banner row at z=6; lay the trim one course of stripped log along the wall TOP
+        // at z=5, the row just in front, as an exposed-rafter frame over the tapestry).
+        line(b, yT, x0, z1 - 1, x1, z1 - 1, strippedDarkOakX);
+
+        // ── 5) CARTOGRAPHY STATION — centred against the map wall ───────────
+        // The cartography table sits centred on the floor one cell in front of the map
+        // wall (3,1,5), flanked by two lecterns (atlas stands) angled inward. The table
+        // derives via paper; lecterns are valued.
+        b.set(cx, yB, 5, CARTOGRAPHY_TABLE);
+        b.set(1, yB, 5, lecternE);   // west lectern, faces east into the room
+        b.set(5, yB, 5, lecternW);   // east lectern, faces west into the room
+
+        // ── 6) LIBRARY WALLS — bookshelves along the side walls ─────────────
+        // Bookshelf / chiseled-bookshelf runs along the west (x=1) and east (x=5) walls
+        // at floor level, with a second course of plain bookshelves stacked for the
+        // floor-to-ceiling study feel. Kept off the door approach (z=1 left clear on the
+        // centre column) and the cartography station (z=5 handled above).
+        for (int z = 2; z <= 4; z++) {
+            b.set(1, yB, z, BOOKSHELF);
+            b.set(1, yB + 1, z, chiseledBookshelf);
+            b.set(5, yB, z, BOOKSHELF);
+            b.set(5, yB + 1, z, chiseledBookshelf);
+        }
+
+        // ── 7) CARPET RUNNERS — blue carpet flanking the central rose ───────
+        // Two blue-carpet runners on the floor either side of the compass axis (x=2 and
+        // x=4 columns, z=2..4) frame the rose and soften the study. Carpet is a thin
+        // block sitting ON the floor; dyed → white_carpet FU value.
+        for (int z = 2; z <= 4; z++) {
+            if (z == cz) continue;          // leave the E–W axis line visible
+            b.set(2, 0, z, blueCarpet);
+            b.set(4, 0, z, blueCarpet);
+        }
+
+        // ── 8) LIGHTING — ceiling glowstone + chain lantern + wall lanterns ──
+        b.set(cx, yT + 1, cz, GLOWSTONE);          // ceiling-centre light (y=5)
+        // lantern hung over the cartography table (3,1,5): lantern y=3, chain y=4 → ceiling
+        chainLantern(b, cx, yT - 1, 5, 1);         // lantern (3,3,5), chain (3,4,5) → ceiling (3,5,5)
+        // wall-backed lanterns flanking the door for the entry glow
         b.set(1, yB, 1, LANTERN);
         b.set(5, yB, 1, LANTERN);
 

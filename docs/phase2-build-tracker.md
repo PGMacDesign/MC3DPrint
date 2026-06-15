@@ -7,9 +7,9 @@
 
 ## Status
 - **Curated builds before Phase 2:** 29
-- **Phase 2 queue:** 103 · **Done:** 47 · **Blocked:** 2 · **Remaining:** 54
-- **Next up:** `map_room`
-- **Last completed:** `smithy_workshop`
+- **Phase 2 queue:** 103 · **Done:** 48 · **Blocked:** 2 · **Remaining:** 53
+- **Next up:** `library`
+- **Last completed:** `map_room`
 
 ## Process (per build — follow exactly on resume)
 1. Pick the first unchecked `[ ]` build in queue order below.
@@ -88,7 +88,7 @@
 - [x] brewing_room
 - [x] super_smelter
 - [x] smithy_workshop
-- [ ] map_room
+- [x] map_room
 - [ ] library (Hard)
 
 ### H — Infrastructure / civic / defensive (13)
