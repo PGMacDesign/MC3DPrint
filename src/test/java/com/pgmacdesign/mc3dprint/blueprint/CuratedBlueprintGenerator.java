@@ -214,6 +214,7 @@ class CuratedBlueprintGenerator {
         builds.put("treehouse", treehouse());
         // Phase 2 — Category F (functional farms)
         builds.put("iron_farm", ironFarm());
+        builds.put("mob_xp_tower", mobXpTower());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -4424,6 +4425,144 @@ class CuratedBlueprintGenerator {
         // wall, on the open y=5 platform (z=1, clear of the chamber ring at z=4..10).
         b.set(cx - 2, 6, z0 + 1, bs("minecraft:oak_sign[rotation=0]"));
         b.set(cx + 2, 6, z0 + 1, bs("minecraft:oak_sign[rotation=0]"));
+
+        return b.build();
+    }
+
+    /**
+     * §F.mob_xp_tower — a STATIC dark-spawner / XP-farm tower, 9×9×24 (W×L×H)
+     * → builder(9, 24, 9).
+     *
+     * <p>The classic "how do I build a mob farm" build, printed as the STRUCTURE
+     * only: dark stone/deepslate shell, water channels, a central drop shaft, a
+     * fall chamber, and a hopper+chest collection floor with a player kill slot.
+     * Nothing alive is captured — after printing, hostile mobs spawn naturally on
+     * the unlit top platform (the static shell keeps it dark), get pushed by the
+     * water channels into the central drop hole, fall the height of the shaft, and
+     * land in the collection sump where the player kills them through the slot and
+     * the hopper ring sweeps drops into the chest. Every block is a vanilla
+     * FU-valued block or structural-free matter (water).
+     *
+     * <p>Layout (south = +z is the "front", where the player stands; cx=cz=4):
+     * <ul>
+     *   <li><b>y=0</b> — solid stone foundation (9×9).</li>
+     *   <li><b>Collection sump, y=1..4</b> — a deepslate-walled room. A central
+     *       collection chest is ringed by 4 hoppers that feed into it; four water
+     *       sources at the edges wash drops onto the hopper ring. The SOUTH face
+     *       carries a glass-pane viewing window (panes backed along X by the wall →
+     *       render-safe) and, one cell up, an iron-bar KILL SLOT the player hits
+     *       mobs through (backed left/right by deepslate → render-safe). The sump
+     *       ceiling (y=4) is solid except the central 3×3, which is the bottom of
+     *       the drop shaft so fallen mobs land on the hopper ring.</li>
+     *   <li><b>Drop shaft / fall chamber, y=5..18</b> — a solid stone tube whose
+     *       inner 3×3 is hollow: the fall column (≈14 blocks of free fall ≫ the
+     *       ~23 needed to soften, but tall enough to read as a tower and stack with
+     *       the sump drop). The tube walls keep mobs in the chute as they fall.</li>
+     *   <li><b>Spawn platform, y=19</b> — a 7×7 deepslate-slab floor (bottom slabs
+     *       give a solid, mob-spawnable surface) with the central 3×3 left OPEN as
+     *       the drop hole. Water sources at the four mid-edges flow inward toward
+     *       the hole, pushing spawned mobs off the platform and down the shaft.</li>
+     *   <li><b>Spawn chamber + dark roof, y=20..23</b> — stone walls box the
+     *       platform and a solid stone slab roof at y=23 seals out skylight so the
+     *       chamber stays dark and mobs spawn. Oak wall signs label the build.</li>
+     * </ul>
+     */
+    private static Blueprint mobXpTower() {
+        Blueprint.Builder b = Blueprint.builder("Mob XP Tower", 9, 24, 9);
+        // all vanilla, all FU-valued / structural-free:
+        BlueprintBlockState stone     = bs("minecraft:stone");
+        BlueprintBlockState deepslate = bs("minecraft:deepslate[axis=y]");
+        BlueprintBlockState cobble    = COBBLE;
+        BlueprintBlockState pane      = GLASS_PANE;   // only where backed by a solid neighbour
+        BlueprintBlockState bars      = IRON_BARS;    // kill slot, only where backed by a solid neighbour
+        BlueprintBlockState slabBot   = bs("minecraft:deepslate_tile_slab[type=bottom]"); // spawn surface
+        BlueprintBlockState slabRoof  = bs("minecraft:stone_slab[type=top]");
+        BlueprintBlockState chest     = bs("minecraft:chest[facing=south,type=single,waterlogged=false]");
+        BlueprintBlockState water     = WATER;        // structural (asItem()==AIR) → prints free
+
+        int x0 = 0, x1 = 8, z0 = 0, z1 = 8;           // 9×9 footprint
+        int cx = 4, cz = 4;                           // centre column (drop shaft)
+
+        // ── 1) STONE FOUNDATION at y=0 ───────────────────────────────────────
+        floor(b, 0, x0, z0, x1, z1, stone);
+
+        // ── 2) COLLECTION SUMP, y=1..4 (deepslate-walled drop landing) ───────
+        // A 9×9 deepslate wall ring, interior open so the player can enter and
+        // stand at the kill slot. Hopper ring + chest at the centre; water washes
+        // drops onto the hoppers.
+        walls(b, x0, z0, x1, z1, 1, 3, deepslate);
+        // 2a) central collection chest, ringed by 4 hoppers that feed INTO it.
+        b.set(cx, 1, cz, chest);
+        b.set(cx - 1, 1, cz, bs("minecraft:hopper[enabled=true,facing=east]"));   // → chest
+        b.set(cx + 1, 1, cz, bs("minecraft:hopper[enabled=true,facing=west]"));   // → chest
+        b.set(cx, 1, cz - 1, bs("minecraft:hopper[enabled=true,facing=south]"));  // → chest
+        b.set(cx, 1, cz + 1, bs("minecraft:hopper[enabled=true,facing=north]"));  // → chest
+        // 2b) four water sources at the sump-floor edges (y=1) wash drops inward.
+        b.set(x0 + 1, 1, cz, water);                  // west inflow
+        b.set(x1 - 1, 1, cz, water);                  // east inflow
+        b.set(cx, 1, z0 + 1, water);                  // north inflow
+        b.set(cx, 1, z1 - 1, water);                  // south inflow
+        // 2c) SOUTH-face viewing window: a row of glass panes at y=2, each flanked
+        //     left/right by the deepslate wall run → render-safe (connects along X).
+        for (int x = cx - 1; x <= cx + 1; x++) {
+            b.set(x, 2, z1, pane);
+        }
+        // 2d) KILL SLOT: an iron-bar slit at y=3 on the south wall centre, flanked
+        //     by deepslate along X → render-safe. The player stands outside (+z)
+        //     and hits mobs piled in the sump through the bars.
+        b.set(cx, 3, z1, bars);
+        // 2e) SUMP CEILING at y=4: solid deepslate EXCEPT the central 3×3, left
+        //     OPEN (air-skip) as the bottom of the drop shaft so falling mobs land
+        //     on the hopper ring below.
+        for (int x = x0; x <= x1; x++) {
+            for (int z = z0; z <= z1; z++) {
+                if (x >= cx - 1 && x <= cx + 1 && z >= cz - 1 && z <= cz + 1) continue; // shaft mouth
+                b.set(x, 4, z, deepslate);
+            }
+        }
+
+        // ── 3) DROP SHAFT / FALL CHAMBER, y=5..18 ────────────────────────────
+        // A solid stone tube (5×5 outer) whose inner 3×3 is hollow: the fall
+        // column. The tube walls keep mobs in the chute the whole way down.
+        int sx0 = cx - 2, sx1 = cx + 2, sz0 = cz - 2, sz1 = cz + 2; // 2..6 (5×5)
+        for (int y = 5; y <= 18; y++) {
+            // outer ring of the tube (the inner 3×3 stays air → the fall column)
+            line(b, y, sx0, sz0, sx1, sz0, stone); // north
+            line(b, y, sx0, sz1, sx1, sz1, stone); // south
+            line(b, y, sx0, sz0, sx0, sz1, stone); // west
+            line(b, y, sx1, sz0, sx1, sz1, stone); // east
+        }
+
+        // ── 4) SPAWN PLATFORM at y=19 ────────────────────────────────────────
+        // A 7×7 deepslate-tile-slab floor (bottom slabs = solid spawnable surface)
+        // with the central 3×3 left OPEN as the drop hole. Water at the four
+        // mid-edges flows toward the hole and pushes spawned mobs in.
+        int px0 = x0 + 1, px1 = x1 - 1, pz0 = z0 + 1, pz1 = z1 - 1; // 1..7 (7×7)
+        for (int x = px0; x <= px1; x++) {
+            for (int z = pz0; z <= pz1; z++) {
+                if (x >= cx - 1 && x <= cx + 1 && z >= cz - 1 && z <= cz + 1) continue; // drop hole
+                b.set(x, 19, z, slabBot);
+            }
+        }
+        // water channels: a source at each mid-edge of the platform, flowing inward.
+        b.set(px0, 19, cz, water);                    // west channel
+        b.set(px1, 19, cz, water);                    // east channel
+        b.set(cx, 19, pz0, water);                    // north channel
+        b.set(cx, 19, pz1, water);                    // south channel
+
+        // ── 5) SPAWN CHAMBER WALLS y=20..22 + DARK ROOF y=23 ─────────────────
+        // Stone walls box the platform; a cobble corner course ties them. The
+        // y=23 stone-slab roof seals out skylight so the chamber stays dark and
+        // hostile mobs spawn on the platform after printing.
+        walls(b, x0, z0, x1, z1, 20, 22, stone);
+        corners(b, x0, z0, x1, z1, 20, 22, cobble);
+        floor(b, 23, x0, z0, x1, z1, slabRoof);
+
+        // ── 6) LABEL SIGNS on the SOUTH sump face, y=2 ───────────────────────
+        // Oak wall signs flanking the viewing window (FU-valued, recipe-derived),
+        // mounted on the outside of the south wall (facing=south, +z).
+        b.set(cx - 2, 2, z1, bs("minecraft:oak_wall_sign[facing=south]"));
+        b.set(cx + 2, 2, z1, bs("minecraft:oak_wall_sign[facing=south]"));
 
         return b.build();
     }

@@ -62,7 +62,7 @@ public final class CuratedBlueprints {
             "mangrove_stilt_hut", "cherry_blossom_pavilion", "badlands_mesa_dwelling",
             "hobbit_hole", "treehouse",
             // Phase 2 — Category F (functional farms)
-            "iron_farm");
+            "iron_farm", "mob_xp_tower");
 
     /**
      * Load a bundled curated blueprint straight from the mod's resources (no world

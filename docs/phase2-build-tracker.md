@@ -7,9 +7,9 @@
 
 ## Status
 - **Curated builds before Phase 2:** 29
-- **Phase 2 queue:** 103 · **Done:** 14 · **Blocked:** 1 · **Remaining:** 88
-- **Next up:** `mob_xp_tower`
-- **Last completed:** `iron_farm`
+- **Phase 2 queue:** 103 · **Done:** 15 · **Blocked:** 1 · **Remaining:** 87
+- **Next up:** `sugarcane_farm_auto`
+- **Last completed:** `mob_xp_tower`
 
 ## Process (per build — follow exactly on resume)
 1. Pick the first unchecked `[ ]` build in queue order below.
@@ -50,7 +50,7 @@
 
 ### F — Functional farms (14) · differentiator; watch for unvalued components
 - [x] iron_farm
-- [ ] mob_xp_tower
+- [x] mob_xp_tower
 - [ ] sugarcane_farm_auto
 - [ ] pumpkin_melon_farm
 - [ ] cactus_farm
