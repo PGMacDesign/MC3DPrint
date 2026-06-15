@@ -7,9 +7,9 @@
 
 ## Status
 - **Curated builds before Phase 2:** 29
-- **Phase 2 queue:** 103 · **Done:** 25 · **Blocked:** 2 · **Remaining:** 76
-- **Next up:** `mushroom_farm`
-- **Last completed:** `tree_farm`
+- **Phase 2 queue:** 103 · **Done:** 26 · **Blocked:** 2 · **Remaining:** 75
+- **Next up:** `koi_pond`
+- **Last completed:** `mushroom_farm`
 
 ## Process (per build — follow exactly on resume)
 1. Pick the first unchecked `[ ]` build in queue order below.
@@ -62,7 +62,7 @@
 - [BLOCKED: needs beehive/honeycomb_block valued (no recipe; core to build)] bee_apiary
 - [x] fishery_pond
 - [x] tree_farm
-- [ ] mushroom_farm
+- [x] mushroom_farm
 
 ### I — Decorative micro / landmarks (17) · cheap volume, easy
 - [ ] koi_pond

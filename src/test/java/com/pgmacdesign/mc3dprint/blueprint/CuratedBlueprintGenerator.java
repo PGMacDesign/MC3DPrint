@@ -225,6 +225,7 @@ class CuratedBlueprintGenerator {
         builds.put("chicken_coop_auto", chickenCoopAuto());
         builds.put("fishery_pond", fisheryPond());
         builds.put("tree_farm", treeFarm());
+        builds.put("mushroom_farm", mushroomFarm());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -5788,6 +5789,191 @@ class CuratedBlueprintGenerator {
         // the chest-access front so the build reads as the chicken coop.
         b.set(cx - 1, 1, z1, bs("minecraft:oak_wall_sign[facing=south]"));
         b.set(cx + 1, 1, z1, bs("minecraft:oak_wall_sign[facing=south]"));
+
+        return b.build();
+    }
+
+    /**
+     * §F.mushroom_farm — a STATIC underground low-ceiling mushroom farm, 9×9×5
+     * (W×L×H) → builder(9, 5, 9). The "underground staple": a dark enclosed stone
+     * chamber where small red/brown mushrooms grow on the dim planting beds, with a
+     * bone-meal dispenser assist and a piston-+-water harvest that sweeps cut caps
+     * into a collection chest.
+     *
+     * <p><b>Why this build is fully printable + render-safe.</b> Every block is a
+     * vanilla FU-valued block or structural-free matter:
+     * <ul>
+     *   <li><b>Small mushroom plants</b> ({@code red_mushroom}/{@code brown_mushroom})
+     *       are {@link net.minecraft.world.level.block.MushroomBlock} ⇒ a
+     *       {@link net.minecraft.world.level.block.BushBlock}, so they're
+     *       <b>structural-free</b> (planted growth, like crops/saplings) and print at
+     *       no FU cost. We deliberately do NOT use the giant {@code *_mushroom_block}
+     *       / {@code mushroom_stem} (those are the blocked mushroom_island_hut case)
+     *       and NOT {@code mycelium}/{@code podzol}/{@code nylium} (UNVALUED).</li>
+     *   <li><b>Base = stone</b> (3@1), with {@code stone_bricks} (3@1) ceiling/posts,
+     *       {@code cobblestone} (1@1) end caps, {@code dirt} (1@1) growth pads;
+     *       {@code dispenser}/{@code piston}/{@code chest} derive from crafting recipes
+     *       and {@code hopper} is valued (100@3). {@code redstone_wire} is structural.</li>
+     *   <li><b>Water</b> ({@code asItem()==AIR}) prints free; it both stays the
+     *       harvested caps along the channel and reads as the harvest sluice.</li>
+     *   <li>No glass panes / iron bars anywhere ⇒ the stub-pane render-integrity gate
+     *       can never apply. The chamber is an enclosed dark box (mushrooms need low
+     *       light) — the only torch is OUTSIDE the growing beds, at the player's
+     *       access on the south rim.</li>
+     * </ul>
+     *
+     * <p>Layout (south = +z is the "front"/access side; cx=4):
+     * <ul>
+     *   <li><b>y=0</b> — solid stone foundation (9×9). A <b>hopper line</b> runs down
+     *       the centre (x=cx, z=1..6) all facing south, chaining cut caps to the
+     *       collection <b>chest</b> at the south edge (x=cx, z=7, facing north).</li>
+     *   <li><b>Water channel, y=1</b> — water along the centre column (x=cx, z=1..6)
+     *       directly over the hopper line: knocked-loose caps drop onto the channel and
+     *       the flow sweeps them south onto the hopper mouths below.</li>
+     *   <li><b>Planting beds, y=1..2</b> — two <b>dirt</b> rows straddle the channel at
+     *       x=cx-1 (3) and x=cx+1 (5), z=1..6; a small mushroom (red on the west bed,
+     *       brown on the east bed) is pre-planted on each bed cell at y=2. Small
+     *       mushrooms are BushBlocks ⇒ free.</li>
+     *   <li><b>Harvest wall, y=2..3</b> — behind each bed (x=cx-2 (2) west / x=cx+2 (6)
+     *       east) a stone backing at y=1 carries an <b>observer</b> at y=2 facing the
+     *       mushroom and a <b>piston</b> at y=3 facing inward that shoves the cap off the
+     *       bed and onto the water channel; a <b>redstone-dust</b> ribbon on a stone
+     *       shelf one column further out (x=1 / x=7) ties each observer-back to its
+     *       piston.</li>
+     *   <li><b>Bone-meal dispensers, y=2</b> — on the north rim (z=0) at the two bed
+     *       columns, facing south down each bed, loaded with bone meal for the player's
+     *       growth assist.</li>
+     *   <li><b>Dark chamber shell, y=1..4</b> — stone walls box the beds and a
+     *       {@code stone_bricks} ceiling at y=4 keeps the interior dark (so the
+     *       mushrooms survive); stone-brick corner posts tie it together. A single
+     *       access torch sits OUTSIDE the beds on the south rim for the player.</li>
+     *   <li><b>Label signs</b> — oak wall signs on the south face flank the chest.</li>
+     * </ul>
+     */
+    private static Blueprint mushroomFarm() {
+        Blueprint.Builder b = Blueprint.builder("Underground Mushroom Farm", 9, 5, 9);
+        // all vanilla, all FU-valued / structural-free:
+        BlueprintBlockState stone   = bs("minecraft:stone");
+        BlueprintBlockState bricks  = STONE_BRICKS;                          // 3@1 — dark ceiling/posts
+        BlueprintBlockState cobble  = COBBLE;
+        BlueprintBlockState dirt    = bs("minecraft:dirt");                  // 1@1 — planting bed
+        BlueprintBlockState redCap  = bs("minecraft:red_mushroom");          // MushroomBlock⇒BushBlock → free
+        BlueprintBlockState brownCap= bs("minecraft:brown_mushroom");        // MushroomBlock⇒BushBlock → free
+        BlueprintBlockState water   = WATER;                                 // structural (asItem()==AIR) → free
+        BlueprintBlockState chest   = bs("minecraft:chest[facing=north,type=single,waterlogged=false]");
+        BlueprintBlockState redDust = bs("minecraft:redstone_wire[east=none,west=none,north=none,south=none,power=0]"); // structural
+
+        int x0 = 0, x1 = 8, z0 = 0, z1 = 8;            // 9×9 footprint
+        int cx = 4;                                    // central water-channel / hopper column
+        int bedZ0 = 1, bedZ1 = 6;                      // planting / channel run along Z
+
+        // ── 1) STONE FOUNDATION at y=0, with the central HOPPER LINE ─────────
+        floor(b, 0, x0, z0, x1, z1, stone);
+        // hopper line down the centre, all facing south toward the chest.
+        for (int z = bedZ0; z <= bedZ1; z++) {
+            b.set(cx, 0, z, bs("minecraft:hopper[enabled=true,facing=south]"));
+        }
+
+        // ── 2) COLLECTION CHEST at the SOUTH end of the line, y=0 ────────────
+        // The hopper line terminates at the chest tucked at z=7, facing north so its
+        // front reads inward toward the channel. (z=8 is the chamber's south wall.)
+        b.set(cx, 0, bedZ1 + 1, chest);                // z=7 collection chest
+
+        // ── 3) WATER CHANNEL at y=1 over the hopper line ─────────────────────
+        // Water along the centre column directly above the hoppers: knocked-loose caps
+        // drop onto it and the flow sweeps them south onto the hopper mouths below.
+        for (int z = bedZ0; z <= bedZ1; z++) {
+            b.set(cx, 1, z, water);
+        }
+
+        // ── 4) PLANTING BEDS (dirt) + SMALL MUSHROOMS, flanking the channel ──
+        // Two dirt rows at x=cx-1 (3, RED) and x=cx+1 (5, BROWN), z=1..6. A small
+        // mushroom sits on every bed cell at y=2 (the planted cap; BushBlock → free).
+        int wBedX = cx - 1, eBedX = cx + 1;            // 3 and 5
+        for (int z = bedZ0; z <= bedZ1; z++) {
+            b.set(wBedX, 1, z, dirt);                  // west bed pad
+            b.set(eBedX, 1, z, dirt);                  // east bed pad
+            b.set(wBedX, 2, z, redCap);                // planted red mushroom (free)
+            b.set(eBedX, 2, z, brownCap);              // planted brown mushroom (free)
+        }
+
+        // ── 5) HARVEST WALL: stone backing + observer + piston + redstone ────
+        // Behind each bed a stone column carries an observer (y=2, facing the mushroom)
+        // and a piston (y=3, facing inward to shove the cap off the bed toward the
+        // channel). Redstone dust on a stone shelf one column further out ties each
+        // observer's back output to its piston. West wall faces east, east wall faces west.
+        int wWallX = cx - 2, eWallX = cx + 2;          // 2 and 6 (observer/piston columns)
+        int wShelfX = cx - 3, eShelfX = cx + 3;        // 1 and 7 (redstone-dust shelf columns)
+        for (int z = bedZ0; z <= bedZ1; z++) {
+            b.set(wWallX, 1, z, stone);
+            b.set(eWallX, 1, z, stone);
+            b.set(wWallX, 2, z, bs("minecraft:observer[facing=east,powered=false]"));
+            b.set(eWallX, 2, z, bs("minecraft:observer[facing=west,powered=false]"));
+            b.set(wWallX, 3, z, bs("minecraft:piston[facing=east,extended=false]"));
+            b.set(eWallX, 3, z, bs("minecraft:piston[facing=west,extended=false]"));
+            // redstone-dust shelf: solid stone y=1..3 with a dust ribbon at y=4 on top,
+            // carrying the observer-back signal across to the piston.
+            pillar(b, wShelfX, z, 1, 3, stone);
+            pillar(b, eShelfX, z, 1, 3, stone);
+            b.set(wShelfX, 4, z, redDust);
+            b.set(eShelfX, 4, z, redDust);
+        }
+
+        // ── 6) BONE-MEAL DISPENSER ROW on the NORTH rim (z=0), y=2 ───────────
+        // A dispenser at each bed column facing south down the bed, loaded with bone
+        // meal for the player's growth assist. (Dispenser derives from a cobble + bow +
+        // redstone recipe → FU-derived; its bone-meal contents are NBT, not a block.)
+        b.set(wBedX, 2, z0, bs("minecraft:dispenser[facing=south,triggered=false]"));
+        b.set(eBedX, 2, z0, bs("minecraft:dispenser[facing=south,triggered=false]"));
+
+        // ── 7) DARK CHAMBER SHELL: stone walls + stone-brick ceiling, y=1..4 ─
+        // Stone walls box the beds (mushrooms need an enclosed, dim space) and a
+        // stone-brick ceiling at y=4 keeps the interior dark so the mushrooms survive;
+        // stone-brick corner posts tie it together. Walls rise y=1..3 (the ceiling is
+        // y=4). The harvest/shelf columns at x=1/7 already fill the wall line at those
+        // x, so the ring just closes the remaining perimeter cells. We leave a 2-high
+        // DOORWAY in the south wall at the WEST shelf column (x=wShelfX) by skipping
+        // those two wall cells (air-skip: never written = enterable gap), then top it
+        // with stone at y=3 as a lintel so the chamber stays dark above the door.
+        int doorX = wShelfX;                         // x=1 — clear of the chest (cx) + beds
+        for (int y = 1; y <= 3; y++) {
+            line(b, y, x0, z0, x1, z0, stone);       // north wall
+            line(b, y, x0, z0, x0, z1, stone);       // west wall
+            line(b, y, x1, z0, x1, z1, stone);       // east wall
+            // south wall with a 2-high doorway gap at doorX (skip y=1,2 there)
+            for (int x = x0; x <= x1; x++) {
+                if (x == doorX && y <= 2) continue;  // doorway opening
+                b.set(x, y, z1, stone);
+            }
+        }
+        corners(b, x0, z0, x1, z1, 1, 3, bricks);    // stone-brick corner posts
+        floor(b, 4, x0, z0, x1, z1, bricks);         // dark stone-brick ceiling
+        // re-lay the two redstone-dust ribbons on the y=4 shelf tops (the ceiling
+        // floor() above would otherwise bury them); the dust rides on the solid stone
+        // shelf pillars (y=1..3) and ties each observer-back to its piston. These two
+        // edge cells (x=1/x=7) read as the wiring channel in the otherwise-sealed roof.
+        for (int z = bedZ0; z <= bedZ1; z++) {
+            b.set(wShelfX, 4, z, redDust);
+            b.set(eShelfX, 4, z, redDust);
+        }
+
+        // ── 8) PLAYER ACCESS TORCH, OUTSIDE the dark beds ───────────────────
+        // A single wall torch mounted on the INNER face of the south wall (the wall is
+        // at z=8, the torch sits one cell inside at z=7 and faces north = away from the
+        // wall into the access bay). It sits at x=doorX+1 (x=2), z=7 — clear of the
+        // chest (x=cx) and one row south of the bed span (z=1..6), so it lights the
+        // player's entry without raising the growing-bed light level (mushrooms need
+        // darkness). facing=north means it's hung on the block to its south (the z=8
+        // south wall), pointing into the room.
+        wallTorch(b, doorX + 1, 2, z1 - 1, "north");
+
+        // ── 9) END CAPS + LABEL SIGNS ────────────────────────────────────────
+        // Cobble cap on the bed-span north end at y=1 frames the planter beds as a
+        // contained trough (the south end is the chest/door line).
+        line(b, 1, wWallX, z0, eWallX, z0, cobble);   // north end cap, y=1 (under dispensers)
+        // oak wall signs on the south face flanking the chest (FU-valued, derived).
+        b.set(wBedX, 1, z1, bs("minecraft:oak_wall_sign[facing=south]"));
+        b.set(eBedX, 1, z1, bs("minecraft:oak_wall_sign[facing=south]"));
 
         return b.build();
     }
