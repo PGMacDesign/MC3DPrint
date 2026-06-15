@@ -208,6 +208,7 @@ class CuratedBlueprintGenerator {
         builds.put("jungle_hut", jungleHut());
         builds.put("jungle_temple_ruin", jungleTempleRuin());
         builds.put("mangrove_stilt_hut", mangroveStiltHut());
+        builds.put("cherry_blossom_pavilion", cherryBlossomPavilion());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -3659,5 +3660,112 @@ class CuratedBlueprintGenerator {
             b.set(x0, y, z, ((z + y) % 2 == 0) ? a : bMat);
             b.set(x1, y, z, ((z + y) % 2 == 0) ? bMat : a);
         }
+    }
+
+    /**
+     * Cherry Blossom Pavilion (§3.A) — 9×9 footprint → builder(9, 11, 9). An OPEN,
+     * pillared cherry shelter: a raised cherry-plank deck with a soft pink "petal"
+     * read, eight stripped-cherry pillars (four corners + four mid-span posts), open
+     * cherry-fence railings between them (with a front opening to walk in), a tiered
+     * (telescoping, upturned-eave) cherry {@link #pagodaRoof}, and hanging lanterns
+     * glowing under the eaves. No walls — it reads as an enterable open pavilion.
+     *
+     * <p>Petal/blossom look uses {@code pink_carpet} (dyed wool derivative →
+     * normalizes to base cost, FU-valued) laid over the deck, NOT {@code pink_petals}
+     * (a gate-flagged, unvalued block per the Phase 2 rules). The carpet sits at
+     * {@code y=1} on top of the {@code y=0} cherry-plank deck and reads as scattered
+     * fallen blossoms.
+     *
+     * <p>Geometry. Centre {@code (cx=4, cz=4)}. Pillars rise {@code y=1..3}; railings
+     * sit on the deck at {@code y=1}; standing height ({@code y=1..3}) is left OPEN
+     * inside per the air-skip rule so the shelter is walk-in. The roof seats its
+     * lowest eave at {@code y=5} (its under-bracket course lands at {@code y=4}, one
+     * clear course above the {@code y=3} pillar tops). A {@code baseHalf=3} bottom
+     * tier reaches {@code cx±(3+1) = 0..8} — exactly the 9-wide footprint edge.
+     */
+    private static Blueprint cherryBlossomPavilion() {
+        final int W = 9, H = 11;
+        final int cx = 4, cz = 4;
+        Blueprint.Builder b = Blueprint.builder("Cherry Blossom Pavilion", W, H, W);
+        Palette p = CHERRY; // cherry planks/logs/slabs/stairs, pink bed, lantern
+        BlueprintBlockState pillarPost = bs("minecraft:stripped_cherry_log[axis=y]");
+        BlueprintBlockState railing = bs("minecraft:cherry_fence");
+        BlueprintBlockState pinkCarpet = bs("minecraft:pink_carpet");
+        BlueprintBlockState deckTrim = bs("minecraft:cherry_slab[type=top]");
+        int x0 = 0, x1 = W - 1, z0 = 0, z1 = W - 1; // 0..8
+        int pillarTop = 3;   // pillars y=1..3
+        int roofY = 5;       // lowest eave; under-bracket lands at y=4 (above tops)
+
+        // 1) cherry-plank deck at y=0 (the walkable surface = top of y=0).
+        floor(b, 0, x0, z0, x1, z1, p.plankFloor);
+        // A cherry-slab trim border one course up around the deck rim reads as a
+        // raised lip; skip the front-centre cell so the entry stays flush/open.
+        for (int x = x0; x <= x1; x++) {
+            if (x != cx) b.set(x, 1, z0, deckTrim); // north rim (front), gap at entry
+            b.set(x, 1, z1, deckTrim);              // south rim (back)
+        }
+        for (int z = z0 + 1; z <= z1 - 1; z++) {
+            b.set(x0, 1, z, deckTrim);              // west rim
+            b.set(x1, 1, z, deckTrim);              // east rim
+        }
+
+        // 2) eight stripped-cherry pillars: four corners + four mid-span posts.
+        int[][] posts = {
+                {x0, z0}, {x1, z0}, {x0, z1}, {x1, z1}, // corners
+                {cx, z0}, {cx, z1}, {x0, cz}, {x1, cz}  // edge midpoints
+        };
+        for (int[] q : posts) {
+            pillar(b, q[0], q[1], 1, pillarTop, pillarPost);
+        }
+
+        // 3) open cherry-fence railings spanning between the pillars at y=1 (waist
+        //    height). The deck-rim cells (y=1 slabs) are overwritten by the rail on
+        //    the perimeter line so the railing reads continuous; the FRONT centre
+        //    (the (cx, z0) bay either side of the front mid-post) is left open as the
+        //    walk-in entrance. Fences self-reconcile their connections at print time.
+        for (int x = x0; x <= x1; x++) {
+            // front (north) rail: skip the two cells flanking centre → open entry bay
+            if (x != cx - 1 && x != cx + 1) b.set(x, 1, z0, railing);
+            b.set(x, 1, z1, railing); // back (south) rail, full
+        }
+        for (int z = z0 + 1; z <= z1 - 1; z++) {
+            b.set(x0, 1, z, railing); // west rail
+            b.set(x1, 1, z, railing); // east rail
+        }
+        // re-stamp the pillar bases (the rail loop overwrote them with fence)
+        for (int[] q : posts) {
+            b.set(q[0], 1, q[1], pillarPost);
+        }
+
+        // 4) soft pink-carpet "petal" scatter on the open deck interior (y=1). Carpet
+        //    derives from wool → FU-valued; reads as fallen cherry blossoms. Kept off
+        //    the perimeter rail line and clear of a central walking path.
+        int[][] petals = {
+                {cx - 1, cz - 1}, {cx + 1, cz - 1}, {cx - 1, cz + 1}, {cx + 1, cz + 1},
+                {cx - 2, cz}, {cx + 2, cz}, {cx, cz - 2}, {cx, cz + 2}
+        };
+        for (int[] q : petals) {
+            b.set(q[0], 1, q[1], pinkCarpet);
+        }
+
+        // 5) tiered upturned-eave cherry roof seated above the pillars (two tiers +
+        //    finial). baseHalf=3 reaches the 9-wide footprint edge exactly.
+        pagodaRoof(b, cx, cz, roofY, 3, 2, p.roofStairName, p.roofSlab, p.lightBlock);
+
+        // 6) hanging lanterns under the eaves on chains from the lowest eave ring at
+        //    the four mid-span pillars, so the pavilion glows. The eave ring sits at
+        //    y=roofY (5); hang a chain at y=4 and the lantern at y=3 (pillar-top
+        //    height), backed by the eave above.
+        int[][] lanternBays = {{cx, z0}, {cx, z1}, {x0, cz}, {x1, cz}};
+        for (int[] q : lanternBays) {
+            // offset one cell inward from the rim so the lantern hangs in the bay,
+            // not inside the pillar column.
+            int lx = q[0] == x0 ? x0 + 1 : (q[0] == x1 ? x1 - 1 : q[0]);
+            int lz = q[1] == z0 ? z0 + 1 : (q[1] == z1 ? z1 - 1 : q[1]);
+            b.set(lx, 4, lz, CHAIN);
+            b.set(lx, 3, lz, HANGING_LANTERN);
+        }
+
+        return b.build();
     }
 }
