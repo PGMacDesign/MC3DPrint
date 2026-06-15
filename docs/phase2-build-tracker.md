@@ -7,9 +7,9 @@
 
 ## Status
 - **Curated builds before Phase 2:** 29
-- **Phase 2 queue:** 103 · **Done:** 44 · **Blocked:** 2 · **Remaining:** 57
-- **Next up:** `brewing_room`
-- **Last completed:** `storage_barrel_hall`
+- **Phase 2 queue:** 103 · **Done:** 45 · **Blocked:** 2 · **Remaining:** 56
+- **Next up:** `super_smelter`
+- **Last completed:** `brewing_room`
 
 ## Process (per build — follow exactly on resume)
 1. Pick the first unchecked `[ ]` build in queue order below.
@@ -85,7 +85,7 @@
 
 ### G — Utility rooms (6) · functional shells
 - [x] storage_barrel_hall
-- [ ] brewing_room
+- [x] brewing_room
 - [ ] super_smelter
 - [ ] smithy_workshop
 - [ ] map_room

@@ -246,6 +246,7 @@ class CuratedBlueprintGenerator {
         builds.put("dragon_statue", dragonStatue());
         // Phase 2 — Category G (storage)
         builds.put("storage_barrel_hall", storageBarrelHall());
+        builds.put("brewing_room", brewingRoom());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -6296,6 +6297,128 @@ class CuratedBlueprintGenerator {
         chainLantern(b, 2, lanternY, cz, 1);                         // west walkway
         chainLantern(b, 6, lanternY, cz, 1);                         // east walkway
         chainLantern(b, cx, lanternY, cz, 1);                        // centre crossing
+
+        return b.build();
+    }
+
+    /**
+     * §G.brewing_room — a functional potion-brewing chamber, 7×7×5 (W×L×H) →
+     * builder(7, 5, 7).
+     *
+     * <p>An enterable {@link #roomShell} the player walks into and stocks with fuel
+     * (blaze powder) and ingredients to brew. Printed as the working SHELL: a row of
+     * three brewing stands on a smooth-stone alchemy counter against the back wall, a
+     * water-filled cauldron beside the counter for filling bottles, ingredient
+     * storage (barrels + a chest), a small nether-wart bed in the back corner (the
+     * single most-needed brewing ingredient grows in-place), bookshelf lab accents,
+     * and glowstone + hanging-lantern lighting.
+     *
+     * <p><b>Printability.</b> Every block is vanilla and either FU-valued or
+     * structural-free:
+     * <ul>
+     *   <li><b>brewing_stand</b> derives (blaze_rod + cobblestone), <b>cauldron</b>
+     *       derives (iron ingots), <b>glowstone</b>=20@3, <b>bookshelf</b>=40@3,
+     *       <b>barrel/chest</b> derive (planks/slabs), lanterns/chains derive.</li>
+     *   <li><b>soul_sand</b>=1@1 and <b>netherrack</b>=1@1 are explicitly valued
+     *       (mined-but-listed); the <b>nether_wart</b> crop is a {@code BushBlock}, so
+     *       it's structural matter and prints free (its item is the seed, never the
+     *       grown block) — same family as farmland crops.</li>
+     *   <li><b>water</b> in the cauldron is itemless structural matter (prints free).</li>
+     * </ul>
+     * No glass panes or iron bars are used, so the stub-pane render gate is moot.
+     *
+     * <p>Layout (north = z=0 is the entrance wall; 7×7 = x0..6, z0..6; interior
+     * x/z 1..5, standing height y=1..3, ceiling y=4):
+     * <ul>
+     *   <li><b>Shell</b> — stone-brick walls, polished-blackstone floor, stone-brick
+     *       ceiling; walk-in oak door centred on the north wall, opening inward.</li>
+     *   <li><b>Alchemy counter</b> — a smooth-stone counter along the back (south,
+     *       z=5) wall at y=1 with three <b>brewing stands</b> set on top (y=2) at
+     *       x=2,3,4, the canonical brewing-station row.</li>
+     *   <li><b>Cauldron</b> — a water-filled cauldron at floor level in the SW work
+     *       corner (x=1, z=5) for filling bottles.</li>
+     *   <li><b>Nether-wart bed</b> — a 2×2 patch of <b>soul_sand</b> (y=1) in the SE
+     *       corner with mature <b>nether_wart</b> growing on top (y=2); a netherrack
+     *       lip frames it as a little nether garden.</li>
+     *   <li><b>Storage</b> — two <b>barrels</b> and a <b>chest</b> along the west wall
+     *       for bottles/ingredients.</li>
+     *   <li><b>Lab accents</b> — a <b>bookshelf</b> pair flanking the counter and a
+     *       <b>glowstone</b> block recessed in the ceiling centre.</li>
+     *   <li><b>Lighting</b> — a chain-hung lantern over the work area + the ceiling
+     *       glowstone keep the room lit (mob-free interior).</li>
+     * </ul>
+     */
+    private static Blueprint brewingRoom() {
+        Blueprint.Builder b = Blueprint.builder("Brewing Room", 7, 5, 7);
+
+        BlueprintBlockState polishedBlackstone = bs("minecraft:polished_blackstone"); // floor (derives)
+        BlueprintBlockState smoothStone = bs("minecraft:smooth_stone");                // counter top
+        BlueprintBlockState soulSand = bs("minecraft:soul_sand");                      // wart bed (1@1)
+        BlueprintBlockState netherrack = bs("minecraft:netherrack");                   // wart-bed lip (1@1)
+        BlueprintBlockState netherWart = bs("minecraft:nether_wart[age=3]");           // BushBlock → structural
+        BlueprintBlockState brewingStand = bs("minecraft:brewing_stand[has_bottle_0=false,has_bottle_1=false,has_bottle_2=false]");
+
+        int x0 = 0, x1 = 6, z0 = 0, z1 = 6;   // 7×7 footprint
+        int yB = 1, yT = 3;                   // wall course (y=1..3)
+        int doorX = 3;                        // north-wall doorway (centred)
+
+        // ── 1) SHELL: stone-brick walls, polished-blackstone floor, stone-brick ceiling ──
+        // roomShell lays the floor (y0), wall ring (y1..3) and ceiling (y4); the
+        // interior is left open per the air-skip rule so it's enterable.
+        roomShell(b, x0, 0, z0, x1, yT + 1, z1, STONE_BRICKS, polishedBlackstone, STONE_BRICKS);
+
+        // ── 2) NORTH-WALL DOORWAY (centred), opens inward ───────────────────
+        door2(b, doorX, yB, z0, "oak", "N");
+
+        // ── 3) ALCHEMY COUNTER + BREWING-STAND ROW (back/south wall) ────────
+        // Smooth-stone counter at y=1 spanning x=1..5 against the south wall (z=5),
+        // with three brewing stands set on top (y=2) at x=2,3,4 — the classic
+        // three-station brewing row. The counter doubles as the wart-bed lip later.
+        line(b, yB, 1, 5, 5, 5, smoothStone);
+        b.set(2, yB + 1, 5, brewingStand);
+        b.set(3, yB + 1, 5, brewingStand);
+        b.set(4, yB + 1, 5, brewingStand);
+
+        // ── 4) CAULDRON (water source) — SW work corner, floor level ────────
+        // Cauldron at (1,1,4) just in front of the counter; fill it so bottles can
+        // be drawn. WATER inside is itemless structural matter (prints free).
+        BlueprintBlockState waterCauldron = bs("minecraft:water_cauldron[level=3]");
+        b.set(1, yB, 4, waterCauldron);
+
+        // ── 5) NETHER-WART BED — SE corner, a little nether garden ──────────
+        // A 2×2 soul-sand patch at (4..5, z=3..4) on the floor (y=1) with mature
+        // nether_wart growing on top (y=2). A netherrack lip on the inner edge frames
+        // it. soul_sand & netherrack are valued; the wart crop is a BushBlock (free).
+        for (int x = 4; x <= 5; x++) {
+            for (int z = 3; z <= 4; z++) {
+                b.set(x, yB, z, soulSand);
+                b.set(x, yB + 1, z, netherWart);
+            }
+        }
+        // netherrack lip on the two interior-facing edges (x=3 col, z=2 row) at floor
+        b.set(3, yB, 3, netherrack);
+        b.set(3, yB, 4, netherrack);
+        b.set(4, yB, 2, netherrack);
+        b.set(5, yB, 2, netherrack);
+
+        // ── 6) INGREDIENT STORAGE — west wall (x=1) ─────────────────────────
+        // Two barrels stacked + a chest at floor level along the west wall for
+        // bottles and reagents. Kept off the door approach (z=1 left clear).
+        b.set(1, yB, 2, CHEST);
+        b.set(1, yB, 3, BARREL);
+        b.set(1, yB + 1, 3, BARREL);   // a second barrel stacked for capacity
+
+        // ── 7) LAB ACCENTS — bookshelves flanking the counter ──────────────
+        // A bookshelf at each back corner (on the counter's flanks) for the
+        // alchemist's-library feel. bookshelf=40@3.
+        b.set(1, yB + 1, 5, BOOKSHELF);
+        b.set(5, yB + 1, 5, BOOKSHELF);
+
+        // ── 8) LIGHTING — ceiling glowstone + a chain-hung lantern ─────────
+        // Recess a glowstone block into the ceiling centre (overwrites the ceiling
+        // cell) and hang a lantern over the work area so the room is fully lit.
+        b.set(3, yT + 1, 3, GLOWSTONE);          // ceiling centre (y=4)
+        chainLantern(b, 3, yB + 1, 3, 1);        // lantern at y=2 over the centre, chain to y=3
 
         return b.build();
     }
