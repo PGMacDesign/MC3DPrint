@@ -7,9 +7,9 @@
 
 ## Status
 - **Curated builds before Phase 2:** 29
-- **Phase 2 queue:** 103 · **Done:** 81 · **Blocked:** 2 · **Remaining:** 20
-- **Next up:** `conduit_shrine`
-- **Last completed:** `fishing_hut`
+- **Phase 2 queue:** 103 · **Done:** 82 · **Blocked:** 2 · **Remaining:** 19
+- **Next up:** `ocean_ruins`
+- **Last completed:** `conduit_shrine`
 
 ## Process (per build — follow exactly on resume)
 1. Pick the first unchecked `[ ]` build in queue order below.
@@ -128,7 +128,7 @@
 ### E — Ocean / water (9)
 - [x] dock_pier
 - [x] fishing_hut
-- [ ] conduit_shrine
+- [x] conduit_shrine (conduit block unvalued/loot-derived → left empty sea-lantern mount for player)
 - [ ] ocean_ruins
 - [ ] coral_garden
 - [ ] prismarine_monument_fragment
