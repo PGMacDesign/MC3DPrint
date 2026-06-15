@@ -658,6 +658,383 @@ class CuratedBlueprintGenerator {
     }
 
     // =====================================================================
+    //  PHASE 0 SHARED LIBRARY  (palette-driven, parametric houses + rooms)
+    // =====================================================================
+    /*
+     * ─────────────────────────────────────────────────────────────────────
+     *  CONVENTIONS FOR FUTURE BUILD AUTHORS (read before writing a build)
+     * ─────────────────────────────────────────────────────────────────────
+     *
+     *  AXES.  x = width  (east, +x),  y = up (+y),  z = depth (south, +z).
+     *  Spec footprints are written W×L×H and the builder is
+     *  {@code builder(name, sizeX=W, sizeY=H, sizeZ=L)} — note H feeds sizeY.
+     *
+     *  AIR-SKIP RULE.  {@link Blueprint.Builder#set} SILENTLY IGNORES air
+     *  (see Blueprint.java:160 — "Air states are treated as empty and
+     *  skipped"). You therefore CANNOT punch a hole by setting air. To leave
+     *  a cell empty — a doorway, a window opening, an open interior, a ladder
+     *  hatch — simply DO NOT call set() on that cell. NEVER try to clear a
+     *  cell with {@code bs("minecraft:air")}; it is a no-op and the previously
+     *  placed block (if any) stays. The {@link #house} helper relies on this:
+     *  the doorway and the whole interior are left open by not writing them.
+     *
+     *  ENTERABLE INTERIORS.  The ground-floor interior MUST be open at
+     *  standing height. A past bug raised an interior floor one level so the
+     *  player spawned inside solid blocks and the build was unenterable. So:
+     *  put the SOLID floor at {@code y = y0} (walkable surface = top of y0),
+     *  the wall ring from {@code y0+1} up, the doorway gap at {@code y0+1}
+     *  and {@code y0+2}, and leave the interior cells above the floor unset.
+     *
+     *  STAIR FACING (gable/hip).  Roof stairs face the way they DESCEND, i.e.
+     *  toward the eave. Per {@link #gableRoofX}: the north slope (low z) uses
+     *  {@code facing=south}; the south slope (high z) uses {@code facing=north}
+     *  (and likewise west→{@code facing=east}, east→{@code facing=west} for
+     *  {@link #hipRoof}). The helpers build the stair strings for you from a
+     *  bare stair-block NAME (e.g. {@code "oak_stairs"}); a {@link Palette}
+     *  carries that name in {@link Palette#roofStairName}.
+     *
+     *  CONNECTING BLOCKS self-reconcile AT PRINT TIME. Glass panes, fences,
+     *  iron bars, walls, and redstone wire compute their own connection
+     *  shapes when placed in-world, so you do NOT pre-set connection states —
+     *  just place the base block and the printer reconciles neighbours.
+     *
+     *  TWO-BLOCK PLACEMENTS use the dedicated helpers so BOTH halves land:
+     *  doors via {@link #door2} (facing derived from the wall face so it opens
+     *  inward), beds via {@link #bed} (head + foot). Setting only one half
+     *  prints a broken single block.
+     * ─────────────────────────────────────────────────────────────────────
+     */
+
+    /**
+     * A reusable block set that drives a biome/style house. Fields are grouped
+     * by role so {@link #house} (and future room/roof builders) can stay
+     * palette-agnostic — swap the {@link Palette} and the same geometry renders
+     * in a different material family.
+     *
+     * <p>Roof material is split to feed the existing roof helpers cleanly:
+     * {@link #gableRoofX}/{@link #hipRoof} take a bare stair-block <em>name</em>
+     * {@code String} (they build the facing variants themselves), so the palette
+     * stores {@link #roofStairName} (e.g. {@code "oak_stairs"}) alongside the
+     * matching {@link #roofSlab} they want for the ridge/cap. Likewise
+     * {@link #bed} and {@link #door2} take colour/wood <em>name</em> strings, so
+     * {@link #doorWood} and {@link #bedColor} are stored as {@code String}.
+     */
+    private static final class Palette {
+        /** Primary wall block (the bulk of the wall ring). */
+        final BlueprintBlockState wall;
+        /** Secondary trim / accent block (banding, plate course, dormers). */
+        final BlueprintBlockState accentWall;
+        /** Corner post, vertical (axis=y) variant. */
+        final BlueprintBlockState logPillarY;
+        /** Corner post, horizontal (axis=x) variant — for tie-beams/rails. */
+        final BlueprintBlockState logPillarX;
+        /** Interior plank/finish floor block. */
+        final BlueprintBlockState plankFloor;
+        /** Matching slab, top half (ridge caps, sills, counters). */
+        final BlueprintBlockState slabTop;
+        /** Matching slab, bottom half (ridge of a gable, eaves). */
+        final BlueprintBlockState slabBottom;
+        /** Window glazing (a pane or glass block). */
+        final BlueprintBlockState windowPane;
+        /** Bare stair-block NAME for {@link #gableRoofX}/{@link #hipRoof} (e.g. "oak_stairs"). */
+        final String roofStairName;
+        /** Slab used for the gable ridge / hip cap (usually {@link #slabBottom}). */
+        final BlueprintBlockState roofSlab;
+        /** Wood NAME for {@link #door2} (e.g. "oak"). */
+        final String doorWood;
+        /** Bed colour NAME for {@link #bed} (e.g. "white"). */
+        final String bedColor;
+        /** A light source block (lantern/torch/etc.) for sconces and interiors. */
+        final BlueprintBlockState lightBlock;
+
+        Palette(BlueprintBlockState wall, BlueprintBlockState accentWall,
+                BlueprintBlockState logPillarY, BlueprintBlockState logPillarX,
+                BlueprintBlockState plankFloor, BlueprintBlockState slabTop, BlueprintBlockState slabBottom,
+                BlueprintBlockState windowPane, String roofStairName, BlueprintBlockState roofSlab,
+                String doorWood, String bedColor, BlueprintBlockState lightBlock) {
+            this.wall = wall;
+            this.accentWall = accentWall;
+            this.logPillarY = logPillarY;
+            this.logPillarX = logPillarX;
+            this.plankFloor = plankFloor;
+            this.slabTop = slabTop;
+            this.slabBottom = slabBottom;
+            this.windowPane = windowPane;
+            this.roofStairName = roofStairName;
+            this.roofSlab = roofSlab;
+            this.doorWood = doorWood;
+            this.bedColor = bedColor;
+            this.lightBlock = lightBlock;
+        }
+    }
+
+    // ---- predefined biome/style palettes (vanilla, FU-valued blocks) --------
+
+    /** Plains: oak planks + cobble, oak corner logs, glass panes, white bed. */
+    private static final Palette PLAINS_OAK = new Palette(
+            OAK_PLANKS, COBBLE, OAK_LOG_Y, OAK_LOG_X,
+            OAK_PLANKS, OAK_SLAB_TOP, OAK_SLAB_BOTTOM, GLASS_PANE,
+            "oak_stairs", OAK_SLAB_BOTTOM, "oak", "white", LANTERN);
+
+    /** Taiga: spruce planks + cobble, spruce corner logs. */
+    private static final Palette TAIGA_SPRUCE = new Palette(
+            SPRUCE_PLANKS, COBBLE, SPRUCE_LOG_Y, bs("minecraft:spruce_log[axis=x]"),
+            SPRUCE_PLANKS, SPRUCE_SLAB_TOP, SPRUCE_SLAB_BOTTOM, GLASS_PANE,
+            "spruce_stairs", SPRUCE_SLAB_BOTTOM, "spruce", "blue", LANTERN);
+
+    /** Savanna: acacia planks + acacia logs over stripped-acacia trim. */
+    private static final Palette SAVANNA_ACACIA = new Palette(
+            bs("minecraft:acacia_planks"), bs("minecraft:stripped_acacia_log[axis=x]"),
+            bs("minecraft:acacia_log[axis=y]"), bs("minecraft:acacia_log[axis=x]"),
+            bs("minecraft:acacia_planks"), bs("minecraft:acacia_slab[type=top]"),
+            bs("minecraft:acacia_slab[type=bottom]"), GLASS_PANE,
+            "acacia_stairs", bs("minecraft:acacia_slab[type=bottom]"), "acacia", "orange", LANTERN);
+
+    /** Desert: cut sandstone walls + smooth-sandstone trim, sandstone-stair roof. */
+    private static final Palette DESERT_SANDSTONE = new Palette(
+            bs("minecraft:cut_sandstone"), bs("minecraft:smooth_sandstone"),
+            bs("minecraft:chiseled_sandstone"), bs("minecraft:sandstone"),
+            bs("minecraft:smooth_sandstone"), bs("minecraft:sandstone_slab[type=top]"),
+            bs("minecraft:sandstone_slab[type=bottom]"), GLASS_PANE,
+            "sandstone_stairs", bs("minecraft:sandstone_slab[type=bottom]"), "jungle", "yellow", LANTERN);
+
+    /** Snowy: spruce + snow-block trim, spruce corner logs, blue bed. */
+    private static final Palette SNOWY = new Palette(
+            SPRUCE_PLANKS, bs("minecraft:snow_block"), SPRUCE_LOG_Y, bs("minecraft:spruce_log[axis=x]"),
+            SPRUCE_PLANKS, SPRUCE_SLAB_TOP, SPRUCE_SLAB_BOTTOM, GLASS_PANE,
+            "spruce_stairs", SPRUCE_SLAB_BOTTOM, "spruce", "light_blue", LANTERN);
+
+    /** Jungle: jungle planks + jungle logs, cyan bed. */
+    private static final Palette JUNGLE = new Palette(
+            bs("minecraft:jungle_planks"), bs("minecraft:stripped_jungle_log[axis=x]"),
+            bs("minecraft:jungle_log[axis=y]"), bs("minecraft:jungle_log[axis=x]"),
+            bs("minecraft:jungle_planks"), bs("minecraft:jungle_slab[type=top]"),
+            bs("minecraft:jungle_slab[type=bottom]"), GLASS_PANE,
+            "jungle_stairs", bs("minecraft:jungle_slab[type=bottom]"), "jungle", "cyan", LANTERN);
+
+    /** Mangrove: mangrove planks + mangrove logs, red bed. */
+    private static final Palette MANGROVE = new Palette(
+            bs("minecraft:mangrove_planks"), bs("minecraft:stripped_mangrove_log[axis=x]"),
+            bs("minecraft:mangrove_log[axis=y]"), bs("minecraft:mangrove_log[axis=x]"),
+            bs("minecraft:mangrove_planks"), bs("minecraft:mangrove_slab[type=top]"),
+            bs("minecraft:mangrove_slab[type=bottom]"), GLASS_PANE,
+            "mangrove_stairs", bs("minecraft:mangrove_slab[type=bottom]"), "mangrove", "red", LANTERN);
+
+    /** Cherry: cherry planks + cherry logs, pink bed, soul-soft light read. */
+    private static final Palette CHERRY = new Palette(
+            bs("minecraft:cherry_planks"), bs("minecraft:stripped_cherry_log[axis=x]"),
+            bs("minecraft:cherry_log[axis=y]"), bs("minecraft:cherry_log[axis=x]"),
+            bs("minecraft:cherry_planks"), bs("minecraft:cherry_slab[type=top]"),
+            bs("minecraft:cherry_slab[type=bottom]"), GLASS_PANE,
+            "cherry_stairs", bs("minecraft:cherry_slab[type=bottom]"), "cherry", "pink", LANTERN);
+
+    /** Badlands: terracotta walls + smooth-sandstone trim, brick-stair roof. */
+    private static final Palette BADLANDS_TERRACOTTA = new Palette(
+            bs("minecraft:terracotta"), bs("minecraft:smooth_sandstone"),
+            bs("minecraft:cut_sandstone"), bs("minecraft:sandstone"),
+            bs("minecraft:smooth_sandstone"), bs("minecraft:brick_slab[type=top]"),
+            bs("minecraft:brick_slab[type=bottom]"), GLASS_PANE,
+            "brick_stairs", bs("minecraft:brick_slab[type=bottom]"), "jungle", "orange", LANTERN);
+
+    /** Dark-oak medieval: stone-brick walls + dark-oak corner posts, dark-oak doors. */
+    private static final Palette DARK_OAK_MEDIEVAL = new Palette(
+            STONE_BRICKS, DARK_OAK_PLANKS,
+            bs("minecraft:dark_oak_log[axis=y]"), bs("minecraft:dark_oak_log[axis=x]"),
+            DARK_OAK_PLANKS, STONE_BRICK_SLAB_TOP, STONE_BRICK_SLAB_BOTTOM, GLASS_PANE,
+            "stone_brick_stairs", STONE_BRICK_SLAB_BOTTOM, "dark_oak", "red", LANTERN);
+
+    /** Modern (optional): white-concrete walls + light-gray trim, glass, flat-feel roof. */
+    private static final Palette MODERN_CONCRETE = new Palette(
+            bs("minecraft:white_concrete"), bs("minecraft:light_gray_concrete"),
+            bs("minecraft:smooth_quartz"), bs("minecraft:smooth_quartz"),
+            bs("minecraft:smooth_quartz"), bs("minecraft:smooth_quartz_slab[type=top]"),
+            bs("minecraft:smooth_quartz_slab[type=bottom]"), GLASS,
+            "quartz_stairs", bs("minecraft:smooth_quartz_slab[type=bottom]"), "oak", "gray", SEA_LANTERN);
+
+    // ---- generic gap-fillers (3D fills / shells / rooms) --------------------
+
+    /**
+     * A solid 3D box fill of {@code mat} over [x0..x1] × [y0..y1] × [z0..z1]
+     * (inclusive). The 2D {@link #floor} fills a single y-layer; this is its
+     * volumetric sibling for plinths, thick walls, and filled cores. Order of
+     * the two corners doesn't matter — it normalises low/high per axis.
+     */
+    private static void solid(Blueprint.Builder b, int x0, int y0, int z0, int x1, int y1, int z1,
+                              BlueprintBlockState mat) {
+        int lx = Math.min(x0, x1), hx = Math.max(x0, x1);
+        int ly = Math.min(y0, y1), hy = Math.max(y0, y1);
+        int lz = Math.min(z0, z1), hz = Math.max(z0, z1);
+        for (int y = ly; y <= hy; y++) {
+            for (int x = lx; x <= hx; x++) {
+                for (int z = lz; z <= hz; z++) {
+                    b.set(x, y, z, mat);
+                }
+            }
+        }
+    }
+
+    /**
+     * A hollow box "room shell" for functional rooms: the four {@code wall}
+     * faces (yo+1..y1-1 between floor and ceiling), a solid {@code floorMat}
+     * slab at {@code y0}, and a solid {@code ceilMat} slab at {@code y1}, over
+     * [x0..x1] × [z0..z1]. The interior (between floor and ceiling, inside the
+     * wall ring) is LEFT OPEN per the air-skip rule so the room is enterable —
+     * carve a doorway afterward by overwriting wall cells with {@link #door2}
+     * (or simply omit a wall cell before calling if you want the gap pre-made).
+     * Pass {@code ceilMat == null} for an open-topped room.
+     */
+    private static void roomShell(Blueprint.Builder b, int x0, int y0, int z0, int x1, int y1, int z1,
+                                  BlueprintBlockState wall, BlueprintBlockState floorMat, BlueprintBlockState ceilMat) {
+        int lx = Math.min(x0, x1), hx = Math.max(x0, x1);
+        int ly = Math.min(y0, y1), hy = Math.max(y0, y1);
+        int lz = Math.min(z0, z1), hz = Math.max(z0, z1);
+        floor(b, ly, lx, lz, hx, hz, floorMat);
+        if (hy - ly >= 2) {
+            walls(b, lx, lz, hx, hz, ly + 1, hy - 1, wall);
+        } else if (hy - ly == 1) {
+            // 2-high box: the single mid course IS the wall ring
+            walls(b, lx, lz, hx, hz, ly + 1, hy - 1 < ly + 1 ? ly + 1 : hy - 1, wall);
+        }
+        if (ceilMat != null && hy > ly) {
+            floor(b, hy, lx, lz, hx, hz, ceilMat);
+        }
+    }
+
+    // ---- parametric, palette-driven house -----------------------------------
+
+    /**
+     * A clean, ENTERABLE rectangular house driven entirely by a {@link Palette},
+     * composed from the existing geometry helpers. Footprint is
+     * [x0..x1] × [z0..z1]; the walkable interior floor sits at {@code y=0} (its
+     * top face), walls rise {@code y=1..wallH}, and a gable roof closes the top.
+     *
+     * <p>What it lays down, in order:
+     * <ol>
+     *   <li>solid {@code plankFloor} foundation at {@code y=0} (walkable);</li>
+     *   <li>{@code wall} ring {@code y=1..wallH} with {@code logPillarY} corner
+     *       posts of equal height (no corner nub);</li>
+     *   <li>a few {@code windowPane} windows centred on each long wall and the
+     *       back wall;</li>
+     *   <li>a doorway in the centre of the north ({@code z=z0}) wall — the two
+     *       door cells get a {@link #door2} opening inward; the cell is the only
+     *       break in the ring, left open by writing the door (a 2-block state),
+     *       NOT by setting air;</li>
+     *   <li>a gable roof ({@link #gableRoofX} + {@link #gableEndFill}) seated at
+     *       {@code y=wallH} using the palette's {@link Palette#roofStairName} and
+     *       {@link Palette#roofSlab}; if the footprint is nearly square
+     *       ({@code |W−L| ≤ 1}) a {@link #hipRoof} is used instead so the roof
+     *       reads correctly;</li>
+     *   <li>if {@code furnish}, minimal interior props on the {@code y=1} floor:
+     *       a {@link #bed}, a crafting table, a chest, and a {@link Palette#lightBlock}.</li>
+     * </ol>
+     *
+     * <p>The interior above the floor is deliberately never written, so the
+     * player can walk in through the door and stand inside (see the ENTERABLE
+     * note in the conventions header).
+     *
+     * @param wallH top y of the wall ring (so walls occupy y=1..wallH, ≥3 advised)
+     */
+    private static void house(Blueprint.Builder b, int x0, int z0, int x1, int z1,
+                              int wallH, Palette p, boolean furnish) {
+        int lx = Math.min(x0, x1), hx = Math.max(x0, x1);
+        int lz = Math.min(z0, z1), hz = Math.max(z0, z1);
+        // 1) walkable foundation floor at y=0
+        floor(b, 0, lx, lz, hx, hz, p.plankFloor);
+        // 2) wall ring + equal-height corner posts (no nub)
+        walls(b, lx, lz, hx, hz, 1, wallH, p.wall);
+        corners(b, lx, lz, hx, hz, 1, wallH, p.logPillarY);
+        // 3) windows centred (vertically mid-wall) on the two long walls + back wall
+        int wy = Math.max(2, 1 + (wallH - 1) / 2); // a mid-height course, ≥2
+        int cz = (lz + hz) / 2;
+        int cx = (lx + hx) / 2;
+        if (hz - lz >= 4) {
+            window2(b, lx, wy, cz, p.windowPane, null); // west long wall
+            window2(b, hx, wy, cz, p.windowPane, null); // east long wall
+        }
+        window2(b, cx, wy, hz, p.windowPane, null);     // south (back) wall
+        // 4) door centred on the north wall (z=lz), opening inward (faces south)
+        door2(b, cx, 1, lz, p.doorWood, "N");
+        // 5) roof seated on the wall plate at y=wallH
+        int w = hx - lx, l = hz - lz;
+        if (Math.abs(w - l) <= 1) {
+            hipRoof(b, lx, lz, hx, hz, wallH, p.roofStairName, p.roofSlab);
+        } else {
+            gableRoofX(b, lx, lz, hx, hz, wallH, p.roofStairName, p.roofSlab);
+            gableEndFill(b, lx, lz, hx, hz, wallH, p.wall);
+        }
+        // 6) optional minimal furnishings on the standing floor (y=1)
+        if (furnish) {
+            bed(b, lx + 1, 1, hz - 1, p.bedColor, "south"); // head near back wall
+            b.set(hx - 1, 1, hz - 1, CRAFTING_TABLE);
+            b.set(hx - 1, 1, lz + 1, CHEST);
+            b.set(lx + 1, 1, lz + 1, p.lightBlock);
+        }
+    }
+
+    // ---- pagoda / stacked-eave roof (Japanese set) --------------------------
+
+    /**
+     * A stacked, upturned-eave pagoda roof of {@code tiers} tiers centred on
+     * {@code (cx,cz)}, the lowest tier seated at {@code y=cy}. Each tier is a
+     * smaller square ring of inward-facing stairs (per the gable/hip facing
+     * convention) with an outward "flare" lip of top-half stairs one course
+     * below the ring's eave — the upturned-eave silhouette. Tier {@code k}
+     * (0 = bottom) has half-extent {@code baseHalf - k} and sits two courses
+     * above the previous tier, so a 3-tier roof spans {@code cy..cy+5} plus a
+     * finial. The top is capped with {@code cap}.
+     *
+     * @param baseHalf  half-extent of the bottom tier (full width = 2*baseHalf+1)
+     * @param tiers     number of stacked tiers (≥1)
+     * @param roofStair bare stair-block NAME (e.g. "spruce_stairs")
+     * @param eaveSlab  slab used to cap each tier ridge / finial base
+     * @param cap       the apex finial block (e.g. a lantern or end rod)
+     */
+    private static void pagodaRoof(Blueprint.Builder b, int cx, int cz, int cy, int baseHalf, int tiers,
+                                   String roofStair, BlueprintBlockState eaveSlab, BlueprintBlockState cap) {
+        BlueprintBlockState north = bs("minecraft:" + roofStair + "[facing=south,half=bottom,shape=straight]");
+        BlueprintBlockState south = bs("minecraft:" + roofStair + "[facing=north,half=bottom,shape=straight]");
+        BlueprintBlockState west = bs("minecraft:" + roofStair + "[facing=east,half=bottom,shape=straight]");
+        BlueprintBlockState east = bs("minecraft:" + roofStair + "[facing=west,half=bottom,shape=straight]");
+        // upturned-eave flare lip: top-half stairs pointing the OPPOSITE way (out)
+        BlueprintBlockState flareN = bs("minecraft:" + roofStair + "[facing=north,half=top,shape=straight]");
+        BlueprintBlockState flareS = bs("minecraft:" + roofStair + "[facing=south,half=top,shape=straight]");
+        BlueprintBlockState flareW = bs("minecraft:" + roofStair + "[facing=west,half=top,shape=straight]");
+        BlueprintBlockState flareE = bs("minecraft:" + roofStair + "[facing=east,half=top,shape=straight]");
+        int y = cy;
+        for (int k = 0; k < tiers; k++) {
+            int h = baseHalf - k;
+            if (h < 0) break;
+            int ax0 = cx - h, ax1 = cx + h, az0 = cz - h, az1 = cz + h;
+            // upturned-eave flare lip one course below this tier's ring
+            for (int x = ax0; x <= ax1; x++) {
+                b.set(x, y, az0 - 1, flareN);
+                b.set(x, y, az1 + 1, flareS);
+            }
+            for (int z = az0; z <= az1; z++) {
+                b.set(ax0 - 1, y, z, flareW);
+                b.set(ax1 + 1, y, z, flareE);
+            }
+            // the tier ring proper: inward-facing stairs at y+1
+            for (int x = ax0; x <= ax1; x++) {
+                b.set(x, y + 1, az0, north);
+                b.set(x, y + 1, az1, south);
+            }
+            for (int z = az0; z <= az1; z++) {
+                b.set(ax0, y + 1, z, west);
+                b.set(ax1, y + 1, z, east);
+            }
+            // slab-cap the tier interior so each tier is closed before the next
+            if (h >= 1) {
+                floor(b, y + 1, ax0 + 1, az0 + 1, ax1 - 1, az1 - 1, eaveSlab);
+            }
+            y += 2; // next tier two courses up
+        }
+        // finial: a short stack capped by the cap block on the central axis
+        b.set(cx, y, cz, eaveSlab);
+        b.set(cx, y + 1, cz, cap);
+    }
+
+    // =====================================================================
     //  THE 23 BUILDS  (docs/blueprint-specs.md §3, coverage matrix §4 order)
     // =====================================================================
 

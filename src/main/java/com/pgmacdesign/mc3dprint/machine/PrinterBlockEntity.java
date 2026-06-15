@@ -425,6 +425,15 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
                 || block instanceof net.minecraft.world.level.block.DirtPathBlock; // grass/dirt path
     }
 
+    /**
+     * Public delegation to {@link #isStructuralMatter} for use in GameTests that
+     * verify curated-blueprint printability without instantiating a real printer.
+     * No behavior change — identical logic, different visibility.
+     */
+    public static boolean isStructuralMatterForTest(BlockState state) {
+        return isStructuralMatter(state);
+    }
+
     private void recordSkippedBlock(BlockState resolvedState) {
         skippedThisJob++;
         String id = net.minecraft.core.registries.BuiltInRegistries.BLOCK
