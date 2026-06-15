@@ -7,9 +7,9 @@
 
 ## Status
 - **Curated builds before Phase 2:** 29
-- **Phase 2 queue:** 103 · **Done:** 60 · **Blocked:** 2 · **Remaining:** 41
-- **Next up:** `stable_horse`
-- **Last completed:** `portcullis_gate`
+- **Phase 2 queue:** 103 · **Done:** 61 · **Blocked:** 2 · **Remaining:** 40
+- **Next up:** `greenhouse`
+- **Last completed:** `stable_horse`
 
 ## Process (per build — follow exactly on resume)
 1. Pick the first unchecked `[ ]` build in queue order below.
@@ -103,7 +103,7 @@
 - [x] guard_tower
 - [x] drawbridge
 - [x] portcullis_gate
-- [ ] stable_horse
+- [x] stable_horse
 - [ ] greenhouse
 
 ### B — Architectural styles (17)

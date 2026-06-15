@@ -263,6 +263,7 @@ class CuratedBlueprintGenerator {
         builds.put("guard_tower", guardTower());
         builds.put("drawbridge", drawbridge());
         builds.put("portcullis_gate", portcullisGate());
+        builds.put("stable_horse", stableHorse());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -9839,5 +9840,158 @@ class CuratedBlueprintGenerator {
         if (idx >= n) idx = n - 1;
         if (idx < 0) idx = 0;
         return idx;
+    }
+
+    /**
+     * §H.stable_horse — an OPEN-BAY HORSE STABLE, 9×11×10 (W×L×H) → builder(9, 10, 11).
+     * Disc T2. PMC "stable" tag archetype: a timber-and-stone barn whose long west &
+     * east walls are lined with fence-gated stalls flanking a central dirt aisle, a
+     * hay loft over the back half, a tack-room nook (barrels + wall signs), a gabled
+     * roof, and lanterns. The player walks in the open south bay and adds horses —
+     * none are captured.
+     *
+     * <p>Every block is a vanilla FU-valued or structural-free block (spruce
+     * logs/planks/slabs/stairs, oak fences + fence gates, hay, barrels, cauldrons,
+     * lanterns, ladders, signs, dirt-path; water is structural). Glass panes sit only
+     * in the solid timber-frame walls (sturdy faces on both sides) so the build never
+     * ships a stub pane.
+     *
+     * <p>The full 11-deep gable peaks at y=9, so H must be 10 (y range 0..9). The loft
+     * floor (y=4) and its hay sit strictly inboard of the roof slopes — at y=4 the
+     * roof occupies only z=0/z=10, and the loft is inset to z=1..5, so they never
+     * collide.
+     *
+     * <p>Layout (south = +z is the OPEN front; aisle runs north–south at x=4):
+     * <ul>
+     *   <li><b>y=0</b> — spruce-plank floor over the full 9×11 footprint; the central
+     *       aisle (x=4, z=1..9) is dirt-path so the stalls read as flanking bays.</li>
+     *   <li><b>y=1..3</b> — timber-frame north wall (z=0) and both long side walls
+     *       (x=0,8); the south face (z=10) is LEFT OPEN as the drive-in bay (only the
+     *       two south corner posts frame it). Glazed windows high in the side &amp;
+     *       back walls. The interior is left unwritten above the floor → enterable.</li>
+     *   <li><b>Stalls</b> — three west (x=1..3) and three east (x=5..7) bays, divided
+     *       by oak-fence partitions across x at z=3/6/9 and a fence rail down the
+     *       aisle edge (x=3 west, x=5 east), each stall opened to the aisle by an oak
+     *       fence gate. Hay-bale bedding + a cauldron water trough per side.</li>
+     *   <li><b>Hay loft, y=4</b> — a spruce-slab floor over the back half (inset
+     *       z=1..5, x=1..7) carrying stacked hay bales; the front half stays open to
+     *       the roof so a mounted player can ride in.</li>
+     *   <li><b>Tack room, NW</b> — barrels stacked in the corner with oak wall signs
+     *       (the tack board) on the west wall.</li>
+     *   <li><b>Roof</b> — a spruce gable running along X from y=4 (peak y=9), gable
+     *       ends filled; lanterns on the partition fence posts light the bays.</li>
+     * </ul>
+     */
+    private static Blueprint stableHorse() {
+        Blueprint.Builder b = Blueprint.builder("Horse Stable", 9, 10, 11);
+        int x0 = 0, x1 = 8, z0 = 0, z1 = 10;
+
+        // ── 1) FLOOR (y=0) — spruce planks, dirt-path central aisle ──────────
+        floor(b, 0, x0, z0, x1, z1, SPRUCE_PLANKS);
+        for (int z = 1; z <= 9; z++) {
+            b.set(4, 0, z, DIRT_PATH);            // the walk-in aisle
+        }
+
+        // ── 2) TIMBER-FRAME SHELL (y=1..3) — open south bay ──────────────────
+        // North wall (z=0) and both long side walls (x=0, x=8). The south face
+        // (z=10) is deliberately NOT walled: it's the open drive-in bay. We frame
+        // it with the two south corner posts only.
+        for (int y = 1; y <= 3; y++) {
+            line(b, y, x0, z0, x1, z0, SPRUCE_PLANKS);   // north wall
+            line(b, y, x0, z0, x0, 9, SPRUCE_PLANKS);    // west wall (z=0..9)
+            line(b, y, x1, z0, x1, 9, SPRUCE_PLANKS);    // east wall (z=0..9)
+        }
+        // stripped-spruce corner posts (incl. the two south posts framing the bay)
+        corners(b, x0, z0, x1, z1, 1, 3, STRIPPED_SPRUCE_Y);
+        // vertical studs down the long walls every 2 cells (timber read)
+        for (int z = z0; z <= 9; z += 2) {
+            pillar(b, x0, z, 1, 3, STRIPPED_SPRUCE_Y);
+            pillar(b, x1, z, 1, 3, STRIPPED_SPRUCE_Y);
+        }
+        // top plate rail (stripped logs) along the three closed walls at y=3
+        line(b, 3, x0, z0, x1, z0, bs("minecraft:stripped_spruce_log[axis=x]")); // north plate
+        line(b, 3, x0, z0, x0, 9, bs("minecraft:stripped_spruce_log[axis=z]")); // west plate
+        line(b, 3, x1, z0, x1, 9, bs("minecraft:stripped_spruce_log[axis=z]")); // east plate
+
+        // glazed windows up high on the side walls (embedded in solid plank wall →
+        // sturdy faces both sides, never a stub pane) + a back-wall pair
+        window2(b, x0, 2, 3, GLASS_PANE, null);
+        window2(b, x0, 2, 7, GLASS_PANE, null);
+        window2(b, x1, 2, 3, GLASS_PANE, null);
+        window2(b, x1, 2, 7, GLASS_PANE, null);
+        window2(b, 3, 2, z0, GLASS_PANE, null);
+        window2(b, 5, 2, z0, GLASS_PANE, null);
+
+        // ── 3) STALLS — three per side flanking the x=4 aisle ────────────────
+        // Partition fences run across x at the stall divisions z=3, z=6, z=9; the
+        // aisle-edge rail (x=3 west, x=5 east) closes each stall except for one
+        // fence-gate opening into the aisle. Connecting fences self-reconcile.
+        for (int zDiv : new int[]{3, 6, 9}) {
+            line(b, 1, 1, zDiv, 3, zDiv, OAK_FENCE);   // west divider
+            line(b, 1, 5, zDiv, 7, zDiv, OAK_FENCE);   // east divider
+        }
+        // aisle-edge rails (x=3 west, x=5 east) along z=1..9
+        line(b, 1, 3, 1, 3, 9, OAK_FENCE);
+        line(b, 1, 5, 1, 5, 9, OAK_FENCE);
+        // a fence gate per stall opening east/west onto the aisle (overwrites the
+        // rail cell). Gate centres at z=2, z=5, z=8.
+        for (int zg : new int[]{2, 5, 8}) {
+            b.set(3, 1, zg, bs("minecraft:oak_fence_gate[facing=east,open=false,in_wall=false,powered=false]"));
+            b.set(5, 1, zg, bs("minecraft:oak_fence_gate[facing=west,open=false,in_wall=false,powered=false]"));
+        }
+        // stall bedding: a hay bale in the back & front stall of each side (the
+        // middle stall keeps a water trough instead). West x=1, east x=7.
+        for (int zb : new int[]{5, 8}) {
+            b.set(1, 1, zb, HAY);
+            b.set(7, 1, zb, HAY);
+        }
+        // water troughs in the middle stall of each side: an empty cauldron
+        // (FU-valued; the player fills it) over a sunken water cell at y=0
+        // (water is structural → prints free).
+        b.set(1, 1, 4, CAULDRON);   // west trough
+        b.set(7, 1, 4, CAULDRON);   // east trough
+        b.set(1, 0, 5, WATER);
+        b.set(7, 0, 5, WATER);
+
+        // ── 4) HAY LOFT (y=4) — spruce-slab floor over the back half ─────────
+        // Inset to x=1..7, z=1..5 so it clears the roof slopes (at y=4 the roof
+        // touches only z=0 and z=10). The front half (z=6..10) is open to the roof
+        // so a mounted player can ride straight in.
+        floor(b, 4, 1, 1, 7, 5, SPRUCE_SLAB_TOP);
+        // stacked hay bales on the loft (the feed store); at y=5 the roof slopes
+        // sit at z=1/z=9, so keep loft hay at z=2..4.
+        b.set(2, 5, 2, HAY);
+        b.set(2, 5, 3, HAY);
+        b.set(6, 5, 2, HAY);
+        b.set(6, 5, 3, HAY);
+        b.set(4, 5, 3, HAY);
+        // ladder up to the loft on the back wall, enterable from the aisle
+        for (int y = 1; y <= 3; y++) {
+            b.set(2, y, 1, bs("minecraft:ladder[facing=south,waterlogged=false]"));
+        }
+
+        // ── 5) TACK ROOM NOOK (NW corner) — barrels + wall signs ─────────────
+        b.set(1, 1, 1, BARREL);
+        b.set(1, 2, 1, BARREL);
+        // tack board: oak wall signs mounted on the WEST wall (x=0) facing east into
+        // the nook — facing=east attaches to the block to its west, so the x=0 plank
+        // wall supports them. (Mounting on z=0 would have no block behind the sign.)
+        b.set(1, 2, 2, bs("minecraft:oak_wall_sign[facing=east]"));
+        b.set(1, 3, 2, bs("minecraft:oak_wall_sign[facing=east]"));
+
+        // ── 6) GABLE ROOF (y=4) running along X, ends filled ─────────────────
+        gableRoofX(b, x0, z0, x1, z1, 4, "spruce_stairs", SPRUCE_SLAB_BOTTOM);
+        gableEndFill(b, x0, z0, x1, z1, 4, SPRUCE_PLANKS);
+
+        // ── 7) LIGHTING — lanterns on the partition fence posts + tack barrel ──
+        // Lanterns place on the top face of the y=1 partition fences (at y=2), one
+        // per side per stall row, lighting the bays so no hostiles spawn.
+        for (int zl : new int[]{3, 6}) {
+            b.set(1, 2, zl, LANTERN);
+            b.set(7, 2, zl, LANTERN);
+        }
+        b.set(1, 3, 1, LANTERN);   // atop the tack-room barrel stack
+
+        return b.build();
     }
 }
