@@ -305,6 +305,8 @@ class CuratedBlueprintGenerator {
         builds.put("aquarium", aquarium());
         // Phase 2 — Category E (sailing_ship)
         builds.put("sailing_ship", sailingShip());
+        // Phase 2 — Category C (nether_portal_room)
+        builds.put("nether_portal_room", netherPortalRoom());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -14896,6 +14898,176 @@ class CuratedBlueprintGenerator {
         //    so the hold reads as enterable (the hull interior y=2 is open under the
         //    deck except the keel/sides). Backed by the deck plank above.
         b.set(cx, sideY, mainZ + 1, ladder);                       // hold ladder (against the deck underside)
+
+        return b.build();
+    }
+
+    /**
+     * Nether Portal Room (Category C) — 9×9 footprint → builder(9, H, 9). A
+     * dramatic nether-portal chamber: a framed OBSIDIAN + crying-obsidian portal
+     * arch standing on a raised blackstone dais at the back of the hall,
+     * polished-blackstone walls with gold-block accents and polished-blackstone-brick
+     * pilasters, hanging chains + lanterns, a magma/glowstone glow band, a decorative
+     * blackstone-and-gold floor, and a walk-through entrance on the north wall.
+     *
+     * <p>Coordinates: x=0..8 (width, east), z=0..8 (depth, south), y up. The
+     * north edge (z=0) is the entrance side; the portal dais sits at the far
+     * south end (z=8). The walkable interior floor is the TOP of the y=0 course.
+     *
+     * <p>CRITICAL: the purple {@code nether_portal} block is a fire/state block
+     * that cannot be printed. We build only the standard 4-wide × 5-tall OBSIDIAN
+     * arch (jambs of crying_obsidian-accented obsidian, an obsidian lintel) and
+     * leave the 2×3 interior EMPTY (air, per the air-skip rule) so the player
+     * lights it with flint &amp; steel. No nether_portal block is ever placed.
+     *
+     * <p>Palette is all FU-valued vanilla: obsidian, crying_obsidian, blackstone,
+     * polished_blackstone (+ bricks/slab/stairs), chiseled_polished_blackstone,
+     * gold_block, magma_block, glowstone, shroomlight, chains, lanterns, soul_sand,
+     * basalt. No glass panes / iron bars are used, so there are no lone-stub
+     * render-safety concerns; chains are not bars and are always safe.
+     */
+    private static Blueprint netherPortalRoom() {
+        final int W = 9, H = 9, D = 9;
+        Blueprint.Builder b = Blueprint.builder("Nether Portal Room", W, H, D);
+        final int x0 = 0, x1 = W - 1, z0 = 0, z1 = D - 1; // x:0..8  z:0..8
+        final int cx = (x0 + x1) / 2;                     // 4 — hall centre line
+
+        // ── Palette (all vanilla, all FU-valued or structural) ────────────────
+        BlueprintBlockState obsidian   = bs("minecraft:obsidian");
+        BlueprintBlockState crying     = bs("minecraft:crying_obsidian");
+        BlueprintBlockState blackstone = bs("minecraft:blackstone");
+        BlueprintBlockState polBS      = bs("minecraft:polished_blackstone");
+        BlueprintBlockState polBSBrick = bs("minecraft:polished_blackstone_bricks");
+        BlueprintBlockState chiseledPB = bs("minecraft:chiseled_polished_blackstone");
+        BlueprintBlockState gold       = bs("minecraft:gold_block");
+        BlueprintBlockState magma      = bs("minecraft:magma_block");
+        BlueprintBlockState glowstone  = GLOWSTONE;
+        BlueprintBlockState shroomlight= bs("minecraft:shroomlight");
+        BlueprintBlockState soulSand   = bs("minecraft:soul_sand");
+        BlueprintBlockState basalt     = bs("minecraft:basalt[axis=y]");
+        BlueprintBlockState polBSStairN= bs("minecraft:polished_blackstone_stairs[facing=north,half=bottom,shape=straight]");
+        BlueprintBlockState polBSSlabT = bs("minecraft:polished_blackstone_slab[type=top]");
+
+        // ── 1) FLOOR (y=0) — polished-blackstone hall floor with a gold-inlay aisle ──
+        // Whole footprint polished blackstone, then a blackstone runner down the
+        // centre aisle (x∈[3..5]) from entrance to dais, with a dashed gold/chiseled
+        // runic line down the exact centre (x=4) — the ceremonial path to the portal.
+        floor(b, 0, x0, z0, x1, z1, polBS);
+        floor(b, 0, 3, z0, 5, z1, blackstone);
+        for (int z = z0; z <= z1; z++) {
+            b.set(cx, 0, z, (z % 2 == 0) ? gold : chiseledPB); // dashed gold/chiseled aisle runner
+        }
+        // corner hearth flecks (magma) so the floor reads as nether-warmed.
+        b.set(1, 0, 1, magma);
+        b.set(x1 - 1, 0, 1, magma);
+
+        // ── 2) WALL RING (y=1..5) — polished-blackstone walls, gold band, pilasters ──
+        // Polished-blackstone body as a hollow ring (interior left OPEN/walkable),
+        // a blackstone plinth course (y=1) on the wall line, a gold/chiseled runic
+        // band at mid-height (y=3), and a polished-brick top cornice (y=5).
+        walls(b, x0, z0, x1, z1, 1, 5, polBS);               // body (ring only — interior open)
+        line(b, 1, x0, z0, x1, z0, blackstone);              // plinth course on each face
+        line(b, 1, x0, z1, x1, z1, blackstone);
+        line(b, 1, x0, z0, x0, z1, blackstone);
+        line(b, 1, x1, z0, x1, z1, blackstone);
+        // chiseled-polished-blackstone PILASTERS at the four corners + mid long-walls,
+        // full height — the dark carved buttress rhythm.
+        for (int[] c : new int[][]{{x0, z0}, {x1, z0}, {x0, z1}, {x1, z1}}) {
+            pillar(b, c[0], c[1], 1, 5, chiseledPB);
+        }
+        pillar(b, x0, cx, 1, 5, polBSBrick);                 // west mid-wall pilaster
+        pillar(b, x1, cx, 1, 5, polBSBrick);                 // east mid-wall pilaster
+        // gold/chiseled alternating runic band at y=3 around the whole ring.
+        for (int x = x0; x <= x1; x++) {
+            b.set(x, 3, z0, (x % 2 == 0) ? gold : chiseledPB);
+            b.set(x, 3, z1, (x % 2 == 0) ? gold : chiseledPB);
+        }
+        for (int z = z0; z <= z1; z++) {
+            b.set(x0, 3, z, (z % 2 == 0) ? chiseledPB : gold);
+            b.set(x1, 3, z, (z % 2 == 0) ? chiseledPB : gold);
+        }
+        // polished-brick cornice band along the wall top (y=5) tying the relief together.
+        line(b, 5, x0, z0, x1, z0, polBSBrick);
+        line(b, 5, x0, z1, x1, z1, polBSBrick);
+        line(b, 5, x0, z0, x0, z1, polBSBrick);
+        line(b, 5, x1, z0, x1, z1, polBSBrick);
+
+        // ── 3) GLOWING NICHES — glowstone/shroomlight insets on the long walls ────────
+        // Recessed light blocks flanked above & below by solid wall, on the west &
+        // east long walls, giving the chamber a warm nether glow. Full blocks only
+        // (no bars/panes), so render-safe.
+        for (int z : new int[]{3, 6}) {
+            b.set(x0, 2, z, glowstone);   // west wall light inset
+            b.set(x0, 4, z, shroomlight);
+            b.set(x1, 2, z, glowstone);   // east wall light inset
+            b.set(x1, 4, z, shroomlight);
+        }
+
+        // ── 4) ENTRANCE (north wall z=0) — a walk-through portal-style doorway ─────────
+        // A gold lintel band flanked by chiseled jambs, with a walk-through DOOR at the
+        // centre so the chamber is enterable from the north. (walls() already filled the
+        // front face; we overstamp the frame + door.) Jambs at x=3 and x=5; the door
+        // (a passable 2-block state) overstamps the wall at the centre, NOT set air.
+        pillar(b, 3, z0, 1, 4, chiseledPB);                  // west jamb
+        pillar(b, 5, z0, 1, 4, chiseledPB);                  // east jamb
+        for (int x = 3; x <= 5; x++) b.set(x, 4, z0, gold);  // gold lintel over the opening
+        door2(b, cx, 1, z0, "crimson", "N");                 // crimson door (nether wood) opens inward
+        // flanking entrance braziers (basalt pedestal + magma glow) just inside.
+        b.set(2, 1, 1, basalt);  b.set(2, 2, 1, magma);
+        b.set(x1 - 2, 1, 1, basalt);  b.set(x1 - 2, 2, 1, magma);
+
+        // ── 5) THE PORTAL DAIS (far south, z∈[6..8]) ──────────────────────────────────
+        // A raised, stepped blackstone platform at the head of the hall. A single
+        // ascending step (polished-blackstone stairs facing north, toward the aisle)
+        // climbs from the floor at z=6, onto a 1-high dais slab at z=7..8 on which the
+        // obsidian portal frame stands. Gold inlay flanks the portal base.
+        for (int x = 2; x <= x1 - 2; x++) {
+            b.set(x, 1, 6, polBSStairN);                     // approach step tread (faces the aisle)
+        }
+        floor(b, 1, 2, 7, x1 - 2, 8, blackstone);            // raised dais platform (y=1 top = step-up)
+        b.set(2, 1, 7, gold);  b.set(x1 - 2, 1, 7, gold);    // gold inlay flanking the portal base
+        // basalt back-wall buttresses behind the portal (z=8) framing the dais.
+        pillar(b, 2, 8, 2, 5, basalt);
+        pillar(b, x1 - 2, 8, 2, 5, basalt);
+
+        // ── 6) THE OBSIDIAN PORTAL FRAME (the centrepiece) ────────────────────────────
+        // The standard nether-portal arch: a 4-wide × 5-tall obsidian rectangle with a
+        // 2×3 EMPTY interior (the player lights it with flint & steel). It stands on the
+        // dais top (y=2) at z=7, centred on the aisle (frame columns at x=3 and x=6,
+        // interior x∈[4..5]). Corners use crying_obsidian as a dripping accent; the rest
+        // is obsidian. The interior cells (x∈[4..5], y∈[3..5]) are NEVER written → air,
+        // exactly as required for a player-activated portal.
+        final int pz = 7;                                    // portal plane (z=7, on the dais)
+        final int pxl = 3, pxr = 6;                          // frame jambs (interior x∈[4..5])
+        final int pyb = 2, pyt = 6;                          // base course y=2, top lintel y=6
+        // jambs (left x=3, right x=6) y=2..6, with crying-obsidian at the base & head corners.
+        for (int y = pyb; y <= pyt; y++) {
+            boolean corner = (y == pyb || y == pyt);
+            b.set(pxl, y, pz, corner ? crying : obsidian);
+            b.set(pxr, y, pz, corner ? crying : obsidian);
+        }
+        // base sill (y=2) and lintel (y=6) across the interior span x∈[4..5].
+        for (int x = 4; x <= 5; x++) {
+            b.set(x, pyb, pz, obsidian);                     // base sill
+            b.set(x, pyt, pz, obsidian);                     // top lintel
+        }
+        // interior x∈[4..5], y∈[3..5] left as AIR (the portal void) — DO NOT set.
+        // a crying-obsidian keystone accent above the lintel centre, reading as the
+        // portal's "drip", backed solidly by the lintel below.
+        b.set(4, pyt + 1, pz, crying);
+        b.set(5, pyt + 1, pz, crying);
+        // soul-sand altar slab just in front of the portal (z=6) at the dais foot.
+        b.set(cx, 2, 6, soulSand);
+
+        // ── 7) HANGING CHAIN LANTERNS — drop from the cornice over the aisle ──────────
+        // Chain lanterns hang along the centre aisle, each backed by the y=5 cornice
+        // band above (a solid block exists at y=5 over them). Chains are not bars, so
+        // they are render-safe with no neighbour requirement.
+        chainLantern(b, cx, 3, 2, 1);                        // lantern y=3, chain y=4, cornice at y=5
+        chainLantern(b, cx, 3, 5, 1);
+        // wall-flanking floor lanterns marking the dais approach (warm pools of light).
+        b.set(2, 2, 6, LANTERN);
+        b.set(x1 - 2, 2, 6, LANTERN);
 
         return b.build();
     }

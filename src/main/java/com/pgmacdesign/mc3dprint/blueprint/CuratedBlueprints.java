@@ -142,7 +142,9 @@ public final class CuratedBlueprints {
             // Phase 2 — Category E (aquarium)
             "aquarium",
             // Phase 2 — Category E (sailing_ship)
-            "sailing_ship");
+            "sailing_ship",
+            // Phase 2 — Category C (nether_portal_room)
+            "nether_portal_room");
 
     /**
      * Load a bundled curated blueprint straight from the mod's resources (no world
