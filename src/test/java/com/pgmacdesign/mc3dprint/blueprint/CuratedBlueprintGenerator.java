@@ -277,6 +277,8 @@ class CuratedBlueprintGenerator {
         builds.put("greek_quartz_temple", greekQuartzTemple());
         builds.put("roman_bath_house", romanBathHouse());
         builds.put("fantasy_wizard_tower", fantasyWizardTower());
+        // Phase 2 — Category B (victorian_townhouse)
+        builds.put("victorian_townhouse", victorianTownhouse());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -11842,6 +11844,233 @@ class CuratedBlueprintGenerator {
         b.set(x0 + 1, 2, z1, bs("minecraft:potted_bamboo"));
         b.set(x1 - 1, 2, z1, bs("minecraft:potted_fern"));
         b.set(x0 + 1, 2, z0 + 1, bs("minecraft:potted_cactus"));
+
+        return b.build();
+    }
+
+    /**
+     * Phase 2 — Category B. Victorian Townhouse. 11×9 footprint, three stories tall.
+     * A tall, narrow brick row-house with polished-granite quoins/trim, a protruding
+     * two-story bay window on the front, tall sash-style windows on every story, a
+     * steep copper mansard/gable roof, a brick chimney, and an ornate granite front
+     * stoop. Reads as a Victorian urban street house.
+     *
+     * <p>Layout (x:0..10 east, z:0..8 south, y up):
+     * <ul>
+     *   <li>y0 — granite plinth + front stoop steps projecting to the street.</li>
+     *   <li>Story 1: floor y1, walls y2..5, front door (z=0) + bay window box.</li>
+     *   <li>Story 2: floor y6, walls y7..10, tall sash windows + upper bay.</li>
+     *   <li>Story 3: floor y11, walls y12..15, sash windows under the eave.</li>
+     *   <li>Copper mansard roof y16..19; brick chimney rises past it.</li>
+     * </ul>
+     */
+    private static Blueprint victorianTownhouse() {
+        final int W = 11, H = 21, D = 9;
+        Blueprint.Builder b = Blueprint.builder("Victorian Townhouse", W, H, D);
+        final int x0 = 0, x1 = W - 1, z0 = 0, z1 = D - 1; // x:0..10  z:0..8
+        final int cx = (x0 + x1) / 2; // 5
+        final int cz = (z0 + z1) / 2; // 4
+
+        // Palette ---------------------------------------------------------------
+        BlueprintBlockState polGranite   = bs("minecraft:polished_granite");
+        BlueprintBlockState granite      = bs("minecraft:granite");
+        BlueprintBlockState polGraniteSlabTop    = bs("minecraft:polished_granite_slab[type=top]");
+        BlueprintBlockState polGraniteSlabBottom = bs("minecraft:polished_granite_slab[type=bottom]");
+        BlueprintBlockState graniteStairN = bs("minecraft:granite_stairs[facing=north,half=bottom,shape=straight]");
+        BlueprintBlockState brickSlabBottom = bs("minecraft:brick_slab[type=bottom]");
+        BlueprintBlockState brickStairN = bs("minecraft:brick_stairs[facing=north,half=bottom,shape=straight]");
+        // Copper mansard roof: oxidation gradient so it reads as aged copper.
+        BlueprintBlockState copper0 = copperPatina(0); // cut copper (lower flare)
+        BlueprintBlockState copper2 = copperPatina(2); // weathered (upper field)
+        BlueprintBlockState copperRidge = bs("minecraft:cut_copper_slab[type=bottom]");
+
+        // ── y0: PLINTH + STOOP ────────────────────────────────────────────────
+        // Solid polished-granite footing over the footprint (raised basement look).
+        floor(b, 0, x0, z0, x1, z1, polGranite);
+        // Ornate front stoop: granite steps centred on the door, projecting south is
+        // impossible (z<0 OOB), so the entry steps climb INSIDE the front bay row.
+        // A 3-wide granite landing in front of the door at the street face.
+        for (int x = cx - 1; x <= cx + 1; x++) {
+            b.set(x, 0, z0, polGraniteSlabTop); // street-level threshold reveal
+        }
+
+        // ════════════════════════════════════════════════════════════════════
+        //  STORY 1 (ground) — floor y1, walls y2..5
+        // ════════════════════════════════════════════════════════════════════
+        floor(b, 1, x0, z0, x1, z1, polGranite);          // ground-floor finish
+        walls(b, x0, z0, x1, z1, 2, 5, BRICKS);
+        // polished-granite quoins (corner posts) the full ground-story height
+        corners(b, x0, z0, x1, z1, 2, 5, polGranite);
+        // granite water-table / base course banding at the wall foot (y2 perimeter)
+        // (re-stamp the perimeter ring in granite as a trim band)
+        line(b, 2, x0, z0, x1, z0, granite);
+        line(b, 2, x0, z1, x1, z1, granite);
+        line(b, 2, x0, z0, x0, z1, granite);
+        line(b, 2, x1, z0, x1, z1, granite);
+        // re-assert quoins over the band
+        corners(b, x0, z0, x1, z1, 2, 5, polGranite);
+        // Front door, centred on the north wall, opening inward (faces south).
+        door2(b, cx, 2, z0, "dark_oak", "N");
+        // polished-granite door surround (pilasters + lintel)
+        pillar(b, cx - 1, z0, 2, 4, polGranite);
+        pillar(b, cx + 1, z0, 2, 4, polGranite);
+        b.set(cx, 4, z0, polGranite); // lintel over the door head
+
+        // PROTRUDING BAY WINDOW (front, east of the door): a 3-wide × 1-deep box
+        // bumping the brick face inward is impossible (z<0), so the bay reads as a
+        // full-glass three-sided projection set INTO the front room: glass blocks on
+        // the front face flanked by brick returns. Glass BLOCKS (not panes) — never
+        // a stub. Ground + upper story share the bay column for a 2-story bay.
+        int bayX0 = 7, bayX1 = 9; // bay spans x 7..9 on the front (z=0) wall
+        for (int by = 3; by <= 4; by++) {                 // ground-floor bay glazing
+            b.set(bayX0, by, z0, GLASS);
+            b.set(cx + 3, by, z0, GLASS);                 // x=8 centre light
+            b.set(bayX1, by, z0, GLASS);
+        }
+        // bay base (granite sill) and a brick cap over the bay head
+        line(b, 2, bayX0, z0, bayX1, z0, granite);
+        line(b, 5, bayX0, z0, bayX1, z0, BRICKS);
+
+        // Tall sash windows (full glass BLOCKS → render-safe) on the side walls.
+        for (int sy = 3; sy <= 4; sy++) {
+            b.set(x0, sy, 2, GLASS); b.set(x0, sy, 6, GLASS); // west wall
+            b.set(x1, sy, 2, GLASS); b.set(x1, sy, 6, GLASS); // east wall
+            b.set(cx, sy, z1, GLASS);                          // back wall centre
+            b.set(cx - 2, sy, z1, GLASS);
+            b.set(cx + 2, sy, z1, GLASS);
+        }
+
+        // ════════════════════════════════════════════════════════════════════
+        //  STORY 2 — floor y6, walls y7..10
+        // ════════════════════════════════════════════════════════════════════
+        // Inter-story floor (ceiling of story 1) — leave a stairwell hatch in the SE
+        // corner so the upper floors are reachable in-world.
+        for (int x = x0 + 1; x <= x1 - 1; x++) {
+            for (int z = z0 + 1; z <= z1 - 1; z++) {
+                if (x == x1 - 1 && z == z1 - 1) continue;     // hatch
+                b.set(x, 6, z, polGranite);
+            }
+        }
+        // granite string-course (decorative band) ringing the facade at y6
+        line(b, 6, x0, z0, x1, z0, polGraniteSlabTop);
+        // ladder linking story 1 → story 2 (backed by east wall, facing west)
+        pillar(b, x1 - 1, z1 - 1, 2, 6, bs("minecraft:ladder[facing=west,waterlogged=false]"));
+
+        walls(b, x0, z0, x1, z1, 7, 10, BRICKS);
+        corners(b, x0, z0, x1, z1, 7, 10, polGranite);
+        // upper bay window (continues the 2-story bay), full glass blocks
+        for (int by = 8; by <= 9; by++) {
+            b.set(bayX0, by, z0, GLASS);
+            b.set(cx + 3, by, z0, GLASS);
+            b.set(bayX1, by, z0, GLASS);
+        }
+        line(b, 10, bayX0, z0, bayX1, z0, BRICKS); // bay head cap
+        // front sash windows flanking the door bay, full glass blocks (2 tall)
+        for (int sy = 8; sy <= 9; sy++) {
+            b.set(cx - 2, sy, z0, GLASS);
+            b.set(cx + 1, sy, z0, GLASS);
+            b.set(x0, sy, 2, GLASS); b.set(x0, sy, 6, GLASS); // west
+            b.set(x1, sy, 2, GLASS); b.set(x1, sy, 6, GLASS); // east
+            b.set(cx, sy, z1, GLASS);                          // back centre
+            b.set(cx - 2, sy, z1, GLASS);
+            b.set(cx + 2, sy, z1, GLASS);
+        }
+
+        // ════════════════════════════════════════════════════════════════════
+        //  STORY 3 — floor y11, walls y12..15
+        // ════════════════════════════════════════════════════════════════════
+        for (int x = x0 + 1; x <= x1 - 1; x++) {
+            for (int z = z0 + 1; z <= z1 - 1; z++) {
+                if (x == x1 - 1 && z == z1 - 1) continue;     // hatch
+                b.set(x, 11, z, polGranite);
+            }
+        }
+        line(b, 11, x0, z0, x1, z0, polGraniteSlabTop); // string-course band
+        pillar(b, x1 - 1, z1 - 1, 7, 11, bs("minecraft:ladder[facing=west,waterlogged=false]"));
+
+        walls(b, x0, z0, x1, z1, 12, 15, BRICKS);
+        corners(b, x0, z0, x1, z1, 12, 15, polGranite);
+        // top-story sash windows (full glass blocks, 2 tall) on all four faces
+        for (int sy = 13; sy <= 14; sy++) {
+            b.set(cx - 3, sy, z0, GLASS); b.set(cx, sy, z0, GLASS); b.set(cx + 3, sy, z0, GLASS); // front
+            b.set(x0, sy, 2, GLASS); b.set(x0, sy, 6, GLASS); // west
+            b.set(x1, sy, 2, GLASS); b.set(x1, sy, 6, GLASS); // east
+            b.set(cx - 2, sy, z1, GLASS); b.set(cx, sy, z1, GLASS); b.set(cx + 2, sy, z1, GLASS); // back
+        }
+        // attic floor (ceiling of story 3) so the roof seats on a closed box
+        for (int x = x0 + 1; x <= x1 - 1; x++) {
+            for (int z = z0 + 1; z <= z1 - 1; z++) {
+                b.set(x, 16, z, polGranite);
+            }
+        }
+
+        // ════════════════════════════════════════════════════════════════════
+        //  COPPER MANSARD / GABLE ROOF  (y16 plate up)
+        // ════════════════════════════════════════════════════════════════════
+        // A steep copper gable running along X (ridge parallel to the street). Lower
+        // flared course = cut copper (gambrel-style flare), the rising field weathers
+        // to a green patina; a cut-copper slab caps the ridge.
+        // Flared eave course: outward (top-half) copper stairs at the wall plate y16.
+        for (int x = x0; x <= x1; x++) {
+            b.set(x, 16, z0, copperStair(0, "south", "top"));
+            b.set(x, 16, z1, copperStair(0, "north", "top"));
+        }
+        // Steeper upper pitch, inset one z-row, from y17 — weathered copper field.
+        {
+            int yBase = 17;
+            int y = yBase, zn = z0 + 1, zs = z1 - 1;
+            while (zs - zn > 1) {
+                for (int x = x0; x <= x1; x++) {
+                    b.set(x, y, zn, copperStair(2, "south", "bottom"));
+                    b.set(x, y, zs, copperStair(2, "north", "bottom"));
+                }
+                zn++; zs--; y++;
+            }
+            // ridge cap (1- or 2-wide) in cut-copper slab
+            for (int x = x0; x <= x1; x++) {
+                b.set(x, y, zn, copperRidge);
+                if (zs != zn) b.set(x, y, zs, copperRidge);
+            }
+            // close the triangular gable ends (x=x0 / x=x1) with weathered copper so
+            // the attic isn't open to sky.
+            for (int gx : new int[]{x0, x1}) {
+                int yy = yBase, gzn = z0 + 1, gzs = z1 - 1;
+                while (gzs - gzn > 1) {
+                    for (int gz = gzn + 1; gz <= gzs - 1; gz++) {
+                        b.set(gx, yy, gz, copper2);
+                    }
+                    gzn++; gzs--; yy++;
+                }
+            }
+        }
+
+        // ── BRICK CHIMNEY ─────────────────────────────────────────────────────
+        // Rises through the west portion of the roof, capped by a granite crown that
+        // pokes above the ridge. Re-asserted after the roof so the slopes don't bury it.
+        pillar(b, x0 + 1, z0 + 2, 12, 20, BRICKS);
+        b.set(x0 + 1, 20, z0 + 2, BRICKS);
+        b.set(x0 + 1, 21 - 1, z0 + 2, polGraniteSlabBottom); // y20 granite crown reveal
+        // chimney pots (a couple of granite-walled flues on the crown)
+        // (kept within H=21 budget; crown at y20)
+
+        // ── ENTRY DETAIL: granite stoop steps + lanterns flanking the door ──────
+        // step up to the threshold (granite stair facing the street at the door)
+        b.set(cx, 1, z0, graniteStairN);
+        // wall lanterns flanking the door (sit on the granite pilasters)
+        b.set(cx - 1, 3, z0, LANTERN);
+        b.set(cx + 1, 3, z0, LANTERN);
+        // brick-stair pediment hood over the door head (decorative canopy)
+        b.set(cx - 1, 5, z0, brickStairN);
+        b.set(cx, 5, z0, brickSlabBottom);
+        b.set(cx + 1, 5, z0, brickStairN);
+
+        // ── INTERIOR: a hearth + light on each story so the rooms read as lived-in
+        b.set(x0 + 1, 2, z0 + 2, bs("minecraft:furnace[facing=south,lit=false]")); // ground hearth at chimney base
+        chainLantern(b, cx, 5, cz, 0);   // ground-floor ceiling lamp (lantern y5, hung off y6 floor)
+        chainLantern(b, cx, 10, cz, 0);  // story-2 ceiling lamp
+        chainLantern(b, cx, 15, cz, 0);  // story-3 ceiling lamp
+        b.set(cx - 2, 7, cz, BOOKSHELF); // a study shelf upstairs
+        b.set(cx + 2, 7, cz, BOOKSHELF);
 
         return b.build();
     }

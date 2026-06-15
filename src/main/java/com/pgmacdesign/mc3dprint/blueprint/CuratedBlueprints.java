@@ -112,7 +112,9 @@ public final class CuratedBlueprints {
             // Phase 2 — Category B (roman_bath_house)
             "roman_bath_house",
             // Phase 2 — Category B (fantasy_wizard_tower)
-            "fantasy_wizard_tower");
+            "fantasy_wizard_tower",
+            // Phase 2 — Category B (victorian_townhouse)
+            "victorian_townhouse");
 
     /**
      * Load a bundled curated blueprint straight from the mod's resources (no world
