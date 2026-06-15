@@ -102,7 +102,9 @@ public final class CuratedBlueprints {
             // Phase 2 — Category B (japanese_tea_house)
             "japanese_tea_house",
             // Phase 2 — Category B (zen_garden)
-            "zen_garden");
+            "zen_garden",
+            // Phase 2 — Category B (japanese_dojo)
+            "japanese_dojo");
 
     /**
      * Load a bundled curated blueprint straight from the mod's resources (no world

@@ -272,6 +272,7 @@ class CuratedBlueprintGenerator {
         builds.put("torii_gate", toriiGate());
         builds.put("japanese_tea_house", japaneseTeaHouse());
         builds.put("zen_garden", zenGarden());
+        builds.put("japanese_dojo", japaneseDojo());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -3819,6 +3820,165 @@ class CuratedBlueprintGenerator {
         for (int[] c : new int[][]{{x0, z0}, {x1, z0}, {x0, z1}, {x1, z1}}) {
             b.set(c[0], 2, c[1], topiary);
         }
+
+        return b.build();
+    }
+
+    /**
+     * Japanese Dojo (training hall). 11×9 footprint → builder(11, 12, 9). A long,
+     * open, ENTERABLE training hall in the classic dōjō idiom: white shōji wall
+     * panels (white-wool / white-concrete) framed by stripped-dark-oak timber posts,
+     * a tatami-look floor (white carpet over spruce planks, green-carpet border
+     * "heri"), a raised sensei dais at the far end, fence-and-sign weapon racks along
+     * the side walls, hanging lanterns, a sliding shōji entrance, and a sweeping
+     * four-sided dark-oak hip roof with a deep upturned eave bracket.
+     *
+     * <p>AXES: x=W (0..10), z=depth (0..8). The hall body is inset to x 1..9, z 1..7
+     * (so the eave + bracket reach the footprint edge without clipping). The walkable
+     * floor surface is the y=0 plinth top; walls rise y=1..4; the interior above the
+     * tatami (y=2..4) is deliberately left unset so the player can walk in and stand.
+     *
+     * <p>PALETTE — vanilla, FU-valued / structural only:
+     * <ul>
+     *   <li>Plinth/foundation: {@code stone_bricks} (derives).</li>
+     *   <li>Shōji infill: {@code white_wool} panels banded with {@code white_concrete}
+     *       (both valued; SOLID blocks, not panes — so no stub-pane render risk).</li>
+     *   <li>Timber frame: {@code stripped_dark_oak_log} posts + head/sill bands.</li>
+     *   <li>Tatami floor: {@code spruce_planks} sub-floor, {@code white_carpet} mats,
+     *       {@code green_carpet} border (heri) — all derive.</li>
+     *   <li>Dais: {@code dark_oak_planks} platform + a {@code dark_oak_slab} step.</li>
+     *   <li>Weapon racks: {@code dark_oak_fence} stands + {@code dark_oak_sign} /
+     *       {@code oak_sign} plaques (signs are valued; item frames are ENTITIES and
+     *       are NOT used).</li>
+     *   <li>Roof: {@code dark_oak_stairs}/{@code dark_oak_slab} hip roof + an outward
+     *       under-bracket course for the deep upturned-eave look.</li>
+     *   <li>Light: {@code lantern} / hanging {@code lantern} on {@code chain}.</li>
+     * </ul>
+     *
+     * <p>RENDER-SAFETY: the shōji is SOLID white_wool/white_concrete (no glass panes
+     * or iron bars), so there are no stub-pane cells — the build never authors an
+     * unconnected {@code IronBarsBlock}.
+     */
+    private static Blueprint japaneseDojo() {
+        final int W = 11, L = 9, H = 12;
+        Blueprint.Builder b = Blueprint.builder("Japanese Dojo", W, H, L);
+
+        // hall body inset (leaves a 1-cell apron so the eave bracket clears the edge)
+        final int x0 = 1, x1 = 9, z0 = 1, z1 = 7, wallTop = 4;
+        final int cx = (x0 + x1) / 2;            // 5
+        final int cz = (z0 + z1) / 2;            // 4
+
+        BlueprintBlockState shoji = WHITE_WOOL;                                  // paper-screen infill
+        BlueprintBlockState shojiBand = bs("minecraft:white_concrete");          // concrete accent band
+        BlueprintBlockState postY = bs("minecraft:stripped_dark_oak_log[axis=y]"); // dark-wood frame posts
+        BlueprintBlockState bandX = bs("minecraft:stripped_dark_oak_log[axis=x]"); // head/sill band along X
+        BlueprintBlockState bandZ = bs("minecraft:stripped_dark_oak_log[axis=z]"); // head/sill band along Z
+        BlueprintBlockState subFloor = SPRUCE_PLANKS;                            // plank sub-floor
+        BlueprintBlockState tatami = bs("minecraft:white_carpet");               // tatami mat field
+        BlueprintBlockState tatamiBorder = bs("minecraft:green_carpet");         // mat border (heri)
+        BlueprintBlockState daisDeck = DARK_OAK_PLANKS;                          // sensei dais platform
+        BlueprintBlockState daisStep = bs("minecraft:dark_oak_slab[type=bottom]"); // step up onto the dais
+        BlueprintBlockState rackPost = DARK_OAK_FENCE;                           // weapon-rack stands
+        BlueprintBlockState roofSlab = bs("minecraft:dark_oak_slab[type=bottom]"); // ridge / eave cap
+        final String ROOF = "dark_oak_stairs";
+
+        // ── 1) PLINTH (y=0) — full 11×9 stone-brick foundation, walkable ────────
+        floor(b, 0, 0, 0, W - 1, L - 1, STONE_BRICKS);
+
+        // ── 2) SHŌJI WALL RING (y=1..4) ────────────────────────────────────────
+        // White-wool screen infill on all four faces, with a white-concrete band at
+        // mid-height (y=2) for the framed-panel look, then stripped-dark-oak timber
+        // posts every 2 cells + corner posts (placed AFTER the infill so the frame
+        // wins the shared cells). Head/sill bands tie the frame together.
+        walls(b, x0, z0, x1, z1, 1, wallTop, shoji);
+        // mid-height white-concrete band course (y=2) across the whole wall ring
+        line(b, 2, x0, z0, x1, z0, shojiBand); line(b, 2, x0, z1, x1, z1, shojiBand);
+        line(b, 2, x0, z0, x0, z1, shojiBand); line(b, 2, x1, z0, x1, z1, shojiBand);
+        // vertical timber studs every 2 cells along all four faces
+        for (int x = x0; x <= x1; x += 2) {
+            pillar(b, x, z0, 1, wallTop, postY);
+            pillar(b, x, z1, 1, wallTop, postY);
+        }
+        for (int z = z0; z <= z1; z += 2) {
+            pillar(b, x0, z, 1, wallTop, postY);
+            pillar(b, x1, z, 1, wallTop, postY);
+        }
+        corners(b, x0, z0, x1, z1, 1, wallTop, postY);
+        // dark-oak head band (y=wallTop plate) + sill band (y=1 base) for the frame
+        line(b, wallTop, x0, z0, x1, z0, bandX); line(b, wallTop, x0, z1, x1, z1, bandX);
+        line(b, wallTop, x0, z0, x0, z1, bandZ); line(b, wallTop, x1, z0, x1, z1, bandZ);
+        line(b, 1, x0, z0, x1, z0, bandX); line(b, 1, x0, z1, x1, z1, bandX);
+        line(b, 1, x0, z0, x0, z1, bandZ); line(b, 1, x1, z0, x1, z1, bandZ);
+        // re-assert corner posts after the bands overwrote the corners
+        corners(b, x0, z0, x1, z1, 1, wallTop, postY);
+
+        // ── 3) SLIDING SHŌJI ENTRANCE (north wall, z=z0) ───────────────────────
+        // A spruce sliding door opening inward onto the hall, centred on the front
+        // wall (cx). The door (a 2-block state) overwrites the lower two courses of
+        // the centre cell, which is the only break in the ring.
+        door2(b, cx, 1, z0, "spruce", "N");
+
+        // ── 4) TATAMI FLOOR (y=1) ──────────────────────────────────────────────
+        // Spruce-plank sub-floor over the whole hall interior, then a white-carpet
+        // mat field with a green-carpet border (heri) ring — the tatami look.
+        floor(b, 1, x0 + 1, z0 + 1, x1 - 1, z1 - 1, subFloor);    // x 2..8, z 2..6
+        floor(b, 1, x0 + 1, z0 + 1, x1 - 1, z1 - 1, tatami);      // carpet over the sub-floor
+        fenceRingless(b, 1, x0 + 1, z0 + 1, x1 - 1, z1 - 1, tatamiBorder); // border ring (heri)
+
+        // ── 5) RAISED SENSEI DAIS (far/back end, z=z1) ─────────────────────────
+        // A low dark-oak platform spanning the back of the hall (one step up), with
+        // a dark-oak-slab step in front of it so it's reachable. The dais sits at the
+        // south (back) wall; the carpet stops short of it.
+        floor(b, 1, x0 + 1, z1 - 1, x1 - 1, z1 - 1, daisDeck);    // back-row platform (z=6)
+        for (int x = x0 + 1; x <= x1 - 1; x++) {
+            b.set(x, 1, z1 - 2, daisStep);                       // slab step approach (z=5)
+        }
+        // a small lantern shrine accent on the dais centre
+        b.set(cx, 2, z1 - 1, LANTERN);
+
+        // ── 6) WEAPON RACKS (fence stands + sign plaques along the side walls) ──
+        // Dark-oak fence stands two cells in from each side wall, with a sign plaque
+        // mounted above as the rack head. Signs are FU-valued; item frames (entities)
+        // are deliberately NOT used. Placed inside the standing space at y=1..2.
+        for (int z : new int[]{z0 + 1, z1 - 2}) {
+            // west-side rack
+            pillar(b, x0 + 1, z, 1, 2, rackPost);
+            b.set(x0 + 1, 3, z, bs("minecraft:dark_oak_sign[rotation=4]")); // plaque facing east into hall
+            // east-side rack
+            pillar(b, x1 - 1, z, 1, 2, rackPost);
+            b.set(x1 - 1, 3, z, bs("minecraft:dark_oak_sign[rotation=12]")); // plaque facing west into hall
+        }
+
+        // ── 7) HANGING LANTERNS (interior light) ───────────────────────────────
+        // Two lanterns on short chains from the wall-plate course, kept clear of the
+        // standing space, lighting the hall.
+        b.set(x0 + 1, wallTop, z0 + 1, CHAIN); b.set(x0 + 1, wallTop - 1, z0 + 1, HANGING_LANTERN);
+        b.set(x1 - 1, wallTop, z0 + 1, CHAIN); b.set(x1 - 1, wallTop - 1, z0 + 1, HANGING_LANTERN);
+
+        // ── 8) SWEEPING HIP ROOF with a deep upturned eave bracket ─────────────
+        // First, an outward-facing under-bracket ring one course below the eave at
+        // the footprint edge (x/z 0..10 / 0..8) — the deep-eave soffit that gives the
+        // dōjō roof its upturned, overhanging read. Then a four-sided dark-oak hip
+        // roof seated on the wall plate (y=wallTop), capped with a dark-oak slab.
+        int ey = wallTop + 1;                          // y=5 eave course
+        BlueprintBlockState brkN = bs("minecraft:" + ROOF + "[facing=north,half=top,shape=straight]");
+        BlueprintBlockState brkS = bs("minecraft:" + ROOF + "[facing=south,half=top,shape=straight]");
+        BlueprintBlockState brkW = bs("minecraft:" + ROOF + "[facing=west,half=top,shape=straight]");
+        BlueprintBlockState brkE = bs("minecraft:" + ROOF + "[facing=east,half=top,shape=straight]");
+        int bx0 = 0, bx1 = W - 1, bz0 = 0, bz1 = L - 1;
+        for (int x = bx0; x <= bx1; x++) {
+            b.set(x, ey - 1, bz0, brkN);
+            b.set(x, ey - 1, bz1, brkS);
+        }
+        for (int z = bz0; z <= bz1; z++) {
+            b.set(bx0, ey - 1, z, brkW);
+            b.set(bx1, ey - 1, z, brkE);
+        }
+        // upturned corner curl tips — one course up at the four bracket corners
+        b.set(bx0, ey, bz0, brkN); b.set(bx1, ey, bz0, brkN);
+        b.set(bx0, ey, bz1, brkS); b.set(bx1, ey, bz1, brkS);
+        // the hip roof proper, seated on the wall plate
+        hipRoof(b, x0, z0, x1, z1, ey, ROOF, roofSlab);
 
         return b.build();
     }
