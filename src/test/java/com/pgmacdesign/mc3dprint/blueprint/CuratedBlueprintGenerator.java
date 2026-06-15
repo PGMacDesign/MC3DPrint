@@ -215,6 +215,7 @@ class CuratedBlueprintGenerator {
         // Phase 2 — Category F (functional farms)
         builds.put("iron_farm", ironFarm());
         builds.put("mob_xp_tower", mobXpTower());
+        builds.put("sugarcane_farm_auto", sugarcaneFarmAuto());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -4563,6 +4564,127 @@ class CuratedBlueprintGenerator {
         // mounted on the outside of the south wall (facing=south, +z).
         b.set(cx - 2, 2, z1, bs("minecraft:oak_wall_sign[facing=south]"));
         b.set(cx + 2, 2, z1, bs("minecraft:oak_wall_sign[facing=south]"));
+
+        return b.build();
+    }
+
+    /**
+     * §F.sugarcane_farm_auto — a STATIC automatic sugar-cane farm, 9×9×5 (W×L×H)
+     * → builder(9, 5, 9).
+     *
+     * <p>The "Tier-1 must-build" auto sugar-cane farm, printed as the working
+     * STRUCTURE: two planting strips of sand straddling a central water channel,
+     * a row of sugar cane on each strip, an observer + piston harvest wall behind
+     * each strip, redstone dust tying the observers to the pistons, and a hopper
+     * line under the water that sweeps the broken cane into a collection chest.
+     * Every block is a vanilla FU-valued block (sand, sugar_cane, observer, piston,
+     * redstone, hopper, chest all derive) or structural-free matter (water, redstone
+     * wire). The mechanism reproduces faithfully and "works" once printed: cane grows
+     * to height 2, the observer beside the upper block detects the growth pulse,
+     * fires the piston that breaks the top cane, and the item washes down the water
+     * channel into the hoppers → chest.
+     *
+     * <p>Layout (south = +z is the "front"/access side; cx=cz=4):
+     * <ul>
+     *   <li><b>y=0</b> — solid stone foundation (9×9), with a central <b>water
+     *       channel</b> punched along Z at x=4 (z=1..7): the flow that carries
+     *       cut cane south to the hopper mouth.</li>
+     *   <li><b>Hopper line + chest, y=0</b> — at the south end of the channel a
+     *       hopper line (x=4, z=6..7) feeds a collection chest tucked behind the
+     *       south wall, so every item the channel delivers is collected.</li>
+     *   <li><b>Planting strips, y=1</b> — two rows of <b>sand</b> (x=3 and x=5,
+     *       z=1..7) flanking the channel, each within one block of water → always
+     *       hydrated. <b>Sugar cane</b> sits on every sand cell (y=2), the bottom
+     *       course of each plant.</li>
+     *   <li><b>Harvest wall, y=2..4</b> — behind each strip an <b>observer</b> at
+     *       y=2 (x=2 west / x=6 east) faces the cane, watching the cell the second
+     *       cane block grows into; a <b>piston</b> at y=3 above it faces the cane
+     *       top and breaks the grown block. One column further out (x=1 / x=7) a
+     *       stone shelf carries a <b>redstone dust</b> ribbon at y=4 tying each
+     *       observer's back output to its piston.</li>
+     *   <li><b>Side walls + label signs</b> — stone end walls (z=0 and z=8) box the
+     *       channel; oak wall signs on the south face label the build.</li>
+     * </ul>
+     */
+    private static Blueprint sugarcaneFarmAuto() {
+        Blueprint.Builder b = Blueprint.builder("Auto Sugar Cane Farm", 9, 5, 9);
+        // all vanilla, all FU-valued / structural-free:
+        BlueprintBlockState stone   = bs("minecraft:stone");
+        BlueprintBlockState cobble  = COBBLE;
+        BlueprintBlockState sand    = bs("minecraft:sand");                 // FU-valued (sandstone derivation)
+        BlueprintBlockState cane    = bs("minecraft:sugar_cane[age=0]");    // FU-valued (=2@1); BushBlock structural too
+        BlueprintBlockState water   = WATER;                               // structural (asItem()==AIR) → prints free
+        BlueprintBlockState chest   = bs("minecraft:chest[facing=north,type=single,waterlogged=false]");
+        BlueprintBlockState redDust = bs("minecraft:redstone_wire[east=none,west=none,north=none,south=none,power=0]"); // structural
+
+        int x0 = 0, x1 = 8, z0 = 0, z1 = 8;            // 9×9 footprint
+        int cx = 4;                                    // central water-channel column
+        int stripZ0 = 1, stripZ1 = 7;                  // planting / channel run along Z
+
+        // ── 1) STONE FOUNDATION at y=0, with the central WATER CHANNEL ───────
+        floor(b, 0, x0, z0, x1, z1, stone);
+        // central channel: water along Z at x=cx (z=1..6); the cut cane floats south.
+        for (int z = stripZ0; z <= stripZ1 - 1; z++) {
+            b.set(cx, 0, z, water);
+        }
+
+        // ── 2) HOPPER LINE + COLLECTION CHEST at the SOUTH end, y=0 ──────────
+        // The channel terminates over a hopper that feeds the chest. The hopper
+        // mouth (z=7) catches what the flow delivers; it points north into the
+        // chest tucked at the south edge (z=8), facing north so its front reads
+        // inward. (Air-skip means these overwrite the stone foundation cells.)
+        b.set(cx, 0, stripZ1, bs("minecraft:hopper[enabled=true,facing=north]")); // z=7 → feeds chest at z=8
+        b.set(cx, 0, z1, chest);                                                   // collection chest, faces north
+
+        // ── 3) PLANTING STRIPS (sand) + SUGAR CANE, flanking the channel ─────
+        // Two sand rows at x=cx-1 and x=cx+1 (3 and 5), each one block from water →
+        // hydrated. Cane sits on every sand cell (the bottom course of each plant).
+        int wStripX = cx - 1, eStripX = cx + 1;        // 3 and 5
+        for (int z = stripZ0; z <= stripZ1; z++) {
+            b.set(wStripX, 1, z, sand);
+            b.set(eStripX, 1, z, sand);
+            b.set(wStripX, 2, z, cane);                // cane bottom block, west strip
+            b.set(eStripX, 2, z, cane);                // cane bottom block, east strip
+        }
+
+        // ── 4) HARVEST WALL: stone backing + observer + piston + redstone ────
+        // Behind each strip a stone pillar per cane carries the observer (y=2,
+        // facing the cane, watching the cell the 2nd cane block grows into) and the
+        // piston (y=3, facing the cane top, which it breaks). Redstone dust on the
+        // y=3 stone wall ties observer-back → piston.
+        // The harvest wall is two columns DEEPER than the strips. The observer sits
+        // at the strip-back column (x=wWallX/eWallX), the piston at y=3 above it
+        // faces the cane top, and the redstone dust runs on a stone shelf one column
+        // further out (x=wShelfX/eShelfX) so it has a solid y=3 floor under it (the
+        // shelf top) and ties each observer's back output to its piston.
+        int wWallX = cx - 2, eWallX = cx + 2;          // 2 and 6 (observer/piston columns)
+        int wShelfX = cx - 3, eShelfX = cx + 3;        // 1 and 7 (redstone-dust shelf columns)
+        for (int z = stripZ0; z <= stripZ1; z++) {
+            // observer mount: stone block at y=1, observer at y=2 facing the cane,
+            // piston at y=3 facing the cane top (breaks the grown 2nd block toward
+            // the channel). West wall faces east, east wall faces west.
+            b.set(wWallX, 1, z, stone);
+            b.set(eWallX, 1, z, stone);
+            b.set(wWallX, 2, z, bs("minecraft:observer[facing=east,powered=false]"));
+            b.set(eWallX, 2, z, bs("minecraft:observer[facing=west,powered=false]"));
+            b.set(wWallX, 3, z, bs("minecraft:piston[facing=east,extended=false]"));
+            b.set(eWallX, 3, z, bs("minecraft:piston[facing=west,extended=false]"));
+            // redstone-dust shelf: solid stone y=1..3 with a dust ribbon at y=4 on top,
+            // carrying the observer-back signal across to the piston.
+            pillar(b, wShelfX, z, 1, 3, stone);
+            pillar(b, eShelfX, z, 1, 3, stone);
+            b.set(wShelfX, 4, z, redDust);
+            b.set(eShelfX, 4, z, redDust);
+        }
+
+        // ── 5) END WALLS (box the channel) + LABEL SIGNS ─────────────────────
+        // Cobble end caps at z=0 and z=8 across the planting/channel span close the
+        // ends so the water channel reads as a contained trough.
+        line(b, 1, wWallX, z0, eWallX, z0, cobble);   // north end cap, y=1
+        line(b, 1, wWallX, z1, eWallX, z1, cobble);   // south end cap, y=1
+        // oak wall signs on the south face flanking the chest (FU-valued, derived).
+        b.set(wStripX, 1, z1, bs("minecraft:oak_wall_sign[facing=south]"));
+        b.set(eStripX, 1, z1, bs("minecraft:oak_wall_sign[facing=south]"));
 
         return b.build();
     }
