@@ -316,6 +316,8 @@ class CuratedBlueprintGenerator {
         builds.put("basalt_pillar_cluster", basaltPillarCluster());
         // Phase 2 — Category C (nether_hub_room)
         builds.put("nether_hub_room", netherHubRoom());
+        // Phase 2 — Category C (nether_fortress_bridge)
+        builds.put("nether_fortress_bridge", netherFortressBridge());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -15831,6 +15833,177 @@ class CuratedBlueprintGenerator {
         b.set(cx - 2, 2, z1 - 1, bs("minecraft:oak_wall_sign[facing=north]")); // "S" portal label (backed by S jamb)
         b.set(x0 + 1, 2, cz - 2, bs("minecraft:oak_wall_sign[facing=east]"));  // "W" portal label (backed by W jamb)
         b.set(x1 - 1, 2, cz - 2, bs("minecraft:oak_wall_sign[facing=west]"));  // "E" portal label (backed by E jamb)
+
+        return b.build();
+    }
+
+    /**
+     * Category C — nether_fortress_bridge. 5×13 footprint → builder(5, 9, 13). An
+     * instantly-recognizable span of a vanilla <b>nether-fortress bridge</b>: the
+     * iconic nether-brick walkway carried on stair-stepped arch supports descending
+     * into the gap below, with raised side parapets, the signature
+     * <b>nether-brick-fence</b> railings, and the classic fence "battlement" pattern
+     * crowning the top. The bridge runs along the long Z axis (13 deep), 5 wide.
+     *
+     * <p><b>Why this build is fully printable + render-safe.</b> Every block is a
+     * vanilla FU-valued block:
+     * <ul>
+     *   <li><b>nether_bricks</b> (+ <b>chiseled</b> / <b>cracked</b> for weathering)
+     *       — the deck, parapets, support legs and arch masonry; all FU-valued.</li>
+     *   <li><b>nether_brick_stairs</b> — the stair-stepped descending arch supports
+     *       under the deck (the "bridge spanning a gap" read) and the arch soffits;
+     *       recipe-derived from nether bricks.</li>
+     *   <li><b>nether_brick_fence</b> — the railings / balustrades / battlement
+     *       pattern. Fences are NOT panes/bars ⇒ render-safe (they connect to each
+     *       other and to posts naturally), so the stub-pane gate never applies.</li>
+     *   <li><b>nether_brick_slab</b>, <b>nether_brick_wall</b> — parapet caps and the
+     *       support footings; recipe-derived.</li>
+     *   <li><b>lantern</b> — bridge lamps on the parapet posts; FU-valued.</li>
+     *   <li><b>soul_sand</b> + <b>nether_wart[age=3]</b> — a tiny fortress wart patch on
+     *       the deck. The wart is a BushBlock crop ⇒ structural-free (prints free).</li>
+     * </ul>
+     * No glass panes / iron bars anywhere.
+     *
+     * <p>Layout (the span runs along Z; cx=2 is the centre walkway column):
+     * <ul>
+     *   <li><b>Deck (y=2)</b> — a 5×13 nether-brick walkway, the full span; lightly
+     *       weathered with cracked/chiseled flecks so it reads aged.</li>
+     *   <li><b>Support legs (z=2,6,10) + arch soffits</b> — full-width nether-brick
+     *       piers drop from the deck down to y=0; between them, nether-brick stairs
+     *       spring inward under the deck (y=1) to read as arched supports, and the
+     *       <b>ends step DOWN below the deck</b> on descending stair legs so the span
+     *       clearly bridges a gap (the centre of each bay stays open air).</li>
+     *   <li><b>Parapets (y=3)</b> — raised nether-brick side walls along both long
+     *       edges, capped with a nether-brick slab, carrying the fence balustrade.</li>
+     *   <li><b>Fence railings / battlements (y=4..5)</b> — a nether-brick-fence rail
+     *       runs the length of both parapets; every few cells a fence post rises a
+     *       second course for the classic fortress battlement crenellation.</li>
+     *   <li><b>Lamps</b> — lanterns crown the parapet posts at the bridge mid-span.</li>
+     * </ul>
+     */
+    private static Blueprint netherFortressBridge() {
+        Blueprint.Builder b = Blueprint.builder("Nether Fortress Bridge", 5, 9, 13);
+        final int x0 = 0, x1 = 4, z0 = 0, z1 = 12; // 5×13 footprint (W×L)
+        final int cx = (x0 + x1) / 2;              // 2 — centre walkway column
+        final int deckY = 2;                       // the walkable bridge deck
+
+        // ── Palette (all vanilla, all FU-valued) ──────────────────────────────
+        BlueprintBlockState netherBricks = bs("minecraft:nether_bricks");
+        BlueprintBlockState chiseledNB   = bs("minecraft:chiseled_nether_bricks");
+        BlueprintBlockState crackedNB    = bs("minecraft:cracked_nether_bricks");
+        BlueprintBlockState nbFence      = bs("minecraft:nether_brick_fence");
+        BlueprintBlockState nbSlabTop    = bs("minecraft:nether_brick_slab[type=top]");
+        BlueprintBlockState nbWall       = bs("minecraft:nether_brick_wall");
+        // soffit stairs curling inward under the deck (Z-Y plane), backed onto the piers.
+        BlueprintBlockState archLo = bs("minecraft:nether_brick_stairs[facing=south,half=top,shape=straight]");
+        BlueprintBlockState archHi = bs("minecraft:nether_brick_stairs[facing=north,half=top,shape=straight]");
+        // descending end legs: stairs treading DOWN off the deck at the two approaches.
+        BlueprintBlockState stepDownN = bs("minecraft:nether_brick_stairs[facing=north,half=bottom,shape=straight]");
+        BlueprintBlockState stepDownS = bs("minecraft:nether_brick_stairs[facing=south,half=bottom,shape=straight]");
+        BlueprintBlockState soulSand   = bs("minecraft:soul_sand");
+        BlueprintBlockState netherWart = bs("minecraft:nether_wart[age=3]");
+
+        // ── 1) SUPPORT PIERS (z=2,6,10) — full-width nether-brick legs to the gap ──
+        // Three piers carry the deck; each drops from just under the deck (y=1) to the
+        // floor of the gap (y=0), full width. The bay centres between them stay OPEN
+        // air (skipped) so the arches read as spanning a void.
+        for (int zp = 2; zp <= 10; zp += 4) {
+            solid(b, x0, 0, zp, x1, 1, zp, netherBricks);
+        }
+        // weathering flecks on the piers so the masonry reads aged, not uniform
+        b.set(1, 0, 2, crackedNB);
+        b.set(3, 1, 6, crackedNB);
+        b.set(2, 0, 10, crackedNB);
+        b.set(0, 1, 6, chiseledNB);
+        b.set(4, 1, 6, chiseledNB);
+
+        // ── 2) ARCH SOFFITS — inward-curling stairs under the deck in each 3-wide bay ─
+        // For each pier-to-pier bay [zp+1 .. zp+3], stairs spring inward from the piers
+        // at y=1 and a nether-brick keystone bridges the bay centre, across the full
+        // width — the rounded arch under the walkway. The bay centre below stays open.
+        for (int zp = 2; zp < 10; zp += 4) {
+            int zLo = zp + 1; // beside the lower pier
+            int zKey = zp + 2; // bay centre — keystone row
+            int zHi = zp + 3; // beside the upper pier
+            for (int x = x0; x <= x1; x++) {
+                b.set(x, 1, zLo, archLo);          // springer curling toward centre
+                b.set(x, 1, zHi, archHi);          // springer curling toward centre
+                b.set(x, 1, zKey, netherBricks);   // keystone bridging the arch
+            }
+        }
+
+        // ── 3) DESCENDING END LEGS — the span drops below the deck at both approaches ─
+        // North end (z=0..1) and south end (z=11..12) step DOWN off the deck on stair
+        // treads + a wall footing, so the bridge visibly descends into the gap rather
+        // than ending in a flat ledge — the "spanning a void" fortress read.
+        for (int x = x0; x <= x1; x++) {
+            // north approach: deck tread at z=1 steps down toward z=0
+            b.set(x, deckY, z0 + 1, stepDownN);
+            b.set(x, deckY - 1, z0, netherBricks); // lower landing one block down
+            b.set(x, deckY - 1, z0 + 1, nbWall);   // footing under the tread
+            b.set(x, deckY - 2, z0, nbWall);       // descending leg toward the gap floor
+            // south approach: mirrored
+            b.set(x, deckY, z1 - 1, stepDownS);
+            b.set(x, deckY - 1, z1, netherBricks);
+            b.set(x, deckY - 1, z1 - 1, nbWall);
+            b.set(x, deckY - 2, z1, nbWall);
+        }
+
+        // ── 4) BRIDGE DECK (y=2) — the 5×13 nether-brick walkway, the full span ──────
+        // Laid AFTER the end legs so the deck surface stays flush over z=2..10 and the
+        // stair treads at z=1 / z=11 read as the descending approaches at the ends.
+        for (int z = z0 + 1; z <= z1 - 1; z++) {
+            for (int x = x0; x <= x1; x++) {
+                if ((z == z0 + 1 || z == z1 - 1)) continue; // leave the stair treads
+                b.set(x, deckY, z, netherBricks);
+            }
+        }
+        // deck weathering flecks
+        b.set(1, deckY, 4, crackedNB);
+        b.set(3, deckY, 8, crackedNB);
+        b.set(2, deckY, 6, chiseledNB);
+
+        // ── 5) RAISED SIDE PARAPETS (y=3) — nether-brick walls along both long edges ─
+        // A one-course raised parapet runs the deck length on x=x0 and x=x1, capped
+        // with a nether-brick top-slab, seating the fence balustrade above.
+        for (int z = z0 + 1; z <= z1 - 1; z++) {
+            b.set(x0, deckY + 1, z, netherBricks);
+            b.set(x1, deckY + 1, z, netherBricks);
+        }
+
+        // ── 6) FENCE RAILINGS + BATTLEMENTS (y=4..5) — the signature fortress crown ──
+        // A nether-brick-fence rail runs the length of both parapets at y=4 (fences are
+        // render-safe — they connect to each other / posts). Every other cell raises a
+        // second fence course for the classic fortress battlement crenellation pattern.
+        for (int z = z0 + 1; z <= z1 - 1; z++) {
+            b.set(x0, deckY + 2, z, nbFence);
+            b.set(x1, deckY + 2, z, nbFence);
+            if (z % 2 == 1) { // raised "battlement" merlons every other cell
+                b.set(x0, deckY + 3, z, nbFence);
+                b.set(x1, deckY + 3, z, nbFence);
+            }
+        }
+        // close the rail across the two ends so the balustrade reads continuous
+        b.set(x0, deckY + 2, z0 + 1, nbFence);
+        b.set(x1, deckY + 2, z0 + 1, nbFence);
+        b.set(x0, deckY + 2, z1 - 1, nbFence);
+        b.set(x1, deckY + 2, z1 - 1, nbFence);
+
+        // ── 7) LAMPS — lanterns crown the parapet posts at mid-span ──────────────────
+        // Standing lanterns sit on the raised fence merlons at the bridge centre,
+        // casting the warm fortress glow over the walkway.
+        b.set(x0, deckY + 4, 5, LANTERN);
+        b.set(x1, deckY + 4, 5, LANTERN);
+        b.set(x0, deckY + 4, 7, LANTERN);
+        b.set(x1, deckY + 4, 7, LANTERN);
+
+        // ── 8) FORTRESS WART PATCH — a tiny soul-sand nether-wart bed on the deck ─────
+        // The vanilla-fortress wart-on-soul-sand read; the crop is a BushBlock ⇒
+        // structural-free (prints free). Tucked centre-deck, clear of the walkway edges.
+        b.set(cx, deckY, 4, soulSand);
+        b.set(cx, deckY + 1, 4, netherWart);
+        b.set(cx, deckY, 8, soulSand);
+        b.set(cx, deckY + 1, 8, netherWart);
 
         return b.build();
     }
