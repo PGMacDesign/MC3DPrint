@@ -323,6 +323,7 @@ class CuratedBlueprintGenerator {
         // Phase 2 — Category D (purpur_tower)
         builds.put("purpur_tower", purpurTower());
         builds.put("end_stone_outpost", endStoneOutpost());
+        builds.put("chorus_garden", chorusGarden());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -13428,6 +13429,175 @@ class CuratedBlueprintGenerator {
         // ── 8) YARD GLOW — end-rod ground sconces flanking the gate path ─────────────
         b.set(cx - 1, 1, 2, END_ROD); // gate-path west sconce
         b.set(cx + 1, 1, 2, END_ROD); // gate-path east sconce
+
+        return b.build();
+    }
+
+    /**
+     * Category D — chorus_garden. 9×9 footprint → builder(9, 11, 9), disc T7. A
+     * stylized End chorus GROVE on an end-stone field: several "chorus trees" of
+     * varied heights twisting up out of a rolling end-stone + end-stone-brick
+     * ground, with purpur accents and end-rod glow dotted among them. Reads as a
+     * lush, purple-and-glowing End garden — asymmetric and organic, NOT a grid.
+     *
+     * <p>CHORUS-TREE STYLING (chorus_plant / chorus_flower are UNVALUED — they have
+     * no recipe, no FU value, and fail the printability gate, so they are NEVER
+     * used). Each stylized chorus tree is built from FU-valued End blocks:
+     * <ul>
+     *   <li><b>Trunk</b> — a purpur-PILLAR stem (the purple chorus stem) rising
+     *       from the field, sometimes kinking sideways a cell partway up (chorus
+     *       plants are famously twisty/asymmetric).</li>
+     *   <li><b>Branches</b> — purpur-STAIRS "forks/elbows" cantilevering outward at
+     *       branch nodes (the characteristic chorus elbows), each ending in a small
+     *       purpur-slab or purpur-stair bulb cap.</li>
+     *   <li><b>Flower tips</b> — an END-ROD glowing tip over a purpur-slab bulb cap
+     *       (the chorus flower) crowning each trunk/branch.</li>
+     * </ul>
+     * Five trees of different sizes (a big twisty one, two mid, two small saplings)
+     * make a varied grove rather than a row of identical posts.
+     *
+     * <p>GROUND — a mottled end-stone + end-stone-bricks field (positional-hash
+     * scatter, not a tile) with gentle relief humps (a couple of raised end-stone
+     * mounds the trees grow off), purpur-block + purpur-pillar accent stones, and
+     * end-rod ground sconces glowing between the trees.
+     *
+     * <p>RENDER-SAFETY: no glass panes / iron bars anywhere (the only thin verticals
+     * are END RODS, which are render-safe), so the stub-pane GameTest guard cannot
+     * trip. Purpur stairs/slabs are full structural states.
+     *
+     * <p>PRINTABILITY: end_stone, end_stone_bricks, purpur_block, purpur_pillar,
+     * purpur_stairs, purpur_slab, end_rod are all FU-valued (derive via
+     * popped_chorus_fruit / end_stone). The UNVALUED chorus_plant / chorus_flower
+     * are deliberately NOT used — the grove is stylized from purpur + end rods.
+     *
+     * <p>AXES: x=W (0..8, east), y=up (0..10), z=depth (0..8, south). Build order is
+     * bottom-up, last-write-wins, air-skip (gaps left unset — never set air).
+     */
+    private static Blueprint chorusGarden() {
+        final int W = 9, H = 11, D = 9;
+        Blueprint.Builder b = Blueprint.builder("Chorus Garden", W, H, D);
+        final int x0 = 0, x1 = W - 1, z0 = 0, z1 = D - 1; // 0..8
+
+        // ── Palette (all FU-valued End blocks) ───────────────────────────────
+        final BlueprintBlockState endStone    = bs("minecraft:end_stone");
+        final BlueprintBlockState endBricks   = bs("minecraft:end_stone_bricks");
+        final BlueprintBlockState endBrickSlT = bs("minecraft:end_stone_brick_slab[type=top]");
+        final BlueprintBlockState purpurBlock = bs("minecraft:purpur_block");
+        final BlueprintBlockState purpurPillarY = bs("minecraft:purpur_pillar[axis=y]");
+        final BlueprintBlockState purpurPillarX = bs("minecraft:purpur_pillar[axis=x]");
+        final BlueprintBlockState purpurPillarZ = bs("minecraft:purpur_pillar[axis=z]");
+        final BlueprintBlockState purpurSlabT = bs("minecraft:purpur_slab[type=top]");
+        // purpur-stair "forks/elbows" for the chorus branches — top-half so the tread
+        // cantilevers OUTWARD off the trunk like a chorus elbow, facing each cardinal.
+        final BlueprintBlockState forkN = bs("minecraft:purpur_stairs[facing=north,half=top,shape=straight]");
+        final BlueprintBlockState forkS = bs("minecraft:purpur_stairs[facing=south,half=top,shape=straight]");
+        final BlueprintBlockState forkW = bs("minecraft:purpur_stairs[facing=west,half=top,shape=straight]");
+        final BlueprintBlockState forkE = bs("minecraft:purpur_stairs[facing=east,half=top,shape=straight]");
+
+        // ── 1) GROUND (y=0) — mottled end-stone + end-stone-bricks field over the
+        //    whole 9×9, keyed off a positional hash so it scatters rather than tiles.
+        //    A meandering end-stone-brick "path" drift wanders SW→NE through it.
+        for (int x = x0; x <= x1; x++) {
+            for (int z = z0; z <= z1; z++) {
+                int k = (x * 5 + z * 3) % 7;
+                // a soft diagonal drift of end-stone-bricks (the worn path through the grove)
+                boolean drift = Math.abs((x - z)) <= 1 && ((x + z) % 2 == 0);
+                BlueprintBlockState mat = (drift || k == 0 || k == 3) ? endBricks : endStone;
+                b.set(x, 0, z, mat);
+            }
+        }
+
+        // ── 2) GENTLE RELIEF (y=1) — a few raised end-stone mounds so the field rolls
+        //    instead of lying flat (the bigger chorus trees grow off these humps).
+        //    Asymmetric clusters in the SW and NE, plus a lone outcrop.
+        for (int[] m : new int[][]{{2, 6}, {1, 6}, {2, 7}, {6, 2}, {7, 2}, {6, 3}, {4, 5}}) {
+            b.set(m[0], 1, m[1], ((m[0] + m[1]) % 2 == 0) ? endStone : endBricks);
+        }
+        // a low purpur accent shelf where the centre tree springs (the purple base flare)
+        b.set(4, 1, 4, purpurBlock);
+        b.set(3, 1, 4, purpurBlock);
+
+        // ── 3) THE GROVE — five stylized chorus trees of varied height/branching,
+        //    scattered asymmetrically. Trunks are purpur-pillar, branches are purpur-
+        //    stair forks, bulb caps are purpur-slab, glowing tips are end rods.
+        //    NEVER chorus_plant/flower (unvalued) — pure purpur + end-rod stylization.
+
+        // ── Tree A — the BIG twisty centrepiece (SW mound, x=2,z=6). Trunk kinks
+        //    sideways partway up; two branch tiers with stair elbows + bulb tips.
+        {
+            int tx = 2, tz = 6;
+            pillar(b, tx, tz, 1, 4, purpurPillarY);   // lower trunk off the mound
+            // first branch tier (y=3): a west elbow with a bulb + end-rod flower
+            b.set(tx - 1, 3, tz, forkW);
+            b.set(tx - 1, 4, tz, purpurSlabT);        // bulb cap on the west branch
+            b.set(tx - 1, 5, tz, END_ROD);            // chorus flower (glowing tip)
+            // the trunk KINKS one cell south (a horizontal purpur-pillar jog) then climbs
+            b.set(tx, 5, tz + 1, purpurPillarZ);      // sideways kink (chorus twist)
+            pillar(b, tx, tz + 1, 6, 7, purpurPillarY); // upper trunk on the jog
+            // second branch tier (y=6): a south elbow with bulb + flower
+            b.set(tx, 6, tz + 2, forkS);
+            b.set(tx, 7, tz + 2, purpurSlabT);
+            b.set(tx, 8, tz + 2, END_ROD);
+            // crown of the big trunk: bulb cap + end-rod flower
+            b.set(tx, 8, tz + 1, purpurSlabT);
+            b.set(tx, 9, tz + 1, END_ROD);
+        }
+
+        // ── Tree B — a MID tree on the NE mound (x=6,z=2). One east branch elbow,
+        //    a small north bulb, end-rod flower crown. Twists east.
+        {
+            int tx = 6, tz = 2;
+            pillar(b, tx, tz, 1, 4, purpurPillarY);   // trunk off the NE mound
+            b.set(tx + 1, 3, tz, forkE);              // east elbow branch
+            b.set(tx + 1, 4, tz, END_ROD);            // east branch flower
+            b.set(tx, 4, tz - 1, forkN);              // small north bulb fork
+            b.set(tx, 5, tz - 1, END_ROD);            // north branch flower
+            b.set(tx, 5, tz, purpurSlabT);            // crown bulb cap
+            b.set(tx, 6, tz, END_ROD);                // crown flower
+        }
+
+        // ── Tree C — a MID-SHORT tree, centre-east (x=6,z=6). Twists west with a
+        //    stair elbow; modest height; bulb + flower crown.
+        {
+            int tx = 6, tz = 6;
+            pillar(b, tx, tz, 1, 3, purpurPillarY);   // trunk
+            b.set(tx - 1, 2, tz, forkW);              // west elbow low
+            b.set(tx - 1, 3, tz, END_ROD);            // west branch flower
+            b.set(tx, 4, tz, purpurSlabT);            // bulb cap
+            b.set(tx, 5, tz, END_ROD);                // crown flower
+        }
+
+        // ── Tree D — a small SAPLING near the centre (x=4,z=4) on the purpur shelf.
+        //    Short trunk, single bulb + flower (a young chorus sprout).
+        {
+            int tx = 4, tz = 4;
+            pillar(b, tx, tz, 2, 3, purpurPillarY);   // short trunk on the purpur shelf
+            b.set(tx, 4, tz, purpurSlabT);            // bulb cap
+            b.set(tx, 5, tz, END_ROD);                // sprout flower
+        }
+
+        // ── Tree E — a tiny SAPLING front-west (x=3,z=2). Two-tall, single flower.
+        {
+            int tx = 3, tz = 2;
+            pillar(b, tx, tz, 1, 2, purpurPillarY);   // tiny trunk
+            b.set(tx, 3, tz, purpurSlabT);            // bulb cap
+            b.set(tx, 4, tz, END_ROD);                // tip flower
+        }
+
+        // ── 4) PURPUR ACCENT STONES — a few low purpur-block / purpur-pillar "rocks"
+        //    scattered on the field for the purple End-garden read (asymmetric).
+        b.set(7, 1, 6, purpurBlock);             // SE accent stone
+        b.set(0, 1, 3, purpurPillarX);           // W lying log accent
+        b.set(5, 1, 7, purpurBlock);             // S accent stone
+        b.set(1, 1, 1, endBrickSlT);             // NW low cap stone
+
+        // ── 5) GROUND GLOW — end-rod sconces dotted between the trees on the field
+        //    (the glowing chorus understory). End rods are render-safe thin verticals.
+        b.set(4, 1, 1, END_ROD);                 // N glow
+        b.set(0, 1, 7, END_ROD);                 // SW corner glow
+        b.set(8, 1, 4, END_ROD);                 // E glow
+        b.set(5, 1, 3, END_ROD);                 // centre-N glow among the trees
+        b.set(7, 1, 8, END_ROD);                 // SE corner glow
 
         return b.build();
     }
