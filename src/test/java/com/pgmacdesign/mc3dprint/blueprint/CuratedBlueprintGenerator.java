@@ -289,6 +289,8 @@ class CuratedBlueprintGenerator {
         builds.put("elven_treehouse", elvenTreehouse());
         // Phase 2 — Category B (dwarven_hall)
         builds.put("dwarven_hall", dwarvenHall());
+        // Phase 2 — Category E (dock_pier)
+        builds.put("dock_pier", dockPier());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -13264,6 +13266,118 @@ class CuratedBlueprintGenerator {
             b.set(4, 4, pz, LANTERN);            // floor-standing lantern on the west aisle trim
             b.set(8, 4, pz, LANTERN);            // east aisle trim
         }
+
+        return b.build();
+    }
+
+    /**
+     * Dock Pier (Category E) — 11×7 footprint → builder(11, H, 7). A lively
+     * working fishing dock: a spruce-plank deck on spruce-log piling posts
+     * extending south over a shallow water bed, with spruce-fence railings,
+     * mooring posts capped with lanterns, stacked barrels + crates of cargo,
+     * a fishing/crafting corner (crafting table, smoker, campfire, barrels),
+     * a plank bench, and a short stair ramp up from the water at the seaward end.
+     *
+     * <p>Coordinates: x=0..10 (width, east), z=0..6 (depth, south), y up. The
+     * north edge (z=0) is the shore side; the pier reaches south over the water.
+     * The walkable deck surface is the TOP of the y={@code deckY} planks.
+     *
+     * <p>Everything placed is FU-valued vanilla (spruce planks/logs/slabs/stairs/
+     * fences/fence-gate, oak planks, cobblestone, barrels, chest, crafting table,
+     * smoker, campfire, lanterns, torches) or structural-free matter
+     * ({@code water} — the sea bed, prints free). No glass panes / iron bars are
+     * used, so there are no lone-stub render-safety concerns; fences self-reconcile
+     * their connection shapes at print time.
+     */
+    private static Blueprint dockPier() {
+        final int W = 11, H = 6, D = 7;
+        Blueprint.Builder b = Blueprint.builder("Dock Pier", W, H, D);
+        Palette p = TAIGA_SPRUCE; // spruce planks/logs/slabs/stairs, lanterns
+        BlueprintBlockState logY = p.logPillarY;             // spruce_log[axis=y]
+        BlueprintBlockState logX = bs("minecraft:spruce_log[axis=x]");
+        BlueprintBlockState planks = p.plankFloor;           // spruce_planks
+        BlueprintBlockState fence = bs("minecraft:spruce_fence");
+        BlueprintBlockState fenceGate = bs("minecraft:spruce_fence_gate[facing=south,in_wall=false,open=true,powered=false]");
+        BlueprintBlockState slabTop = p.slabTop;             // spruce_slab[type=top]
+
+        final int x0 = 0, x1 = W - 1, z0 = 0, z1 = D - 1;    // x:0..10  z:0..6
+        final int cx = (x0 + x1) / 2;                        // 5
+        final int deckY = 2;                                 // walkable surface = top of y=2 planks
+        final int railY = deckY + 1;                         // 3 — fence railings on the deck edges
+        final int padY = 0;                                  // cobble footing pads on the sea bed
+        final int pileY0 = 1, pileY1 = deckY - 1;            // log pilings y=1 (between pad and deck)
+
+        // ── 1) SHALLOW WATER BED (y=0) over the whole footprint (structural → free).
+        //    The pier stands over open water; the sea bed reads beneath the pilings.
+        floor(b, 0, x0, z0, x1, z1, WATER);
+
+        // ── 2) PILING POSTS — cobble footing pads on the sea bed with spruce-log
+        //    pilings rising to just under the deck. Placed on a grid under the deck
+        //    so the structure reads as founded over water (overwrites the water cell).
+        int[][] piles = {
+                {x0, z0}, {cx, z0}, {x1, z0},               // shore-edge row
+                {x0, z1 - 1}, {cx, z1 - 1}, {x1, z1 - 1},   // mid row
+                {x0, z1}, {cx - 2, z1}, {cx + 2, z1}, {x1, z1} // seaward row
+        };
+        for (int[] s : piles) {
+            b.set(s[0], padY, s[1], ((s[0] + s[1]) % 2 == 0) ? COBBLE : MOSSY_COBBLE); // footing pad
+            pillar(b, s[0], s[1], pileY0, pileY1, logY); // log piling y=1
+        }
+
+        // ── 3) DECK (y=2) — spruce-plank walkable surface over the whole footprint.
+        floor(b, deckY, x0, z0, x1, z1, planks);
+
+        // ── 4) RAILINGS — spruce-fence railings on the two long edges (x=0, x=10)
+        //    and the seaward end (z=6). The shore edge (z=0) is left OPEN so you can
+        //    walk onto the pier from land. Each rail line is ≥2 fences long, so every
+        //    fence has a connectable neighbour and self-reconciles at print. A
+        //    fence-gate sits mid-rail on the east long edge for a boat-side step-off.
+        line(b, railY, x0, z0, x0, z1, fence);              // west long-edge rail (z=0..6)
+        line(b, railY, x1, z0, x1, z1, fence);              // east long-edge rail (z=0..6)
+        line(b, railY, x0, z1, x1, z1, fence);              // seaward end rail (x=0..10)
+        b.set(x1, railY, (z0 + z1) / 2, fenceGate);          // east-edge boarding gate (mid-rail)
+
+        // ── 5) MOORING POSTS — tall spruce-log bollards at the four pier corners,
+        //    rising a block above the rail, each capped with a lantern (dock lights).
+        for (int[] c : new int[][]{{x0, z0}, {x1, z0}, {x0, z1}, {x1, z1}}) {
+            pillar(b, c[0], c[1], deckY + 1, deckY + 2, logY); // bollard y=3..4 (pillar(x,z,y0,y1))
+            b.set(c[0], deckY + 3, c[1], LANTERN);             // lantern cap at y=5
+        }
+
+        // ── 6) CARGO — stacked barrels (2-high) and a chest along the deck, reading
+        //    as crates/cargo waiting to ship. Kept off the rail line so the deck stays
+        //    walkable down the centre.
+        b.set(x0 + 1, deckY + 1, z1 - 1, BARREL);            // SW cargo stack (bottom)
+        b.set(x0 + 1, deckY + 2, z1 - 1, BARREL);            //            (top)
+        b.set(x0 + 1, deckY + 1, z1 - 2, BARREL);            // SW second barrel
+        b.set(x0 + 2, deckY + 1, z1 - 1, CHEST);             // dock chest beside the stack
+        b.set(x1 - 1, deckY + 1, z0 + 1, BARREL);            // NE single barrel (near shore)
+
+        // ── 7) FISHING / CRAFTING CORNER (NW, near shore) — a crafting table, a
+        //    smoker for the catch, and a campfire on a cobble hearth pad for cooking.
+        b.set(x0 + 1, deckY + 1, z0 + 1, CRAFTING_TABLE);    // crafting table
+        b.set(x0 + 2, deckY + 1, z0 + 1, SMOKER);            // smoker (catch processing)
+        b.set(cx, deckY, z0 + 2, COBBLE);                    // hearth pad under the campfire
+        b.set(cx, deckY + 1, z0 + 2, CAMPFIRE);              // lit cooking campfire
+
+        // ── 8) PLANK BENCH — a row of spruce stairs (a sit-down bench) facing the
+        //    water, set against the east rail mid-deck.
+        BlueprintBlockState benchW = bs("minecraft:spruce_stairs[facing=west,half=bottom,shape=straight]");
+        b.set(x1 - 1, deckY + 1, z0 + 3, benchW);
+        b.set(x1 - 1, deckY + 1, z0 + 4, benchW);
+
+        // ── 9) DECK LANTERNS / TORCHES — a hanging lantern under the deck over the
+        //    open water (backed by the solid plank deck) and rail-post torches for the
+        //    lived-in working-dock glow.
+        b.set(cx - 1, deckY - 1, z1 - 1, HANGING_LANTERN);   // hangs under the deck (off the piling cells)
+        b.set(cx + 2, deckY + 1, z1, fence);                 // extra seaward rail post (tie-up)
+        b.set(cx + 2, deckY + 2, z1, TORCH);                 // torch atop the tie-up post
+
+        // ── 10) SHORE RAMP — a short spruce-stair step down from the deck to the
+        //    water at the seaward end centre, so the dock reads as accessible from a
+        //    boat. A single descending stair course at the south lip.
+        BlueprintBlockState stairN = bs("minecraft:spruce_stairs[facing=north,half=bottom,shape=straight]");
+        b.set(cx, deckY, z1, stairN);                        // step at the seaward lip (overlays deck plank)
 
         return b.build();
     }
