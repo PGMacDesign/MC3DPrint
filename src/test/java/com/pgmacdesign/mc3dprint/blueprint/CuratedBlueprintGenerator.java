@@ -233,6 +233,7 @@ class CuratedBlueprintGenerator {
         builds.put("wishing_well", wishingWell());
         builds.put("statue_pedestal", statuePedestal());
         builds.put("obelisk", obelisk());
+        builds.put("stonehenge_ring", stonehengeRing());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -6489,6 +6490,118 @@ class CuratedBlueprintGenerator {
         for (int lx : new int[]{2, 4}) {
             b.set(lx, beamY - 1, postZ[1], CHAIN);
             b.set(lx, beamY - 2, postZ[1], HANGING_LANTERN);
+        }
+
+        return b.build();
+    }
+
+    /**
+     * §I Stonehenge Ring. 9×9 footprint → builder(9,7,9). A weathered megalithic
+     * circle: six outer <i>trilithons</i> (paired stone uprights capped by a
+     * horizontal lintel) arranged around a ~9×9 ring, plus two taller inner
+     * trilithons forming the central "great trilithon" pair. No grass floor is
+     * printed — the monument sits on the player's existing ground — only a sparse
+     * ring of foundation/heel stones marks the base. Weathering is conveyed by
+     * mixing stone / cobblestone / mossy-cobblestone / mossy-stone-bricks /
+     * andesite across the megaliths so no two read identically. Stone-slab caps sit
+     * atop the tallest lintels as worn capstones. All blocks are vanilla and FU
+     * valued or recipe-derived (slabs/mossy variants). Decorative landmark; T3 disc.
+     */
+    private static Blueprint stonehengeRing() {
+        Blueprint.Builder b = Blueprint.builder("Stonehenge Ring", 9, 7, 9);
+        // Weathered megalith palette — cycle these so adjacent stones differ.
+        BlueprintBlockState stone = bs("minecraft:stone");
+        BlueprintBlockState cobble = bs("minecraft:cobblestone");
+        BlueprintBlockState mossyCobble = bs("minecraft:mossy_cobblestone");
+        BlueprintBlockState mossyBrick = bs("minecraft:mossy_stone_bricks");
+        BlueprintBlockState andesite = bs("minecraft:andesite");
+        // Worn capstone slabs (top-half) for the lintel crowns.
+        BlueprintBlockState stoneSlabTop = bs("minecraft:stone_slab[type=top]");
+        BlueprintBlockState cobbleSlabTop = bs("minecraft:cobblestone_slab[type=top]");
+
+        BlueprintBlockState[] megalith = { mossyCobble, stone, andesite, cobble, mossyBrick };
+
+        // ── SPARSE FOUNDATION / HEEL STONES (y0) ──────────────────────────────
+        // No solid floor (the player's ground stays). Just a thin scatter of
+        // weathered base stones marking the circle and the central altar — so the
+        // ring reads as a deliberate monument footprint, not floating megaliths.
+        // Heel stones on the four cardinal edges of the ring:
+        b.set(4, 0, 0, mossyCobble);   // north heel
+        b.set(4, 0, 8, mossyCobble);   // south heel
+        b.set(0, 0, 4, andesite);      // west heel
+        b.set(8, 0, 4, andesite);      // east heel
+        // Central altar stone (the "Altar Stone"): a small 1×3 mossy slab line.
+        b.set(3, 0, 4, mossyBrick);
+        b.set(4, 0, 4, mossyBrick);
+        b.set(5, 0, 4, mossyBrick);
+
+        // ── SIX OUTER TRILITHONS (uprights y1..y3, lintel y4) ─────────────────
+        // Each trilithon is two uprights one cell apart along a tangent of the
+        // ring, bridged by a horizontal lintel at their crown. Uprights are 3 tall
+        // (y1..y3); the lintel spans the two upright tops plus the gap (y4). Pairs
+        // are placed around the perimeter at the four corners-ish + two flanks so
+        // the silhouette reads as a circle of standing gateways.
+        //
+        // {ax,az}=first upright, {bx,bz}=second upright (always 1 apart),
+        // lintel runs along the shared axis covering both tops and the gap.
+        int[][] outer = {
+            // north edge — two trilithons flanking the north heel, lintels along X
+            {2, 1, 3, 1},   // NW gate (uprights x=2,3 at z=1)
+            {5, 1, 6, 1},   // NE gate (uprights x=5,6 at z=1)
+            // south edge — two trilithons, lintels along X
+            {2, 7, 3, 7},   // SW gate
+            {5, 7, 6, 7},   // SE gate
+            // west & east flanks — single gates, lintels along Z
+            {1, 4, 1, 5},   // W gate (uprights z=4,5 at x=1) — shifted to keep in-bounds
+            {7, 3, 7, 4},   // E gate (uprights z=3,4 at x=7)
+        };
+        int oi = 0;
+        for (int[] t : outer) {
+            int ax = t[0], az = t[1], bx = t[2], bz = t[3];
+            BlueprintBlockState upMat = megalith[oi % megalith.length];
+            BlueprintBlockState lintelMat = megalith[(oi + 2) % megalith.length];
+            // two uprights, 3 tall
+            pillar(b, ax, az, 1, 3, upMat);
+            pillar(b, bx, bz, 1, 3, upMat);
+            // lintel at y4 bridging the two upright crowns (covers a..b along the
+            // axis they differ on, inclusive — the single gap cell between them
+            // included since |a-b| is exactly 1 → just the two crown cells).
+            int dx = Integer.signum(bx - ax);
+            int dz = Integer.signum(bz - az);
+            int cx = ax, cz = az;
+            b.set(cx, 4, cz, lintelMat);
+            while (cx != bx || cz != bz) {
+                cx += dx; cz += dz;
+                b.set(cx, 4, cz, lintelMat);
+            }
+            oi++;
+        }
+
+        // ── TWO TALLER INNER TRILITHONS (the "Great Trilithon" pair) ──────────
+        // Inner uprights are 4 tall (y1..y4) with the lintel at y5, set inside the
+        // ring facing the centre. They tower over the outer ring (the classic
+        // Stonehenge sarsen-trilithon silhouette). Capstone slabs crown each lintel.
+        int[][] inner = {
+            // a northward-facing inner gate: uprights x=3,5 at z=3, lintel x3..x5 @ z=3
+            {3, 3, 5, 3},
+            // a southward-facing inner gate: uprights x=3,5 at z=5, lintel x3..x5 @ z=5
+            {3, 5, 5, 5},
+        };
+        int ii = 0;
+        for (int[] t : inner) {
+            int ax = t[0], az = t[1], bx = t[2], bz = t[3];
+            BlueprintBlockState upMat = (ii == 0) ? mossyBrick : andesite;
+            BlueprintBlockState lintelMat = (ii == 0) ? stone : mossyCobble;
+            // two uprights, 4 tall
+            pillar(b, ax, az, 1, 4, upMat);
+            pillar(b, bx, bz, 1, 4, upMat);
+            // lintel at y5 spanning the full inner span (x=ax..bx along z=az)
+            line(b, 5, ax, az, bx, bz, lintelMat);
+            // worn capstone slabs atop the lintel ends (y6) — the crowning sarsens
+            BlueprintBlockState cap = (ii == 0) ? stoneSlabTop : cobbleSlabTop;
+            b.set(ax, 6, az, cap);
+            b.set(bx, 6, bz, cap);
+            ii++;
         }
 
         return b.build();
