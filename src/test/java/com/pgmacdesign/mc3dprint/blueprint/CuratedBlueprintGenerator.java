@@ -235,6 +235,7 @@ class CuratedBlueprintGenerator {
         builds.put("obelisk", obelisk());
         builds.put("stonehenge_ring", stonehengeRing());
         builds.put("garden_archway", gardenArchway());
+        builds.put("ruin_pillar", ruinPillar());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -1414,6 +1415,61 @@ class CuratedBlueprintGenerator {
         b.set(1, 14, 1, goldBlock);
         // y15: the gilded tip — a single gold block crowning the monument
         b.set(1, 15, 1, goldBlock);
+        return b.build();
+    }
+
+    /**
+     * §I Ruin Pillar. 3×3 footprint → builder(3,9,3). A crumbling, partly-collapsed
+     * stone column — "WorldEdit ruin" decor. A scatter of cobble / mossy-cobble rubble
+     * and stone-brick-slab fragments rings the base, from which a weathered stone-brick
+     * shaft (cracked / mossy / chiseled mix) rises off-centre and SNAPS partway up: the
+     * top course is a broken stair+slab lip suggesting the sheared-off shaft, with a lone
+     * leaning fragment beside it. Atmospheric, not enterable. Standalone or cluster-able.
+     * Vanilla-only, no vines/leaves (UNVALUED) — the ruin reads from cracked/mossy stone.
+     * T3 footprint, T2 disc.
+     */
+    private static Blueprint ruinPillar() {
+        Blueprint.Builder b = Blueprint.builder("Ruin Pillar", 3, 8, 3);
+        BlueprintBlockState stoneBrickStairN =
+                bs("minecraft:stone_brick_stairs[facing=north,half=bottom,shape=straight]");
+        BlueprintBlockState stoneBrickStairE =
+                bs("minecraft:stone_brick_stairs[facing=east,half=bottom,shape=straight]");
+
+        // ── RUBBLE FIELD (y0) ──────────────────────────────────────────────
+        // A broken scatter ringing the base — deliberately NOT a full 3×3 floor so
+        // the air-skip leaves gaps and it reads as a collapse pile, not a platform.
+        // The shaft footing sits at (1,*,1); rubble fans out toward the NW/SE.
+        b.set(0, 0, 0, MOSSY_COBBLE);          // NW corner chunk
+        b.set(1, 0, 0, COBBLE);                 // north-edge cobble
+        b.set(0, 0, 1, COBBLE);                 // west-edge cobble
+        b.set(1, 0, 1, MOSSY_STONE_BRICKS);     // shaft footing (mossy, weathered)
+        b.set(2, 0, 1, MOSSY_COBBLE);           // east rubble lump
+        b.set(1, 0, 2, COBBLE);                 // south-edge cobble
+        b.set(2, 0, 2, MOSSY_COBBLE);           // SE corner chunk
+        // toppled stone-brick-slab fragments lying flat in the rubble
+        b.set(0, 0, 2, STONE_BRICK_SLAB_BOTTOM); // SW fallen slab fragment
+        b.set(2, 0, 0, STONE_BRICK_SLAB_BOTTOM); // NE fallen slab fragment
+
+        // ── WEATHERED SHAFT (y1..y5), off-centre on the (1,1) footing ──────
+        // A worn, mismatched stone-brick stack — the surviving lower drum of the
+        // column. Material degrades upward (mossy → mixed → cracked) toward the break.
+        b.set(1, 1, 1, MOSSY_STONE_BRICKS);     // damp, mossy base course
+        b.set(1, 2, 1, STONE_BRICKS);           // intact mid course
+        b.set(1, 3, 1, CRACKED_STONE_BRICKS);   // cracking begins
+        b.set(1, 4, 1, CHISELED_STONE_BRICKS);  // a decorative drum course (worn relief)
+        b.set(1, 5, 1, CRACKED_STONE_BRICKS);   // last full course before the break
+        // a leaning chunk fused to the shaft (the column slumping as it failed)
+        b.set(2, 1, 1, MOSSY_COBBLE);           // bulge of fallen masonry at the foot
+        b.set(0, 2, 1, CRACKED_STONE_BRICKS);   // dislodged block clinging to the west face
+
+        // ── SHEARED-OFF TOP (y6..y7) ───────────────────────────────────────
+        // The shaft snaps: a half-slab lip + a stair "fracture face" suggesting the
+        // broken cross-section, plus one cracked stub of the continuing column.
+        b.set(1, 6, 1, CRACKED_STONE_BRICKS);   // jagged stub of the snapped shaft
+        b.set(1, 6, 0, stoneBrickStairN);       // fracture lip overhanging north
+        b.set(0, 6, 1, stoneBrickStairE);       // fracture lip overhanging west
+        b.set(1, 7, 1, STONE_BRICK_SLAB_BOTTOM); // worn slab cap — the broken shaft top
+
         return b.build();
     }
 

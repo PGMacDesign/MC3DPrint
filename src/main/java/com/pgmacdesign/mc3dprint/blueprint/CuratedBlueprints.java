@@ -68,7 +68,8 @@ public final class CuratedBlueprints {
             "mushroom_farm",
             // Phase 2 — Category I (ornamental / garden)
             "koi_pond", "gazebo", "pergola_garden", "wishing_well",
-            "statue_pedestal", "obelisk", "stonehenge_ring", "garden_archway");
+            "statue_pedestal", "obelisk", "stonehenge_ring", "garden_archway",
+            "ruin_pillar");
 
     /**
      * Load a bundled curated blueprint straight from the mod's resources (no world
