@@ -239,6 +239,7 @@ class CuratedBlueprintGenerator {
         builds.put("cemetery_plot", cemeteryPlot());
         builds.put("scarecrow", scarecrow());
         builds.put("flower_shop", flowerShop());
+        builds.put("food_stall", foodStall());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -1591,6 +1592,111 @@ class CuratedBlueprintGenerator {
         // (2,4,2) — a half=top stair (the old (2,3,1) backing) has no bottom face for
         // a lantern to attach to, so it would float; wool gives a real solid face.
         b.set(2, 3, 2, HANGING_LANTERN);
+        return b.build();
+    }
+
+    /**
+     * Phase 2 §I Food Stall. 5&times;5&times;5 (W&times;L&times;H) &rarr; builder(5,5,5). T1 disc.
+     *
+     * <p>A street-food vendor cart — deliberately DISTINCT from {@link #marketStall}
+     * (a generic dry-goods stall): this is a working food stand with a campfire
+     * grill, two smoker ovens behind the counter, barrels of produce, a striped
+     * wool awning, hanging lanterns, and a standing sign for signage (no item
+     * frames). Open-fronted so a customer can walk up to the counter (south face,
+     * z=0, is the service side; the kitchen is at the back, z=4).
+     *
+     * <p>AXES: x=W (0..4), y=up (0..4), z=depth (0..4). South (z=0) is the open
+     * front the awning slopes toward; north (z=4) is the back kitchen wall.
+     *
+     * <p>Vanilla, FU-valued blocks only (spruce plank/log/slab/trapdoor, white/red
+     * wool, barrel, campfire, smoker, composter, hay, lantern, oak sign — all derive
+     * value and are used by other shipping builds), so every cell clears the
+     * printability gate. NO glass/iron-bars panes anywhere, so the render-integrity
+     * stub-pane gate never applies; the lanterns hang on chains backed by the solid
+     * wool awning above them.
+     *
+     * <p>Layout:
+     * <ul>
+     *   <li><b>y=0</b> — walkable spruce-plank floor over the full 5&times;5.</li>
+     *   <li><b>back kitchen wall (z=4)</b> — spruce planks y=1..2 with spruce-log
+     *       corner posts; two {@link #SMOKER} ovens (facing south, toward the cook)
+     *       flanking a central composter, barrels of produce in the back corners.</li>
+     *   <li><b>front counter (z=1)</b> — a spruce-trapdoor apron (top half, closed)
+     *       under a spruce top-slab counter surface, spanning the open front between
+     *       the two front posts; the bay above stays open (air-skip) for service.</li>
+     *   <li><b>grill</b> — a lit {@link #CAMPFIRE} on the floor at the cook's spot
+     *       (2,1,3), the stall's smoke signature.</li>
+     *   <li><b>awning (y=3..4)</b> — a striped white/red wool canopy sloping from a
+     *       high back lip (oak stairs at z=4, y=4) over a striped wool middle
+     *       (z=2..3, y=4) down to a low front lip (oak stairs at z=0, y=3).</li>
+     *   <li><b>lanterns</b> — two hanging lanterns on single chains under the front
+     *       awning edge, each backed by the solid wool block directly above it.</li>
+     *   <li><b>signage</b> — a standing oak sign on the counter advertising the
+     *       stand (FU-valued, recipe-derived; no item frame).</li>
+     * </ul>
+     */
+    private static Blueprint foodStall() {
+        Blueprint.Builder b = Blueprint.builder("Food Stall", 5, 5, 5);
+        BlueprintBlockState smokerSouth = bs("minecraft:smoker[facing=south,lit=true]");
+        BlueprintBlockState trapdoorApron =
+                bs("minecraft:spruce_trapdoor[facing=south,half=top,open=false,powered=false,waterlogged=false]");
+
+        // 1) walkable spruce-plank floor
+        floor(b, 0, 0, 0, 4, 4, SPRUCE_PLANKS);
+
+        // 2) back kitchen wall (z=4), spruce planks y=1..2, between the corner posts
+        line(b, 1, 1, 4, 3, 4, SPRUCE_PLANKS);
+        line(b, 2, 1, 4, 3, 4, SPRUCE_PLANKS);
+
+        // 3) four corner posts y=1..3 (spruce logs) — front and back
+        pillar(b, 0, 1, 1, 3, SPRUCE_LOG_Y);
+        pillar(b, 4, 1, 1, 3, SPRUCE_LOG_Y);
+        pillar(b, 0, 4, 1, 3, SPRUCE_LOG_Y);
+        pillar(b, 4, 4, 1, 3, SPRUCE_LOG_Y);
+
+        // 4) kitchen line at the back: two smoker ovens flanking a central composter,
+        //    barrels of produce in the back corners
+        b.set(0, 1, 4, BARREL);              // produce barrel (back-west corner base)
+        b.set(4, 1, 4, BARREL);              // produce barrel (back-east corner base)
+        b.set(1, 1, 4, smokerSouth);         // smoker oven, facing the cook (south)
+        b.set(3, 1, 4, smokerSouth);         // smoker oven, facing the cook (south)
+        b.set(2, 1, 4, COMPOSTER);           // scraps composter between the ovens
+
+        // 5) front counter (z=1): trapdoor apron under a top-slab surface, spanning
+        //    the open front between the two front posts (x=1..3)
+        for (int x = 1; x <= 3; x++) {
+            b.set(x, 1, 1, trapdoorApron);        // counter apron face
+            b.set(x, 2, 1, SPRUCE_SLAB_TOP);      // counter surface
+        }
+
+        // 6) grill + goods: lit campfire at the cook's spot, a hay-bale of produce
+        //    in the west aisle and a produce barrel in the east aisle. (No carved
+        //    pumpkin — survival pumpkins are intentionally UNVALUED in the FU economy
+        //    and would silently skip in strict mode; barrel/hay derive value.)
+        b.set(2, 1, 3, CAMPFIRE);            // the grill (smoke signature)
+        b.set(0, 1, 3, HAY);                 // straw / produce stack, west aisle
+        b.set(4, 1, 3, BARREL);              // produce barrel on display, east aisle
+
+        // 7) striped wool awning, back(high) → front(low), spanning x=0..4
+        BlueprintBlockState backStair = bs("minecraft:oak_stairs[facing=north,half=bottom,shape=straight]");
+        BlueprintBlockState frontStair = bs("minecraft:oak_stairs[facing=north,half=top,shape=straight]");
+        for (int x = 0; x <= 4; x++) {
+            b.set(x, 4, 4, backStair);                        // back lip high
+            b.set(x, 4, 3, (x % 2 == 0) ? WHITE_WOOL : RED_WOOL); // striped row
+            b.set(x, 4, 2, (x % 2 == 0) ? RED_WOOL : WHITE_WOOL); // striped row (offset)
+            b.set(x, 3, 0, frontStair);                       // front lip low
+        }
+
+        // 8) two hanging lanterns on single chains under the front awning edge,
+        //    each backed by the solid wool block directly above (y=4) so they don't
+        //    float; lantern at y=3, chain at y... the wool at (1,4,3)/(3,4,3) backs them
+        chainLantern(b, 1, 3, 3, 0); // lantern at (1,3,3), backed by wool at (1,4,3)
+        chainLantern(b, 3, 3, 3, 0); // lantern at (3,3,3), backed by wool at (3,4,3)
+
+        // 9) signage — a standing oak sign atop the west front post (solid spruce
+        //    log support below at y=3), facing the customer. No item frame.
+        b.set(0, 4, 1, bs("minecraft:oak_sign[rotation=8]"));
+
         return b.build();
     }
 
