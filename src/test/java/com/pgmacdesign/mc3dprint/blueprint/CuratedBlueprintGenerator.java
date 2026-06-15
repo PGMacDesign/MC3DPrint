@@ -229,6 +229,7 @@ class CuratedBlueprintGenerator {
         // Phase 2 — Category I (ornamental / garden)
         builds.put("koi_pond", koiPond());
         builds.put("gazebo", gazebo());
+        builds.put("pergola_garden", pergolaGarden());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -6179,6 +6180,127 @@ class CuratedBlueprintGenerator {
         //    lowest eave ring at y=4).
         for (int[] c : new int[][]{{x0 + 1, z0 + 1}, {x1 - 1, z0 + 1}, {x0 + 1, z1 - 1}, {x1 - 1, z1 - 1}}) {
             b.set(c[0], 3, c[1], HANGING_LANTERN);
+        }
+
+        return b.build();
+    }
+
+    /**
+     * Pergola Garden — a wooden pergola walkway over a garden path. A row of three
+     * stripped-oak post pairs (at x=1 and x=5) carry overhead cross-beams; an
+     * oak-trapdoor lattice forms the open pergola roof. A dirt-path walkway runs
+     * down the centre (x=3, structural → prints free); stone-brick-edged planter
+     * boxes fill the four corner quadrants with farmland+wheat (structural). Hanging
+     * lanterns on chains light the walk. 7×7 footprint (T5), disc T1.
+     *
+     * <p>Vanilla, FU-valued/structural blocks only. The pergola reads from its
+     * wood frame + trapdoor lattice — NO leaves/vines/flowers (all UNVALUED). The
+     * "garden" greenery is moss-block planter bases + structural farmland/wheat, so
+     * everything is printable. Trapdoors are not {@code IronBarsBlock}, so the open
+     * lattice never trips the stub-pane render gate (no panes/bars are used at all).
+     *
+     * <p>Footprint x=0..6 (W), z=0..6 (depth), y=0..5 (H=6):
+     * <ul>
+     *   <li>{@code y=0} cobblestone footing over the full footprint; a central
+     *       dirt-path walkway (column x=3, z=0..6) — structural, free; four
+     *       stone-brick-edged planter boxes (the corner quadrants) filled with
+     *       farmland+wheat (structural) over a moss-block course.</li>
+     *   <li>{@code y=1..3} six stripped-oak posts: pairs at x=1 & x=5 for z=1,3,5.</li>
+     *   <li>{@code y=4} overhead pergola frame: two longitudinal stripped-oak
+     *       beams (axis=z) along x=1 and x=5, and three cross-beams (axis=x)
+     *       spanning x=1..5 over each post pair.</li>
+     *   <li>{@code y=5} oak-trapdoor lattice (top-half, open) laid over the bays
+     *       between the beams — the airy pergola "roof".</li>
+     *   <li>hanging lanterns on chains under the centre cross-beam.</li>
+     * </ul>
+     */
+    private static Blueprint pergolaGarden() {
+        final int W = 7, H = 6, D = 7;
+        Blueprint.Builder b = Blueprint.builder("Pergola Garden", W, H, D);
+        int x0 = 0, x1 = W - 1, z0 = 0, z1 = D - 1; // 0..6
+        int walkX = 3;                              // central walkway column
+        BlueprintBlockState post = STRIPPED_OAK_Y;
+        BlueprintBlockState beamX = STRIPPED_OAK_X;
+        BlueprintBlockState beamZ = bs("minecraft:stripped_oak_log[axis=z]");
+        BlueprintBlockState planterEdge = STONE_BRICKS;
+        BlueprintBlockState planterBase = bs("minecraft:moss_block");
+        BlueprintBlockState latticeTop =
+                bs("minecraft:oak_trapdoor[facing=north,half=top,open=true,powered=false,waterlogged=false]");
+        int[] postX = {1, 5};       // the two post rows flanking the walkway
+        int[] postZ = {1, 3, 5};    // three post pairs along the path
+        int postTop = 3;            // posts y=1..3
+        int beamY = 4;              // overhead frame course
+        int latticeY = 5;          // pergola lattice roof
+
+        // 1) cobblestone footing over the whole footprint (walkable ground = top of y=0).
+        floor(b, 0, x0, z0, x1, z1, COBBLE);
+
+        // 2) central dirt-path walkway down x=3 (structural → prints free), overwriting
+        //    the footing so the path reads sunken into the courtyard.
+        path(b, walkX, z0, z1);
+
+        // 3) four corner planter quadrants flanking the walkway: stone-brick-edged
+        //    boxes filled with a moss-block course topped by structural farmland+wheat.
+        //    Quadrants are x∈{0..1} (west) / x∈{5..6} (east) by z∈{0..1} / z∈{5..6};
+        //    the post cells (x=1/5, z=1/5) sit on the inner planter corners, so the
+        //    posts rise straight out of the garden beds.
+        int[][] planters = {
+                {x0, z0, x0 + 1, z0 + 1}, {x1 - 1, z0, x1, z0 + 1}, // north-west / north-east
+                {x0, z1 - 1, x0 + 1, z1}, {x1 - 1, z1 - 1, x1, z1}  // south-west / south-east
+        };
+        for (int[] q : planters) {
+            // stone-brick rim around the bed (one course up at y=1).
+            fenceRing(b, 1, q[0], q[1], q[2], q[3], planterEdge);
+            // inner soil cell of each 2×2 bed (the single cell diagonally inset from
+            // the outer corner) gets moss base + farmland + wheat.
+            int ix = (q[0] == x0) ? q[0] : q[2]; // outer corner x
+            int iz = (q[1] == z0) ? q[1] : q[3]; // outer corner z
+            b.set(ix, 0, iz, planterBase);   // moss base under the bed corner
+            b.set(ix, 1, iz, FARMLAND);      // structural farmland
+            b.set(ix, 2, iz, WHEAT);         // structural crop
+        }
+
+        // 4) six stripped-oak posts (pairs at x=1 & x=5 for z=1,3,5), y=1..3.
+        for (int px : postX) {
+            for (int pz : postZ) {
+                pillar(b, px, pz, 1, postTop, post);
+            }
+        }
+
+        // 5) overhead pergola frame at y=4: two longitudinal beams (axis=z) along
+        //    x=1 and x=5 spanning z=1..5, plus three cross-beams (axis=x) over each
+        //    post pair spanning x=1..5. Cross-beams are stamped after so the
+        //    intersections read as crossing timbers.
+        for (int px : postX) {
+            line(b, beamY, px, postZ[0], px, postZ[postZ.length - 1], beamZ);
+        }
+        for (int pz : postZ) {
+            line(b, beamY, postX[0], pz, postX[1], pz, beamX);
+        }
+
+        // 6) oak-trapdoor lattice "roof" at y=5, top-half open, laid across the bays
+        //    bounded by the frame (x=1..5, z=1..5). Skip the four beam corners so the
+        //    lattice reads as slats spanning between the timbers, leaving an airy,
+        //    open pergola canopy. Trapdoors are not IronBars → no stub-pane risk.
+        for (int x = postX[0]; x <= postX[1]; x++) {
+            for (int z = postZ[0]; z <= postZ[postZ.length - 1]; z++) {
+                boolean isFrameCorner =
+                        (x == postX[0] || x == postX[1]) && (z == postZ[0] || z == postZ[postZ.length - 1]);
+                if (isFrameCorner) continue;
+                // alternate slats in a lattice checker so the canopy reads as open weave.
+                if (((x + z) & 1) == 0) {
+                    b.set(x, latticeY, z, latticeTop);
+                }
+            }
+        }
+
+        // 7) hanging lanterns on chains under the centre cross-beam (the z=3 beam),
+        //    dropped over the walkway flanks (x=2 and x=4 — clear of the post columns)
+        //    so they light the walk without blocking it. The cross-beam at y=4 backs
+        //    the chain.
+        for (int lx : new int[]{2, 4}) {
+            b.set(lx, beamY - 1, postZ[1], CHAIN);
+            b.set(lx, beamY - 2, postZ[1], HANGING_LANTERN);
         }
 
         return b.build();

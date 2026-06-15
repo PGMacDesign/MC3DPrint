@@ -67,7 +67,7 @@ public final class CuratedBlueprints {
             "animal_pen", "chicken_coop_auto", "fishery_pond", "tree_farm",
             "mushroom_farm",
             // Phase 2 — Category I (ornamental / garden)
-            "koi_pond", "gazebo");
+            "koi_pond", "gazebo", "pergola_garden");
 
     /**
      * Load a bundled curated blueprint straight from the mod's resources (no world

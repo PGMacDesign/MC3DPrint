@@ -7,9 +7,9 @@
 
 ## Status
 - **Curated builds before Phase 2:** 29
-- **Phase 2 queue:** 103 · **Done:** 28 · **Blocked:** 2 · **Remaining:** 73
-- **Next up:** `pergola_garden`
-- **Last completed:** `gazebo`
+- **Phase 2 queue:** 103 · **Done:** 29 · **Blocked:** 2 · **Remaining:** 72
+- **Next up:** `wishing_well`
+- **Last completed:** `pergola_garden`
 
 ## Process (per build — follow exactly on resume)
 1. Pick the first unchecked `[ ]` build in queue order below.
@@ -67,7 +67,7 @@
 ### I — Decorative micro / landmarks (17) · cheap volume, easy
 - [x] koi_pond
 - [x] gazebo
-- [ ] pergola_garden
+- [x] pergola_garden
 - [ ] wishing_well
 - [ ] statue_pedestal
 - [ ] obelisk
