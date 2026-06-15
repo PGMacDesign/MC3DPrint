@@ -7,9 +7,9 @@
 
 ## Status
 - **Curated builds before Phase 2:** 29
-- **Phase 2 queue:** 103 · **Done:** 12 · **Blocked:** 1 · **Remaining:** 90
-- **Next up:** `treehouse`
-- **Last completed:** `hobbit_hole`
+- **Phase 2 queue:** 103 · **Done:** 13 · **Blocked:** 1 · **Remaining:** 89
+- **Next up:** `iron_farm`
+- **Last completed:** `treehouse`
 
 ## Process (per build — follow exactly on resume)
 1. Pick the first unchecked `[ ]` build in queue order below.
@@ -46,7 +46,7 @@
 - [x] badlands_mesa_dwelling
 - [BLOCKED: needs mushroom blocks + mycelium valued (no recipe; core to build)] mushroom_island_hut
 - [x] hobbit_hole
-- [ ] treehouse
+- [x] treehouse
 
 ### F — Functional farms (14) · differentiator; watch for unvalued components
 - [ ] iron_farm

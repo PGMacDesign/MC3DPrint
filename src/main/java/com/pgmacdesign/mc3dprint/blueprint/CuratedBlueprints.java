@@ -60,7 +60,7 @@ public final class CuratedBlueprints {
             // Phase 2 — Category A
             "snowy_igloo", "snowy_alpine_chalet", "jungle_hut", "jungle_temple_ruin",
             "mangrove_stilt_hut", "cherry_blossom_pavilion", "badlands_mesa_dwelling",
-            "hobbit_hole");
+            "hobbit_hole", "treehouse");
 
     /**
      * Load a bundled curated blueprint straight from the mod's resources (no world

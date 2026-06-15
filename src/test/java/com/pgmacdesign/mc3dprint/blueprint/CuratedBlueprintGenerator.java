@@ -211,6 +211,7 @@ class CuratedBlueprintGenerator {
         builds.put("cherry_blossom_pavilion", cherryBlossomPavilion());
         builds.put("badlands_mesa_dwelling", badlandsMesaDwelling());
         builds.put("hobbit_hole", hobbitHole());
+        builds.put("treehouse", treehouse());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -4093,6 +4094,161 @@ class CuratedBlueprintGenerator {
         b.set(x1 - 2, floorY + 1, z1 - 1, LANTERN);          // floor lantern, back
         // a hanging lantern in the centre, chained to the burrow ceiling
         chainLantern(b, cx, ceilY - 2, cz, 1);
+
+        return b.build();
+    }
+
+    /**
+     * Treehouse (Category A, §A row "treehouse") — 9×9 footprint → builder(9, 14, 9).
+     * "WorldEdit for survival" reads this as an elevated tree-cabin, NOT a plain stilt
+     * hut: a THICK 3×3 oak-LOG trunk rises from the ground up through a raised oak-plank
+     * platform and continues above the cabin roof (the player's own leaf canopy crowns
+     * the bare top); spruce-log branch struts splay out under the deck; a ladder climbs
+     * the trunk to the platform; oak-fence railings ring the deck; a small walled oak
+     * cabin with a gable roof sits on the platform around the trunk; hanging lanterns
+     * glow under the eaves and the deck.
+     *
+     * <p><b>No leaves/vines/bamboo</b> (gate-flagged, unvalued → silently won't print) —
+     * the canopy is the player's real tree. Everything here is VALUED oak/spruce wood,
+     * planks, fences, ladders, glass panes, and lanterns.
+     *
+     * <p>Geometry. Footprint x,z=0..8. Trunk is the central 3×3 oak-log column
+     * x=3..5 × z=3..5 from the ground (y=0) up to y=13 (it pierces the deck and the
+     * cabin roof, reading as a continuing tree). Deck (raised oak-plank platform) at
+     * y=4 over the full 9×9, minus the trunk cells and a south ladder hatch. Cabin wall
+     * ring y=5..8 on a 7×7 inset (x=1..7 × z=1..7) with oak-log corner posts; the trunk
+     * passes up through the cabin interior. Gable roof (ridge along X) seats at y=9 over
+     * the cabin footprint, closed ends. The trunk top y=10..13 stands proud of the roof.
+     * The interior standing space (deck-top = y=4, head room y=5..8) is left open per the
+     * air-skip rule so the cabin is enterable off the ladder.
+     */
+    private static Blueprint treehouse() {
+        Blueprint.Builder b = Blueprint.builder("Treehouse", 9, 14, 9);
+        // all vanilla, all FU-valued: oak/spruce logs, oak planks/fence/slab/stairs,
+        // ladders, glass panes, lanterns. NO leaves/vines/bamboo (unvalued, won't print).
+        BlueprintBlockState trunkLog = OAK_LOG_Y;               // central tree trunk (axis=y)
+        BlueprintBlockState branchX  = bs("minecraft:spruce_log[axis=x]"); // branch struts (E/W)
+        BlueprintBlockState branchZ  = bs("minecraft:spruce_log[axis=z]"); // branch struts (N/S)
+        BlueprintBlockState deck     = OAK_PLANKS;              // raised platform planks
+        BlueprintBlockState wall     = OAK_PLANKS;              // cabin walls
+        BlueprintBlockState cornerY  = OAK_LOG_Y;              // cabin corner posts
+        BlueprintBlockState railing  = OAK_FENCE;              // deck railing
+
+        int x0 = 0, x1 = 8, z0 = 0, z1 = 8;
+        int cx = 4, cz = 4;                 // trunk / footprint centre
+        int tx0 = 3, tx1 = 5, tz0 = 3, tz1 = 5; // 3×3 trunk columns
+        int deckY = 4;                      // raised platform (walkable surface = top of y=4)
+        int trunkTop = 13;                  // trunk stands proud above the roof
+        // cabin: 7×7 inset on the deck
+        int wx0 = 1, wx1 = 7, wz0 = 1, wz1 = 7;
+        int wallBottom = deckY + 1;         // 5
+        int wallH = deckY + 4;              // 8 (wall plate; roof seats at y=9)
+        int roofY = wallH + 1;              // 9
+        // Ladder climbs the SOUTH face of the trunk: a south-facing ladder backs onto
+        // the block to its NORTH, so rungs sit at z=tz1+1 (=6, just south of the trunk)
+        // and the deck hatch is the SAME column so the player steps straight up onto it.
+        int ladderZ = tz1 + 1;               // 6
+        int hatchX = cx, hatchZ = ladderZ;   // (4,6) hatch directly above the rungs
+
+        // ── 1) THE TRUNK ─────────────────────────────────────────────────────
+        // A solid 3×3 oak-log column from the ground (y=0) up to trunkTop. It passes
+        // through the deck and the cabin and stands proud above the roof so the build
+        // reads as a cabin built around a living tree.
+        for (int x = tx0; x <= tx1; x++) {
+            for (int z = tz0; z <= tz1; z++) {
+                pillar(b, x, z, 0, trunkTop, trunkLog);
+            }
+        }
+
+        // ── 2) BRANCH STRUTS under the deck ──────────────────────────────────
+        // Spruce-log branches splay out from the trunk just below the platform
+        // (y=deckY-1=3), reaching to the four mid-edges — they read as boughs and
+        // visually carry the platform. Axis matches the direction each branch runs.
+        int by = deckY - 1; // 3
+        line(b, by, tx0 - 1, cz, x0, cz, branchX);  // west branch  (x: 2→0)
+        line(b, by, tx1 + 1, cz, x1, cz, branchX);  // east branch  (x: 6→8)
+        line(b, by, cx, tz0 - 1, cx, z0, branchZ);  // north branch (z: 2→0)
+        // south branch routed via x=cx-1 so it never collides with the ladder column
+        // (the ladder rungs occupy x=cx, z=ladderZ at this y); it still reads as a bough.
+        line(b, by, cx - 1, tz1 + 1, cx - 1, z1, branchZ); // south branch (z: 6→8)
+        // diagonal-ish corner boughs one step out from the trunk (single log knobs)
+        b.set(tx0 - 1, by, tz0 - 1, branchX);
+        b.set(tx1 + 1, by, tz0 - 1, branchX);
+        b.set(tx0 - 1, by, tz1 + 1, branchX);
+        b.set(tx1 + 1, by, tz1 + 1, branchX);
+
+        // ── 3) THE RAISED PLATFORM (deck) at y=deckY ─────────────────────────
+        // Full 9×9 oak-plank floor, MINUS the trunk cells (logs already there) and the
+        // south ladder hatch (left open per air-skip so the player climbs onto the deck).
+        for (int x = x0; x <= x1; x++) {
+            for (int z = z0; z <= z1; z++) {
+                if (x >= tx0 && x <= tx1 && z >= tz0 && z <= tz1) continue; // trunk passes through
+                if (x == hatchX && z == hatchZ) continue;                  // ladder hatch
+                b.set(x, deckY, z, deck);
+            }
+        }
+
+        // ── 4) DECK RAILINGS (oak fence around the platform edge) ────────────
+        // A fence ring on the deck perimeter at y=deckY+? sits one course above the
+        // floor (y=deckY+1) so it reads as a guard rail. Leave a gap at the hatch so
+        // the rail doesn't cap the ladder opening.
+        int railY = deckY + 1; // 5
+        for (int x = x0; x <= x1; x++) {
+            b.set(x, railY, z0, railing);
+            if (x == cx) continue; // leave a gap on the south edge in front of the door
+            b.set(x, railY, z1, railing);
+        }
+        for (int z = z0 + 1; z <= z1 - 1; z++) {
+            b.set(x0, railY, z, railing);
+            b.set(x1, railY, z, railing);
+        }
+        // (the cabin wall ring below re-stamps the inset perimeter; the OUTER railing
+        //  ring on the 0/8 edges is the open-deck guard, distinct from the cabin walls.)
+
+        // ── 5) THE CABIN on the platform ─────────────────────────────────────
+        // 7×7 inset oak-plank wall ring y=5..8 with oak-log corner posts. The trunk
+        // rises up through the cabin interior (y=5..8), so the cabin genuinely wraps
+        // the tree. Interior (off the trunk) left open per air-skip → enterable.
+        walls(b, wx0, wz0, wx1, wz1, wallBottom, wallH, wall);
+        corners(b, wx0, wz0, wx1, wz1, wallBottom, wallH, cornerY);
+
+        // 5a) south door into the cabin (faces north, opens inward), flanked by glass
+        //     windows. Each pane is flanked by solid wall cells → render-safe.
+        door2(b, cx, wallBottom, wz1, "oak", "S");
+        int wy = wallBottom + 1; // 6, mid-wall
+        window2(b, wx0, wy, cz, GLASS_PANE, null);     // west wall, centred
+        window2(b, wx1, wy, cz, GLASS_PANE, null);     // east wall, centred
+        window2(b, cx - 1, wy, wz0, GLASS_PANE, null); // north wall, west of centre
+        window2(b, cx + 1, wy, wz0, GLASS_PANE, null); // north wall, east of centre
+
+        // 5b) gable roof (ridge along X) seated on the wall plate, closed gable ends.
+        gableRoofX(b, wx0, wz0, wx1, wz1, roofY, "oak_stairs", OAK_SLAB_BOTTOM);
+        gableEndFill(b, wx0, wz0, wx1, wz1, roofY, wall);
+
+        // ── 6) THE LADDER up the trunk to the deck ───────────────────────────
+        // South-facing ladder rungs in the column just south of the trunk (x=cx, z=6)
+        // climb from the ground (y=1) up to deck-top. A LADDER_SOUTH backs onto the
+        // block to its NORTH — here the solid trunk log at (cx, y, tz1=5) — so every
+        // rung has a wall behind it. The deck hatch at (cx, 6) (left open in step 3)
+        // sits directly above, so the player climbs out onto the platform.
+        for (int y = 1; y <= deckY; y++) {
+            b.set(cx, y, ladderZ, LADDER_SOUTH); // rungs y=1..4 (top rung level with deck)
+        }
+
+        // ── 7) HANGING LANTERNS (under-deck glow + cabin interior) ───────────
+        // Under-deck lanterns hang off the plank deck (solid above them) at the four
+        // mid-edges, lighting the trunk base like a real treehouse at night.
+        b.set(x0 + 2, deckY - 1, cz, HANGING_LANTERN);
+        b.set(x1 - 2, deckY - 1, cz, HANGING_LANTERN);
+        b.set(cx, deckY - 1, z0 + 2, HANGING_LANTERN);
+        // a hanging lantern inside the cabin, chained up to the roof underside
+        chainLantern(b, wx0 + 1, wallH - 1, wz0 + 1, 1);
+
+        // ── 8) interior furnishings on the deck (standing floor = y=deckY) ───
+        bed(b, wx0 + 1, wallBottom, wz1 - 1, "white", "south"); // bed at back-left
+        b.set(wx1 - 1, wallBottom, wz1 - 1, CHEST);             // storage, back-right
+        b.set(wx1 - 1, wallBottom, wz0 + 1, CRAFTING_TABLE);    // work corner, front-right
+        b.set(wx0 + 1, wallBottom, wz0 + 1, LANTERN);           // floor lantern, front-left
 
         return b.build();
     }
