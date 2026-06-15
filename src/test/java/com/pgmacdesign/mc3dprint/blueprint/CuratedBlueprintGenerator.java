@@ -982,62 +982,134 @@ class CuratedBlueprintGenerator {
     // ---- pagoda / stacked-eave roof (Japanese set) --------------------------
 
     /**
-     * A stacked, upturned-eave pagoda roof of {@code tiers} tiers centred on
-     * {@code (cx,cz)}, the lowest tier seated at {@code y=cy}. Each tier is a
-     * smaller square ring of inward-facing stairs (per the gable/hip facing
-     * convention) with an outward "flare" lip of top-half stairs one course
-     * below the ring's eave — the upturned-eave silhouette. Tier {@code k}
-     * (0 = bottom) has half-extent {@code baseHalf - k} and sits two courses
-     * above the previous tier, so a 3-tier roof spans {@code cy..cy+5} plus a
-     * finial. The top is capped with {@code cap}.
+     * One pagoda eave tier — a single square roof skirt with a deep overhang and
+     * the four signature UPTURNED CORNERS — centred on {@code (cx,cz)} with its
+     * eave ring seated at {@code y=ey}. Returns the y of the corner finger tops
+     * (the highest cell this tier touches) so callers can stack the next tier or
+     * a finial above it.
      *
-     * @param baseHalf  half-extent of the bottom tier (full width = 2*baseHalf+1)
-     * @param tiers     number of stacked tiers (≥1)
-     * @param roofStair bare stair-block NAME (e.g. "spruce_stairs")
-     * @param eaveSlab  slab used to cap each tier ridge / finial base
-     * @param cap       the apex finial block (e.g. a lantern or end rod)
+     * <p>Geometry, from the wall line outward (this is what makes it read as a
+     * pagoda and not a generic stepped roof):
+     * <ul>
+     *   <li><b>Deep overhanging eave.</b> The eave ring of inward-facing
+     *       {@code half=bottom} stairs sits at {@code (cx±half, cz±half)} — i.e.
+     *       {@code half} blocks out from centre — and OVERHANGS the body, which
+     *       must be inset. One course below ({@code ey-1}) an outward-facing
+     *       {@code half=top} "bracket" ring sits one cell further out (at
+     *       {@code half+1}), giving the underside the deep-bracket look and
+     *       extending the visible lip to {@code half+1} from centre.</li>
+     *   <li><b>Upturned corners.</b> At each corner a continuous rising diagonal
+     *       reads as the signature flick: the bracket-lip corner sits at
+     *       {@code ey-1} (on the {@code half+1} diagonal), the eave ring corner at
+     *       {@code ey}, and a curl tip — an outward-facing {@code half=top} stair —
+     *       sits one cell further out AND one course higher ({@code ey+1}, on the
+     *       {@code half+1} diagonal). So the corner steps lip→ring→tip up and out,
+     *       visibly curling the roofline UP instead of cutting off flat.</li>
+     * </ul>
+     *
+     * <p><b>Footprint warning:</b> the bracket lip AND the upturned curl tip reach
+     * {@code half+1} from centre, so a tier with half-extent {@code half} needs the
+     * build footprint to span at least {@code [cx-(half+1) .. cx+(half+1)]} in both
+     * axes. Size the body inset accordingly (e.g. an 11-wide footprint, centre 5,
+     * tops out at a bottom tier of {@code half=4} whose lip just reaches x=0/10).
+     *
+     * @param ey        y of the eave ring (its overhang course)
+     * @param half      half-extent of this tier's eave ring (ring width = 2*half+1)
+     * @param roofStair bare stair-block NAME (e.g. "dark_oak_stairs")
+     * @param capSlab   slab that closes the tier interior so it isn't see-through
+     * @return the y of this tier's upturned corner curl tips ({@code ey+1})
      */
-    private static void pagodaRoof(Blueprint.Builder b, int cx, int cz, int cy, int baseHalf, int tiers,
-                                   String roofStair, BlueprintBlockState eaveSlab, BlueprintBlockState cap) {
+    private static int pagodaEaveTier(Blueprint.Builder b, int cx, int cz, int ey, int half,
+                                      String roofStair, BlueprintBlockState capSlab) {
+        // inward-facing eave slope (the roof pitch), half=bottom
         BlueprintBlockState north = bs("minecraft:" + roofStair + "[facing=south,half=bottom,shape=straight]");
         BlueprintBlockState south = bs("minecraft:" + roofStair + "[facing=north,half=bottom,shape=straight]");
         BlueprintBlockState west = bs("minecraft:" + roofStair + "[facing=east,half=bottom,shape=straight]");
         BlueprintBlockState east = bs("minecraft:" + roofStair + "[facing=west,half=bottom,shape=straight]");
-        // upturned-eave flare lip: top-half stairs pointing the OPPOSITE way (out)
-        BlueprintBlockState flareN = bs("minecraft:" + roofStair + "[facing=north,half=top,shape=straight]");
-        BlueprintBlockState flareS = bs("minecraft:" + roofStair + "[facing=south,half=top,shape=straight]");
-        BlueprintBlockState flareW = bs("minecraft:" + roofStair + "[facing=west,half=top,shape=straight]");
-        BlueprintBlockState flareE = bs("minecraft:" + roofStair + "[facing=east,half=top,shape=straight]");
+        // outward-facing under-bracket, half=top (the deep-eave soffit look)
+        BlueprintBlockState brkN = bs("minecraft:" + roofStair + "[facing=north,half=top,shape=straight]");
+        BlueprintBlockState brkS = bs("minecraft:" + roofStair + "[facing=south,half=top,shape=straight]");
+        BlueprintBlockState brkW = bs("minecraft:" + roofStair + "[facing=west,half=top,shape=straight]");
+        BlueprintBlockState brkE = bs("minecraft:" + roofStair + "[facing=east,half=top,shape=straight]");
+
+        int ax0 = cx - half, ax1 = cx + half, az0 = cz - half, az1 = cz + half;
+        int bx0 = ax0 - 1, bx1 = ax1 + 1, bz0 = az0 - 1, bz1 = az1 + 1; // bracket extent (half+1)
+
+        // 1) deep-eave under-bracket one course below the ring (outward-facing top
+        //    stairs); INCLUDING the corner cells (bx,bz) so each corner has a lip
+        //    block to anchor the upward curl on.
+        for (int x = bx0; x <= bx1; x++) {
+            b.set(x, ey - 1, bz0, brkN);
+            b.set(x, ey - 1, bz1, brkS);
+        }
+        for (int z = bz0; z <= bz1; z++) {
+            b.set(bx0, ey - 1, z, brkW);
+            b.set(bx1, ey - 1, z, brkE);
+        }
+        // 2) the eave ring proper: inward-facing slope at ey
+        for (int x = ax0; x <= ax1; x++) {
+            b.set(x, ey, az0, north);
+            b.set(x, ey, az1, south);
+        }
+        for (int z = az0; z <= az1; z++) {
+            b.set(ax0, ey, z, west);
+            b.set(ax1, ey, z, east);
+        }
+        // 3) close the tier interior so it isn't see-through to the next tier
+        if (half >= 1) {
+            floor(b, ey, ax0 + 1, az0 + 1, ax1 - 1, az1 - 1, capSlab);
+        }
+        // 4) UPTURNED CORNERS — the signature flick. Each corner is a continuous
+        //    rising diagonal: bracket-lip corner at ey-1 (placed in step 1), eave
+        //    ring corner at ey (placed in step 2), then a curl TIP one cell further
+        //    out and one course up (ey+1, at the half+1 diagonal). The tip is an
+        //    outward-facing top-half stair, so the roofline visibly curls upward.
+        // The curl tip at each corner is an outward-facing top-half stair, one cell
+        // diagonally outboard (half+1) and one course up — completing the
+        // lip→ring→tip upward step. North corners flick north, south corners south.
+        b.set(bx0, ey + 1, bz0, brkN);
+        b.set(bx1, ey + 1, bz0, brkN);
+        b.set(bx0, ey + 1, bz1, brkS);
+        b.set(bx1, ey + 1, bz1, brkS);
+        return ey + 1;
+    }
+
+    /**
+     * A full stacked, telescoping, upturned-eave pagoda roof of {@code tiers}
+     * tiers centred on {@code (cx,cz)}, the lowest eave seated at {@code y=cy}.
+     * Each tier is a {@link #pagodaEaveTier} (deep overhang + upturned corners),
+     * smaller than the one below, separated by a short body "drum" so the tiers
+     * read as distinct stories rather than one mushroom. The apex gets a finial:
+     * a slab base, a short mast, and {@code cap}.
+     *
+     * <p><b>Footprint warning:</b> the bottom tier's bracket lip reaches
+     * {@code baseHalf+1} from {@code (cx,cz)} — size the body footprint so that
+     * {@code [cx-(baseHalf+1) .. cx+(baseHalf+1)]} is in-bounds in both axes (an
+     * 11-wide footprint centred at 5 fits a {@code baseHalf=4} bottom tier).
+     *
+     * @param baseHalf  half-extent of the bottom tier (ring width = 2*baseHalf+1)
+     * @param tiers     number of stacked tiers (≥1; odd counts are traditional)
+     * @param roofStair bare stair-block NAME (e.g. "dark_oak_stairs")
+     * @param eaveSlab  slab used to close each tier interior + finial base
+     * @param cap       the apex finial block (e.g. a lantern or end rod)
+     */
+    private static void pagodaRoof(Blueprint.Builder b, int cx, int cz, int cy, int baseHalf, int tiers,
+                                   String roofStair, BlueprintBlockState eaveSlab, BlueprintBlockState cap) {
         int y = cy;
         for (int k = 0; k < tiers; k++) {
             int h = baseHalf - k;
             if (h < 0) break;
-            int ax0 = cx - h, ax1 = cx + h, az0 = cz - h, az1 = cz + h;
-            // upturned-eave flare lip one course below this tier's ring
-            for (int x = ax0; x <= ax1; x++) {
-                b.set(x, y, az0 - 1, flareN);
-                b.set(x, y, az1 + 1, flareS);
+            int top = pagodaEaveTier(b, cx, cz, y, h, roofStair, eaveSlab);
+            // short body drum between tiers (one course) so stories read distinctly
+            if (k < tiers - 1) {
+                int nh = Math.max(0, h - 1); // next tier's footprint, drum sits inside it
+                floor(b, top, cx - nh, cz - nh, cx + nh, cz + nh, eaveSlab);
+                y = top + 1; // next eave one course above the corner tips + drum
+            } else {
+                y = top;
             }
-            for (int z = az0; z <= az1; z++) {
-                b.set(ax0 - 1, y, z, flareW);
-                b.set(ax1 + 1, y, z, flareE);
-            }
-            // the tier ring proper: inward-facing stairs at y+1
-            for (int x = ax0; x <= ax1; x++) {
-                b.set(x, y + 1, az0, north);
-                b.set(x, y + 1, az1, south);
-            }
-            for (int z = az0; z <= az1; z++) {
-                b.set(ax0, y + 1, z, west);
-                b.set(ax1, y + 1, z, east);
-            }
-            // slab-cap the tier interior so each tier is closed before the next
-            if (h >= 1) {
-                floor(b, y + 1, ax0 + 1, az0 + 1, ax1 - 1, az1 - 1, eaveSlab);
-            }
-            y += 2; // next tier two courses up
         }
-        // finial: a short stack capped by the cap block on the central axis
+        // finial: a short slab+cap stack on the central axis
         b.set(cx, y, cz, eaveSlab);
         b.set(cx, y + 1, cz, cap);
     }
@@ -2245,54 +2317,162 @@ class CuratedBlueprintGenerator {
     }
 
     /**
-     * Japanese Pagoda. 9×9 base → builder(9, 17, 9). A multi-tier pagoda whose
-     * stacked, upturned-eave roofs are produced by the {@link #pagodaRoof} helper.
-     * The body is a dark-oak / spruce box with red-concrete accent bands and
-     * stripped-log corner posts; lanterns hang under the lowest eave. The roof is
-     * 3 stacked tiers centred on the body, each smaller than the last, finialled
-     * with a soul-lantern on a slab — reading top-down as a classic pagoda.
+     * Japanese Pagoda — landmark rebuild. 11×11 base → builder(11, 33, 11): a
+     * tall, slender, five-tier temple pagoda in the iconic vermilion-and-white
+     * palette with a dark roof for contrast, deep overhanging eaves with the
+     * signature UPTURNED CORNERS on every tier, per-story balcony railings, and
+     * a tall sōrin (the gilded spire finial) on top.
      *
-     * <p>Layout (Y): foundation y=0; body walls y=1..6 (door + windows + accent
-     * band); the pagoda roof stack seats at {@code cy=6} and rises through the
-     * tiers + finial to ~y=15, inside the H=17 budget.
+     * <p>Authenticity choices (see the project CLAUDE.md pagoda checklist):
+     * <ul>
+     *   <li><b>Upturned eave corners</b> — every tier is a {@link #pagodaEaveTier}
+     *       whose four corners step UP (a finger of top-half stairs curling out),
+     *       so each roofline visibly flicks upward at the corners.</li>
+     *   <li><b>Deep overhanging eaves</b> — each tier's body is inset two cells
+     *       inside its eave ring, and an outward under-bracket course gives the
+     *       soffit depth, so the roofs overhang generously.</li>
+     *   <li><b>Telescoping tiers</b> — five eaves (halves 4,3,2,1,0), each clearly
+     *       smaller, with a short white-walled body story + balcony railing
+     *       visible between tiers so they read as distinct floors.</li>
+     *   <li><b>Sōrin finial</b> — a tall dark-fence mast threaded with gold-block
+     *       rings, an end-rod above, topped by a lightning rod: a prominent spire.</li>
+     *   <li><b>Palette</b> — stripped-dark-oak log frame, white-concrete infill
+     *       walls, red-concrete base/accent bands and balcony railings, dark-oak
+     *       roof stairs/slabs; trapdoor-lattice windows; eave lanterns.</li>
+     * </ul>
+     *
+     * <p>Footprint: the ground-floor body is inset to x/z 1..9 (half-extent 4 from
+     * centre 5) so the bottom tier's eave + lip reach the x/z 0..10 footprint edge
+     * without clipping. Each higher story telescopes inward by one cell per tier.
      */
     private static Blueprint japanesePagoda() {
-        Blueprint.Builder b = Blueprint.builder("Japanese Pagoda", 9, 17, 9);
+        final int W = 11, H = 33;
+        final int cx = 5, cz = 5;
+        Blueprint.Builder b = Blueprint.builder("Japanese Pagoda", W, H, W);
         BlueprintBlockState redConcrete = bs("minecraft:red_concrete");
-        BlueprintBlockState strippedSpruceX = bs("minecraft:stripped_spruce_log[axis=x]");
-        // 1) stone-brick plinth (y=0) for a grounded, walkable base
-        floor(b, 0, 0, 0, 8, 8, STONE_BRICKS);
-        // 2) body: dark-oak plank walls y=1..6 with stripped-spruce corner posts
-        walls(b, 0, 0, 8, 8, 1, 6, DARK_OAK_PLANKS);
-        corners(b, 0, 0, 8, 8, 1, 6, STRIPPED_SPRUCE_Y);
-        // 3) red-concrete accent band at the wall-head course (y=5) — the lacquer line
-        line(b, 5, 1, 0, 7, 0, redConcrete);
-        line(b, 5, 1, 8, 7, 8, redConcrete);
-        line(b, 5, 0, 1, 0, 7, redConcrete);
-        line(b, 5, 8, 1, 8, 7, redConcrete);
-        // 4) doorway (north wall, centred, opening inward) + spruce-pane windows
-        door2(b, 4, 1, 0, "dark_oak", "N");
-        window2(b, 0, 3, 4, GLASS_PANE, null);
-        window2(b, 8, 3, 4, GLASS_PANE, null);
-        window2(b, 4, 3, 8, GLASS_PANE, null);
-        // 5) spruce-plank interior floor + a soul-lantern hung from a spruce tie-beam,
-        //    so the body is enterable and lit (tie-beam backs the chain).
-        floor(b, 0, 1, 1, 7, 7, SPRUCE_PLANKS);
-        line(b, 6, 1, 4, 7, 4, strippedSpruceX); // ceiling tie-beam to back the chain
-        b.set(4, 5, 4, CHAIN);
-        b.set(4, 4, 4, SOUL_HANGING_LANTERN);
-        // 6) stacked upturned-eave roof: 3 tiers centred on the body, seated at the
-        //    wall head (cy=6). baseHalf=4 → bottom tier spans the full 9-wide body
-        //    (its flare lip overhangs the eaves). Spruce stairs read as dark roofing;
-        //    spruce-slab caps each tier; a soul-lantern is the apex finial.
-        pagodaRoof(b, 4, 4, 6, 4, 3, "spruce_stairs", SPRUCE_SLAB_BOTTOM, SOUL_HANGING_LANTERN);
-        // 7) eave lanterns under the lowest tier's upturned corners (front pair),
-        //    on short chains backed by the flare lip above them.
-        b.set(0, 6, 0, HANGING_LANTERN);
-        b.set(8, 6, 0, HANGING_LANTERN);
-        b.set(0, 6, 8, HANGING_LANTERN);
-        b.set(8, 6, 8, HANGING_LANTERN);
+        BlueprintBlockState whiteConcrete = bs("minecraft:white_concrete");
+        BlueprintBlockState postY = bs("minecraft:stripped_dark_oak_log[axis=y]");
+        BlueprintBlockState beamX = bs("minecraft:stripped_dark_oak_log[axis=x]");
+        BlueprintBlockState redFence = bs("minecraft:dark_oak_fence"); // balcony railings (dark wood)
+        BlueprintBlockState roofSlab = bs("minecraft:dark_oak_slab[type=bottom]");
+        BlueprintBlockState goldBlock = bs("minecraft:gold_block");
+        final String ROOF = "dark_oak_stairs";
+
+        // ----- 1) stone-brick plinth (y=0), walkable, full 11×11 footprint -----
+        floor(b, 0, 0, 0, W - 1, W - 1, STONE_BRICKS);
+
+        // ----- 2) ground story (enterable temple body), inset to x/z 1..9 -------
+        // half-extent 4 → walls at 1..9; tall first story y=1..5.
+        int g0 = 1, g1 = 9, gTop = 5;
+        walls(b, g0, g0, g1, g1, 1, gTop, whiteConcrete);     // white lacquered infill
+        corners(b, g0, g0, g1, g1, 1, gTop, postY);           // dark-oak corner posts
+        // mid-wall posts on each face for the timber-frame look
+        for (int s : new int[]{3, 5, 7}) {
+            pillar(b, s, g0, 1, gTop, postY);
+            pillar(b, s, g1, 1, gTop, postY);
+            pillar(b, g0, s, 1, gTop, postY);
+            pillar(b, g1, s, 1, gTop, postY);
+        }
+        // red lacquer base course (y=1) + head accent band (y=gTop)
+        fenceRingless(b, 1, g0, g0, g1, g1, redConcrete);
+        fenceRingless(b, gTop, g0, g0, g1, g1, redConcrete);
+        // doorway (north wall, centred, opens inward) + trapdoor-lattice windows
+        door2(b, cx, 1, g0, "dark_oak", "N");
+        latticeWindow(b, g0, 3, cx, "W"); // west wall
+        latticeWindow(b, g1, 3, cx, "E"); // east wall
+        latticeWindow(b, cx, 3, g1, "S"); // south (back) wall
+        // interior: spruce floor, ceiling tie-beam, hanging soul-lantern (lit + enterable)
+        floor(b, 0, g0 + 1, g0 + 1, g1 - 1, g1 - 1, SPRUCE_PLANKS);
+        line(b, gTop + 1, g0 + 1, cz, g1 - 1, cz, beamX);
+        b.set(cx, gTop, cz, CHAIN);
+        b.set(cx, gTop - 1, cz, SOUL_HANGING_LANTERN);
+
+        // ----- 3) telescoping roof tiers (5), each with upturned corners --------
+        // Tier eave halves: 4,3,2,1,0. Bottom eave seats at the ground-wall head.
+        int ey = gTop + 1; // first eave course at y=6 (above the y=5 wall head)
+        int[] halves = {4, 3, 2, 1, 0};
+        for (int t = 0; t < halves.length; t++) {
+            int h = halves[t];
+            int top = pagodaEaveTier(b, cx, cz, ey, h, ROOF, roofSlab);
+            // eave lanterns dangling below this tier's four upturned corners
+            // (ey-2, hanging off the bracket-lip corner at the half+1 diagonal).
+            int lx0 = cx - (h + 1), lx1 = cx + (h + 1), lz0 = cz - (h + 1), lz1 = cz + (h + 1);
+            if (h >= 1) {
+                b.set(lx0, ey - 2, lz0, HANGING_LANTERN);
+                b.set(lx1, ey - 2, lz0, HANGING_LANTERN);
+                b.set(lx0, ey - 2, lz1, HANGING_LANTERN);
+                b.set(lx1, ey - 2, lz1, HANGING_LANTERN);
+            }
+            if (t < halves.length - 1) {
+                // short body story above this tier, telescoped to the NEXT tier's
+                // footprint, with a red balcony railing ringing it — distinct floors.
+                int nh = halves[t + 1];
+                int bx0 = cx - nh, bx1 = cx + nh, bz0 = cz - nh, bz1 = cz + nh;
+                int storyY = top + 1;               // wall course sits above the corner tips
+                // white-walled drum (the visible story); dark-oak corner posts placed
+                // LAST so they win the corners over the red accent ring.
+                walls(b, bx0, bz0, bx1, bz1, storyY, storyY, whiteConcrete);
+                fenceRingless(b, storyY, bx0, bz0, bx1, bz1, redConcrete); // red lacquer band
+                corners(b, bx0, bz0, bx1, bz1, storyY, storyY, postY);
+                fenceRing(b, storyY + 1, bx0, bz0, bx1, bz1, redFence); // balcony railing above
+                // next eave seats one course ABOVE the railing so it overhangs the
+                // balcony without overwriting it (eave projects out past the railing).
+                ey = storyY + 2;
+            } else {
+                ey = top; // topmost tier: finial seats here
+            }
+        }
+
+        // ----- 4) sōrin finial (the prominent gilded spire) --------------------
+        // A dark-fence mast threaded with gold-block rings, an end rod, capped by a
+        // lightning rod — tall and obviously the apex of the pagoda.
+        int fy = ey;                          // base just above the top tier
+        b.set(cx, fy, cz, roofSlab);          // finial base disc
+        b.set(cx, fy + 1, cz, goldBlock);     // lower ring (dew basin / fukubachi)
+        b.set(cx, fy + 2, cz, redFence);      // mast
+        b.set(cx, fy + 3, cz, goldBlock);     // ring
+        b.set(cx, fy + 4, cz, redFence);      // mast
+        b.set(cx, fy + 5, cz, goldBlock);     // ring
+        b.set(cx, fy + 6, cz, END_ROD);       // upper jewel (hōju) stem
+        b.set(cx, fy + 7, cz, LIGHTNING_ROD); // crowning spire tip
         return b.build();
+    }
+
+    /**
+     * A single perimeter ring of {@code mat} at height {@code y} over
+     * [x0..x1]×[z0..z1] (like {@link #fenceRing} but for any block) — used for the
+     * pagoda's red lacquer base/accent courses without the fence semantics.
+     */
+    private static void fenceRingless(Blueprint.Builder b, int y, int x0, int z0, int x1, int z1,
+                                      BlueprintBlockState mat) {
+        line(b, y, x0, z0, x1, z0, mat);
+        line(b, y, x0, z1, x1, z1, mat);
+        line(b, y, x0, z0, x0, z1, mat);
+        line(b, y, x1, z0, x1, z1, mat);
+    }
+
+    /**
+     * A traditional lattice window: a glass pane in the wall cell with a flanking
+     * pair of (closed, vertical) trapdoors on the two cells beside it along the
+     * wall, reading as a shōji-style lattice. {@code wallFace} is N/S/E/W (the
+     * face the window sits on — determines which axis the flankers run along and
+     * the trapdoor facing).
+     */
+    private static void latticeWindow(Blueprint.Builder b, int x, int y, int z, String wallFace) {
+        b.set(x, y, z, GLASS_PANE);
+        String face = wallFace.toUpperCase();
+        boolean alongX = face.equals("N") || face.equals("S")
+                || face.equals("NORTH") || face.equals("SOUTH");
+        String td = alongX ? "north" : "east"; // trapdoor facing (cosmetic lattice)
+        BlueprintBlockState trap =
+                bs("minecraft:dark_oak_trapdoor[facing=" + td + ",half=top,open=false,powered=false,waterlogged=false]");
+        if (alongX) {
+            b.set(x - 1, y, z, trap);
+            b.set(x + 1, y, z, trap);
+        } else {
+            b.set(x, y, z - 1, trap);
+            b.set(x, y, z + 1, trap);
+        }
     }
 
     // =====================================================================
