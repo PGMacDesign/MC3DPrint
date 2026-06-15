@@ -328,6 +328,8 @@ class CuratedBlueprintGenerator {
         builds.put("end_gateway_shrine", endGatewayShrine());
         // Phase 2 — Category A (mushroom_island_hut) — unblocked: mushroom blocks/mycelium now valued
         builds.put("mushroom_island_hut", mushroomIslandHut());
+        // Phase 2 — Category F (bee_apiary) — unblocked: honeycomb valued → beehive/honeycomb_block derive
+        builds.put("bee_apiary", beeApiary());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -6663,6 +6665,197 @@ class CuratedBlueprintGenerator {
             b.set(s[0], s[1], s[2], redToggle ? redSmall : brownSmall);
             redToggle = !redToggle;
         }
+
+        return b.build();
+    }
+
+    /**
+     * §F.bee_apiary — a cottagecore bee apiary / honey farm, 9×9×9 (W×L×H) →
+     * builder(9, 9, 9). UNBLOCKED: {@code honeycomb} (the item) is now FU-valued
+     * (6@2), so {@code beehive} (6 planks + 3 honeycomb) and {@code honeycomb_block}
+     * (4 honeycomb) DERIVE through the recipe valuator — both print. The build is
+     * delivered as the working apiary STRUCTURE; bees are entities the player adds,
+     * so the crafted {@code beehive}s are left ready (honey_level=0).
+     *
+     * <p>Design intent (charming, golden-honey palette): an oak post-and-beam,
+     * open-sided shelter holding two rows of {@code beehive}s on log-and-slab stands,
+     * with {@code honeycomb_block} golden accents, an enclosing oak-fence garden, a
+     * flower meadow of structural blooms (the bees' forage), a honey-collection nook
+     * (barrels + composter + crafting table), and warm lantern lighting.
+     *
+     * <p><b>Why this build is fully printable + render-safe.</b> Every block is a
+     * vanilla FU-valued / recipe-derived block or itemless-structural matter:
+     * <ul>
+     *   <li><b>{@code beehive}</b> (derives ~36 FU @ T2) and <b>{@code honeycomb_block}</b>
+     *       (derives ~24 FU @ T2) — the just-unblocked honey blocks. We deliberately do
+     *       NOT use {@code bee_nest} (worldgen-only, no recipe, intentionally UNVALUED) —
+     *       a built apiary is made of crafted {@code beehive}s anyway.</li>
+     *   <li><b>Oak family</b> — planks/logs/stripped/slabs/stairs/fences/fence_gates
+     *       (all FU-valued or recipe-derived) for the shelter frame, stands, and the
+     *       garden enclosure.</li>
+     *   <li><b>Flowers</b> ({@code dandelion}/{@code poppy}/{@code blue_orchid}/
+     *       {@code allium}/{@code azure_bluet}/{@code oxeye_daisy}/{@code cornflower}/
+     *       tulips, plus tall {@code sunflower}/{@code rose_bush}/{@code lilac}) are
+     *       {@link net.minecraft.world.level.block.BushBlock}s ⇒ itemless-structural,
+     *       so the whole meadow prints free. Tall flowers place BOTH halves.</li>
+     *   <li><b>{@code barrel}/{@code composter}/{@code crafting_table}</b> derive from
+     *       recipes; {@code lantern}/{@code chain} are FU-valued. No glass panes / iron
+     *       bars anywhere ⇒ the render-integrity stub-pane gate can never apply.</li>
+     * </ul>
+     *
+     * <p>Layout (south = +z is the "front"/entrance; x,z = 0..8):
+     * <ul>
+     *   <li><b>y=0</b> — oak-plank footing over the 9×9 (walkable garden floor); a
+     *       dirt-path walkway runs down the centre (x=4) from the south gate to the
+     *       shelter; the rest reads as the meadow ground.</li>
+     *   <li><b>y=1</b> — oak-fence garden ring with a fence-gate entrance on the south
+     *       face (x=4); inside, the open-sided apiary shelter's four oak-log corner
+     *       posts and the two rows of beehives on stripped-oak-log + oak-slab stands;
+     *       the honey-collection nook (barrels + composter + crafting table) in the
+     *       NW corner; and the structural flower meadow filling the open ground.</li>
+     *   <li><b>y=2..4</b> — the shelter frame: oak-log posts carry an overhead oak-log
+     *       beam grid (open sides, so the apiary is airy and enterable), with
+     *       honeycomb-block golden accents on the cross-beams and chain-hung lanterns
+     *       lighting the hives.</li>
+     * </ul>
+     */
+    private static Blueprint beeApiary() {
+        final int W = 9, H = 9, D = 9;
+        Blueprint.Builder b = Blueprint.builder("Bee Apiary", W, H, D);
+        int x0 = 0, x1 = W - 1, z0 = 0, z1 = D - 1; // 0..8
+        int cx = 4, cz = 4;                          // centre column
+
+        // build-local materials — all FU-valued / recipe-derived or itemless-structural:
+        BlueprintBlockState planks    = OAK_PLANKS;          // garden floor + shelter floor
+        BlueprintBlockState postY     = OAK_LOG_Y;           // shelter corner posts (vertical)
+        BlueprintBlockState beamX     = STRIPPED_OAK_X;      // overhead beams (axis=x)
+        BlueprintBlockState beamZ     = bs("minecraft:stripped_oak_log[axis=z]"); // overhead beams (axis=z)
+        BlueprintBlockState standLog  = STRIPPED_OAK_Y;      // hive stand legs (vertical)
+        BlueprintBlockState fence     = OAK_FENCE;           // garden enclosure (FenceBlock → no stub-pane gate)
+        BlueprintBlockState honeyBlk  = bs("minecraft:honeycomb_block"); // golden accent (derives ~24@2)
+        // crafted beehives, left ready for the player's bees (honey_level=0). facing per row
+        // so the hive fronts (where bees enter/exit and the player shears) face the open aisle.
+        BlueprintBlockState hiveFaceS = bs("minecraft:beehive[facing=south,honey_level=0]");
+        BlueprintBlockState hiveFaceN = bs("minecraft:beehive[facing=north,honey_level=0]");
+
+        // ── 1) GARDEN FLOOR — oak-plank footing over the whole 9×9 (walkable y=0) ──
+        floor(b, 0, x0, z0, x1, z1, planks);
+        // dirt-path central walkway (structural → prints free) from the south gate
+        // up to the shelter, overwriting the footing so the path reads as a worn track.
+        path(b, cx, z0, z1);
+
+        // ── 2) GARDEN FENCE RING at y=1 with a south-face GATE entrance ───────────
+        // The oak-fence ring encloses the cottage garden; the gate (x=cx, south wall)
+        // is the single entrance, opening outward onto the path. fenceRing places the
+        // ring; the gate overwrites its (cx,1,z1) cell.
+        fenceRing(b, 1, x0, z0, x1, z1, fence);
+        b.set(cx, 1, z1, bs("minecraft:oak_fence_gate[facing=south,open=false,in_wall=false,powered=false]"));
+
+        // ── 3) OPEN-SIDED APIARY SHELTER — oak post-and-beam frame, NW of centre ──
+        // The shelter is an airy pergola roofing the hive rows: four oak-log corner
+        // posts (y=1..4) carry an overhead beam grid; the sides stay OPEN so the
+        // apiary is enterable and the bees can fly freely. Footprint x=1..7, z=1..3.
+        int sx0 = 1, sx1 = 7, sz0 = 1, sz1 = 3; // shelter footprint (the hive bay)
+        int postTop = 4;                         // posts rise y=1..4
+        // corner + mid posts so the beam grid has support without walling the sides in.
+        int[][] shelterPosts = {
+                {sx0, sz0}, {sx1, sz0}, {sx0, sz1}, {sx1, sz1}, // four corners
+                {cx, sz0}, {cx, sz1}                            // mid posts on the long faces
+        };
+        for (int[] p : shelterPosts) {
+            pillar(b, p[0], p[1], 1, postTop, postY);
+        }
+        // overhead beam grid at y=postTop+? — laid one course above the post tops so the
+        // shelter roofs the hives. Two longitudinal beams (axis=x) along z=sz0 & z=sz1
+        // spanning x=sx0..sx1, crossed by three lateral beams (axis=z) at x=sx0,cx,sx1.
+        int beamY = postTop;                      // beam grid seats on the post tops (y=4)
+        line(b, beamY, sx0, sz0, sx1, sz0, beamX); // north longitudinal beam
+        line(b, beamY, sx0, sz1, sx1, sz1, beamX); // south longitudinal beam
+        for (int bx : new int[]{sx0, cx, sx1}) {
+            line(b, beamY, bx, sz0, bx, sz1, beamZ); // lateral cross-beams
+        }
+        // re-assert the corner/mid posts so the beam course didn't clip their tops.
+        for (int[] p : shelterPosts) {
+            b.set(p[0], beamY, p[1], postY);
+        }
+        // HONEYCOMB-BLOCK golden accents on the centre cross-beam line (the ridge of
+        // the shelter) — the honey theme reading from above. Placed between the post
+        // columns at x=2,3,5,6 on the centre lateral beam row (z=2), one course up.
+        for (int hx : new int[]{2, 3, 5, 6}) {
+            b.set(hx, beamY, cz - 2, honeyBlk); // z=2 (the aisle centre line)
+        }
+
+        // ── 4) TWO ROWS OF BEEHIVES ON STANDS, under the shelter ──────────────────
+        // Each hive sits on a little stand: a stripped-oak-log leg (y=1) topped by an
+        // oak-slab shelf (y=1 top) with the hive at y=2. The NORTH row faces south and
+        // the SOUTH row faces north, so both hive fronts open onto the central aisle
+        // (z=2) where the player tends them. Hives at x=2,4,6 in each row.
+        int[] hiveX = {2, 4, 6};
+        // north row stands/hives at z=1 (face south, toward the aisle):
+        for (int hx : hiveX) {
+            b.set(hx, 1, sz0, standLog);   // stand leg
+            b.set(hx, 2, sz0, hiveFaceS);  // beehive (front faces south → aisle)
+        }
+        // south row stands/hives at z=3 (face north, toward the aisle):
+        for (int hx : hiveX) {
+            b.set(hx, 1, sz1, standLog);
+            b.set(hx, 2, sz1, hiveFaceN);  // beehive (front faces north → aisle)
+        }
+
+        // ── 5) HONEY-COLLECTION NOOK in the NW corner (inside the fence) ──────────
+        // The cottagecore "honey nook": a couple of barrels (jars of honeycomb stock),
+        // a composter (garden waste → bonemeal for the meadow), and a crafting table,
+        // tucked in the NW corner clear of the hive rows. All recipe-derived → printable.
+        b.set(x0 + 1, 1, z0 + 1, BARREL);          // honeycomb-stock barrel
+        b.set(x0 + 2, 1, z0 + 1, COMPOSTER);       // garden composter
+        b.set(x0 + 1, 1, z0 + 2, CRAFTING_TABLE);  // potting / crafting bench
+        b.set(x0 + 2, 1, z0 + 2, honeyBlk);        // a golden honeycomb-block accent on the nook
+
+        // ── 6) FLOWER MEADOW — the bees' forage, on the open ground (structural-free) ──
+        // A scatter of vanilla flowers fills the open garden ground at y=1 (on the oak
+        // footing), south of the shelter and around the aisle. Flowers are BushBlocks →
+        // itemless-structural → print FREE. Tall flowers (sunflower/rose_bush/lilac)
+        // place BOTH halves (lower at y=1, upper at y=2). The path (x=cx) and the hive
+        // rows / nook cells are left clear so the meadow reads as the surrounding bloom.
+        BlueprintBlockState[] blooms = {
+                bs("minecraft:dandelion"), bs("minecraft:poppy"), bs("minecraft:blue_orchid"),
+                bs("minecraft:allium"), bs("minecraft:azure_bluet"), bs("minecraft:oxeye_daisy"),
+                bs("minecraft:cornflower"), bs("minecraft:red_tulip"), bs("minecraft:orange_tulip"),
+                bs("minecraft:white_tulip"), bs("minecraft:pink_tulip"),
+                bs("minecraft:lily_of_the_valley")
+        };
+        // The forage band fills the south half of the garden (z=4..7) plus the open
+        // flanks beside the aisle, skipping the path column and the fence ring cells.
+        int bi = 0;
+        for (int z = cz; z <= z1 - 1; z++) {
+            for (int x = x0 + 1; x <= x1 - 1; x++) {
+                if (x == cx) continue;                 // keep the path clear
+                b.set(x, 1, z, blooms[bi % blooms.length]);
+                bi++;
+            }
+        }
+        // a few TALL flowers as meadow highlights (both halves), in the back corners
+        // of the forage band where they won't crowd the path.
+        String[] tall = {"sunflower", "rose_bush", "lilac", "peony"};
+        int[][] tallSpots = {
+                {x0 + 1, z1 - 1}, {x1 - 1, z1 - 1}, {x0 + 2, z1 - 2}, {x1 - 2, z1 - 2}
+        };
+        for (int t = 0; t < tallSpots.length; t++) {
+            int tx = tallSpots[t][0], tz = tallSpots[t][1];
+            String f = tall[t % tall.length];
+            b.set(tx, 1, tz, bs("minecraft:" + f + "[half=lower]"));
+            b.set(tx, 2, tz, bs("minecraft:" + f + "[half=upper]"));
+        }
+
+        // ── 7) LIGHTING — chain-hung lanterns under the shelter beams + nook glow ──
+        // Two hanging lanterns drop over the central aisle (z=2) at x=3 & x=5 — between
+        // the hive columns (x=2/4/6) so they clear the hives — chained up to the beam
+        // grid at y=beamY. Plus a standing lantern by the nook.
+        for (int lx : new int[]{3, 5}) {
+            b.set(lx, beamY - 1, cz - 2, CHAIN);          // chain under the centre beam (z=2)
+            b.set(lx, beamY - 2, cz - 2, HANGING_LANTERN);
+        }
+        b.set(x0 + 1, 2, z0 + 1, LANTERN); // standing lantern atop the nook barrel area
 
         return b.build();
     }
