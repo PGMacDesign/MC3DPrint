@@ -238,6 +238,7 @@ class CuratedBlueprintGenerator {
         builds.put("ruin_pillar", ruinPillar());
         builds.put("cemetery_plot", cemeteryPlot());
         builds.put("scarecrow", scarecrow());
+        builds.put("flower_shop", flowerShop());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -6906,6 +6907,135 @@ class CuratedBlueprintGenerator {
         //    wide-brim sun-hat. Trapdoor derives from oak planks → FU-valued; no
         //    pane/bar so no render-integrity stub risk.
         b.set(cx, 5, z, bs("minecraft:oak_trapdoor[facing=north,half=bottom,open=false,powered=false,waterlogged=false]"));
+
+        return b.build();
+    }
+
+    /**
+     * §I Flower Shop. 7×7 footprint → builder(7, 6, 7); disc T1. A cottagecore
+     * glass-fronted commerce stall: an oak-framed shop whose entire FRONT wall
+     * (north, {@code z=0}) is a big glass shopfront pierced by a central doorway,
+     * shaded by a striped white/red wool awning. Inside, a trapdoor-and-slab
+     * counter, barrels of stock, flower-pot displays (empty {@code flower_pot} —
+     * recipe-derived from brick → FU-valued — plus a couple of structural
+     * {@code potted_*} blooms for colour), and chain-backed hanging lanterns. The
+     * back/side walls are solid oak planks with a glass window each; the shop is
+     * ENTERABLE through the front door.
+     *
+     * <p>RENDER-SAFETY: every glass pane in the shopfront and the side/back windows
+     * is flanked HORIZONTALLY by an oak-log mullion or a plank-wall cell (or another
+     * pane in the same run), so each pane has at least one connectable neighbour and
+     * never ships as an invisible stub (see {@link CuratedBlueprintRenderIntegrityGameTests}).
+     * All blocks are vanilla and FU-valued, recipe-derived, or itemless-structural.
+     */
+    private static Blueprint flowerShop() {
+        final int W = 7, H = 6, D = 7;
+        Blueprint.Builder b = Blueprint.builder("Flower Shop", W, H, D);
+        int x0 = 0, x1 = W - 1, z0 = 0, z1 = D - 1; // 0..6
+        int wallH = 3;                              // walls y=1..3
+        int cx = (x0 + x1) / 2;                     // centre column (x=3)
+
+        // 1) WALKABLE FOUNDATION — oak-plank floor over the whole footprint (top of
+        //    y=0). A spruce-plank threshold strip just inside the door reads as a mat.
+        floor(b, 0, x0, z0, x1, z1, OAK_PLANKS);
+
+        // 2) FRAME — oak-log corner posts y=1..3 + a back/side plank-wall ring. The
+        //    FRONT (north, z=0) wall is intentionally NOT filled with plank here; it
+        //    becomes the glass shopfront in step 3. So we write the three solid walls
+        //    (south z=6, west x=0, east x=6) and the corner posts, then carve.
+        corners(b, x0, z0, x1, z1, 1, wallH, OAK_LOG_Y);
+        for (int y = 1; y <= wallH; y++) {
+            line(b, y, x0, z1, x1, z1, OAK_PLANKS); // south (back) wall
+            line(b, y, x0, z0, x0, z1, OAK_PLANKS); // west wall
+            line(b, y, x1, z0, x1, z1, OAK_PLANKS); // east wall
+        }
+
+        // 3) GLASS SHOPFRONT — the north wall (z=0). A central oak-log mullion at the
+        //    door jambs (x=2 and x=4) plus the corner posts (x=0,x=6) divide the front
+        //    into glass bays. Every pane cell (y=1..3) sits between two solid mullions
+        //    along X, so it connects horizontally → render-safe, no stub panes.
+        //    Mullions:
+        pillar(b, 2, z0, 1, wallH, OAK_LOG_Y); // left door jamb / mullion
+        pillar(b, 4, z0, 1, wallH, OAK_LOG_Y); // right door jamb / mullion
+        //    Glass bays: x=1 (between corner post x=0 and jamb x=2) and x=5 (between
+        //    jamb x=4 and corner post x=6), full height y=1..3.
+        for (int y = 1; y <= wallH; y++) {
+            b.set(1, y, z0, GLASS_PANE);
+            b.set(5, y, z0, GLASS_PANE);
+        }
+        //    A clerestory glass strip ABOVE the door (x=3) at the wall top course so
+        //    the shopfront reads as continuous glazing over the entrance. It connects
+        //    to the two log jambs at x=2/x=4 → render-safe.
+        b.set(cx, wallH, z0, GLASS_PANE);
+        //    Door dead-centre in the front wall, opening inward (faces south).
+        door2(b, cx, 1, z0, "oak", "N");
+
+        // 4) SIDE & BACK WINDOWS — one glass pane mid-wall on each solid wall. Each is
+        //    embedded in its plank run, so its horizontal neighbours are plank cells
+        //    (sturdy faces) → render-safe.
+        window2(b, x0, 2, 3, GLASS_PANE, null); // west wall window
+        window2(b, x1, 2, 3, GLASS_PANE, null); // east wall window
+        window2(b, cx, 2, z1, GLASS_PANE, null); // back wall window
+
+        // 5) ROOF — a flat oak-slab roof over the shop at y=wallH+1, with a one-cell
+        //    overhang on the front so the awning tucks under it. Slabs derive from
+        //    planks → FU-valued.
+        flatRoof(b, wallH + 1, x0, z0, x1, z1, OAK_SLAB_BOTTOM);
+
+        // 6) STRIPED AWNING — a sloped white/red wool canopy over the shopfront,
+        //    projecting out in FRONT of the door line at the floor's z=0 edge. The
+        //    awning is one course below the roof (y=wallH) sloping down to the front
+        //    lip (y=wallH-1) one cell proud (z=0 outer face). Built from a striped
+        //    wool band capped by a stair lip so it reads as a market awning.
+        int awnY = wallH + 1;                       // back of the awning, flush under the roof line
+        // back/high row of the awning sits on the wall plate at z=0, top course:
+        for (int x = x0; x <= x1; x++) {
+            b.set(x, awnY, z0, (((x - x0) / 1) % 2 == 0) ? WHITE_WOOL : RED_WOOL); // striped band
+        }
+        // front lip: a row of top-half oak stairs one cell proud is NOT possible
+        // outside the footprint, so the awning's outer edge is the wool band itself;
+        // a row of front-facing bottom stairs UNDER the band (y=wallH, z=0) gives the
+        // canopy its sloped underside without leaving the volume.
+        for (int x = x0; x <= x1; x++) {
+            b.set(x, wallH, z0, bs("minecraft:oak_stairs[facing=south,half=top,shape=straight]"));
+        }
+
+        // 7) COUNTER — an L of oak trapdoors (closed, half=bottom) on slab supports
+        //    just inside the shopfront forms a waist-high sales counter. Trapdoors and
+        //    slabs derive from planks → FU-valued; trapdoors are NOT IronBars, so no
+        //    stub-pane risk. The counter runs along the inside of the front-left bay
+        //    and turns down the west side, leaving the door path (x=3) clear.
+        BlueprintBlockState counterTop =
+                bs("minecraft:oak_trapdoor[facing=north,half=bottom,open=false,powered=false,waterlogged=false]");
+        // support course (y=1) under the counter so it reads solid, then the trapdoor
+        // "countertop" at y=2.
+        b.set(1, 1, 1, OAK_SLAB_BOTTOM); b.set(1, 2, 1, counterTop);
+        b.set(1, 1, 2, OAK_SLAB_BOTTOM); b.set(1, 2, 2, counterTop);
+        b.set(5, 1, 1, OAK_SLAB_BOTTOM); b.set(5, 2, 1, counterTop); // right-bay counter stub
+
+        // 8) STOCK BARRELS — flower-shop supplies behind the counter, against the back
+        //    wall. Barrels derive from planks+slabs → printable.
+        b.set(1, 1, z1 - 1, BARREL);
+        b.set(2, 1, z1 - 1, BARREL);
+        b.set(x1 - 1, 1, z1 - 1, BARREL);
+
+        // 9) FLOWER-POT DISPLAYS — the floral identity. Empty flower_pots line the
+        //    front windowsill (on the counter and back shelf) and the back wall; a
+        //    couple of structural potted_* blooms add colour. flower_pot is recipe-
+        //    derived (brick) → FU-valued; potted_* are itemless-structural → free.
+        b.set(1, 3, 1, bs("minecraft:flower_pot"));            // on the left counter
+        b.set(5, 3, 1, bs("minecraft:potted_poppy"));          // on the right counter (red bloom)
+        b.set(2, 1, z1 - 1, bs("minecraft:flower_pot"));       // back shelf (over a barrel-free cell)
+        b.set(cx, 1, z1 - 1, bs("minecraft:potted_oxeye_daisy")); // back-centre bloom
+        b.set(x1 - 1, 2, z1 - 1, bs("minecraft:potted_blue_orchid")); // back-right bloom on a barrel
+        b.set(cx - 1, 1, 2, bs("minecraft:potted_dandelion")); // interior floor accent
+        b.set(cx + 1, 1, 2, bs("minecraft:potted_cornflower")); // interior floor accent
+
+        // 10) LANTERNS — two chain-backed hanging lanterns from the slab roof, lighting
+        //     the interior. Chains attach up to the y=wallH+1 slab roof (a solid face),
+        //     so the lanterns hang correctly rather than floating.
+        b.set(2, wallH, 4, CHAIN);  b.set(2, wallH - 1, 4, HANGING_LANTERN);
+        b.set(4, wallH, 4, CHAIN);  b.set(4, wallH - 1, 4, HANGING_LANTERN);
 
         return b.build();
     }
