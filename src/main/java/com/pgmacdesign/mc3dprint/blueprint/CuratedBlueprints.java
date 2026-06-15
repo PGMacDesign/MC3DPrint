@@ -118,7 +118,9 @@ public final class CuratedBlueprints {
             // Phase 2 — Category B (nordic_viking_longhouse)
             "nordic_viking_longhouse",
             // Phase 2 — Category B (copper_clocktower)
-            "copper_clocktower");
+            "copper_clocktower",
+            // Phase 2 — Category B (modern_glass_villa)
+            "modern_glass_villa");
 
     /**
      * Load a bundled curated blueprint straight from the mod's resources (no world

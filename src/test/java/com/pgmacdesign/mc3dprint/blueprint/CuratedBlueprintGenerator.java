@@ -283,6 +283,8 @@ class CuratedBlueprintGenerator {
         builds.put("nordic_viking_longhouse", nordicVikingLonghouse());
         // Phase 2 — Category B (copper_clocktower)
         builds.put("copper_clocktower", copperClocktower());
+        // Phase 2 — Category B (modern_glass_villa)
+        builds.put("modern_glass_villa", modernGlassVilla());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -11848,6 +11850,276 @@ class CuratedBlueprintGenerator {
         b.set(x0 + 1, 2, z1, bs("minecraft:potted_bamboo"));
         b.set(x1 - 1, 2, z1, bs("minecraft:potted_fern"));
         b.set(x0 + 1, 2, z0 + 1, bs("minecraft:potted_cactus"));
+
+        return b.build();
+    }
+
+    /**
+     * Phase 2 — Category B. Modern Glass Villa. A sleek, low, MULTI-TIERED luxury
+     * villa: a larger ground floor and a smaller setback upper floor crowned by a
+     * roof terrace. Floor-to-ceiling GLASS-BLOCK curtain walls framed in
+     * white/light-grey concrete + smooth-quartz mullions, flat slab roofs with
+     * crisp overhangs, sea-lantern recessed downlighting, and a sunken
+     * infinity-pool water feature off the front patio. 15×11 footprint (T6),
+     * disc T5. "Featured widely" — built to be showcase-clean.
+     *
+     * <p><b>Axis mapping.</b> Footprint W×L = 15×11 → builder {@code (W=15, H=11,
+     * L=11)}: x = width 0..14 (east), z = depth 0..10 (south), y = up 0..10.
+     * Direct sibling of {@link #modernConcreteHouse} (MODERN_CONCRETE palette, the
+     * GLASS-curtain-then-over-stamp technique) and {@link #modernPoolDeck} (the
+     * sunken prismarine-lined water basin).
+     *
+     * <p><b>Vertical / tier scheme (strictly bottom-up, last-write-wins, air-skip).</b>
+     * <ul>
+     *   <li><b>y=0</b> — foundation. Light-grey concrete plinth under the whole
+     *       footprint; a prismarine-lined POOL FLOOR is over-stamped under the
+     *       sunken front-patio basin, with flush sea-lantern uplights.</li>
+     *   <li><b>Ground tier (the wide floor): floor y=0, glass curtain walls
+     *       y=1..4, flat roof deck y=5.</b> The body spans the rear of the
+     *       footprint (z≥2); the front strip (z=0..1) is the open patio + pool.
+     *       WATER fills the sunken basin flush with the patio at y=1.</li>
+     *   <li><b>Upper tier (the setback floor): floor y=6, glass curtain walls
+     *       y=7..8, flat roof y=9.</b> Inset from the ground roof on all sides so
+     *       the ground-roof perimeter becomes a walkable wrap-around terrace.</li>
+     *   <li><b>y=10</b> — a low concrete parapet rings the upper roof → the top
+     *       roof terrace.</li>
+     * </ul>
+     *
+     * <p><b>Glass-wall approach (render-safe).</b> Every curtain wall is full
+     * GLASS BLOCKS (never panes), so the render-integrity gate passes trivially
+     * (glass blocks aren't {@code IronBarsBlock}). The walls are framed as true
+     * curtain walls: concrete/quartz corner posts + regular gray-concrete
+     * mullions break each glazed face into bays, with a base spandrel course and a
+     * smooth-quartz top rail.
+     *
+     * <p><b>Palette (all vanilla, FU-valued or structural).</b> white /
+     * light_gray / gray concrete, smooth_quartz + smooth_quartz_slab,
+     * quartz_stairs, glass (BLOCKS), prismarine + prismarine_bricks (pool lining),
+     * sea_lantern, water (structural).
+     */
+    private static Blueprint modernGlassVilla() {
+        final int W = 15, H = 12, D = 11;
+        Blueprint.Builder b = Blueprint.builder("Modern Glass Villa", W, H, D);
+        final int x0 = 0, x1 = W - 1, z0 = 0, z1 = D - 1; // x:0..14  z:0..10
+
+        // Palette ---------------------------------------------------------------
+        BlueprintBlockState foundation = bs("minecraft:light_gray_concrete");
+        BlueprintBlockState wallMass   = bs("minecraft:white_concrete");
+        BlueprintBlockState frame      = bs("minecraft:gray_concrete");          // piers / mullions
+        BlueprintBlockState deck       = bs("minecraft:light_gray_concrete");    // flat roof slab mass
+        BlueprintBlockState quartz     = bs("minecraft:smooth_quartz");          // structural framing accent
+        BlueprintBlockState quartzSlabTop = bs("minecraft:smooth_quartz_slab[type=top]"); // top rail / coping
+        BlueprintBlockState quartzSlabBot = bs("minecraft:smooth_quartz_slab[type=bottom]"); // overhang fascia
+        BlueprintBlockState poolFloor  = bs("minecraft:prismarine");
+        BlueprintBlockState poolLining = bs("minecraft:prismarine_bricks");
+
+        // GROUND BODY footprint: the wide floor occupies the rear of the plot
+        // (z=2..10); the front strip z=0..1 is the patio + sunken pool. Full width.
+        final int gz0 = 2, gz1 = z1;          // body z:2..10  (9 deep)
+        final int gWallH = 4;                 // ground glass walls y=1..4
+        final int gDeckY = gWallH + 1;        // ground flat roof deck y=5
+        final int gcx = (x0 + x1) / 2;        // 7 — body centre x
+
+        // UPPER (setback) body: inset from the ground roof on every side so the
+        // ground-roof perimeter is a walkable terrace. Sits on the ground deck.
+        final int ux0 = 3, ux1 = 11, uz0 = 4, uz1 = 9; // upper x:3..11  z:4..9
+        final int uFloorY = gDeckY + 1;       // upper floor y=6 (the ground deck is its base)
+        final int uWallTop = uFloorY + 3;     // upper walls y=7..9 (spandrel y7, glass y8, rail y9)
+        final int uDeckY = uWallTop + 1;       // upper flat roof y=10
+        final int uParapetY = uDeckY + 1;      // roof-terrace parapet y=11
+        final int ucx = (ux0 + ux1) / 2;       // 7
+
+        // Sunken pool basin in the front patio: a 7×1 strip-ish reflecting pool.
+        // x:4..10, z:0 (front edge row only is the open infinity lip); basin
+        // occupies z:0..1 so it reads as a real sunken water feature.
+        final int px0 = 4, px1 = 10, pz0 = 0, pz1 = 1;
+
+        // ── y=0 : FOUNDATION ──────────────────────────────────────────────────
+        floor(b, 0, x0, z0, x1, z1, foundation);            // full plinth
+        floor(b, 0, px0, pz0, px1, pz1, poolFloor);         // pool basin floor (prismarine)
+        // flush sea-lantern uplights down the pool floor (glow up through the water)
+        for (int x = px0 + 1; x <= px1 - 1; x += 2) {
+            b.set(x, 0, pz0, SEA_LANTERN);
+        }
+
+        // ── PATIO + POOL (y=1) ────────────────────────────────────────────────
+        // The front patio surface is light-grey concrete; the pool cells get WATER
+        // flush with it. A prismarine-brick lining rings the basin at y=0.
+        floor(b, 1, x0, pz0, x1, gz0 - 1, foundation);      // patio deck across the front strip
+        floor(b, 1, px0, pz0, px1, pz1, WATER);             // …water over the basin cells
+        line(b, 0, px0, pz1, px1, pz1, poolLining);         // basin inner (north) wall lining
+        line(b, 0, px0, pz0, px0, pz1, poolLining);         // basin west wall lining
+        line(b, 0, px1, pz0, px1, pz1, poolLining);         // basin east wall lining
+        // smooth-quartz coping ring around the inner pool edge (the bright reveal)
+        for (int x = px0 - 1; x <= px1 + 1; x++) {
+            b.set(x, 1, pz1 + 1, quartzSlabTop);            // coping behind the pool (patio side)
+        }
+
+        // ════════════════════════════════════════════════════════════════════
+        //  GROUND TIER — the wide floor (z=2..10), glass curtain walls y=1..4
+        // ════════════════════════════════════════════════════════════════════
+        // 1) walkable interior floor at y=0 (its top face is the standing surface)
+        floor(b, 0, x0, gz0, x1, gz1, foundation);
+        // 2) FULL-HEIGHT GLAZING — glass BLOCKS fill the whole wall ring first; the
+        //    solid mass, frame, and rails over-stamp the cells that aren't glass.
+        for (int y = 1; y <= gWallH; y++) {
+            for (int x = x0; x <= x1; x++) {
+                b.set(x, y, gz0, GLASS); // north (front, facing patio)
+                b.set(x, y, gz1, GLASS); // south (back)
+            }
+            for (int z = gz0 + 1; z <= gz1 - 1; z++) {
+                b.set(x0, y, z, GLASS);  // west
+                b.set(x1, y, z, GLASS);  // east
+            }
+        }
+        // 3) BASE SPANDREL — a white-concrete plinth course (y=1) grounds the glazing.
+        line(b, 1, x0, gz0, x1, gz0, wallMass);
+        line(b, 1, x0, gz1, x1, gz1, wallMass);
+        line(b, 1, x0, gz0, x0, gz1, wallMass);
+        line(b, 1, x1, gz0, x1, gz1, wallMass);
+        // 4) SOLID FEATURE WALL — a full-height white-concrete plug on the back-east
+        //    (SE) bay (the service / kitchen wall), with a short west return.
+        for (int y = 1; y <= gWallH; y++) {
+            for (int x = x1 - 3; x <= x1; x++) {
+                b.set(x, y, gz1, wallMass);
+            }
+            b.set(x1, y, gz1 - 1, wallMass);
+        }
+        // 5) CORNER PIERS + MULLIONS — gray-concrete frame columns rising the full
+        //    wall height, breaking the glazing into clean bays (curtain-wall read).
+        int[][] gPiers = {
+                {x0, gz0}, {x1, gz0}, {x0, gz1}, {x1, gz1},   // four corners
+                {x0 + 4, gz0}, {gcx, gz0}, {x1 - 4, gz0},     // front-wall mullions
+                {x0 + 4, gz1}, {x1 - 4, gz1},                 // back-wall mullions
+                {x0, (gz0 + gz1) / 2}, {x1, (gz0 + gz1) / 2}  // east/west mid mullions
+        };
+        for (int[] p : gPiers) {
+            pillar(b, p[0], p[1], 1, gWallH, frame);
+        }
+        // 6) TOP RAIL — a smooth-quartz coping band wrapping the wall top (y=gWallH),
+        //    the crisp modern fascia line capping the curtain wall.
+        line(b, gWallH, x0, gz0, x1, gz0, quartz);
+        line(b, gWallH, x0, gz1, x1, gz1, quartz);
+        line(b, gWallH, x0, gz0, x0, gz1, quartz);
+        line(b, gWallH, x1, gz0, x1, gz1, quartz);
+        // re-assert corner piers above the rail so the grid corners stay gray
+        for (int[] c : new int[][]{{x0, gz0}, {x1, gz0}, {x0, gz1}, {x1, gz1}}) {
+            b.set(c[0], gWallH, c[1], frame);
+        }
+        // 7) FLAT ROOF DECK (y=5) — light-grey concrete over the whole ground body.
+        //    This is the ground ceiling, the upper-floor base, AND the wrap terrace.
+        floor(b, gDeckY, x0, gz0, x1, gz1, deck);
+        // crisp quartz overhang fascia: a bottom-slab lip projecting one cell over
+        // the FRONT (patio-side) eave — the signature flat-roof horizontal reveal.
+        for (int x = x0; x <= x1; x++) {
+            b.set(x, gDeckY, gz0 - 1, quartzSlabBot);
+        }
+        // 8) GROUND ENTRY — a wide glazed sliding-door read: leave the centre-front
+        //    bay open at y=1..2 by over-writing the spandrel/glass there with glass
+        //    (kept glazed full-height, flanked by the gcx mullion) and a quartz step.
+        b.set(gcx - 1, 1, gz0, GLASS); // re-glaze the entry bay base (was spandrel)
+        b.set(gcx + 1, 1, gz0, GLASS);
+        b.set(gcx, 1, gz0, GLASS);
+        b.set(gcx, 2, gz0, GLASS);
+        b.set(gcx, 1, gz0 - 1, quartzSlabTop); // patio entry step just outside the glass
+
+        // ════════════════════════════════════════════════════════════════════
+        //  UPPER TIER — the setback floor (x:3..11, z:4..9), glass walls y=7..8
+        // ════════════════════════════════════════════════════════════════════
+        // upper floor finish at y=6 (sits on the ground deck at y=5)
+        floor(b, uFloorY, ux0, uz0, ux1, uz1, foundation);
+        // FULL-HEIGHT GLAZING — glass blocks fill the upper wall ring first.
+        for (int y = uFloorY + 1; y <= uWallTop; y++) {
+            for (int x = ux0; x <= ux1; x++) {
+                b.set(x, y, uz0, GLASS); // north (front)
+                b.set(x, y, uz1, GLASS); // south (back)
+            }
+            for (int z = uz0 + 1; z <= uz1 - 1; z++) {
+                b.set(ux0, y, z, GLASS); // west
+                b.set(ux1, y, z, GLASS); // east
+            }
+        }
+        // base spandrel course (y=uFloorY+1) grounds the upper glazing
+        line(b, uFloorY + 1, ux0, uz0, ux1, uz0, wallMass);
+        line(b, uFloorY + 1, ux0, uz1, ux1, uz1, wallMass);
+        line(b, uFloorY + 1, ux0, uz0, ux0, uz1, wallMass);
+        line(b, uFloorY + 1, ux1, uz0, ux1, uz1, wallMass);
+        // solid back-wall plug on the upper SE bay (bedroom service wall)
+        for (int y = uFloorY + 1; y <= uWallTop; y++) {
+            for (int x = ux1 - 2; x <= ux1; x++) {
+                b.set(x, y, uz1, wallMass);
+            }
+        }
+        // corner piers + a centre mullion on each long face (curtain-wall read)
+        int[][] uPiers = {
+                {ux0, uz0}, {ux1, uz0}, {ux0, uz1}, {ux1, uz1}, // corners
+                {ucx, uz0}, {ucx, uz1}                          // front/back mid mullions
+        };
+        for (int[] p : uPiers) {
+            pillar(b, p[0], p[1], uFloorY + 1, uWallTop, frame);
+        }
+        // quartz top rail wrapping the upper wall top
+        line(b, uWallTop, ux0, uz0, ux1, uz0, quartz);
+        line(b, uWallTop, ux0, uz1, ux1, uz1, quartz);
+        line(b, uWallTop, ux0, uz0, ux0, uz1, quartz);
+        line(b, uWallTop, ux1, uz0, ux1, uz1, quartz);
+        for (int[] c : new int[][]{{ux0, uz0}, {ux1, uz0}, {ux0, uz1}, {ux1, uz1}}) {
+            b.set(c[0], uWallTop, c[1], frame);
+        }
+        // upper entry off the terrace: leave the centre-front bay glazed (sliding
+        // door read) and add a quartz threshold on the terrace just outside it.
+        b.set(ucx, uFloorY + 1, uz0, GLASS);
+        b.set(ucx, uFloorY, uz0 - 1, quartzSlabTop);
+
+        // ── UPPER FLAT ROOF (y=9) + ROOF-TERRACE PARAPET (y=10) ───────────────
+        floor(b, uDeckY, ux0, uz0, ux1, uz1, deck);
+        // low concrete parapet ringing the upper roof → the top roof terrace
+        line(b, uParapetY, ux0, uz0, ux1, uz0, wallMass);
+        line(b, uParapetY, ux0, uz1, ux1, uz1, wallMass);
+        line(b, uParapetY, ux0, uz0, ux0, uz1, wallMass);
+        line(b, uParapetY, ux1, uz0, ux1, uz1, wallMass);
+        // smooth-quartz coping cap along the front parapet run (bright reveal)
+        for (int x = ux0 + 1; x <= ux1 - 1; x++) {
+            b.set(x, uParapetY, uz0, quartzSlabTop);
+        }
+
+        // ── WRAP-AROUND TERRACE (the exposed ground-roof perimeter) ───────────
+        // A render-safe low GLASS-BLOCK balustrade rings the ground roof edge, with
+        // gray-concrete corner posts so it reads as a framed glass terrace railing.
+        for (int x = x0; x <= x1; x++) {
+            b.set(x, gDeckY + 1, gz0, GLASS); // front rail
+            b.set(x, gDeckY + 1, gz1, GLASS); // back rail
+        }
+        for (int z = gz0 + 1; z <= gz1 - 1; z++) {
+            b.set(x0, gDeckY + 1, z, GLASS);  // west rail
+            b.set(x1, gDeckY + 1, z, GLASS);  // east rail
+        }
+        // gray-concrete corner posts on the terrace railing (frame the glass)
+        for (int[] c : new int[][]{{x0, gz0}, {x1, gz0}, {x0, gz1}, {x1, gz1}}) {
+            b.set(c[0], gDeckY + 1, c[1], frame);
+        }
+
+        // ── RECESSED SEA-LANTERN LIGHTING ─────────────────────────────────────
+        // Ground ceiling downlights set flush into the roof-deck course (y=gDeckY)
+        // down the body so they read as recessed downlights over the open plan.
+        int gccz = (gz0 + gz1) / 2; // body centre z
+        b.set(x0 + 3, gDeckY, gccz, SEA_LANTERN);
+        b.set(gcx, gDeckY, gccz, SEA_LANTERN);
+        b.set(x1 - 3, gDeckY, gccz, SEA_LANTERN);
+        // Upper ceiling downlights flush into the upper roof (y=uDeckY).
+        b.set(ucx - 2, uDeckY, (uz0 + uz1) / 2, SEA_LANTERN);
+        b.set(ucx + 2, uDeckY, (uz0 + uz1) / 2, SEA_LANTERN);
+
+        // ── INTERIOR (sparse, modern; on the standing floors) ─────────────────
+        // Ground open-plan living: a low bed in the back corner, a desk + chest,
+        // and a potted plant by the entry. Kept minimal for crisp lines.
+        bed(b, x0 + 2, 1, gz1 - 1, "light_gray", "south");
+        b.set(x1 - 1, 1, gz1 - 1, CRAFTING_TABLE);
+        b.set(x1 - 1, 1, gz1 - 2, CHEST);
+        b.set(x0 + 2, 1, gz0 + 1, bs("minecraft:potted_oak_sapling"));
+        // Upper bedroom: a bed + bookshelf against the solid SE wall.
+        bed(b, ux0 + 1, uFloorY + 1, uz1 - 1, "gray", "south");
+        b.set(ux1 - 1, uFloorY + 1, uz1 - 1, BOOKSHELF);
 
         return b.build();
     }
