@@ -56,7 +56,9 @@ public final class CuratedBlueprints {
             "savanna_acacia_villa", "tiered_fountain", "wall_battlement_segment",
             // Per-biome starter houses (§3.A)
             "desert_sandstone_house", "desert_pyramid_shrine", "taiga_log_cabin",
-            "taiga_spruce_longhouse");
+            "taiga_spruce_longhouse",
+            // Phase 2 — Category A
+            "snowy_igloo");
 
     /**
      * Load a bundled curated blueprint straight from the mod's resources (no world
