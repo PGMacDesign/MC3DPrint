@@ -253,6 +253,7 @@ class CuratedBlueprintGenerator {
         builds.put("library", library());
         // Phase 2 — Category H (infrastructure / civic / defensive)
         builds.put("sky_bridge_segment", skyBridgeSegment());
+        builds.put("road_path_segment", roadPathSegment());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -7136,6 +7137,80 @@ class CuratedBlueprintGenerator {
             b.set(x0, deckY - 1, z, HANGING_LANTERN);
             b.set(x1, deckY - 1, z, HANGING_LANTERN);
         }
+
+        return b.build();
+    }
+
+    /**
+     * Phase 2 §H Road / Path Segment. 5×5 footprint → builder(5, 4, 5). T1 disc.
+     *
+     * <p>A single TILEABLE tile of a paved street: a 3-lane cobblestone carriageway
+     * with a stone center line, raised smooth-stone sidewalks/curbs on each side,
+     * and a wrought-iron lamppost (stone-brick-wall shaft + lantern, via the
+     * {@link #light(Blueprint.Builder, int, int, int, int, BlueprintBlockState)}
+     * helper) standing on the west footpath. Print copies edge-to-edge along the
+     * travel axis (Z) to lay a road of any length: every Z-row of the carriageway,
+     * center line and sidewalks is identical, so the surface is seamless across the
+     * z=4↔z=0 seam, and the single lamp sits at z=0 (one per tile, period 5) so the
+     * curb + lamp rhythm continues unbroken from tile to tile.
+     *
+     * <p>Axes: x=W (0..4, across the road), y=up (0..3), z=depth (0..4, the direction
+     * of travel). Width layout (x): 0 = west sidewalk/curb, 1 = west lane, 2 = center
+     * line, 3 = east lane, 4 = east sidewalk/curb.
+     *
+     * <p>Vanilla blocks only, all FU-valued/structural: cobblestone, stone, diorite,
+     * smooth-stone slabs, dirt-path, stone-brick wall and the lantern all clear the
+     * printability gate (cobble/stone/diorite/slabs are valued; dirt_path is
+     * structural). No glass/iron-bars panes anywhere, so the render-integrity
+     * stub-pane gate never applies; the standing lantern sits on the solid curb.
+     *
+     * <p>Layout (Y), footprint x=0..4 × z=0..4:
+     * <ul>
+     *   <li><b>y=0</b> — road base plane filling the full 5×5. The carriageway
+     *       (x=1,3) is cobblestone, the center line (x=2) is stone (the painted lane
+     *       divider, lighter than the cobble), and the two sidewalk columns (x=0,4)
+     *       are a solid diorite footing the raised footpath sits on. Every column is
+     *       uniform down Z so the surface tiles flush.</li>
+     *   <li><b>y=1</b> — raised sidewalks/curbs: a smooth-stone slab (top) capping
+     *       each sidewalk column (x=0 and x=4) for the full depth, so the footpath
+     *       reads as a half-block-raised curb stepping down to the carriageway. The
+     *       road-facing slab edge is the curb line.</li>
+     *   <li><b>lamppost</b> — on the west footpath at (x=0, z=0): a 2-tall
+     *       stone-brick-wall shaft on the curb with a torch crown (the {@code light()}
+     *       helper), the wrought-iron street lamp. At z=0 only, so each tile drops one
+     *       lamp and the spacing stays even across seams.</li>
+     * </ul>
+     */
+    private static Blueprint roadPathSegment() {
+        Blueprint.Builder b = Blueprint.builder("Road / Path Segment", 5, 4, 5);
+        BlueprintBlockState stone   = bs("minecraft:stone");
+        BlueprintBlockState diorite = bs("minecraft:diorite");
+        int z0 = 0, z1 = 4;           // travel axis (tiles flush along Z)
+
+        // ── ROAD BASE PLANE (y=0) ──────────────────────────────────────────
+        // Sidewalk footings (x=0,4) = diorite; carriageway lanes (x=1,3) = cobble;
+        // center line (x=2) = stone. Each column runs the full depth so it tiles.
+        line(b, 0, 0, z0, 0, z1, diorite);   // west sidewalk footing
+        line(b, 0, 1, z0, 1, z1, COBBLE);    // west lane
+        line(b, 0, 2, z0, 2, z1, stone);     // painted center line
+        line(b, 0, 3, z0, 3, z1, COBBLE);    // east lane
+        line(b, 0, 4, z0, 4, z1, diorite);   // east sidewalk footing
+
+        // ── RAISED SIDEWALKS / CURBS (y=1) ─────────────────────────────────
+        // Smooth-stone top-slab footpath capping each sidewalk column; the
+        // road-facing edge reads as the curb stepping down to the lanes. The
+        // lamp cell (x=0,z=0) is left open here so the lamppost stands on the
+        // diorite footing instead of clashing with the slab.
+        for (int z = z0; z <= z1; z++) {
+            if (!(z == 0)) b.set(0, 1, z, SMOOTH_STONE_SLAB_TOP);
+            b.set(4, 1, z, SMOOTH_STONE_SLAB_TOP);
+        }
+
+        // ── LAMPPOST (west footpath, x=0, z=0) ─────────────────────────────
+        // 2-tall stone-brick-wall shaft standing on the diorite curb footing,
+        // torch-crowned. One per tile at z=0 so the lamp rhythm continues evenly
+        // across the z=4↔z=0 seam.
+        light(b, 0, 0, 1, 2, STONE_BRICK_WALL);
 
         return b.build();
     }
