@@ -83,6 +83,7 @@ public class CuratedBlueprintPrintabilityGameTests {
             "minecraft:target",                 // redstone + hay; hay unvalued (redstone_workshop)
             "minecraft:fletching_table",        // 4 planks + 2 flint; flint unvalued
             "minecraft:cartography_table",      // 4 planks + 2 paper; paper unvalued
+            "minecraft:enchanting_table",       // 4 obsidian + 2 diamond + 1 book; book→paper unvalued (enchanting_room)
             "minecraft:gilded_blackstone",      // bastion loot, not craftable (no recipe to derive)
             "minecraft:bell"                    // village loot, not craftable in survival
     );

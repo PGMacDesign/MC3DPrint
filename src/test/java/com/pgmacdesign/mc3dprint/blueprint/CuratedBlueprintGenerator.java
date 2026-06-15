@@ -189,6 +189,10 @@ class CuratedBlueprintGenerator {
         builds.put("emerald_market_hall", emeraldMarketHall());
         builds.put("lighthouse", lighthouse());
         builds.put("castle_keep", castleKeep());
+        // Phase 0 pilot builds (validate the parametric helper library)
+        builds.put("cherry_grove_cottage", cherryGroveCottage());
+        builds.put("enchanting_room", enchantingRoom());
+        builds.put("japanese_pagoda", japanesePagoda());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -2146,6 +2150,144 @@ class CuratedBlueprintGenerator {
         // gatehouse passage lanterns on chains
         b.set(9, 5, 1, CHAIN); b.set(9, 4, 1, HANGING_LANTERN);
         b.set(11, 5, 1, CHAIN); b.set(11, 4, 1, HANGING_LANTERN);
+        return b.build();
+    }
+
+    // =====================================================================
+    //  PHASE 0 PILOT BUILDS  (validate the parametric helper library)
+    //  docs/blueprint-candidates.md — cherry cottage / enchanting room / pagoda
+    // =====================================================================
+
+    /**
+     * Cherry Grove Cottage. 7×7 footprint → builder(7, 8, 7). A furnished,
+     * enterable cherry-themed cottage built entirely from the parametric
+     * {@link #house} helper with the {@link #CHERRY} palette, plus light pink
+     * accents (pink_petals — a BushBlock, prints free as structural matter — and
+     * a couple of flower pots). The {@link #house} call lays the walkable y=0
+     * foundation, the cherry wall ring (y=1..4) with cherry-log corner posts, a
+     * hip roof (7×7 is square so {@link #house} picks {@link #hipRoof}), a clear
+     * north-wall door (left open via {@link #door2}), and the standard furnish set
+     * (bed + crafting table + chest + lantern).
+     */
+    private static Blueprint cherryGroveCottage() {
+        Blueprint.Builder b = Blueprint.builder("Cherry Grove Cottage", 7, 8, 7);
+        // Parametric cherry house: walkable interior, hip roof, door, furnish.
+        house(b, 0, 0, 6, 6, 4, CHERRY, true);
+        // Pink-petal accents on open interior floor cells (y=1). Petals are a
+        // BushBlock → structural/free; they sit on the y=0 plank floor. Keep clear
+        // of the door cell (3,1), the furnishings, and the table-free middle path.
+        b.set(2, 1, 3, bs("minecraft:pink_petals[flower_amount=3,facing=south]"));
+        b.set(4, 1, 3, bs("minecraft:pink_petals[flower_amount=4,facing=north]"));
+        b.set(3, 1, 5, bs("minecraft:pink_petals[flower_amount=2,facing=west]"));
+        // Flower pots flanking the door on the inside (decorative; flower_pot is
+        // recipe-derivable from brick → printable).
+        b.set(2, 1, 1, bs("minecraft:flower_pot"));
+        b.set(4, 1, 1, bs("minecraft:flower_pot"));
+        // A potted cherry-pink bloom on the back windowsill for the cherry theme.
+        b.set(3, 2, 5, bs("minecraft:potted_pink_tulip"));
+        return b.build();
+    }
+
+    /**
+     * Enchanting Room. 7×7 footprint → builder(7, 5, 7). A functional max-power
+     * enchanting setup built on the {@link #roomShell} helper. An enchanting_table
+     * sits dead-centre on the floor with EXACTLY 15 bookshelves ringing it at the
+     * canonical vanilla power distance: the bookshelves occupy the 5×5 interior
+     * perimeter (relative distance 2 from the table) at the same Y as the table,
+     * with a 1-block AIR GAP (the distance-1 interior cells x∈{2,4}/z∈{2,4}) left
+     * empty between every shelf and the table — that empty cell is what lets the
+     * shelf's power reach the table in vanilla. The 5×5 perimeter has 16 cells; we
+     * fill 15 and leave the cell in front of the door ({@code (3,1)}) open as the
+     * walk-in entrance. Lapis storage (a barrel), wall-backed lanterns, and a
+     * carpet round it out.
+     */
+    private static Blueprint enchantingRoom() {
+        Blueprint.Builder b = Blueprint.builder("Enchanting Room", 7, 5, 7);
+        // Box: stone-brick walls, polished-andesite floor, stone-brick ceiling.
+        // Interior is x,z = 1..5 (5×5), standing height y=1..3, ceiling y=4.
+        BlueprintBlockState polishedAndesite = bs("minecraft:polished_andesite");
+        roomShell(b, 0, 0, 0, 6, 4, 6, STONE_BRICKS, polishedAndesite, STONE_BRICKS);
+        // Walk-in door centred on the north wall (z=0), opening inward.
+        door2(b, 3, 1, 0, "dark_oak", "N");
+        // Carpet over the interior floor (white_carpet derives from wool → printable).
+        floor(b, 1, 1, 1, 5, 5, bs("minecraft:white_carpet"));
+        // Enchanting table dead-centre, on top of the carpeted floor.
+        b.set(3, 1, 3, bs("minecraft:enchanting_table"));
+        // The 15 bookshelves: every cell of the 5×5 interior perimeter (x∈{1,5} or
+        // z∈{1,5}) at table level (y=1), EXCEPT (3,1) which is the entrance gap in
+        // front of the door. The distance-1 ring (x∈{2,4}/z∈{2,4}) is deliberately
+        // left empty — that 1-block air gap is the vanilla power requirement.
+        int shelves = 0;
+        for (int x = 1; x <= 5; x++) {
+            for (int z = 1; z <= 5; z++) {
+                boolean onRing = (x == 1 || x == 5 || z == 1 || z == 5);
+                if (!onRing) continue;            // skip interior (table + air gap)
+                if (x == 3 && z == 1) continue;   // entrance gap aligned with the door
+                b.set(x, 1, z, BOOKSHELF);
+                shelves++;
+            }
+        }
+        // shelves == 15 by construction (16 perimeter cells − 1 entrance gap).
+        // Lapis storage: a barrel set ON TOP of the back-corner shelf (y=2), so it
+        // doesn't consume a ring cell (which would drop the count below 15) and
+        // doesn't sit in a distance-1 air-gap cell (which would break the power
+        // rule). Barrel derives from planks+slabs → printable.
+        b.set(5, 2, 5, BARREL);
+        // Wall-backed hanging lanterns on chains from the ceiling, in two corners,
+        // kept clear of the bookshelf ring's headroom (lanterns hang at y=2).
+        b.set(1, 3, 1, CHAIN); b.set(1, 2, 1, HANGING_LANTERN);
+        b.set(5, 3, 1, CHAIN); b.set(5, 2, 1, HANGING_LANTERN);
+        return b.build();
+    }
+
+    /**
+     * Japanese Pagoda. 9×9 base → builder(9, 17, 9). A multi-tier pagoda whose
+     * stacked, upturned-eave roofs are produced by the {@link #pagodaRoof} helper.
+     * The body is a dark-oak / spruce box with red-concrete accent bands and
+     * stripped-log corner posts; lanterns hang under the lowest eave. The roof is
+     * 3 stacked tiers centred on the body, each smaller than the last, finialled
+     * with a soul-lantern on a slab — reading top-down as a classic pagoda.
+     *
+     * <p>Layout (Y): foundation y=0; body walls y=1..6 (door + windows + accent
+     * band); the pagoda roof stack seats at {@code cy=6} and rises through the
+     * tiers + finial to ~y=15, inside the H=17 budget.
+     */
+    private static Blueprint japanesePagoda() {
+        Blueprint.Builder b = Blueprint.builder("Japanese Pagoda", 9, 17, 9);
+        BlueprintBlockState redConcrete = bs("minecraft:red_concrete");
+        BlueprintBlockState strippedSpruceX = bs("minecraft:stripped_spruce_log[axis=x]");
+        // 1) stone-brick plinth (y=0) for a grounded, walkable base
+        floor(b, 0, 0, 0, 8, 8, STONE_BRICKS);
+        // 2) body: dark-oak plank walls y=1..6 with stripped-spruce corner posts
+        walls(b, 0, 0, 8, 8, 1, 6, DARK_OAK_PLANKS);
+        corners(b, 0, 0, 8, 8, 1, 6, STRIPPED_SPRUCE_Y);
+        // 3) red-concrete accent band at the wall-head course (y=5) — the lacquer line
+        line(b, 5, 1, 0, 7, 0, redConcrete);
+        line(b, 5, 1, 8, 7, 8, redConcrete);
+        line(b, 5, 0, 1, 0, 7, redConcrete);
+        line(b, 5, 8, 1, 8, 7, redConcrete);
+        // 4) doorway (north wall, centred, opening inward) + spruce-pane windows
+        door2(b, 4, 1, 0, "dark_oak", "N");
+        window2(b, 0, 3, 4, GLASS_PANE, null);
+        window2(b, 8, 3, 4, GLASS_PANE, null);
+        window2(b, 4, 3, 8, GLASS_PANE, null);
+        // 5) spruce-plank interior floor + a soul-lantern hung from a spruce tie-beam,
+        //    so the body is enterable and lit (tie-beam backs the chain).
+        floor(b, 0, 1, 1, 7, 7, SPRUCE_PLANKS);
+        line(b, 6, 1, 4, 7, 4, strippedSpruceX); // ceiling tie-beam to back the chain
+        b.set(4, 5, 4, CHAIN);
+        b.set(4, 4, 4, SOUL_HANGING_LANTERN);
+        // 6) stacked upturned-eave roof: 3 tiers centred on the body, seated at the
+        //    wall head (cy=6). baseHalf=4 → bottom tier spans the full 9-wide body
+        //    (its flare lip overhangs the eaves). Spruce stairs read as dark roofing;
+        //    spruce-slab caps each tier; a soul-lantern is the apex finial.
+        pagodaRoof(b, 4, 4, 6, 4, 3, "spruce_stairs", SPRUCE_SLAB_BOTTOM, SOUL_HANGING_LANTERN);
+        // 7) eave lanterns under the lowest tier's upturned corners (front pair),
+        //    on short chains backed by the flare lip above them.
+        b.set(0, 6, 0, HANGING_LANTERN);
+        b.set(8, 6, 0, HANGING_LANTERN);
+        b.set(0, 6, 8, HANGING_LANTERN);
+        b.set(8, 6, 8, HANGING_LANTERN);
         return b.build();
     }
 }

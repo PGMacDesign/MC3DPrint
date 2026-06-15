@@ -49,7 +49,9 @@ public final class CuratedBlueprints {
             "iron_foundry", "redstone_workshop", "diamond_vault",
             // Large (T6–T7 footprint) + remaining high-tier
             "church", "manor_house", "copper_observatory", "emerald_market_hall",
-            "lighthouse", "castle_keep");
+            "lighthouse", "castle_keep",
+            // Phase 0 pilot builds (validate the parametric helper library)
+            "cherry_grove_cottage", "enchanting_room", "japanese_pagoda");
 
     /**
      * Load a bundled curated blueprint straight from the mod's resources (no world
