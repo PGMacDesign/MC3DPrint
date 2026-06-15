@@ -7,9 +7,9 @@
 
 ## Status
 - **Curated builds before Phase 2:** 29
-- **Phase 2 queue:** 103 · **Done:** 94 · **Blocked:** 2 · **Remaining:** 7
-- **Next up:** `nether_fortress_bridge`
-- **Last completed:** `nether_hub_room`
+- **Phase 2 queue:** 103 · **Done:** 95 · **Blocked:** 2 · **Remaining:** 6
+- **Next up:** `blackstone_bastion_fragment`
+- **Last completed:** `nether_fortress_bridge`
 
 ## Process (per build — follow exactly on resume)
 1. Pick the first unchecked `[ ]` build in queue order below.
@@ -143,7 +143,7 @@
 - [x] nether_wart_farm (nether_wart prints as structural crop on soul_sand)
 - [x] basalt_pillar_cluster
 - [x] nether_hub_room (blue_ice prints; 4 unlit obsidian portal frames)
-- [ ] nether_fortress_bridge
+- [x] nether_fortress_bridge
 - [ ] blackstone_bastion_fragment
 
 ### D — End (5) · T7 materials; watch end-block values
