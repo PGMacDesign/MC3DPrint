@@ -132,7 +132,9 @@ public final class CuratedBlueprints {
             // Phase 2 — Category E (conduit_shrine)
             "conduit_shrine",
             // Phase 2 — Category E (ocean_ruins)
-            "ocean_ruins");
+            "ocean_ruins",
+            // Phase 2 — Category E (coral_garden)
+            "coral_garden");
 
     /**
      * Load a bundled curated blueprint straight from the mod's resources (no world

@@ -297,6 +297,8 @@ class CuratedBlueprintGenerator {
         builds.put("conduit_shrine", conduitShrine());
         // Phase 2 — Category E (ocean_ruins)
         builds.put("ocean_ruins", oceanRuins());
+        // Phase 2 — Category E (coral_garden)
+        builds.put("coral_garden", coralGarden());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -13889,6 +13891,188 @@ class CuratedBlueprintGenerator {
                     b.set(x, 1, z, WATER);
                 }
             }
+        }
+
+        return b.build();
+    }
+
+    /**
+     * coral_garden — Category E, "easiest path to color". A vibrant 9×9 seabed reef
+     * garden submerged in water, studded with branching/mounded "coral" formations
+     * in many bright colours. {@code builder(9, 8, 9)} — x=0..8 (W), z=0..8 (D),
+     * centred on (cx,cz)=(4,4); T5 footprint band, disc T1.
+     *
+     * <p><b>Real coral is UNPRINTABLE</b> — live/dead coral blocks, coral fans, sea
+     * pickles and kelp are loot/worldgen-only with no recipe, so they carry no FU
+     * value and would fail the printability gate. The documented intent of this build
+     * is COLOUR (a vibrant reef), and colour is fully achievable with valued blocks,
+     * so the reef is evoked entirely from FU-valued / structural-matter blocks:
+     * <ul>
+     *   <li><b>Coral heads / brain coral</b> — mounded domes and stacked pillars of
+     *       bright {@code *_concrete} (pink, magenta, orange, lime, cyan, light-blue,
+     *       yellow, red, purple). Dyed concrete normalises to its base FU value, so
+     *       16 bright colours are all wound/printable.</li>
+     *   <li><b>Coral fans / branches</b> — {@code end_rod} sprigs rising off the heads
+     *       as thin vertical branches (end_rods are NOT panes/bars → always render-safe,
+     *       never a stub), plus a few colour-accent {@code *_glazed_terracotta} faces
+     *       (organic swirl patterns) on the head crowns.</li>
+     *   <li><b>Tube coral / anemones</b> — vertical pillars of bright concrete and
+     *       full {@code *_stained_glass} BLOCKS (translucent reef colour; full blocks
+     *       are always render-safe, no panes used anywhere).</li>
+     *   <li><b>Sea-pickle glow</b> — {@code sea_lantern} and {@code glowstone} dots
+     *       nestled among the coral.</li>
+     *   <li><b>Bed</b> — sand + red-sand + gravel + a little sandstone, gently mounded,
+     *       with scattered colourful concrete "pebbles".</li>
+     * </ul>
+     *
+     * <p>The whole garden is submerged: water (structural → prints free) fills the
+     * entire volume first, then the seabed and coral overwrite it, so the reef reads
+     * as an underwater scene. No coral / sea_pickle / kelp / seagrass /
+     * dark_prismarine anywhere — every placed block is FU-valued or structural water.
+     * The scatter is deliberately asymmetric (positions/heights/colours keyed off a
+     * positional hash), not a grid.
+     */
+    private static Blueprint coralGarden() {
+        final int W = 9, H = 8, D = 9;
+        Blueprint.Builder b = Blueprint.builder("Coral Garden", W, H, D);
+        final int x0 = 0, x1 = W - 1, z0 = 0, z1 = D - 1; // 0..8
+
+        // ── seabed materials (all FU-valued) ────────────────────────────────
+        final BlueprintBlockState sand      = bs("minecraft:sand");
+        final BlueprintBlockState redSand   = bs("minecraft:red_sand");
+        final BlueprintBlockState gravel    = bs("minecraft:gravel");
+        final BlueprintBlockState sandstone = bs("minecraft:sandstone");
+
+        // ── bright "coral" colour palette — dyed concrete normalises to base FU ─
+        final BlueprintBlockState pink      = bs("minecraft:pink_concrete");
+        final BlueprintBlockState magenta   = bs("minecraft:magenta_concrete");
+        final BlueprintBlockState orange    = bs("minecraft:orange_concrete");
+        final BlueprintBlockState lime       = bs("minecraft:lime_concrete");
+        final BlueprintBlockState cyan      = bs("minecraft:cyan_concrete");
+        final BlueprintBlockState lightBlue = bs("minecraft:light_blue_concrete");
+        final BlueprintBlockState yellow    = bs("minecraft:yellow_concrete");
+        final BlueprintBlockState red       = bs("minecraft:red_concrete");
+        final BlueprintBlockState purple    = bs("minecraft:purple_concrete");
+        final BlueprintBlockState[] coral = {pink, magenta, orange, lime, cyan, lightBlue, yellow, red, purple};
+
+        // translucent reef "tube coral" — full stained-glass BLOCKS (always safe)
+        final BlueprintBlockState glassPink   = bs("minecraft:pink_stained_glass");
+        final BlueprintBlockState glassCyan   = bs("minecraft:cyan_stained_glass");
+        final BlueprintBlockState glassLime   = bs("minecraft:lime_stained_glass");
+        final BlueprintBlockState glassMag    = bs("minecraft:magenta_stained_glass");
+        final BlueprintBlockState glassOrange = bs("minecraft:orange_stained_glass");
+
+        // glow + thin branches (sea-pickle / fan-coral analogues)
+        final BlueprintBlockState seaLantern  = SEA_LANTERN;
+        final BlueprintBlockState glowstone   = GLOWSTONE;
+        final BlueprintBlockState endRod      = END_ROD;
+
+        // glazed-terracotta swirl "fan" faces (normalise to base FU)
+        final BlueprintBlockState glazePink   = bs("minecraft:pink_glazed_terracotta[facing=north]");
+        final BlueprintBlockState glazeCyan   = bs("minecraft:cyan_glazed_terracotta[facing=north]");
+        final BlueprintBlockState glazeOrange = bs("minecraft:orange_glazed_terracotta[facing=north]");
+        final BlueprintBlockState glazeLime   = bs("minecraft:lime_glazed_terracotta[facing=north]");
+
+        // ── 1) SUBMERGE — fill the whole volume with water (structural, free) so the
+        //    reef reads as an underwater scene. The seabed + coral overwrite it below.
+        solid(b, x0, 0, z0, x1, H - 1, z1, WATER);
+
+        // ── 2) SEABED (y=0) — a mottled sand/red-sand/gravel/sandstone floor over the
+        //    whole 9×9, keyed off a positional hash so it scatters rather than tiles.
+        //    Heavier red-sand drift in the SW, more sandstone shelf in the NE.
+        for (int x = x0; x <= x1; x++) {
+            for (int z = z0; z <= z1; z++) {
+                int k = (x * 7 + z * 3) % 9;
+                BlueprintBlockState mat;
+                if (x <= 3 && z >= 5 && k % 2 == 0) {
+                    mat = redSand;                 // SW red-sand drift
+                } else if (x >= 5 && z <= 3 && k % 3 == 0) {
+                    mat = sandstone;               // NE sandstone shelf
+                } else if (k <= 1) {
+                    mat = gravel;
+                } else if (k == 2) {
+                    mat = redSand;
+                } else {
+                    mat = sand;
+                }
+                b.set(x, 0, z, mat);
+            }
+        }
+
+        // ── 3) GENTLE MOUNDS (y=1) — a few raised sand/gravel humps so the bed rolls
+        //    instead of lying flat (the coral heads grow off these). Asymmetric.
+        for (int[] m : new int[][]{{2, 2}, {3, 2}, {2, 3}, {6, 5}, {7, 5}, {6, 6}, {4, 7}, {5, 7}, {1, 6}}) {
+            b.set(m[0], 1, m[1], ((m[0] + m[1]) % 2 == 0) ? sand : gravel);
+        }
+        // a low sandstone outcrop ridge running NE→centre for the reef to climb
+        b.set(5, 1, 3, sandstone);
+        b.set(6, 1, 3, sandstone);
+        b.set(5, 1, 4, sandstone);
+
+        // ── 4) CORAL HEADS — mounded domes of bright concrete on the bed, varied
+        //    colours/sizes/heights, scattered asymmetrically. dome() stacks shrinking
+        //    rings; the springing height is y=1 so the heads rise out of the seabed.
+        //    Each head: {cx, cz, radius, colourIndex}.
+        int[][] heads = {
+                {2, 2, 2, 0},  // pink brain coral, SW (largest)
+                {6, 6, 2, 4},  // cyan brain coral, SE
+                {7, 2, 1, 2},  // orange knob, NE
+                {2, 6, 1, 5},  // light-blue knob, SW-S
+                {5, 4, 1, 3},  // lime knob, centre ridge
+        };
+        for (int[] h : heads) {
+            // a filled disc base at y=1 grounds the head, then a dome above it.
+            disc(b, 1, h[0], h[1], h[2], coral[h[3]]);
+            dome(b, h[0], h[1], 2, h[2], coral[h[3]]);
+        }
+
+        // ── 5) GLAZED-TERRACOTTA FAN FACES — swirl-patterned crowns on three heads to
+        //    read as fan/plate coral (normalise to base FU). Seated on the dome tops.
+        b.set(2, 4, 2, glazePink);    // pink head crown
+        b.set(6, 4, 6, glazeCyan);    // cyan head crown
+        b.set(7, 3, 2, glazeOrange);  // orange knob crown
+        b.set(5, 3, 4, glazeLime);    // lime knob crown
+
+        // ── 6) TUBE-CORAL PILLARS — vertical stacks of bright concrete + translucent
+        //    stained-glass BLOCKS rising off the bed at scattered spots, varied heights
+        //    (full blocks → always render-safe, no panes anywhere).
+        pillar(b, 4, 2, 1, 4, magenta); b.set(4, 5, 2, glassMag);   // magenta tube + glass tip
+        pillar(b, 3, 5, 1, 3, lime);    b.set(3, 4, 5, glassLime);  // lime tube + glass tip
+        pillar(b, 7, 5, 1, 3, yellow);  b.set(7, 4, 5, glassOrange);// yellow tube + glass tip
+        pillar(b, 1, 4, 1, 2, purple);  b.set(1, 3, 4, glassPink);  // short purple + glass tip
+        pillar(b, 5, 7, 1, 3, red);     b.set(5, 4, 7, glassCyan);  // red tube + glass tip
+        pillar(b, 8, 7, 1, 2, glassPink);                            // lone translucent stub (full block, safe)
+        pillar(b, 1, 1, 1, 2, glassCyan);                            // corner translucent stub
+
+        // ── 7) FAN-CORAL BRANCHES — end_rod sprigs rising off the heads/pillars as thin
+        //    branching coral. end_rods are safe thin verticals (not panes), so they read
+        //    as delicate branches without any render-stub risk.
+        b.set(2, 5, 2, endRod);                // off the pink head apex
+        b.set(6, 5, 6, endRod);                // off the cyan head apex
+        b.set(4, 6, 2, endRod);                // off the magenta tube
+        b.set(3, 5, 5, endRod);                // off the lime tube
+        b.set(7, 5, 5, endRod);                // off the yellow tube
+        b.set(5, 5, 7, endRod);                // off the red tube
+        b.set(8, 4, 8, endRod);                // lone branch, SE corner
+        b.set(3, 4, 7, endRod);                // lone branch, S
+
+        // ── 8) SEA-PICKLE GLOW — sea_lantern + glowstone dots nestled among the coral on
+        //    the bed and on a couple of head crowns, lighting the reef.
+        b.set(3, 1, 3, seaLantern);            // nestled SW of the pink head
+        b.set(5, 1, 5, glowstone);             // centre bed glow
+        b.set(7, 1, 6, seaLantern);            // near the cyan head
+        b.set(6, 3, 6, glowstone);             // crown glow on the cyan head
+        b.set(2, 3, 2, glowstone);             // crown glow on the pink head
+        b.set(1, 1, 7, seaLantern);            // SW corner glow
+
+        // ── 9) COLOURFUL PEBBLES — scattered single concrete blocks on the bed (y=1) in
+        //    bright colours, asymmetric, to add reef litter/detail between the heads.
+        int[][] pebbles = {
+                {0, 4, 1}, {4, 0, 6}, {8, 4, 3}, {4, 8, 8}, {0, 0, 7},
+                {8, 0, 2}, {0, 8, 0}, {3, 0, 4}, {0, 6, 5}, {8, 5, 7},
+        };
+        for (int[] p : pebbles) {
+            b.set(p[0], 1, p[1], coral[p[2] % coral.length]);
         }
 
         return b.build();
