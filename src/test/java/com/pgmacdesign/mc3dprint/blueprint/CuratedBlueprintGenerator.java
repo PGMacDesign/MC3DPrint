@@ -5711,7 +5711,7 @@ class CuratedBlueprintGenerator {
      * </ul>
      */
     private static Blueprint jungleHut() {
-        Blueprint.Builder b = Blueprint.builder("Jungle Hut", 7, 11, 7);
+        Blueprint.Builder b = Blueprint.builder("Jungle Hut", 7, 10, 7);
         Palette p = JUNGLE; // jungle planks/logs/slabs/stairs, cyan bed, lantern
         // build-local materials (all vanilla, all FU-valued / structural).
         // NOTE: jungle_leaves and bamboo are NOT FU-valued and NOT structural matter,
@@ -5725,10 +5725,13 @@ class CuratedBlueprintGenerator {
         int x0 = 0, x1 = 6, z0 = 0, z1 = 6;
         int cx = (x0 + x1) / 2; // 3
         int cz = (z0 + z1) / 2; // 3
-        int deckY = 3;          // raised platform (walkable surface = top of y=3)
-        int wallBottom = 4;     // walls rise from above the deck
-        int wallH = 6;          // wall plate (canopy seats at y=7)
-        int roofY = wallH + 1;  // 7
+        // Lowered one course so the door is reachable: the hut sits on shorter stilts
+        // (a single jungle-log post on the grass footing) with its deck at y=2 and the
+        // door sill at y=3 — still a raised stilt hut, just no longer floating too high.
+        int deckY = 2;          // raised platform (walkable surface = top of y=2)
+        int wallBottom = 3;     // walls rise from above the deck
+        int wallH = 5;          // wall plate (canopy seats at y=6)
+        int roofY = wallH + 1;  // 6
 
         // 1) grass footing under the build so it sits on the ground (structural matter)
         floor(b, 0, x0, z0, x1, z1, GRASS_BLOCK);
@@ -5783,8 +5786,9 @@ class CuratedBlueprintGenerator {
         //    (cx, z1-1) backs onto it and climbs to the deck. Ladder faces south →
         //    attaches to the block at (cx, *, z1).
         pillar(b, cx, z1, 1, deckY - 1, logY); // full backing post for the ladder rungs
-        b.set(hatchX, 1, hatchZ, LADDER_SOUTH); // rung y=1, backed by (cx,z1) log
-        b.set(hatchX, 2, hatchZ, LADDER_SOUTH); // rung y=2 → climb out onto deck at y=3
+        for (int ry = 1; ry <= deckY - 1; ry++) {
+            b.set(hatchX, ry, hatchZ, LADDER_SOUTH); // rungs y=1..deckY-1, backed by (cx,z1) log → climb onto deck
+        }
 
         // 9) hanging lanterns under the deck for the elevated-hut glow, backed by the
         //    plank deck above them (deck at y=3 is solid over these cells). Placed off
