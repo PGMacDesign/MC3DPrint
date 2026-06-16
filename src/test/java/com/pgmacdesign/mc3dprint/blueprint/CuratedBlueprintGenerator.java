@@ -10438,13 +10438,18 @@ class CuratedBlueprintGenerator {
      * it's the player's ground). The pen interior cells at y=0 are left unset so the
      * existing ground shows through; only the corner SHELTER gets a printed oak-plank
      * floor (so animals can shelter on a dry wood surface) and the water trough is a
-     * sunken pool. Every printed block is vanilla and FU-valued (oak_fence,
-     * oak_fence_gate, oak_log, oak_planks, oak_slab, hay_block, lantern, torch derive
-     * for free) or structural-free matter (water prints free, {@code asItem()==AIR}).
+     * sunken pool. Every printed block is vanilla and FU-valued (grass_block=1@1,
+     * oak_fence, oak_fence_gate, oak_log, oak_planks, oak_slab, hay_block, lantern,
+     * torch derive for free) or structural-free matter (water prints free,
+     * {@code asItem()==AIR}).
      *
      * <p>Layout (south = +z is the "front"/access side with the gate; 9×9 = x0..8,
      * z0..8):
      * <ul>
+     *   <li><b>Grass floor, y=0</b> — {@code grass_block[snowy=false]} across the full
+     *       [0..8]×[0..8] footprint, laid first so later placements overwrite it. Grass
+     *       is the ideal animal-pen floor: sheep graze it to regrow wool and it spreads
+     *       to neighbouring dirt. (grass_block is FU-valued, 1@1 — prints fine.)</li>
      *   <li><b>Fence perimeter, y=1</b> — {@link #fenceRing} of oak fence around the
      *       full [0..8]×[0..8] edge, with a single <b>oak fence gate</b> on the south
      *       face (x=4, z=8, facing=south) as the entrance. Fences/gates self-reconcile
@@ -10452,14 +10457,15 @@ class CuratedBlueprintGenerator {
      *       (NOT an {@link net.minecraft.world.level.block.IronBarsBlock}), so the
      *       stub-pane render gate doesn't apply.</li>
      *   <li><b>Corner lean-to shelter, NW (x=0..3, z=0..3)</b> — an oak-plank floor at
-     *       y=0 (the only printed ground, dry standing room), four oak-log corner posts
+     *       y=0 (laid over the grass for dry standing room), four oak-log corner posts
      *       y=1..2, oak-plank back (north, z=0) + side (west, x=0) walls y=1..2 to break
      *       the wind, and an oak-slab roof at y=3 over the footprint. The east + south
      *       faces stay open so animals can walk in. A hanging lantern under the roof
      *       lights the shelter.</li>
-     *   <li><b>Water trough, y=0</b> — a 1×2 sunken water pool at (x=6, z=2..3), boxed
-     *       on its north/south ends with cobble at y=0 so it reads as a contained
-     *       trough. Water is structural and prints free; animals drink/path to it.</li>
+     *   <li><b>Water trough, y=0</b> — a 1×2 sunken water pool at (x=6, z=2..3) that
+     *       overwrites the grass, boxed on its north/south ends with cobble at y=0 so it
+     *       reads as a contained sunken trough. Water is structural and prints free;
+     *       animals drink/path to it.</li>
      *   <li><b>Hay-bale feeder, y=1</b> — two hay blocks at (x=6, z=6) and (x=7, z=6)
      *       near the SE corner, the classic feed pile (hay derives from wheat, FU-valued).</li>
      *   <li><b>Lighting</b> — fence-post lanterns on the two front (south) gate-flanking
@@ -10469,7 +10475,8 @@ class CuratedBlueprintGenerator {
      */
     private static Blueprint animalPen() {
         Blueprint.Builder b = Blueprint.builder("Animal Pen", 9, 5, 9);
-        // all vanilla, all FU-valued / structural-free (NO grass floor — player's terrain):
+        // all vanilla, all FU-valued / structural-free:
+        BlueprintBlockState grass  = GRASS_BLOCK; // FU-valued (1@1); the pen's printed floor
         BlueprintBlockState fence  = OAK_FENCE;   // FU-valued; FenceBlock (NOT IronBars → no stub-pane gate)
         BlueprintBlockState planks = OAK_PLANKS;  // shelter floor + walls
         BlueprintBlockState postY  = OAK_LOG_Y;   // shelter corner posts
@@ -10481,9 +10488,14 @@ class CuratedBlueprintGenerator {
         int x0 = 0, x1 = 8, z0 = 0, z1 = 8;       // 9×9 footprint
         int gateX = 4;                            // south-face gate column
 
+        // ── 0) GRASS FLOOR at y=0 across the full footprint ─────────────────
+        // Laid FIRST so the later shelter plank floor, the sunken water trough, and the
+        // cobble trough end caps overwrite the grass cells they sit on. Grass is the
+        // ideal animal-pen floor (sheep graze it to regrow wool; it spreads to dirt).
+        floor(b, 0, x0, z0, x1, z1, grass);
+
         // ── 1) FENCE PERIMETER at y=1 (gate on the south face) ──────────────
-        // The pen sits on the player's terrain: no floor is printed under the open
-        // pen. The fence ring is the enclosure; the gate is the single entrance.
+        // The fence ring is the enclosure; the gate is the single entrance.
         fenceRing(b, 1, x0, z0, x1, z1, fence);
         // oak fence gate on the south wall (z=8), facing south (outward) — the
         // entrance. Overwrites the fence cell fenceRing placed at (4,1,8).
@@ -10491,7 +10503,7 @@ class CuratedBlueprintGenerator {
 
         // ── 2) CORNER LEAN-TO SHELTER, NW (x=0..3, z=0..3) ──────────────────
         int sx0 = 0, sx1 = 3, sz0 = 0, sz1 = 3;   // shelter footprint
-        // oak-plank floor at y=0 (the only printed ground — dry standing room)
+        // oak-plank floor at y=0 (over the grass — dry standing room)
         floor(b, 0, sx0, sz0, sx1, sz1, planks);
         // four oak-log corner posts, y=1..2
         corners(b, sx0, sz0, sx1, sz1, 1, 2, postY);
