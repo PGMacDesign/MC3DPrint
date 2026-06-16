@@ -9753,7 +9753,8 @@ class CuratedBlueprintGenerator {
         // ── 7) MEZZANINE (y=4) — U-shaped gallery, open central atrium ──────
         // A plank gallery floor around three sides (west, east, south runs) two
         // cells deep; the centre is left OPEN so the hall reads double-height.
-        // A ladder hatch is left open at the SE access column.
+        // The SE access column is left open here so the ladder can run up through
+        // it; its deck-layer cell (y=mezzY) is filled by the top ladder rung (§9).
         int hatchX = 8, hatchZ = 8;               // ladder hatch (SE)
         for (int x = 1; x <= 9; x++) {
             for (int z = 1; z <= 9; z++) {
@@ -9777,10 +9778,13 @@ class CuratedBlueprintGenerator {
         // re-open the hatch + an access gap in the rail so the ladder is reachable
         b.set(hatchX, mezzY + 1, 7, darkOakSlabBottom); // step off the ladder onto the gallery
 
-        // ── 9) LADDER — SE corner, climbs y=1..3 to the mezzanine hatch ─────
-        // Backed by the east stone-brick wall: ladder faces east → attaches to the
-        // block at (hatchX+1, *, hatchZ) = (9, *, 8), which is the wall ring.
-        for (int y = 1; y <= mezzY - 1; y++) {
+        // ── 9) LADDER — SE corner, continuous climb y=1..mezzY to the deck ──
+        // Runs all the way to the deck layer (top rung at y=mezzY=4, filling the
+        // open hatch cell) so the climb tops out FLUSH with the y=5 gallery
+        // surface — no 2-block mantle. The top rung is backed on both sides by
+        // the gallery planks at (7,4,8) and (9,4,8); the climber steps off onto
+        // those planks (clear headroom at y=5/y=6 above them).
+        for (int y = 1; y <= mezzY; y++) {
             b.set(hatchX, y, hatchZ, ladderE);
         }
 
