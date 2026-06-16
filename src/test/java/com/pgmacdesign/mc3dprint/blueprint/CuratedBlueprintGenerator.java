@@ -10219,133 +10219,176 @@ class CuratedBlueprintGenerator {
     }
 
     /**
-     * §F.chicken_coop_auto — a STATIC automatic cooked-chicken coop, 5×5×8 (W×L×H)
-     * → builder(5, 8, 5).
+     * §F.chicken_coop_auto — a STATIC, EASY-TO-READ automatic cooked-chicken cooker,
+     * 7×7×7 (W×L×H) → builder(7, 7, 7).
      *
-     * <p>The classic Reddit "auto cooked-chicken farm" (r/Minecraftbuilds, 9.9k
-     * upvotes), printed as the working STRUCTURE only. Chickens are never captured —
-     * the player drops a few starting chickens into the glass growth chamber after
-     * printing; from then on it runs itself. Every block is a vanilla FU-valued or
-     * structural-free block (glass uses solid BLOCKS, never lone panes → render-safe).
+     * <p>Printed as the working STRUCTURE only. Chickens are entities and are never
+     * captured — the player drops a few chickens into the glass pen after printing,
+     * and the lava above cooks them as they grow; the cooked chicken + feathers fall
+     * onto the hopper floor and chain into an accessible chest. Every block is a
+     * vanilla FU-valued or structural-free block (glass uses solid BLOCKS, never lone
+     * panes → render-safe).
      *
-     * <p>How the mechanism works once the player adds chickens:
+     * <p><b>The whole point — the lava is CONTAINED and NEVER reaches the hoppers.</b>
+     * The old build let a 3×3 lava sheet sit right on the chamber ceiling with nothing
+     * holding it up, so it read as "lava poured down onto the hoppers" — goofy and
+     * unsafe. This rebuild stacks the cooker cleanly bottom-to-top and puts a SOLID
+     * bottom-slab barrier directly UNDER the lava, two cells above the hopper floor.
+     * Lava cannot flow down through a solid slab, so the drop path and the hopper floor
+     * stay lava-free and the items always survive:
+     * <pre>
+     *   y=4   [ LAVA ]    ← thin cook layer, held up, can't fall
+     *   y=3   [ slab  ]   ← solid bottom-slab floor under the lava (the containment)
+     *   y=2   [ PEN   ]   ← 1-tall glass pen; chickens stand here, on the hoppers
+     *   y=1   [hopper ]   ← standing floor + drop floor; cooked chicken lands here
+     *   y=0   [ stone ]
+     * </pre>
+     *
+     * <p>Layout (south = +z is the "front"/access side; cx=cz=3):
      * <ul>
-     *   <li>Adult chickens lay eggs onto the <b>hopper grid floor</b>; the eggs are
-     *       swept into the collection chest below.</li>
-     *   <li>A <b>comparator</b> reads the hopper feeding the chest and pulses a
-     *       <b>dispenser</b> aimed down into the chamber; the dispenser throws eggs back
-     *       in, hatching new chicks (the auto-restock loop). An <b>observer</b> watching
-     *       the dispenser face keeps the pulse clean.</li>
-     *   <li>Chicks are short and safe; once they grow to <b>adult height</b> their head
-     *       enters the <b>lava blade</b> suspended two blocks above the standing floor.
-     *       They die <i>cooked</i>, dropping cooked chicken + feathers straight down onto
-     *       the hopper grid → chest. Lava is structural (prints free) and is boxed by
-     *       glass so the blade can't spill.</li>
-     * </ul>
-     *
-     * <p>Layout (south = +z is the "front" / chest-access side; cx=cz=2):
-     * <ul>
-     *   <li><b>y=0</b> — stone foundation. A central <b>collection chest</b> (faces south)
-     *       ringed by four <b>hoppers</b> that feed into it; the SE diagonal hopper is the
-     *       comparator-read hopper that drives the egg-dispenser loop.</li>
-     *   <li><b>y=1</b> — the <b>hopper standing floor</b>: a 3×3 hopper grid (chickens
-     *       stand on it) all feeding DOWN into the y=0 collection ring, so every dropped
-     *       egg/cooked-chicken funnels to the chest. A stone rim frames it.</li>
-     *   <li><b>y=2..4</b> — the <b>glass growth chamber</b> (solid glass walls on a stone
-     *       base course at y=1) where the chickens live and grow.</li>
-     *   <li><b>Lava blade, y=4</b> — a single lava cell on the chamber ceiling directly
-     *       over the standing floor: the kill height. Glass walls box it.</li>
-     *   <li><b>Control stack, y=5..7</b> — above the lava: a <b>dispenser</b> facing DOWN
-     *       (throws eggs into the chamber), an <b>observer</b> + <b>comparator</b> + a
-     *       <b>redstone</b> ribbon on a stone shelf tying the comparator-read hopper to the
-     *       dispenser, and a smooth-stone-slab roof cap.</li>
+     *   <li><b>y=0</b> — stone foundation (7×7).</li>
+     *   <li><b>y=1 — hopper floor + accessible chest.</b> A 3×3 hopper grid (chickens
+     *       stand ON it; cooked chicken/feathers drop ONTO it) all chain toward the
+     *       front and into a <b>chest that faces OUT on the open south side at floor
+     *       level</b>, so the player just walks up and opens it — no digging. A lantern
+     *       lights the front. A short stone rim frames the grid.</li>
+     *   <li><b>y=2 — the 1-tall glass PEN.</b> Solid-glass walls box the 3×3 standing
+     *       floor; this is where the player puts the chickens. The front centre cell is
+     *       left OPEN as the drop-in gap so chickens can be tossed in.</li>
+     *   <li><b>y=3 — the containment slab floor.</b> Smooth-stone BOTTOM slabs fill the
+     *       3×3 directly over the pen: a solid floor the lava rests on so it can never
+     *       fall onto the chickens' drop cells or the hoppers below.</li>
+     *   <li><b>y=4 — the thin lava cook layer.</b> A 3×3 lava sheet on the slab floor;
+     *       a grown chicken's head reaches up into it and it dies cooked. Boxed by glass
+     *       so it can't spill sideways; held up by the y=3 slabs so it can't fall.</li>
+     *   <li><b>y=5..6</b> — glass over the cook layer to keep it contained, capped by a
+     *       smooth-stone-slab roof.</li>
+     *   <li><b>Explanatory signs</b> — a title sign on the front, a "Put CHICKENS in
+     *       here" sign at the pen, a "Lava cooks grown chickens" sign at the cook layer,
+     *       and a "Cooked chicken collects in the chest" sign by the chest.</li>
      * </ul>
      */
     private static Blueprint chickenCoopAuto() {
-        Blueprint.Builder b = Blueprint.builder("Auto Chicken Coop", 5, 8, 5);
+        Blueprint.Builder b = Blueprint.builder("Auto Chicken Cooker", 7, 7, 7);
         // all vanilla, all FU-valued / structural-free:
         BlueprintBlockState stone   = bs("minecraft:stone");
         BlueprintBlockState glass   = GLASS;                // solid glass for walls (always renders)
         BlueprintBlockState slabTop = SMOOTH_STONE_SLAB_TOP;
+        BlueprintBlockState slabBot = bs("minecraft:smooth_stone_slab[type=bottom]"); // lava-holder floor
         BlueprintBlockState chest   = bs("minecraft:chest[facing=south,type=single,waterlogged=false]");
         BlueprintBlockState lava    = LAVA;                 // structural → prints free
-        BlueprintBlockState redDust = bs("minecraft:redstone_wire[east=none,west=none,north=none,south=none,power=0]"); // structural
+        BlueprintBlockState lantern = LANTERN;              // glowstone-free lighting, FU-valued
 
-        int x0 = 0, x1 = 4, z0 = 0, z1 = 4;                 // 5×5 footprint
-        int cx = 2, cz = 2;                                 // centre column
+        int x0 = 0, x1 = 6, z0 = 0, z1 = 6;                 // 7×7 footprint
+        int cx = 3, cz = 3;                                 // centre column
 
-        // ── 1) STONE FOUNDATION at y=0, with the COLLECTION CHEST + HOPPER RING ──
-        // The chest sits at the centre, faced south for front access. Four hoppers
-        // ring it and feed INTO it; the SE diagonal hopper (cx+1,cz+1) is the one the
-        // comparator reads to drive the egg-dispenser restock loop.
+        // ── 1) STONE FOUNDATION at y=0 ───────────────────────────────────────────
         floor(b, 0, x0, z0, x1, z1, stone);
-        b.set(cx, 0, cz, chest);                                          // collection chest, faces south
-        b.set(cx - 1, 0, cz, bs("minecraft:hopper[enabled=true,facing=east]"));   // → chest
-        b.set(cx + 1, 0, cz, bs("minecraft:hopper[enabled=true,facing=west]"));   // → chest
-        b.set(cx, 0, cz - 1, bs("minecraft:hopper[enabled=true,facing=south]"));  // → chest
-        b.set(cx + 1, 0, cz + 1, bs("minecraft:hopper[enabled=true,facing=west]")); // comparator-read hopper → E hopper → chest
 
-        // ── 2) HOPPER STANDING FLOOR at y=1 (the chickens stand here) ────────────
-        // A 3×3 hopper grid centred on (cx,cz), every hopper feeding DOWN into the
-        // y=0 collection ring below, so eggs + cooked chicken laid/dropped here funnel
-        // straight to the chest. A stone rim around the grid frames the chamber base
-        // and gives the glass walls a solid course to sit on.
-        for (int x = cx - 1; x <= cx + 1; x++) {
-            for (int z = cz - 1; z <= cz + 1; z++) {
-                b.set(x, 1, z, bs("minecraft:hopper[enabled=true,facing=down]")); // → ring below
+        // Pen footprint (the inner 3×3 the chickens live in) and the chest position.
+        // The chest sits one cell SOUTH of the pen's south wall (an open front alcove)
+        // so the hopper chain reaches it AND the player can walk up to its open south
+        // face at floor level. cz+1 = pen south wall row; cz+2 = chest row.
+        int px0 = cx - 1, px1 = cx + 1, pz0 = cz - 1, pz1 = cz + 1;
+        int chestZ = cz + 2;                                  // = 5: chest row, open to the front
+
+        // ── 2) HOPPER FLOOR + ACCESSIBLE CHEST at y=1 ────────────────────────────
+        // A 3×3 hopper grid centred on (cx,cz): the chickens STAND on it and the cooked
+        // chicken/feathers/eggs DROP onto it. Every hopper points SOUTH, chaining the
+        // grid toward the front, where the front-centre hopper (cx, cz+1) feeds into a
+        // CHEST one cell further south (cx, cz+2). The chest faces south and its south
+        // side is OPEN to the world, so the player reaches it at floor level — no door.
+        for (int x = px0; x <= px1; x++) {
+            for (int z = pz0; z <= pz1; z++) {
+                b.set(x, 1, z, bs("minecraft:hopper[enabled=true,facing=south]"));  // chain south
             }
         }
-        // stone rim course at y=1 around the 3×3 grid (perimeter of the 5×5)
-        line(b, 1, x0, z0, x1, z0, stone); line(b, 1, x0, z1, x1, z1, stone);
-        line(b, 1, x0, z0, x0, z1, stone); line(b, 1, x1, z0, x1, z1, stone);
-
-        // ── 3) GLASS GROWTH CHAMBER WALLS, y=2..4 ────────────────────────────────
-        // Solid-glass walls (always render) on the y=1 stone rim, boxing the chickens
-        // and the lava blade above them. Stone corner posts tie the cage together.
-        for (int y = 2; y <= 4; y++) {
-            line(b, y, x0, z0, x1, z0, glass); line(b, y, x0, z1, x1, z1, glass);
-            line(b, y, x0, z0, x0, z1, glass); line(b, y, x1, z0, x1, z1, glass);
+        // front-centre carrier hopper at (cx, cz+1) already faces south (set above);
+        // it sits over the chest row's north neighbour and drops into the chest:
+        b.set(cx, 1, chestZ, chest);                          // accessible collection chest (faces south, open front)
+        // stone rim course at y=1 around the build (perimeter of the 7×7). The chest
+        // cell and the two cells flanking it on the front row stay open as the alcove.
+        line(b, 1, x0, z0, x1, z0, stone);                    // north rim
+        line(b, 1, x0, z0, x0, z1, stone);                    // west rim
+        line(b, 1, x1, z0, x1, z1, stone);                    // east rim
+        // south rim row (z=z1): solid except the central 3 cells (the open front alcove)
+        for (int x = x0; x <= x1; x++) {
+            if (x >= cx - 1 && x <= cx + 1) continue;         // leave the front alcove open
+            b.set(x, 1, z1, stone);
         }
-        corners(b, x0, z0, x1, z1, 2, 4, stone);
+        // a wall lantern lighting the front alcove, on the east alcove pier facing the chest
+        b.set(cx + 2, 1, chestZ, lantern);                    // sits on the rim corner, lights pickup
 
-        // ── 4) LAVA BLADE (the cook floor), y=4 over the standing floor ──────────
-        // A 3×3 lava sheet on the chamber ceiling directly above the 3×3 hopper floor:
-        // chicks are too short to reach it, but once they grow to adult height their
-        // head enters the lava and they die cooked, dropping onto the hoppers below.
-        // The glass walls (step 3) box the blade so it can't spill. Lava prints free.
-        for (int x = cx - 1; x <= cx + 1; x++) {
-            for (int z = cz - 1; z <= cz + 1; z++) {
+        // ── 3) THE 1-TALL GLASS PEN at y=2 (where the player puts the chickens) ──
+        // Solid-glass walls around the 3×3 hopper floor; chickens stand on the hoppers
+        // inside. The front-centre wall cell (cx, pz1) is left OPEN as the toss-in gap so
+        // the player drops chickens in. An outer stone rim at y=2 frames the build.
+        // 3a) glass box around the inner 3×3:
+        line(b, 2, px0, pz0, px1, pz0, glass);   // north pen wall
+        line(b, 2, px0, pz0, px0, pz1, glass);   // west pen wall
+        line(b, 2, px1, pz0, px1, pz1, glass);   // east pen wall
+        b.set(px0, 2, pz1, glass);               // south pen wall: west cell
+        b.set(px1, 2, pz1, glass);               // south pen wall: east cell ( cx OPEN = toss-in gap )
+        // 3b) outer stone rim at y=2 (perimeter of the 7×7), front alcove left open.
+        line(b, 2, x0, z0, x1, z0, stone);
+        line(b, 2, x0, z0, x0, z1, stone);
+        line(b, 2, x1, z0, x1, z1, stone);
+        for (int x = x0; x <= x1; x++) {
+            if (x >= cx - 1 && x <= cx + 1) continue;         // keep the alcove open above the chest
+            b.set(x, 2, z1, stone);
+        }
+
+        // ── 4) CONTAINMENT SLAB FLOOR at y=3 (holds the lava up) ─────────────────
+        // Smooth-stone BOTTOM slabs fill the 3×3 directly over the pen. Lava cannot
+        // flow down through a solid slab, so this is the floor the cook layer rests on:
+        // the lava can never fall onto the chickens or the hoppers. Glass rim outside.
+        for (int x = px0; x <= px1; x++) {
+            for (int z = pz0; z <= pz1; z++) {
+                b.set(x, 3, z, slabBot);
+            }
+        }
+        line(b, 3, x0, z0, x1, z0, glass); line(b, 3, x0, z1, x1, z1, glass);
+        line(b, 3, x0, z0, x0, z1, glass); line(b, 3, x1, z0, x1, z1, glass);
+
+        // ── 5) THE THIN LAVA COOK LAYER at y=4 (boxed + held up) ─────────────────
+        // A 3×3 lava sheet resting on the y=3 slabs, boxed by a glass rim so it can't
+        // spill sideways. A grown chicken below reaches its head up into the lava as it
+        // grows tall and dies cooked; the cooked chicken drops back DOWN to the hopper
+        // floor (which is lava-free — the slab floor blocks the lava). Lava prints free.
+        for (int x = px0; x <= px1; x++) {
+            for (int z = pz0; z <= pz1; z++) {
                 b.set(x, 4, z, lava);
             }
         }
+        line(b, 4, x0, z0, x1, z0, glass); line(b, 4, x0, z1, x1, z1, glass);
+        line(b, 4, x0, z0, x0, z1, glass); line(b, 4, x1, z0, x1, z1, glass);
 
-        // ── 5) CONTROL STACK above the blade, y=5..7 ─────────────────────────────
-        // A stone ceiling slab over the lava (so the blade is capped) carries the
-        // redstone control gear: a dispenser facing DOWN through a gap drops eggs back
-        // into the chamber, an observer + comparator + redstone ribbon tie the
-        // comparator-read hopper's fill level to that dispenser (the auto-restock loop).
-        floor(b, 5, x0, z0, x1, z1, stone);            // ceiling cap over the chamber
-        // dispenser facing down at the centre — overwrites the stone cap cell so it can
-        // throw eggs straight down into the growth chamber.
-        b.set(cx, 5, cz, bs("minecraft:dispenser[facing=down,triggered=false]"));
-        // comparator on the cap reading the chest/hopper fill, facing the dispenser;
-        // an observer beside it cleans the pulse, and a redstone ribbon carries the
-        // signal across the cap top. All sit on the solid y=5 stone ceiling.
-        b.set(cx + 1, 6, cz, bs("minecraft:comparator[facing=west,mode=compare,powered=false]")); // → toward dispenser
-        b.set(cx + 1, 6, cz + 1, bs("minecraft:observer[facing=west,powered=false]"));            // watches the dispenser line
-        b.set(cx, 6, cz, redDust);                                                                // ribbon over the dispenser
-        b.set(cx - 1, 6, cz, redDust);                                                            // ribbon run west
-        // (every y=6 control cell sits on the solid y=5 stone ceiling laid above.)
+        // ── 6) GLASS CAP COURSE y=5 + SLAB ROOF y=6 ──────────────────────────────
+        // A glass course over the cook layer keeps the lava contained from above, then a
+        // smooth-stone top-slab roof caps the whole cooker.
+        line(b, 5, x0, z0, x1, z0, glass); line(b, 5, x0, z1, x1, z1, glass);
+        line(b, 5, x0, z0, x0, z1, glass); line(b, 5, x1, z0, x1, z1, glass);
+        floor(b, 5, px0, pz0, px1, pz1, glass);        // glass lid directly over the lava
+        floor(b, 6, x0, z0, x1, z1, slabTop);          // smooth-stone slab roof cap
 
-        // ── 6) SLAB ROOF at y=7 ──────────────────────────────────────────────────
-        // Smooth-stone top slabs cap the build and shelter the control gear.
-        floor(b, 7, x0, z0, x1, z1, slabTop);
-
-        // ── 7) LABEL SIGNS on the SOUTH face, flanking the chest, y=1 ────────────
-        // Oak wall signs (FU-valued, recipe-derived) on the south rim either side of
-        // the chest-access front so the build reads as the chicken coop.
-        b.set(cx - 1, 1, z1, bs("minecraft:oak_wall_sign[facing=south]"));
-        b.set(cx + 1, 1, z1, bs("minecraft:oak_wall_sign[facing=south]"));
+        // ── 7) EXPLANATORY SIGNS (signText — title + clear instructions) ─────────
+        // All STANDING signs (oak_sign[rotation=8] = faces south), each resting on a
+        // SOLID block directly below it so they always render. The front-rim signs sit
+        // on the y=2 stone rim cells that flank the open chest alcove (x=0,1,5,6); the
+        // pen sign sits on the y=2 pen glass beside the toss-in gap. rotation=8 = south.
+        //
+        // Title — west front rim corner.
+        signText(b, "minecraft:oak_sign[rotation=8]", x0 + 1, 3, z1,
+                 "AUTO CHICKEN", "COOKER", "", "");
+        // "Put CHICKENS in the pen" — on the pen glass, right by the open toss-in gap.
+        signText(b, "minecraft:oak_sign[rotation=8]", px1, 3, pz1,
+                 "Put CHICKENS", "in the pen", "(toss them in", "the open gap)");
+        // "Lava cooks grown chickens" — west-most front rim cell.
+        signText(b, "minecraft:oak_sign[rotation=8]", x0, 3, z1,
+                 "Lava cooks the", "grown chickens.", "It is held up", "and contained.");
+        // "Cooked chicken collects in the chest" — east front rim, by the open alcove.
+        signText(b, "minecraft:oak_sign[rotation=8]", x1 - 1, 3, z1,
+                 "Cooked chicken", "collects in the", "chest in the", "open front alcove");
 
         return b.build();
     }
