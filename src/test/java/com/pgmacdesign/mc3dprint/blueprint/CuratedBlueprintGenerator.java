@@ -7363,21 +7363,31 @@ class CuratedBlueprintGenerator {
         //
         //  ┌ LEVELS ──────────────────────────────────────────────────────────────┐
         //  │ y=0       stone foundation                                            │
-        //  │ y=1       COLLECTION ROOM floor + hopper ring → chest; walk-in DOOR    │
-        //  │           on the south wall (sill at y=1) so the player strolls in.    │
-        //  │ y=2       KILL CHAMBER: golem lands on the hopper FLOOR (y=1) head at   │
-        //  │           y=2; a contained LAVA blade burns it at y=3; an oak_wall_sign │
-        //  │           in the cell directly BELOW the lava (y=2) stops the lava      │
-        //  │           pouring down onto the hoppers → iron drops survive on y=1.    │
-        //  │ y=3       lava blade (held) + collection-room ceiling                   │
-        //  │ y=4..8    DROP SHAFT — a stone tube whose 1×1 core funnels the golem     │
-        //  │           down from the spawn platform into the kill chamber.           │
+        //  │ y=1       COLLECTION ROOM floor + KILL CHAMBER. A 2×2 LAVA-CAULDRON    │
+        //  │           kill spot (golems land IN the lava and die) ringed by a      │
+        //  │           hopper floor that funnels iron → a chest in the walk-in room.│
+        //  │           Walk-in DOOR on the south wall (sill at y=1).                │
+        //  │ y=2       kill-chamber head room (golems are 2.7 tall); explanatory     │
+        //  │           signs; ceiling lanterns.                                     │
+        //  │ y=3       collection-room ceiling (2×2 drop mouth left OPEN).           │
+        //  │ y=4..8    DROP SHAFT — a stone tube whose 2×2 core funnels the golem     │
+        //  │           down from the spawn platform into the kill chamber. A 2×2     │
+        //  │           core clears the 1.4-block-wide iron golem with room to spare. │
         //  │ y=9       SPAWN PLATFORM — lit stone deck, water flowing INWARD pushes   │
-        //  │           golems to the central 1×1 drop hole.                          │
+        //  │           golems to the central 2×2 drop hole.                          │
         //  │ y=10..12  VILLAGER PODS (3 glass cells + beds) and the ZOMBIE cell;     │
         //  │           glass-walled spawn enclosure.                                 │
         //  │ y=13      slab roof.                                                    │
         //  └───────────────────────────────────────────────────────────────────────┘
+        //
+        // WHY LAVA-CAULDRON (the kill-chamber fix): the spawn-platform wash water
+        // pours straight down the central drop hole onto the kill block. A raw lava
+        // block touched by that water turns to OBSIDIAN — the kill dies and golems
+        // pile up. A minecraft:lava_cauldron is a single self-contained block that
+        // holds lava: it never flows/spreads and never converts to obsidian when
+        // water touches it, so the wash water pours down onto it harmlessly and it
+        // keeps killing. lava_cauldron is itemless (asItem()==AIR) → prints free as
+        // structural matter, same as the water/lava it replaces.
         Blueprint.Builder b = Blueprint.builder("Iron Farm", 13, 14, 13);
         // all vanilla, all FU-valued / structural-free:
         BlueprintBlockState stone     = bs("minecraft:stone");
@@ -7390,77 +7400,87 @@ class CuratedBlueprintGenerator {
         BlueprintBlockState chest     = bs("minecraft:chest[facing=north,type=single,waterlogged=false]");
         BlueprintBlockState lantern   = LANTERN;           // glowstone-free lighting, FU-valued
         BlueprintBlockState water     = WATER;             // structural (asItem()==AIR) → prints free
-        BlueprintBlockState lava      = LAVA;              // structural → prints free
+        BlueprintBlockState lavaCauldron = bs("minecraft:lava_cauldron"); // structural (asItem()==AIR) → prints free; water-safe kill block
 
         int x0 = 0, x1 = 12, z0 = 0, z1 = 12;            // 13×13 footprint
         int cx = 6, cz = 6;                               // centre column (kill / drop shaft)
+        // The drop / kill column is a 2×2 (the 1.4-block-wide iron golem won't reliably
+        // fit a 1×1). Core cells span x∈{cx-1,cx}, z∈{cz-1,cz}. A 4×4 ring around it
+        // (x∈{cx-2..cx+1}, z∈{cz-2..cz+1}) carries the stone shaft collar above and the
+        // iron-catching hopper floor below.
+        int dx0 = cx - 1, dx1 = cx, dz0 = cz - 1, dz1 = cz;       // 2×2 drop/kill core
+        int rx0 = cx - 2, rx1 = cx + 1, rz0 = cz - 2, rz1 = cz + 1; // 4×4 collar/hopper ring
 
         // ── 1) STONE FOUNDATION at y=0 ───────────────────────────────────────
         floor(b, 0, x0, z0, x1, z1, stone);
 
         // ── 2) COLLECTION ROOM, y=1..3 (the walk-in iron pickup) ─────────────
         // A 13×13 stone-brick walled room you can WALK INTO. Its floor is the
-        // foundation (y=0). The single central hopper at (cx,cz) sits at floor
-        // level (y=1) and feeds a chest beside it; a small hopper ring funnels
-        // wider drops in. A real DOOR on the south wall (sill at y=1) lets the
-        // player walk straight in to grab iron from the chest.
+        // foundation (y=0). The 2×2 lava-cauldron kill spot sits at the centre; a
+        // hopper ring around it funnels the iron the golems drop into a chest. A real
+        // DOOR on the south wall (sill at y=1) lets the player walk straight in.
         // 2a) stone-brick wall ring, y=1..3, interior open (enterable / standable).
         walls(b, x0, z0, x1, z1, 1, 3, bricks);
         // 2b) ceiling at y=3 closes the room (the kill chamber sits on top of it),
-        //     leaving the central 1×1 OPEN as the bottom of the drop/kill column so
-        //     the golem falls through onto the hopper.
+        //     leaving the central 2×2 OPEN as the bottom of the drop/kill column so
+        //     the golem falls through onto the lava cauldrons.
         for (int x = x0; x <= x1; x++) {
             for (int z = z0; z <= z1; z++) {
-                if (x == cx && z == cz) continue;        // drop hole down onto the hopper
+                if (x >= dx0 && x <= dx1 && z >= dz0 && z <= dz1) continue; // 2×2 drop mouth
                 b.set(x, 3, z, bricks);
             }
         }
-        // 2c) HOPPER FLOOR + chest. The central hopper catches the iron the golem
-        //     drops; the 4 orthogonal neighbours feed INTO it; the chest sits one
-        //     cell south and the south hopper feeds the chest instead.
-        b.set(cx, 1, cz, bs("minecraft:hopper[enabled=true,facing=south]"));      // catch → chest
-        b.set(cx, 1, cz + 1, chest);                                              // chest (facing=north → opens toward hopper)
-        b.set(cx - 1, 1, cz, bs("minecraft:hopper[enabled=true,facing=east]"));   // → centre hopper
-        b.set(cx + 1, 1, cz, bs("minecraft:hopper[enabled=true,facing=west]"));   // → centre hopper
-        b.set(cx, 1, cz - 1, bs("minecraft:hopper[enabled=true,facing=south]"));  // → centre hopper
+        // 2c) KILL CHAMBER + HOPPER FLOOR + chest, all at y=1.
+        //     • Inner 2×2 (the drop core) = LAVA CAULDRONS: golems fall down the shaft
+        //       and land IN the lava → they die. The wash water pouring down the shaft
+        //       lands on these cauldrons harmlessly (no obsidian, no spread).
+        //     • The 12-cell hopper ring around the cauldrons catches the iron that the
+        //       dying golems scatter outward and funnels it south to a collection hopper
+        //       → the chest. The chest sits 2 cells south of the ring, in the open room,
+        //       so the player walks in and grabs the iron.
+        for (int x = dx0; x <= dx1; x++) {
+            for (int z = dz0; z <= dz1; z++) {
+                b.set(x, 1, z, lavaCauldron);            // 2×2 lava-cauldron kill spot
+            }
+        }
+        //     Hopper ring: north/west/east rows feed SOUTH into the z=rz1 row; the
+        //     z=rz1 row funnels along X toward (cx, rz1), which drops into a collection
+        //     hopper one cell further south, which feeds the chest. All ring cells are
+        //     the 4×4 minus the inner 2×2 core.
+        for (int x = rx0; x <= rx1; x++) {
+            for (int z = rz0; z <= rz1; z++) {
+                if (x >= dx0 && x <= dx1 && z >= dz0 && z <= dz1) continue; // skip the cauldron core
+                String facing;
+                if (z == rz1) {
+                    // south row of the ring → funnel along X toward column cx
+                    facing = (x < cx) ? "east" : (x > cx) ? "west" : "south";
+                } else {
+                    // every other ring cell pushes SOUTH toward the south row
+                    facing = "south";
+                }
+                b.set(x, 1, z, bs("minecraft:hopper[enabled=true,facing=" + facing + "]"));
+            }
+        }
+        //     Collection hopper one cell south of the ring's drain (cx, rz1) → chest.
+        b.set(cx, 1, rz1 + 1, bs("minecraft:hopper[enabled=true,facing=south]")); // drain → chest
+        b.set(cx, 1, rz1 + 2, chest);                                             // chest (facing=north → opens toward the player walking in)
         // 2d) WALK-IN DOOR on the south wall, sill at floor level (y=1..2). Walk
         //     straight in from outside; door2 places both halves (render-safe).
         door2(b, cx, 1, z1, "oak", "S");
-        // 2e) interior lantern on the ceiling underside so the room is lit for pickup
-        //     (lantern hangs under the y=3 brick ceiling at a clear corner cell).
+        // 2e) interior lanterns on the ceiling underside so the room is lit for pickup
+        //     (lantern hangs under the y=3 brick ceiling at clear corner cells).
         b.set(x0 + 2, 2, z0 + 2, bs("minecraft:lantern[hanging=true]"));
         b.set(x1 - 2, 2, z0 + 2, bs("minecraft:lantern[hanging=true]"));
 
-        // ── 3) KILL CHAMBER with CONTAINED LAVA BLADE, y=2..3 ────────────────
-        // The KEY FIX. The golem falls down the central 1×1 column and lands on the
-        // hopper at y=1 (foot level). One block up (y=2) is its HEAD; the lava blade
-        // sits at y=3 so it burns the golem WITHOUT touching the hopper. The lava is
-        // HELD up there by an oak_wall_sign in the cell DIRECTLY BELOW it (y=2):
-        // lava can't flow down through a sign, so it can never reach the hoppers and
-        // the iron drops survive on the hopper at y=1.
-        //
-        //   y=3   [ LAVA ]   ← kill blade (one source, contained)
-        //   y=2   [ sign  ]   ← oak_wall_sign holds the lava up (no down-flow)
-        //   y=1   [hopper ]   ← golem feet + dropped iron land here, lava-free
-        //
-        // A STANDING oak_sign occupies the (cx,2,cz) cell (it rests on the hopper at
-        // y=1). A standing sign fully blocks downward lava flow, so the lava at y=3
-        // has a solid floor and can NEVER pour onto the hopper. This is the contained
-        // lava blade: kills at head level, leaves the hopper at foot level lava-free.
-        signText(b, "minecraft:oak_sign[rotation=8]", cx, 2, cz,
-                 "KILL CHAMBER", "Lava held up by", "this sign so iron", "survives below");
-        // the lava blade: a single contained source at y=3 over the kill cell.
-        b.set(cx, 3, cz, lava);
-
         // ── 4) DROP SHAFT, y=4..8 (the funnel tube) ──────────────────────────
-        // A solid stone tube whose inner 1×1 core (cx,cz) is hollow: the golem the
-        // water pushes into the centre hole falls ~5 blocks down this chute and lands
-        // in the kill chamber. The walls keep it in the chute as it falls.
+        // A solid stone tube whose inner 2×2 core is hollow: the golem the water pushes
+        // into the centre hole falls ~5 blocks down this chute and lands in the lava
+        // cauldrons below. The 4×4 outer wall (inner 2×2 left OPEN = air-skip) keeps the
+        // golem in the chute as it falls.
         for (int y = 4; y <= 8; y++) {
-            // a 3×3 stone collar around the 1×1 core (core left OPEN = air-skip)
-            for (int x = cx - 1; x <= cx + 1; x++) {
-                for (int z = cz - 1; z <= cz + 1; z++) {
-                    if (x == cx && z == cz) continue;    // hollow fall core
+            for (int x = rx0; x <= rx1; x++) {
+                for (int z = rz0; z <= rz1; z++) {
+                    if (x >= dx0 && x <= dx1 && z >= dz0 && z <= dz1) continue; // hollow fall core
                     b.set(x, y, z, stone);
                 }
             }
@@ -7468,19 +7488,19 @@ class CuratedBlueprintGenerator {
 
         // ── 5) SPAWN PLATFORM at y=9 ─────────────────────────────────────────
         // A 13×13 stone deck — the lit area where iron golems spawn within the
-        // villagers' range. The central 1×1 (cx,cz) is left OPEN as the drop hole.
-        // Water sources at the four mid-edges flow INWARD across the deck, pushing
-        // any spawned golem to the centre hole and down the shaft.
+        // villagers' range. The central 2×2 (the drop core) is left OPEN as the drop
+        // hole. Water sources at the four mid-edges flow INWARD across the deck, pushing
+        // any spawned golem to the 2×2 hole and down the shaft.
         for (int x = x0; x <= x1; x++) {
             for (int z = z0; z <= z1; z++) {
-                if (x == cx && z == cz) continue;        // drop hole
+                if (x >= dx0 && x <= dx1 && z >= dz0 && z <= dz1) continue; // 2×2 drop hole
                 b.set(x, 9, z, stone);
             }
         }
         // FOUR water sources on the deck (y=10), set 3 cells out from the centre on
         // the N/S/E/W arms of a cross — clear of the south-wall villager pods and the
         // east-wall zombie cell. Each flows the remaining 3 blocks inward toward the
-        // central 1×1 drop hole — the only low point — sweeping any spawned golem to
+        // central 2×2 drop hole — the only low point — sweeping any spawned golem to
         // the hole and down the shaft. (Static capture; the player re-places a source
         // if one drifts on first power-up.)
         b.set(cx - 3, 10, cz, water);                    // west  → flows east  to centre
@@ -7559,13 +7579,18 @@ class CuratedBlueprintGenerator {
                  "Iron golems", "spawn on this", "platform. Water", "pushes them down");
         // "Water pushes golems down to the kill chamber" — near the west water source.
         signText(b, "minecraft:oak_sign[rotation=4]", x0 + 2, 10, cz - 2,
-                 "Water flows IN", "to the centre", "hole -> golems", "fall to the lava");
+                 "Water flows IN", "to the 2x2 hole", "-> golems fall", "to the cauldrons");
         // Collection-room sign: mounted on the INNER face of the north wall (z=z0),
         // one cell in (z0+1) facing south so it reads as the player walks in through
         // the south door and looks across the room. (facing=south attaches to the
         // solid brick wall block at z=z0 to its north → render-safe.)
         signText(b, "minecraft:oak_wall_sign[facing=south]", cx, 2, z0 + 1,
-                 "COLLECTION", "Iron collects in", "this chest. Lava", "is held safe above");
+                 "COLLECTION", "Golems die in the", "lava cauldrons;", "iron -> this chest");
+        // Kill-chamber explainer, mounted on the INNER face of the EAST wall (x=x1),
+        // one cell in (x1-1) facing west so the wall block at x1 to its east backs it
+        // → render-safe. Explains the water-safe lava-cauldron kill.
+        signText(b, "minecraft:oak_wall_sign[facing=west]", x1 - 1, 2, cz,
+                 "KILL CHAMBER", "Lava cauldrons", "(water-safe, no", "obsidian) kill here");
 
         return b.build();
     }
