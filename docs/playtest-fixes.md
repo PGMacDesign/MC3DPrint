@@ -30,7 +30,13 @@ Leftover unchecked items carry over to the next session.
 - [ ] cactus_farm — no cactus planted; cactus breaks if ANY solid block is horizontally adjacent, and two cacti can't be adjacent (need gaps). Correct design: spaced cactus columns on sand, a "breaker" block at the 2nd segment height beside each so grown segments auto-break and fall into water → hopper → chest (no redstone needed). Also: cobblestone on top of the chests blocks them — use glass or nothing.
 - [ ] bamboo_farm — no bamboo planted; observers fire once on plant then never again (watching the wrong cell). Bamboo grows UP; observer must watch the growth cell so it re-fires each growth → piston breaks → water/hopper. Or simpler reliable design.
 - [ ] kelp_farm — no kelp planted; a redstone piece broke off on print (redstone can't sit in/under water). Kelp grows UP underwater; redstone control must be in a DRY (glass-enclosed) chamber. Plant kelp on a solid block underwater; harvest at the top; collect.
-- [ ] animal_pen — no flooring (add a floor). Feature request: place a spawn egg to add a pig/cow — mobs are ENTITIES (can't print); spawn eggs are items, not placeable blocks. Could optionally stock spawn eggs in a chest (item NBT) — discuss with user.
+- [ ] animal_pen — no flooring (add a floor). Feature request: place a spawn egg to add a pig/cow — mobs are ENTITIES (can't print); spawn eggs are items, not placeable blocks. Could optionally stock spawn eggs in a chest (item NBT, creative-only items) — awaiting user decision.
+- [ ] tree_farm — fundamentally over-engineered/can't full-auto: trees don't regrow (sapling consumed on harvest), observers/hopper-under-dirt won't work. Per user, NOT a rabbit hole to chase — SIMPLIFY to an honest semi-auto plantation: spaced saplings on dirt with growth room + log/sapling collection (water/hoppers) + player replants. Reliable, not fake.
+
+- [ ] apothecary_shop — a row of potted plants floats in mid-air and blocks the walkway. Put them on a shelf/counter/surface (or remove the ones blocking the path) so they're not floating and you can walk through.
+
+## Strategy note (farms)
+Regrowing crops (cactus/bamboo/kelp/cane✓/melon✓) → make them actually work. Non-regrowing (trees) → simplify to honest semi-auto. Remaining unflagged farms to proactively check: villager_trading_hall, fishery_pond, mushroom_farm.
 - [x] sugarcane_farm_auto — water now adjacent to the sand at the soil's own level (y=1) so canSurvive passes (cane no longer pops on print); observers raised to the cane's 2nd block for correct harvest; snapped cane → water → hopper → chest.
 - [x] super_smelter — full row of input chests, each with a down-hopper feeding its own furnace; fuel + output extended across the whole bank so all 5 furnaces run in parallel.
 - [x] map_room — filled the 4 corner gaps (potted cornflowers at the entry, barrels by the cartography table).
