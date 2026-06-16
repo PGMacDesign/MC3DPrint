@@ -22,7 +22,7 @@ Leftover unchecked items carry over to the next session.
 
 ## Needs rework (farms)
 - [x] iron_farm — **lava-cauldron kill** (water-safe, no obsidian, contained) + **2×2 drop** for 1.4-wide golems; hopper ring → chest. (lava_cauldron confirmed printable = itemless/structural.)
-- [ ] chicken_coop_auto — lava leaks (1-block air moat around it) AND is sealed away from the chickens (can't cook). Redesign with a contained **lava cauldron** cooker (now proven printable) + accessible chest.
+- [x] chicken_coop_auto — redesigned with contained **lava cauldrons** (no raw lava → no leak/obsidian); glass pen on a hopper grid, toss-in gap, accessible front chest, explanatory signs.
 - [ ] mob_xp_tower — mechanism still unclear/messy. Clarity rework (clear spawn→water→drop→kill→collect path + access).
 
 ## Open (new findings, in order)
