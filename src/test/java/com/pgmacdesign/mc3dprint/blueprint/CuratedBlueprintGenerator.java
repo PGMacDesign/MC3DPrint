@@ -8998,11 +8998,16 @@ class CuratedBlueprintGenerator {
      *       comparator/repeater/redstone readout runs along the front lip here.</li>
      *   <li><b>y=2</b> — FURNACE BANK: five furnaces facing south (out the open
      *       front), each sitting on the output hopper below it, plus the fuel
-     *       hopper line behind them (north, z=1) feeding the furnaces' sides.</li>
-     *   <li><b>y=3</b> — INPUT layer: a hopper line over the furnace tops, fed from
-     *       the input chest, distributing ore down into each furnace.</li>
-     *   <li><b>y=4</b> — smooth-stone roof + glowstone light; the input chest sits
-     *       on the roof rim at the back so the player can reach it.</li>
+     *       hopper line behind them (north, z=2) feeding the furnaces' sides — one
+     *       fuel hopper per furnace.</li>
+     *   <li><b>y=3</b> — INPUT down-hoppers (one over each furnace top) + the FUEL
+     *       chest row (one chest over each fuel hopper at z=2). Each input hopper
+     *       drops ore straight into the furnace below it; each fuel chest drops coal
+     *       into the fuel hopper below it. No items are funnelled west→east, so EVERY
+     *       furnace is fed independently — no single-furnace bottleneck.</li>
+     *   <li><b>y=4</b> — smooth-stone roof + glowstone light; the INPUT CHEST ROW
+     *       (one chest per furnace, x=1..5, sitting on each input down-hopper) lines
+     *       the back of the roof so the player can tip ore into any/all furnaces.</li>
      * </ul>
      */
     private static Blueprint superSmelter() {
@@ -9068,34 +9073,42 @@ class CuratedBlueprintGenerator {
         }
 
         // ── 6) FUEL HOPPER LINE, y=2 (behind the bank, z=2) → into furnace sides ──
-        // A hopper line one row north of the furnaces, each hopper facing south so it
-        // pushes fuel sideways into the adjacent furnace's fuel slot. Fed from the
-        // fuel chest at the west end.
+        // A hopper line one row north of the furnaces (x=1..5, z=2), each hopper
+        // facing south so it pushes fuel sideways into the furnace directly in front
+        // of it — that hopper's OUTPUT face points at the furnace, so it lands in the
+        // FUEL slot. One fuel hopper per furnace; none chain east/west, so every
+        // furnace is fuelled independently (the y=3 fuel-chest row above tops each).
         for (int x = bankX0; x <= bankX1; x++) {
             b.set(x, 2, bankZ - 1, bs("minecraft:hopper[enabled=true,facing=south]")); // → furnace fuel slot
         }
-        // FUEL CHEST at the west end of the fuel line (player tops up coal here)
-        b.set(bankX0 - 1 + 1, 2, bankZ - 2, CHEST); // (1,2,1) feeds the fuel line southward
-        b.set(bankX0, 2, bankZ - 2, bs("minecraft:hopper[enabled=true,facing=south]")); // chest → fuel line
+        // FUEL CHEST ROW, y=3 (one chest per fuel hopper, x=1..5, z=2). Each chest sits
+        // directly on the fuel hopper below it, so coal tipped into any chest drops into
+        // its hopper → that furnace's fuel slot. Mirrors the input row: every furnace
+        // gets fuel independently, no west-end bottleneck.
+        for (int x = bankX0; x <= bankX1; x++) {
+            b.set(x, 3, bankZ - 1, CHEST);         // (x,3,2) fuel chest → fuel hopper below
+        }
 
-        // ── 7) INPUT LAYER, y=3 — hopper line over furnace tops, fed by input chest ──
+        // ── 7) INPUT LAYER, y=3 — down-hopper over every furnace top (one per furnace) ──
         // Five hoppers above the furnace row (x=1..5, z=3) each face DOWN so ore drops
-        // straight into the furnace below. They're chained west→east from the input
-        // chest so a single drop distributes across the bank.
+        // straight into the furnace directly below it. They do NOT chain — each is fed
+        // independently by its own input chest on the roof (y=4) directly above, so EVERY
+        // furnace receives ore in parallel (fixes the old single-furnace bottleneck).
         for (int x = bankX0; x <= bankX1; x++) {
             b.set(x, 3, bankZ, bs("minecraft:hopper[enabled=true,facing=down]")); // → furnace top below
         }
-        // a west-end feeder hopper carries the input chest's contents east into the line
-        b.set(bankX0, 3, bankZ - 1, bs("minecraft:hopper[enabled=true,facing=south]")); // input → bank
 
-        // ── 8) ROOF y=4 + INPUT CHEST + LIGHT ────────────────────────────────────
-        // Smooth-stone roof over the machine, a glowstone block recessed into the
-        // centre for full lighting, and the INPUT chest sitting on the back-roof rim
-        // (x=1, z=1) where the player tips in raw ore — it falls to the y=3 feeder.
+        // ── 8) ROOF y=4 + INPUT CHEST ROW + LIGHT ────────────────────────────────
+        // Smooth-stone roof over the machine, a glowstone block recessed into the front
+        // centre for full lighting, and a FULL ROW of INPUT CHESTS (one per furnace,
+        // x=1..5, z=3) sitting directly on the input down-hoppers. Ore tipped into any
+        // input chest falls through its hopper into the furnace below it, so the player
+        // can load every furnace at once and the whole bank smelts in parallel.
         floor(b, 4, x0, z0, x1, z1, smoothStone);
-        b.set(3, 4, 3, GLOWSTONE);                 // ceiling-centre light
-        // INPUT chest perched on the roof at the back-west, reachable from outside
-        b.set(bankX0, 4, bankZ - 1, CHEST);        // (1,4,2) input chest on the roof rim
+        b.set(3, 4, bankZ + 1, GLOWSTONE);         // (3,4,4) front-centre ceiling light
+        for (int x = bankX0; x <= bankX1; x++) {
+            b.set(x, 4, bankZ, CHEST);             // (x,4,3) input chest → down-hopper → furnace
+        }
         // smooth-stone-slab catwalk lip along the open front edge for a tidy finish
         for (int x = x0; x <= x1; x++) {
             b.set(x, 4, z1, smoothSlab);           // front roof eave (z=6) as a slab brow
