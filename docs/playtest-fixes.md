@@ -35,7 +35,7 @@ Leftover unchecked items carry over to the next session.
 
 - [x] apothecary_shop — removed the floating head-height herb row (potted_* + hanging lantern at y=2 across z=4 that blocked the aisle); relocated the 5 bloom types onto surfaces (bookshelf tops, barrel tops, counter); central aisle (x=2..4) now clear at y=1 and y=2 front-to-back; the one hanging lantern moved off the aisle against the west wall.
 
-- [ ] greenhouse — entering drops you into the central water channel with no way out. Fix: top the water with bottom slabs (waterlogged path) so you walk above it, OR move the door + give a dry walk-in path; may need a step/stairs up a level.
+- [x] greenhouse — central aisle water channel (x=4, y=0) that the door dumped you into is now covered with flush waterlogged TOP slabs (walk above the water, dry feet, flush with the floor — no entry pit, walk in/out freely); each planter bed got its own y=1 water source so crops stay irrigated. No stairs/2nd level needed (single-storey).
 - [ ] tavern_inn — can't reach the stairs to the 2nd floor; even if reached, head hits the ceiling (need more headroom/taller 2nd floor); 2nd-floor inn rooms are sparse — furnish them.
 - [ ] stable_horse (Horse Stable) — the gate + ladder don't actually lead to the 2nd floor; no way up without breaking blocks. Make the ladder/access actually reach the upper level.
 
