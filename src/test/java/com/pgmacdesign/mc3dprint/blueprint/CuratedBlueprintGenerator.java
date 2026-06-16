@@ -11890,11 +11890,17 @@ class CuratedBlueprintGenerator {
      *       caged-lava fireplace (lava boxed by iron bars / cobble with a chimney that
      *       rises through the roof), and two stair-seat tables.</li>
      *   <li><b>Floor break, y=6</b> — a spruce-plank ceiling/upper floor over the
-     *       whole footprint EXCEPT a 1-cell stair hatch, so the two floors connect.
-     *       An oak stair run climbs the south-west corner from y=1 to the hatch.</li>
+     *       whole footprint EXCEPT a 2-cell stair hatch, so the two floors connect.
+     *       A spruce stair run climbs column x=2 (one bay east of the chimney, clear of
+     *       the fireplace/keg/bar/tables), mounting from the open common-room floor and
+     *       rising y=1..5 toward -z. The hatch is opened over the top two steps so a
+     *       climbing head never meets plank, and the player tops out onto a solid deck
+     *       landing in the north guest room with full headroom.</li>
      *   <li><b>Upper story, y=7..10</b> — a second {@link #timberFrame} ring with its
      *       own windows; the interior is split by a spruce-plank partition into two
-     *       guest bedrooms, each with a {@link #bed}, a lantern, and a window.</li>
+     *       furnished guest bedrooms, each with an intact {@link #bed}, a carpet rug, a
+     *       nightstand (barrel/chest) topped with a potted bloom, two lanterns, and a
+     *       guest bookshelf.</li>
      *   <li><b>Roof, y=10..16</b> — a spruce {@link #gableRoofX} with
      *       {@link #gableEndFill} closed gable ends; the cobble chimney pokes through
      *       the north slope. Hanging tavern sign + chain lanterns dress the front
@@ -12009,25 +12015,48 @@ class CuratedBlueprintGenerator {
         b.set(x1 - 1, g0, z1 - 2, LANTERN);
 
         // ── 4) FLOOR BREAK (y=6) — upper floor with a stair hatch ────────────
-        // interior STAIR run climbing the south-west corner (column x=x0+1) from the
-        // ground floor up to the upper deck: one spruce stair per z-row, facing north
-        // (so you climb toward -z), rising y=1..5 across z = z1 .. z1-4. The top step
-        // is at (x0+1, 5, z1-4) → you emerge standing at deck height over z1-5.
-        int stairTopZ = z1 - 4;   // 8
+        // interior STAIR run climbing column x=x0+2 (one bay east of the chimney/west
+        // wall, clear of the fireplace at x≤x0+2/y=1, the keg & bar at the back, and
+        // the east-side tables). It climbs toward -z (facing=north → each step presents
+        // its low riser to a player walking north, so the run is genuinely mountable),
+        // rising y=1..5 across z = z1-2 .. z1-6:
+        //
+        //   bottom step (x0+2, 1, z1-2)  ← mounted from the OPEN floor at z1-1
+        //               (x0+2, 2, z1-3)
+        //               (x0+2, 3, z1-4)
+        //               (x0+2, 4, z1-5)  ← head reaches y=6 → hatch cell above it
+        //   top step    (x0+2, 5, z1-6)  ← head reaches y=6 → hatch cell above it
+        //
+        // The player tops out on the high (north) back of the top step and walks
+        // forward (north) onto the SOLID deck landing at (x0+2, 6, z1-7), which has two
+        // clear cells of headroom above (y=7,y=8 in the north guest room) and is not
+        // boxed in by the chimney (x0+1) or the room partition (z=cz).
+        int stairCol  = x0 + 2;       // 2
+        int stairBotZ = z1 - 2;       // 10 (one bay in from the south wall → mountable)
+        int stairTopZ = z1 - 6;       // 6  (top step)
+        int landingZ  = z1 - 7;       // 5  (deck landing in the north room)
         for (int i = 0; i <= 4; i++) {
-            int sz = z1 - i;
-            int sy = g0 + i;
-            b.set(x0 + 1, sy, sz, bs("minecraft:spruce_stairs[facing=north,half=bottom,shape=straight]"));
+            int sz = stairBotZ - i;   // 10,9,8,7,6
+            int sy = g0 + i;          // 1,2,3,4,5
+            b.set(stairCol, sy, sz, bs("minecraft:spruce_stairs[facing=north,half=bottom,shape=straight]"));
         }
-        // spruce-plank deck over the whole footprint; the hatch (column x=x0+1 at the
-        // top of the stairs, z = stairTopZ and the cell one north of it) is left UNSET
-        // so you can walk up off the stair onto the upper floor.
+        // spruce-plank deck over the whole footprint. The hatch (UNSET deck cells) is
+        // opened over the upper portion of the run so a climbing head never hits plank:
+        // the two top steps (z = stairTopZ and stairTopZ+1) sit under open sky to the
+        // deck — the steps below them top out under y=5/4 with their own clearance, so
+        // only these two y=6 cells must be cut. The landing cell (stairCol, 6, landingZ)
+        // stays SOLID so the emerging player has a floor to step onto.
         for (int x = x0; x <= x1; x++) {
             for (int z = z0; z <= z1; z++) {
-                if (x == x0 + 1 && (z == stairTopZ || z == stairTopZ - 1)) continue; // stair hatch
+                if (x == stairCol && (z == stairTopZ || z == stairTopZ + 1)) continue; // stair hatch
                 b.set(x, upFloorY, z, floorMat);
             }
         }
+        // a low banister reads the open stairwell as finished: oak fences on the solid
+        // deck along the SOUTH-east edge of the hatch (clear of the climb column, the
+        // partition at z=cz, and the landing path to the north).
+        b.set(stairCol + 1, u0, stairTopZ + 1, OAK_FENCE); // (3,7,7)
+        b.set(stairCol + 1, u0, stairTopZ + 2, OAK_FENCE); // (3,7,8)
 
         // ── 5) UPPER STORY (y=7..10) — timber-frame ring + guest bedrooms ────
         timberFrame(b, x0, z0, x1, z1, u0, u1, planks, studY, studX);
@@ -12051,24 +12080,54 @@ class CuratedBlueprintGenerator {
         }
 
         // interior partition splitting the upper floor into two guest bedrooms,
-        // running along X at z=cz (skip the chimney cell so it isn't doubled, and
-        // leave a 1-cell doorway gap at x=cx so both rooms are reachable from the
-        // stair landing). The partition is a plank wall y=7..9 (head clearance under
-        // the gable above y=10).
+        // running along X at z=cz (skip the chimney cell so it isn't doubled, the
+        // stairwell column so the emerging head has clearance, and leave a 1-cell
+        // doorway gap at x=cx so both rooms are reachable). The partition is a plank
+        // wall y=7..9 (head clearance under the gable above y=10).
         for (int x = x0 + 1; x <= x1 - 1; x++) {
             if (x == cx) continue;            // doorway gap between the rooms
-            if (x == x0 + 1) continue;        // leave the chimney/landing column clear
+            if (x == x0 + 1) continue;        // chimney column
+            if (x == stairCol) continue;      // stairwell / landing column (head clearance)
             for (int y = u0; y <= u1 - 1; y++) {
                 b.set(x, y, cz, planks);
             }
         }
-        // guest bedrooms: a bed + a floor lantern in each room (on the y=7 floor).
-        // North room (z0 side): bed head at z0+1 facing north (foot at z0+2).
+
+        // ── guest bedrooms — furnish each like a real inn room (on the y=7 floor) ──
+        // Each room keeps its intact (head+foot) bed and adds: a carpet rug, a
+        // nightstand (barrel/chest "luggage") with a potted bloom on top, a second
+        // lantern, and a guest bookshelf. All blocks are vanilla & FU-valued or
+        // itemless-structural (carpet/potted/flower_pot); nothing intrudes into the
+        // y=7/y=8 head space the player walks through (decor on a nightstand sits at
+        // y=8 ON the barrel, where the player never stands).
+        BlueprintBlockState rugN     = bs("minecraft:light_blue_carpet");
+        BlueprintBlockState rugS     = bs("minecraft:red_carpet");
+        BlueprintBlockState pottedN   = bs("minecraft:potted_blue_orchid");
+        BlueprintBlockState pottedS   = bs("minecraft:potted_poppy");
+
+        // North room (z0 side): bed head at z0+1 facing north (foot at z0+2), east side.
         bed(b, x1 - 1, u0, z0 + 1, "red", "north");
-        b.set(x0 + 2, u0, z0 + 1, LANTERN);
-        // South room (z1 side): bed head at z1-1 facing south (foot at z1-2).
+        b.set(x0 + 2, u0, z0 + 1, LANTERN);                 // keep the original corner lantern
+        // a 2×2 wool rug centred in the room
+        b.set(x0 + 4, u0, z0 + 3, rugN); b.set(x0 + 5, u0, z0 + 3, rugN);
+        b.set(x0 + 4, u0, z0 + 4, rugN); b.set(x0 + 5, u0, z0 + 4, rugN);
+        // nightstand: a barrel beside the bed head with a potted orchid on top
+        b.set(x1 - 2, u0, z0 + 1, BARREL);
+        b.set(x1 - 2, u0 + 1, z0 + 1, pottedN);
+        b.set(x1 - 1, u0, z0 + 3, BOOKSHELF);               // guest bookshelf, east wall
+        b.set(x0 + 3, u0, z0 + 1, LANTERN);                 // second lantern
+
+        // South room (z1 side): bed head at z1-1 facing south (foot at z1-2), east side.
         bed(b, x1 - 1, u0, z1 - 1, "red", "south");
-        b.set(x1 - 1, u0, cz + 1, LANTERN);
+        b.set(x1 - 1, u0, cz + 1, LANTERN);                 // keep the original lantern
+        // a 2×2 wool rug centred in the room
+        b.set(x0 + 4, u0, z1 - 4, rugS); b.set(x0 + 5, u0, z1 - 4, rugS);
+        b.set(x0 + 4, u0, z1 - 3, rugS); b.set(x0 + 5, u0, z1 - 3, rugS);
+        // nightstand: a chest "as luggage" beside the bed head with a potted poppy on top
+        b.set(x1 - 2, u0, z1 - 1, CHEST);
+        b.set(x1 - 2, u0 + 1, z1 - 1, pottedS);
+        b.set(x1 - 1, u0, z1 - 3, BOOKSHELF);               // guest bookshelf, east wall
+        b.set(x0 + 3, u0, z1 - 1, LANTERN);                 // second lantern
 
         // ── 6) ROOF (y=10..16) — spruce gable, closed ends, chimney pokes out ─
         gableRoofX(b, x0, z0, x1, z1, u1, "spruce_stairs", SPRUCE_SLAB_BOTTOM);
