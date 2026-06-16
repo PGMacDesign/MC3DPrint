@@ -26,6 +26,7 @@ Leftover unchecked items carry over to the next session.
 - [x] mob_xp_tower — clarity rework: walk-in kill chamber (door), AFK spot + iron-bar kill slot, glass viewing window, accessible chest, dry landing (removed base water), explanatory signs.
 
 ## Open (new findings, in order)
+- [ ] sugarcane_farm_auto — all cane breaks on print. Root cause: water is at y=0 (floor) but the sand soil is at y=1, so the soil has NO horizontally-adjacent water at its own level → cane fails canSurvive on the print's neighbor reconcile. Fix: put water adjacent to each sand block at y=1; also raise the observers to the cane's 2nd-block height for correct harvest timing; verify collection still reaches the hopper.
 - [x] super_smelter — full row of input chests, each with a down-hopper feeding its own furnace; fuel + output extended across the whole bank so all 5 furnaces run in parallel.
 - [x] map_room — filled the 4 corner gaps (potted cornflowers at the entry, barrels by the cartography table).
 - [x] mineshaft_entrance — was a sealed facade; opened a 2-tall walk-in tunnel mouth + rails leading in + an open dig-down shaft start at the back (surface entrance marker).
