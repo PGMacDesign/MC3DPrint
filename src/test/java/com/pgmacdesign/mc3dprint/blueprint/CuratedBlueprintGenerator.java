@@ -7665,7 +7665,7 @@ class CuratedBlueprintGenerator {
         // ── 4) SPAWN PLATFORM at y=19 ────────────────────────────────────────
         // A 7×7 deepslate-tile-slab floor (bottom slabs = solid spawnable surface)
         // with the central 3×3 left OPEN as the drop hole. Water at the four
-        // mid-edges flows toward the hole and pushes spawned mobs in.
+        // mid-edges flows INWARD to the hole and pushes spawned mobs in.
         int px0 = x0 + 1, px1 = x1 - 1, pz0 = z0 + 1, pz1 = z1 - 1; // 1..7 (7×7)
         for (int x = px0; x <= px1; x++) {
             for (int z = pz0; z <= pz1; z++) {
@@ -7673,11 +7673,21 @@ class CuratedBlueprintGenerator {
                 b.set(x, 19, z, slabBot);
             }
         }
-        // water channels: a source at each mid-edge of the platform, flowing inward.
-        b.set(px0, 19, cz, water);                    // west channel
-        b.set(px1, 19, cz, water);                    // east channel
-        b.set(cx, 19, pz0, water);                    // north channel
-        b.set(cx, 19, pz1, water);                    // south channel
+        // 4a) RETAINING LIP at platform level (y=19): a full 9×9 deepslate ring on
+        //     the outer perimeter. WITHOUT this, the spawn-chamber walls only start
+        //     at y=20, so the platform's outer edge was OPEN air and the edge water
+        //     sources spread OUTWARD off the rim and poured down the OUTSIDE of the
+        //     tower. The lip is one block taller than the platform surface, so flow
+        //     can only go INWARD across the slab tops toward the central hole.
+        walls(b, x0, z0, x1, z1, 19, 19, deepslate);
+        // 4b) water sources sit on the platform's OUTER slab edge, hard against the
+        //     lip, so the lip blocks the outward direction and each source flows the
+        //     only way it can — inward toward the central drop hole (≤2 cells away,
+        //     well inside water's 7-block reach), washing spawned mobs in.
+        b.set(px0, 19, cz, water);                    // west  edge → flows east  to hole
+        b.set(px1, 19, cz, water);                    // east  edge → flows west  to hole
+        b.set(cx, 19, pz0, water);                    // north edge → flows south to hole
+        b.set(cx, 19, pz1, water);                    // south edge → flows north to hole
 
         // ── 5) SPAWN CHAMBER WALLS y=20..22 + DARK ROOF y=23 ─────────────────
         // Stone walls box the platform; a cobble corner course ties them. The
@@ -7687,11 +7697,23 @@ class CuratedBlueprintGenerator {
         corners(b, x0, z0, x1, z1, 20, 22, cobble);
         floor(b, 23, x0, z0, x1, z1, slabRoof);
 
-        // ── 6) LABEL SIGNS on the SOUTH sump face, y=2 ───────────────────────
-        // Oak wall signs flanking the viewing window (FU-valued, recipe-derived),
-        // mounted on the outside of the south wall (facing=south, +z).
-        b.set(cx - 2, 2, z1, bs("minecraft:oak_wall_sign[facing=south]"));
-        b.set(cx + 2, 2, z1, bs("minecraft:oak_wall_sign[facing=south]"));
+        // ── 6) EXPLANATORY SIGNS (signText — title + how-it-works) ───────────
+        // Mounted on the INNER face of the NORTH sump wall: facing=south signs at
+        // z=z0+1 attach northward to the solid deepslate wall at z=z0 → render-safe,
+        // and read as the player stands at the south kill slot looking across the
+        // sump toward the north wall. The sump interior at y=2..3 is open air here.
+        signText(b, "minecraft:oak_wall_sign[facing=south]", cx, 3, z0 + 1,
+                 "MOB XP TOWER", "", "Mobs spawn in the", "dark room above");
+        signText(b, "minecraft:oak_wall_sign[facing=south]", cx - 2, 3, z0 + 1,
+                 "Water washes", "them to the", "centre drop and", "down the shaft");
+        signText(b, "minecraft:oak_wall_sign[facing=south]", cx + 2, 3, z0 + 1,
+                 "Drops collect", "in the chest", "below — hopper", "ring feeds it");
+        // Kill-slot instructions: a standing sign on the slab roof of the sump, just
+        // OUTSIDE the south kill slot where the player stands. rotation=0 faces north
+        // (+ -z) so it reads as the player walks up to the slot; it sits on the y=2
+        // ceiling deepslate at (cx, 3, z1) which is solid below → render-safe.
+        signText(b, "minecraft:oak_sign[rotation=0]", cx, 5, z1,
+                 "Stand here and", "hit mobs through", "the bars for XP", "(kill slot below)");
 
         return b.build();
     }
