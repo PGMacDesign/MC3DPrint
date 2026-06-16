@@ -28,4 +28,4 @@ Leftover unchecked items carry over to the next session.
 ## Open (new findings, in order)
 - [x] super_smelter — full row of input chests, each with a down-hopper feeding its own furnace; fuel + output extended across the whole bank so all 5 furnaces run in parallel.
 - [x] map_room — filled the 4 corner gaps (potted cornflowers at the entry, barrels by the cartography table).
-- [ ] mineshaft_entrance — appears to have no actual entrance (rails/facade only?). Check whether it opens into a usable descending shaft; if it's just a facade, make it a real walk/ride-in entrance. (User: "if intentional it's fine" — low priority.)
+- [x] mineshaft_entrance — was a sealed facade; opened a 2-tall walk-in tunnel mouth + rails leading in + an open dig-down shaft start at the back (surface entrance marker).
