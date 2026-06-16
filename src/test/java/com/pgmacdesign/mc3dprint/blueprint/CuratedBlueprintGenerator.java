@@ -12223,22 +12223,26 @@ class CuratedBlueprintGenerator {
         b.set(2, 3, 2, bs("minecraft:flower_pot"));                      // herbalist's pot on the counter
         b.set(5, 1, 2, CHEST);                                           // sales chest by the east bay
 
-        // ── 9) DRYING HERBS — a stripped-spruce ceiling beam across the shop at the
-        //    wall-top course (y=wallH=3) with "bunches" of drying herbs (potted_*
-        //    blooms) hung beneath it. potted_* are itemless-structural → print free,
-        //    and read as bundles of herbs strung up to dry. (Loose flowers/leaves are
-        //    UNVALUED → deliberately not used.)
-        line(b, wallH, x0, 4, x1, 4, beam);      // beam across the mid-shop (y=3, z=4)
-        b.set(1, wallH - 1, 4, bs("minecraft:potted_fern"));
-        b.set(2, wallH - 1, 4, bs("minecraft:potted_allium"));
-        b.set(4, wallH - 1, 4, bs("minecraft:potted_blue_orchid"));
-        b.set(5, wallH - 1, 4, bs("minecraft:potted_cornflower"));
+        // ── 9) DRYING HERBS — drying-herb pots (potted_* blooms) sit ON SURFACES, not
+        //    floating in the walkway: atop the side-wall bookshelves and barrels. A bare
+        //    stripped-spruce ceiling beam still runs the mid-shop at the wall-top course
+        //    (y=wallH=3) as a roof detail — it's above head height, so it doesn't block
+        //    the aisle, and nothing hangs from it into the walkway. potted_* are
+        //    itemless-structural → print free, and read as bunches of herbs set out to
+        //    dry. (Loose flowers/leaves are UNVALUED → deliberately not used.) The
+        //    central aisle (x=2..4) is left fully clear at y=1 AND y=2 end to end.
+        line(b, wallH, x0, 4, x1, 4, beam);      // bare ceiling beam (y=3, z=4), above head height
+        b.set(1, wallH, z1 - 2, bs("minecraft:potted_fern"));        // atop west bookshelf (1,2,6)
+        b.set(5, wallH, z1 - 2, bs("minecraft:potted_blue_orchid")); // atop east bookshelf (5,2,6)
+        b.set(5, 2, 3, bs("minecraft:potted_cornflower"));           // atop east barrel (mirrors west barrel's azure_bluet)
+        b.set(1, 3, 2, bs("minecraft:potted_allium"));               // atop the counter end slab (1,2,2 is SPRUCE_SLAB_TOP)
 
-        // ── 10) LIGHTING — a hanging lantern slung under the centre of the ceiling beam
-        //    (the beam at (cx,3,4) is its solid support face), plus a standing lantern on
-        //    the brewing counter so the nook is lit.
-        b.set(cx, wallH - 1, 4, HANGING_LANTERN); // lantern hangs at y=2 under the beam
-        b.set(3, 3, z1 - 1, LANTERN);             // standing lantern on the brewing counter
+        // ── 10) LIGHTING — a standing lantern on the brewing counter lights the nook, and
+        //    one hanging lantern is slung under the ceiling beam against the WEST wall
+        //    (off the central aisle) for ambient light. Nothing hangs into the x=2..4
+        //    walkway, so the player can walk straight front-to-back.
+        b.set(x0 + 1, wallH - 1, 4, HANGING_LANTERN); // hangs at (1,2,4), against the west wall — clear of the aisle
+        b.set(3, 3, z1 - 1, LANTERN);                 // standing lantern on the brewing counter
 
         return b.build();
     }
