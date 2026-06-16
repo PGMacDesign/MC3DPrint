@@ -15998,28 +15998,29 @@ class CuratedBlueprintGenerator {
      * §E Underwater Dome Base. 11×11 footprint → builder(11, 9, 11). A sleek
      * submerged habitat: a prismarine + white-concrete circular foundation ring on
      * the seabed, a transparent GLASS hemisphere over a dry, walkable interior
-     * (white-concrete floor, sea-lantern lighting, a couple of furnishings), an
-     * iron-trapdoor airlock hatch, and the whole thing hugged by structural WATER
-     * so it reads as sitting on the ocean floor with a dry glass interior.
+     * (white-concrete floor, sea-lantern lighting, a couple of furnishings), and a
+     * real iron-door walk-in entrance cut into the north dome shell. It prints DRY:
+     * the dressed prismarine-brick foundation rim reads as the base sitting on the
+     * ocean floor without any surrounding water.
      *
      * <p>THE DOME IS THE HERO. It is built from full {@code light_blue_stained_glass}
      * BLOCKS via {@link #dome} (stacked ring SHELLS, hollow interior) — never panes.
      * Full glass blocks are sturdy and never render as invisible stubs, so the
      * render-integrity gate ({@code CuratedBlueprintRenderIntegrityGameTests}) has
      * no lone pane to enforce. The interior under the dome is LEFT AS AIR (air-skip
-     * rule) so it is dry and enterable; water is placed ONLY in the perimeter/exterior
-     * cells, never inside the shell, so the interior never floods.
+     * rule) so it is dry and enterable; no water is placed anywhere, so the interior
+     * (and the surrounding ground) never floods.
      *
      * <p>PALETTE (all FU-valued vanilla, or structural/free): light_blue_stained_glass
-     * + glass (dome + viewport), white_concrete + light_gray_concrete (floor/ring),
+     * + glass (dome + viewports), white_concrete + light_gray_concrete (floor/ring),
      * prismarine + prismarine_bricks (+slab) (foundation), sea_lantern (lighting),
-     * iron_block + iron_bars + iron_trapdoor (airlock tube), chain, and structural
-     * {@link #WATER} (prints free). No glass PANES, so nothing can stub. dark_prismarine,
-     * coral, kelp, sea_pickle are UNVALUED and deliberately AVOIDED.
+     * iron_block (door jambs) + iron_door (the walk-in entrance), chain. No glass
+     * PANES, so nothing can stub. No water. dark_prismarine, coral, kelp, sea_pickle
+     * are UNVALUED and deliberately AVOIDED.
      *
      * <p>AXES: x=W (0..10, east), y=up, z=depth (0..10, south). Centre (5,5).
      * The dome springs at y=2 with radius 4 (apex at y=6); the foundation ring sits
-     * at y=0..1; the airlock tube climbs the north edge.
+     * at y=0..1; the walk-in iron door sits in the north dome shell (y=2..3).
      */
     private static Blueprint underwaterDomeBase() {
         final int W = 11, H = 9, D = 11;
@@ -16036,9 +16037,6 @@ class CuratedBlueprintGenerator {
         final BlueprintBlockState lightGrayConcrete = bs("minecraft:light_gray_concrete");
         final BlueprintBlockState domeGlass = bs("minecraft:light_blue_stained_glass");
         final BlueprintBlockState ironBlock = IRON_BLOCK;
-        final BlueprintBlockState ironBars  = IRON_BARS;
-        final BlueprintBlockState ironTrapdoorTop =
-                bs("minecraft:iron_trapdoor[facing=north,half=top,open=false,powered=false,waterlogged=false]");
 
         // ── 1) SEABED FOUNDATION (y=0) — a solid 11×11 prismarine seabed footing the
         //    whole base rests on (structural stone read), with a dressed prismarine-
@@ -16049,16 +16047,12 @@ class CuratedBlueprintGenerator {
         line(b, 0, x0, z0, x0, z1, bricks); // west rim
         line(b, 0, x1, z0, x1, z1, bricks); // east rim
 
-        // ── 2) SUBMERGING WATER (y=1) — a structural WATER ring around the foundation
-        //    so the base reads as submerged on the seabed. Water fills ONLY the outer
-        //    perimeter ring; everything inside that ring stays the dry habitat. Water
-        //    is structural matter → prints free, and is never placed inside the dome.
-        for (int x = x0; x <= x1; x++) {
-            for (int z = z0; z <= z1; z++) {
-                boolean outerRing = (x == x0 || x == x1 || z == z0 || z == z1);
-                if (outerRing) b.set(x, 1, z, WATER);
-            }
-        }
+        // ── 2) (no perimeter water) — earlier builds wrapped the foundation in a ring
+        //    of structural WATER source blocks to read as "submerged on the seabed".
+        //    Printed on land, that just spilled a ring of water flowing off the base,
+        //    so it has been removed entirely: the dome now prints DRY with no
+        //    surrounding water. The dressed prismarine-brick foundation rim (step 1)
+        //    already reads as the base sitting on the ocean floor.
 
         // ── 3) FOUNDATION RING (y=1) — the circular base ring the dome springs from:
         //    a prismarine + white-concrete ring (radius 4, centred 5,5) sitting one
@@ -16093,26 +16087,32 @@ class CuratedBlueprintGenerator {
         //    for contrast: a clear apex oculus and four clear cardinal viewports. All are
         //    full glass BLOCKS (over-stamp the tinted shell), so they stay render-safe.
         b.set(cx, 6, cz, GLASS);          // clear apex oculus (over-stamp the dome cap)
-        b.set(cx, 2, cz - r, GLASS);      // north viewport (clear panel in the tinted shell)
+        // (no north viewport — the north shell cell is the walk-in door, step 7.)
         b.set(cx, 2, cz + r, GLASS);      // south viewport
         b.set(cx - r, 2, cz, GLASS);      // west viewport
         b.set(cx + r, 2, cz, GLASS);      // east viewport
 
-        // ── 7) AIRLOCK TUBE (north edge) — the entry: a short iron-framed access shaft
-        //    rising from the seabed at the north foundation edge into the dome interior.
-        //    Iron-block jambs flank an iron-bars window pair (the bars connect to each
-        //    other + the iron-block jambs → never stub), capped by an iron-trapdoor hatch.
-        final int ax = cx, az = cz - (r - 1); // airlock at the north inner-ring edge (5,1 region)
-        // iron-block jambs either side of the entry on the foundation ring
-        pillar(b, ax - 1, az, 1, 3, ironBlock);
-        pillar(b, ax + 1, az, 1, 3, ironBlock);
-        // iron-bars window/grille in the airlock throat (connects to the iron jambs)
-        b.set(ax, 2, az, ironBars);
-        b.set(ax, 3, az, ironBars);
-        // iron-trapdoor hatch capping the airlock (the dive hatch)
-        b.set(ax, 4, az, ironTrapdoorTop);
-        // a chain handhold dropping from the hatch into the habitat
-        b.set(ax, 1, az + 1, CHAIN);
+        // ── 7) WALK-IN ENTRANCE (north edge) — a real, usable iron door cut into the
+        //    north dome shell so a player walks straight into the dry habitat. The old
+        //    iron-bars/iron-trapdoor "airlock" was decorative, not a doorway you could
+        //    enter through — this replaces it with a clean 2-tall iron door, framed by
+        //    iron-block jambs for the airlock look.
+        final int ax = cx, az = cz - r; // door cell = the north-most dome shell cell (5,1)
+        // iron-block jambs in the shell line flanking the door (x=4 / x=6 at z=1), so
+        // the doorway reads as a framed iron portal. They over-stamp the dome glass on
+        // that line and rise two courses to the door head (y=2..3).
+        pillar(b, ax - 1, az, 2, 3, ironBlock);
+        pillar(b, ax + 1, az, 2, 3, ironBlock);
+        // the iron door itself, in the shell at (ax,az). door2 places BOTH halves
+        // (lower y=2, upper y=3); "N" wall → faces south, opening inward onto the deck.
+        // It over-stamps the dome glass at this single column → a real doorway. Nothing
+        // else writes these two cells (the north viewport was removed), so the partner-
+        // half stays intact (double-block GameTest safe). The cell in front (z=0, y=2..3)
+        // is outside the dome shell → air, and the foundation rim under it (y=1) is solid,
+        // so you walk straight in from the seabed platform onto the dry concrete floor.
+        door2(b, ax, 2, az, "iron", "N");
+        // a chain handhold accent on the floor just inside the door (not in the path).
+        b.set(ax + 1, 1, az + 1, CHAIN);
 
         // ── 8) INTERIOR FURNISHINGS — a few livable details on the dry floor: a sea-
         //    lantern lighting ring set flush at the four inner-ring cardinals (the habitat
