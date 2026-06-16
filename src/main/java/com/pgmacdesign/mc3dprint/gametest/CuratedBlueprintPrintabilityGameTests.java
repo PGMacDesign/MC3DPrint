@@ -81,7 +81,6 @@ public class CuratedBlueprintPrintabilityGameTests {
             // NOTE: wheat=2@1, sugar_cane=2@1, flint=2@1 added to defaultEntries() — this
             // resolves hay_block/target (via wheat), cartography_table/enchanting_table (via
             // sugar_cane→paper→book), and fletching_table (via flint). Those 5 entries removed.
-            "minecraft:grass_block",            // natural ground (campfire_site, barn) — value or make structural
             "minecraft:gilded_blackstone",      // bastion loot, not craftable (no recipe to derive)
             "minecraft:bell"                    // village loot, not craftable in survival
     );

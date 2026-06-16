@@ -334,6 +334,11 @@ public final class FuValueRegistry {
         return List.of(
                 // ===== T1 — bulk / infinite (trivially gathered) =====
                 "minecraft:cobblestone=1@1", "minecraft:dirt=1@1", "minecraft:gravel=1@1",
+                // grass_block: the most abundant surface block in the game — a grassy dirt
+                // variant (no recipe → can't derive), valued = dirt so it actually prints
+                // (was unprintable/allowlisted, which silently dropped grass footings, e.g.
+                // floated jungle_hut's stilts). Cheapest tier; abundance-safe (T1 floor).
+                "minecraft:grass_block=1@1",
                 "minecraft:sand=1@1", "minecraft:red_sand=1@1", "minecraft:soul_sand=1@1",
                 "minecraft:soul_soil=1@1", "minecraft:clay_ball=1@1", "minecraft:netherrack=1@1",
                 "minecraft:deepslate=1@1", "minecraft:cobbled_deepslate=1@1", "minecraft:tuff=1@1",
