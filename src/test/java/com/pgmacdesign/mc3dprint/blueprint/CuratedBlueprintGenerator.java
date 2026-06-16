@@ -4712,8 +4712,18 @@ class CuratedBlueprintGenerator {
         }
 
         // interior ladder: climbs the south wall line from the base up to the
-        // observatory, backed by the ring wall behind it (facing=north attaches to z+1).
+        // observatory. A facing=north ladder attaches to the block at z+1, but the
+        // round shaft leaves that cell (cx, cz+2) as interior air for the whole run,
+        // so the ladder would pop off on print. Back it with a 1-wide deepslate-brick
+        // spine directly behind every ladder cell (cx, cz+2) so each rung has a solid
+        // support face. The deck floors already occupy (cx, cz+2) at y9 and y17
+        // (polished-deepslate discs), so only the open shaft courses (y1..8, y10..16)
+        // need the spine — and the ladder column (cx, cz+1) stays open as the climb /
+        // hatch path. The ladder ends at y17, delivering the climber onto the
+        // observatory deck (the r=2 polished-deepslate disc at y17).
         pillar(b, cx, cz + 1, 1, 17, ladderN);
+        for (int y = 1; y <= 8; y++)  b.set(cx, y, cz + 2, deepslateBricks);   // lower-shaft spine
+        for (int y = 10; y <= 16; y++) b.set(cx, y, cz + 2, deepslateBricks);  // mid-shaft spine
 
         // 6) WIZARD'S QUARTERS — furnish the study landing (y10 floor) and the
         //    observatory (y18 floor) with arcane props (all printable blocks).
