@@ -45,3 +45,31 @@ Regrowing crops (cactus/bamboo/kelp/cane✓/melon✓) → make them actually wor
 - [x] super_smelter — full row of input chests, each with a down-hopper feeding its own furnace; fuel + output extended across the whole bank so all 5 furnaces run in parallel.
 - [x] map_room — filled the 4 corner gaps (potted cornflowers at the entry, barrels by the cartography table).
 - [x] mineshaft_entrance — was a sealed facade; opened a 2-tall walk-in tunnel mouth + rails leading in + an open dig-down shaft start at the back (surface entrance marker).
+
+---
+
+## Deploy + verification (all 8 reported items done, 2026-06-16)
+All 8 open items above ✓ fixed/committed/pushed. Rebuilt `mc3dprint-0.4.0.jar`, **redeployed** to the Prism 1.20.1 instance (replaced in place, checksums match, no duplicate). `./gradlew build` + `runGameTestServer` green — **all 69 gametests pass, 132 blueprints**. No regressions.
+
+## Cascade analysis (per Patrick's request — "do these problems hit other builds I haven't tested?")
+Grounded in the foundation audit (`-DauditFoundations=true`) + a 3-way read-only code review of farms, raised entrances, and multi-level access.
+
+**A) Did MY changes regress anything? No.** The global changes are isolated or net-positive:
+- `grass_block` now FU-valued (1@1) → builds that use it now print their grass floors/footings instead of dropping them (fixes the floating class; **foundation audit now flags 0 floating builds**). It's the lowest tier so it can't bump any build's disc tier; abundance-safe to wind (dirt-tier).
+- Deterministic block-entity serialization + printer `sendBlockUpdated()` on place → signs/containers sync correctly; no gameplay change to other builds.
+- Per-build geometry fixes are local. 69/69 gametests + 132 blueprints confirm no regression.
+
+**B) Other builds with the SAME bug classes you suspected — yes, a handful. NONE fixed yet (awaiting your triage):**
+
+*LIKELY-BROKEN (objective bugs):*
+- [ ] **fantasy_wizard_tower** — the climb ladder is **unbacked**: it's `facing=north` up the center of a round tower, so the cell behind it is interior air the whole run → the ladder has no support face and **pops off on print (won't place)**. You literally can't climb the tower. Fix: add a solid backing spine behind the ladder (clear of the y9/y17 hatches), or hug the ladder to the ring wall at each taper. *(Worst one.)*
+- [ ] **library** — mezzanine ladder runs only y=1..3 but the gallery walking surface is y=5 → a **2-block mantle** with nothing to grab (ladder ends 2 short). Fix: extend the ladder to fill the hatch at the deck layer (y≤mezzY).
+- [ ] **mushroom_farm** — **fake auto-harvest**, same class as tree/kelp/wart: observers watch the planted mushroom cell, but small mushrooms don't grow taller/change state in place, so the observer fires once and never re-cycles. Design call (like tree_farm was): reframe as honest semi-auto (dark chamber + bonemeal + manual harvest).
+
+*SUSPECT (likely needs a decision, not clearly a bug):*
+- [ ] **castle_keep** — ladder is well-formed but climbs to **no landing** (hollow open-top tower, dead-ends at y=13 in air). Needs a destination: add a wall-walk/deck inside the merlons (and extend the ladder to it), or a mid-level floor.
+- [ ] **church** — belfry bell has **no internal access** (sealed stone shaft). Probably intentional (real belfries are sealed; H=12 leaves no stair room) — confirm whether you want it reachable.
+- [ ] **barn** — "hayloft" is **floating hay** (two hay stacks at y=5 with no loft floor and no ladder beneath). Add a loft floor + ladder, or drop the loft and put the hay on the ground.
+- [ ] **nether_wart_farm** — minor: a brewing-nook `water_cauldron` overstamps one crop cell and the NE corner furniture boxes in the x=6 walkway end. Cosmetic layout nit, not a print/mechanism failure.
+
+*Confirmed OK (spot-checked, no action):* villager_trading_hall, fishery_pond, koi_pond, small_farm, bee_apiary, scarecrow (farms); fishing_hut, japanese_tea_house, railway_station, victorian_townhouse (the buried-door audit flags are all **legit reachable raised entrances**, not traps); lighthouse, watchtower, guard_tower, copper_clocktower, purpur_tower, manor_house, victorian_townhouse, copper_observatory, windmill, japanese_pagoda (multi-level access all sound). **No stair-facing bugs of the tavern/stable kind remain** — every other interior climb is a ladder; the failures above are backing/run-length/destination, not facing.
