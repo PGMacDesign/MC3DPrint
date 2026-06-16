@@ -5421,20 +5421,20 @@ class CuratedBlueprintGenerator {
      * </ul>
      */
     private static Blueprint taigaSpruceLonghouse() {
-        Blueprint.Builder b = Blueprint.builder("Taiga Spruce Longhouse", 9, 9, 7);
+        Blueprint.Builder b = Blueprint.builder("Taiga Spruce Longhouse", 9, 8, 7);
         Palette p = TAIGA_SPRUCE;
         int x0 = 0, x1 = 8, z0 = 0, z1 = 6;
-        int floorY = 1;        // walkable spruce floor sits on the cobble footing
-        int wallBottom = 2;    // walls rise from above the finish floor
-        int wallH = 5;         // wall plate (roof seats here)
+        int floorY = 0;        // spruce-plank floor IS the single base course (no buried footing)
+        int wallBottom = 1;    // walls + door sill rise one course above the y=0 floor
+        int wallH = 4;         // wall plate (roof seats here)
         int cx = (x0 + x1) / 2; // 4
         int cz = (z0 + z1) / 2; // 3
 
-        // 1) cobblestone footing over the whole footprint at y=0
-        floor(b, 0, x0, z0, x1, z1, COBBLE);
-        // 2) spruce-plank finish floor on top of the footing at y=1 (walkable)
+        // 1) spruce-plank finish floor as the single y=0 base course (walkable).
+        //    (The redundant buried cobble footing course was dropped so the door
+        //     sill lands at y=1 and the hall is enterable from flat ground.)
         floor(b, floorY, x0, z0, x1, z1, p.plankFloor);
-        // 3) spruce-plank wall ring y=2..5 with spruce-log corner posts
+        // 3) spruce-plank wall ring y=1..4 with spruce-log corner posts
         walls(b, x0, z0, x1, z1, wallBottom, wallH, p.wall);
         corners(b, x0, z0, x1, z1, wallBottom, wallH, p.logPillarY);
         // 3b) intermediate spruce-log studs every 2 cells down both long walls
