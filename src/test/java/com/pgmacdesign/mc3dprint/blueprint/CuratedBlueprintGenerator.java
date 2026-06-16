@@ -3015,7 +3015,18 @@ class CuratedBlueprintGenerator {
             window2(b, 7, 4, z, GLASS_PANE, null);
             window2(b, 13, 4, z, GLASS_PANE, null);
         }
-        pillar(b, 8, 8, 1, 13, LADDER_SOUTH); // interior climb
+        pillar(b, 8, 8, 1, 14, LADDER_SOUTH); // interior climb — tops out into the rooftop hatch (y=14)
+        // rooftop wall-walk: stone-brick deck at y=14 across the keep interior (x,z=8..12),
+        // capping the hall below as a roof. Its walkable top sits at elevation 15.0, flush with
+        // the wall top (walls end y=14) and ringed by the y=15 merlons → a battlement you stand
+        // behind. The ladder column (8,14,8) is left OPEN as a hatch so the climb passes through
+        // it and the player steps flush off onto an adjacent deck cell (e.g. (9,14,8)).
+        for (int x = 8; x <= 12; x++) {
+            for (int z = 8; z <= 12; z++) {
+                if (x == 8 && z == 8) continue; // ladder hatch — keep open
+                b.set(x, 14, z, STONE_BRICKS);
+            }
+        }
         crenellate(b, 15, 7, 7, 13, 13, STONE_BRICK_WALL);
         // great-hall lantern chandelier on a chain. The keep is an open-topped tower
         // (no ceiling until the y=15 battlement), so add an oak tie-beam spanning the
