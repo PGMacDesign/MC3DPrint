@@ -155,6 +155,8 @@ tasks.named('test', Test).configure {
     systemProperty 'genBlueprints', System.getProperty('genBlueprints', 'false')
     // Same opt-in plumbing for the blueprint dump/validation tool.
     systemProperty 'dumpBlueprints', System.getProperty('dumpBlueprints', 'false')
+    // Same opt-in plumbing for the foundation/floating diagnostic audit.
+    systemProperty 'auditFoundations', System.getProperty('auditFoundations', 'false')
     testLogging {
         events 'failed'
         exceptionFormat 'full'
