@@ -12466,19 +12466,33 @@ class CuratedBlueprintGenerator {
      * {@code IronBarsBlock}). The frame's spruce posts and sills break the glass into
      * window-like bays for the greenhouse look without risking an invisible stub.
      *
+     * <p><b>Walk-in safety / irrigation.</b> The central aisle (x=4, z=1..7) is the
+     * irrigation feature, but it is NOT an open pit: each y=0 aisle cell is a
+     * WATERLOGGED TOP slab, so its top face is flush (elevation 1.0) with the
+     * surrounding stone-brick floor. The player steps straight off the door
+     * threshold onto a dry, flush walkway, walks to the back of the greenhouse and
+     * back out again — no 1-deep water drop anywhere on the path — while water still
+     * fills the lower half of the channel for the look. Because that capped water no
+     * longer moistens the y=1 farmland, each planter bed gets its OWN water source at
+     * the farmland level (west bed {@code (1,1,4)}, east bed {@code (7,1,4)}), which
+     * hydrates the bed's whole z=1..7 strip (4-block radius).
+     *
      * <p><b>Printability.</b> All blocks are vanilla FU-valued or structural:
-     * stone bricks / spruce frame / glass / oak door / flower_pot / lantern are
-     * FU-valued; farmland (FarmBlock), the crops (CropBlock→BushBlock), water
-     * (itemless), and potted_* (itemless) are structural → print free.
+     * stone bricks / stone_brick_slab / spruce frame / glass / oak door / flower_pot
+     * / lantern are FU-valued; farmland (FarmBlock), the crops (CropBlock→BushBlock),
+     * water (itemless, incl. the slabs' waterlogged state), and potted_* (itemless)
+     * are structural → print free.
      *
      * <p>Footprint x=0..8 (W=9), z=0..8 (depth=9), y=0..7 (H=8):
      * <ul>
      *   <li>{@code y=0} stone-brick footing over the full 9×9; the central aisle
-     *       column (x=4) is dug as a water irrigation channel.</li>
+     *       column (x=4, z=1..7) is a flush waterlogged-slab walkway over the
+     *       irrigation channel (walk above the water, dry feet).</li>
      *   <li>{@code y=1..4} spruce post-and-sill frame with GLASS-block wall bays;
-     *       an oak door centred on the north wall; raised farmland planter beds with
-     *       crops to either side of the aisle; spruce-slab shelves with flower-pots
-     *       and potted blooms.</li>
+     *       an oak door centred on the north wall landing on the flush aisle; raised
+     *       farmland planter beds with crops to either side, each fed by its own
+     *       in-bed water source; spruce-slab shelves with flower-pots and potted
+     *       blooms.</li>
      *   <li>{@code y=4..} a peaked GLASS gable roof (stepped glass blocks running
      *       along X) on a spruce ridge beam; gable ends glazed too.</li>
      * </ul>
@@ -12497,12 +12511,17 @@ class CuratedBlueprintGenerator {
         // 1) STONE-BRICK FOOTING over the whole footprint (walkable y=0 surface).
         floor(b, 0, x0, z0, x1, z1, STONE_BRICKS);
 
-        // 2) WATER IRRIGATION CHANNEL down the central aisle (x=cx, z=1..7), sunk
-        //    into the footing. Water is itemless → structural (prints free). The
-        //    aisle stays walkable along its planted edges; the channel is the
-        //    greenhouse's irrigation feature running between the two planter beds.
+        // 2) FLUSH WALKWAY OVER THE WATER CHANNEL down the central aisle (x=cx,
+        //    z=1..7). The aisle cell is the greenhouse's irrigation feature, but
+        //    capping it with a WATERLOGGED TOP SLAB makes the walkway flush with the
+        //    surrounding stone-brick floor (top face at elevation 1.0) so the player
+        //    walks across with dry feet — straight in from the door, to the back, and
+        //    out again — while water still fills the lower half of the cell, keeping
+        //    the irrigation-feature read. The slab item is FU-valued (derives); the
+        //    waterlogged water state is itemless → structural (prints free).
+        BlueprintBlockState aisleWalk = bs("minecraft:stone_brick_slab[type=top,waterlogged=true]");
         for (int z = 1; z <= z1 - 1; z++) {
-            b.set(cx, 0, z, WATER);
+            b.set(cx, 0, z, aisleWalk);
         }
 
         // 3) PLANTER BEDS — two raised farmland strips flanking the aisle, each
@@ -12513,12 +12532,27 @@ class CuratedBlueprintGenerator {
         // west bed: x=1..2, east bed: x=6..7; both z=1..7, fed by the central channel.
         int[][] beds = {{1, 2}, {6, 7}};
         int cropIdx = 0;
+        // a per-bed water source at the farmland level keeps each strip hydrated now
+        // that the central channel is slabbed over (its water is in the lower half of
+        // y=0 and can't moisten the y=1 farmland). Farmland hydrates within a 4-block
+        // horizontal radius at the same Y, so one source near the centre of each bed
+        // moistens its whole z=1..7 strip. west bed source (1,1,4); east bed (7,1,4).
+        int[][] bedSources = {{1, 4}, {7, 4}}; // {x, z} at y=1
         for (int[] bed : beds) {
             for (int x = bed[0]; x <= bed[1]; x++) {
                 for (int z = 1; z <= z1 - 1; z++) {
-                    b.set(x, 1, z, FARMLAND);            // moist farmland (structural)
-                    b.set(x, 2, z, crops[cropIdx % crops.length]); // crop atop (structural)
-                    cropIdx++;
+                    boolean isSource = false;
+                    for (int[] src : bedSources) {
+                        if (src[0] == x && src[1] == z) { isSource = true; break; }
+                    }
+                    if (isSource) {
+                        b.set(x, 1, z, WATER);  // in-bed water source (structural); no crop above
+                        cropIdx++;              // keep the crop rotation phase stable
+                    } else {
+                        b.set(x, 1, z, FARMLAND);            // moist farmland (structural)
+                        b.set(x, 2, z, crops[cropIdx % crops.length]); // crop atop (structural)
+                        cropIdx++;
+                    }
                 }
             }
         }
