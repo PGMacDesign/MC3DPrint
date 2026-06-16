@@ -8809,16 +8809,17 @@ class CuratedBlueprintGenerator {
         b.set(cx - 1, yB + 1, 7, bs("minecraft:oak_wall_sign[facing=east]"));
         b.set(cx + 1, yB + 1, 7, bs("minecraft:oak_wall_sign[facing=west]"));
 
-        // ── 6) LIGHTING: chain-hung lanterns down the walkway ───────────────
-        // Hang from the ceiling (y4) on a single chain link (y3) to a lantern at y2,
-        // along the walkway cross so the open aisles are lit (mob-free interior).
+        // ── 6) LIGHTING: chain-hung lanterns tucked into the nook recesses ──
+        // Hang from the ceiling (y4) on a single chain link (y3) to a lantern at y2.
         // chainLantern(x,y,z,hangLen) puts the lantern at (x,y,z) and chains above.
+        // The central cross (x=cx N–S aisle, z=cz E–W aisle) and the entrance
+        // walk-in path (x=doorX from z0) are kept CLEAR of overhead lamps so they
+        // don't block movement; each lantern instead sits one cell off the aisle,
+        // inside an open corner nook, lighting the storage from within the recess.
         int lanternY = yB + 1;                                       // y=2 (eye level)
-        chainLantern(b, cx, lanternY, 2, 1);                         // north walkway
-        chainLantern(b, cx, lanternY, 6, 1);                         // south walkway
-        chainLantern(b, 2, lanternY, cz, 1);                         // west walkway
-        chainLantern(b, 6, lanternY, cz, 1);                         // east walkway
-        chainLantern(b, cx, lanternY, cz, 1);                        // centre crossing
+        chainLantern(b, 2, lanternY, 3, 1);                          // NW nook (was west aisle 2,4)
+        chainLantern(b, 3, lanternY, 6, 1);                          // SW nook (was south aisle 4,6)
+        chainLantern(b, 6, lanternY, 5, 1);                          // SE nook (was east aisle 6,4)
 
         return b.build();
     }
