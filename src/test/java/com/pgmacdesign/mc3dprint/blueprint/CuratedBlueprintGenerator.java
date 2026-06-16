@@ -8098,113 +8098,126 @@ class CuratedBlueprintGenerator {
     }
 
     /**
-     * §F.cactus_farm — a STATIC automatic cactus farm, 7×7×5 (W×L×H)
+     * §F.cactus_farm — a SELF-HARVESTING cactus farm, 7×7×5 (W×L×H)
      * → builder(7, 5, 7).
      *
      * <p>The "Tier-1 easy farm", printed as the working STRUCTURE the player plants
      * into. Vanilla <b>cactus</b> has no producing recipe and is <em>not</em>
      * structural matter ({@code CactusBlock} is not a {@code BushBlock}), so it is
-     * UNVALUED and would be silently skipped by the printer's strict-mode gate. We
-     * therefore <b>omit the cactus itself</b> — the player plants it after printing —
-     * and print the mechanism: sand columns on raised pedestals, an adjacent
-     * <b>break-bar</b> (an oak <b>fence post</b>, not a glass pane / iron bar, so the
-     * render-integrity stub-pane gate doesn't apply) at the grow height, a sunken
-     * <b>water canal</b> that catches the snapped cactus, and a hopper → chest at the
-     * south end. Every printed block is a vanilla FU-valued block (sand 1@1, stone,
-     * cobble, oak_fence, hopper, chest all derive) or structural-free matter (water
-     * prints free, {@code asItem()==AIR}).
+     * UNVALUED and would be silently skipped by the printer's strict-mode gate (the
+     * {@code allCuratedBlueprintBlocksArePrintable} guardrail). We therefore
+     * <b>omit the cactus itself</b> — the player drops a cactus on each exposed sand
+     * grow-block after printing — and print the canonical no-redstone harvester
+     * MECHANISM (Minecraft Wiki / 4netplayers): two SPACED sand grow-blocks, a solid
+     * <b>breaker block</b> at the grow-into height beside each, and a flowing-water
+     * collection channel that sweeps each snapped segment to a central hopper → chest.
+     * This mirrors the shipped bamboo_farm pattern (omit the unvalued plant, print the
+     * mechanism). Every printed block is vanilla FU-valued (sand 1@1, stone, cobble,
+     * hopper, chest, oak_wall_sign all derive) or structural-free matter (water prints
+     * free, {@code asItem()==AIR}).
      *
-     * <p>How it works once printed + planted: the player drops a cactus on each sand
-     * pedestal. Cactus grows straight up; the moment it grows into the block adjacent
-     * to the fence-post break-bar one column over, the touching-a-solid-neighbour rule
-     * pops the new segment as a drop. The drop lands in the sunken water canal beside
-     * the pedestal, floats south, and is swept by the hopper into the collection chest.
-     *
-     * <p>Layout (south = +z is the "front"/access side; the canal runs along Z):
+     * <p><b>Why it survives + harvests (the geometry that fixes the old broken build):</b>
+     * a cactus pops the instant ANY solid block is horizontally adjacent to one of its
+     * segments, and two cacti can't be adjacent. So:
      * <ul>
-     *   <li><b>y=0</b> — stone foundation (7×7) with two <b>water canals</b> punched
-     *       along Z (z=1..5) at x=2 and x=4: the troughs that catch + carry the
-     *       snapped cactus south.</li>
-     *   <li><b>Hopper + chest, y=0</b> — at the south end of each canal a hopper
-     *       (z=5) feeds a collection chest tucked at the south edge (z=6, facing
-     *       north), so every cactus the canal delivers is collected.</li>
-     *   <li><b>Sand pedestals, y=1..2</b> — two rows of sand columns at x=1 and x=5
-     *       (z=1..5), each raised on a 1-block stone pedestal (y=1) with the sand
-     *       grow-block on top (y=2). The player plants cactus on the y=2 sand; it
-     *       grows up into y=3+.</li>
-     *   <li><b>Break-bars, y=3</b> — an oak <b>fence post</b> one column inward from
-     *       each sand row (x=2-adjacent → x=1.5 isn't a cell, so the bar sits on the
-     *       canal-edge column at x=2/x=4 over the water at y=3) facing the grow cell:
-     *       when the cactus reaches y=3 next to it, the segment pops off and falls
-     *       into the canal below. (Fence posts auto-connect to nothing here and render
-     *       fine as a single post — no IronBarsBlock stub risk.)</li>
-     *   <li><b>Side walls + label signs</b> — cobble end caps (z=0, z=6) box the
-     *       canals; oak wall signs on the south face label the build.</li>
+     *   <li><b>Air/water on all 4 sides of the planted base.</b> Each sand grow-block
+     *       is at y=1; the cactus base the player plants sits at y=2. At y=2 its four
+     *       horizontal neighbours are flowing WATER (non-solid → does NOT break cactus)
+     *       or air. No solid block, and no other cactus, ever touches a base.</li>
+     *   <li><b>Grow-blocks spaced 4 apart</b> (x=1 and x=5) — cacti are never
+     *       adjacent.</li>
+     *   <li><b>The breaker only touches the GROWN segment.</b> A cobblestone breaker
+     *       sits at y=3 one cell inward from each column ((2,3,3) west / (4,3,3) east) —
+     *       the grow-into height. The base at y=2 has air/water beside it there, so it
+     *       survives; only when the cactus grows up into y=3 does that new segment
+     *       become horizontally adjacent to the breaker and pop. The base regrows — a
+     *       perpetual harvester needing no redstone.</li>
+     * </ul>
+     *
+     * <p><b>Collection (the snapped piece must reach the chest WITHOUT touching a
+     * cactus block — a cactus destroys dropped items it touches).</b> A flowing-water
+     * channel at y=2 (the planted-base level) wraps each base and runs to the centre;
+     * when the y=3 segment pops, the item drops into that flowing water and is swept to
+     * the centre cell (3,2,3), which sits directly above a <b>hopper at y=1</b> (one
+     * block LOWER than the water, per the canonical design, so the water stops at the
+     * lip and the item drops in). The hopper feeds the <b>collection chest</b> at
+     * (3,1,4), which has <b>nothing solid above it</b> (open air) so it opens freely.
+     *
+     * <p>Layout (south = +z is the "front"/access side; grow-blocks at x=1 and x=5, z=3):
+     * <ul>
+     *   <li><b>y=0..1</b> — stone foundation; a central <b>hopper</b> at (3,1,3) (the
+     *       channel drop-off, one block below the y=2 water) feeds the <b>chest</b> at
+     *       (3,1,4).</li>
+     *   <li><b>y=1</b> — two <b>sand</b> grow-blocks at (1,1,3) and (5,1,3); the player
+     *       plants a cactus on each (base lands at y=2).</li>
+     *   <li><b>y=2</b> — a flowing <b>water</b> channel surrounding each planted base
+     *       and running to the centre (3,2,3) above the hopper, sweeping snapped pieces
+     *       to collection.</li>
+     *   <li><b>y=3</b> — two cobblestone <b>breaker</b> blocks at (2,3,3) and (4,3,3),
+     *       each beside (and only touching) the cactus segment that grows up into
+     *       y=3.</li>
+     *   <li><b>Sign</b> — an oak wall sign on the south face explaining the build.</li>
      * </ul>
      */
     private static Blueprint cactusFarm() {
         Blueprint.Builder b = Blueprint.builder("Cactus Farm", 7, 5, 7);
         // all vanilla, all FU-valued / structural-free (NO cactus — unvalued; player plants it):
         BlueprintBlockState stone  = bs("minecraft:stone");
-        BlueprintBlockState cobble = COBBLE;
         BlueprintBlockState sand   = bs("minecraft:sand");   // FU-valued (1@1) — the grow-block
-        BlueprintBlockState water  = WATER;                  // structural (asItem()==AIR) → prints free
-        BlueprintBlockState fence  = OAK_FENCE;              // FU-valued; break-bar (NOT a pane → no stub-pane gate)
+        BlueprintBlockState water  = WATER;                  // source; structural (asItem()==AIR) → prints free
+        BlueprintBlockState cobble = COBBLE;                 // the BREAKER block (solid; pops the grown segment)
         BlueprintBlockState chest  = bs("minecraft:chest[facing=north,type=single,waterlogged=false]");
 
-        int x0 = 0, x1 = 6, z0 = 0, z1 = 6;            // 7×7 footprint
-        int wCanalX = 2, eCanalX = 4;                  // the two sunken water canals
-        int wSandX  = 1, eSandX  = 5;                  // the two sand-pedestal rows
-        int rowZ0 = 1, rowZ1 = 5;                      // pedestals / canal run along Z
+        // Two grow-blocks, SPACED 4 apart so planted cacti are never adjacent. The
+        // collection channel + hopper drop run down the centre (cx=3).
+        int wX = 1, eX = 5;     // cactus columns (4 apart → never adjacent)
+        int cz = 3;             // cactus row (z)
+        int cx = 3;             // centre column (channel drop-off / hopper / chest)
 
-        // ── 1) STONE FOUNDATION at y=0, with the two WATER CANALS ────────────
-        floor(b, 0, x0, z0, x1, z1, stone);
-        // canals: water along Z at x=2 and x=4 (z=1..4); the snapped cactus floats south.
-        for (int z = rowZ0; z <= rowZ1 - 1; z++) {
-            b.set(wCanalX, 0, z, water);
-            b.set(eCanalX, 0, z, water);
+        // ── 1) FOUNDATION (y=0) + central HOPPER/CHEST drop (y=1) ─────────────
+        floor(b, 0, 0, 0, 6, 6, stone);
+        // The hopper sits ONE BLOCK BELOW the y=2 water channel so the swept cactus
+        // piece drops into it; it feeds the chest one cell south. Nothing solid sits
+        // above the chest (open air at y=2..) so it opens freely.
+        b.set(cx, 1, cz, bs("minecraft:hopper[enabled=true,facing=south]")); // (3,1,3) under channel centre
+        b.set(cx, 1, cz + 1, chest);                                         // (3,1,4) collection chest
+
+        // ── 2) SAND GROW-BLOCKS (y=1) — player plants cactus on top (base → y=2) ──
+        // Each grow-block is a single exposed sand block. The planted base lands at y=2
+        // with air/water on all 4 sides (see channel below), so it survives.
+        b.set(wX, 1, cz, sand);   // west grow-block
+        b.set(eX, 1, cz, sand);   // east grow-block
+
+        // ── 3) Flowing WATER collection channel (y=2 = planted-base level) ────
+        // Wraps each base and runs to the centre cell (cx,2,cz), which sits directly
+        // above the hopper, so the flow drops the swept piece in. Water is a SOURCE
+        // block (level=0); in-game it flows down into the lower hopper cell. Every base
+        // neighbour at y=2 is WATER (non-solid → safe) or air — no solid ever touches a
+        // base, and the snapped y=3 segment lands in this water (never on a cactus).
+        int[][] channel = {
+            {0, cz}, {2, cz}, {cx, cz},          // west base flanks + centre (over hopper)
+            {4, cz}, {6, cz},                    // east base flanks
+            {wX, cz - 1}, {wX, cz + 1},          // N/S of west base
+            {eX, cz - 1}, {eX, cz + 1},          // N/S of east base
+            {cx, cz - 1}                          // centre channel arm (feeds toward hopper)
+        };
+        for (int[] c : channel) {
+            b.set(c[0], 2, c[1], water);
         }
 
-        // ── 2) HOPPERS + COLLECTION CHEST at the SOUTH end, y=0 ──────────────
-        // Each canal terminates over a hopper that feeds the chest. The hopper
-        // mouths (z=5) catch what the flows deliver; they point north into a chest
-        // tucked at the south edge (z=6), facing north so its front reads inward.
-        // (Air-skip means these overwrite the stone foundation cells.)
-        b.set(wCanalX, 0, rowZ1, bs("minecraft:hopper[enabled=true,facing=north]")); // z=5 → feeds chest
-        b.set(eCanalX, 0, rowZ1, bs("minecraft:hopper[enabled=true,facing=north]"));
-        b.set(wCanalX, 0, z1, chest);                                                 // west collection chest
-        b.set(eCanalX, 0, z1, chest);                                                 // east collection chest
+        // ── 4) BREAKER BLOCKS (y=3) — pop ONLY the grown segment ─────────────
+        // A cobble breaker one cell inward from each grow-block, at y=3 (the grow-into
+        // height). The base at y=2 has water/air beside it here, so it survives; the
+        // segment that grows up into y=3 becomes horizontally adjacent to the breaker
+        // and pops, dropping into the y=2 water below to be swept to the hopper.
+        b.set(wX + 1, 3, cz, cobble); // (2,3,3) — beside west cactus's y=3 segment
+        b.set(eX - 1, 3, cz, cobble); // (4,3,3) — beside east cactus's y=3 segment
 
-        // ── 3) SAND PEDESTALS (raised) — the player plants cactus on top ─────
-        // Two sand rows at x=1 and x=5 (z=1..5). Each is a 1-block stone pedestal at
-        // y=1 with the sand grow-block on top at y=2, so cactus planted there grows up
-        // (y=3+) beside the break-bar over the adjacent canal, and snapped segments
-        // fall PAST the pedestal into the canal one column over.
-        for (int z = rowZ0; z <= rowZ1; z++) {
-            b.set(wSandX, 1, z, stone);   // pedestal base
-            b.set(eSandX, 1, z, stone);
-            b.set(wSandX, 2, z, sand);    // grow-block (player plants cactus here)
-            b.set(eSandX, 2, z, sand);
-        }
-
-        // ── 4) BREAK-BARS (oak fence posts) over the canals, at grow height ──
-        // A fence post sits on the canal-edge column (x=2 / x=4) at y=3, directly
-        // beside the y=3 cell the planted cactus grows into. When the cactus touches
-        // the post the new segment pops as a drop and falls into the canal below.
-        // Fence posts are NOT IronBarsBlock, so the stub-pane render gate doesn't apply.
-        for (int z = rowZ0; z <= rowZ1; z++) {
-            b.set(wCanalX, 3, z, fence);
-            b.set(eCanalX, 3, z, fence);
-        }
-
-        // ── 5) END WALLS (box the canals) + LABEL SIGNS ──────────────────────
-        // Cobble end caps at z=0 and z=6 across the canal span close the ends so each
-        // water canal reads as a contained trough.
-        line(b, 1, wSandX, z0, eSandX, z0, cobble);   // north end cap, y=1
-        line(b, 1, wSandX, z1, eSandX, z1, cobble);   // south end cap, y=1
-        // oak wall signs on the south face flanking the chests (FU-valued, derived).
-        b.set(wSandX, 1, z1, bs("minecraft:oak_wall_sign[facing=south]"));
-        b.set(eSandX, 1, z1, bs("minecraft:oak_wall_sign[facing=south]"));
+        // ── 5) EXPLANATORY SIGN on the south face ────────────────────────────
+        // Mounted on the south edge (z=6) at the centre; nothing solid above the chest.
+        signText(b, "minecraft:oak_wall_sign[facing=south]", cx, 1, 6,
+                "Plant cactus on", "the sand. It grows", "into the breaker;",
+                "water -> hopper.");
 
         return b.build();
     }
