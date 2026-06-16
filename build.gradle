@@ -157,6 +157,8 @@ tasks.named('test', Test).configure {
     systemProperty 'dumpBlueprints', System.getProperty('dumpBlueprints', 'false')
     // Same opt-in plumbing for the foundation/floating diagnostic audit.
     systemProperty 'auditFoundations', System.getProperty('auditFoundations', 'false')
+    // Same opt-in plumbing for the ladder-support (unbacked-ladder) diagnostic audit.
+    systemProperty 'auditLadders', System.getProperty('auditLadders', 'false')
     testLogging {
         events 'failed'
         exceptionFormat 'full'
