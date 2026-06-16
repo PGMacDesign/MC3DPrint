@@ -6281,9 +6281,15 @@ class CuratedBlueprintGenerator {
         // 1) cherry-plank deck at y=0 (the walkable surface = top of y=0).
         floor(b, 0, x0, z0, x1, z1, p.plankFloor);
         // A cherry-slab trim border one course up around the deck rim reads as a
-        // raised lip; skip the front-centre cell so the entry stays flush/open.
+        // raised lip. Skip the whole front entrance bay — the centre post column
+        // (cx) AND the two cells flanking it (cx-1, cx+1) — so the entry stays
+        // flush at floor level with NO waist-high top-slab lip to step over. (The
+        // previous build only skipped cx, leaving slabs at cx-1/cx+1 that walled
+        // the bay closed — that was the "no entrance" bug.)
         for (int x = x0; x <= x1; x++) {
-            if (x != cx) b.set(x, 1, z0, deckTrim); // north rim (front), gap at entry
+            if (x != cx && x != cx - 1 && x != cx + 1) {
+                b.set(x, 1, z0, deckTrim);          // north rim (front), gap at entry
+            }
             b.set(x, 1, z1, deckTrim);              // south rim (back)
         }
         for (int z = z0 + 1; z <= z1 - 1; z++) {
@@ -6318,6 +6324,18 @@ class CuratedBlueprintGenerator {
         for (int[] q : posts) {
             b.set(q[0], 1, q[1], pillarPost);
         }
+
+        // 3b) a real cherry door in the front entrance bay so the way IN reads
+        //     intentionally and the sill sits at the floor walking level (y=1).
+        //     Sits at (cx-1, z0) — flanked by the central front mid-post (cx) on
+        //     one side and an open archway gap (cx+1) on the other, giving a
+        //     framed door + open-bay entrance. Front wall is north (z=0) → the
+        //     door faces south so it opens inward onto the deck. door2 places both
+        //     halves (lower y=1, upper y=2); nothing else writes those two cells,
+        //     so the partner-half stays intact (double-block GameTest safe). The
+        //     cell directly in front (z=-1) is outside the footprint → naturally
+        //     air, so you walk straight in from flat ground.
+        door2(b, cx - 1, 1, z0, "cherry", "N");
 
         // 4) soft pink-carpet "petal" scatter on the open deck interior (y=1). Carpet
         //    derives from wool → FU-valued; reads as fallen cherry blossoms. Kept off
