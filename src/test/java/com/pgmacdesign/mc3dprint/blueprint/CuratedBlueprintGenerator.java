@@ -17564,9 +17564,12 @@ class CuratedBlueprintGenerator {
      *   <li><b>y=1..2, frame</b> — a low nether-brick wall ring around the footprint with
      *       chiseled nether-brick corner posts, a <b>nether-brick-fence</b> rail crowning
      *       it at y=3, and a <b>fence gate</b> access in the south wall centre.</li>
-     *   <li><b>Brewing nook</b> — in the NE corner (open of the beds): a netherrack stand
-     *       carrying a <b>brewing_stand</b>, a <b>water cauldron</b> beside it, and
-     *       <b>barrels</b> + a <b>chest</b> for storing the harvested wart.</li>
+     *   <li><b>Brewing nook</b> — a compact station capping the dead-end north tip of the
+     *       x=6 walkway, hugging the north wall in the NE corner: a netherrack stand
+     *       carrying a <b>brewing_stand</b>, a <b>water cauldron</b> + <b>barrel</b> beside
+     *       it, and a collection <b>chest</b> capping the x=3 walkway's north tip. It sits
+     *       only in the walkways' dead-end cells — never on a soul-sand/wart bed cell, and
+     *       both lanes stay open to the south so circulation is clear.</li>
      *   <li><b>Lighting</b> — lanterns on the corner posts and a glowstone accent, so the
      *       beds stay lit for the player (nether-wart growth doesn't need light).</li>
      * </ul>
@@ -17628,17 +17631,23 @@ class CuratedBlueprintGenerator {
         b.set(cx, 1, z1, bs("minecraft:nether_brick_fence[in_wall=false,open=false]"));
         b.set(cx, 2, z1, bs("minecraft:nether_brick_fence[in_wall=false,open=false]"));
 
-        // ── 5) BREWING NOOK — NE corner (clear of the bed path) ──────────────────────
-        // A netherrack stand carries the brewing stand; a water cauldron sits beside it
-        // for filling bottles; barrels + a chest store the harvested wart. All on the
-        // y=1 standing floor in the NE walkway corner (x=7..8 isn't a bed there — the
-        // east bed is only x=7; x=8 is the wall, so the nook tucks at x=7..6 near z=0..1).
-        b.set(6, 1, z0 + 1, netherrack);                 // brewing-stand pedestal
-        b.set(6, 2, z0 + 1, brewingStand);               // brewing stand on the stand
-        b.set(7, 1, z0 + 1, waterCauldron);              // filling cauldron beside it
-        b.set(6, 1, z0 + 2, BARREL);                     // wart-storage barrel
-        b.set(7, 1, z0 + 2, BARREL);                     // wart-storage barrel
-        b.set(cx + 1, 1, z0 + 1, CHEST);                 // collection chest near the nook
+        // ── 5) BREWING NOOK — NE walkway corner, hugging the north wall ──────────────
+        // A compact brewing station consolidated into the DEAD-END north tip of the
+        // x=6 walkway (the lane between the mid and east beds), tucked against the
+        // north (z=0) wall in the NE corner. It deliberately uses ONLY the lane's two
+        // northern cells (z=1,2) so it reads as a little station capping the corner —
+        // the lane still runs open from z=3 to the front gate, and it never touches a
+        // soul-sand/wart bed cell (x=5 mid-bed and x=7 east-bed columns stay whole).
+        //   • netherrack pedestal + brewing stand stacked in the corner (x=6, z=1)
+        //   • water cauldron beside it for filling bottles (x=6, z=2)
+        //   • a barrel + chest hugging the north wall for storing the harvested wart
+        b.set(6, 1, z0 + 1, netherrack);    // brewing-stand pedestal (NE corner, vs N wall)
+        b.set(6, 2, z0 + 1, brewingStand);  // brewing stand on the pedestal
+        b.set(6, 1, z0 + 2, waterCauldron); // filling cauldron, one cell down the corner
+        b.set(6, 2, z0 + 2, BARREL);        // wart-storage barrel stacked over the cauldron
+        // collection chest capping the DEAD-END north tip of the x=3 walkway (vs N wall),
+        // mirroring the brewing corner — off every bed, and the lane stays open south of it.
+        b.set(3, 1, z0 + 1, CHEST);
 
         // ── 6) LIGHTING — lanterns on the corner posts + a glowstone accent ──────────
         // Standing lanterns crown the four chiseled corner posts (on top of the y=2
@@ -17647,7 +17656,7 @@ class CuratedBlueprintGenerator {
         b.set(x1, 3, z0, LANTERN); // NE post lantern
         b.set(x0, 3, z1, LANTERN); // SW post lantern
         b.set(x1, 3, z1, LANTERN); // SE post lantern
-        b.set(6, 2, z0 + 2, glowstone); // glowstone glow over the brewing nook
+        b.set(6, 3, z0 + 1, glowstone); // glowstone glow crowning the brewing nook
 
         return b.build();
     }
