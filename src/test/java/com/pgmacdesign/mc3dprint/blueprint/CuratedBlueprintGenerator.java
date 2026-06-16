@@ -7600,30 +7600,34 @@ class CuratedBlueprintGenerator {
      * → builder(9, 24, 9).
      *
      * <p>The classic "how do I build a mob farm" build, printed as the STRUCTURE
-     * only: dark stone/deepslate shell, water channels, a central drop shaft, a
-     * fall chamber, and a hopper+chest collection floor with a player kill slot.
-     * Nothing alive is captured — after printing, hostile mobs spawn naturally on
-     * the unlit top platform (the static shell keeps it dark), get pushed by the
-     * water channels into the central drop hole, fall the height of the shaft, and
-     * land in the collection sump where the player kills them through the slot and
-     * the hopper ring sweeps drops into the chest. Every block is a vanilla
-     * FU-valued block or structural-free matter (water).
+     * only: dark stone/deepslate shell, a dark spawn platform up top, a central
+     * drop shaft, a fall chamber, and a WALK-IN kill chamber at the base. Nothing
+     * alive is captured — after printing, hostile mobs spawn naturally on the unlit
+     * top platform (the static shell keeps it dark), water on the platform pushes
+     * them into the central drop hole, they fall the height of the shaft, and land
+     * in the landing pen at the bottom. The player walks in through the door,
+     * stands on the marked step, one-hits the mobs through the kill slot for XP,
+     * and the hopper ring under the pen sweeps the drops into the chest beside the
+     * slot. Every block is a vanilla FU-valued block or structural-free matter
+     * (water). Water lives ONLY on the spawn platform — the base is dry.
      *
-     * <p>Layout (south = +z is the "front", where the player stands; cx=cz=4):
+     * <p>Layout (south = +z is the "front", where the player enters; cx=cz=4):
      * <ul>
      *   <li><b>y=0</b> — solid stone foundation (9×9).</li>
-     *   <li><b>Collection sump, y=1..4</b> — a deepslate-walled room. A central
-     *       collection chest is ringed by 4 hoppers that feed into it; four water
-     *       sources at the edges wash drops onto the hopper ring. The SOUTH face
-     *       carries a glass-pane viewing window (panes backed along X by the wall →
-     *       render-safe) and, one cell up, an iron-bar KILL SLOT the player hits
-     *       mobs through (backed left/right by deepslate → render-safe). The sump
-     *       ceiling (y=4) is solid except the central 3×3, which is the bottom of
-     *       the drop shaft so fallen mobs land on the hopper ring.</li>
+     *   <li><b>Walk-in kill chamber, y=1..4</b> — a deepslate-walled, DRY room the
+     *       player enters through a south DOOR (sill at floor level). The north 3×3
+     *       under the shaft is the LANDING PEN: a hopper ring that catches falling
+     *       mobs and sweeps drops to a reachable CHEST. A partition wall splits the
+     *       pen from the player's aisle; in it sit the chest, a glass-block VIEWING
+     *       WINDOW at eye level (see mobs land), and a 1-block iron-bar KILL SLOT at
+     *       foot height. The player stands on a marked stone-slab AFK STEP facing
+     *       the slot and one-hits mobs through it. Explanatory signs frame the
+     *       window. The chamber ceiling (y=4) is solid except the central 3×3 shaft
+     *       mouth, so fallen mobs drop onto the hopper ring.</li>
      *   <li><b>Drop shaft / fall chamber, y=5..18</b> — a solid stone tube whose
      *       inner 3×3 is hollow: the fall column (≈14 blocks of free fall ≫ the
      *       ~23 needed to soften, but tall enough to read as a tower and stack with
-     *       the sump drop). The tube walls keep mobs in the chute as they fall.</li>
+     *       the chamber drop). The tube walls keep mobs in the chute as they fall.</li>
      *   <li><b>Spawn platform, y=19</b> — a 7×7 deepslate-slab floor (bottom slabs
      *       give a solid, mob-spawnable surface) with the central 3×3 left OPEN as
      *       the drop hole. Water sources at the four mid-edges flow inward toward
@@ -7639,10 +7643,11 @@ class CuratedBlueprintGenerator {
         BlueprintBlockState stone     = bs("minecraft:stone");
         BlueprintBlockState deepslate = bs("minecraft:deepslate[axis=y]");
         BlueprintBlockState cobble    = COBBLE;
-        BlueprintBlockState pane      = GLASS_PANE;   // only where backed by a solid neighbour
+        BlueprintBlockState glass     = GLASS;        // viewing window (solid block → always render-safe)
         BlueprintBlockState bars      = IRON_BARS;    // kill slot, only where backed by a solid neighbour
         BlueprintBlockState slabBot   = bs("minecraft:deepslate_tile_slab[type=bottom]"); // spawn surface
         BlueprintBlockState slabRoof  = bs("minecraft:stone_slab[type=top]");
+        BlueprintBlockState afkStep   = bs("minecraft:stone_slab[type=bottom]"); // the player's marked stand-on spot
         BlueprintBlockState chest     = bs("minecraft:chest[facing=south,type=single,waterlogged=false]");
         BlueprintBlockState water     = WATER;        // structural (asItem()==AIR) → prints free
 
@@ -7652,32 +7657,68 @@ class CuratedBlueprintGenerator {
         // ── 1) STONE FOUNDATION at y=0 ───────────────────────────────────────
         floor(b, 0, x0, z0, x1, z1, stone);
 
-        // ── 2) COLLECTION SUMP, y=1..4 (deepslate-walled drop landing) ───────
-        // A 9×9 deepslate wall ring, interior open so the player can enter and
-        // stand at the kill slot. Hopper ring + chest at the centre; water washes
-        // drops onto the hoppers.
+        // ── 2) WALK-IN KILL CHAMBER, y=1..4 (deepslate-walled, dry) ──────────
+        // A deepslate-walled room the player WALKS INTO via a south door. Mobs
+        // fall down the central shaft and land on the hopper ring in the LANDING
+        // PEN (north 3×3 under the shaft). A low partition splits the pen from the
+        // player's standing aisle; the player stands on a marked step facing a
+        // 1-block iron-bar KILL SLOT and one-hits mobs through it. Hoppers sweep
+        // the drops to a reachable chest beside the slot. NO water down here — the
+        // base is dry; water belongs only on the spawn platform up top.
         walls(b, x0, z0, x1, z1, 1, 3, deepslate);
-        // 2a) central collection chest, ringed by 4 hoppers that feed INTO it.
-        b.set(cx, 1, cz, chest);
-        b.set(cx - 1, 1, cz, bs("minecraft:hopper[enabled=true,facing=east]"));   // → chest
-        b.set(cx + 1, 1, cz, bs("minecraft:hopper[enabled=true,facing=west]"));   // → chest
-        b.set(cx, 1, cz - 1, bs("minecraft:hopper[enabled=true,facing=south]"));  // → chest
-        b.set(cx, 1, cz + 1, bs("minecraft:hopper[enabled=true,facing=north]"));  // → chest
-        // 2b) four water sources at the sump-floor edges (y=1) wash drops inward.
-        b.set(x0 + 1, 1, cz, water);                  // west inflow
-        b.set(x1 - 1, 1, cz, water);                  // east inflow
-        b.set(cx, 1, z0 + 1, water);                  // north inflow
-        b.set(cx, 1, z1 - 1, water);                  // south inflow
-        // 2c) SOUTH-face viewing window: a row of glass panes at y=2, each flanked
-        //     left/right by the deepslate wall run → render-safe (connects along X).
-        for (int x = cx - 1; x <= cx + 1; x++) {
-            b.set(x, 2, z1, pane);
+
+        // 2a) FLOOR at y=1: solid deepslate across the whole interior so the player
+        //     has a dry floor to stand on, EXCEPT the central 3×3 landing pen
+        //     (x3..5, z3..5) which is the hopper ring (set just below).
+        for (int x = x0 + 1; x <= x1 - 1; x++) {
+            for (int z = z0 + 1; z <= z1 - 1; z++) {
+                if (x >= cx - 1 && x <= cx + 1 && z >= cz - 1 && z <= cz + 1) continue; // pen (hoppers)
+                b.set(x, 1, z, deepslate);
+            }
         }
-        // 2d) KILL SLOT: an iron-bar slit at y=3 on the south wall centre, flanked
-        //     by deepslate along X → render-safe. The player stands outside (+z)
-        //     and hits mobs piled in the sump through the bars.
-        b.set(cx, 3, z1, bars);
-        // 2e) SUMP CEILING at y=4: solid deepslate EXCEPT the central 3×3, left
+
+        // 2b) LANDING PEN hopper ring (x3..5, z3..5), all funnelling to the chest.
+        //     The two north rows (z3,z4) face south; the front row (z5) carries the
+        //     items west to (cx-1,1,z5) which faces south INTO the chest at z6.
+        for (int x = cx - 1; x <= cx + 1; x++) {
+            b.set(x, 1, cz - 1, bs("minecraft:hopper[enabled=true,facing=south]")); // z3 → z4
+            b.set(x, 1, cz,     bs("minecraft:hopper[enabled=true,facing=south]")); // z4 → z5
+        }
+        b.set(cx + 1, 1, cz + 1, bs("minecraft:hopper[enabled=true,facing=west]")); // z5 east → centre
+        b.set(cx,     1, cz + 1, bs("minecraft:hopper[enabled=true,facing=west]")); // z5 centre → west
+        b.set(cx - 1, 1, cz + 1, bs("minecraft:hopper[enabled=true,facing=south]")); // z5 west → chest at z6
+
+        // 2c) PARTITION WALL at z=6, y=1..3: solid deepslate that pens the mobs in,
+        //     with two openings on the player's row (y=1): the reachable CHEST and
+        //     the iron-bar KILL SLOT. The chest faces south (front toward the
+        //     player), the slot is flanked by chest/deepslate along X → render-safe.
+        for (int y = 1; y <= 3; y++) {
+            for (int x = x0 + 1; x <= x1 - 1; x++) {
+                if (y == 1 && (x == cx - 1 || x == cx)) continue; // chest + kill-slot cells
+                b.set(x, y, cz + 2, deepslate);
+            }
+        }
+        b.set(cx - 1, 1, cz + 2, chest);  // collection chest, faces south → opens toward player
+        b.set(cx,     1, cz + 2, bars);   // KILL SLOT at foot height (deepslate/chest flank it → render-safe)
+
+        // 2d) AFK / KILL SPOT: a marked stone-slab step in the player aisle (z7),
+        //     directly south of the kill slot, facing it. Stand here, hit mobs
+        //     through the slot, open the chest right beside you.
+        b.set(cx, 1, cz + 3, afkStep);
+
+        // 2e) VIEWING WINDOW in the PARTITION (z6) at eye level (y=2): three glass
+        //     BLOCKS so the player standing in the aisle SEES mobs land in the pen
+        //     and understands the mechanism. Glass blocks are full solids flanked by
+        //     deepslate partition along X → always render-safe (no stub panes).
+        for (int x = cx - 1; x <= cx + 1; x++) {
+            b.set(x, 2, cz + 2, glass);
+        }
+        // 2f) WALK-IN DOOR in the south outer wall (sill at floor level y=1), facing
+        //     north so it opens into the chamber. door2 places both halves → partner
+        //     intact. The player walks straight in from the south, dry-footed.
+        door2(b, cx, 1, z1, "oak", "S");
+
+        // 2g) CHAMBER CEILING at y=4: solid deepslate EXCEPT the central 3×3, left
         //     OPEN (air-skip) as the bottom of the drop shaft so falling mobs land
         //     on the hopper ring below.
         for (int x = x0; x <= x1; x++) {
@@ -7734,23 +7775,20 @@ class CuratedBlueprintGenerator {
         corners(b, x0, z0, x1, z1, 20, 22, cobble);
         floor(b, 23, x0, z0, x1, z1, slabRoof);
 
-        // ── 6) EXPLANATORY SIGNS (signText — title + how-it-works) ───────────
-        // Mounted on the INNER face of the NORTH sump wall: facing=south signs at
-        // z=z0+1 attach northward to the solid deepslate wall at z=z0 → render-safe,
-        // and read as the player stands at the south kill slot looking across the
-        // sump toward the north wall. The sump interior at y=2..3 is open air here.
-        signText(b, "minecraft:oak_wall_sign[facing=south]", cx, 3, z0 + 1,
-                 "MOB XP TOWER", "", "Mobs spawn in the", "dark room above");
-        signText(b, "minecraft:oak_wall_sign[facing=south]", cx - 2, 3, z0 + 1,
-                 "Water washes", "them to the", "centre drop and", "down the shaft");
-        signText(b, "minecraft:oak_wall_sign[facing=south]", cx + 2, 3, z0 + 1,
-                 "Drops collect", "in the chest", "below — hopper", "ring feeds it");
-        // Kill-slot instructions: a standing sign on the slab roof of the sump, just
-        // OUTSIDE the south kill slot where the player stands. rotation=0 faces north
-        // (+ -z) so it reads as the player walks up to the slot; it sits on the y=2
-        // ceiling deepslate at (cx, 3, z1) which is solid below → render-safe.
-        signText(b, "minecraft:oak_sign[rotation=0]", cx, 5, z1,
-                 "Stand here and", "hit mobs through", "the bars for XP", "(kill slot below)");
+        // ── 6) EXPLANATORY SIGNS (signText — how-it-works at the kill spot) ──
+        // All three mount on the PARTITION wall (z6) and read facing SOUTH toward
+        // the player standing on the AFK step in the aisle. Each sign sits one cell
+        // south of the partition (z7) with facing=south so it attaches northward to
+        // the solid deepslate partition → render-safe, framing the viewing window.
+        //   • centre, above the window — the main "what to do here" sign.
+        signText(b, "minecraft:oak_wall_sign[facing=south]", cx, 3, cz + 3,
+                 "MOB XP FARM", "Stand here, hit", "mobs through the", "slot for XP");
+        //   • left, over the chest — drops collection.
+        signText(b, "minecraft:oak_wall_sign[facing=south]", cx - 2, 2, cz + 3,
+                 "Drops collect", "in this chest", "", "");
+        //   • right — where the mobs come from (the flow, top → bottom).
+        signText(b, "minecraft:oak_wall_sign[facing=south]", cx + 2, 2, cz + 3,
+                 "Mobs spawn in", "the dark room up", "top; water washes", "them down here");
 
         return b.build();
     }
