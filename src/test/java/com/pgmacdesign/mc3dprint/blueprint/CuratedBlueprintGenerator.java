@@ -9408,6 +9408,20 @@ class CuratedBlueprintGenerator {
         b.set(1, yB, 1, LANTERN);
         b.set(5, yB, 1, LANTERN);
 
+        // ── 9) CORNER DECOR — fill the four empty inner-frame "slots" ─────────
+        // Four symmetric floor cells in the corners of the inner furniture frame sat
+        // empty and read as unfinished gaps: the two entry corners that flank the north
+        // doorway (2,1)/(4,1) and the two cartography-station corners that flank the
+        // table (2,5)/(4,5). None are on the central walkway, so filling them stays
+        // non-blocking. Entry corners get a potted cornflower (blue bloom matching the
+        // room's blue carpet / terracotta / banner palette — potted_* is itemless-
+        // structural, prints free); the station corners get map-storage barrels beside
+        // the cartography table (rolled maps & atlases — BARREL is recipe-derived/valued).
+        b.set(2, yB, 1, bs("minecraft:potted_cornflower"));   // entry corner, west of door
+        b.set(4, yB, 1, bs("minecraft:potted_cornflower"));   // entry corner, east of door
+        b.set(2, yB, 5, BARREL);                              // map-storage barrel, west of table
+        b.set(4, yB, 5, BARREL);                              // map-storage barrel, east of table
+
         return b.build();
     }
 
