@@ -7,6 +7,7 @@ import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -42,8 +43,17 @@ public final class BlueprintSerializer {
         root.put(KEY_PALETTE, palette);
         root.putIntArray(KEY_BLOCKS, blueprint.rawBlocks().clone());
 
+        // Sort block entities by position so serialization is DETERMINISTIC — the
+        // source map is a HashMap, whose iteration order varies per run and would
+        // otherwise produce spurious byte diffs on every regen of a signed build.
         ListTag blockEntities = new ListTag();
-        for (Map.Entry<BlockPos, CompoundTag> entry : blueprint.blockEntities().entrySet()) {
+        List<Map.Entry<BlockPos, CompoundTag>> sortedBe =
+                new ArrayList<>(blueprint.blockEntities().entrySet());
+        sortedBe.sort(Comparator
+                .comparingInt((Map.Entry<BlockPos, CompoundTag> e) -> e.getKey().getX())
+                .thenComparingInt(e -> e.getKey().getY())
+                .thenComparingInt(e -> e.getKey().getZ()));
+        for (Map.Entry<BlockPos, CompoundTag> entry : sortedBe) {
             CompoundTag be = new CompoundTag();
             BlockPos pos = entry.getKey();
             be.putIntArray(KEY_BE_POS, new int[]{pos.getX(), pos.getY(), pos.getZ()});
