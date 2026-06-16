@@ -9781,9 +9781,16 @@ class CuratedBlueprintGenerator {
         // ── 9) LADDER — SE corner, continuous climb y=1..mezzY to the deck ──
         // Runs all the way to the deck layer (top rung at y=mezzY=4, filling the
         // open hatch cell) so the climb tops out FLUSH with the y=5 gallery
-        // surface — no 2-block mantle. The top rung is backed on both sides by
-        // the gallery planks at (7,4,8) and (9,4,8); the climber steps off onto
-        // those planks (clear headroom at y=5/y=6 above them).
+        // surface — no 2-block mantle. A facing=east ladder takes its support
+        // from the WEST neighbour (hatchX-1 = 7), so back the whole run with a
+        // 3-tall dark-oak-plank post at (7, 1..3, 8); the deck plank already at
+        // (7,mezzY,8) backs the top rung. This reads as a structural post under
+        // the SE gallery corner and gives every rung a sturdy face (no reliance
+        // on the printer's suppress-drops). The climber steps off the top rung
+        // onto the gallery planks at (7,4,8)/(9,4,8) (clear headroom y=5/y=6).
+        for (int y = 1; y <= mezzY - 1; y++) {
+            b.set(hatchX - 1, y, hatchZ, DARK_OAK_PLANKS); // west backing post
+        }
         for (int y = 1; y <= mezzY; y++) {
             b.set(hatchX, y, hatchZ, ladderE);
         }
