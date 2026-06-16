@@ -8223,8 +8223,8 @@ class CuratedBlueprintGenerator {
     }
 
     /**
-     * §F.bamboo_farm — a STATIC automatic bamboo farm, 7×7×5 (W×L×H)
-     * → builder(7, 5, 7).
+     * §F.bamboo_farm — a STATIC automatic bamboo farm, 7×7×6 (W×L×H)
+     * → builder(7, 6, 7).
      *
      * <p>The "Tier-1 post-1.20 farm", printed as the working STRUCTURE the player
      * plants into. Vanilla <b>bamboo</b> has no producing recipe and its grown stalk
@@ -8233,47 +8233,60 @@ class CuratedBlueprintGenerator {
      * gate. We therefore <b>omit the bamboo itself</b> — the player plants a shoot on
      * each grow-block after printing — and print the mechanism: <b>mud</b> grow-blocks
      * (bamboo plants on dirt/sand/gravel/mud; mud is FU-valued 1@1 and on-theme for
-     * the post-1.20 mangrove-swamp look), an <b>observer</b> at the harvest height that
-     * watches the grow column and detects the stalk growing one block taller, a
-     * <b>piston</b> above it that shoves/breaks the new segment off, a sunken
+     * the post-1.20 mangrove-swamp look), an <b>observer</b> RAISED to the cell the
+     * second bamboo segment grows into (NOT the planted base — the base is always
+     * present once planted, so a base-height observer fires once and never again),
+     * a <b>piston</b> above it that snaps the new segment off toward the canal, a
      * <b>water canal</b> that catches the snapped bamboo, and a hopper → chest at the
-     * south end. Every printed block is a vanilla FU-valued block (mud 1@1, stone,
-     * cobble, redstone 4@3, hopper 100@3, observer/piston derive from crafting,
-     * chest derives) or structural-free matter (water prints free, {@code asItem()==AIR};
-     * redstone_wire is structural).
+     * south end. This mirrors the shipped auto sugar-cane farm exactly (vertical-grow
+     * plant, observer-watches-the-growth-cell, piston-snap, central water canal). Every
+     * printed block is a vanilla FU-valued block (mud 1@1, stone, cobble, redstone 4@3,
+     * hopper 100@3, observer/piston derive from crafting, chest derives) or
+     * structural-free matter (water prints free, {@code asItem()==AIR}; redstone_wire
+     * is structural).
      *
      * <p>How it works once printed + planted: the player drops a bamboo shoot on each
-     * mud grow-block. Bamboo grows straight up; the moment a new segment grows into the
-     * cell an observer faces, the observer pulses, firing the piston beside it which
-     * breaks the stalk above the cut point. The broken bamboo lands in the central
-     * water canal, floats south, and is swept by the hopper into the collection chest.
-     * (This mirrors the shipped cactus_farm / pumpkin_melon_farm static-shell pattern,
-     * with a central canal flanked by two harvest rows.)
+     * mud grow-block (the cells at y=2 are left as air above the mud for exactly this).
+     * Bamboo grows straight up. The planted base sits at y=2 and is permanent; the
+     * <b>second</b> segment grows into y=3, which is the cell the observer faces — so
+     * the observer pulses on every regrowth (this is the fix: the old build watched the
+     * base at y=2, which never changes). The observer's back output runs across a
+     * redstone-dust shelf to the piston at y=4, which snaps the stalk toward the central
+     * water canal. The broken bamboo lands in the canal water (y=2..4), flows south, and
+     * is swept by the hopper into the collection chest.
      *
      * <p>Layout (south = +z is the "front"/access side; the canal runs along Z; cx=3):
      * <ul>
      *   <li><b>y=0</b> — stone foundation (7×7) with a central <b>water canal</b>
-     *       punched along Z (z=1..4) at x=cx: the trough that catches + carries the
-     *       snapped bamboo south.</li>
+     *       punched along Z at x=cx: the trough that carries the snapped bamboo south
+     *       to the hopper.</li>
      *   <li><b>Hopper + chest, y=0</b> — at the south end of the canal a hopper
      *       (x=cx, z=5) feeds a collection chest tucked at the south edge (z=6,
-     *       facing north), so every bamboo segment the canal delivers is collected.</li>
+     *       facing north), so every bamboo segment the canal delivers is collected.
+     *       Nothing solid sits above the chest, so it opens freely.</li>
      *   <li><b>Mud grow-blocks, y=1</b> — two rows of mud straddling the canal at
-     *       x=cx-1 (2) and x=cx+1 (4), z=1..5: the player plants bamboo on top (y=2);
-     *       the stalk grows up over the canal edge, and broken segments fall into the
-     *       central canal.</li>
-     *   <li><b>Harvest wall, y=2..3</b> — one column further out (x=1 west / x=5 east)
-     *       a stone base at y=1 carries an <b>observer</b> at y=2 facing the grow
-     *       column (west faces east, east faces west), watching the stalk grow into its
-     *       face, and a <b>piston</b> at y=3 above it facing the grow column to break
-     *       the new segment off toward the canal. A redstone-dust ribbon on the y=4
-     *       piston-top ties each observer's back output across to fire its piston.</li>
+     *       x=cx-1 (2) and x=cx+1 (4), z=1..5, with <b>air left above them at y=2</b>
+     *       so the player can plant a bamboo shoot on each.</li>
+     *   <li><b>Canal catch-water, y=2..4</b> — water source column at x=cx along the
+     *       planting rows so the snapped bamboo segment (broken at the harvest height)
+     *       always lands in water and sweeps south, never onto a solid block.</li>
+     *   <li><b>Harvest wall</b> — one column further out (x=1 west / x=5 east) a stone
+     *       backing at y=1..2 raises an <b>observer at y=3</b> facing the grow column
+     *       (west faces east, east faces west) — it watches the cell the SECOND bamboo
+     *       segment grows into — with a <b>piston at y=4</b> above it facing the grow
+     *       column to snap the new segment toward the canal. A stone shelf one column
+     *       further out (x=0 / x=6) carries a redstone-dust ribbon at y=5 tying each
+     *       observer's back output to its piston.</li>
      *   <li><b>End walls + label signs</b> — cobble end caps (z=0, z=6) box the
-     *       canal; oak wall signs on the south face label the build.</li>
+     *       canal; oak wall signs on the south face explain where to plant.</li>
      * </ul>
      */
     private static Blueprint bambooFarm() {
-        Blueprint.Builder b = Blueprint.builder("Bamboo Farm", 7, 5, 7);
+        // Height 6 (y=0..5): the harvest wall stacks stone backing (y=1..2),
+        // observer (y=3, the 2nd-bamboo-segment height), piston (y=4) and a
+        // redstone-dust ribbon (y=5) — mirroring the shipped auto sugar-cane farm so
+        // the detectors sit where the bamboo actually grows, not at the planted base.
+        Blueprint.Builder b = Blueprint.builder("Bamboo Farm", 7, 6, 7);
         // all vanilla, all FU-valued / structural-free (NO bamboo — unvalued; player plants it):
         BlueprintBlockState stone   = bs("minecraft:stone");
         BlueprintBlockState cobble  = COBBLE;
@@ -8286,6 +8299,7 @@ class CuratedBlueprintGenerator {
         int cx = 3;                                    // central water-canal column
         int wMudX  = cx - 1, eMudX  = cx + 1;          // 2 and 4 (mud grow-block rows)
         int wWallX = cx - 2, eWallX = cx + 2;          // 1 and 5 (observer/piston harvest walls)
+        int wShelfX = cx - 3, eShelfX = cx + 3;        // 0 and 6 (redstone-dust shelf columns)
         int rowZ0 = 1, rowZ1 = 5;                      // grow-blocks / canal run along Z
 
         // ── 1) STONE FOUNDATION at y=0, with the central WATER CANAL ─────────
@@ -8303,41 +8317,62 @@ class CuratedBlueprintGenerator {
         b.set(cx, 0, rowZ1, bs("minecraft:hopper[enabled=true,facing=north]")); // z=5 → feeds chest
         b.set(cx, 0, z1, chest);                                                 // collection chest, faces north
 
-        // ── 3) MUD GROW-BLOCKS — the player plants bamboo on top ─────────────
-        // Two mud rows straddling the canal at x=2 and x=4 (z=1..5). The player plants
-        // a bamboo shoot on the y=2 cell above each; the stalk grows up (y=3+) over the
-        // canal edge, and broken segments fall into the central canal.
+        // ── 2b) CANAL CATCH-WATER (y=2..4) — where the snapped bamboo lands ──
+        // A water SOURCE column at x=cx along the planting rows (z=1..5) through y=2..4:
+        // the bamboo snapped at the harvest height always falls into water (never onto
+        // a solid block) and flows south, dropping down the y=0 canal into the hopper.
         for (int z = rowZ0; z <= rowZ1; z++) {
-            b.set(wMudX, 1, z, mud);   // grow-block (player plants bamboo here)
+            b.set(cx, 2, z, water);
+            b.set(cx, 3, z, water);
+            b.set(cx, 4, z, water);
+        }
+
+        // ── 3) MUD GROW-BLOCKS — the player plants bamboo on top ─────────────
+        // Two mud rows straddling the canal at x=2 and x=4 (z=1..5). Air is left above
+        // each (y=2) so the player can plant a bamboo shoot; the planted base sits at
+        // y=2, the 2nd segment grows into y=3 (the observer's watch cell), and broken
+        // segments fall into the central canal water.
+        for (int z = rowZ0; z <= rowZ1; z++) {
+            b.set(wMudX, 1, z, mud);   // grow-block (player plants bamboo here; air above at y=2)
             b.set(eMudX, 1, z, mud);
         }
 
-        // ── 4) HARVEST WALL: observer + piston + redstone ────────────────────
-        // One column further out from each mud row (x=1 west / x=5 east) a stone base
-        // at y=1 carries an observer at y=2 facing the grow column (watching the stalk
-        // grow into its face) and a piston at y=3 above it facing the grow column
-        // (breaks the new segment off toward the central canal). West wall faces east,
-        // east wall faces west. A redstone-dust ribbon at y=4 rides on the piston-top,
-        // carrying each observer's back-output across to fire its piston.
+        // ── 4) HARVEST WALL: stone backing + observer + piston + redstone ────
+        // One column further out from each mud row (x=1 west / x=5 east): stone backing
+        // at y=1..2 RAISES an observer to y=3 facing the grow column — it watches the
+        // cell the SECOND bamboo segment grows into (the planted base at y=2 is always
+        // present, so a base-height observer would fire once and never again; this is
+        // the fix). A piston at y=4 above it faces the grow column and snaps the new
+        // segment toward the central canal. West wall faces east, east wall faces west.
+        // A stone shelf one column further out (x=0 / x=6) carries a redstone-dust
+        // ribbon at y=5 tying each observer's back output across to fire its piston.
         for (int z = rowZ0; z <= rowZ1; z++) {
-            b.set(wWallX, 1, z, stone);   // observer/piston base
-            b.set(eWallX, 1, z, stone);
-            b.set(wWallX, 2, z, bs("minecraft:observer[facing=east,powered=false]"));
-            b.set(eWallX, 2, z, bs("minecraft:observer[facing=west,powered=false]"));
-            b.set(wWallX, 3, z, bs("minecraft:piston[facing=east,extended=false]"));
-            b.set(eWallX, 3, z, bs("minecraft:piston[facing=west,extended=false]"));
-            b.set(wWallX, 4, z, redDust);
-            b.set(eWallX, 4, z, redDust);
+            pillar(b, wWallX, z, 1, 2, stone);   // observer backing → raises detector to y=3
+            pillar(b, eWallX, z, 1, 2, stone);
+            b.set(wWallX, 3, z, bs("minecraft:observer[facing=east,powered=false]"));
+            b.set(eWallX, 3, z, bs("minecraft:observer[facing=west,powered=false]"));
+            b.set(wWallX, 4, z, bs("minecraft:piston[facing=east,extended=false]"));
+            b.set(eWallX, 4, z, bs("minecraft:piston[facing=west,extended=false]"));
+            pillar(b, wShelfX, z, 1, 4, stone);  // solid floor under the dust ribbon
+            pillar(b, eShelfX, z, 1, 4, stone);
+            b.set(wShelfX, 5, z, redDust);
+            b.set(eShelfX, 5, z, redDust);
         }
 
         // ── 5) END WALLS (box the canal) + LABEL SIGNS ───────────────────────
-        // Cobble end caps at z=0 and z=6 across the grow span close the ends so the
-        // water canal reads as a contained trough.
-        line(b, 1, wWallX, z0, eWallX, z0, cobble);   // north end cap, y=1
-        line(b, 1, wWallX, z1, eWallX, z1, cobble);   // south end cap, y=1
-        // oak wall signs on the south face flanking the chest (FU-valued, derived).
-        b.set(wMudX, 1, z1, bs("minecraft:oak_wall_sign[facing=south]"));
-        b.set(eMudX, 1, z1, bs("minecraft:oak_wall_sign[facing=south]"));
+        // North cobble end cap (y=1) closes the north end so the canal reads as a
+        // contained trough. The SOUTH cap is intentionally NOT placed over the centre
+        // (x=cx) column: that cell sits directly above the collection chest at (cx,0,z1)
+        // and must stay open air so the chest opens freely. We cap only the two mud
+        // columns at the south edge and mount the explanatory signs there.
+        line(b, 1, wMudX, z0, eMudX, z0, cobble);   // north end cap, y=1
+        // oak wall signs on the south face flanking the chest, telling the player where
+        // to plant (FU-valued, derived). These overwrite the south mud-column cells at
+        // y=1, leaving the centre chest column above-clear.
+        signText(b, "minecraft:oak_wall_sign[facing=south]", wMudX, 1, z1,
+                "Plant bamboo on", "the mud blocks.", "Observer fires the", "piston -> water.");
+        signText(b, "minecraft:oak_wall_sign[facing=south]", eMudX, 1, z1,
+                "Plant bamboo on", "the mud blocks.", "Observer fires the", "piston -> water.");
 
         return b.build();
     }
