@@ -10469,7 +10469,8 @@ class CuratedBlueprintGenerator {
      * <p>The "beginner essential": a fenced enclosure the player drops animals into
      * (cows/sheep/pigs/chickens). Printed as the working SHELL — fence perimeter,
      * gate, a covered lean-to shelter in the NW corner, a water trough, a hay-bale
-     * feeder, and lighting. The PLAYER adds the animals after printing.
+     * feeder, an empty storage chest, and lighting. The PLAYER adds the animals
+     * after printing.
      *
      * <p><b>No grass floor.</b> Per the build conventions, the pen sits on the
      * player's own terrain — we do NOT print {@code grass_block} (it's unvalued AND
@@ -10499,7 +10500,12 @@ class CuratedBlueprintGenerator {
      *       y=1..2, oak-plank back (north, z=0) + side (west, x=0) walls y=1..2 to break
      *       the wind, and an oak-slab roof at y=3 over the footprint. The east + south
      *       faces stay open so animals can walk in. A hanging lantern under the roof
-     *       lights the shelter.</li>
+     *       lights the shelter, and an <b>empty single chest</b> sits in the NW back
+     *       corner (x=1, z=1) at y=1, facing south, as the player's "drop your feed /
+     *       spawn eggs here" spot — accessible from the open shelter faces, with air
+     *       above so the lid opens, and clear of the gate, trough and walkways. It is
+     *       printed UNSTOCKED (no item NBT); chest is vanilla and FU-valued (derives
+     *       from oak planks).</li>
      *   <li><b>Water trough, y=0</b> — a 1×2 sunken water pool at (x=6, z=2..3) that
      *       overwrites the grass, boxed on its north/south ends with cobble at y=0 so it
      *       reads as a contained sunken trough. Water is structural and prints free;
@@ -10559,6 +10565,15 @@ class CuratedBlueprintGenerator {
         // hanging lantern under the roof centre (chain to the y=3 slab above)
         b.set(2, 3, 1, CHAIN);
         b.set(2, 2, 1, HANGING_LANTERN);
+        // an EMPTY single chest inside the dry shelter — the player's "drop your
+        // feed / spawn eggs here" spot. Tucked into the NW back corner (north plank
+        // wall behind it at z=0, west plank wall beside it at x=0), sitting on the
+        // y=0 plank floor at y=1, facing SOUTH so it reads/opens toward the open pen
+        // interior (the shelter's east + south faces are open for access). It clears
+        // the hanging lantern (x=2,z=1), the gate (z=8), the trough (x=6), the hay
+        // (z=6) and all walkways; (1,2,1) above it is air so the lid can open (the
+        // y=3 roof slab is two cells up, non-blocking). Unstocked — no item NBT.
+        b.set(1, 1, 1, bs("minecraft:chest[facing=south,type=single,waterlogged=false]"));
 
         // ── 3) WATER TROUGH, y=0 — a 1×2 sunken pool, boxed at its ends ─────
         b.set(6, 0, 2, water);
