@@ -10383,15 +10383,36 @@ class CuratedBlueprintGenerator {
      * </ul>
      */
     private static Blueprint chickenCoopAuto() {
-        Blueprint.Builder b = Blueprint.builder("Auto Chicken Cooker", 7, 7, 7);
+        // ┌───────────────────────────────────────────────────────────────────────┐
+        // │ AUTO CHICKEN COOKER — a compact, fully CONTAINED little cooker.        │
+        // │                                                                       │
+        // │ The cooker is built around minecraft:lava_cauldron, NOT raw lava. A   │
+        // │ lava_cauldron is a single self-contained block that HOLDS lava: it    │
+        // │ never flows, never spreads sideways, never pours down an open face,   │
+        // │ and never converts to obsidian. So nothing can ever leak. It is       │
+        // │ itemless (asItem()==AIR) → prints FREE as structural matter (the same │
+        // │ printability path the iron_farm rework uses and passes). There is NO  │
+        // │ raw lava and NO water anywhere in this build.                         │
+        // │                                                                       │
+        // │ Bottom-to-top:                                                        │
+        // │   y=0  stone foundation.                                              │
+        // │   y=1  HOPPER pen-floor (3×3) chaining to an ACCESSIBLE CHEST that    │
+        // │        faces out of an open front nook at floor level. Chickens stand │
+        // │        on the hoppers; cooked chicken/feathers/eggs drop here → chest.│
+        // │   y=2  GLASS-walled pen (open toss-in gap in the front) holding a row │
+        // │        of LAVA CAULDRONS the chickens walk into to get cooked.        │
+        // │   y=3  glass cap course (seals the pen from above).                   │
+        // │   y=4  smooth-stone slab roof.                                        │
+        // │   Signs on the front rim explain the whole thing.                     │
+        // └───────────────────────────────────────────────────────────────────────┘
+        Blueprint.Builder b = Blueprint.builder("Auto Chicken Cooker", 7, 5, 7);
         // all vanilla, all FU-valued / structural-free:
-        BlueprintBlockState stone   = bs("minecraft:stone");
-        BlueprintBlockState glass   = GLASS;                // solid glass for walls (always renders)
-        BlueprintBlockState slabTop = SMOOTH_STONE_SLAB_TOP;
-        BlueprintBlockState slabBot = bs("minecraft:smooth_stone_slab[type=bottom]"); // lava-holder floor
-        BlueprintBlockState chest   = bs("minecraft:chest[facing=south,type=single,waterlogged=false]");
-        BlueprintBlockState lava    = LAVA;                 // structural → prints free
-        BlueprintBlockState lantern = LANTERN;              // glowstone-free lighting, FU-valued
+        BlueprintBlockState stone        = bs("minecraft:stone");
+        BlueprintBlockState glass        = GLASS;             // solid glass for walls (always renders)
+        BlueprintBlockState slabTop      = SMOOTH_STONE_SLAB_TOP;
+        BlueprintBlockState chest        = bs("minecraft:chest[facing=south,type=single,waterlogged=false]");
+        BlueprintBlockState lavaCauldron = bs("minecraft:lava_cauldron"); // structural (asItem()==AIR) → prints free; self-contained heat, never leaks
+        BlueprintBlockState lantern      = LANTERN;           // glowstone-free lighting, FU-valued
 
         int x0 = 0, x1 = 6, z0 = 0, z1 = 6;                 // 7×7 footprint
         int cx = 3, cz = 3;                                 // centre column
@@ -10400,13 +10421,13 @@ class CuratedBlueprintGenerator {
         floor(b, 0, x0, z0, x1, z1, stone);
 
         // Pen footprint (the inner 3×3 the chickens live in) and the chest position.
-        // The chest sits one cell SOUTH of the pen's south wall (an open front alcove)
+        // The chest sits one cell SOUTH of the pen's south wall (an open front nook)
         // so the hopper chain reaches it AND the player can walk up to its open south
         // face at floor level. cz+1 = pen south wall row; cz+2 = chest row.
         int px0 = cx - 1, px1 = cx + 1, pz0 = cz - 1, pz1 = cz + 1;
         int chestZ = cz + 2;                                  // = 5: chest row, open to the front
 
-        // ── 2) HOPPER FLOOR + ACCESSIBLE CHEST at y=1 ────────────────────────────
+        // ── 2) HOPPER PEN-FLOOR + ACCESSIBLE CHEST at y=1 ────────────────────────
         // A 3×3 hopper grid centred on (cx,cz): the chickens STAND on it and the cooked
         // chicken/feathers/eggs DROP onto it. Every hopper points SOUTH, chaining the
         // grid toward the front, where the front-centre hopper (cx, cz+1) feeds into a
@@ -10421,88 +10442,73 @@ class CuratedBlueprintGenerator {
         // it sits over the chest row's north neighbour and drops into the chest:
         b.set(cx, 1, chestZ, chest);                          // accessible collection chest (faces south, open front)
         // stone rim course at y=1 around the build (perimeter of the 7×7). The chest
-        // cell and the two cells flanking it on the front row stay open as the alcove.
+        // cell and the two cells flanking it on the front row stay open as the nook.
         line(b, 1, x0, z0, x1, z0, stone);                    // north rim
         line(b, 1, x0, z0, x0, z1, stone);                    // west rim
         line(b, 1, x1, z0, x1, z1, stone);                    // east rim
-        // south rim row (z=z1): solid except the central 3 cells (the open front alcove)
+        // south rim row (z=z1): solid except the central 3 cells (the open front nook)
         for (int x = x0; x <= x1; x++) {
-            if (x >= cx - 1 && x <= cx + 1) continue;         // leave the front alcove open
+            if (x >= cx - 1 && x <= cx + 1) continue;         // leave the front nook open
             b.set(x, 1, z1, stone);
         }
-        // a wall lantern lighting the front alcove, on the east alcove pier facing the chest
+        // a wall lantern lighting the front nook, on the east nook pier facing the chest
         b.set(cx + 2, 1, chestZ, lantern);                    // sits on the rim corner, lights pickup
 
-        // ── 3) THE 1-TALL GLASS PEN at y=2 (where the player puts the chickens) ──
-        // Solid-glass walls around the 3×3 hopper floor; chickens stand on the hoppers
+        // ── 3) THE GLASS PEN + LAVA-CAULDRON COOKERS at y=2 ──────────────────────
+        // Solid-glass walls around the 3×3 pen; chickens stand on the hopper floor (y=1)
         // inside. The front-centre wall cell (cx, pz1) is left OPEN as the toss-in gap so
-        // the player drops chickens in. An outer stone rim at y=2 frames the build.
-        // 3a) glass box around the inner 3×3:
-        line(b, 2, px0, pz0, px1, pz0, glass);   // north pen wall
+        // the player drops chickens in. The pen's NORTH wall row is made of LAVA
+        // CAULDRONS instead of glass: a lava_cauldron is a solid full block, so it serves
+        // BOTH as that wall (contained, render-safe, no gap) AND as the cooker. The
+        // cauldrons sit at y=2 — the height an adult chicken's body reaches — so a
+        // chicken milling around the pen presses INTO the cauldron's lava and is cooked;
+        // the cooked chicken + feathers drop onto the hoppers below → chest. Because they
+        // are CAULDRONS the lava is fully self-contained — it cannot flow, spread, or
+        // leak anywhere. The remaining pen cells stay open so chickens have floor to
+        // stand on and room to wander into the heat.
+        // 3a) glass box around the inner 3×3 pen (north wall left for the cooker row):
         line(b, 2, px0, pz0, px0, pz1, glass);   // west pen wall
         line(b, 2, px1, pz0, px1, pz1, glass);   // east pen wall
         b.set(px0, 2, pz1, glass);               // south pen wall: west cell
         b.set(px1, 2, pz1, glass);               // south pen wall: east cell ( cx OPEN = toss-in gap )
-        // 3b) outer stone rim at y=2 (perimeter of the 7×7), front alcove left open.
+        // 3b) lava-cauldron cooker row = the pen's NORTH wall (3 wide), set LAST so it
+        //     isn't overwritten. Solid blocks → they ARE the north wall AND the heat:
+        for (int x = px0; x <= px1; x++) {
+            b.set(x, 2, pz0, lavaCauldron);                   // contained heat + north wall — chickens press in & cook
+        }
+        // 3c) outer stone rim at y=2 (perimeter of the 7×7), front nook left open.
         line(b, 2, x0, z0, x1, z0, stone);
         line(b, 2, x0, z0, x0, z1, stone);
         line(b, 2, x1, z0, x1, z1, stone);
         for (int x = x0; x <= x1; x++) {
-            if (x >= cx - 1 && x <= cx + 1) continue;         // keep the alcove open above the chest
+            if (x >= cx - 1 && x <= cx + 1) continue;         // keep the nook open above the chest
             b.set(x, 2, z1, stone);
         }
 
-        // ── 4) CONTAINMENT SLAB FLOOR at y=3 (holds the lava up) ─────────────────
-        // Smooth-stone BOTTOM slabs fill the 3×3 directly over the pen. Lava cannot
-        // flow down through a solid slab, so this is the floor the cook layer rests on:
-        // the lava can never fall onto the chickens or the hoppers. Glass rim outside.
-        for (int x = px0; x <= px1; x++) {
-            for (int z = pz0; z <= pz1; z++) {
-                b.set(x, 3, z, slabBot);
-            }
+        // ── 4) GLASS CAP COURSE y=3 + SLAB ROOF y=4 ──────────────────────────────
+        // A glass lid over the pen seals it from above (no chickens hop out, and the
+        // whole cooker reads as an enclosed glass box), then a smooth-stone top-slab
+        // roof caps the build. The front nook column stays open so the chest is reachable.
+        line(b, 3, x0, z0, x1, z0, glass); line(b, 3, x0, z0, x0, z1, glass); line(b, 3, x1, z0, x1, z1, glass);
+        for (int x = x0; x <= x1; x++) {
+            if (x >= cx - 1 && x <= cx + 1) continue;         // keep the nook open above the chest
+            b.set(x, 3, z1, glass);
         }
-        line(b, 3, x0, z0, x1, z0, glass); line(b, 3, x0, z1, x1, z1, glass);
-        line(b, 3, x0, z0, x0, z1, glass); line(b, 3, x1, z0, x1, z1, glass);
+        floor(b, 3, px0, pz0, px1, pz1, glass);               // glass lid directly over the pen
+        floor(b, 4, x0, z0, x1, z1, slabTop);                 // smooth-stone slab roof cap
 
-        // ── 5) THE THIN LAVA COOK LAYER at y=4 (boxed + held up) ─────────────────
-        // A 3×3 lava sheet resting on the y=3 slabs, boxed by a glass rim so it can't
-        // spill sideways. A grown chicken below reaches its head up into the lava as it
-        // grows tall and dies cooked; the cooked chicken drops back DOWN to the hopper
-        // floor (which is lava-free — the slab floor blocks the lava). Lava prints free.
-        for (int x = px0; x <= px1; x++) {
-            for (int z = pz0; z <= pz1; z++) {
-                b.set(x, 4, z, lava);
-            }
-        }
-        line(b, 4, x0, z0, x1, z0, glass); line(b, 4, x0, z1, x1, z1, glass);
-        line(b, 4, x0, z0, x0, z1, glass); line(b, 4, x1, z0, x1, z1, glass);
-
-        // ── 6) GLASS CAP COURSE y=5 + SLAB ROOF y=6 ──────────────────────────────
-        // A glass course over the cook layer keeps the lava contained from above, then a
-        // smooth-stone top-slab roof caps the whole cooker.
-        line(b, 5, x0, z0, x1, z0, glass); line(b, 5, x0, z1, x1, z1, glass);
-        line(b, 5, x0, z0, x0, z1, glass); line(b, 5, x1, z0, x1, z1, glass);
-        floor(b, 5, px0, pz0, px1, pz1, glass);        // glass lid directly over the lava
-        floor(b, 6, x0, z0, x1, z1, slabTop);          // smooth-stone slab roof cap
-
-        // ── 7) EXPLANATORY SIGNS (signText — title + clear instructions) ─────────
-        // All STANDING signs (oak_sign[rotation=8] = faces south), each resting on a
-        // SOLID block directly below it so they always render. The front-rim signs sit
-        // on the y=2 stone rim cells that flank the open chest alcove (x=0,1,5,6); the
-        // pen sign sits on the y=2 pen glass beside the toss-in gap. rotation=8 = south.
-        //
-        // Title — west front rim corner.
-        signText(b, "minecraft:oak_sign[rotation=8]", x0 + 1, 3, z1,
-                 "AUTO CHICKEN", "COOKER", "", "");
-        // "Put CHICKENS in the pen" — on the pen glass, right by the open toss-in gap.
-        signText(b, "minecraft:oak_sign[rotation=8]", px1, 3, pz1,
-                 "Put CHICKENS", "in the pen", "(toss them in", "the open gap)");
-        // "Lava cooks grown chickens" — west-most front rim cell.
+        // ── 5) EXPLANATORY SIGNS (signText — title + clear instructions) ─────────
+        // STANDING signs (oak_sign[rotation=8] = faces south), each resting on the SOLID
+        // y=2 stone rim cell directly below it so they always render. They flank the open
+        // chest nook on the front rim (x=0,1,5,6 at z=z1). rotation=8 = south.
         signText(b, "minecraft:oak_sign[rotation=8]", x0, 3, z1,
-                 "Lava cooks the", "grown chickens.", "It is held up", "and contained.");
-        // "Cooked chicken collects in the chest" — east front rim, by the open alcove.
+                 "AUTO CHICKEN", "COOKER", "", "");
+        signText(b, "minecraft:oak_sign[rotation=8]", x0 + 1, 3, z1,
+                 "Toss chickens in", "the open gap.", "", "");
         signText(b, "minecraft:oak_sign[rotation=8]", x1 - 1, 3, z1,
-                 "Cooked chicken", "collects in the", "chest in the", "open front alcove");
+                 "Lava cauldrons", "cook them.", "(contained -", "no leaks)");
+        signText(b, "minecraft:oak_sign[rotation=8]", x1, 3, z1,
+                 "Cooked food", "drops to the", "chest in the", "open front.");
 
         return b.build();
     }
