@@ -13036,22 +13036,22 @@ class CuratedBlueprintGenerator {
      * </ul>
      */
     private static Blueprint nordicVikingLonghouse() {
-        final int W = 11, H = 13, D = 15;
+        final int W = 11, H = 12, D = 15;
         Blueprint.Builder b = Blueprint.builder("Nordic Viking Longhouse", W, H, D);
         Palette p = TAIGA_SPRUCE;
         final int x0 = 0, x1 = W - 1, z0 = 0, z1 = D - 1; // x:0..10  z:0..14
         final int cx = (x0 + x1) / 2; // 5
         final int cz = (z0 + z1) / 2; // 7
-        final int floorY = 1;     // walkable spruce floor on the cobble footing
-        final int wallBottom = 2; // walls rise from above the finish floor
-        final int wallH = 5;      // wall plate (roof seats here); peak = 5+7 = 12
+        final int floorY = 0;     // spruce-plank floor IS the single base course
+        final int wallBottom = 1; // walls + door sill rise one course above the y=0 floor
+        final int wallH = 4;      // wall plate (roof seats here); peak = 4+7 = 11
 
         // build-local materials (all vanilla; spruce family + stone/cobble + hay)
         BlueprintBlockState strippedSpruceX = bs("minecraft:stripped_spruce_log[axis=x]");
 
-        // 1) cobblestone footing over the whole footprint at y=0 (the low base)
-        floor(b, 0, x0, z0, x1, z1, COBBLE);
-        // 2) spruce-plank finish floor at y=1 (walkable surface)
+        // 1) spruce-plank finish floor as the single y=0 base course (walkable).
+        //    (The redundant buried cobble footing course was dropped so the door sill
+        //     lands at y=1 and the hall is enterable from flat ground.)
         floor(b, floorY, x0, z0, x1, z1, p.plankFloor);
 
         // 3) LOW STONE-BRICK BASE COURSE (y=2..3) under the timber frame: a 2-tall
@@ -13116,10 +13116,10 @@ class CuratedBlueprintGenerator {
         gableRoofX(b, x0, z0, x1, z1, wallH, p.roofStairName, HAY);
         gableEndFill(b, x0, z0, x1, z1, wallH, p.wall);
         // hay-bale thatch accents draped along the two courses just below the ridge
-        // (the slope rows at zn=5/zs=9 and zn=6/zs=8, which sit at y=10 and y=11).
+        // (the slope rows at zn=5/zs=9 and zn=6/zs=8, which sit at y=9 and y=10).
         for (int x = x0; x <= x1; x++) {
-            b.set(x, 10, 5, HAY); b.set(x, 10, 9, HAY);
-            b.set(x, 11, 6, HAY); b.set(x, 11, 8, HAY);
+            b.set(x, 9, 5, HAY); b.set(x, 9, 9, HAY);
+            b.set(x, 10, 6, HAY); b.set(x, 10, 8, HAY);
         }
 
         // 8) CENTRAL LONG FIREPIT / HEARTH on the aisle: a lit campfire over a cobble
@@ -13134,9 +13134,9 @@ class CuratedBlueprintGenerator {
         // 9) CHIMNEY / SMOKE LOUVER: a cobble flue rising from beside the hearth up
         //    through the north roof slope, capped with a stone-brick wall vent so
         //    smoke "escapes" above the ridge line of that bay.
-        int chimX = cx, chimZ = z0 + 4; // poke through the north slope (z=4 → slope y=9)
-        pillar(b, chimX, chimZ, wallBottom, 10, COBBLE);
-        b.set(chimX, 11, chimZ, STONE_BRICK_WALL); // louver vent atop the flue
+        int chimX = cx, chimZ = z0 + 4; // poke through the north slope (z=4 → slope y=8)
+        pillar(b, chimX, chimZ, wallBottom, 9, COBBLE);
+        b.set(chimX, 10, chimZ, STONE_BRICK_WALL); // louver vent atop the flue
 
         // 10) FURNISHINGS — a long communal hall:
         // a bed at each gable end (heads to the centre)
