@@ -12017,46 +12017,54 @@ class CuratedBlueprintGenerator {
         // ── 4) FLOOR BREAK (y=6) — upper floor with a stair hatch ────────────
         // interior STAIR run climbing column x=x0+2 (one bay east of the chimney/west
         // wall, clear of the fireplace at x≤x0+2/y=1, the keg & bar at the back, and
-        // the east-side tables). It climbs toward -z (facing=north → each step presents
-        // its low riser to a player walking north, so the run is genuinely mountable),
-        // rising y=1..5 across z = z1-2 .. z1-6:
+        // the east-side tables). It climbs toward -z (north). For a stair the TALL
+        // riser sits OPPOSITE the facing (cf. the table stools: facing=east → tall back
+        // on the WEST), so to walk NORTH up a smooth flight the steps must be
+        // facing=SOUTH — the tall riser faces north and each step's low side meets the
+        // ascending player. The ground story is 5 blocks tall: the footing top is at
+        // elevation 1.0 and the deck's walkable top is 7.0, so a full climb needs SIX
+        // steps at cells y=1..6 (a 5-step run would leave a 1-block hop at the top):
         //
         //   bottom step (x0+2, 1, z1-2)  ← mounted from the OPEN floor at z1-1
         //               (x0+2, 2, z1-3)
         //               (x0+2, 3, z1-4)
         //               (x0+2, 4, z1-5)  ← head reaches y=6 → hatch cell above it
-        //   top step    (x0+2, 5, z1-6)  ← head reaches y=6 → hatch cell above it
+        //               (x0+2, 5, z1-6)  ← head reaches y=6 → hatch cell above it
+        //   top step    (x0+2, 6, z1-7)  ← cell y=6, tall-side top = 7.0 = deck flush
         //
-        // The player tops out on the high (north) back of the top step and walks
-        // forward (north) onto the SOLID deck landing at (x0+2, 6, z1-7), which has two
-        // clear cells of headroom above (y=7,y=8 in the north guest room) and is not
-        // boxed in by the chimney (x0+1) or the room partition (z=cz).
-        int stairCol  = x0 + 2;       // 2
-        int stairBotZ = z1 - 2;       // 10 (one bay in from the south wall → mountable)
-        int stairTopZ = z1 - 6;       // 6  (top step)
-        int landingZ  = z1 - 7;       // 5  (deck landing in the north room)
-        for (int i = 0; i <= 4; i++) {
-            int sz = stairBotZ - i;   // 10,9,8,7,6
-            int sy = g0 + i;          // 1,2,3,4,5
-            b.set(stairCol, sy, sz, bs("minecraft:spruce_stairs[facing=north,half=bottom,shape=straight]"));
+        // The top step sits FLUSH with the deck (top at 7.0), so the player walks
+        // straight off it (north) onto the SOLID deck landing at (x0+2, 6, z1-8) and
+        // northward — no hop. The landing has two clear cells of headroom above
+        // (y=7,y=8 in the north guest room) and is not boxed in by the chimney (x0+1)
+        // or the room partition (z=cz, which skips this column).
+        int stairCol   = x0 + 2;       // 2
+        int stairBotZ  = z1 - 2;       // 10 (one bay in from the south wall → mountable)
+        int stairTopZ  = z1 - 7;       // 5  (top step, cell y=6, flush with the deck)
+        int landingZ   = z1 - 8;       // 4  (deck landing in the north room)
+        for (int i = 0; i <= 5; i++) {
+            int sz = stairBotZ - i;    // 10,9,8,7,6,5
+            int sy = g0 + i;           // 1,2,3,4,5,6
+            b.set(stairCol, sy, sz, bs("minecraft:spruce_stairs[facing=south,half=bottom,shape=straight]"));
         }
         // spruce-plank deck over the whole footprint. The hatch (UNSET deck cells) is
-        // opened over the upper portion of the run so a climbing head never hits plank:
-        // the two top steps (z = stairTopZ and stairTopZ+1) sit under open sky to the
-        // deck — the steps below them top out under y=5/4 with their own clearance, so
-        // only these two y=6 cells must be cut. The landing cell (stairCol, 6, landingZ)
-        // stays SOLID so the emerging player has a floor to step onto.
+        // opened only over the two steps whose climbing head reaches into y=6 — the
+        // y=4 step at z=stairTopZ+2 and the y=5 step at z=stairTopZ+1. The top step
+        // itself (z=stairTopZ) is the y=6-cell stair, and everything else stays solid
+        // deck, so the landing at (stairCol, 6, landingZ) is a flush floor to step onto.
+        int hatchA = stairTopZ + 1;    // 6  (over the y=5 step)
+        int hatchB = stairTopZ + 2;    // 7  (over the y=4 step)
         for (int x = x0; x <= x1; x++) {
             for (int z = z0; z <= z1; z++) {
-                if (x == stairCol && (z == stairTopZ || z == stairTopZ + 1)) continue; // stair hatch
+                if (x == stairCol && z == stairTopZ) continue;            // top step (cell y=6 = stair)
+                if (x == stairCol && (z == hatchA || z == hatchB)) continue; // stair hatch (headroom)
                 b.set(x, upFloorY, z, floorMat);
             }
         }
-        // a low banister reads the open stairwell as finished: oak fences on the solid
-        // deck along the SOUTH-east edge of the hatch (clear of the climb column, the
-        // partition at z=cz, and the landing path to the north).
-        b.set(stairCol + 1, u0, stairTopZ + 1, OAK_FENCE); // (3,7,7)
-        b.set(stairCol + 1, u0, stairTopZ + 2, OAK_FENCE); // (3,7,8)
+        // a low banister reads the open stairwell as finished: an oak fence on the
+        // solid deck at the south-east corner of the hatch (z=hatchB is south of the
+        // partition, so it's clear of the partition plank, the climb column, and the
+        // landing path to the north). The partition at z=cz walls the north/x=3 edge.
+        b.set(stairCol + 1, u0, hatchB, OAK_FENCE); // (3,7,7)
 
         // ── 5) UPPER STORY (y=7..10) — timber-frame ring + guest bedrooms ────
         timberFrame(b, x0, z0, x1, z1, u0, u1, planks, studY, studX);
