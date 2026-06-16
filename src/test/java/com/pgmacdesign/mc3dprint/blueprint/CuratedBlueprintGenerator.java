@@ -12373,9 +12373,9 @@ class CuratedBlueprintGenerator {
      *
      * <p>Every block is a vanilla FU-valued or structural-free block (spruce
      * logs/planks/slabs/stairs, oak fences + fence gates, hay, barrels, cauldrons,
-     * lanterns, ladders, signs, dirt-path; water is structural). Glass panes sit only
-     * in the solid timber-frame walls (sturdy faces on both sides) so the build never
-     * ships a stub pane.
+     * lanterns, signs, dirt-path; water is structural). Glass panes sit only in the
+     * solid timber-frame walls (sturdy faces on both sides) so the build never ships
+     * a stub pane.
      *
      * <p>The full 11-deep gable peaks at y=9, so H must be 10 (y range 0..9). The loft
      * floor (y=4) and its hay sit strictly inboard of the roof slopes — at y=4 the
@@ -12396,7 +12396,10 @@ class CuratedBlueprintGenerator {
      *       fence gate. Hay-bale bedding + a cauldron water trough per side.</li>
      *   <li><b>Hay loft, y=4</b> — a spruce-slab floor over the back half (inset
      *       z=1..5, x=1..7) carrying stacked hay bales; the front half stays open to
-     *       the roof so a mounted player can ride in.</li>
+     *       the roof so a mounted player can ride in. Reached by a 4-step spruce
+     *       STAIR run (the west front bay) climbing north from the open south bay
+     *       (x=2, z=8→5, y=1→4) flush onto the loft's south edge — no block-breaking,
+     *       full roof headroom the whole climb.</li>
      *   <li><b>Tack room, NW</b> — barrels stacked in the corner with oak wall signs
      *       (the tack board) on the west wall.</li>
      *   <li><b>Roof</b> — a spruce gable running along X from y=4 (peak y=9), gable
@@ -12448,7 +12451,17 @@ class CuratedBlueprintGenerator {
         // aisle-edge rail (x=3 west, x=5 east) closes each stall except for one
         // fence-gate opening into the aisle. Connecting fences self-reconcile.
         for (int zDiv : new int[]{3, 6, 9}) {
-            line(b, 1, 1, zDiv, 3, zDiv, OAK_FENCE);   // west divider
+            // The west front-stall (x=1..3, z=7..8) is the LOFT STAIR BAY (stairs
+            // climb x=2, z=8→5). LEAVE its south side open at x=2 by skipping that
+            // z=9 divider cell, so the player walks in from the open south bay
+            // straight to the bottom step. (set() can't punch air — the gap must be
+            // left UNWRITTEN, not overwritten — so we just don't place x=2 here.)
+            if (zDiv == 9) {
+                b.set(1, 1, zDiv, OAK_FENCE);          // west post
+                b.set(3, 1, zDiv, OAK_FENCE);          // aisle-edge post (x=2 left open)
+            } else {
+                line(b, 1, 1, zDiv, 3, zDiv, OAK_FENCE); // west divider
+            }
             line(b, 1, 5, zDiv, 7, zDiv, OAK_FENCE);   // east divider
         }
         // aisle-edge rails (x=3 west, x=5 east) along z=1..9
@@ -12486,10 +12499,38 @@ class CuratedBlueprintGenerator {
         b.set(6, 5, 2, HAY);
         b.set(6, 5, 3, HAY);
         b.set(4, 5, 3, HAY);
-        // ladder up to the loft on the back wall, enterable from the aisle
-        for (int y = 1; y <= 3; y++) {
-            b.set(2, y, 1, bs("minecraft:ladder[facing=south,waterlogged=false]"));
+        // ── LOFT ACCESS — a 4-step spruce stair run climbing NORTH onto the loft ─
+        // The old north-wall ladder at (2,y,1) dead-ended into the solid loft slab
+        // at (2,4,1) (the eave, where the roof cell (2,5,1) leaves no climbing
+        // headroom), so there was no way up without breaking blocks. Replace it with
+        // an open stair flight in the front half (full roof headroom) that walks the
+        // player straight up onto a standable loft cell.
+        //
+        // The run climbs the x=2 column from z=8 up to z=5 (the loft's south edge).
+        // Per this build's stair convention the tall riser is OPPOSITE the facing
+        // (cf. the table-stool stairs: facing=east → tall back on the WEST), so a
+        // flight ascending NORTHWARD uses facing=SOUTH — the climber meets each
+        // step's low side and steps up smoothly. The top step sits at cell y=4 so its
+        // tall-side top = 5.0 = the loft surface, landing flush (no hop):
+        //
+        //   bottom step (2,1,8)  ← mounted from the open south bay / aisle gate
+        //               (2,2,7)     roof at z=7 is y=7 → 4 clear cells of headroom
+        //               (2,3,6)     roof at z=6 is y=8 → ample headroom
+        //   top step    (2,4,5)  ← cell y=4, tall-top 5.0, flush with the loft edge
+        //
+        // From the top step the player walks north onto the SOLID loft slab at
+        // (2,4,4) (z=4 ≥ 3 → standable; roof at z=4 is y=8, three clear cells) and on
+        // across the loft. Every climb/landing cell clears the roof schedule, so the
+        // whole ascent is break-free.
+        for (int i = 0; i < 4; i++) {
+            int sy = 1 + i;          // y = 1,2,3,4
+            int sz = 8 - i;          // z = 8,7,6,5
+            b.set(2, sy, sz, bs("minecraft:spruce_stairs[facing=south,half=bottom,shape=straight]"));
         }
+        // The west z=9 divider deliberately SKIPS x=2 (see the stalls section), so
+        // that cell is the stair bay's open south doorway: the player walks in from
+        // the open south riding bay straight onto the bottom step. (set() can't punch
+        // air, so the gap must be left unwritten, not cleared.)
 
         // ── 5) TACK ROOM NOOK (NW corner) — barrels + wall signs ─────────────
         b.set(1, 1, 1, BARREL);
