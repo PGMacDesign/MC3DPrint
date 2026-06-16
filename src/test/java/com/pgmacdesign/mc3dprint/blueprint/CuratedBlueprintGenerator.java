@@ -10743,11 +10743,14 @@ class CuratedBlueprintGenerator {
      * observers that watched the planted cell fired once on plant and <b>never
      * re-cycled</b>, and the piston-/water-sweep harvest could never trigger. This
      * build tears out all of that and replaces it with a plain, reliable dark chamber
-     * the player actually tends. The honest workflow: walk in, <b>bone-meal</b> a
-     * small mushroom to grow a GIANT mushroom, harvest the mushroom blocks/stems +
-     * mushrooms by hand, <b>replant</b> a small mushroom, store the haul in the chest.
-     * No observers, pistons, redstone, dispensers, or water-sweep — nothing that
-     * pretends to be automatic and isn't.
+     * the player actually tends. The honest workflow is the low-light SPREAD farm:
+     * keep it dark on the mycelium floor and the small mushrooms <b>spread</b> to
+     * adjacent open cells over time; the player walks in, <b>reaps</b> the spread
+     * mushrooms by hand, <b>replants</b> to keep the spacing, and stores the haul in
+     * the chest. (This 2-tall interior is deliberately NOT a giant-mushroom farm — see
+     * the biology note — so we don't promise bone-meal-to-giant.) No observers,
+     * pistons, redstone, dispensers, or water-sweep — nothing that pretends to be
+     * automatic and isn't.
      *
      * <p><b>Mushroom biology — why this is the OPPOSITE of the tree farm.</b> Small
      * mushrooms need <b>darkness</b> (light ≤12 on normal blocks; brighter and they
@@ -10755,8 +10758,12 @@ class CuratedBlueprintGenerator {
      * with no skylight and NO interior lanterns/torches. The catch: on
      * {@code mycelium} (or podzol) mushrooms survive at <em>any</em> light level, so
      * we floor the chamber with mycelium — that plus the solid roof makes the farm
-     * bulletproof. The small mushrooms are spaced out with open air around/above each
-     * one so the player's bone-meal has room to pop a giant.
+     * bulletproof. The small mushrooms are spaced out on the mycelium with open cells
+     * between them, which is exactly what low-light <b>spreading</b> needs: a dark
+     * mushroom can spread to a nearby empty cell, and the player reaps and replants.
+     * We do NOT farm by growing giants here: a giant mushroom needs roughly 7 blocks
+     * of vertical clearance and a wide footprint, and this chamber's interior is only
+     * ~2 blocks tall — so the spread mechanic is the one that actually works.
      *
      * <p><b>Why this build is fully printable + render-safe.</b> Every block is a
      * vanilla FU-valued block or structural-free matter:
@@ -10765,9 +10772,9 @@ class CuratedBlueprintGenerator {
      *       are {@link net.minecraft.world.level.block.MushroomBlock} ⇒ a
      *       {@link net.minecraft.world.level.block.BushBlock}, so they're
      *       <b>structural-free</b> (planted growth, like crops/saplings) and print at
-     *       no FU cost. We pre-plant ONLY the small mushrooms and let the player grow
-     *       the giants — we deliberately do NOT pre-place the giant
-     *       {@code *_mushroom_block} / {@code mushroom_stem} blocks.</li>
+     *       no FU cost. We pre-plant ONLY the small mushrooms (they spread on the dark
+     *       mycelium) — we deliberately do NOT pre-place or grow the giant
+     *       {@code *_mushroom_block} / {@code mushroom_stem} blocks (no room).</li>
      *   <li><b>Mycelium</b> ({@code mycelium}=2@1) is FU-valued and on-theme — it is
      *       the grow medium that lets mushrooms survive in light, the keystone of this
      *       build.</li>
@@ -10792,20 +10799,19 @@ class CuratedBlueprintGenerator {
      *       x=2 (clear of the centre) as the only opening; a stone lintel caps it at
      *       y=3 so the doorway doesn't leak light into the grow space.</li>
      *   <li><b>Planted mushrooms, y=2</b> — small red + brown mushrooms on a spaced
-     *       grid across the mycelium (x∈{1,3,5,7} × z∈{1,3,5,7}, colours alternating)
-     *       so each has open air around and above it and the bone-meal'd giant has
-     *       room to form. The work strip near the door (z≈6..7 by the chest) is left
-     *       clear.</li>
+     *       grid across the mycelium (x∈{1,3,5,7} × z∈{1,3,5}, colours alternating) with
+     *       open cells between them so each has room to spread on the dark mycelium. The
+     *       work strip near the door (z=7 by the chest/sign) is left clear.</li>
      *   <li><b>Stone-brick roof, y=4</b> — a solid 9×9 {@code stone_bricks} ceiling
-     *       seals the top so the interior stays DARK. (Floor y=1 → mushroom y=2 →
-     *       roof y=4 gives a couple of blocks of grow headroom inside the box; the
-     *       player can pop the roof for full-height giants if desired.)</li>
+     *       seals the top so the interior stays DARK. The interior is ~2 blocks tall
+     *       (floor y=1 → roof y=4), which is fine for a spreading farm and too short
+     *       for giants — the spread mechanic is the one this build supports.</li>
      *   <li><b>Collection chest, y=2</b> — a {@code chest} just inside the door
-     *       (x=3, z=7, facing north) for the harvested mushroom blocks/stems and
-     *       mushrooms. Honest semi-auto: the player tends and stores by hand.</li>
+     *       (x=4, z=7, facing north) for the reaped mushrooms. Honest semi-auto: the
+     *       player tends, reaps, replants, and stores by hand.</li>
      *   <li><b>Label sign, y=2</b> — an {@code oak_wall_sign} on the south wall beside
-     *       the door explaining the workflow (keep it DARK, bone-meal to grow giants,
-     *       replant).</li>
+     *       the door explaining the workflow (keep it DARK on mycelium so they spread;
+     *       reap & replant).</li>
      * </ul>
      */
     private static Blueprint mushroomFarm() {
@@ -10850,8 +10856,8 @@ class CuratedBlueprintGenerator {
 
         // ── 4) STONE-BRICK ROOF at y=4 — keeps the interior DARK ─────────────
         // A solid 9×9 stone-brick ceiling seals the top so no skylight reaches the
-        // mushrooms. Floor y=1 → mushroom y=2 → roof y=4 gives a couple of blocks of
-        // grow headroom inside the box (pop the roof for full-height giants).
+        // mushrooms. Interior is ~2 blocks tall (floor y=1 → roof y=4): fine for a
+        // low-light SPREAD farm, too short for giants — spread is what this build does.
         floor(b, roofY, x0, z0, x1, z1, bricks);
 
         // ── 5) OAK DOOR in the south wall (both halves) ──────────────────────
@@ -10862,9 +10868,9 @@ class CuratedBlueprintGenerator {
 
         // ── 6) PLANTED SMALL MUSHROOMS at y=2 — spaced grid on the mycelium ──
         // Small red + brown mushrooms on a 2-block grid (x∈{1,3,5,7} × z∈{1,3,5}),
-        // colours alternating, so each has open air around and above it and the
-        // bone-meal'd giant has room to form. The front strip by the door/chest/sign
-        // (z=iz1=7) is left clear so the player can walk in and work the harvest.
+        // colours alternating, with open cells between them so each has room to SPREAD
+        // on the dark mycelium (the player reaps & replants). The front strip by the
+        // door/chest/sign (z=iz1=7) is left clear so the player can walk in and work.
         int[] gx = {1, 3, 5, 7};
         int[] gz = {1, 3, 5};
         for (int sx : gx) {
@@ -10875,19 +10881,23 @@ class CuratedBlueprintGenerator {
         }
 
         // ── 7) COLLECTION CHEST just inside the door (y=2) ───────────────────
-        // A chest at (cx, z=7) facing north for the harvested mushroom blocks/stems +
-        // mushrooms. Honest semi-auto: the player bone-meals to grow giants, harvests
-        // and replants by hand, and stores the haul here. (Sits on the mycelium at y=2,
-        // one cell inside the south wall, beside the door at x=doorX.)
+        // A chest at (cx, z=7) facing north for the reaped mushrooms. Honest semi-auto:
+        // the player lets them spread on the dark mycelium, then reaps and replants by
+        // hand, and stores the haul here. (Sits on the mycelium at y=2, one cell inside
+        // the south wall, beside the door at x=doorX.)
         b.set(cx, 2, iz1, chest);
 
         // ── 8) LABEL SIGN on the INNER face of the south wall (y=2) ──────────
-        // Explains the honest workflow: keep it DARK, bone-meal to grow giants, replant.
+        // Explains the honest workflow for THIS short chamber: dark + mycelium lets the
+        // small mushrooms SPREAD to adjacent cells; the player reaps and replants. This
+        // build farms by low-light SPREAD, NOT giant growth — the 2-tall interior is far
+        // too short for a giant mushroom (which needs ~7 blocks of vertical clearance),
+        // so the sign promises the mechanic that actually works here.
         // Hung on the INNER face of the south wall at x=cx+1 (one cell inside at z=iz1,
         // facing=south = mounted on the solid z1 wall behind it), so the wall stays a
         // solid light-block and the sign reads to a player walking in.
         signText(b, "minecraft:oak_wall_sign[facing=south]", cx + 1, 2, iz1,
-                "Mushroom farm:", "keep it DARK,", "bonemeal to grow", "giants; replant.");
+                "Mushroom farm:", "dark + mycelium", "= they spread.", "Reap & replant.");
 
         return b.build();
     }
