@@ -5893,14 +5893,18 @@ class CuratedBlueprintGenerator {
         pillar(b, x0, z1, 1, 3, chiseledBrick);
         pillar(b, x1, z1, 1, 1, chiseledBrick); // SE pilaster broken off at y=1
 
-        // north doorway (z=z0), opening inward (faces south), at the foot of the steps
-        door2(b, cx, 1, z0, "jungle", "N");
-
         // render-safe shrine windows on the intact walls (each pane between two wall
         // cells along its wall line so it connects horizontally → render-safe).
-        window2(b, cx, 2, z0, GLASS_PANE, null);  // north (over the door lintel line)
+        // NOTE: no window on the north wall over the door column (cx) — the jungle
+        // door is two cells tall (lower y=1, upper y=2), so a pane at (cx,2,z0) would
+        // overwrite the door's upper half and the printed door would self-break.
         window2(b, x0, 2, cz, GLASS_PANE, null);  // west wall, centred
         window2(b, cx, 2, z1, GLASS_PANE, null);  // south wall, centred (intact half)
+
+        // north doorway (z=z0), opening inward (faces south), at the foot of the steps.
+        // Placed AFTER the windows so the door's two-cell footprint (y=1 lower, y=2
+        // upper) is never overwritten — door2 wins the (cx,1,z0)+(cx,2,z0) cells.
+        door2(b, cx, 1, z0, "jungle", "N");
 
         // y=4 — chamber ceiling / step-0 deck: weathered cobble cap over the 9×9,
         // with a collapsed hole (a few cells left OPEN) so the roof reads broken.
