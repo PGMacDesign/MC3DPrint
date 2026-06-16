@@ -9895,20 +9895,26 @@ class CuratedBlueprintGenerator {
 
     /**
      * Phase 2 §H Mineshaft Entrance. 5×5 footprint → builder(5, 5, 5). T4 printer,
-     * T1 disc — the survival Let's Play staple: a timbered tunnel mouth boring into
-     * a hillside, with mine rails leading down and in.
+     * T1 disc — the survival Let's Play staple: a timbered, ENTERABLE tunnel mouth you
+     * walk straight into, with mine rails leading in to an open shaft you dig down from.
      *
-     * <p>Orientation: the open <b>access side is the south face</b> ({@code z=4}); the
-     * hill the shaft bores into is to the <b>north</b> ({@code z=0}). The player walks
-     * up a short raised cobble apron at the front, under a timbered portal (log posts +
-     * crossbeam lintel with a plank/stair overhang roof), then the floor <b>steps down
-     * one block</b> into a framed, recessed tunnel that recedes into darkness — the
-     * signature "tunnel mouth": a framed air gap with rails running down and in.
+     * <p>A blueprint can only ADD blocks — it can't carve a descending shaft into the
+     * terrain it prints on — so this is a surface mine-HEAD: a framed head-frame /
+     * portal you place at the mouth of the mine you then dig. To make it genuinely
+     * <b>enterable</b> rather than a sealed facade, the build leaves real openings:
+     * a 1-wide × 2-tall walk-in tunnel mouth, and an open "start digging here" floor
+     * pit at the back the player drops into / mines straight down from.
      *
-     * <p>Axes: x=W (0..4, across the portal), y=up (0..4), z=depth (0..4; z=4 front
-     * apron → z=0 deep end). The descending read is real: the apron rail sits one
-     * block higher than the tunnel-floor rail, so the minecart line visibly drops as
-     * it enters the shaft.
+     * <p>Orientation: the open <b>walk-in face is the south front</b> ({@code z=4}); the
+     * tunnel bores <b>north</b> to the dig pit at the deep end ({@code z=0}). The player
+     * walks in from z=4, through the timbered portal at z=3 (log posts + crossbeam
+     * lintel under a plank/stair overhang roof), along the open rail tunnel, to the open
+     * shaft start at the back.
+     *
+     * <p>Axes: x=W (0..4, across the portal), y=up (0..4), z=depth (0..4; z=4 walk-in
+     * front → z=0 deep-end dig pit). The center column {@code cx=2} is the through-line:
+     * AIR for the 2-tall walk-in mouth (y=1..2 at z=1..3), rails on the floor leading in
+     * (z=4..2), and the unfilled dig pit at the back (no y=0 floor at z=0..1).
      *
      * <p>Vanilla blocks only, all FU-valued or structural, so every block clears the
      * printability gate:
@@ -9919,36 +9925,37 @@ class CuratedBlueprintGenerator {
      *       timber portal frame, lintel, support posts and overhang roof; all derive.</li>
      *   <li><b>rail</b> — crafts from iron + stick (6 iron + 1 stick → 16 rails), so it
      *       derives an FU value. Every rail in this build sits directly on a SOLID
-     *       cobble block below it (apron rails on the y=1 apron cobble, tunnel rails on
-     *       the y=0 base cobble), so the rails place and stay.</li>
-     *   <li><b>lantern</b> — two pit lanterns light the mouth; FU-valued.</li>
-     *   <li><b>oak_sign</b> — a standing "MINE" plaque on the apron; FU-valued.</li>
+     *       cobble block below it (the y=0 base pad), so the rails place and stay.</li>
+     *   <li><b>lantern</b> — two eave lanterns light the mouth; FU-valued.</li>
+     *   <li><b>oak_sign</b> — a standing "MINE" plaque beside the mouth; FU-valued.</li>
      * </ul>
      * No glass panes / iron bars anywhere, so the stub-pane render gate never applies.
      *
-     * <p>Layout (south = +z is the open front; 5×5 = x0..4, z0..4):
+     * <p>Layout (south = +z is the open walk-in front; 5×5 = x0..4, z0..4):
      * <ul>
-     *   <li><b>Base (y=0)</b> — a solid cobble pad over the whole 5×5 footprint; the
-     *       tunnel rails ride on it and it gives the apron something to sit on.</li>
-     *   <li><b>Side & back reinforcement walls (x=0, x=4 for z=0..2; back z=0)</b> —
-     *       cobble/mossy-cobble walls y=1..2 boxing the tunnel interior into the hill,
-     *       lightly weathered so the masonry reads aged and mine-worn.</li>
-     *   <li><b>Raised apron (z=3..4)</b> — a cobble step up to y=1 the player mounts at
-     *       the mouth; the front lip of the mine head.</li>
-     *   <li><b>Timber portal (z=2)</b> — two spruce-log posts at x=1 and x=3 rising
+     *   <li><b>Base (y=0)</b> — a cobble pad over the footprint EXCEPT the two
+     *       back-center cells (cx, z=0..1), which are left UNFILLED as the open
+     *       "dig down here" shaft start; the rails ride on the pad elsewhere.</li>
+     *   <li><b>Side & back reinforcement walls (x=0, x=4 for z=0..3; back z=0 flanks
+     *       x=1,3)</b> — cobble/mossy-cobble walls y=1..2 boxing the tunnel into the
+     *       hill, lightly weathered. The back-CENTER stays open as the shaft drop.</li>
+     *   <li><b>Walk-in tunnel (cx=2, z=1..3, y=1..2)</b> — left as AIR: a clear
+     *       1-wide × 2-tall mouth the player strides straight into.</li>
+     *   <li><b>Timber portal (z=3)</b> — two spruce-log posts at x=1 and x=3 rising
      *       y=1..2, capped by an oak-log crossbeam lintel spanning x=1..3 at y=3; the
-     *       classic mine head-frame. The portal opening (x=2) is left clear.</li>
+     *       classic mine head-frame. The portal opening (cx) is left clear, full-height.</li>
      *   <li><b>Support posts (z=0)</b> — two more spruce-log posts at the deep end,
-     *       y=1..2, carrying the tunnel ceiling like pit props.</li>
+     *       y=1..2, flanking the shaft drop like pit props.</li>
      *   <li><b>Ceiling / roof (y=3, then y=4)</b> — oak-plank tunnel ceiling over the
-     *       shaft (z=0..2), and an oak-stair + plank OVERHANG roof projecting out over
-     *       the apron (z=3..4) so the mouth reads as a sheltered head-frame.</li>
-     *   <li><b>Rails — the descending line</b> — center column x=2: apron rails on the
-     *       y=1 apron at z=4,3 (on apron cobble), then the line steps DOWN to the y=0
-     *       tunnel floor at z=2,1,0, leading down and into the dark. A minecart stop
-     *       (cobble buffer) caps the front of the apron line at z=4.</li>
-     *   <li><b>Lighting & signage</b> — a lantern on each portal post top, and a
-     *       standing oak "MINE" sign on the west apron lip.</li>
+     *       bore (z=0..2) EXCEPT the cell over the dig pit (cx, z=0), which is left
+     *       open to the surface; plus an oak-stair + plank OVERHANG roof projecting out
+     *       over the front mouth (z=4) so it reads as a sheltered head-frame.</li>
+     *   <li><b>Rails — the line leading in</b> — center column x=2 on the y=1 tunnel
+     *       floor: from the front lip (z=4), through the portal (z=3), into the tunnel
+     *       (z=2), STOPPING at the lip of the open dig pit. A minecart stop (cobble
+     *       buffer) caps the front of the line at z=4.</li>
+     *   <li><b>Lighting & signage</b> — a hanging lantern under each side of the front
+     *       overhang, and a standing oak "MINE" sign beside the mouth.</li>
      * </ul>
      */
     private static Blueprint mineshaftEntrance() {
@@ -9963,71 +9970,91 @@ class CuratedBlueprintGenerator {
         BlueprintBlockState overhangStair =
                 bs("minecraft:oak_stairs[facing=north,half=bottom,shape=straight]"); // eave lip over the front
         int x0 = 0, x1 = 4, z0 = 0, z1 = 4;
-        int cx = 2;                       // center rail column / portal opening
+        int cx = 2;                       // center rail column / portal opening + shaft
 
-        // ── 1) BASE PAD (y=0) — solid cobble under the whole footprint ───────
-        floor(b, 0, x0, z0, x1, z1, cobble);
+        // ── 1) BASE PAD (y=0) — cobble under the footprint, EXCEPT the dig hole ─
+        // A blueprint can only ADD blocks, never carve into the terrain it prints
+        // on, so this is a surface mine-HEAD you place at the mouth of the shaft you
+        // then dig. To make that real we leave the two back-center floor cells
+        // (cx, z=0..1) UNFILLED: an open "start digging here" pit the player drops
+        // into / mines straight down from to begin the actual mineshaft. Everything
+        // else is paved so the rails and walls have solid support.
+        for (int x = x0; x <= x1; x++) {
+            for (int z = z0; z <= z1; z++) {
+                if (x == cx && z <= 1) continue;   // skip → open dig-down shaft start
+                b.set(x, 0, z, cobble);
+            }
+        }
 
         // ── 2) TUNNEL SIDE + BACK WALLS (y=1..2) — box the shaft into the hill ─
-        // West & east walls flank the shaft for its buried depth (z=0..2); the
-        // back wall (z=0) closes the deep end below the props. Weathered.
+        // West & east walls flank the open tunnel for its buried depth (z=0..3);
+        // the back wall (z=0) closes the deep end at x=1 and x=3 but LEAVES the
+        // center (cx) open top-to-bottom so the dig pit reads as a shaft dropping
+        // away into the dark. The center of the tunnel (cx, z=1..3) is left as AIR
+        // at y=1..2 — a clear 1-wide × 2-tall walk-in mouth you stride straight
+        // into; Builder.set() ignores air, so we simply never place there.
         for (int y = 1; y <= 2; y++) {
-            for (int z = z0; z <= 2; z++) {
+            for (int z = z0; z <= 3; z++) {
                 b.set(x0, y, z, cobble);   // west wall
                 b.set(x1, y, z, cobble);   // east wall
             }
-            // back wall between the side walls (x=1..3) at the deep end
-            for (int x = x0 + 1; x <= x1 - 1; x++) {
-                b.set(x, y, z0, cobble);
-            }
+            // back wall flanks only (x=1, x=3) — center stays open as the shaft
+            b.set(x0 + 1, y, z0, cobble);
+            b.set(x1 - 1, y, z0, cobble);
         }
         // weathering flecks — the mine reads old and mossy
         b.set(x0, 1, 1, mossy);
-        b.set(x1, 2, 0, mossy);
+        b.set(x1, 2, 1, mossy);
         b.set(1, 2, 0, mossy);
         b.set(3, 1, 0, mossy);
 
-        // ── 3) RAISED FRONT APRON (z=3..4, y=1) — the cobble mine-head step ──
-        floor(b, 1, x0, 3, x1, z1, cobble);
-        b.set(2, 1, 4, mossy); // worn tread on the apron lip
+        // ── 3) TIMBER PORTAL (z=3) — log posts + crossbeam lintel ───────────
+        // The portal frames the walk-in mouth. Posts at x=1,3 (y=1..2) and an
+        // oak-log lintel across x=1..3 at y=3; the center (cx) is LEFT CLEAR so the
+        // opening is a full 1-wide × 2-tall doorway you walk straight through.
+        pillar(b, 1, 3, 1, 2, post);     // west portal post
+        pillar(b, 3, 3, 1, 2, post);     // east portal post
+        line(b, 3, 1, 3, 3, 3, lintel);  // crossbeam lintel x=1..3 at y=3
 
-        // ── 4) TIMBER PORTAL (z=2) — log posts + crossbeam lintel ───────────
-        pillar(b, 1, 2, 1, 2, post);     // west portal post
-        pillar(b, 3, 2, 1, 2, post);     // east portal post
-        line(b, 3, 1, 2, 3, 2, lintel);  // crossbeam lintel x=1..3 at y=3
-
-        // ── 5) SUPPORT PROPS (z=0) — pit props at the deep end ──────────────
+        // ── 4) SUPPORT PROPS (z=0) — pit props at the deep end ──────────────
         pillar(b, 1, 0, 1, 2, post);     // west prop
         pillar(b, 3, 0, 1, 2, post);     // east prop
 
-        // ── 6) CEILING + OVERHANG ROOF ──────────────────────────────────────
-        // Tunnel ceiling over the buried shaft (z=0..1) at y=3 — the lintel
-        // crossbeam at z=2,y=3 is LEFT exposed as the visible head-frame beam.
-        // Then an overhang deck projecting out over the apron (z=3..4) at y=4
-        // with a stair eave lip.
-        floor(b, 3, x0 + 1, z0, x1 - 1, 1, planks);   // shaft ceiling (z=0..1, between the side walls)
-        floor(b, 4, x0, 3, x1, z1, planks);           // overhang deck over the apron
+        // ── 5) CEILING + OVERHANG ROOF ──────────────────────────────────────
+        // Plank ceiling over the buried tunnel (z=0..2) at y=3, shading the walk-in
+        // so it reads as a roofed bore — but the cell directly over the dig pit
+        // (cx, z=0) is LEFT OPEN so the shaft is daylit / open to the surface where
+        // you drop in. The lintel crossbeam at z=3,y=3 stays exposed as the visible
+        // head-frame beam. Then an overhang deck projects out over the front
+        // (z=4) at y=4 with a stair eave lip.
+        for (int x = x0 + 1; x <= x1 - 1; x++) {
+            for (int z = z0; z <= 2; z++) {
+                if (x == cx && z == z0) continue;  // skip → open shaft mouth overhead
+                b.set(x, 3, z, planks);            // tunnel ceiling
+            }
+        }
+        floor(b, 4, x0, z1, x1, z1, planks);       // overhang deck over the front mouth
         for (int x = x0; x <= x1; x++) {
-            b.set(x, 4, z1, overhangStair);           // front eave lip of the overhang
+            b.set(x, 4, z1, overhangStair);        // front eave lip of the overhang
         }
 
-        // ── 7) RAILS — the descending minecart line (center x=2) ────────────
-        // Apron rails ride the y=1 apron (z=4,3); the line then STEPS DOWN to the
-        // y=0 tunnel floor (z=2,1,0), leading down and into the dark.
-        b.set(cx, 2, z1, rail);   // apron rail at z=4 (on apron cobble y=1)
-        b.set(cx, 2, 3, rail);    // apron rail at z=3
-        b.set(cx, 1, 2, rail);    // steps DOWN into the portal mouth (on base y=0)
-        b.set(cx, 1, 1, rail);    // tunnel rail
-        b.set(cx, 1, z0, rail);   // deep-end rail, fading into the dark
-        // minecart stop — a cobble buffer block beside the front of the apron line
-        b.set(cx + 1, 2, z1, cobble);
+        // ── 6) RAILS — the minecart line leading INTO the mouth (center x=2) ─
+        // The track runs along the y=1 tunnel floor (on the y=0 cobble pad) from the
+        // front lip at z=4, through the open portal, INTO the tunnel toward the back,
+        // then STOPS at z=2 — right at the lip of the open dig pit (cx, z=0..1), so
+        // it reads as a cart track running up to the shaft you mine down from.
+        b.set(cx, 1, z1, rail);   // front-lip rail at the mouth (on base cobble y=0)
+        b.set(cx, 1, 3, rail);    // rail through the portal opening
+        b.set(cx, 1, 2, rail);    // tunnel rail, ending at the lip of the dig pit
+        // minecart stop — a cobble buffer block beside the front of the line
+        b.set(cx + 1, 1, z1, cobble);
 
-        // ── 8) LIGHTING + SIGNAGE ───────────────────────────────────────────
-        // Hanging lanterns under the overhang deck (y=4 plank at z=3) light the
-        // mouth without burying the exposed lintel beam at z=2.
-        b.set(1, 3, 3, HANGING_LANTERN);  // west eave lantern under the overhang
-        b.set(3, 3, 3, HANGING_LANTERN);  // east eave lantern under the overhang
-        b.set(0, 2, 4, bs("minecraft:oak_sign[rotation=8]")); // "MINE" plaque on the west apron lip
+        // ── 7) LIGHTING + SIGNAGE ───────────────────────────────────────────
+        // Hanging lanterns under the front overhang deck (y=4 plank at z=4) light
+        // the mouth without burying the exposed lintel beam at z=3.
+        b.set(1, 3, z1, HANGING_LANTERN);  // west eave lantern under the overhang
+        b.set(3, 3, z1, HANGING_LANTERN);  // east eave lantern under the overhang
+        b.set(0, 1, 4, bs("minecraft:oak_sign[rotation=8]")); // "MINE" plaque on the west of the mouth
 
         return b.build();
     }
