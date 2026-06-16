@@ -3176,9 +3176,13 @@ class CuratedBlueprintGenerator {
     private static Blueprint guardTower() {
         Blueprint.Builder b = Blueprint.builder("Guard Tower", 5, 13, 5);
         final int cx = 2, cz = 2, r = 2;
-        // ladder backed by the SOUTH ring wall: facing=north attaches to the block at
-        // z+1, i.e. the solid ring cell (cx, y, cz+1) directly behind it.
-        BlueprintBlockState ladderN = bs("minecraft:ladder[facing=north,waterlogged=false]");
+        // Interior ladder hugs the solid NORTH-wall corner cell (lx,lz)=(3,1) instead of
+        // sitting dead-centre (the old (cx,cz) had air on every side → unbacked, popped on
+        // update). facing=south so it attaches to facing.getOpposite()==NORTH at (lx,y,0),
+        // a solid ring stone-brick cell every course (the cardinal mid-cells carry arrow
+        // slits/the door, so an off-cardinal corner is the only fully-sturdy column).
+        final int lx = 3, lz = 1;
+        BlueprintBlockState ladderS = bs("minecraft:ladder[facing=south,waterlogged=false]");
 
         // --- base: stone-brick disc footing (r=2) at y=0 ---
         disc(b, 0, cx, cz, r, STONE_BRICKS);
@@ -3194,9 +3198,9 @@ class CuratedBlueprintGenerator {
         // --- door at the base (north cardinal cell, faces south into the shaft) ---
         door2(b, cx, 1, 0, "oak", "N");
 
-        // --- interior ladder up the full shaft, backed by the south ring wall ---
-        // climbs y=1..9 and surfaces through the deck hatch carved at (cx, 9, cz).
-        pillar(b, cx, cz, 1, 9, ladderN);
+        // --- interior ladder up the full shaft, backed by the north ring wall ---
+        // climbs y=1..9 at (lx,lz) and surfaces through the deck hatch carved there.
+        pillar(b, lx, lz, 1, 9, ladderS);
 
         // --- arrow-slit iron bars on the cardinal faces, two courses (y=3, y=6) ---
         // each sits on a ring cell flanked along-ring by sturdy stone bricks → renders.
@@ -3212,7 +3216,7 @@ class CuratedBlueprintGenerator {
             for (int z = 0; z <= 4; z++) {
                 double d = Math.sqrt((x - cx) * (x - cx) + (z - cz) * (z - cz));
                 if (d > r + 0.5) continue;          // outside the round footprint
-                if (x == cx && z == cz) continue;   // ladder hatch
+                if (x == lx && z == lz) continue;   // ladder hatch (NW-ish corner column)
                 b.set(x, 9, z, OAK_PLANKS);
             }
         }
@@ -6274,11 +6278,14 @@ class CuratedBlueprintGenerator {
         gableEndFill(b, x0, z0, x1, z1, roofY, p.wall);
 
         // 7) ladder access: the south stilt column at (cx, z1) is a full mangrove-log
-        //    backing post y=1..2, so a south-facing ladder on the hatch column
-        //    (cx, z1-1) backs onto it and climbs from the water up to the deck.
+        //    backing post y=1..2. The ladder sits one cell NORTH of it on the hatch
+        //    column (cx, z1-1) and must face NORTH so it attaches to facing.getOpposite()
+        //    ==SOUTH at (cx, y, z1), the backing post. (facing=south would attach to z-1,
+        //    interior air, and pop on the next block update — the original convention bug.)
+        BlueprintBlockState ladderN = bs("minecraft:ladder[facing=north,waterlogged=false]");
         pillar(b, cx, z1, 1, deckY - 1, logY); // full backing post for the ladder rungs
-        b.set(hatchX, 1, hatchZ, LADDER_SOUTH); // rung y=1 (at water level)
-        b.set(hatchX, 2, hatchZ, LADDER_SOUTH); // rung y=2 → climb out onto deck at y=3
+        b.set(hatchX, 1, hatchZ, ladderN); // rung y=1 (at water level)
+        b.set(hatchX, 2, hatchZ, ladderN); // rung y=2 → climb out onto deck at y=3
 
         // 8) hanging lanterns under the deck (the over-water glow), backed by the
         //    solid plank deck above them. Placed off the stilt cells so they hang free.
@@ -13797,6 +13804,10 @@ class CuratedBlueprintGenerator {
         line(b, 6, x0, z0, x1, z0, polGraniteSlabTop);
         // ladder linking story 1 → story 2 (backed by east wall, facing west)
         pillar(b, x1 - 1, z1 - 1, 2, 6, bs("minecraft:ladder[facing=west,waterlogged=false]"));
+        // The walls() courses skip the inter-story floor level (y6), so the east wall is
+        // air at (x1,6,z1-1) — the one rung the floor slab interrupts. Patch it with the
+        // matching brick wall so EVERY rung backs onto a sturdy face (else it pops here).
+        b.set(x1, 6, z1 - 1, BRICKS);
 
         walls(b, x0, z0, x1, z1, 7, 10, BRICKS);
         corners(b, x0, z0, x1, z1, 7, 10, polGranite);
@@ -13829,6 +13840,9 @@ class CuratedBlueprintGenerator {
         }
         line(b, 11, x0, z0, x1, z0, polGraniteSlabTop); // string-course band
         pillar(b, x1 - 1, z1 - 1, 7, 11, bs("minecraft:ladder[facing=west,waterlogged=false]"));
+        // Same fix at the story-2→3 inter-story floor (y11): patch the east-wall backing
+        // the floor slab interrupts so the top ladder rung is sturdy-backed.
+        b.set(x1, 11, z1 - 1, BRICKS);
 
         walls(b, x0, z0, x1, z1, 12, 15, BRICKS);
         corners(b, x0, z0, x1, z1, 12, 15, polGranite);
@@ -14164,7 +14178,10 @@ class CuratedBlueprintGenerator {
         // patina read while staying valued. (Economy is frozen — swap, don't value.)
         BlueprintBlockState oxidizedCopper    = bs("minecraft:oxidized_cut_copper");
         BlueprintBlockState whiteConcrete     = bs("minecraft:white_concrete");
-        BlueprintBlockState ladderN           = bs("minecraft:ladder[facing=north,waterlogged=false]");
+        // facing=south so the ladder attaches to facing.getOpposite()==NORTH, where the
+        // ring wall (z=sz0) actually is; facing=north would attach to z+1 (interior air)
+        // and the ladder would pop on the next block update (silent failure, renders backwards).
+        BlueprintBlockState ladderS           = bs("minecraft:ladder[facing=south,waterlogged=false]");
         // The four copper-oxidation cut variants, banded in order up the shaft.
         BlueprintBlockState[] band = {
                 copperPatina(0), // cut_copper
@@ -14300,9 +14317,9 @@ class CuratedBlueprintGenerator {
         b.set(sx1 - 1, 18, sz1 - 1, CHAIN); b.set(sx1 - 1, 17, sz1 - 1, HANGING_LANTERN);
 
         // interior ladder: climbs the north wall line from the base up through the
-        // belfry hatch, backed by the ring wall behind it (facing=north → attaches to
+        // belfry hatch, backed by the ring wall behind it (facing=south → attaches to
         // (cx, y, sz0) which is solid copper/deepslate the whole way up).
-        pillar(b, cx, sz0 + 1, 1, 16, ladderN);
+        pillar(b, cx, sz0 + 1, 1, 16, ladderS);
 
         // 6) PYRAMIDAL COPPER SPIRE (y20..) — a tapering cut-copper-stair roof over the
         //    7×7 belfry top, weathered (level 2) climbing to oxidized (level 3) near the
@@ -14393,7 +14410,9 @@ class CuratedBlueprintGenerator {
         BlueprintBlockState purpleGlass    = bs("minecraft:purple_stained_glass");
         BlueprintBlockState magentaGlass   = bs("minecraft:magenta_stained_glass");
         BlueprintBlockState purpurSlabTop  = bs("minecraft:purpur_slab[type=top]");
-        BlueprintBlockState ladderN        = bs("minecraft:ladder[facing=north,waterlogged=false]");
+        // facing=south so the ladder attaches to facing.getOpposite()==NORTH ring wall
+        // (z=sz0); facing=north would attach to z+1 (interior air) and pop on update.
+        BlueprintBlockState ladderS        = bs("minecraft:ladder[facing=south,waterlogged=false]");
         // Purpur stairs for the End-City flare corbel: bottom-half, facing OUTWARD
         // on each face so the tread cantilevers away from the shaft.
         BlueprintBlockState flareN = bs("minecraft:purpur_stairs[facing=north,half=bottom,shape=straight]");
@@ -14531,9 +14550,9 @@ class CuratedBlueprintGenerator {
         b.set(cx, 23, cz, END_ROD);
 
         // interior ladder: climbs the north wall line from the base up through the
-        // flare-deck hatch, backed by the ring wall behind it (facing=north attaches
+        // flare-deck hatch, backed by the ring wall behind it (facing=south attaches
         // to (cx, y, sz0) which is solid purpur/end-stone the whole way up).
-        pillar(b, cx, sz0 + 1, 1, 16, ladderN);
+        pillar(b, cx, sz0 + 1, 1, 16, ladderS);
 
         return b.build();
     }
@@ -16907,7 +16926,10 @@ class CuratedBlueprintGenerator {
         final BlueprintBlockState fence    = OAK_FENCE;           // railings + rigging
         final BlueprintBlockState chain    = CHAIN;               // rope rigging
         final BlueprintBlockState sail     = WHITE_WOOL;          // sails
-        final BlueprintBlockState ladder   = bs("minecraft:ladder[facing=north,waterlogged=false]");
+        // Ladders face AWAY from the wall they mount on (attach to facing.getOpposite()):
+        // ladderE attaches to its WEST neighbour, ladderW to its EAST neighbour.
+        final BlueprintBlockState ladderE  = bs("minecraft:ladder[facing=east,waterlogged=false]");
+        final BlueprintBlockState ladderW  = bs("minecraft:ladder[facing=west,waterlogged=false]");
         final BlueprintBlockState glass    = GLASS;               // cabin windows (BLOCKS)
         final BlueprintBlockState slabTop  = OAK_SLAB_TOP;        // cabin roof
         final BlueprintBlockState hullStairS = bs("minecraft:oak_stairs[facing=south,half=bottom,shape=straight]");
@@ -17006,7 +17028,11 @@ class CuratedBlueprintGenerator {
                 b.set(x, deckY + 4, z, slabTop);                    // y=7 slab roof
             }
         }
-        b.set(cx + 1, deckY + 1, cabZ1, ladder);                    // ladder up onto the quarterdeck
+        // ladder up onto the quarterdeck at its starboard-front corner. facing=east so it
+        // attaches to facing.getOpposite()==WEST at (cx, deckY+1, cabZ1) — the raised-deck
+        // plank to its west (a sturdy full vertical face); a north-facing ladder here would
+        // attach to (cx+1, deckY+1, cabZ1+1), the open main-deck edge (air), and pop off.
+        b.set(cx + 1, deckY + 1, cabZ1, ladderE);                   // ladder up onto the quarterdeck
 
         // ── 7) SHIP'S WHEEL — at the front of the quarterdeck (z=4) a fence "binnacle"
         //    post with an open trapdoor as the wheel, facing forward over the deck.
@@ -17083,10 +17109,13 @@ class CuratedBlueprintGenerator {
         b.set(cx, foreTopY + 1, foreZ, LANTERN);                   // foremast-top lantern
         b.set(cx, deckY + 1, bowZ - 1, LANTERN);                   // bow lantern on the foredeck
 
-        // ── 14) LADDER BELOW DECKS — a ladder down the inside of the hull amidships
-        //    so the hold reads as enterable (the hull interior y=2 is open under the
-        //    deck except the keel/sides). Backed by the deck plank above.
-        b.set(cx, sideY, mainZ + 1, ladder);                       // hold ladder (against the deck underside)
+        // ── 14) LADDER BELOW DECKS — a hold ladder mounted on the INSIDE of the
+        //    starboard hull amidships so the hold reads as enterable. facing=west so it
+        //    attaches to facing.getOpposite()==EAST at (cx+2, sideY, mainZ+1), the
+        //    starboard hull plank (a sturdy full vertical face). The old centreline
+        //    north-facing ladder attached to open hold air and popped on update — a
+        //    ladder can't hang off the horizontal deck underside.
+        b.set(cx + 1, sideY, mainZ + 1, ladderW);                  // hold ladder (on the starboard hull)
 
         return b.build();
     }
