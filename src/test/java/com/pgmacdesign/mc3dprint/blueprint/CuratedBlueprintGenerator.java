@@ -11094,7 +11094,7 @@ class CuratedBlueprintGenerator {
      * </ul>
      */
     private static Blueprint hotAirBalloon() {
-        final int W = 9, H = 15, D = 9;
+        final int W = 9, H = 13, D = 9;
         Blueprint.Builder b = Blueprint.builder("Hot Air Balloon", W, H, D);
 
         final int cx = 4, cz = 4;
@@ -11105,34 +11105,37 @@ class CuratedBlueprintGenerator {
         final BlueprintBlockState woolC = bs("minecraft:blue_wool");
         final BlueprintBlockState[] stripe = { woolA, woolB, woolC };
 
-        // ── BASKET (gondola) — 3×3 oak-plank box at x=3..5, z=3..5 ─────────────
+        // ── BASKET (gondola) — short open-topped 3×3 box at x=3..5, z=3..5 ─────
+        // The gondola sits on the ground (floor at y=0). Earlier revisions stacked
+        // a solid plank floor AND a separate plank wall course AND a fence rim,
+        // which lifted the whole balloon ~2 blocks onto a purposeless plank
+        // pedestal. Now: ONE plank floor at y=0 (the deck the player stands on),
+        // capped by a fence rim at y=1 (the open railing) — nothing redundant.
         final int bx0 = 3, bx1 = 5, bz0 = 3, bz1 = 5;
-        // y=0: solid plank floor
+        // y=0: solid plank floor (basket deck, grounded)
         floor(b, 0, bx0, bz0, bx1, bz1, OAK_PLANKS);
-        // y=1: plank side walls (interior left open → enterable basket)
-        walls(b, bx0, bz0, bx1, bz1, 1, 1, OAK_PLANKS);
-        // y=2: oak-fence rim around the top lip
-        fenceRing(b, 2, bx0, bz0, bx1, bz1, OAK_FENCE);
+        // y=1: oak-fence rim — the basket railing the rigging hangs from
+        fenceRing(b, 1, bx0, bz0, bx1, bz1, OAK_FENCE);
 
-        // ── RIGGING — suspension lines from the four basket top corners ───────
-        // fence run y=3..5 then a chain link y=6, climbing toward the neck.
+        // ── RIGGING — suspension lines from the four basket rim corners ───────
+        // fence run y=2..3 then a chain link y=4, climbing toward the neck.
         final int[][] corners = {{bx0, bz0}, {bx1, bz0}, {bx0, bz1}, {bx1, bz1}};
         for (int[] c : corners) {
-            pillar(b, c[0], c[1], 3, 5, OAK_FENCE);
-            b.set(c[0], 6, c[1], CHAIN);
+            pillar(b, c[0], c[1], 2, 3, OAK_FENCE);
+            b.set(c[0], 4, c[1], CHAIN);
         }
 
         // ── ENVELOPE — hollow onion/teardrop wool shell, striped by sector ────
-        // ring radius per envelope course y=7..14 (neck → bulge → crown).
-        // index 0 → y=7 … index 7 → y=14.
+        // ring radius per envelope course y=5..12 (neck → bulge → crown).
+        // index 0 → y=5 … index 7 → y=12.
         final int[] ringR = {1, 2, 3, 4, 4, 3, 2, 1};
-        final int yEnv0 = 7;
+        final int yEnv0 = 5;
         for (int i = 0; i < ringR.length; i++) {
             int y = yEnv0 + i;
             int r = ringR[i];
             paintRing(b, y, cx, cz, r, stripe);
         }
-        // close the neck floor (y=7) and the crown (y=14) with solid wool discs so
+        // close the neck floor (y=5) and the crown (y=12) with solid wool discs so
         // the envelope reads as a sealed balloon rather than an open tube.
         paintDisc(b, yEnv0, cx, cz, ringR[0], stripe);
         paintDisc(b, yEnv0 + ringR.length - 1, cx, cz, ringR[ringR.length - 1], stripe);
@@ -11140,11 +11143,11 @@ class CuratedBlueprintGenerator {
         // ── LANTERNS — burner glow under the neck + basket-rim lights ─────────
         // a chain link just below the neck centre carrying a hanging lantern (the
         // balloon's burner), backed by the solid neck-floor disc above it.
-        b.set(cx, 6, cz, CHAIN);
-        b.set(cx, 5, cz, HANGING_LANTERN);
+        b.set(cx, 4, cz, CHAIN);
+        b.set(cx, 3, cz, HANGING_LANTERN);
         // two non-hanging lanterns resting on opposite basket-rim corners.
-        b.set(bx0, 3, bz0, LANTERN);
-        b.set(bx1, 3, bz1, LANTERN);
+        b.set(bx0, 1, bz0, LANTERN);
+        b.set(bx1, 1, bz1, LANTERN);
 
         return b.build();
     }
