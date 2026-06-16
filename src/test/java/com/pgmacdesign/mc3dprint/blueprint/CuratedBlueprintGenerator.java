@@ -617,6 +617,19 @@ class CuratedBlueprintGenerator {
     /**
      * (6) A hemispherical dome of {@code mat}: stacked decreasing rings from the
      * springing height {@code cy} up to {@code cy+r}, centred at (cx,cz).
+     *
+     * <p><b>Apex-gap caveat (read before using for a roof):</b> the dome is built from
+     * stacked HOLLOW {@link #circleRing}s whose radius is {@code round(sqrt(r²-dy²))}.
+     * Near the top that radius drops to the lone center block in one step (e.g. r=4 goes
+     * …→ring3→center, r=3 …→ring2→center, r=2 ring2→center), so the surface is NOT
+     * watertight at the crown — it leaves an open shoulder/apex hole. That's invisible on
+     * a small decorative blob (see coral_garden's coral heads — it reads as organic) but
+     * is a glaring hole on a roof. For any dome that must look CLOSED (igloo roof,
+     * observation dome, …), <b>cap the crown after this call</b> with a small
+     * {@link #disc} at the top layer(s) — see {@code snowyIgloo()} /
+     * {@code underwaterDomeBase()} for the pattern. Do not "fix" it by widening the rings
+     * here; the per-build cap keeps each dome's shell thickness/material under the
+     * author's control.
      */
     private static void dome(Blueprint.Builder b, int cx, int cz, int cy, int r, BlueprintBlockState mat) {
         for (int dy = 0; dy <= r; dy++) {
