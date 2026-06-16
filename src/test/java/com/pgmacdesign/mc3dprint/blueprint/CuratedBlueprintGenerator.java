@@ -7156,19 +7156,33 @@ class CuratedBlueprintGenerator {
         int wallBottom = deckY + 1;         // 5
         int wallH = deckY + 4;              // 8 (wall plate; roof seats at y=9)
         int roofY = wallH + 1;              // 9
-        // Ladder climbs the SOUTH face of the trunk: a south-facing ladder backs onto
-        // the block to its NORTH, so rungs sit at z=tz1+1 (=6, just south of the trunk)
-        // and the deck hatch is the SAME column so the player steps straight up onto it.
-        int ladderZ = tz1 + 1;               // 6
-        int hatchX = cx, hatchZ = ladderZ;   // (4,6) hatch directly above the rungs
+        // Ladder climbs the SOUTH face of the trunk, pulled ONE cell toward centre vs.
+        // the old layout so it clears the front door. A south-facing ladder backs onto
+        // the block to its NORTH, so the rungs sit at z=tz1 (=5, the southern trunk
+        // column) and back onto the solid trunk at z=tz0..tz1-1 (=4) directly north.
+        // The deck hatch is the SAME column. The old ladder sat at z=tz1+1 (=6), the
+        // ONLY approach tile to the south door at z=wz1 (=7): that left a hole right in
+        // front of the door so you couldn't reach/exit it. With the ladder at z=5 the
+        // hatch is north of the doorway, the deck cell in front of the door (z=6) is
+        // solid plank, and the door at z=7 is reachable and clear.
+        int ladderZ = tz1;                   // 5 (was 6) — one cell toward centre
+        int hatchX = cx, hatchZ = ladderZ;   // (4,5) hatch directly above the rungs
 
         // ── 1) THE TRUNK ─────────────────────────────────────────────────────
-        // A solid 3×3 oak-log column from the ground (y=0) up to trunkTop. It passes
-        // through the deck and the cabin and stands proud above the roof so the build
-        // reads as a cabin built around a living tree.
+        // A 3×3 oak-log column that reads as a living tree the cabin is built around,
+        // but HOLLOW through the living space so the room is open and walkable. The
+        // trunk rises from the ground (y=0) up to and INCLUDING the deck/floor level
+        // (y=deckY) so the tree visibly roots into the floor (support "from the
+        // bottom"), is OMITTED through the cabin headroom (y=wallBottom..wallH) so the
+        // 5×5 interior is clear to move around in, then RESUMES at the roof and stands
+        // proud above it (y=roofY..trunkTop) so the tree continues up into the player's
+        // own leaf canopy (the "top"). The walls/corner posts carry the roof, so the
+        // hollow mid-section costs no structural support.
         for (int x = tx0; x <= tx1; x++) {
             for (int z = tz0; z <= tz1; z++) {
-                pillar(b, x, z, 0, trunkTop, trunkLog);
+                pillar(b, x, z, 0, deckY, trunkLog);        // support trunk: ground → floor
+                pillar(b, x, z, roofY, trunkTop, trunkLog); // canopy trunk: roof → above
+                // (y=wallBottom..wallH left open → hollow interior, no trunk in the room)
             }
         }
 
