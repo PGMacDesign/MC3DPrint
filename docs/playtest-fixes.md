@@ -36,7 +36,7 @@ Leftover unchecked items carry over to the next session.
 - [x] apothecary_shop — removed the floating head-height herb row (potted_* + hanging lantern at y=2 across z=4 that blocked the aisle); relocated the 5 bloom types onto surfaces (bookshelf tops, barrel tops, counter); central aisle (x=2..4) now clear at y=1 and y=2 front-to-back; the one hanging lantern moved off the aisle against the west wall.
 
 - [x] greenhouse — central aisle water channel (x=4, y=0) that the door dumped you into is now covered with flush waterlogged TOP slabs (walk above the water, dry feet, flush with the floor — no entry pit, walk in/out freely); each planter bed got its own y=1 water source so crops stay irrigated. No stairs/2nd level needed (single-storey).
-- [ ] tavern_inn — can't reach the stairs to the 2nd floor; even if reached, head hits the ceiling (need more headroom/taller 2nd floor); 2nd-floor inn rooms are sparse — furnish them.
+- [x] tavern_inn — rebuilt the interior stair: moved it one bay east of the chimney (x=2), flipped it to `facing=south` so walking north actually ascends (it was facing=north = a riser-wall you'd jump/headbonk — the root cause), and extended it to a 6-step run (y=1..6) so the top step sits flush with the y=6 deck (no 1-block hop). Hatch re-derived (open at (2,6,6)/(2,6,7)) for full headroom; clean landing into the north room. Furnished both guest rooms (carpet rugs, barrel/chest nightstands w/ potted blooms, extra lanterns, bookshelves); both beds intact. Verified climb layer-by-layer in the dump.
 - [ ] stable_horse (Horse Stable) — the gate + ladder don't actually lead to the 2nd floor; no way up without breaking blocks. Make the ladder/access actually reach the upper level.
 
 ## Strategy note (farms)
