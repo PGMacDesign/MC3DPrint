@@ -26,6 +26,7 @@ Leftover unchecked items carry over to the next session.
 - [x] mob_xp_tower — clarity rework: walk-in kill chamber (door), AFK spot + iron-bar kill slot, glass viewing window, accessible chest, dry landing (removed base water), explanatory signs.
 
 ## Open (new findings, in order)
+- [ ] pumpkin_melon_farm — harvest never works: pumpkins/melons grow SIDEWAYS onto an adjacent block, not upward, so the sugar-cane-style upward detector/piston can't break them. Rearchitect to the canonical design: stem on hydrated farmland → fruit grows on an adjacent growth block → observer watches that spawn cell → piston crushes the fruit → water/hopper collects. Lower yield is acceptable; correctness > yield.
 - [x] sugarcane_farm_auto — water now adjacent to the sand at the soil's own level (y=1) so canSurvive passes (cane no longer pops on print); observers raised to the cane's 2nd block for correct harvest; snapped cane → water → hopper → chest.
 - [x] super_smelter — full row of input chests, each with a down-hopper feeding its own furnace; fuel + output extended across the whole bank so all 5 furnaces run in parallel.
 - [x] map_room — filled the 4 corner gaps (potted cornflowers at the entry, barrels by the cartography table).
