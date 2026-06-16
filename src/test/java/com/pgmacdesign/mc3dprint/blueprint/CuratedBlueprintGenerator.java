@@ -3,7 +3,9 @@ package com.pgmacdesign.mc3dprint.blueprint;
 import net.minecraft.DetectedVersion;
 import net.minecraft.SharedConstants;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtIo;
+import net.minecraft.nbt.StringTag;
 import net.minecraft.server.Bootstrap;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -356,6 +358,42 @@ class CuratedBlueprintGenerator {
 
     private static BlueprintBlockState bs(String id) {
         return BlueprintBlockState.parse(id);
+    }
+
+    /**
+     * Place a sign (wall or standing) WITH readable text. Plain {@code b.set(...sign...)}
+     * leaves a BLANK sign — the text is block-entity NBT, which the blueprint format
+     * round-trips ({@link Blueprint.Builder#blockEntity}) and the printer applies
+     * ({@code PrinterBlockEntity}'s {@code placedBe.load(beData)}). Up to 4 lines on the
+     * FRONT face; pass "" for blank lines. {@code stateStr} is the full sign block state
+     * (e.g. {@code "minecraft:oak_wall_sign[facing=south]"} or
+     * {@code "minecraft:oak_sign[rotation=8]"}). Use this for explanatory plaques on
+     * functional builds (farms etc.) so players know how the build works.
+     */
+    private static void signText(Blueprint.Builder b, String stateStr, int x, int y, int z,
+                                 String l1, String l2, String l3, String l4) {
+        b.set(x, y, z, bs(stateStr));
+        CompoundTag be = new CompoundTag();
+        be.putString("id", "minecraft:sign");
+        be.put("front_text", signFace(new String[]{l1, l2, l3, l4}));
+        be.put("back_text", signFace(new String[]{"", "", "", ""}));
+        be.putByte("is_waxed", (byte) 0);
+        b.blockEntity(x, y, z, be);
+    }
+
+    /** Build a 1.20.1 sign-face compound (messages = 4 JSON text components). */
+    private static CompoundTag signFace(String[] lines) {
+        CompoundTag face = new CompoundTag();
+        ListTag messages = new ListTag();
+        for (int i = 0; i < 4; i++) {
+            String line = i < lines.length && lines[i] != null ? lines[i] : "";
+            String json = "{\"text\":\"" + line.replace("\\", "\\\\").replace("\"", "\\\"") + "\"}";
+            messages.add(StringTag.valueOf(json));
+        }
+        face.put("messages", messages);
+        face.putString("color", "black");
+        face.putByte("has_glowing_text", (byte) 0);
+        return face;
     }
 
     /** A solid floor of {@code mat} filling [x0..x1] x [z0..z1] at height y. */

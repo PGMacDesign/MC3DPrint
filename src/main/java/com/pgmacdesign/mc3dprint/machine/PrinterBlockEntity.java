@@ -797,6 +797,9 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
                 if (placedBe != null) {
                     placedBe.load(beData);
                     placedBe.setChanged();
+                    // Push the block-entity data to clients now, otherwise BE-backed
+                    // visuals (sign text, etc.) don't appear until the chunk reloads.
+                    serverLevel.sendBlockUpdated(worldPos, placedState, placedState, Block.UPDATE_CLIENTS);
                 }
             }
             energy.consume(rfPerBlock);
