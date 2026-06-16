@@ -8647,38 +8647,48 @@ class CuratedBlueprintGenerator {
      * <b>blocks</b> (NOT panes) seated on the stone foundation — so the render-integrity
      * stub-pane gate ({@code IronBarsBlock} with zero connections) never applies.
      *
-     * <p>How it works once printed + planted: the player plants a kelp shoot on the
-     * stone column floor (under the water). Kelp grows straight up through the water;
-     * when a new segment grows into the cell the top observer faces, the observer
-     * pulses, firing the piston beside it which breaks the stalk at the cut point. The
-     * broken kelp drifts down through the water column and lands on the hopper floor,
-     * which feeds the collection chest. Smelting the collected kelp in the furnace bank
-     * yields dried kelp (food / a fuel source / smelting XP).
+     * <p>How it works once printed + planted: the player plants a kelp shoot on each
+     * submerged stone grow-block (the two rows straddling the central water canal).
+     * Kelp grows straight up through the water; when a new segment grows into the cell
+     * the side observer faces (the 2nd-segment height, y=2), the observer pulses,
+     * firing the piston above it which snaps the stalk LOW toward the central canal —
+     * leaving the planted base to regrow (self-sustaining). The snapped kelp lands in
+     * the canal water, floats south, and drops onto the hopper canal floor, which
+     * chains it into the collection chest. Smelting it in the furnace bank yields dried
+     * kelp (food / fuel / smelting XP).
      *
-     * <p>Layout (south = +z is the "front"/access side; the column is centred at
-     * cx=cz=4):
+     * <p>This mirrors the auto bamboo/sugar-cane farm pattern (side harvest walls, not
+     * a top head) — adapted for UNDERWATER growth. The fix from the old build: the
+     * redstone no longer sits on the observer/piston tops (where it washed off on
+     * print) or anywhere touching water. It rides a DEDICATED dry stone shelf one
+     * column beyond each harvest wall; the full-solid, non-waterloggable observer/piston
+     * bodies dam the water in and keep that shelf bone-dry.
+     *
+     * <p>Layout (south = +z is the "front"/access side; the canal is centred at cx=4,
+     * running along z=2..6):
      * <ul>
-     *   <li><b>y=0</b> — stone foundation (9×9). The central 3×3 (x=3..5, z=3..5) is
-     *       the <b>hopper floor</b> of the column: hoppers that catch broken kelp and
-     *       chain it south into the collection chest.</li>
-     *   <li><b>Collection chest, y=0</b> — tucked at the south edge under the column
-     *       wall (x=4, z=6, facing north): the hopper floor empties into it.</li>
-     *   <li><b>Water column, y=1..6</b> — the central 3×3 (x=3..5, z=3..5) filled with
-     *       <b>water</b>; the player plants kelp on the hopper floor and it grows up
-     *       through this column.</li>
+     *   <li><b>y=0</b> — stone foundation (9×9). The central canal floor (x=4, z=2..6)
+     *       is <b>hoppers</b> that catch the snapped kelp and chain it south.</li>
+     *   <li><b>Collection chest, y=0</b> — at the south edge (x=4, z=7, facing north):
+     *       the hopper canal empties into it.</li>
+     *   <li><b>Water, y=1..6</b> — the central canal (x=4) is water full height; the two
+     *       grow rows (x=3 and x=5) are solid <b>stone</b> grow-blocks at y=1 with
+     *       <b>water</b> above (y=2..6) so the planted kelp grows submerged.</li>
      *   <li><b>Glass walls, y=1..6</b> — a 5×5 ring of glass <b>blocks</b> (x=2..6,
-     *       z=2..6) boxing the water column so it reads as a contained tank and the
-     *       water is held in. Glass blocks (not panes) connect to the stone foundation
-     *       and each other → no stub-pane render risk.</li>
-     *   <li><b>Harvest head, y=7..8</b> — above the column an <b>observer</b> at y=7
-     *       (x=4, facing down into the column top) watches the kelp grow into its face;
-     *       a <b>piston</b> at y=7 beside it (x=3, facing east at the grow cell) breaks
-     *       the new growth, and a <b>redstone-dust</b> ribbon on a stone shelf at y=8
-     *       ties the observer's back output across to fire the piston.</li>
-     *   <li><b>Dried-kelp smelter, y=1</b> — a 2-<b>furnace</b> bank on the south face
-     *       (x=2 and x=6, z=8, facing north) for smelting the collected kelp into dried
-     *       kelp.</li>
-     *   <li><b>Label signs</b> — oak wall signs on the south face flank the chest.</li>
+     *       z=1..7) boxing the tank so it reads as a contained aquarium and holds the
+     *       water in. Glass blocks (not panes) → no stub-pane render risk.</li>
+     *   <li><b>Harvest walls, y=1..3</b> — one column out from each grow row (x=2 west /
+     *       x=6 east): stone backing at y=1 raises an <b>observer</b> to y=2 (facing the
+     *       grow-cell — the 2nd-kelp-segment height, so it re-fires each growth cycle),
+     *       with a <b>piston</b> at y=3 above that snaps the cut stalk into the canal.
+     *       These solid mechanism blocks are the dam.</li>
+     *   <li><b>Dry redstone shelves, y=1..4</b> — one column further out (x=1 / x=7): a
+     *       solid stone pillar (y=1..3) carries a <b>redstone-dust</b> ribbon at y=4 in
+     *       AIR, never on a mechanism top, never in/touching water.</li>
+     *   <li><b>Dried-kelp smelter, y=1</b> — a 2-<b>furnace</b> bank on the south edge
+     *       (x=1 and x=7, z=8, facing north) for smelting the collected kelp.</li>
+     *   <li><b>Label signs</b> — oak wall signs on the south face flank the chest,
+     *       telling the player where to plant the kelp.</li>
      * </ul>
      */
     private static Blueprint kelpFarm() {
@@ -8692,64 +8702,107 @@ class CuratedBlueprintGenerator {
         BlueprintBlockState redDust = bs("minecraft:redstone_wire[east=none,west=none,north=none,south=none,power=0]"); // structural
 
         int x0 = 0, x1 = 8, z0 = 0, z1 = 8;            // 9×9 footprint
-        int cx = 4, cz = 4;                            // column centre
-        int colX0 = 3, colX1 = 5, colZ0 = 3, colZ1 = 5; // 3×3 water column
-        int wallX0 = 2, wallX1 = 6, wallZ0 = 2, wallZ1 = 6; // 5×5 glass-wall ring
-        int colTop = 6;                                // water rises y=1..6
+        int cx = 4;                                    // central water-canal column
+        int wGrowX = cx - 1, eGrowX = cx + 1;          // 3 and 5 — submerged stone grow-blocks (plant kelp here)
+        int wWallX = cx - 2, eWallX = cx + 2;          // 2 and 6 — observer/piston harvest walls (the dry dam)
+        int wShelfX = cx - 3, eShelfX = cx + 3;        // 1 and 7 — dry stone redstone-dust shelf columns
+        int rowZ0 = 2, rowZ1 = 6;                      // canal + grow rows run along Z (z=2..6)
+        int colTop = 6;                                // water rises y=1..6 (grow column height)
 
-        // ── 1) STONE FOUNDATION at y=0 ──────────────────────────────────────
+        // ── 1) STONE FOUNDATION at y=0, with the central WATER CANAL ────────
+        // The canal (x=cx) carries snapped kelp south to the hopper. Its floor is
+        // dropped to hoppers below; the grow-blocks straddle it one column out.
         floor(b, 0, x0, z0, x1, z1, stone);
 
-        // ── 2) HOPPER FLOOR under the column + COLLECTION CHEST, y=0 ─────────
-        // The 3×3 column floor is hoppers that catch broken kelp and chain it south
-        // into the chest tucked under the south wall (x=cx, z=6, facing north).
-        // Each hopper points south toward the next, the southmost feeding the chest.
-        // (Air-skip means these overwrite the stone foundation cells.)
-        for (int x = colX0; x <= colX1; x++) {
-            for (int z = colZ0; z <= colZ1; z++) {
-                b.set(x, 0, z, bs("minecraft:hopper[enabled=true,facing=south]")); // chain south to the chest
+        // ── 2) HOPPER CANAL FLOOR + COLLECTION CHEST, y=0 ───────────────────
+        // The central canal floor (x=cx, z=2..6) is hoppers that catch the broken
+        // kelp the pistons snap inward and chain it SOUTH into the chest tucked at the
+        // south edge (x=cx, z=7, facing north). (Air-skip overwrites the foundation.)
+        for (int z = rowZ0; z <= rowZ1; z++) {
+            b.set(cx, 0, z, bs("minecraft:hopper[enabled=true,facing=south]")); // chain south to the chest
+        }
+        b.set(cx, 0, rowZ1 + 1, chest);                // collection chest at z=7, faces north
+
+        // ── 3) WATER COLUMN (canal + the two submerged grow rows), y=1..colTop ──
+        // Water fills the central canal (x=cx) AND the two grow-block rows above the
+        // grow-blocks (x=3 and x=5), so the kelp planted on the grow-blocks grows up
+        // through water and the snapped stalk lands in the canal water and floats
+        // south. The grow-blocks themselves are solid STONE at y=1 (kelp needs a solid
+        // base under the water); water sits above them at y=2..colTop. The canal is
+        // water the whole height y=1..colTop. The observer/piston walls (x=2 and x=6)
+        // are full solid NON-waterloggable blocks → they dam the water in and keep the
+        // redstone shelves beyond them DRY.
+        for (int z = rowZ0; z <= rowZ1; z++) {
+            // submerged grow-blocks: solid base at y=1, water above (player plants kelp here)
+            b.set(wGrowX, 1, z, stone);
+            b.set(eGrowX, 1, z, stone);
+            // central canal: water full height
+            for (int y = 1; y <= colTop; y++) {
+                b.set(cx, y, z, water);
+            }
+            // water over the grow-blocks (y=2..colTop) so the kelp grows submerged
+            for (int y = 2; y <= colTop; y++) {
+                b.set(wGrowX, y, z, water);
+                b.set(eGrowX, y, z, water);
             }
         }
-        b.set(cx, 0, wallZ1, chest);                   // collection chest just south of the column (z=6), faces north
 
-        // ── 3) WATER COLUMN + GLASS WALLS, y=1..colTop ──────────────────────
-        // The 3×3 interior fills with water (the player plants kelp on the hopper
-        // floor; it grows up through this column). A 5×5 ring of glass BLOCKS boxes
-        // the column so it reads as a contained tank — glass blocks (not panes) seat
-        // on the foundation and each other, so no IronBarsBlock stub-pane risk.
+        // ── 4) GLASS TANK WALLS, y=1..colTop ────────────────────────────────
+        // A 5×5 ring of glass BLOCKS (x=2..6, z=1..7) boxes the whole tank so it reads
+        // as a contained aquarium and holds the water in. Glass blocks (not panes) seat
+        // on the stone foundation and each other → no IronBarsBlock stub-pane risk. The
+        // observer/piston harvest walls (x=2/x=6) overwrite the west/east glass faces at
+        // their cells; that's fine — they ARE the wall there (and the dam).
         for (int y = 1; y <= colTop; y++) {
-            floor(b, y, colX0, colZ0, colX1, colZ1, water);   // water fill (3×3)
-            walls(b, wallX0, wallZ0, wallX1, wallZ1, y, y, glass); // glass ring (5×5 perimeter)
+            walls(b, wWallX, rowZ0 - 1, eWallX, rowZ1 + 1, y, y, glass); // 5×5 perimeter
         }
 
-        // ── 4) HARVEST HEAD: observer + piston + redstone, y=7..8 ───────────
-        // Above the column an observer at y=7 (x=cx, facing DOWN into the column top)
-        // watches the kelp grow into its face; its BACK output points up into y=8. A
-        // piston at y=7 one column west (x=3, facing east at the grow cell) breaks the
-        // new growth. Both are solid mechanism blocks at y=7, so a redstone-dust ribbon
-        // laid across their tops at y=8 — over the observer (its back output) and over
-        // the piston — ties the observer's back output across to fire the piston. A
-        // stone cap one column east (x=5) at y=7 closes the head as a solid mechanism.
-        int obsX = cx;                                 // observer over the column centre
-        int pistonX = cx - 1;                          // piston beside it (west)
-        b.set(obsX, colTop + 1, cz, bs("minecraft:observer[facing=down,powered=false]")); // y=7, watches column top
-        b.set(pistonX, colTop + 1, cz, bs("minecraft:piston[facing=east,extended=false]")); // y=7, breaks the growth
-        b.set(cx + 1, colTop + 1, cz, stone);          // y=7, stone cap east of the observer (x=5)
-        // redstone-dust ribbon at y=8 riding the y=7 mechanism tops: over the observer
-        // back-output and over the piston, carrying the harvest pulse across.
-        b.set(obsX, colTop + 2, cz, redDust);          // y=8, on the observer back-output
-        b.set(pistonX, colTop + 2, cz, redDust);       // y=8, on the piston top
+        // ── 5) HARVEST WALLS: stone backing + observer + piston + DRY redstone ──
+        // One column out from each grow row (x=2 west / x=6 east): a stone backing at
+        // y=1 RAISES an observer to y=2 — the cell the SECOND kelp segment grows into.
+        // (Kelp's planted base at y=2-water is always present once planted, so a base-
+        // height observer would fire once and never again; watching the 2nd segment
+        // makes it re-fire every growth cycle and break LOW, leaving the base to
+        // regrow. This is the fix.) The observer's FRONT face is directly adjacent to
+        // the grow-block water cell — no glass between, so it watches the kelp, not the
+        // glass. A piston at y=3 above it faces the grow column and snaps the cut stalk
+        // toward the central canal water. The observer + piston bodies (full solid,
+        // NON-waterloggable) form the DAM between the water column and the redstone.
+        //
+        // The redstone-dust ribbon rides a DEDICATED solid stone shelf one column
+        // FURTHER OUT (x=1 west / x=7 east): its own stone pillar y=1..3 carries the
+        // dust at y=4 in AIR — never on top of the observer/piston, never in or touching
+        // water (the mechanism wall dams the water away). This is the wash-off fix: in
+        // the old build the dust sat on the observer/piston tops and was adjacent to the
+        // wet column, so a piece broke off on print. Now every dust block sits on a dry,
+        // supported stone shelf. West wall faces east, east wall faces west.
+        for (int z = rowZ0; z <= rowZ1; z++) {
+            b.set(wWallX, 1, z, stone);  // observer backing → raises detector to y=2
+            b.set(eWallX, 1, z, stone);
+            b.set(wWallX, 2, z, bs("minecraft:observer[facing=east,powered=false]")); // watches grow cell
+            b.set(eWallX, 2, z, bs("minecraft:observer[facing=west,powered=false]"));
+            b.set(wWallX, 3, z, bs("minecraft:piston[facing=east,extended=false]"));  // snaps stalk → canal
+            b.set(eWallX, 3, z, bs("minecraft:piston[facing=west,extended=false]"));
+            pillar(b, wShelfX, z, 1, 3, stone);  // dry solid floor under the dust ribbon
+            pillar(b, eShelfX, z, 1, 3, stone);
+            b.set(wShelfX, 4, z, redDust);       // y=4 redstone, on a DRY stone shelf in air
+            b.set(eShelfX, 4, z, redDust);
+        }
 
-        // ── 5) DRIED-KELP SMELTER: 2-furnace bank on the south face, y=1 ────
-        // Two furnaces on the south edge (x=2 and x=6, z=8) for smelting the collected
+        // ── 6) DRIED-KELP SMELTER: 2-furnace bank on the south face, y=1 ────
+        // Two furnaces on the south edge (x=1 and x=7, z=8) for smelting the collected
         // kelp into dried kelp (food / fuel / XP). Furnaces derive their FU value from
         // the 8-cobblestone crafting recipe.
-        b.set(wallX0, 1, z1, furnace);                 // west furnace
-        b.set(wallX1, 1, z1, furnace);                 // east furnace
+        b.set(wShelfX, 1, z1, furnace);                // west furnace (x=1)
+        b.set(eShelfX, 1, z1, furnace);                // east furnace (x=7)
 
-        // ── 6) LABEL SIGNS on the south face flanking the chest ─────────────
-        b.set(cx - 1, 1, wallZ1, bs("minecraft:oak_wall_sign[facing=south]"));
-        b.set(cx + 1, 1, wallZ1, bs("minecraft:oak_wall_sign[facing=south]"));
+        // ── 7) LABEL SIGNS on the south face flanking the chest ─────────────
+        // Tell the player where to plant: the two submerged stone grow rows (x=3/x=5).
+        // These mount on the south glass face flanking the chest column.
+        signText(b, "minecraft:oak_wall_sign[facing=south]", wGrowX, 1, rowZ1 + 1,
+                "Plant kelp on the", "submerged stone", "rows (sides of", "the water canal).");
+        signText(b, "minecraft:oak_wall_sign[facing=south]", eGrowX, 1, rowZ1 + 1,
+                "Observer fires the", "piston -> snaps", "kelp into the", "canal -> hopper.");
 
         return b.build();
     }
