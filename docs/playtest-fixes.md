@@ -27,13 +27,17 @@ Leftover unchecked items carry over to the next session.
 
 ## Open (new findings, in order)
 - [x] pumpkin_melon_farm — rearchitected for sideways growth: stems on hydrated farmland → fruit grows on adjacent dirt growth blocks (only valid spawn cell) → flowing-water sweep → hopper → chest (semi-auto; full-auto piston-crush can't fit one lane). Observers kept as growth indicators.
-- [ ] cactus_farm — no cactus planted; cactus breaks if ANY solid block is horizontally adjacent, and two cacti can't be adjacent (need gaps). Correct design: spaced cactus columns on sand, a "breaker" block at the 2nd segment height beside each so grown segments auto-break and fall into water → hopper → chest (no redstone needed). Also: cobblestone on top of the chests blocks them — use glass or nothing.
+- [x] cactus_farm — rebuilt: spaced sand grow-blocks with air/water on all sides (so cactus survives), cobblestone breaker at the grow-into height, water sweep → hopper → chest, chests unblocked above. Cactus itself isn't FU-valued/structural so it can't print (like bamboo/kelp) — the player plants into the working mechanism (a sign explains).
 - [ ] bamboo_farm — no bamboo planted; observers fire once on plant then never again (watching the wrong cell). Bamboo grows UP; observer must watch the growth cell so it re-fires each growth → piston breaks → water/hopper. Or simpler reliable design.
 - [ ] kelp_farm — no kelp planted; a redstone piece broke off on print (redstone can't sit in/under water). Kelp grows UP underwater; redstone control must be in a DRY (glass-enclosed) chamber. Plant kelp on a solid block underwater; harvest at the top; collect.
 - [ ] animal_pen — no flooring (add a floor). Feature request: place a spawn egg to add a pig/cow — mobs are ENTITIES (can't print); spawn eggs are items, not placeable blocks. Could optionally stock spawn eggs in a chest (item NBT, creative-only items) — awaiting user decision.
 - [ ] tree_farm — fundamentally over-engineered/can't full-auto: trees don't regrow (sapling consumed on harvest), observers/hopper-under-dirt won't work. Per user, NOT a rabbit hole to chase — SIMPLIFY to an honest semi-auto plantation: spaced saplings on dirt with growth room + log/sapling collection (water/hoppers) + player replants. Reliable, not fake.
 
 - [ ] apothecary_shop — a row of potted plants floats in mid-air and blocks the walkway. Put them on a shelf/counter/surface (or remove the ones blocking the path) so they're not floating and you can walk through.
+
+- [ ] greenhouse — entering drops you into the central water channel with no way out. Fix: top the water with bottom slabs (waterlogged path) so you walk above it, OR move the door + give a dry walk-in path; may need a step/stairs up a level.
+- [ ] tavern_inn — can't reach the stairs to the 2nd floor; even if reached, head hits the ceiling (need more headroom/taller 2nd floor); 2nd-floor inn rooms are sparse — furnish them.
+- [ ] stable_horse (Horse Stable) — the gate + ladder don't actually lead to the 2nd floor; no way up without breaking blocks. Make the ladder/access actually reach the upper level.
 
 ## Strategy note (farms)
 Regrowing crops (cactus/bamboo/kelp/cane✓/melon✓) → make them actually work. Non-regrowing (trees) → simplify to honest semi-auto. Remaining unflagged farms to proactively check: villager_trading_hall, fishery_pond, mushroom_farm.
