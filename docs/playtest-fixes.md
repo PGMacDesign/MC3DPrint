@@ -59,7 +59,9 @@ Grounded in the foundation audit (`-DauditFoundations=true`) + a 3-way read-only
 - Deterministic block-entity serialization + printer `sendBlockUpdated()` on place → signs/containers sync correctly; no gameplay change to other builds.
 - Per-build geometry fixes are local. 69/69 gametests + 132 blueprints confirm no regression.
 
-**B) Other builds with the SAME bug classes you suspected — yes, a handful. NONE fixed yet (awaiting your triage):**
+**APPROVED PLAN (2026-06-16):** fix wizard_tower + library + nether_wart_farm cosmetic now; mushroom_farm → honest semi-auto (like tree_farm); make castle_keep top, barn hayloft, AND church belfry reachable; animal_pen → add an empty chest only (no stocked spawn eggs). stable_horse stays a stair. Then rebuild + redeploy the jar again.
+
+**B) Other builds with the SAME bug classes you suspected — yes, a handful (now being fixed per the approved plan):**
 
 *LIKELY-BROKEN (objective bugs):*
 - [ ] **fantasy_wizard_tower** — the climb ladder is **unbacked**: it's `facing=north` up the center of a round tower, so the cell behind it is interior air the whole run → the ladder has no support face and **pops off on print (won't place)**. You literally can't climb the tower. Fix: add a solid backing spine behind the ladder (clear of the y9/y17 hatches), or hug the ladder to the ring wall at each taper. *(Worst one.)*
