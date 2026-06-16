@@ -5597,7 +5597,7 @@ class CuratedBlueprintGenerator {
      * </ul>
      */
     private static Blueprint snowyAlpineChalet() {
-        Blueprint.Builder b = Blueprint.builder("Snowy Alpine Chalet", 9, 9, 7);
+        Blueprint.Builder b = Blueprint.builder("Snowy Alpine Chalet", 9, 8, 7);
         Palette p = SNOWY; // spruce + snow-block trim, spruce logs, light-blue bed
         // build-local materials (all vanilla, all FU-valued)
         BlueprintBlockState snow = bs("minecraft:snow_block");
@@ -5608,18 +5608,18 @@ class CuratedBlueprintGenerator {
         // inside the fixed 9×7 footprint. Ridge runs the full width x=0..8.
         int x0 = 0, x1 = 8, z0 = 1, z1 = 5;
         int eaveN = z0 - 1, eaveS = z1 + 1; // 0 and 6 — within bounds
-        int floorY = 1;        // walkable spruce floor sits on the stone-brick plinth
-        int wallBottom = 2;    // walls rise from above the finish floor
-        int wallH = 5;         // wall plate (roof seats at y=6, one above the plate)
-        int roofBase = wallH + 1; // y=6
+        int floorY = 0;        // stone-brick plinth + plank floor IS the single base course
+        int wallBottom = 1;    // walls + door sill rise one course above the y=0 base
+        int wallH = 4;         // wall plate (roof seats at y=5, one above the plate)
+        int roofBase = wallH + 1; // y=5
         int cx = (x0 + x1) / 2;   // 4
         int cz = (z0 + z1) / 2;   // 3
 
-        // 1) stone-brick footing over the body at y=0 (walkable ground)
-        floor(b, 0, x0, z0, x1, z1, STONE_BRICKS);
-        // 1b) stone-brick plinth ring one course up (y=1) — the masonry base
+        // 1) stone-brick plinth ring as the single y=0 base course — the masonry base.
+        //    (The redundant buried stone-brick footing course below was dropped so the
+        //     door sill lands at y=1 and the chalet is enterable from flat ground.)
         walls(b, x0, z0, x1, z1, floorY, floorY, STONE_BRICKS);
-        // 1c) spruce-plank finish floor inside the plinth at y=1 (walkable surface)
+        // 1c) spruce-plank finish floor inside the plinth at y=0 (walkable surface)
         floor(b, floorY, x0 + 1, z0 + 1, x1 - 1, z1 - 1, p.plankFloor);
 
         // 2) spruce-plank wall ring y=2..5 with stripped-spruce corner posts
