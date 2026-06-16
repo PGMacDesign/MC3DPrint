@@ -2668,15 +2668,37 @@ class CuratedBlueprintGenerator {
                 b.set(4, yy, zEnd, STONE_BRICKS);
             }
         }
-        // STEEPLE: 3×3 tower in the front-left corner (x0..2,z0..2) rising tallest
+        // STEEPLE: 3×3 tower in the front-left corner (x0..2,z0..2) rising tallest.
+        // The interior is the single (1,*,1) column. Perimeter walls y=1..8 EXCEPT the
+        // east wall at (2,1,1)/(2,2,1): that pair is left OPEN as a 2-tall base doorway
+        // so a player can walk from the nave floor at (3,1,1) into the steeple base
+        // (1,1,1). (set() can't clear a cell — air is a no-op — so we simply never lay
+        // brick there rather than carving it out afterwards.)
         for (int y = 1; y <= 8; y++) {
-            walls(b, 0, 0, 2, 2, y, y, STONE_BRICKS);
+            line(b, y, 0, 0, 2, 0, STONE_BRICKS); // north face (z=0) — solid (backs the ladder)
+            line(b, y, 0, 2, 2, 2, STONE_BRICKS); // south face (z=2)
+            line(b, y, 0, 0, 0, 2, STONE_BRICKS); // west face (x=0)
+            // east face (x=2): skip the doorway cells (2,1,1) and (2,2,1)
+            for (int z = 0; z <= 2; z++) {
+                if (z == 1 && (y == 1 || y == 2)) continue; // base doorway into the nave
+                b.set(2, y, z, STONE_BRICKS);
+            }
         }
-        // belfry openings near the top (fence) + a floor bell
+        // belfry: fence ring at y=7. The bell hangs from a stone-brick ceiling anchor at
+        // (1,8,1) so it dangles in open air over the cleared (1,*,1) shaft — ringable from
+        // a player standing at the top of the ladder (head at y=6, the open cell directly
+        // below the bell). No plank belfry floor (it would seal the shaft from below).
         fenceRing(b, 7, 0, 0, 2, 2, DARK_OAK_FENCE);
-        b.set(1, 6, 1, OAK_PLANKS); // belfry floor
-        b.set(1, 7, 1, BELL_FLOOR);
-        b.set(1, 5, 1, GLOWSTONE);  // spire light behind a louvre
+        b.set(1, 8, 1, STONE_BRICKS); // ceiling anchor (overwrites the nave-roof slope cell here)
+        b.set(1, 7, 1, bs("minecraft:bell[attachment=ceiling,facing=north]")); // hung bell
+        // spire light: relocated OUT of the (1,*,1) shaft (it used to sit at (1,5,1) and
+        // block the climb) and embedded in the west wall at (0,5,1) — still lights the
+        // shaft from the side while leaving the column clear for the ladder.
+        b.set(0, 5, 1, GLOWSTONE);
+        // ladder up the shaft (1, y=1..5, 1): facing=south, backed by the solid north
+        // steeple wall (1,*,0). Climbs from the base doorway to y=5; head reaches y=6,
+        // the open cell one block below the hung bell at (1,7,1) → bell is ringable.
+        pillar(b, 1, 1, 1, 5, LADDER_SOUTH);
         // pyramid spire on the tower (y=9) + cross at the peak (y=10..11)
         pyramidRoof(b, 0, 0, 2, 2, 9, "stone_brick_stairs", CHISELED_STONE_BRICKS);
         // fill the spire core (the y=9 ring leaves (1,9,1) hollow) so the cap and cross
