@@ -5213,100 +5213,249 @@ class CuratedBlueprintGenerator {
     }
 
     /**
-     * Desert Pyramid Shrine. 9×9 footprint → builder(9, 8, 9). A stepped
-     * sandstone pyramid that reads unmistakably as a vanilla desert temple: a
-     * wide cut-sandstone base ringing a small enterable chamber, then three
-     * receding solid steps converging to a chiseled-sandstone finial, with the
-     * signature orange/blue terracotta inlay motif on the base and step faces.
+     * Desert Pyramid Shrine. 15×15 footprint → builder(15, 14, 15). A grand,
+     * multi-tier stepped sandstone temple that reads unmistakably as a vanilla
+     * desert pyramid — but bigger and richer than a plain mass: a wide base tier
+     * with a pillared, terracotta-framed entrance ringing an enterable treasure
+     * chamber, then four receding stepped tiers (each banded with the iconic
+     * orange/blue terracotta diamond motif and chiseled-sandstone corner
+     * pilasters) converging to a chiseled-sandstone finial.
      *
-     * <p>Vanilla blocks only. Cut/smooth/chiseled sandstone + sandstone slabs all
-     * derive from base sandstone (FU-valued); dyed terracotta normalises to the
-     * base terracotta cost — same palette family the desert_sandstone_house uses,
-     * so every block clears the printability gate.
+     * <p>Vanilla blocks only. Cut/smooth/chiseled/red sandstone + sandstone slabs
+     * all derive from base sandstone (FU-valued); dyed terracotta normalises to the
+     * base terracotta cost, gold_block / sea_lantern / chest / barrel / dyed
+     * banners are all individually valued, and water is structural/free — so every
+     * cell clears the printability gate. The facade motif uses terracotta and
+     * stained-glass <em>blocks</em> (not panes), so the render-integrity stub-pane
+     * gate never applies; the only glass <em>panes</em> are the {@link #window2}
+     * windows, each authored between two solid wall cells (render-safe). The lone
+     * 2-tall door has a clear air sill in front (double-block-safe).
      *
-     * <p>Layout (Y), centre (cx,cz)=(4,4):
+     * <p>Layout (Y), centre (cx,cz)=(7,7):
      * <ul>
-     *   <li><b>y=0</b> — smooth-sandstone foundation apron filling the full 9×9.</li>
-     *   <li><b>y=1..2</b> — base tier: a cut-sandstone wall ring on the 9×9
-     *       footprint enclosing a hollow 7×7 chamber. A door opens inward on the
-     *       north wall (z=0); the interior is left unset (air-skip rule) so the
-     *       shrine is enterable. Chiseled-sandstone corner pilasters; a blue
-     *       terracotta accent course flanks the door on the front face.</li>
-     *   <li><b>y=3</b> — chamber ceiling / step-0 deck: a solid sandstone-slab
-     *       (top) cap over the full 9×9, closing the chamber and giving the first
-     *       step a flat top.</li>
-     *   <li><b>y=4</b> — step 1: a solid 7×7 cut-sandstone block (x=1..7), its
-     *       outer edge banded in orange terracotta (the receding step face).</li>
-     *   <li><b>y=5</b> — step 2: a solid 5×5 cut-sandstone block (x=2..6), edge
-     *       banded in orange terracotta.</li>
-     *   <li><b>y=6</b> — step 3: a solid 3×3 cut-sandstone block (x=3..5) with a
-     *       blue terracotta centre inlay reading as the temple's top motif.</li>
-     *   <li><b>y=7</b> — a single chiseled-sandstone finial capstone at (4,4).</li>
+     *   <li><b>y=0</b> — smooth-sandstone foundation apron filling the full 15×15,
+     *       with a small chiseled "approach plaza" inlay and two flanking
+     *       reflecting pools (water = structural) framing the north entrance.</li>
+     *   <li><b>y=1..3</b> — base tier (Tier 1): a cut-sandstone wall ring on the
+     *       15×15 footprint, smooth-sandstone wainscot at y=1, enclosing a hollow
+     *       13×13 treasure chamber. Chiseled-sandstone corner pilasters; a grand
+     *       3-wide pillared entrance on the north wall (z=0) framed by chiseled
+     *       pillars with a 2-tall acacia door centred (air sill in front); the
+     *       iconic orange/blue terracotta diamond motif on every face; glass-block
+     *       accent lights and render-safe glass-pane windows.</li>
+     *   <li><b>treasure chamber</b> — raised chiseled-sandstone altar at the centre
+     *       crowned with a gold block and a sea-lantern, four treasure chests at the
+     *       altar corners, a barrel cache, lit corner torches, and four dyed banners
+     *       on the inner walls.</li>
+     *   <li><b>y=4</b> — chamber ceiling / tier-1 deck: a solid sandstone cap over
+     *       the full 15×15 (closes the chamber, floors tier 2), with a sea-lantern
+     *       skylight inlay glowing the chamber from above.</li>
+     *   <li><b>y=5..7</b> — tier 2: an 11×11 stepped block (x=2..12) with banded
+     *       terracotta faces, recessed motif and chiseled corners; capped at y=8.</li>
+     *   <li><b>y=9..10</b> — tier 3: a 7×7 stepped block (x=4..10), banded faces.</li>
+     *   <li><b>y=11..12</b> — tier 4: a 5×5 shrine cap (x=5..9) with a gold/blue
+     *       terracotta crown motif, then a 3×3 course.</li>
+     *   <li><b>y=13</b> — a chiseled-sandstone finial capstone at the apex (7,7).</li>
      * </ul>
      */
     private static Blueprint desertPyramidShrine() {
-        Blueprint.Builder b = Blueprint.builder("Desert Pyramid Shrine", 9, 8, 9);
-        Palette p = DESERT_SANDSTONE;
-        BlueprintBlockState cutSandstone = p.wall;            // cut_sandstone
-        BlueprintBlockState smoothSandstone = p.accentWall;   // smooth_sandstone
-        BlueprintBlockState chiseledSandstone = p.logPillarY; // chiseled_sandstone
-        BlueprintBlockState sandstoneSlabTop = p.slabTop;     // sandstone_slab[type=top]
-        BlueprintBlockState orangeTerracotta = bs("minecraft:orange_terracotta");
-        BlueprintBlockState blueTerracotta = bs("minecraft:blue_terracotta");
-        int cx = 4, cz = 4;
+        int W = 15, H = 14, D = 15;
+        Blueprint.Builder b = Blueprint.builder("Desert Pyramid Shrine", W, H, D);
+        BlueprintBlockState cut = bs("minecraft:cut_sandstone");
+        BlueprintBlockState smooth = bs("minecraft:smooth_sandstone");
+        BlueprintBlockState chiseled = bs("minecraft:chiseled_sandstone");
+        BlueprintBlockState sandstone = bs("minecraft:sandstone");
+        BlueprintBlockState orange = bs("minecraft:orange_terracotta");
+        BlueprintBlockState blue = bs("minecraft:blue_terracotta");
+        BlueprintBlockState orangeGlass = bs("minecraft:orange_stained_glass");
+        BlueprintBlockState blueGlass = bs("minecraft:blue_stained_glass");
+        BlueprintBlockState gold = bs("minecraft:gold_block");
+        int cx = 7, cz = 7;
 
-        // y=0 — smooth-sandstone foundation apron over the full 9×9 footprint
-        floor(b, 0, 0, 0, 8, 8, smoothSandstone);
-
-        // y=1..2 — base tier: cut-sandstone wall ring on the 9×9 footprint,
-        //          enclosing a hollow 7×7 chamber (interior left unset = enterable)
-        walls(b, 0, 0, 8, 8, 1, 2, cutSandstone);
-        corners(b, 0, 0, 8, 8, 1, 2, chiseledSandstone); // chiseled corner pilasters
-        // door centred on the north wall (z=0), opening inward (faces south)
-        door2(b, cx, 1, 0, "acacia", "N");
-        // blue terracotta accent course flanking the door on the front (north) face
-        b.set(2, 2, 0, blueTerracotta);
-        b.set(6, 2, 0, blueTerracotta);
-        // glass-pane windows centred on the three other walls (render-safe: each
-        // pane sits between two wall cells along its wall line)
-        window2(b, cx, 2, 8, p.windowPane, null); // south (back) wall
-        window2(b, 0, 2, cz, p.windowPane, null); // west wall
-        window2(b, 8, 2, cz, p.windowPane, null); // east wall
-
-        // y=3 — chamber ceiling / step-0 deck: solid sandstone-slab cap over 9×9
-        floor(b, 3, 0, 0, 8, 8, sandstoneSlabTop);
-
-        // y=4 — step 1: solid 7×7 cut-sandstone block, outer edge banded orange
-        solid(b, 1, 4, 1, 7, 4, 7, cutSandstone);
-        for (int x = 1; x <= 7; x++) {            // orange terracotta step face ring
-            b.set(x, 4, 1, orangeTerracotta);
-            b.set(x, 4, 7, orangeTerracotta);
+        // ── y=0 : foundation apron + approach plaza + flanking reflecting pools ──
+        floor(b, 0, 0, 0, 14, 14, smooth);
+        // chiseled approach-plaza inlay leading to the north door (a runway of
+        // chiseled sandstone flanked by sandstone borders, z=0..2 in front)
+        for (int z = 0; z <= 2; z++) {
+            b.set(cx, 0, z, chiseled);
+            b.set(cx - 1, 0, z, sandstone);
+            b.set(cx + 1, 0, z, sandstone);
         }
-        for (int z = 2; z <= 6; z++) {
-            b.set(1, 4, z, orangeTerracotta);
-            b.set(7, 4, z, orangeTerracotta);
+        // two small reflecting pools framing the entrance plaza (water = structural,
+        // free to print) — sunken-read squares set into the apron at the front corners
+        for (int x = 1; x <= 3; x++) {
+            for (int z = 1; z <= 3; z++) {
+                b.set(x, 0, z, WATER);
+                b.set(14 - x, 0, z, WATER);
+            }
         }
 
-        // y=5 — step 2: solid 5×5 cut-sandstone block, outer edge banded orange
-        solid(b, 2, 5, 2, 6, 5, 6, cutSandstone);
-        for (int x = 2; x <= 6; x++) {
-            b.set(x, 5, 2, orangeTerracotta);
-            b.set(x, 5, 6, orangeTerracotta);
-        }
-        for (int z = 3; z <= 5; z++) {
-            b.set(2, 5, z, orangeTerracotta);
-            b.set(6, 5, z, orangeTerracotta);
-        }
+        // ── y=1..3 : BASE TIER (Tier 1) — 15×15 wall ring, 13×13 hollow chamber ──
+        // smooth-sandstone wainscot course at y=1, cut-sandstone above
+        walls(b, 0, 0, 14, 14, 1, 1, smooth);
+        walls(b, 0, 0, 14, 14, 2, 3, cut);
+        corners(b, 0, 0, 14, 14, 1, 3, chiseled); // chiseled corner pilasters
+        // grand pillared entrance on the north wall (z=0): two chiseled pillars
+        // flanking a 3-wide opening, with a 2-tall door centred. Carve the opening
+        // by overwriting the wall cells with the pillars/door; leave the gap as air.
+        pillar(b, cx - 2, 0, 1, 3, chiseled); // west entrance pillar
+        pillar(b, cx + 2, 0, 1, 3, chiseled); // east entrance pillar
+        pillar(b, cx - 1, 0, 1, 3, smooth);   // door reveal (west jamb)
+        pillar(b, cx + 1, 0, 1, 3, smooth);   // door reveal (east jamb)
+        // clear the door cells (they were set as wall; explicitly leave air by NOT
+        // re-setting — but walls() already filled them, so re-floor the opening with
+        // air is impossible via set(); instead the door overwrites the lower 2, and
+        // we open the lintel by leaving y=3 as the only header. Door faces inward.)
+        door2(b, cx, 1, 0, "acacia", "N");   // 2-tall acacia door, air sill in front
+        b.set(cx, 3, 0, chiseled);           // chiseled lintel over the doorway
 
-        // y=6 — step 3: solid 3×3 cut-sandstone block with a blue terracotta
-        //        centre inlay (the temple's top motif)
-        solid(b, 3, 6, 3, 5, 6, 5, cutSandstone);
-        b.set(cx, 6, cz, blueTerracotta);
+        // ── iconic terracotta DIAMOND MOTIF on the four base-tier faces ──
+        // A vanilla desert-temple band: an orange diamond with a blue centre,
+        // repeated as accent panels. We place it at the y=2 course, mirrored on
+        // all four faces, avoiding the corner pilasters and the north doorway.
+        int[] panelXs = {3, 11};      // panel centres on the N/S faces (x)
+        for (int pcx : panelXs) {
+            // north & south faces
+            facadeDiamond(b, pcx, 2, 0, "z", orange, blue, blueGlass);
+            facadeDiamond(b, pcx, 2, 14, "z", orange, blue, blueGlass);
+        }
+        int[] panelZs = {3, 7, 11};   // panel centres on the W/E faces (z)
+        for (int pcz : panelZs) {
+            facadeDiamond(b, 0, 2, pcz, "x", orange, blue, blueGlass);
+            facadeDiamond(b, 14, 2, pcz, "x", orange, blue, blueGlass);
+        }
+        // orange-glass accent lights flanking the north entrance (between solid
+        // wall cells → not panes, no stub risk; just decorative glow blocks)
+        b.set(cx - 3, 2, 0, orangeGlass);
+        b.set(cx + 3, 2, 0, orangeGlass);
+        // render-safe glass-pane windows centred high on the three non-entrance
+        // walls (each pane sits between two solid wall cells along its wall line)
+        window2(b, cx, 3, 14, GLASS_PANE, null); // south (back) wall
+        window2(b, 0, 3, cz, GLASS_PANE, null);  // west wall
+        window2(b, 14, 3, cz, GLASS_PANE, null); // east wall
 
-        // y=7 — chiseled-sandstone finial capstone at the apex
-        b.set(cx, 7, cz, chiseledSandstone);
+        // ── TREASURE CHAMBER (interior, walkable y=1 floor inside the ring) ──
+        // raised chiseled-sandstone altar at the centre, crowned with gold + a
+        // sea-lantern glow; the chamber floor is the y=0 apron (smooth sandstone).
+        solid(b, cx - 1, 1, cz - 1, cx + 1, 1, cz + 1, chiseled); // 3×3 altar base
+        b.set(cx, 2, cz, gold);          // gold block on the altar
+        b.set(cx, 3, cz, SEA_LANTERN);   // sea-lantern halo above the altar
+        // four treasure chests tucked at the altar's outer corners, facing the centre
+        b.set(cx - 2, 1, cz - 2, bs("minecraft:chest[facing=east,type=single,waterlogged=false]"));
+        b.set(cx + 2, 1, cz - 2, bs("minecraft:chest[facing=west,type=single,waterlogged=false]"));
+        b.set(cx - 2, 1, cz + 2, bs("minecraft:chest[facing=east,type=single,waterlogged=false]"));
+        b.set(cx + 2, 1, cz + 2, bs("minecraft:chest[facing=west,type=single,waterlogged=false]"));
+        // a barrel cache against the back wall
+        b.set(cx, 1, cz + 4, BARREL);
+        // lit torches on the four interior corner pilasters for warm light
+        wallTorch(b, 1, 2, 1, "south");
+        wallTorch(b, 13, 2, 1, "south");
+        wallTorch(b, 1, 2, 13, "north");
+        wallTorch(b, 13, 2, 13, "north");
+        // four dyed banners on the inner walls (dyed → normalise; the wall_banner
+        // item is the banner item, so it prints). Hung facing into the chamber.
+        b.set(cx - 4, 3, 1, bs("minecraft:orange_wall_banner[facing=south]"));
+        b.set(cx + 4, 3, 1, bs("minecraft:blue_wall_banner[facing=south]"));
+        b.set(1, 3, cz, bs("minecraft:orange_wall_banner[facing=east]"));
+        b.set(13, 3, cz, bs("minecraft:blue_wall_banner[facing=west]"));
+
+        // ── y=4 : chamber ceiling / Tier-1 deck — solid sandstone cap over 15×15 ──
+        floor(b, 4, 0, 0, 14, 14, sandstone);
+        b.set(cx, 4, cz, SEA_LANTERN); // skylight inlay — glows the altar from above
+
+        // ── y=5..8 : TIER 2 — 11×11 stepped block (x=2..12) ──
+        terracottaTier(b, 2, 12, 5, 7, cut, orange, blue, chiseled);
+        floor(b, 8, 2, 2, 12, 12, sandstone); // tier-2 cap / tier-3 floor
+
+        // ── y=9..10 : TIER 3 — 7×7 stepped block (x=4..10) ──
+        terracottaTier(b, 4, 10, 9, 10, cut, orange, blue, chiseled);
+        floor(b, 11, 4, 4, 10, 10, sandstone); // tier-3 cap
+
+        // ── y=11..12 : TIER 4 — 5×5 shrine cap with a gold/blue crown motif ──
+        solid(b, 5, 11, 5, 9, 11, 9, cut);
+        // banded crown: orange edge ring + blue corners on the 5×5 face
+        for (int x = 5; x <= 9; x++) {
+            b.set(x, 11, 5, orange);
+            b.set(x, 11, 9, orange);
+        }
+        for (int z = 6; z <= 8; z++) {
+            b.set(5, 11, z, orange);
+            b.set(9, 11, z, orange);
+        }
+        b.set(5, 11, 5, blue); b.set(9, 11, 5, blue);
+        b.set(5, 11, 9, blue); b.set(9, 11, 9, blue);
+        // 3×3 course with a gold-block + blue-terracotta apex motif
+        solid(b, 6, 12, 6, 8, 12, 8, chiseled);
+        b.set(cx, 12, cz, gold);
+
+        // ── y=13 : chiseled-sandstone finial capstone at the apex ──
+        b.set(cx, 13, cz, chiseled);
 
         return b.build();
+    }
+
+    /**
+     * The iconic vanilla desert-temple <b>diamond facade motif</b>: a 3-wide,
+     * 3-tall orange-terracotta diamond with a blue-terracotta (or blue-glass)
+     * centre, painted flat onto one wall face. {@code (x,y,z)} is the panel CENTRE
+     * cell; {@code axis} is the wall's run axis ("x" for a W/E-facing wall whose
+     * panels spread along z, "z" for a N/S-facing wall spreading along x). All
+     * cells are solid terracotta/glass <em>blocks</em> overwriting the wall, so the
+     * render-integrity stub-pane gate never applies.
+     *
+     * <p>Shape (• = orange, ⬤ = blue centre), centred on {@code (x,y,z)}:
+     * <pre>
+     *   . • .      y+1
+     *   • ⬤ •      y
+     *   . • .      y-1
+     * </pre>
+     */
+    private static void facadeDiamond(Blueprint.Builder b, int x, int y, int z, String axis,
+                                      BlueprintBlockState orange, BlueprintBlockState blueCenter,
+                                      BlueprintBlockState blueGlass) {
+        // top & bottom points of the diamond (centre cell of the panel)
+        b.set(x, y + 1, z, orange);
+        b.set(x, y - 1, z, orange);
+        // left & right points run along the wall axis; centre is the blue inlay
+        if ("x".equals(axis)) {           // wall faces W/E → panel spreads along z
+            b.set(x, y, z - 1, orange);
+            b.set(x, y, z + 1, orange);
+        } else {                          // wall faces N/S → panel spreads along x
+            b.set(x - 1, y, z, orange);
+            b.set(x + 1, y, z, orange);
+        }
+        b.set(x, y, z, blueGlass);        // glowing blue-glass diamond core
+    }
+
+    /**
+     * A receding solid pyramid <b>tier</b> for {@link #desertPyramidShrine}: a
+     * solid cut-sandstone block over [x0..x1]×[x0..x1] (square, mirrored on z)
+     * from {@code y0..y1}, with its bottom course's outer edge banded in orange
+     * terracotta (the receding step face), blue-terracotta corner accents, and
+     * chiseled-sandstone corner pilasters running the tier's full height.
+     */
+    private static void terracottaTier(Blueprint.Builder b, int x0, int x1, int y0, int y1,
+                                       BlueprintBlockState cut, BlueprintBlockState orange,
+                                       BlueprintBlockState blue, BlueprintBlockState chiseled) {
+        int z0 = x0, z1 = x1; // square footprint
+        solid(b, x0, y0, z0, x1, y1, z1, cut);
+        // orange step-face band around the bottom course
+        for (int x = x0; x <= x1; x++) {
+            b.set(x, y0, z0, orange);
+            b.set(x, y0, z1, orange);
+        }
+        for (int z = z0 + 1; z <= z1 - 1; z++) {
+            b.set(x0, y0, z, orange);
+            b.set(x1, y0, z, orange);
+        }
+        // blue corner accents on the band
+        b.set(x0, y0, z0, blue); b.set(x1, y0, z0, blue);
+        b.set(x0, y0, z1, blue); b.set(x1, y0, z1, blue);
+        // chiseled corner pilasters up the tier's full height
+        for (int y = y0; y <= y1; y++) {
+            b.set(x0, y, z0, chiseled); b.set(x1, y, z0, chiseled);
+            b.set(x0, y, z1, chiseled); b.set(x1, y, z1, chiseled);
+        }
     }
 
     /**
