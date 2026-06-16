@@ -20,10 +20,10 @@ Leftover unchecked items carry over to the next session.
 - [x] (infra) signText() helper + printer syncs block-entity data on print; deterministic BE serialization; double-block + foundation guardrails
 - [x] storage_barrel_hall — removed entrance + center hanging lamps, tucked the other 3 into the corner nooks (walkways clear)
 
-## Needs rework (farms — pending robust redesign)
-- [ ] iron_farm — wash water pours down the 1×1 drop onto the lava → obsidian. Redesign: 2×2 drop, contained lava (lava cauldron) kept out of the water path, golem-collection sized for 1.4-wide golems.
-- [ ] chicken_coop_auto — lava leaks (1-block air moat around it) AND is sealed away from the chickens (can't cook). Redesign with a contained **lava cauldron** cooker (1.20 design) + accessible chest.
+## Needs rework (farms)
+- [x] iron_farm — **lava-cauldron kill** (water-safe, no obsidian, contained) + **2×2 drop** for 1.4-wide golems; hopper ring → chest. (lava_cauldron confirmed printable = itemless/structural.)
+- [ ] chicken_coop_auto — lava leaks (1-block air moat around it) AND is sealed away from the chickens (can't cook). Redesign with a contained **lava cauldron** cooker (now proven printable) + accessible chest.
 - [ ] mob_xp_tower — mechanism still unclear/messy. Clarity rework (clear spawn→water→drop→kill→collect path + access).
 
 ## Open (new findings, in order)
-_(none waiting — add new items here as they come in)_
+- [ ] super_smelter — only the one furnace near the input chest is used. Need a full **row of input chests, each with a hopper below pointing forward** into its furnace (or the hopper feeding it), so every furnace in the row gets fed. (Build otherwise fantastic.)
