@@ -6327,8 +6327,8 @@ class CuratedBlueprintGenerator {
         for (int x = x0; x <= x1; x++) {
             if (x != cx && x != cx - 1 && x != cx + 1) {
                 b.set(x, 1, z0, deckTrim);          // north rim (front), gap at entry
+                b.set(x, 1, z1, deckTrim);          // south rim (back), mirrored gap at entry
             }
-            b.set(x, 1, z1, deckTrim);              // south rim (back)
         }
         for (int z = z0 + 1; z <= z1 - 1; z++) {
             b.set(x0, 1, z, deckTrim);              // west rim
@@ -6350,9 +6350,12 @@ class CuratedBlueprintGenerator {
         //    (the (cx, z0) bay either side of the front mid-post) is left open as the
         //    walk-in entrance. Fences self-reconcile their connections at print time.
         for (int x = x0; x <= x1; x++) {
-            // front (north) rail: skip the two cells flanking centre → open entry bay
-            if (x != cx - 1 && x != cx + 1) b.set(x, 1, z0, railing);
-            b.set(x, 1, z1, railing); // back (south) rail, full
+            // front (north) AND back (south) rails: skip the two cells flanking
+            // centre on BOTH faces → open entry bay on each side (symmetric).
+            if (x != cx - 1 && x != cx + 1) {
+                b.set(x, 1, z0, railing); // front (north) rail
+                b.set(x, 1, z1, railing); // back (south) rail
+            }
         }
         for (int z = z0 + 1; z <= z1 - 1; z++) {
             b.set(x0, 1, z, railing); // west rail
@@ -6374,6 +6377,15 @@ class CuratedBlueprintGenerator {
         //     cell directly in front (z=-1) is outside the footprint → naturally
         //     air, so you walk straight in from flat ground.
         door2(b, cx - 1, 1, z0, "cherry", "N");
+        // 3c) a MATCHING cherry door on the opposite (south, z1) face, mirrored to
+        //     the north door so the pavilion reads symmetric with a walk-through
+        //     entrance on both sides. Same x (cx-1), on the south wall → faces north
+        //     so it opens inward onto the deck. The south rim/rail were cleared at
+        //     cx-1/cx+1 above (same as the north bay), and door2 places both halves
+        //     (lower y=1, upper y=2) with nothing else writing those cells, so the
+        //     partner-half stays intact (double-block GameTest safe). The cell in
+        //     front (z=z1+1) is outside the footprint → air, so you walk straight in.
+        door2(b, cx - 1, 1, z1, "cherry", "S");
 
         // 4) soft pink-carpet "petal" scatter on the open deck interior (y=1). Carpet
         //    derives from wool → FU-valued; reads as fallen cherry blossoms. Kept off
