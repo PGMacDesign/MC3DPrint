@@ -7345,147 +7345,215 @@ class CuratedBlueprintGenerator {
      * </ul>
      */
     private static Blueprint ironFarm() {
-        Blueprint.Builder b = Blueprint.builder("Iron Farm", 15, 12, 15);
+        // A real, working iron-golem farm, printed as the STRUCTURE only (the player
+        // drops in 3 villagers + 1 zombie — entities can't print). Read bottom-up as a
+        // multi-level vertical tower; footprint 13×13, height 14.
+        //
+        //  ┌ LEVELS ──────────────────────────────────────────────────────────────┐
+        //  │ y=0       stone foundation                                            │
+        //  │ y=1       COLLECTION ROOM floor + hopper ring → chest; walk-in DOOR    │
+        //  │           on the south wall (sill at y=1) so the player strolls in.    │
+        //  │ y=2       KILL CHAMBER: golem lands on the hopper FLOOR (y=1) head at   │
+        //  │           y=2; a contained LAVA blade burns it at y=3; an oak_wall_sign │
+        //  │           in the cell directly BELOW the lava (y=2) stops the lava      │
+        //  │           pouring down onto the hoppers → iron drops survive on y=1.    │
+        //  │ y=3       lava blade (held) + collection-room ceiling                   │
+        //  │ y=4..8    DROP SHAFT — a stone tube whose 1×1 core funnels the golem     │
+        //  │           down from the spawn platform into the kill chamber.           │
+        //  │ y=9       SPAWN PLATFORM — lit stone deck, water flowing INWARD pushes   │
+        //  │           golems to the central 1×1 drop hole.                          │
+        //  │ y=10..12  VILLAGER PODS (3 glass cells + beds) and the ZOMBIE cell;     │
+        //  │           glass-walled spawn enclosure.                                 │
+        //  │ y=13      slab roof.                                                    │
+        //  └───────────────────────────────────────────────────────────────────────┘
+        Blueprint.Builder b = Blueprint.builder("Iron Farm", 13, 14, 13);
         // all vanilla, all FU-valued / structural-free:
-        BlueprintBlockState stone   = bs("minecraft:stone");
-        BlueprintBlockState cobble  = COBBLE;
-        BlueprintBlockState glass   = GLASS;             // solid glass for walls (always renders)
-        BlueprintBlockState pane    = GLASS_PANE;        // panes only where backed by a solid neighbour
-        BlueprintBlockState bars    = IRON_BARS;         // grates, only where backed by a solid neighbour
-        BlueprintBlockState slabTop = SMOOTH_STONE_SLAB_TOP;
-        BlueprintBlockState slabBot = bs("minecraft:smooth_stone_slab[type=bottom]");
-        BlueprintBlockState chest   = bs("minecraft:chest[facing=south,type=single,waterlogged=false]");
-        BlueprintBlockState water   = WATER;             // structural (asItem()==AIR) → prints free
-        BlueprintBlockState lava    = LAVA;              // structural → prints free
+        BlueprintBlockState stone     = bs("minecraft:stone");
+        BlueprintBlockState bricks     = bs("minecraft:stone_bricks");
+        BlueprintBlockState cobble    = COBBLE;
+        BlueprintBlockState glass     = GLASS;             // solid glass for walls (always renders)
+        BlueprintBlockState bars      = IRON_BARS;         // grates, only where backed by a solid neighbour
+        BlueprintBlockState slabTop   = SMOOTH_STONE_SLAB_TOP;
+        BlueprintBlockState slabBot   = bs("minecraft:smooth_stone_slab[type=bottom]");
+        BlueprintBlockState chest     = bs("minecraft:chest[facing=north,type=single,waterlogged=false]");
+        BlueprintBlockState lantern   = LANTERN;           // glowstone-free lighting, FU-valued
+        BlueprintBlockState water     = WATER;             // structural (asItem()==AIR) → prints free
+        BlueprintBlockState lava      = LAVA;              // structural → prints free
 
-        int x0 = 0, x1 = 14, z0 = 0, z1 = 14;            // 15×15 footprint
-        int cx = 7, cz = 7;                              // centre column
+        int x0 = 0, x1 = 12, z0 = 0, z1 = 12;            // 13×13 footprint
+        int cx = 6, cz = 6;                               // centre column (kill / drop shaft)
 
         // ── 1) STONE FOUNDATION at y=0 ───────────────────────────────────────
         floor(b, 0, x0, z0, x1, z1, stone);
 
-        // ── 2) COLLECTION CHAMBER (the golem-drop sump), y=1..3 ──────────────
-        // A 7×7 stone room centred on (cx,cz). Its floor is the foundation (y=0);
-        // a recessed 3×3 hopper grid at y=1 feeds a central collection chest.
-        int chx0 = cx - 3, chx1 = cx + 3, chz0 = cz - 3, chz1 = cz + 3; // 4..10
-        // 2a) stone wall ring of the chamber, y=1..3, interior left open (enterable)
-        walls(b, chx0, chz0, chx1, chz1, 1, 3, stone);
-        // 2b) collection chest at the centre, ringed by hoppers that feed INTO it.
-        //     The 4 orthogonally-adjacent hoppers face the chest; the 4 diagonals
-        //     face an adjacent hopper so the whole ring funnels to the chest.
-        b.set(cx, 1, cz, chest);
-        b.set(cx - 1, 1, cz, bs("minecraft:hopper[enabled=true,facing=east]"));   // → chest
-        b.set(cx + 1, 1, cz, bs("minecraft:hopper[enabled=true,facing=west]"));   // → chest
-        b.set(cx, 1, cz - 1, bs("minecraft:hopper[enabled=true,facing=south]"));  // → chest
-        b.set(cx, 1, cz + 1, bs("minecraft:hopper[enabled=true,facing=north]"));  // → chest
-        b.set(cx - 1, 1, cz - 1, bs("minecraft:hopper[enabled=true,facing=east]"));   // → W hopper
-        b.set(cx + 1, 1, cz - 1, bs("minecraft:hopper[enabled=true,facing=west]"));   // → E hopper
-        b.set(cx - 1, 1, cz + 1, bs("minecraft:hopper[enabled=true,facing=east]"));   // → W hopper
-        b.set(cx + 1, 1, cz + 1, bs("minecraft:hopper[enabled=true,facing=west]"));   // → E hopper
-        // 2c) four water sources at the chamber-floor edges (y=1) flush drops inward.
-        //     Sources sit against the inner wall faces; the flow carries items to the
-        //     hopper ring. (Static capture — the player re-pushes if a source drifts.)
-        b.set(chx0 + 1, 1, cz, water);                   // west inflow
-        b.set(chx1 - 1, 1, cz, water);                   // east inflow
-        b.set(cx, 1, chz0 + 1, water);                   // north inflow
-        b.set(cx, 1, chz1 - 1, water);                   // south inflow
-        // 2d) south-face viewing window: a row of glass panes at y=2, each flanked
-        //     left/right by the stone wall run → render-safe (connects along X).
-        for (int x = cx - 1; x <= cx + 1; x++) {
-            b.set(x, 2, chz1, pane);                      // panes punched into the south wall
-        }
-        // 2e) iron-bar grate slits on the side walls (y=2), each backed by the stone
-        //     corner posts to either side along Z → render-safe.
-        b.set(chx0, 2, cz, bars);                         // west wall slit (backed by stone N/S)
-        b.set(chx1, 2, cz, bars);                         // east wall slit
-        // 2f) ceiling over the chamber at y=4 is the LAVA TRAY (see step 3); the rest
-        //     of the chamber top is stone so the blade is contained.
-        floor(b, 4, chx0, chz0, chx1, chz1, stone);
-
-        // ── 3) LAVA BLADE (the kill floor), y=4 over the centre 3×3 ──────────
-        // A stone-slab tray rim already laid as the y=4 stone ceiling; punch a 3×3
-        // hole filled with a lava sheet directly above the hopper ring so golems that
-        // spawn above drop onto the blade and their drops fall through to the hoppers.
-        // (Air-skip means we just OVERWRITE the 3×3 stone ceiling cells with lava.)
-        for (int x = cx - 1; x <= cx + 1; x++) {
-            for (int z = cz - 1; z <= cz + 1; z++) {
-                b.set(x, 4, z, lava);
-            }
-        }
-        // a smooth-stone-slab lip framing the blade reads as the classic lava tray
-        for (int x = cx - 2; x <= cx + 2; x++) {
-            b.set(x, 4, cz - 2, slabTop);
-            b.set(x, 4, cz + 2, slabTop);
-        }
-        for (int z = cz - 2; z <= cz + 2; z++) {
-            b.set(cx - 2, 4, z, slabTop);
-            b.set(cx + 2, 4, z, slabTop);
-        }
-
-        // ── 4) SPAWN PLATFORM at y=5 ─────────────────────────────────────────
-        // A full 15×15 smooth-stone platform: the lit deck golems spawn on. Centre
-        // 3×3 left OPEN (air-skip) as the drop-hole down onto the lava blade.
+        // ── 2) COLLECTION ROOM, y=1..3 (the walk-in iron pickup) ─────────────
+        // A 13×13 stone-brick walled room you can WALK INTO. Its floor is the
+        // foundation (y=0). The single central hopper at (cx,cz) sits at floor
+        // level (y=1) and feeds a chest beside it; a small hopper ring funnels
+        // wider drops in. A real DOOR on the south wall (sill at y=1) lets the
+        // player walk straight in to grab iron from the chest.
+        // 2a) stone-brick wall ring, y=1..3, interior open (enterable / standable).
+        walls(b, x0, z0, x1, z1, 1, 3, bricks);
+        // 2b) ceiling at y=3 closes the room (the kill chamber sits on top of it),
+        //     leaving the central 1×1 OPEN as the bottom of the drop/kill column so
+        //     the golem falls through onto the hopper.
         for (int x = x0; x <= x1; x++) {
             for (int z = z0; z <= z1; z++) {
-                if (x >= cx - 1 && x <= cx + 1 && z >= cz - 1 && z <= cz + 1) continue; // drop hole
-                b.set(x, 5, z, slabBot);
+                if (x == cx && z == cz) continue;        // drop hole down onto the hopper
+                b.set(x, 3, z, bricks);
+            }
+        }
+        // 2c) HOPPER FLOOR + chest. The central hopper catches the iron the golem
+        //     drops; the 4 orthogonal neighbours feed INTO it; the chest sits one
+        //     cell south and the south hopper feeds the chest instead.
+        b.set(cx, 1, cz, bs("minecraft:hopper[enabled=true,facing=south]"));      // catch → chest
+        b.set(cx, 1, cz + 1, chest);                                              // chest (facing=north → opens toward hopper)
+        b.set(cx - 1, 1, cz, bs("minecraft:hopper[enabled=true,facing=east]"));   // → centre hopper
+        b.set(cx + 1, 1, cz, bs("minecraft:hopper[enabled=true,facing=west]"));   // → centre hopper
+        b.set(cx, 1, cz - 1, bs("minecraft:hopper[enabled=true,facing=south]"));  // → centre hopper
+        // 2d) WALK-IN DOOR on the south wall, sill at floor level (y=1..2). Walk
+        //     straight in from outside; door2 places both halves (render-safe).
+        door2(b, cx, 1, z1, "oak", "S");
+        // 2e) interior lantern on the ceiling underside so the room is lit for pickup
+        //     (lantern hangs under the y=3 brick ceiling at a clear corner cell).
+        b.set(x0 + 2, 2, z0 + 2, bs("minecraft:lantern[hanging=true]"));
+        b.set(x1 - 2, 2, z0 + 2, bs("minecraft:lantern[hanging=true]"));
+
+        // ── 3) KILL CHAMBER with CONTAINED LAVA BLADE, y=2..3 ────────────────
+        // The KEY FIX. The golem falls down the central 1×1 column and lands on the
+        // hopper at y=1 (foot level). One block up (y=2) is its HEAD; the lava blade
+        // sits at y=3 so it burns the golem WITHOUT touching the hopper. The lava is
+        // HELD up there by an oak_wall_sign in the cell DIRECTLY BELOW it (y=2):
+        // lava can't flow down through a sign, so it can never reach the hoppers and
+        // the iron drops survive on the hopper at y=1.
+        //
+        //   y=3   [ LAVA ]   ← kill blade (one source, contained)
+        //   y=2   [ sign  ]   ← oak_wall_sign holds the lava up (no down-flow)
+        //   y=1   [hopper ]   ← golem feet + dropped iron land here, lava-free
+        //
+        // A STANDING oak_sign occupies the (cx,2,cz) cell (it rests on the hopper at
+        // y=1). A standing sign fully blocks downward lava flow, so the lava at y=3
+        // has a solid floor and can NEVER pour onto the hopper. This is the contained
+        // lava blade: kills at head level, leaves the hopper at foot level lava-free.
+        signText(b, "minecraft:oak_sign[rotation=8]", cx, 2, cz,
+                 "KILL CHAMBER", "Lava held up by", "this sign so iron", "survives below");
+        // the lava blade: a single contained source at y=3 over the kill cell.
+        b.set(cx, 3, cz, lava);
+
+        // ── 4) DROP SHAFT, y=4..8 (the funnel tube) ──────────────────────────
+        // A solid stone tube whose inner 1×1 core (cx,cz) is hollow: the golem the
+        // water pushes into the centre hole falls ~5 blocks down this chute and lands
+        // in the kill chamber. The walls keep it in the chute as it falls.
+        for (int y = 4; y <= 8; y++) {
+            // a 3×3 stone collar around the 1×1 core (core left OPEN = air-skip)
+            for (int x = cx - 1; x <= cx + 1; x++) {
+                for (int z = cz - 1; z <= cz + 1; z++) {
+                    if (x == cx && z == cz) continue;    // hollow fall core
+                    b.set(x, y, z, stone);
+                }
             }
         }
 
-        // ── 5) PERIMETER WALLS y=6..9 (glass over a cobble base course) ──────
-        // A cobble plinth course at y=6 gives every y=7 glass pane a solid block
-        // beneath, and the solid GLASS blocks above always render; the only PANES
-        // are the door-flanking grates in step 6 (backed by cobble/stone).
-        line(b, 6, x0, z0, x1, z0, cobble); line(b, 6, x0, z1, x1, z1, cobble);
-        line(b, 6, x0, z0, x0, z1, cobble); line(b, 6, x1, z0, x1, z1, cobble);
-        for (int y = 7; y <= 9; y++) {
+        // ── 5) SPAWN PLATFORM at y=9 ─────────────────────────────────────────
+        // A 13×13 stone deck — the lit area where iron golems spawn within the
+        // villagers' range. The central 1×1 (cx,cz) is left OPEN as the drop hole.
+        // Water sources at the four mid-edges flow INWARD across the deck, pushing
+        // any spawned golem to the centre hole and down the shaft.
+        for (int x = x0; x <= x1; x++) {
+            for (int z = z0; z <= z1; z++) {
+                if (x == cx && z == cz) continue;        // drop hole
+                b.set(x, 9, z, stone);
+            }
+        }
+        // FOUR water sources on the deck (y=10), set 3 cells out from the centre on
+        // the N/S/E/W arms of a cross — clear of the south-wall villager pods and the
+        // east-wall zombie cell. Each flows the remaining 3 blocks inward toward the
+        // central 1×1 drop hole — the only low point — sweeping any spawned golem to
+        // the hole and down the shaft. (Static capture; the player re-places a source
+        // if one drifts on first power-up.)
+        b.set(cx - 3, 10, cz, water);                    // west  → flows east  to centre
+        b.set(cx + 3, 10, cz, water);                    // east  → flows west  to centre
+        b.set(cx, 10, cz - 3, water);                    // north → flows south to centre
+        b.set(cx, 10, cz + 3, water);                    // south → flows north to centre
+        // corner lanterns sitting on the deck keep the platform lit (golems need
+        // light ≥ the spawn threshold; light it so they spawn HERE, not at random).
+        b.set(x0 + 2, 10, z0 + 2, lantern);
+        b.set(x1 - 2, 10, z0 + 2, lantern);
+        b.set(x0 + 2, 10, z1 - 4, lantern);
+        b.set(x1 - 2, 10, z1 - 4, lantern);
+
+        // ── 6) SPAWN ENCLOSURE WALLS, y=10..12 (glass over a cobble plinth) ──
+        // A cobble plinth course at y=10 backs the door grates; solid GLASS above
+        // (always renders). The cage keeps the golems on the deck until the water
+        // sweeps them down.
+        line(b, 10, x0, z0, x1, z0, cobble); line(b, 10, x0, z1, x1, z1, cobble);
+        line(b, 10, x0, z0, x0, z1, cobble); line(b, 10, x1, z0, x1, z1, cobble);
+        for (int y = 11; y <= 12; y++) {
             line(b, y, x0, z0, x1, z0, glass); line(b, y, x0, z1, x1, z1, glass);
             line(b, y, x0, z0, x0, z1, glass); line(b, y, x1, z0, x1, z1, glass);
         }
-        // cobble corner posts tie the glass cage together
-        corners(b, x0, z0, x1, z1, 6, 9, cobble);
-        // NORTH wall (z=z0, opposite the pods): iron-bar grate slits worked into the
-        // glass at y=7, each flanked along X by the glass wall run → render-safe.
-        // (Overwrites two glass cells with bars; reads as the access/control face.)
-        b.set(cx - 1, 7, z0, bars);
-        b.set(cx + 1, 7, z0, bars);
+        corners(b, x0, z0, x1, z1, 10, 12, cobble);
 
-        // ── 6) VILLAGER PODS along the back (high-z) wall, y=6..8 ─────────────
-        // Three glass-fronted cells, each a 3-wide bay with a bed, separated by stone
-        // piers. The player drops one villager per pod after printing (mobs aren't
-        // captured). Pods sit on the y=5 platform; their floor is that platform.
-        // The bay is 2 cells deep: back row z=13 (against the z=14 perimeter glass) and
-        // front row z=12. The glass FRONT of each pod sits at z=11 so the bay interior
-        // (z=12..13) is free for the 2-block bed; piers run z=11..14 to box each cell.
-        int podBack = z1 - 1;                    // 13, bed-head row (against back glass)
-        int podFront = z1 - 3;                   // 11, glass front of the pods (faces -z)
-        int[] podCx = { 3, 7, 11 };              // the three pod centres in X
+        // ── 7) VILLAGER PODS + ZOMBIE CELL, y=11..12 (back, high-z wall) ─────
+        // Three glass/stone cells along the +z (south) wall, each a 3-wide bay with
+        // a bed and a clear floor (the y=9 deck), where the player puts 1 villager
+        // per pod. A separate small contained cell on the +x (east) wall holds the
+        // 1 zombie that scares the villagers into spawning golems. The pods sit ON
+        // the spawn deck so spawned golems share the villagers' range.
+        int podFront = z1 - 2;                   // 10, glass front of the pods (faces -z)
+        int[] podCx = { 2, 6, 10 };              // the three pod centres in X
         for (int pc : podCx) {
-            // stone piers either side of the bay, y=6..8, from the front glass to back
+            // stone piers either side of the bay, y=11..12, from front glass to back
             for (int z = podFront; z <= z1; z++) {
-                pillar(b, pc - 2, z, 6, 8, stone);
-                pillar(b, pc + 2, z, 6, 8, stone);
+                pillar(b, pc - 2, z, 11, 12, stone);
+                pillar(b, pc + 2, z, 11, 12, stone);
             }
-            // glass front of the bay at y=6..8 (solid glass → always renders)
-            for (int y = 6; y <= 8; y++) {
+            // glass front of the bay at y=11..12 (solid glass → always renders)
+            for (int y = 11; y <= 12; y++) {
                 for (int x = pc - 1; x <= pc + 1; x++) {
                     b.set(x, y, podFront, glass);
                 }
             }
-            // a bed inside the bay: head at z=13 (back), foot at z=12 → facing=south
-            // (bed() puts the foot one step OPPOSITE facing; south → foot at z-1=12).
-            bed(b, pc, 6, podBack, "white", "south");
+            // a bed inside the bay: head at z=11 (back-ish), foot at z=10 → south.
+            bed(b, pc, 10, z1 - 1, "white", "south");
+        }
+        // ZOMBIE cell: a small 1-deep glass-fronted box on the EAST wall (x=x1),
+        // mid-Z, walled in stone so the zombie can't reach the villagers but is
+        // close enough to scare them. Player drops 1 zombie (ideally in a boat).
+        int zcz = cz;                             // zombie cell centred on cz
+        pillar(b, x1 - 1, zcz - 1, 11, 12, stone);
+        pillar(b, x1 - 1, zcz + 1, 11, 12, stone);
+        for (int y = 11; y <= 12; y++) {
+            b.set(x1 - 1, y, zcz, glass);         // glass inner face so villagers SEE the zombie
         }
 
-        // ── 7) SLAB ROOF at y=10 ─────────────────────────────────────────────
-        // Caps the glass cage so spawns are enclosed; smooth-stone top slabs.
-        floor(b, 10, x0, z0, x1, z1, slabTop);
+        // ── 8) SLAB ROOF at y=13 ─────────────────────────────────────────────
+        // Caps the enclosure; smooth-stone top slabs.
+        floor(b, 13, x0, z0, x1, z1, slabTop);
 
-        // ── 8) LABEL SIGNS on the NORTH platform, y=6 ────────────────────────
-        // Standing oak signs (FU-valued, recipe-derived) flanking the north control
-        // wall, on the open y=5 platform (z=1, clear of the chamber ring at z=4..10).
-        b.set(cx - 2, 6, z0 + 1, bs("minecraft:oak_sign[rotation=0]"));
-        b.set(cx + 2, 6, z0 + 1, bs("minecraft:oak_sign[rotation=0]"));
+        // ── 9) EXPLANATORY SIGNS (signText — title + station instructions) ───
+        // Title sign over the door (south outside face), at standing eye level.
+        signText(b, "minecraft:oak_sign[rotation=8]", cx, 4, z1,
+                 "IRON FARM", "", "Enter the door", "for your iron");
+        // Villager instructions on the spawn deck, facing the pods (south), placed on
+        // a clear deck cell off the central water cross and clear of the pod fronts.
+        signText(b, "minecraft:oak_sign[rotation=0]", cx - 3, 10, cz + 2,
+                 "Place 3 VILLAGERS", "in the glass pods", "(south wall).", "They make golems");
+        // Zombie instructions near the east zombie cell.
+        signText(b, "minecraft:oak_sign[rotation=0]", cx + 3, 10, cz + 2,
+                 "Place 1 ZOMBIE", "in the east cell", "(in a boat so", "it cannot move)");
+        // "Iron golems spawn here" on the deck, off the water cross.
+        signText(b, "minecraft:oak_sign[rotation=8]", cx - 3, 10, cz - 2,
+                 "Iron golems", "spawn on this", "platform. Water", "pushes them down");
+        // "Water pushes golems down to the kill chamber" — near the west water source.
+        signText(b, "minecraft:oak_sign[rotation=4]", x0 + 2, 10, cz - 2,
+                 "Water flows IN", "to the centre", "hole -> golems", "fall to the lava");
+        // Collection-room sign: mounted on the INNER face of the north wall (z=z0),
+        // one cell in (z0+1) facing south so it reads as the player walks in through
+        // the south door and looks across the room. (facing=south attaches to the
+        // solid brick wall block at z=z0 to its north → render-safe.)
+        signText(b, "minecraft:oak_wall_sign[facing=south]", cx, 2, z0 + 1,
+                 "COLLECTION", "Iron collects in", "this chest. Lava", "is held safe above");
 
         return b.build();
     }
