@@ -5483,44 +5483,54 @@ class CuratedBlueprintGenerator {
      * snowy_igloo — Category A, build 5/103. A domed snow-block igloo: the classic
      * recognizable taiga/snowy-biome shelter. Vanilla blocks only, all FU-valued.
      *
-     * <p>Footprint 7×9×4 (W×L×H): a radius-3 snow hemisphere (7×7 footprint, 4 tall
-     * incl. floor) with a 2-deep entry tunnel poking south, so the overall depth is 9.
-     * Sits comfortably in the T4 single-printer footprint band.
+     * <p>Footprint 9×12×5 (W×L×H): a radius-4 snow hemisphere (9×9 footprint, 5 tall
+     * incl. floor → 3 blocks of standing headroom at the centre) with a 3-deep covered
+     * tunnel entrance poking south, so the overall depth is 12. Sits in the T4/T5
+     * single-printer footprint band.
      *
      * <p>Construction, honouring the air-skip / hollow-enterable rules:
      * <ul>
      *   <li><b>floor</b> — a {@link #disc} of snow_block at y=0 under the dome, with a
      *       packed-ice {@link #circleRing} and a single blue-ice centre tile as the ice
      *       accents called for in the spec.</li>
-     *   <li><b>shell</b> — {@link #dome} (snow_block) springing from y=0, radius 3. The
+     *   <li><b>shell</b> — {@link #dome} (snow_block) springing from y=0, radius 4. The
      *       helper places only the perimeter rings, so the interior is naturally hollow
-     *       — a player can stand inside (inner clearance ~5 wide × ~3 tall).</li>
-     *   <li><b>entry</b> — a short snow tunnel on the south face: two arch courses
-     *       (sides + roof) around the doorway column, with an open spruce trapdoor as
-     *       the igloo flap at the mouth. The dome shell cell at the tunnel mouth is
-     *       overwritten to a passable trapdoor-backed gap so the interior is enterable
-     *       end-to-end.</li>
-     *   <li><b>furnishings</b> — a {@code light_blue} {@link #bed} against the back wall
-     *       and a floor lantern for the cosy interior the spec asks for.</li>
+     *       — a player can STAND inside (inner clearance ~7 wide × 3 tall at the centre).</li>
+     *   <li><b>apex cap</b> — {@link #dome}'s ring schedule jumps from a radius-3 ring
+     *       (y=3) straight to a lone centre block (y=4), leaving an open ring-gap just
+     *       under the apex (the "missing roof near the apex" pitfall flagged on
+     *       underwater_dome_base). We cap it with a small filled snow {@link #disc} at
+     *       y=4 (radius 2) so the dome reads as a fully closed hemisphere.</li>
+     *   <li><b>entry</b> — the classic igloo TUNNEL: a 1-wide, 2-tall covered snow
+     *       passage on the south face (its own snow roof), forming a covered approach
+     *       from the outside flat ground up to the dome. A clean 2-tall spruce door is
+     *       set into the dome edge at the head of the tunnel (its lower half over-stamps
+     *       the dome's springing-ring cell so it punches the doorway open — you cannot
+     *       clear a cell with air under the builder's air-skip rule, so the door IS the
+     *       hole), opening inward into the hollow interior. The tunnel mouth is left open
+     *       so you walk under cover and straight through the door (reachable from ground
+     *       level, with open air in front).</li>
+     *   <li><b>furnishings</b> — a {@code light_blue} {@link #bed} against the back wall,
+     *       a little campfire hearth, and a floor lantern for the cosy interior.</li>
      * </ul>
      */
     private static Blueprint snowyIgloo() {
-        // build-local materials (all vanilla, all FU-valued; ice/trapdoor derive)
+        // build-local materials (all vanilla, all FU-valued; ice/campfire derive)
         BlueprintBlockState snow = bs("minecraft:snow_block");
         BlueprintBlockState packedIce = bs("minecraft:packed_ice");
         BlueprintBlockState blueIce = bs("minecraft:blue_ice");
-        // open spruce trapdoor on the floor course, hinged at the bottom → passable flap
-        BlueprintBlockState flap =
-                bs("minecraft:spruce_trapdoor[facing=south,half=bottom,open=true,powered=false,waterlogged=false]");
+        BlueprintBlockState campfire =
+                bs("minecraft:campfire[facing=north,lit=true,signal_fire=false,waterlogged=false]");
 
-        int r = 3;                 // dome radius → 7-wide footprint, ~3-tall interior
-        int cx = r;                // centre column x=3  (footprint x=0..6)
-        int cz = r;                // dome centre z=3   (dome footprint z=0..6)
-        int sizeX = 2 * r + 1;     // 7
-        int sizeY = r + 1;         // 4 (floor at y=0 + dome up to y=3)
-        int tunnel = 2;            // entry tunnel depth poking south
-        int sizeZ = 2 * r + 1 + tunnel; // 9
-        int z1 = 2 * r;            // dome's south edge z=6 (tunnel grows from here)
+        int r = 4;                 // dome radius → 9-wide footprint, 3-tall interior
+        int cx = r;                // centre column x=4  (footprint x=0..8)
+        int cz = r;                // dome centre z=4   (dome footprint z=0..8)
+        int sizeX = 2 * r + 1;     // 9
+        int sizeY = r + 1;         // 5 (floor at y=0 + dome up to apex y=4)
+        int tunnel = 3;            // covered entry tunnel depth poking south
+        int sizeZ = 2 * r + 1 + tunnel; // 12
+        int zEdge = 2 * r;         // dome's south edge z=8 (door sits here; tunnel grows from here)
+        int zMouth = zEdge + tunnel; // tunnel mouth z=11 (open; z=12 out of bounds → open air)
 
         Blueprint.Builder b = Blueprint.builder("Snowy Igloo", sizeX, sizeY, sizeZ);
 
@@ -5531,27 +5541,41 @@ class CuratedBlueprintGenerator {
 
         // 2) snow hemisphere shell (hollow by construction → enterable)
         dome(b, cx, cz, 0, r, snow);
+        // 2b) CLOSE THE APEX: dome()'s ring schedule leaves an open ring-gap between the
+        //     radius-3 ring (y=3) and the lone apex block (y=4). Cap it with a small
+        //     filled snow disc (radius 2) at the apex course so the roof is fully closed.
+        disc(b, r, cx, cz, 2, snow);
 
-        // 3) entry: a short snow tunnel on the south face, centred on x=cx.
-        //    Tunnel courses at z=z1+1 .. z1+tunnel: side walls + roof, floor walkable.
-        for (int z = z1 + 1; z <= z1 + tunnel; z++) {
-            b.set(cx - 1, 0, z, snow); // west side, base
-            b.set(cx + 1, 0, z, snow); // east side, base
-            b.set(cx - 1, 1, z, snow); // west side, upper
-            b.set(cx + 1, 1, z, snow); // east side, upper
-            b.set(cx, 2, z, snow);     // tunnel roof
-            b.set(cx, 0, z, snow);     // tunnel floor (walkable lip)
+        // 3) entry: a 1-wide, 2-tall COVERED snow tunnel as a porch on the south face,
+        //    centred on x=cx. Floor at y=0 (walkable), headroom y=1..2, snow side walls
+        //    + its own snow roof at y=3, running from just outside the dome edge out to
+        //    the open mouth. (The doorway itself sits in the dome edge at z=zEdge below.)
+        for (int z = zEdge + 1; z <= zMouth; z++) {
+            b.set(cx, 0, z, snow);     // tunnel floor (walkable lip at ground level)
+            b.set(cx - 1, 0, z, snow); // west wall, lower
+            b.set(cx + 1, 0, z, snow); // east wall, lower
+            b.set(cx - 1, 1, z, snow); // west wall, upper
+            b.set(cx + 1, 1, z, snow); // east wall, upper
+            b.set(cx - 1, 2, z, snow); // west wall, top
+            b.set(cx + 1, 2, z, snow); // east wall, top
+            b.set(cx - 1, 3, z, snow); // tunnel roof, west
+            b.set(cx, 3, z, snow);     // tunnel roof, centre
+            b.set(cx + 1, 3, z, snow); // tunnel roof, east
         }
-        // tunnel mouth flap: an open spruce trapdoor at the outer end
-        b.set(cx, 1, z1 + tunnel, flap);
-        // open the dome shell where the tunnel meets it: overwrite the springing
-        // ring cell at the doorway column with a passable trapdoor-backed gap so
-        // you can pass from the tunnel into the hollow interior.
-        b.set(cx, 1, z1, flap);
+        // 3b) the DOORWAY: a clean 2-tall spruce door set into the dome edge at z=zEdge,
+        //     opening inward (faces north). The builder's air-skip rule means you cannot
+        //     punch a hole with air, so the door's solid lower half OVER-STAMPS the dome's
+        //     springing-ring snow cell at (cx,1,zEdge) — that over-stamp IS the opening —
+        //     and its upper half writes into the already-air cell at (cx,2,zEdge). Nothing
+        //     is written to either door cell afterwards (tunnel/apex cap are elsewhere), so
+        //     the double-block partner stays intact. The tunnel in front keeps z=zEdge+1
+        //     open → air ahead of the door's upper half, reachable from flat ground.
+        door2(b, cx, 1, zEdge, "spruce", "S");
 
         // 4) interior furnishings on the y=0 floor
-        bed(b, cx, 1, cz - 1, "light_blue", "north"); // head at back, foot toward door
-        b.set(cx + 1, 1, cz + 1, LANTERN);            // floor lantern, off-centre
+        bed(b, cx, 1, cz - 2, "light_blue", "north"); // head at back wall, foot inward
+        b.set(cx - 2, 1, cz, campfire);                // little hearth, off to the side
+        b.set(cx + 2, 1, cz + 1, LANTERN);             // floor lantern, off-centre
 
         return b.build();
     }
