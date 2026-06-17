@@ -122,3 +122,5 @@ New bug class: **a fire source (raw `lava`/`fire`) next to flammable blocks (woo
 - [ ] **smithy_workshop** — raw lava @ (5,1,7) adjacent (d1) to spruce_log ×3 + a sign → fire hazard. Same fix.
 - [ ] **(then) promote fire-hazard audit to always-on gate** (assert 0 flagged) once blacksmith + smithy are safe.
 - [ ] **modern_glass_villa** — a quartz slab/block blocks the front door (the threshold step the entrance-fix added). Remove/relocate it so the door is walk-through.
+- [ ] **copper_clocktower** — door opens but the interior floor is a block higher than the sill; you can't step up through the door's upper half (same threshold-pin class as mushroom_island_hut). Add a threshold stair just inside the door (facing = into the building) OR level the entry.
+- [ ] **navigability audit blind spot** — it passed copper_clocktower despite the threshold pin; tighten it to flag a door whose immediate interior is a +1 floor step under the door's upper half (so this class can't recur).
