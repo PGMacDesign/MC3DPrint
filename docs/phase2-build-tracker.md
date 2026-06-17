@@ -128,7 +128,7 @@
 ### E — Ocean / water (9)
 - [x] dock_pier
 - [x] fishing_hut
-- [x] conduit_shrine (conduit block unvalued/loot-derived → left empty sea-lantern mount for player)
+- [x] underwater_conduit_shrine (conduit block unvalued/loot-derived → left empty sea-lantern mount for player)
 - [x] ocean_ruins
 - [x] coral_garden (coral/kelp/sea_pickle unvalued → built as valued bright-concrete reef per "easiest path to color" intent)
 - [x] prismarine_monument_fragment

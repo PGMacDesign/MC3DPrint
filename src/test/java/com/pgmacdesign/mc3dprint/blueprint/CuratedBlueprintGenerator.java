@@ -295,8 +295,8 @@ class CuratedBlueprintGenerator {
         builds.put("dock_pier", dockPier());
         // Phase 2 — Category E (fishing_hut)
         builds.put("fishing_hut", fishingHut());
-        // Phase 2 — Category E (conduit_shrine)
-        builds.put("conduit_shrine", conduitShrine());
+        // Phase 2 — Category E (underwater_conduit_shrine)
+        builds.put("underwater_conduit_shrine", underwaterConduitShrine());
         // Phase 2 — Category E (ocean_ruins)
         builds.put("ocean_ruins", oceanRuins());
         // Phase 2 — Category E (coral_garden)
@@ -8204,10 +8204,15 @@ class CuratedBlueprintGenerator {
      * </ul>
      */
     private static Blueprint sugarcaneFarmAuto() {
-        // Height 6 (y=0..5): the harvest wall now stacks stone backing (y=1..2),
-        // observer (y=3, the cane's 2nd-block height), piston (y=4) and a redstone-dust
-        // ribbon (y=5), one row taller than the old y=0..4 to keep the wiring coherent
-        // after raising the detectors to where the cane actually grows.
+        // Height 6 (y=0..5). HARVEST IS TIMER-DRIVEN (rebuilt). A self-starting observer
+        // CLOCK at the north end pulses two redstone buses that fire a row of pistons at
+        // the cane's 2nd-block height (y=3), snapping every grown cane toward the central
+        // water channel each cycle. This replaces the old per-cane observer→piston wiring,
+        // which only fired on the FIRST growth: the observer watched the 2nd block (y=3)
+        // but the piston broke a different cell (the 3rd, y=4), and the observer's back
+        // signal never climbed the stone pillar up to the dust ribbon at y=5. A clock
+        // trades a little yield for reliability — the tradeoff the design intends. Mirrors
+        // the pumpkin/melon clock harvester so the two read identically.
         Blueprint.Builder b = Blueprint.builder("Auto Sugar Cane Farm", 9, 6, 9);
         // all vanilla, all FU-valued / structural-free:
         BlueprintBlockState stone   = bs("minecraft:stone");
@@ -8265,42 +8270,50 @@ class CuratedBlueprintGenerator {
             b.set(eStripX, 2, z, cane);                // cane bottom block, east strip
         }
 
-        // ── 4) HARVEST WALL: stone backing + observer + piston + redstone ────
-        // Behind each strip a stone pillar per cane carries the observer (RAISED to
-        // y=3, the cane's 2nd-block height, facing the cane so it watches the cell the
-        // 2nd cane block grows into — the 1st block is always present, so the old y=2
-        // observer never saw growth) and the piston (y=4 above it, facing the cane and
-        // snapping the grown block toward the channel). Stone backing fills y=1..2 to
-        // raise the observer; the redstone dust runs on a stone shelf one column
-        // further out (x=wShelfX/eShelfX) so it has a solid y=4 floor under it and ties
-        // each observer's back output to its piston.
-        int wWallX = cx - 2, eWallX = cx + 2;          // 2 and 6 (observer/piston columns)
-        int wShelfX = cx - 3, eShelfX = cx + 3;        // 1 and 7 (redstone-dust shelf columns)
+        // ── 4) PISTON HARVEST ROW (y=3) + CLOCK-DRIVEN REDSTONE BUSES ─────────
+        // A piston sits at the cane's 2nd-block height (y=3) beside every cane, facing it,
+        // raised on a 2-block stone backing. West pistons (x=2) face east; east pistons
+        // (x=6) face west. On each pulse the piston punches the grown cane (the y=3 block,
+        // and any 3rd block above it — sugar cane is push-destroyed, so it snaps into
+        // drops) toward the central channel; the always-present bottom block at y=2
+        // survives and regrows. Each piston is powered FROM BEHIND by a redstone-dust bus
+        // one column further out (west x=1, east x=7) on its own 2-block stone floor at the
+        // SAME y=3 — no fragile vertical signal climb (the old build's failure mode).
+        int wWallX = cx - 2, eWallX = cx + 2;          // 2 and 6 — piston columns (face the cane)
+        int wBusX  = cx - 3, eBusX  = cx + 3;          // 1 and 7 — redstone buses (behind the pistons)
         for (int z = stripZ0; z <= stripZ1; z++) {
-            // observer mount: stone backing at y=1..2, observer at y=3 facing the cane's
-            // 2nd block, piston at y=4 facing the cane top (snaps the grown block toward
-            // the channel). West wall faces east, east wall faces west.
-            pillar(b, wWallX, z, 1, 2, stone);
-            pillar(b, eWallX, z, 1, 2, stone);
-            b.set(wWallX, 3, z, bs("minecraft:observer[facing=east,powered=false]"));
-            b.set(eWallX, 3, z, bs("minecraft:observer[facing=west,powered=false]"));
-            b.set(wWallX, 4, z, bs("minecraft:piston[facing=east,extended=false]"));
-            b.set(eWallX, 4, z, bs("minecraft:piston[facing=west,extended=false]"));
-            // redstone-dust shelf: solid stone y=1..4 with a dust ribbon at y=5 on top,
-            // carrying the observer-back signal across to the piston.
-            pillar(b, wShelfX, z, 1, 4, stone);
-            pillar(b, eShelfX, z, 1, 4, stone);
-            b.set(wShelfX, 5, z, redDust);
-            b.set(eShelfX, 5, z, redDust);
+            pillar(b, wWallX, z, 1, 2, stone);  pillar(b, eWallX, z, 1, 2, stone);   // raise the pistons to y=3
+            b.set(wWallX, 3, z, bs("minecraft:piston[facing=east,extended=false]")); // breaks the west cane's 2nd block
+            b.set(eWallX, 3, z, bs("minecraft:piston[facing=west,extended=false]")); // breaks the east cane's 2nd block
+            pillar(b, wBusX, z, 1, 2, stone);   pillar(b, eBusX, z, 1, 2, stone);    // dust floor at y=2
+            b.set(wBusX, 3, z, redDust);        b.set(eBusX, 3, z, redDust);         // bus dust, directly behind each piston
         }
 
-        // ── 5) END WALLS (box the channel) + LABEL SIGNS ─────────────────────
-        // Cobble end caps at z=0 and z=8 across the planting/channel span close the
-        // ends so the water channel reads as a contained trough.
-        line(b, 1, wWallX, z0, eWallX, z0, cobble);   // north end cap, y=1
-        line(b, 1, wWallX, z1, eWallX, z1, cobble);   // south end cap, y=1
-        // oak wall signs on the south face flanking the chest (FU-valued, derived).
-        b.set(wStripX, 1, z1, bs("minecraft:oak_wall_sign[facing=south]"));
+        // ── 4b) OBSERVER CLOCK (self-starting) at the north end (z=0), y=3 ────
+        // Two ADJACENT observers facing each other = the canonical self-starting clock: it
+        // begins pulsing the instant it prints (no lever needed). Each back-output feeds one
+        // bus. It rides a stone shelf at y=2 spanning the buses so the z=0 dust has a floor.
+        //   (2,3,0) faces east → watches (3,3,0); back faces west → powers (1,3,0)=west bus
+        //   (3,3,0) faces west → watches (2,3,0); back faces east → (4,3,0)…(7,3,0)=east bus
+        // It's a FAST clock; splice a repeater into a bus to slow it (more cane grow-time →
+        // higher yield) if the constant cycling is too busy.
+        line(b, 2, wBusX, z0, eBusX, z0, stone);                                     // y=2 shelf under the north wiring (x=1..7)
+        b.set(wBusX, 3, z0, redDust);                                                // (1,3,0) west bus head
+        b.set(wWallX, 3, z0, bs("minecraft:observer[facing=east,powered=false]"));   // (2,3,0) watches (3,3,0)
+        b.set(cx - 1, 3, z0, bs("minecraft:observer[facing=west,powered=false]"));   // (3,3,0) face-to-face partner
+        b.set(cx,     3, z0, redDust);                                               // (4,3,0) ← east observer back-output
+        b.set(cx + 1, 3, z0, redDust);                                               // (5,3,0) carry east
+        b.set(eWallX, 3, z0, redDust);                                               // (6,3,0) carry east
+        b.set(eBusX,  3, z0, redDust);                                               // (7,3,0) east bus head
+
+        // ── 5) END CAPS + LABEL SIGNS ────────────────────────────────────────
+        // North: a cobble base course under the clock shelf (x=1..7). South: corner cobbles
+        // + two south-facing wall signs flanking the chest. The chest top (cx,1,z1) is LEFT
+        // OPEN so the player can actually open it (the old build capped it with cobble).
+        line(b, 1, wBusX, z0, eBusX, z0, cobble);     // north base course, y=1 (x=1..7)
+        b.set(wWallX, 1, z1, cobble);                 // south-west corner
+        b.set(eWallX, 1, z1, cobble);                 // south-east corner
+        b.set(wStripX, 1, z1, bs("minecraft:oak_wall_sign[facing=south]"));  // sign (attaches to the sand strip behind)
         b.set(eStripX, 1, z1, bs("minecraft:oak_wall_sign[facing=south]"));
 
         return b.build();
@@ -8349,78 +8362,90 @@ class CuratedBlueprintGenerator {
      * </ul>
      */
     private static Blueprint pumpkinMelonFarm() {
-        Blueprint.Builder b = Blueprint.builder("Pumpkin/Melon Farm", 9, 4, 9);
+        Blueprint.Builder b = Blueprint.builder("Pumpkin/Melon Farm", 9, 5, 9);
         // all vanilla, all FU-valued / structural-free:
         BlueprintBlockState stone     = bs("minecraft:stone");
         BlueprintBlockState cobble    = COBBLE;
-        BlueprintBlockState dirt      = bs("minecraft:dirt");               // FU-valued (1@1) → growth block
+        BlueprintBlockState dirt      = bs("minecraft:dirt");               // FU-valued (1@1) → growth block (pushed by the piston)
         BlueprintBlockState farmland  = FARMLAND;                           // FarmBlock → structural-free, moisture=7
         BlueprintBlockState water     = WATER;                              // structural (asItem()==AIR) → prints free
+        BlueprintBlockState glass     = GLASS;                              // over the chest: stops the channel water spilling, still opens
         BlueprintBlockState melonStem = bs("minecraft:melon_stem[age=0]");  // BushBlock → structural-free (planted, grows)
         BlueprintBlockState pumpkinStem = bs("minecraft:pumpkin_stem[age=0]"); // BushBlock → structural-free
-        BlueprintBlockState chest     = bs("minecraft:chest[facing=south,type=single,waterlogged=false]"); // front faces the open south edge → accessible
+        BlueprintBlockState chest     = bs("minecraft:chest[facing=south,type=single,waterlogged=false]");
+        BlueprintBlockState pistonUp  = bs("minecraft:sticky_piston[facing=up,extended=false]"); // pushes the dirt UP into the fruit
+        BlueprintBlockState dust      = bs("minecraft:redstone_wire[east=none,north=none,power=0,south=none,west=none]");
 
-        int x0 = 0, x1 = 8, z0 = 0, z1 = 8;            // 9×9 footprint
+        int x0 = 0, x1 = 8, z0 = 0, z1 = 8;            // 9×9 footprint, now 5 tall
         int cx = 4;                                    // central collection column (water channel + hopper line)
         int rowZ0 = 1, rowZ1 = 7;                      // planting run along Z
         int wStemX = cx - 2, eStemX = cx + 2;          // 2 and 6 — farmland + stems (OUTER)
-        int wGrowX = cx - 1, eGrowX = cx + 1;          // 3 and 5 — dirt growth blocks (INNER, beside the channel)
+        int wGrowX = cx - 1, eGrowX = cx + 1;          // 3 and 5 — dirt growth blocks (INNER, on the pistons)
+        int wBusX = cx - 2, eBusX = cx + 2;            // 2 and 6 — the redstone bus runs UNDER the farmland
 
-        // ── 1) FOUNDATION (y=0) + HOPPER LINE + CHEST ────────────────────────
-        // Reworked from scratch: the old build flooded the whole plane with sweep water
-        // (a useless pool). Now the ONLY water is a single 1-wide channel down the centre,
-        // sitting on a hopper line. Stems are OUTER, the dirt growth blocks INNER (right
-        // beside the channel) so a broken gourd drops into the channel and is collected.
+        // ── 1) FOUNDATION (y=0) + HOPPER LINE + CHEST (glass-capped) ─────────
+        // AUTOMATED rebuild: sticky pistons UNDER the dirt growth blocks push the dirt UP
+        // into the fully-formed gourd to break it (Patrick's design), driven by a
+        // self-starting observer CLOCK — no fragile per-fruit detector wiring. The whole
+        // plane is raised one course (soil y=2, fruit y=3) to fit the pistons at y=1.
         floor(b, 0, x0, z0, x1, z1, stone);
-        // Hopper line the length of the channel bottom (x=cx, z=1..7), each facing south,
-        // chaining the gourd drops into the chest at the south edge (z=8).
         for (int z = rowZ0; z <= rowZ1; z++) {
-            b.set(cx, 0, z, bs("minecraft:hopper[enabled=true,facing=south]"));
+            b.set(cx, 0, z, bs("minecraft:hopper[enabled=true,facing=south]")); // channel-bottom hopper line → chest
         }
-        b.set(cx, 0, z1, chest);                       // collection chest at the south edge, faces south (front = open)
+        b.set(cx, 0, z1, chest);                       // (4,0,8) collection chest, faces south (open edge)
+        b.set(cx, 1, z1, glass);                       // GLASS cap over the chest — stops the channel water spilling, still opens
 
-        // ── 2) CENTRAL WATER CHANNEL at y=1 (hydration + collection) ─────────
-        // A single source line at x=cx, y=1, sitting on the hopper line. It hydrates BOTH
-        // farmland rows (≤2 blocks away at the same level → moisture=7) and is the only
-        // open cell beside the inner dirt, so a broken gourd's drop falls in here and the
-        // hopper below sucks it. y=2 above the channel stays AIR so it never floods the
-        // fruit cells (water at the fruit's level would block the gourd from spawning).
+        // ── 2) CENTRAL WATER CHANNEL (y=1 + y=2) — hydration + collection ────
+        // Water at x=cx, y=1 (on the hopper line) AND y=2 (the soil level, so it hydrates
+        // both farmland rows ≤2 away → moisture=7). y=3 above the channel stays AIR so it
+        // never floods the fruit cells. A broken gourd's slices scatter into the channel,
+        // fall to the water, and the hopper line sucks them to the chest.
         for (int z = rowZ0; z <= rowZ1; z++) {
             b.set(cx, 1, z, water);
+            b.set(cx, 2, z, water);
         }
 
-        // ── 3) STEMS (outer, hydrated) + DIRT GROWTH BLOCKS (inner) ─────────
-        // Farmland rows at x=cx∓2 (2 and 6) with an alternating melon/pumpkin stem on top
-        // (y=2). Each stem's dedicated dirt growth block sits one column INWARD (x=cx∓1,
-        // i.e. 3 and 5) at soil level (y=1); the gourd spawns on its top face at y=2,
-        // right beside the channel. The stem's other neighbours can't host a gourd: the
-        // OUTER side (x=1/7) is non-soil stone, and the Z neighbours are farmland already
-        // capped by a stem (no air) — so the gourd spawns only on the inner dirt.
+        // ── 3) STEMS + DIRT-ON-PISTON GROWTH BLOCKS + REDSTONE BUS ──────────
+        // Stems on farmland at x=cx∓2 (soil y=2, stem y=3). The dirt growth block sits one
+        // column inward (x=cx∓1) ON a sticky piston (y=1) — the gourd spawns on its top at
+        // y=3, beside the channel. A redstone dust bus runs at y=1 UNDER each farmland row
+        // (x=cx∓2), one cell from its piston, so a clock pulse powers every piston at once
+        // (the dust is adjacent to the piston → it extends, shoving the dirt up into the
+        // gourd). The outer column (x=1/7) is non-soil stone so the gourd spawns only on
+        // the inner dirt.
         for (int z = rowZ0; z <= rowZ1; z++) {
-            b.set(wStemX, 1, z, farmland);
-            b.set(eStemX, 1, z, farmland);
+            b.set(wBusX, 1, z, dust);      b.set(eBusX, 1, z, dust);        // redstone bus (under the farmland)
+            b.set(wStemX, 2, z, farmland); b.set(eStemX, 2, z, farmland);   // stem soil
             boolean melon = (z % 2 == 0);
-            b.set(wStemX, 2, z, melon ? melonStem : pumpkinStem);
-            b.set(eStemX, 2, z, melon ? pumpkinStem : melonStem);
-            b.set(wGrowX, 1, z, dirt);   // inner growth block (gourd spawns on top at y=2, beside the channel)
-            b.set(eGrowX, 1, z, dirt);
-            b.set(x0 + 1, 1, z, stone);  // outer filler (non-soil) so no gourd spawns past the stems
-            b.set(x1 - 1, 1, z, stone);
+            b.set(wStemX, 3, z, melon ? melonStem : pumpkinStem);
+            b.set(eStemX, 3, z, melon ? pumpkinStem : melonStem);
+            b.set(wGrowX, 1, z, pistonUp); b.set(eGrowX, 1, z, pistonUp);   // sticky piston under each dirt block
+            b.set(wGrowX, 2, z, dirt);     b.set(eGrowX, 2, z, dirt);       // dirt growth block (gourd spawns on top at y=3)
+            b.set(x0 + 1, 2, z, stone);    b.set(x1 - 1, 2, z, stone);      // outer non-soil filler
         }
 
-        // ── 4) END CAPS + LABEL SIGNS ────────────────────────────────────────
-        // Cobble end caps at z=0 and z=8 across the planting span box the plane; oak wall
-        // signs on the south face explain how the farm works (semi-auto: the gourds grow
-        // sideways onto the dirt beside the channel; break one and the channel + hopper
-        // line catch the drop). A piston auto-harvest needs fragile multi-block redstone
-        // around the dirt that won't reliably reproduce in a print, so this ships the
-        // robust, minimal-water version.
-        line(b, 2, x0, z0, x1, z0, cobble);   // north end cap at the stem plane
-        line(b, 2, x0, z1, x1, z1, cobble);   // south end cap at the stem plane
-        signText(b, "minecraft:oak_wall_sign[facing=south]", wStemX, 1, z1,
-                "Stems fruit", "SIDEWAYS onto", "the inner dirt,", "by the channel");
-        signText(b, "minecraft:oak_wall_sign[facing=south]", eStemX, 1, z1,
-                "Break a gourd:", "it drops in the", "channel -> hopper", "-> this chest");
+        // ── 4) OBSERVER CLOCK (self-starting) at the north end (z=0) ────────
+        // Two ADJACENT observers facing each other form the canonical self-starting clock:
+        // each watches the other's block, so the moment they print, the placement update
+        // kicks off a perpetual pulse train — no manual start, no lever. An observer outputs
+        // from its BACK (opposite its facing), so we route each back-output to one piston bus.
+        //   (3,1,0) facing east  → watches (4,1,0); back faces west  → powers (2,1,0)=west bus
+        //   (4,1,0) facing west  → watches (3,1,0); back faces east  → (5,1,0)→(6,1,0)=east bus
+        // It's a FAST clock (pistons cycle hard); the player can splice a repeater into either
+        // bus to slow it so gourds get more rest time to form. Yield loss is acceptable here.
+        b.set(wGrowX, 1, z0, bs("minecraft:observer[facing=east,powered=false]"));  // (3,1,0)
+        b.set(cx,     1, z0, bs("minecraft:observer[facing=west,powered=false]"));  // (4,1,0) — face-to-face
+        b.set(wBusX, 1, z0, dust);     // (2,1,0) ← west observer back-output → connects to west bus (2,1,1..7)
+        b.set(eGrowX, 1, z0, dust);    // (5,1,0) ← east observer back-output, carries east
+        b.set(eBusX, 1, z0, dust);     // (6,1,0) → connects to east bus (6,1,1..7)
+
+        // ── 5) END CAPS + LABEL SIGNS ────────────────────────────────────────
+        line(b, 3, x0, z0, x1, z0, cobble);   // north end cap at the stem plane
+        line(b, 3, x0, z1, x1, z1, cobble);   // south end cap at the stem plane
+        signText(b, "minecraft:oak_wall_sign[facing=south]", wStemX, 2, z1,
+                "AUTO: stems fruit", "onto the dirt;", "pistons shove it", "up to break it");
+        signText(b, "minecraft:oak_wall_sign[facing=south]", eStemX, 2, z1,
+                "Slices wash to", "the centre channel", "-> hopper -> chest", "(clock-driven)");
 
         return b.build();
     }
@@ -15465,7 +15490,7 @@ class CuratedBlueprintGenerator {
      * unobtainable/unprintable. So the shrine frames an EMPTY central mount: an
      * OBSIDIAN pad with the exact centre cell left as a prominent empty spot marked by
      * a single END ROD (the glowing seat for the player's own gateway), exactly like
-     * {@link #conduitShrine} / {@link #netherPortalRoom} left the activated element for
+     * {@link #underwaterConduitShrine} / {@link #netherPortalRoom} left the activated element for
      * the player. No end_gateway/end_portal/bedrock anywhere.
      *
      * <p>SYMMETRY: fully symmetric on BOTH axes about the centre (cx,cz)=(5,5) —
@@ -16182,8 +16207,8 @@ class CuratedBlueprintGenerator {
     }
 
     /**
-     * §E Conduit Shrine. 7×7 footprint → builder(7, 7, 7). A compact submerged
-     * conduit shrine: a prismarine + prismarine-brick base ringed by a structural
+     * §E Underwater Conduit Shrine. 7×7 footprint → builder(7, 7, 7). A compact submerged
+     * underwater conduit shrine: a prismarine + prismarine-brick base ringed by a structural
      * water moat (prints free), with the classic open prismarine activation FRAME
      * (the hollow ring that powers a conduit) rising on four corner pillars, and a
      * raised central pedestal carrying a sea-lantern mount. Symmetrical, shrine-like.
@@ -16203,9 +16228,9 @@ class CuratedBlueprintGenerator {
      * UNVALUED and deliberately AVOIDED (prismarine_bricks used for the dark accents).
      * T5 footprint, T5 disc.
      */
-    private static Blueprint conduitShrine() {
+    private static Blueprint underwaterConduitShrine() {
         final int W = 7, H = 7, D = 7;
-        Blueprint.Builder b = Blueprint.builder("Conduit Shrine", W, H, D);
+        Blueprint.Builder b = Blueprint.builder("Underwater Conduit Shrine", W, H, D);
         final int x0 = 0, x1 = W - 1, z0 = 0, z1 = D - 1; // x:0..6  z:0..6
         final int cx = 3, cz = 3;                          // shrine centre
 
@@ -16998,6 +17023,17 @@ class CuratedBlueprintGenerator {
         // is outside the dome shell → air, and the foundation rim under it (y=1) is solid,
         // so you walk straight in from the seabed platform onto the dry concrete floor.
         door2(b, ax, 2, az, "iron", "N");
+        // LINTEL — cap the gap directly above the door head. The dome shell has curved
+        // inward by y=4 (the door pokes out past the springing course), so (ax,4,az) was
+        // an open hole over the door (the missing block in the screenshot). An iron block
+        // there completes the framed portal and closes the gap.
+        b.set(ax, 4, az, ironBlock);
+        // TRIGGERS — an iron door can't be opened by hand, so flank it with stone buttons
+        // on the west jamb: one OUTSIDE (the jamb's north face, to enter) and one INSIDE
+        // (the south face, to leave). Each powers the iron jamb at (ax-1,az), which is
+        // directly adjacent to the door, so a press swings it open.
+        b.set(ax - 1, 2, az - 1, bs("minecraft:stone_button[face=wall,facing=north,powered=false]")); // outside
+        b.set(ax - 1, 2, az + 1, bs("minecraft:stone_button[face=wall,facing=south,powered=false]")); // inside
         // a chain handhold accent on the floor just inside the door (not in the path).
         b.set(ax + 1, 1, az + 1, CHAIN);
 
@@ -17265,41 +17301,44 @@ class CuratedBlueprintGenerator {
     }
 
     /**
-     * §E.sailing_ship — Category E, the hero showcase build. A classic wooden
-     * sailing ship / caravel floating in water: a curved planked hull tapering to a
-     * bow and stern with a rounded keel, a lower foredeck and a raised aft
-     * quarterdeck / captain's cabin, two oak-log masts carrying horizontal yards with
-     * billowing WHITE-WOOL SAILS, chain/fence rope rigging, a bowsprit, fence
-     * railings around the decks, a ship's-wheel area, deck cargo (barrels + chest),
-     * ladders below decks, and lanterns. Hard, sculptural, ship-SHAPED — not a box.
+     * §E.sailing_ship — Category E, the hero showcase build. A LARGER, TALLER
+     * three-masted square-rigger (galleon): a planked hull tapering from a wide flat
+     * transom to a pointed bow, an enclosed below-deck HOLD reached by a working
+     * hatch-and-ladder, a stern captain's cabin with a real walk-in door, a ship's
+     * wheel, a raised forecastle, three oak-log masts carrying big clean WHITE-WOOL
+     * sails on log yards, chain/fence rigging, a bowsprit with a jib, deck cargo, and
+     * resting lanterns. Hard, sculptural, ship-SHAPED — not a box.
      *
-     * <p>Footprint 5×13 (W×L) → builder(W=5, H, D=13): x=0..4 (width, centre x=2),
-     * z=0..12 (length — STERN at low z, BOW at high z), y up. The hull sits in a
-     * water bed (structural → prints free) so it reads as floating.
+     * <p>Footprint 7×19 (W×L) → builder(W=7, H=18, D=19): x=0..6 (centre x=3),
+     * z=0..18 (STERN at low z, BOW at high z), y up. The hull sits in a water bed
+     * (structural → prints free) so it reads as floating.
      *
-     * <p>Hull shaping: each z-row has a half-width {@code hw[z]} that narrows from the
-     * full midships beam (hw=2, x=0..4) to a 1-wide bow/stern and a single keel cell
-     * at the very tip — the planked rows skip the outer cells per row to carve the
-     * taper and the rounded keel, exactly the technique the conventions header calls
-     * out. The keel sits at y=1, the flared hull sides at y=2, the walkable deck at
-     * y=3; the aft cabin/quarterdeck rises above the stern.
+     * <p>Hull &amp; decks: a per-row half-width {@code hw[z]} carves the silhouette (wide
+     * beam amidships, flat transom aft, pointed bow). y=1 is the hull bottom / HOLD
+     * FLOOR; y=2..4 are the hull side walls enclosing the open hold; y=5 is the main
+     * deck; y=6 carries the rails, cabin, wheel, forecastle and mast bases. The hold is
+     * the basement the old build's "for-show" ladder never reached — now a hatch in the
+     * deck + a hull-backed ladder run (y=2..5) drops you into it.
      *
-     * <p>RENDER-SAFETY: the only thin elements are chains (rigging) and fences
-     * (railings/rigging) — neither is an {@code IronBarsBlock}, so the stub-pane
-     * guardrail has nothing to flag. Cabin windows are GLASS BLOCKS (full blocks),
-     * not panes. Sails are full WHITE-WOOL BLOCKS. Everything placed is FU-valued
-     * vanilla (oak/spruce planks/logs/slabs/stairs/fences/fence-gate/trapdoors/ladder/
-     * door, white wool, glass block, barrels, chest, crafting table, lanterns,
-     * chains, anvil) or structural-free {@code water}.
+     * <p>RENDER-SAFETY: the only thin elements are chains and fences — neither is an
+     * {@code IronBarsBlock}, so the stub-pane guardrail has nothing to flag. Cabin
+     * windows are GLASS BLOCKS, sails full WHITE-WOOL BLOCKS, lanterns are RESTING
+     * (hanging=false, sat on the mast trucks / roof / posts) so none can fail the
+     * hanging-lantern support rule. Everything placed is FU-valued vanilla
+     * (oak/spruce planks/logs/slabs/stairs/fences/trapdoor/ladder/door, white wool,
+     * glass block, barrels, chest, crafting table, anvil, lanterns) or structural water.
      */
     private static Blueprint sailingShip() {
-        final int W = 5, H = 14, D = 13;
+        final int W = 7, H = 18, D = 19;
         Blueprint.Builder b = Blueprint.builder("Sailing Ship", W, H, D);
 
-        final int x0 = 0, x1 = W - 1, z0 = 0, z1 = D - 1; // x:0..4  z:0..12
-        final int cx = 2;                                  // hull centre column
-        final int sternZ = 0, bowZ = 12;
-        final int keelY = 1, sideY = 2, deckY = 3;         // walkable deck = top of y=3 planks
+        final int x0 = 0, x1 = W - 1, z0 = 0, z1 = D - 1; // x:0..6  z:0..18
+        final int cx = 3;                                  // hull centreline
+        final int sternZ = 0, bowZ = 18;
+        final int floorY = 1;                              // keel / hold floor
+        final int hullY0 = 2, hullY1 = 4;                  // hull side walls (the hold is the open space between them)
+        final int deckY = 5;                               // main deck = top of the y=5 planks
+        final int railY = 6;                               // gunwale rails / cabin / wheel / forecastle / mast bases
 
         // ── PALETTE (all FU-valued or structural) ───────────────────────────────
         final BlueprintBlockState planks   = OAK_PLANKS;          // hull planking
@@ -17307,199 +17346,181 @@ class CuratedBlueprintGenerator {
         final BlueprintBlockState logY     = OAK_LOG_Y;           // masts
         final BlueprintBlockState logX     = OAK_LOG_X;           // yards (axis x)
         final BlueprintBlockState logZ     = bs("minecraft:oak_log[axis=z]"); // bowsprit
-        final BlueprintBlockState fence    = OAK_FENCE;           // railings + rigging
-        final BlueprintBlockState chain    = CHAIN;               // rope rigging
+        final BlueprintBlockState fence    = OAK_FENCE;           // railings + shrouds
+        final BlueprintBlockState chain    = CHAIN;               // stays
         final BlueprintBlockState sail     = WHITE_WOOL;          // sails
-        // Ladders face AWAY from the wall they mount on (attach to facing.getOpposite()):
-        // ladderE attaches to its WEST neighbour, ladderW to its EAST neighbour.
-        final BlueprintBlockState ladderE  = bs("minecraft:ladder[facing=east,waterlogged=false]");
-        final BlueprintBlockState ladderW  = bs("minecraft:ladder[facing=west,waterlogged=false]");
-        final BlueprintBlockState glass    = GLASS;               // cabin windows (BLOCKS)
+        final BlueprintBlockState glass    = GLASS;               // cabin windows (full BLOCKS)
         final BlueprintBlockState slabTop  = OAK_SLAB_TOP;        // cabin roof
-        final BlueprintBlockState hullStairS = bs("minecraft:oak_stairs[facing=south,half=bottom,shape=straight]");
-        final BlueprintBlockState hullStairN = bs("minecraft:oak_stairs[facing=north,half=bottom,shape=straight]");
-        final BlueprintBlockState wheelTrap  = bs("minecraft:oak_trapdoor[facing=south,half=bottom,open=true,powered=false,waterlogged=false]");
+        // Hold ladder faces WEST → attaches to facing.getOpposite()==EAST (the starboard hull/deck).
+        final BlueprintBlockState ladderW  = bs("minecraft:ladder[facing=west,waterlogged=false]");
+        final BlueprintBlockState wheelTrap = bs("minecraft:oak_trapdoor[facing=south,half=bottom,open=true,powered=false,waterlogged=false]");
+        final BlueprintBlockState lanternRest = bs("minecraft:lantern[hanging=false]"); // RESTING lanterns (no support risk)
 
-        // ── HALF-WIDTH per z-row — carves the tapered, rounded hull silhouette.
-        //    hw=2 → full beam (x=0..4); hw=1 → x=1..3; hw=0 → centre keel only.
-        //    Stern (z=0) and bow (z=12) pinch to a single keel cell.
-        final int[] hw = { 0, 1, 1, 2, 2, 2, 2, 2, 2, 2, 1, 1, 0 };
+        // ── HALF-WIDTH per z-row — carves the ship silhouette: a wide flat transom at
+        //    the stern (z=0..1, hw=2 → x=1..5), a full beam amidships (z=2..12, hw=3 →
+        //    x=0..6), and a long graceful taper to a pointed bow (z=13..18). hw[z] is
+        //    the cells each side of the centreline.
+        final int[] hw = { 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 2, 1, 1, 0, 0 };
 
-        // ── 1) WATER BED (y=0) under the whole footprint (structural → free) ─────
+        // ── 1) WATER BED (y=0) under the whole footprint (structural → prints free).
         floor(b, 0, x0, z0, x1, z1, WATER);
 
-        // ── 2) KEEL (y=1) — a single planked centre spine the full length, the
-        //    rounded bottom of the hull. Bow/stern tips are keel-only (hw=0).
+        // ── 2) HULL BOTTOM / HOLD FLOOR (y=1) — planked across each row's beam: the
+        //    rounded bottom of the hull AND the floor you stand on in the hold.
         for (int z = z0; z <= z1; z++) {
             int half = hw[z];
-            if (half == 0) {
-                b.set(cx, keelY, z, planks);                 // pinched tip → keel cell
-            } else {
-                // keel course: full beam at y=1 forms the rounded bottom
-                line(b, keelY, cx - half, z, cx + half, z, planks);
-            }
+            if (half == 0) b.set(cx, floorY, z, planks);
+            else line(b, floorY, cx - half, z, cx + half, z, planks);
         }
 
-        // ── 3) HULL SIDES (y=2) — flared plank walls along each row's beam edges,
-        //    so the hull holds an open interior (deck above) and reads curved. Tip
-        //    rows (hw=0/1) close to a point at bow & stern.
+        // ── 3) HULL SIDES (y=2..4) — port & starboard plank walls along each row's
+        //    beam edge, enclosing a 3-tall open HOLD interior. Tip rows close to a
+        //    centre post; the stern transom and a raised bow stem cap the ends.
         for (int z = z0; z <= z1; z++) {
             int half = hw[z];
             if (half <= 0) {
-                b.set(cx, sideY, z, planks);                 // tip post
+                pillar(b, cx, z, hullY0, hullY1, planks);          // bow/stern tip post
             } else {
-                b.set(cx - half, sideY, z, planks);          // port side
-                b.set(cx + half, sideY, z, planks);          // starboard side
+                pillar(b, cx - half, z, hullY0, hullY1, planks);   // port wall
+                pillar(b, cx + half, z, hullY0, hullY1, planks);   // starboard wall
             }
         }
-        // close the very bow & stern faces so the hull doesn't gape (stem/transom)
-        b.set(cx, sideY, sternZ, planks);
-        b.set(cx, sideY, sternZ + 1, planks);                // transom fill
-        b.set(cx, sideY, bowZ, planks);                      // raised stem post (cutwater)
-        b.set(cx, sideY + 1, bowZ, planks);
+        // stern transom — close the flat back face across the stern beam (y=2..4).
+        for (int y = hullY0; y <= hullY1; y++) {
+            line(b, y, cx - hw[sternZ], sternZ, cx + hw[sternZ], sternZ, planks);
+        }
+        // bow stem / cutwater — a raised stem post at the pointed bow.
+        pillar(b, cx, bowZ, hullY0, hullY1 + 1, planks);
+        pillar(b, cx, bowZ - 1, hullY0, hullY1, planks);
 
-        // ── 4) DECK (y=3) — spruce-plank walkable surface spanning each row's beam,
-        //    a clean ship-shaped floor over the open hull (skip outer cells per the
-        //    taper). Tip rows lay a single deck cell so the deck reads continuous.
+        // ── 4) MAIN DECK (y=5) — spruce-plank walkable surface over the hold, spanning
+        //    each row's beam, with a single HATCH cell left open amidships (the hold
+        //    access, step 5). Tip rows lay a single deck cell so the deck reads continuous.
+        final int hatchX = cx + 2, hatchZ = 8;                     // (5,_,8): starboard, amidships
         for (int z = z0; z <= z1; z++) {
             int half = hw[z];
-            if (half <= 0) {
-                b.set(cx, deckY, z, sprucePl);
-            } else {
-                line(b, deckY, cx - half, z, cx + half, z, sprucePl);
+            if (half <= 0) { b.set(cx, deckY, z, sprucePl); continue; }
+            for (int x = cx - half; x <= cx + half; x++) {
+                if (x == hatchX && z == hatchZ) continue;          // leave the hold hatch open
+                b.set(x, deckY, z, sprucePl);
             }
         }
 
-        // ── 5) RAILINGS — oak-fence rails along both gunwales (the beam edges at
-        //    midships, z=3..9 where hw=2) plus the foredeck. Each rail run is ≥2
-        //    fences so every fence self-reconciles at print. Bow & stern stay open
-        //    for the cabin/figurehead. Rails sit one block above the deck (y=4).
-        final int railY = deckY + 1;                         // 4
-        for (int z = 3; z <= 9; z++) {
-            b.set(cx - 2, railY, z, fence);                  // port gunwale rail
-            b.set(cx + 2, railY, z, fence);                  // starboard gunwale rail
+        // ── 5) HOLD LADDER — a working ladder from the deck hatch down to the hold
+        //    floor, mounted on the INSIDE of the starboard hull. facing=west → it
+        //    attaches to facing.getOpposite()==EAST at (cx+3, y, hatchZ) (the starboard
+        //    hull plank, and the deck plank above) — all sturdy full faces. It runs
+        //    y=2..5: the y=5 rung sits in the open hatch so you climb straight out onto
+        //    the deck, and the bottom lands you on the hold floor (y=1). THIS is the
+        //    basement access the old "for-show" ladder lacked (it floated on the deck
+        //    underside, reaching nothing).
+        for (int y = hullY0; y <= deckY; y++) {
+            b.set(hatchX, y, hatchZ, ladderW);
         }
-        // foredeck cross-rail near the bow (z=10) tying the two gunwales
-        line(b, railY, cx - 1, 10, cx + 1, 10, fence);
 
-        // ── 6) AFT QUARTERDECK + CAPTAIN'S CABIN (stern, z=1..3) — a raised deck
-        //    over the stern with a small glass-windowed cabin, reached by a ladder.
-        //    Raised deck floor at y=4 over z=1..3, walls y=5..6, slab roof y=7.
-        final int cabZ0 = 1, cabZ1 = 3;
-        floor(b, deckY + 1, cx - 1, cabZ0, cx + 1, cabZ1, planks);   // raised aft deck (y=4)
-        // cabin wall ring y=5..6 over the 3×3 aft block (interior left open → enterable)
-        for (int y = deckY + 2; y <= deckY + 3; y++) {               // y=5..6
-            walls(b, cx - 1, cabZ0, cx + 1, cabZ1, y, y, planks);
+        // ── 6) GUNWALE RAILINGS (y=6) — oak-fence rails along both gunwales forward of
+        //    the cabin (z=5..14; the beam edges x=cx∓hw). Each run is many fences long →
+        //    every fence self-reconciles at print.
+        for (int z = 5; z <= 14; z++) {
+            b.set(cx - hw[z], railY, z, fence);                    // port rail
+            b.set(cx + hw[z], railY, z, fence);                    // starboard rail
         }
-        // glass-BLOCK windows in the cabin side & aft walls (full blocks, render-safe).
-        // The {@link #walls} ring above already set these cells with planks; overwrite
-        // with glass so they read as windows.
-        b.set(cx - 1, deckY + 2, cabZ0 + 1, glass);                  // port window (y=5)
-        b.set(cx + 1, deckY + 2, cabZ0 + 1, glass);                  // starboard window
-        b.set(cx, deckY + 2, cabZ0, glass);                          // stern (transom) window
-        // CABIN ENTRY — the wall ring (walls()) sealed the full 3×3, leaving only the
-        // single centre column (cx, z=cabZ0+1) as cabin interior; the air-skip rule means
-        // a doorway can't be carved back out of the placed wall. So the cabin is entered
-        // from ABOVE through an open roof hatch. The hatch MUST sit directly over that
-        // interior column (cx, z=cabZ0+1) — a previous version put it at the forward-centre
-        // (cx, cabZ1), which dropped onto the solid forward wall and sealed the cabin (the
-        // hatch-over-a-wall bug). Leave (cx, cabZ0+1) open in the y=7 slab roof so the drop
-        // lands in the cabin interior.
-        final int hatchZ = cabZ0 + 1;                                // z=2, over the interior
-        for (int z = cabZ0; z <= cabZ1; z++) {
-            for (int x = cx - 1; x <= cx + 1; x++) {
-                if (x == cx && z == hatchZ) continue;               // open roof hatch (centre, over interior)
-                b.set(x, deckY + 4, z, slabTop);                    // y=7 slab roof
+
+        // ── 7) STERN CAPTAIN'S CABIN (z=1..4) — a real walk-in cabin on the main deck:
+        //    a plank wall ring (x=1..5) y=6..7 with a DOORWAY left OPEN in the forward
+        //    wall (carving air into a placed wall is a no-op, so we skip those cells in
+        //    the loop), glass-block windows, a slab roof at y=8, and an oak door you walk
+        //    straight in through from the main deck.
+        final int cabX0 = cx - 2, cabX1 = cx + 2, cabZ0 = 1, cabZ1 = 4;
+        for (int y = railY; y <= railY + 1; y++) {                 // y=6..7 walls
+            for (int z = cabZ0; z <= cabZ1; z++) {
+                for (int x = cabX0; x <= cabX1; x++) {
+                    boolean ring = (x == cabX0 || x == cabX1 || z == cabZ0 || z == cabZ1);
+                    boolean doorway = (x == cx && z == cabZ1);     // forward-centre doorway (both halves)
+                    if (ring && !doorway) b.set(x, y, z, planks);
+                }
             }
         }
-        // ladder up onto the quarterdeck at its starboard-front corner. facing=east so it
-        // attaches to facing.getOpposite()==WEST at (cx, deckY+1, cabZ1) — the raised-deck
-        // plank to its west (a sturdy full vertical face); a north-facing ladder here would
-        // attach to (cx+1, deckY+1, cabZ1+1), the open main-deck edge (air), and pop off.
-        b.set(cx + 1, deckY + 1, cabZ1, ladderE);                   // ladder up onto the quarterdeck
+        b.set(cabX0, railY, cabZ0 + 1, glass);                     // port window
+        b.set(cabX1, railY, cabZ0 + 1, glass);                     // starboard window
+        b.set(cx,    railY, cabZ0, glass);                         // stern (transom) window
+        floor(b, railY + 2, cabX0, cabZ0, cabX1, cabZ1, slabTop);  // y=8 slab roof
+        door2(b, cx, railY, cabZ1, "oak", "S");                    // walk-in door (faces +z, onto the deck)
 
-        // ── 7) SHIP'S WHEEL — at the front of the quarterdeck (z=4) a fence "binnacle"
-        //    post with an open trapdoor as the wheel, facing forward over the deck.
-        b.set(cx, deckY + 1, 4, fence);                             // wheel stand post
-        b.set(cx, deckY + 2, 4, wheelTrap);                        // the wheel (open trapdoor)
+        // ── 8) SHIP'S WHEEL — a fence binnacle + open-trapdoor wheel just forward of the
+        //    cabin door, on the main deck centreline.
+        b.set(cx, railY, 5, fence);
+        b.set(cx, railY + 1, 5, wheelTrap);
 
-        // ── 8) MASTS — two oak-log masts rising from the deck centreline: a tall
-        //    MAINMAST amidships (z=6) and a shorter FOREMAST forward (z=9).
-        final int mainZ = 6, foreZ = 9;
-        final int mainTopY = 12, foreTopY = 10;
-        pillar(b, cx, mainZ, deckY + 1, mainTopY, logY);            // mainmast y=4..12
-        pillar(b, cx, foreZ, deckY + 1, foreTopY, logY);           // foremast y=4..10
-
-        // ── 9) YARDS + SAILS — horizontal oak-log yards across each mast carrying
-        //    rectangular WHITE-WOOL sails hung beneath. The sails curve slightly
-        //    (offset rows) to read as billowing in the wind.
-        // MAINSAIL — lower yard at y=10 (x=0..4), upper yard at y=12 (x=1..3).
-        line(b, 10, cx - 2, mainZ, cx + 2, mainZ, logX);           // main lower yard (beam-wide)
-        line(b, 12, cx - 1, mainZ, cx + 1, mainZ, logX);           // main upper yard (topgallant)
-        // lower mainsail: a 5-wide × 3-tall wool sheet hung y=7..9 under the lower yard,
-        // billowing forward (+z) at its belly.
-        for (int y = 7; y <= 9; y++) {
-            int belly = (y == 8) ? 1 : 0;                          // mid-course bulges forward
-            line(b, y, cx - 2, mainZ + belly, cx + 2, mainZ + belly, sail);
+        // ── 9) FORECASTLE — a short raised foredeck (planks at y=6 over z=15..16) with a
+        //    cross rail, giving the bow a proper raised head.
+        for (int z = 15; z <= 16; z++) {
+            line(b, railY, cx - hw[z], z, cx + hw[z], z, planks);
         }
-        // upper mainsail (topsail): 3-wide × 1-tall wool sheet at y=11 under the upper yard
-        line(b, 11, cx - 1, mainZ, cx + 1, mainZ, sail);
-        // FORESAIL — yard at y=8 (x=0..4); a 5-wide × 2-tall sail hung y=6..7, billowing.
-        line(b, 8, cx - 2, foreZ, cx + 2, foreZ, logX);            // fore yard
-        for (int y = 6; y <= 7; y++) {
-            int belly = (y == 7) ? 1 : 0;
-            line(b, y, cx - 2, foreZ + belly, cx + 2, foreZ + belly, sail);
-        }
+        line(b, railY + 1, cx - 1, 16, cx + 1, 16, fence);         // foredeck rail
 
-        // ── 10) RIGGING — chain stays from each masthead down to the gunwales /
-        //    bowsprit, plus fence shrouds, reading as the rope rigging. Chains &
-        //    fences are NOT iron-bars, so they're render-safe regardless of neighbour.
-        // mainmast forestay: a chain run climbing from the bow toward the masthead.
-        b.set(cx, 11, mainZ + 1, chain);
-        b.set(cx, 11, mainZ + 2, chain);
-        // mainmast backstay to the quarterdeck.
-        b.set(cx, 11, mainZ - 1, chain);
-        // foremast forestay toward the bowsprit.
-        b.set(cx, 9, foreZ + 1, chain);
-        b.set(cx, 9, foreZ + 2, chain);
-        // shroud "rope ladders" — fence runs from gunwale up to each masthead side.
-        pillar(b, cx - 2, mainZ, railY + 1, 9, fence);             // port main shroud
-        pillar(b, cx + 2, mainZ, railY + 1, 9, fence);             // starboard main shroud
-        pillar(b, cx - 2, foreZ, railY + 1, 7, fence);             // port fore shroud
-        pillar(b, cx + 2, foreZ, railY + 1, 7, fence);             // starboard fore shroud
+        // ── 10) MASTS — three oak-log masts on the deck centreline: a tall MAINMAST
+        //    amidships, a FOREMAST forward, a shorter MIZZEN aft.
+        final int mizzenZ = 6, mainZ = 10, foreZ = 14;
+        final int mizzenTop = 11, mainTop = 16, foreTop = 13;
+        pillar(b, cx, mizzenZ, railY, mizzenTop, logY);            // y=6..11
+        pillar(b, cx, mainZ,   railY, mainTop,   logY);            // y=6..16
+        pillar(b, cx, foreZ,   railY, foreTop,   logY);            // y=6..13
 
-        // ── 11) BOWSPRIT — an oak-log (axis z) spearing forward & up off the bow,
-        //    with a small jib of wool slung beneath it and a forestay chain.
-        b.set(cx, deckY + 1, bowZ, logZ);                          // bowsprit base (y=4)
-        b.set(cx, deckY + 2, bowZ, logZ);                          // bowsprit rises off the stem (y=5)
-        b.set(cx, deckY + 1, 11, sail);                            // jib sail under the bowsprit
-        b.set(cx, deckY + 2, 10, chain);                           // forestay chain to the foremast line
+        // ── 11) YARDS + SAILS — big, CLEAN rectangular white-wool sails (no ragged belly
+        //    offsets) hung beneath horizontal oak-log yards. Sails over-stamp the mast at
+        //    their levels (the mast reads behind the canvas); the mast shows above each
+        //    sail and at the truck.
+        // MAINMAST: mainsail 5-wide x 3-tall (y=9..11) under a beam-wide yard (y=12);
+        //   topsail 3-wide x 2-tall (y=13..14) under an upper yard (y=15).
+        line(b, 12, cx - 2, mainZ, cx + 2, mainZ, logX);
+        for (int y = 9; y <= 11; y++) line(b, y, cx - 2, mainZ, cx + 2, mainZ, sail);
+        line(b, 15, cx - 1, mainZ, cx + 1, mainZ, logX);
+        for (int y = 13; y <= 14; y++) line(b, y, cx - 1, mainZ, cx + 1, mainZ, sail);
+        // FOREMAST: foresail 5-wide x 3-tall (y=9..11) under a yard (y=12).
+        line(b, 12, cx - 2, foreZ, cx + 2, foreZ, logX);
+        for (int y = 9; y <= 11; y++) line(b, y, cx - 2, foreZ, cx + 2, foreZ, sail);
+        // MIZZEN: mizzensail 3-wide x 3-tall (y=7..9) under a yard (y=10).
+        line(b, 10, cx - 1, mizzenZ, cx + 1, mizzenZ, logX);
+        for (int y = 7; y <= 9; y++) line(b, y, cx - 1, mizzenZ, cx + 1, mizzenZ, sail);
 
-        // ── 12) DECK CARGO + DETAILS — barrels and a chest as cargo amidships,
-        //    a crafting table (carpenter's bench), an anvil (smith), kept off the
-        //    centreline so the deck stays walkable; lanterns light the ship.
-        b.set(cx - 1, deckY + 1, 7, BARREL);                       // cargo barrel (port)
-        b.set(cx + 1, deckY + 1, 7, BARREL);                       // cargo barrel (starboard)
-        b.set(cx - 1, deckY + 2, 7, BARREL);                       // stacked
-        b.set(cx + 1, deckY + 1, 5, CHEST);                        // ship's chest
-        b.set(cx - 1, deckY + 1, 5, CRAFTING_TABLE);               // carpenter's bench
-        b.set(cx - 1, deckY + 1, 8, ANVIL);                        // ship's anvil
+        // ── 12) RIGGING — chain stays fore/aft of each masthead + fence shrouds from the
+        //    gunwales up to the mast tops (the rope ladders). Chains & fences aren't
+        //    iron-bars, so they're render-safe regardless of neighbour.
+        b.set(cx, mainTop - 2, mainZ + 1, chain);  b.set(cx, mainTop - 2, mainZ - 1, chain); // main stays
+        b.set(cx, foreTop - 2, foreZ + 1, chain);  b.set(cx, foreTop - 2, foreZ - 1, chain); // fore stays
+        b.set(cx, mizzenTop - 2, mizzenZ - 1, chain);                                        // mizzen backstay
+        // Shrouds rise from the GUNWALE (x=cx∓hw) so they FRAME the sail instead of clipping
+        // it: main shrouds at x=0/6 (hw=3) leave the 5-wide mainsail whole; fore shrouds at
+        // x=1/5 (hw=2) frame the narrower foresail.
+        pillar(b, cx - 3, mainZ, railY + 1, 11, fence); pillar(b, cx + 3, mainZ, railY + 1, 11, fence); // main shrouds
+        pillar(b, cx - 2, foreZ, railY + 1, 11, fence); pillar(b, cx + 2, foreZ, railY + 1, 11, fence); // fore shrouds
 
-        // ── 13) LANTERNS — a stern lantern atop the cabin, a masthead lantern, and a
-        //    bow lantern, so the ship reads lit. Stern & masthead lanterns hang from a
-        //    chain backed by a solid block above (mast / cabin roof); bow lantern rests.
-        b.set(cx, deckY + 5, cabZ0 + 1, LANTERN);                  // stern poop lantern (on cabin roof)
-        b.set(cx, mainTopY + 1, mainZ, LANTERN);                   // mainmast-top lantern
-        b.set(cx, foreTopY + 1, foreZ, LANTERN);                   // foremast-top lantern
-        b.set(cx, deckY + 1, bowZ - 1, LANTERN);                   // bow lantern on the foredeck
+        // ── 13) BOWSPRIT — an oak-log (axis z) spar off the bow stem head, with a small
+        //    wool jib slung just aft of it. (Distinct cells: spar at the z=18 tip, jib at
+        //    z=17 — an earlier version put the jib on the spar's own cell and erased it.)
+        b.set(cx, railY, bowZ, logZ);                              // bowsprit spar at the bow tip (y=6)
+        b.set(cx, railY + 1, bowZ, logZ);                          // rising off the stem head (y=7)
+        b.set(cx, railY, bowZ - 1, sail);                          // jib slung just aft (z=17)
 
-        // ── 14) LADDER BELOW DECKS — a hold ladder mounted on the INSIDE of the
-        //    starboard hull amidships so the hold reads as enterable. facing=west so it
-        //    attaches to facing.getOpposite()==EAST at (cx+2, sideY, mainZ+1), the
-        //    starboard hull plank (a sturdy full vertical face). The old centreline
-        //    north-facing ladder attached to open hold air and popped on update — a
-        //    ladder can't hang off the horizontal deck underside.
-        b.set(cx + 1, sideY, mainZ + 1, ladderW);                  // hold ladder (on the starboard hull)
+        // ── 14) DECK CARGO + DETAILS — barrels, a chest, a carpenter's bench and an anvil
+        //    amidships, kept off the centreline AND clear of the hatch so the deck walks.
+        b.set(cx - 2, railY, 11, BARREL); b.set(cx + 2, railY, 11, BARREL);
+        b.set(cx - 2, railY + 1, 11, BARREL);
+        b.set(cx + 2, railY, 12, CHEST);
+        b.set(cx - 2, railY, 12, CRAFTING_TABLE);
+        b.set(cx - 2, railY, 10, ANVIL);
+
+        // ── 15) LANTERNS — RESTING (hanging=false) lanterns at each masthead, on the
+        //    cabin roof, and at the bow, so the ship reads lit. A resting lantern sits ON
+        //    a block (mast truck / roof / a post), so none can fail the hanging-lantern
+        //    support rule.
+        b.set(cx, mainTop + 1, mainZ, lanternRest);                // mainmast truck
+        b.set(cx, foreTop + 1, foreZ, lanternRest);                // foremast truck
+        b.set(cx, mizzenTop + 1, mizzenZ, lanternRest);            // mizzen truck
+        b.set(cx, railY + 3, cabZ0 + 1, lanternRest);              // stern lantern (on the cabin roof)
+        b.set(cx, railY + 1, 15, fence);                           // bow lantern post (on the forecastle)
+        b.set(cx, railY + 2, 15, lanternRest);                     // bow lantern
 
         return b.build();
     }

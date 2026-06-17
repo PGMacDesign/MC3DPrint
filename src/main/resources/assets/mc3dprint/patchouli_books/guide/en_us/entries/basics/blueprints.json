@@ -12,7 +12,7 @@
     {
       "type": "patchouli:text",
       "title": "Naming & Tier",
-      "text": "Every written disc shows its $(l)tier$() — the highest material tier among its blocks (one diamond block in a pile of stone still reads as that tier). That's the lowest machine tier that can print all of it.$(br2)To $(l)rename$() a disc, drop it in an $(item)Anvil$() and type a name — just $(l)1 level$() of XP. The blueprint itself is untouched; only the label changes (clear the field to revert)."
+      "text": "Every written disc shows its $(l)tier$() — the highest material tier among its blocks (one diamond block in a pile of stone still reads as that tier). That's the lowest machine tier that can print all of it.$(br2)It also shows a $(l)Print Cost$() in that top tier — the total Filament the print needs if you feed it a single top-tier spool (cheaper blocks fold in at the down-conversion rate). Free structural blocks like water and crops cost nothing.$(br2)To $(l)rename$() a disc, drop it in an $(item)Anvil$() and type a name — just $(l)1 level$() of XP."
     },
     {
       "type": "patchouli:text",

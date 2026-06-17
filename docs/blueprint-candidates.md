@@ -151,7 +151,7 @@ utility rooms; most infrastructure; T7 material tier.
 | Name | Size→tier | Mat | Palette | Popularity | Recreatable |
 |---|---|---|---|---|---|
 | prismarine_monument_fragment | 13×13 → T6 | T5 | prismarine variants, sea lanterns | monument recognizability | Med |
-| conduit_shrine | 7×7 → T5 | T5 | prismarine, sea lanterns, conduit | 4netplayers conduit guide | Easy |
+| underwater_conduit_shrine | 7×7 → T5 | T5 | prismarine, sea lanterns, conduit | 4netplayers conduit guide | Easy |
 | dock_pier | 11×7 → T6 | T1 | spruce planks/logs, fences, barrels, lanterns | coastal staple; multiple guides | Easy |
 | fishing_hut | 7×7 → T5 | T1 | spruce, oak, barrels, lanterns, trapdoors | cottagecore/lakeside trend | Easy |
 | sailing_ship | 13×5 → T6 | T1 | oak/spruce planks, wool sails, ladders | ship packs 48–60k dl | Hard |

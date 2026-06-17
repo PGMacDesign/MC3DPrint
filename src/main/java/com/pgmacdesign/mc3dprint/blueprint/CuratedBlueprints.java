@@ -129,8 +129,8 @@ public final class CuratedBlueprints {
             "dock_pier",
             // Phase 2 — Category E (fishing_hut)
             "fishing_hut",
-            // Phase 2 — Category E (conduit_shrine)
-            "conduit_shrine",
+            // Phase 2 — Category E (underwater_conduit_shrine)
+            "underwater_conduit_shrine",
             // Phase 2 — Category E (ocean_ruins)
             "ocean_ruins",
             // Phase 2 — Category E (coral_garden)

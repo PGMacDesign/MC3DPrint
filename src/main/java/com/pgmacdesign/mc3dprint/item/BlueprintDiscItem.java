@@ -2,6 +2,7 @@ package com.pgmacdesign.mc3dprint.item;
 
 import com.pgmacdesign.mc3dprint.blueprint.Blueprint;
 import com.pgmacdesign.mc3dprint.blueprint.BlueprintBlockState;
+import com.pgmacdesign.mc3dprint.fu.FuConversion;
 import com.pgmacdesign.mc3dprint.fu.FuValue;
 import com.pgmacdesign.mc3dprint.fu.FuValueRegistry;
 import net.minecraft.ChatFormatting;
@@ -17,6 +18,8 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
 
 import javax.annotation.Nullable;
 import java.util.List;
@@ -37,6 +40,7 @@ public class BlueprintDiscItem extends Item {
     public static final String TAG_SIZE = "Size";
     public static final String TAG_BLOCK_COUNT = "BlockCount";
     public static final String TAG_TIER = "Tier";
+    public static final String TAG_PRINT_COST = "PrintCost";
     public static final String TAG_LOCKED = "Locked";
 
     public BlueprintDiscItem(Properties properties) {
@@ -73,6 +77,7 @@ public class BlueprintDiscItem extends Item {
         tag.putIntArray(TAG_SIZE, new int[]{blueprint.sizeX(), blueprint.sizeY(), blueprint.sizeZ()});
         tag.putInt(TAG_BLOCK_COUNT, blueprint.blockCount());
         tag.putInt(TAG_TIER, blueprintTier(blueprint));
+        tag.putInt(TAG_PRINT_COST, blueprintPrintCost(blueprint));
         return true;
     }
 
@@ -102,6 +107,80 @@ public class BlueprintDiscItem extends Item {
             // FU registry may not be bound yet (e.g. early datagen) — fall back to 1
         }
         return max;
+    }
+
+    /**
+     * The blueprint's total print cost, expressed as a single number of
+     * {@link #blueprintTier top-tier} FU — i.e. how much of the highest-tier
+     * filament a player needs to print the whole thing. Each block is summed
+     * with multiplicity (500 stone counts 500×) in tier-1 base units, then the
+     * total is converted up to the top tier with a ceiling divide (down-only
+     * spending means any remainder rounds up a whole top-tier unit).
+     *
+     * <p>Free blocks contribute 0, mirroring the printer: itemless/structural
+     * matter (water, crops, farmland) and anything the FU registry can't price
+     * (unprintable in strict mode; curated blueprints have none). Returns 0 if
+     * the FU registry isn't bound (e.g. early datagen).
+     */
+    public static int blueprintPrintCost(Blueprint blueprint) {
+        try {
+            int topTier = blueprintTier(blueprint);
+            int ratio = FuConversion.ratio();
+
+            // Tally each palette index with multiplicity over the dense block grid.
+            int[] counts = new int[blueprint.palette().size()];
+            blueprint.forEachBlock((pos, paletteIndex) -> counts[paletteIndex]++);
+
+            long totalBase = 0;
+            for (int i = 0; i < counts.length; i++) {
+                int count = counts[i];
+                if (count == 0) {
+                    continue;
+                }
+                var resolved = blueprint.palette().get(i).resolve();
+                if (resolved.isEmpty()) {
+                    continue;
+                }
+                BlockState state = resolved.get();
+                if (isStructuralMatter(state)) {
+                    continue; // itemless / crops / farmland — prints free
+                }
+                Item item = state.getBlock().asItem();
+                if (item == Items.AIR) {
+                    continue;
+                }
+                Optional<FuValue> value = FuValueRegistry.valueOf(new ItemStack(item));
+                if (value.isEmpty()) {
+                    continue; // unpriced — strict mode can't print it; skip conservatively
+                }
+                FuValue fv = value.get();
+                totalBase += FuConversion.toBase(fv.fu(), fv.tier(), ratio) * count;
+            }
+
+            long cost = FuConversion.fromBaseCeil(totalBase, topTier, ratio);
+            return FuConversion.clampToInt(cost);
+        } catch (RuntimeException ignored) {
+            // FU registry may not be bound yet (e.g. early datagen) — fall back to 0
+            return 0;
+        }
+    }
+
+    /**
+     * Mirrors {@code PrinterBlockEntity.isStructuralMatter}: blocks that print
+     * free — itemless blocks (water/fire/wall-torches, {@code asItem()==AIR})
+     * and tilled/planted growth (crops, stems, saplings, farmland, dirt path).
+     */
+    private static boolean isStructuralMatter(BlockState state) {
+        if (state.isAir()) {
+            return false;
+        }
+        if (state.getBlock().asItem() == Items.AIR) {
+            return true;
+        }
+        Block block = state.getBlock();
+        return block instanceof net.minecraft.world.level.block.BushBlock     // crops/stems/saplings/flowers/wart
+                || block instanceof net.minecraft.world.level.block.FarmBlock      // farmland
+                || block instanceof net.minecraft.world.level.block.DirtPathBlock; // grass/dirt path
     }
 
     public static boolean clearBlueprint(ItemStack stack) {
@@ -154,6 +233,9 @@ public class BlueprintDiscItem extends Item {
         int tier = tag.getInt(TAG_TIER);
         if (tier > 0) {
             tooltip.add(Component.translatable("tooltip.mc3dprint.disc_tier", tier).withStyle(tierFormat(tier)));
+            int printCost = tag.getInt(TAG_PRINT_COST);
+            tooltip.add(Component.translatable("tooltip.mc3dprint.disc_print_cost", printCost, tier)
+                    .withStyle(ChatFormatting.LIGHT_PURPLE));
         }
         if (tag.getBoolean(TAG_LOCKED)) {
             tooltip.add(Component.translatable("tooltip.mc3dprint.disc_locked").withStyle(ChatFormatting.GOLD));
