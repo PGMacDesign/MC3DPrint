@@ -85,3 +85,29 @@ Before the next in-game test, swept ALL 132 builds for the unbacked-ladder class
 Root cause across most: the `facing` was set TOWARD the backing wall instead of away from it (a ladder attaches to `facing.getOpposite()`). Config verified current (game-instance `mc3dprint-common.toml` already has the grass_block/mycelium FU values), jar rebuilt + redeployed.
 
 *Confirmed OK (spot-checked, no action):* villager_trading_hall, fishery_pond, koi_pond, small_farm, bee_apiary, scarecrow (farms); fishing_hut, japanese_tea_house, railway_station, victorian_townhouse (the buried-door audit flags are all **legit reachable raised entrances**, not traps); lighthouse, watchtower, guard_tower, copper_clocktower, purpur_tower, manor_house, victorian_townhouse, copper_observatory, windmill, japanese_pagoda (multi-level access all sound). **No stair-facing bugs of the tavern/stable kind remain** — every other interior climb is a ladder; the failures above are backing/run-length/destination, not facing.
+
+---
+
+## Retest round 2 (2026-06-16, second in-game pass)
+PGMac retested in-game; this round's findings + the audit-surfaced extras. **Built 3 of the requested guardrails as gated audits** (plant-support, reachability, bed-clearance) — see the `blueprint-qa-audits` memory — and they surfaced more instances than were spotted by eye.
+
+**STAIR FACING CONVENTION CORRECTED:** I had it backwards. A stair **ascends toward its `facing`** (raised step on the facing side), so a northward climb = `facing=north`. (My earlier "tall riser opposite facing" was wrong; PGMac confirmed `facing=south`-for-northward read backwards on both tavern_inn and stable_horse.)
+
+- [x] tavern_inn — flipped the 6-step climb to `facing=north` (kept the position/hatch/landing fixes).
+- [x] stable_horse — replaced the (mis-oriented) loft stairs with a wall-backed **ladder** up the west-middle stall (PGMac preferred a ladder — more authentic); ladder audit 0-flagged.
+- [x] mushroom_island_hut — threshold step into the hut: the agent set `facing=north` (riser toward the entering player → still blocked); corrected to `facing=south` (player enters walking south).
+- [x] greek_quartz_temple — dropped the useless solid bottom plinth (verified empty) and re-based down so it's enterable; also fixed a latent sealed cella door (`set(air)` no-op).
+- [x] elven_treehouse — bed was embedded (glass over the foot + wedged in the wall); relocated into open floor with headroom. Bed audit clean.
+- [x] modern_glass_villa — was sealed on both floors; added a ground-floor door + a backed ladder to the 2nd floor. Reachable.
+- [x] copper_clocktower — sealed; added a base door into the shaft (climb the existing ladder up).
+- [x] bee_apiary — flowers were on planks (floated); laid grass_block under each → garden beds.
+- [x] cherry_grove_cottage — pink_petals on planks → moss_block patches.
+- [x] koi_pond — sugar_cane on stone_bricks → dirt + adjacent water.
+- [x] cemetery_plot — dead_bush on a wall → relocated to ground.
+- [x] greenhouse — 2 stray crops sat on corner lanterns → removed (bed layout intact).
+- [x] diamond_vault — iron door opened into a solid inner wall (sealed); carved a real doorway + opened the cage so the chamber is enterable.
+- [x] sailing_ship — cabin roof-hatch sat over a wall → recentered it; below-deck bilge is intentional (allowlisted).
+
+**Guardrails now in place (gated audits):** `-DauditFoundations`, `-DauditLadders`, `-DauditPlantSupport`, `-DauditReachability` (hard-throws, with an intentional-seal allowlist), `-DauditBeds`. All currently clean (bed audit's only flags are iron_farm's by-design villager beds). 69 gametests green, 132 blueprints, jar rebuilt + redeployed.
+
+**Recurring bug class noted:** `Builder.set(pos, AIR)` is a no-op, so "carving" an opening by overwriting a wall with air leaves it solid (door/hatch into stone). Fix by skipping those cells in the wall loop. Hit on greek/copper/villa/diamond_vault/sailing_ship — the reachability audit catches it.
