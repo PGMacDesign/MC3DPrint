@@ -8145,20 +8145,19 @@ class CuratedBlueprintGenerator {
      *
      * <p>Layout (south = +z is the "front"/access side; cx=cz=4):
      * <ul>
-     *   <li><b>y=0</b> — solid stone foundation (9×9), with a central <b>water
-     *       channel</b> punched along Z at x=4 (z=1..7): the flow that carries
-     *       cut cane south to the hopper mouth.</li>
-     *   <li><b>Hopper + chest, y=0</b> — at the south end of the channel a hopper
-     *       (x=4, z=7) feeds a collection chest tucked at the south edge (z=8,
-     *       facing north), so every item the channel delivers is collected.</li>
-     *   <li><b>Central water column, y=1..2</b> — the channel's water rises as a
-     *       <b>source column</b> at x=4 (z=1..7) up through y=1 <em>and</em> y=2.
-     *       This is the fix for the vanilla {@code SugarCaneBlock#canSurvive}
-     *       check: the flanking sand now has water <b>horizontally adjacent at its
-     *       own level (y=1)</b> rather than only beneath it, so the cane survives
-     *       the printer's end-of-job neighbor reconcile instead of all popping. The
-     *       y=2 water source also gives the snapped 2nd-block cane a water cell to
-     *       drop into and flow south on.</li>
+     *   <li><b>y=0</b> — solid stone foundation (9×9) with a full <b>hopper LINE</b>
+     *       along the channel bottom (x=4, z=1..7), each facing south: it sucks the
+     *       cut cane floating in the water above and chains it south to the chest, so
+     *       cane is caught wherever the pistons knock it into the channel.</li>
+     *   <li><b>Collection chest, y=0</b> — at the south edge (x=4, z=8, facing north)
+     *       the hopper line empties into it.</li>
+     *   <li><b>Central water channel, y=1</b> — a single <b>source line</b> at x=4
+     *       (z=1..7), ONE layer, sitting on the hopper line. This satisfies vanilla
+     *       {@code SugarCaneBlock#canSurvive}: the flanking sand has water
+     *       <b>horizontally adjacent at its own level (y=1)</b>, so the cane survives.
+     *       (An earlier build also put water at y=2 — the cane's own level — which
+     *       flowed into the not-yet-placed cane during the print and washed a row out;
+     *       dropping to the single y=1 layer keeps the cane hydrated but clear.)</li>
      *   <li><b>Planting strips, y=1</b> — two rows of <b>sand</b> (x=3 and x=5,
      *       z=1..7) flanking the channel, each <b>directly beside</b> the x=4 water
      *       column at y=1 → always hydrated and canSurvive-valid. <b>Sugar cane</b>
@@ -8194,36 +8193,35 @@ class CuratedBlueprintGenerator {
         int cx = 4;                                    // central water-channel column
         int stripZ0 = 1, stripZ1 = 7;                  // planting / channel run along Z
 
-        // ── 1) STONE FOUNDATION at y=0, with the central WATER CHANNEL ───────
+        // ── 1) STONE FOUNDATION at y=0 ───────────────────────────────────────
         floor(b, 0, x0, z0, x1, z1, stone);
-        // central channel: water along Z at x=cx (z=1..6); the cut cane floats south.
-        for (int z = stripZ0; z <= stripZ1 - 1; z++) {
-            b.set(cx, 0, z, water);
-        }
 
-        // ── 2) HOPPER + COLLECTION CHEST at the SOUTH end, y=0 ───────────────
-        // The channel terminates over a hopper that feeds the chest. The hopper mouth
-        // (z=7) catches what the flow delivers; it points SOUTH (+z) into the chest
-        // tucked at the south edge (z=8). A hopper ejects toward its FACING, so to
-        // feed a chest one cell SOUTH it must face SOUTH (the old facing=north pointed
-        // it back up the channel into water and never reached the chest). The chest
-        // faces north so its front reads inward. (Air-skip means these overwrite the
-        // stone foundation cells.)
-        b.set(cx, 0, stripZ1, bs("minecraft:hopper[enabled=true,facing=south]")); // z=7 → feeds chest at z=8
+        // ── 2) HOPPER LINE (channel bottom) + COLLECTION CHEST, y=0 ──────────
+        // A full hopper LINE runs the whole length of the channel bottom (x=cx, z=1..7),
+        // each facing SOUTH so it BOTH sucks the cut cane floating in the water directly
+        // above it (y=1) AND chains the items south, hopper-to-hopper, into the chest at
+        // the south edge (z=8, facing north so its front reads inward). (Was a single
+        // hopper at the south end — cane the pistons knocked into the channel away from
+        // that one hopper just sat in the water and fell through / never reached the
+        // chest; the full line catches it wherever it lands.) Air-skip means these
+        // overwrite the stone foundation cells.
+        for (int z = stripZ0; z <= stripZ1; z++) {
+            b.set(cx, 0, z, bs("minecraft:hopper[enabled=true,facing=south]"));
+        }
         b.set(cx, 0, z1, chest);                                                   // collection chest, faces north
 
-        // ── 2b) CENTRAL WATER COLUMN at y=1..2 (THE canSurvive FIX) ──────────
-        // Raise the channel's water as a SOURCE column at x=cx through y=1 AND y=2
-        // along the planting rows (z=1..7). At y=1 this puts a water cell directly
-        // beside every sand cell (x=3 east-neighbour / x=5 west-neighbour) AT THE
-        // SAND'S OWN LEVEL — which is what vanilla SugarCaneBlock#canSurvive requires
-        // (water/frosted-ice horizontally adjacent to the soil). Previously the water
-        // sat only at y=0, beneath the sand, so canSurvive failed and the printer's
-        // end-of-job neighbor reconcile popped every cane. The y=2 water source also
-        // gives the snapped 2nd-block cane a water cell to drop into and flow south.
+        // ── 2b) CENTRAL WATER CHANNEL at y=1 (THE canSurvive FIX, one layer down) ──
+        // The channel's water is a SOURCE line at x=cx, y=1 along the planting rows
+        // (z=1..7) — ONE LAYER (y=1), sitting on the hopper line below. At y=1 it puts a
+        // water cell directly beside every sand cell (x=3 east-neighbour / x=5 west-
+        // neighbour) AT THE SAND'S OWN LEVEL — what vanilla SugarCaneBlock#canSurvive
+        // requires (water horizontally adjacent to the soil). The earlier build ALSO put
+        // a water source at y=2 (the cane's OWN level); during the print that water
+        // flowed into the not-yet-placed cane cells and washed a row out before it
+        // settled. Dropping to a single y=1 layer keeps the cane hydrated (survives) but
+        // clear of the cane itself, and still floats any cut cane over the hoppers.
         for (int z = stripZ0; z <= stripZ1; z++) {
-            b.set(cx, 1, z, water);                     // beside the sand at y=1 → cane survives
-            b.set(cx, 2, z, water);                     // catch + sweep the harvested cane south
+            b.set(cx, 1, z, water);                     // beside the sand at y=1 → cane survives; floats cut cane over the hoppers
         }
 
         // ── 3) PLANTING STRIPS (sand) + SUGAR CANE, flanking the channel ─────
