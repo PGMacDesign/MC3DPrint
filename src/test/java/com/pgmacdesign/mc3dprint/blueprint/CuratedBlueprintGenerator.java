@@ -7433,13 +7433,14 @@ class CuratedBlueprintGenerator {
             b.set(tx, 2, tz, bs("minecraft:" + f + "[half=upper]"));
         }
 
-        // ── 7) LIGHTING — chain-hung lanterns under the shelter beams + nook glow ──
-        // Two hanging lanterns drop over the central aisle (z=2) at x=3 & x=5 — between
-        // the hive columns (x=2/4/6) so they clear the hives — chained up to the beam
-        // grid at y=beamY. Plus a standing lantern by the nook.
+        // ── 7) LIGHTING — lanterns hung DIRECTLY under the shelter beams + nook glow ──
+        // Two hanging lanterns over the central aisle (z=2) at x=3 & x=5 — between the
+        // hive columns (x=2/4/6). They hang DIRECTLY off the y=beamY honeycomb-beam course
+        // (NO chain): a chain dropped them to y=2 (head height) so you couldn't walk under
+        // them; hanging straight off the beam puts them at y=3, one block above the
+        // player's head, so the aisle stays walkable. Plus a standing lantern by the nook.
         for (int lx : new int[]{3, 5}) {
-            b.set(lx, beamY - 1, cz - 2, CHAIN);          // chain under the centre beam (z=2)
-            b.set(lx, beamY - 2, cz - 2, HANGING_LANTERN);
+            b.set(lx, beamY - 1, cz - 2, HANGING_LANTERN); // hangs off the y=beamY beam → head clearance below
         }
         b.set(x0 + 1, 2, z0 + 1, LANTERN); // standing lantern atop the nook barrel area
 
