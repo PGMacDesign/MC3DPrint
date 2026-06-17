@@ -15,6 +15,16 @@ import net.minecraftforge.registries.RegistryObject;
 public final class ModCreativeTabs {
     public static final String AE2_MOD_ID = "ae2";
 
+    // Farm / functional-contraption builds are emitted LAST so they sit at the
+    // bottom of the creative tab — these are the discs that get iterated on and
+    // re-tested most, so keeping them grouped at the end makes them easy to find.
+    private static final java.util.Set<String> FARM_BUILDS = java.util.Set.of(
+            "iron_farm", "mob_xp_tower", "sugarcane_farm_auto", "pumpkin_melon_farm",
+            "cactus_farm", "bamboo_farm", "kelp_farm", "villager_trading_hall",
+            "animal_pen", "chicken_coop_auto", "fishery_pond", "tree_farm",
+            "mushroom_farm", "nether_wart_farm", "bee_apiary", "super_smelter",
+            "small_farm");
+
     public static final DeferredRegister<CreativeModeTab> CREATIVE_MODE_TABS =
             DeferredRegister.create(Registries.CREATIVE_MODE_TAB, MC3DPrint.MOD_ID);
 
@@ -59,13 +69,24 @@ public final class ModCreativeTabs {
 
                         // Curated blueprint discs — grab the bundled village-style
                         // builds directly in creative (survival finds them in loot).
+                        // Non-farm builds first, then the FARM_BUILDS pushed to the
+                        // bottom of the tab so the often-tested farms are easy to find.
+                        java.util.function.Consumer<String> emitDisc = name ->
+                                CuratedBlueprints.loadBundled(name).ifPresent(bp -> {
+                                    ItemStack disc = new ItemStack(ModItems.BLUEPRINT_DISC.get());
+                                    BlueprintDiscItem.writeBlueprint(disc,
+                                            CuratedBlueprints.uuidFor(MC3DPrint.MOD_ID, name), bp);
+                                    output.accept(disc);
+                                });
                         for (String name : CuratedBlueprints.CURATED_NAMES) {
-                            CuratedBlueprints.loadBundled(name).ifPresent(bp -> {
-                                ItemStack disc = new ItemStack(ModItems.BLUEPRINT_DISC.get());
-                                BlueprintDiscItem.writeBlueprint(disc,
-                                        CuratedBlueprints.uuidFor(MC3DPrint.MOD_ID, name), bp);
-                                output.accept(disc);
-                            });
+                            if (!FARM_BUILDS.contains(name)) {
+                                emitDisc.accept(name);
+                            }
+                        }
+                        for (String name : CuratedBlueprints.CURATED_NAMES) {
+                            if (FARM_BUILDS.contains(name)) {
+                                emitDisc.accept(name);
+                            }
                         }
 
                         // The in-game guidebook — only when Patchouli is installed.
