@@ -11129,10 +11129,17 @@ class CuratedBlueprintGenerator {
         // ── 1) STONE FOUNDATION at y=0 — grounded, no light leaks from below ──
         floor(b, 0, x0, z0, x1, z1, stone);
 
-        // ── 2) MYCELIUM FLOOR at y=1 — the grow medium ───────────────────────
-        // Mushrooms on mycelium survive at ANY light level, so even with a door the
-        // farm can't fizzle. (mycelium is FU-valued 2@1 and on-theme.)
-        floor(b, 1, ix0, iz0, ix1, iz1, mycelium);
+        // ── 2) MYCELIUM GROW FLOOR at y=0 — the grow medium, FLAT with the door sill ──
+        // The grow floor is the y=0 interior course (overwriting the stone foundation
+        // there — mycelium is still a solid, light-blocking block, so no leak). Laying it
+        // at y=0 (top elevation 1.0) makes it FLUSH with the door sill (the top of the y=0
+        // course under the door): you walk straight into the chamber FLAT. It used to sit
+        // at y=1, a full block ABOVE the sill, so entering forced a step UP and the player's
+        // head clipped the door's upper half (the door occupies sill+1). Flat fixes that and
+        // also gains a block of interior height (floor y=0 → roof y=4 = 3 tall). Mushrooms on
+        // mycelium survive at ANY light level, so the chamber still can't fizzle.
+        // (mycelium is FU-valued 2@1 and on-theme.)
+        floor(b, 0, ix0, iz0, ix1, iz1, mycelium);
 
         // ── 3) STONE WALL RING, y=1..3 — seals out skylight ─────────────────
         // A solid stone box (3 high) around the interior so no daylight enters. The
@@ -11172,26 +11179,27 @@ class CuratedBlueprintGenerator {
         for (int sx : gx) {
             for (int sz : gz) {
                 boolean red = ((sx + sz) / 2) % 2 == 0;   // alternate red/brown across the grid
-                b.set(sx, 2, sz, red ? redCap : brownCap);
+                b.set(sx, 1, sz, red ? redCap : brownCap); // planted on the y=0 mycelium
             }
         }
 
         // ── 7) COLLECTION CHEST just inside the door (y=2) ───────────────────
         // A chest at (cx, z=7) facing north for the reaped mushrooms. Honest semi-auto:
         // the player lets them spread on the dark mycelium, then reaps and replants by
-        // hand, and stores the haul here. (Sits on the mycelium at y=2, one cell inside
+        // hand, and stores the haul here. (Sits on the mycelium at y=1, one cell inside
         // the south wall, beside the door at x=doorX.)
-        b.set(cx, 2, iz1, chest);
+        b.set(cx, 1, iz1, chest);
 
         // ── 8) LABEL SIGN on the INNER face of the south wall (y=2) ──────────
         // Explains the honest workflow for THIS short chamber: dark + mycelium lets the
         // small mushrooms SPREAD to adjacent cells; the player reaps and replants. This
-        // build farms by low-light SPREAD, NOT giant growth — the 2-tall interior is far
+        // build farms by low-light SPREAD, NOT giant growth — the 3-tall interior is far
         // too short for a giant mushroom (which needs ~7 blocks of vertical clearance),
         // so the sign promises the mechanic that actually works here.
         // Hung on the INNER face of the south wall at x=cx+1 (one cell inside at z=iz1,
         // facing=south = mounted on the solid z1 wall behind it), so the wall stays a
-        // solid light-block and the sign reads to a player walking in.
+        // solid light-block and the sign reads to a player walking in. At y=2 (eye level
+        // over the y=0 floor).
         signText(b, "minecraft:oak_wall_sign[facing=south]", cx + 1, 2, iz1,
                 "Mushroom farm:", "dark + mycelium", "= they spread.", "Reap & replant.");
 
