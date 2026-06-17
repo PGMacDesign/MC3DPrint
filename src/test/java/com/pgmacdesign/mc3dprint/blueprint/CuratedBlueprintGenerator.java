@@ -1702,7 +1702,11 @@ class CuratedBlueprintGenerator {
         b.set(3, 1, 0, OAK_LOG_Y);
         b.set(3, 2, 0, OAK_LOG_Y);
         b.set(3, 3, 0, STRIPPED_OAK_Y);             // snapped, bleached crown
-        b.set(2, 2, 0, deadBush);                   // a dead branch nub beside the trunk
+        // a withered patch at the foot of the dead tree, on the grass ground (y=0
+        // grass below → valid dead_bush support). The old (2,2,0) nub sat on the
+        // perimeter stone-brick wall (no soil → floated off on print), so it's
+        // grounded here at (2,1,1) — a clump of dead growth between the graves.
+        b.set(2, 1, 1, deadBush);
 
         return b.build();
     }
@@ -3472,10 +3476,16 @@ class CuratedBlueprintGenerator {
         // Parametric cherry house: walkable interior, hip roof, door, furnish.
         house(b, 0, 0, 6, 6, 4, CHERRY, true);
         // Pink-petal accents on open interior floor cells (y=1). Petals are a
-        // BushBlock → structural/free; they sit on the y=0 plank floor. Keep clear
+        // BushBlock → structural/free, but they need a dirt-family/moss support
+        // (not planks), so each petal cell gets a moss_block (FU-valued, 2@1)
+        // patch at y=0 → a tasteful mossy cherry-blossom ground cover. Keep clear
         // of the door cell (3,1), the furnishings, and the table-free middle path.
+        BlueprintBlockState mossBed = bs("minecraft:moss_block");
+        b.set(2, 0, 3, mossBed);
         b.set(2, 1, 3, bs("minecraft:pink_petals[flower_amount=3,facing=south]"));
+        b.set(4, 0, 3, mossBed);
         b.set(4, 1, 3, bs("minecraft:pink_petals[flower_amount=4,facing=north]"));
+        b.set(3, 0, 5, mossBed);
         b.set(3, 1, 5, bs("minecraft:pink_petals[flower_amount=2,facing=west]"));
         // Flower pots flanking the door on the inside (decorative; flower_pot is
         // recipe-derivable from brick → printable).
@@ -7180,6 +7190,7 @@ class CuratedBlueprintGenerator {
         for (int z = cz; z <= z1 - 1; z++) {
             for (int x = x0 + 1; x <= x1 - 1; x++) {
                 if (x == cx) continue;                 // keep the path clear
+                b.set(x, 0, z, GRASS_BLOCK);           // grass garden bed under each bloom (valid support)
                 b.set(x, 1, z, blooms[bi % blooms.length]);
                 bi++;
             }
@@ -7193,6 +7204,7 @@ class CuratedBlueprintGenerator {
         for (int t = 0; t < tallSpots.length; t++) {
             int tx = tallSpots[t][0], tz = tallSpots[t][1];
             String f = tall[t % tall.length];
+            b.set(tx, 0, tz, GRASS_BLOCK);             // grass garden bed under the tall bloom (valid support)
             b.set(tx, 1, tz, bs("minecraft:" + f + "[half=lower]"));
             b.set(tx, 2, tz, bs("minecraft:" + f + "[half=upper]"));
         }
@@ -11046,9 +11058,12 @@ class CuratedBlueprintGenerator {
             b.set(c[0], 2, c[1], LANTERN);
         }
 
-        // 6) GREENERY — a single short sugar-cane stalk on a rim corner cell adjacent to
-        //    the water (valued 2@1, render-safe). Sits on the stone-brick rim at x=2,z=0
-        //    (one cell out from the pool edge), one tall.
+        // 6) GREENERY — a single short sugar-cane stalk on a rim cell adjacent to the
+        //    water (valued 2@1, render-safe), one tall. Sugar cane needs a dirt/sand
+        //    base (not stone bricks) with water horizontally adjacent at the base's
+        //    level: lay a dirt cell at (2,0,0) — the pool's water disc already fills
+        //    (2,0,1) directly behind it (d≈2.24 ≤ r+0.5), so the cane is hydrated.
+        b.set(2, 0, 0, bs("minecraft:dirt"));
         b.set(2, 1, 0, bs("minecraft:sugar_cane[age=0]"));
 
         return b.build();
@@ -12709,9 +12724,18 @@ class CuratedBlueprintGenerator {
         // horizontal radius at the same Y, so one source near the centre of each bed
         // moistens its whole z=1..7 strip. west bed source (1,1,4); east bed (7,1,4).
         int[][] bedSources = {{1, 4}, {7, 4}}; // {x, z} at y=1
+        // the two front-corner bed cells host standing lanterns (placed in step 9), so
+        // they get NO farmland/crop here — otherwise the crop above would land on the
+        // lantern (no farmland → floats off on print). Leave them as plain footing.
+        int[][] lanternCells = {{x0 + 1, z0 + 1}, {x1 - 1, z0 + 1}}; // (1,1) & (7,1)
         for (int[] bed : beds) {
             for (int x = bed[0]; x <= bed[1]; x++) {
                 for (int z = 1; z <= z1 - 1; z++) {
+                    boolean isLanternCell = false;
+                    for (int[] lc : lanternCells) {
+                        if (lc[0] == x && lc[1] == z) { isLanternCell = true; break; }
+                    }
+                    if (isLanternCell) continue; // skip: a corner lantern stands here, not a planter
                     boolean isSource = false;
                     for (int[] src : bedSources) {
                         if (src[0] == x && src[1] == z) { isSource = true; break; }
