@@ -3,7 +3,6 @@ package com.pgmacdesign.mc3dprint.blueprint;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtIo;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 
 import java.io.DataInputStream;
 import java.io.IOException;
@@ -77,30 +76,28 @@ import java.util.zip.GZIPInputStream;
  *       where it overlaps. Only genuine non-rooms are listed — never a build with a real interior.</li>
  * </ol>
  *
- * <h3>Status: model-improved diagnostic, one real defect away from a hard gate</h3>
- * The two model fixes + the exempt list drove the raw heuristic from 17 false positives down to
- * a single FLAGGED build: {@code snowy_igloo}. That one is <b>not</b> a false positive — it is a
- * genuine, newly-surfaced navigability defect. The igloo's spruce door sits in the dome's
- * springing edge (z=8), but the only floor cell just inside it (z=7, x=3..5) has a 2-block-thick
- * snow roof course directly overhead (head at y+1 AND y+2 are both snow_block), so a 2-tall player
- * cannot step from the doorway into the bed-room — a 1-block-headroom threshold pinch, the same
- * class as the purpur_tower second-floor trap. The dome-lip headroom fix deliberately does NOT
- * paper this over (it credits only a 1-block-thick curving roof, not a 2-thick pinch). It is a
- * <b>real bug, not a model artifact</b>; per the audit's own rules it must NOT be allowlisted
- * (it has a real room) and the fix is a small geometry change (raise the dome a course at the
- * door, or seat the door one cell further in) that is out of this change's scope ("do not change
- * build geometry").
+ * <h3>Status: ALWAYS-ON hard gate</h3>
+ * The two model fixes + the exempt list drove the raw heuristic from 17 false positives down to a
+ * single FLAGGED build: {@code snowy_igloo} — and that one was <b>not</b> a false positive but a
+ * genuine navigability defect: its spruce door sat in the dome's springing edge (z=8) and the only
+ * floor cell just inside it (z=7) had a 2-block-thick snow roof course directly overhead (head at
+ * y+1 AND y+2 both snow_block), so a 2-tall player couldn't step from the doorway into the bed-room
+ * — a 1-block-headroom threshold pinch, the same class as the purpur_tower second-floor trap. The
+ * dome-lip headroom fix deliberately did NOT paper it over (it credits only a 1-block-thick curving
+ * roof, not a 2-thick pinch). That defect is now <b>fixed</b> in {@code snowyIgloo()} (the lower
+ * head course over the door's interior landing is carved with {@code Builder.clear}, restoring
+ * 2-block headroom while the y=3 course keeps the dome closed), so FLAGGED is empty.
  *
- * <p>Because of that one unresolved <em>real</em> defect, this audit is kept <b>gated</b> on
- * {@code -DauditNavigability=true} rather than promoted to an always-on hard gate: promoting it
- * now would either fail every build on a known defect or force allowlisting a build with a real
- * room (forbidden). It does NOT assert/fail. Once the igloo geometry is fixed and FLAGGED is
- * empty, promotion is a one-line change (drop {@link EnabledIfSystemProperty}, add the throw —
- * mirroring {@link BlueprintReachabilityAuditTest}). Writes {@code build/blueprint-navigability-audit.txt}
- * with a transparent EXEMPT section.
+ * <p>With FLAGGED empty, this audit is promoted to an <b>always-on hard gate</b> that runs on every
+ * {@code ./gradlew build}, mirroring {@link BlueprintReachabilityAuditTest}: any non-exempt FLAGGED
+ * build throws an {@link AssertionError} and fails the build. The EXEMPT section is still written
+ * (intentional non-room pockets do NOT fail). To clear a new flag: fix the geometry, or — only for
+ * a genuine non-room cavity — add it to {@link #NAV_EXEMPT} with a justification (never a real
+ * room). Writes {@code build/blueprint-navigability-audit.txt} for inspection.
  *
  * <pre>
- *   ./gradlew test --tests *BlueprintNavigabilityAuditTest* -DauditNavigability=true --rerun-tasks
+ *   ./gradlew build                                                    # runs as a gate
+ *   ./gradlew test --tests *BlueprintNavigabilityAuditTest* --rerun-tasks
  * </pre>
  */
 class BlueprintNavigabilityAuditTest {
@@ -249,7 +246,6 @@ class BlueprintNavigabilityAuditTest {
     }
 
     @Test
-    @EnabledIfSystemProperty(named = "auditNavigability", matches = "true")
     void auditNavigability() throws IOException {
         List<Path> files;
         try (var stream = Files.list(SOURCE_DIR)) {
@@ -474,10 +470,10 @@ class BlueprintNavigabilityAuditTest {
         sb.append("Navigability (walkability) audit — ").append(files.size())
                 .append(" builds, unreachable-threshold=").append(UNREACHABLE_THRESHOLD)
                 .append(" standable cells\n");
-        sb.append("Model-improved (rooftop + dome-lip fixes) + NAV_EXEMPT allowlist. Gated "
-                + "diagnostic: does NOT fail the build.\n");
-        sb.append("Remaining FLAGGED builds are real navigability defects to fix (then this can "
-                + "be promoted to an always-on gate).\n\n");
+        sb.append("Model-improved (rooftop + dome-lip fixes) + NAV_EXEMPT allowlist. ALWAYS-ON "
+                + "hard gate: any non-exempt FLAGGED build fails the build.\n");
+        sb.append("FLAGGED builds are real navigability defects to fix (a room you can stand in "
+                + "but can't walk to / a blocked threshold).\n\n");
         sb.append("=== FLAGGED — navigability defects to fix (").append(flagged.size())
                 .append(") ===\n");
         if (flagged.isEmpty()) {
@@ -495,6 +491,18 @@ class BlueprintNavigabilityAuditTest {
         System.out.println("[NavigabilityAudit] " + flagged.size() + " flagged / "
                 + exempt.size() + " exempt / " + all.size() + " builds -> "
                 + OUTPUT.toAbsolutePath());
+
+        // Guardrail: any non-exempt build with a real navigability defect — a standable
+        // room/level you can't actually walk to, or a blocked door threshold — fails the
+        // build. Fail loudly so the audit is a real gate, not just a report. To clear a new
+        // flag: fix the geometry (carve the pinch / raise the ceiling / add the step), or —
+        // only if the pocket is a genuine non-room cavity by design — add it to NAV_EXEMPT
+        // with a per-entry justification (never allowlist a build that has a real room).
+        if (!flagged.isEmpty()) {
+            throw new AssertionError("Non-navigable build(s) — fix the geometry or, if the "
+                    + "pocket is an intentional non-room cavity, add to NAV_EXEMPT:\n"
+                    + String.join("\n", flagged));
+        }
     }
 
     private static Blueprint readBlueprint(Path file) throws IOException {

@@ -6011,6 +6011,19 @@ class CuratedBlueprintGenerator {
         //     open → air ahead of the door's upper half, reachable from flat ground.
         door2(b, cx, 1, zEdge, "spruce", "S");
 
+        // 3c) THRESHOLD HEADROOM CARVE: the dome's springing edge passes through the head
+        //     cells directly INSIDE the door. At the interior landing column (cx, z=zEdge-1)
+        //     the dome shell stacks TWO snow courses over the floor — head at y=2 AND y=3 —
+        //     so a 2-tall player crossing the doorway has only 1 block of headroom: a
+        //     threshold pinch (same class as the purpur_tower trap). The dome-lip tolerance
+        //     in the navigability model deliberately does NOT excuse a 2-thick pinch, and it
+        //     is a genuine playability defect. Carve the LOWER (y=2) head course of that one
+        //     landing column with clear() — which genuinely empties the cell, unlike set(air)
+        //     — so the player has 2 full blocks of headroom (feet y=1, head y=2 air) stepping
+        //     from the door into the bed-room. The y=3 snow course above stays, so the dome
+        //     still reads as a closed hemisphere from outside — no hole to the sky.
+        b.clear(cx, 2, zEdge - 1);
+
         // 4) interior furnishings on the y=0 floor
         bed(b, cx, 1, cz - 2, "light_blue", "north"); // head at back wall, foot inward
         b.set(cx - 2, 1, cz, campfire);                // little hearth, off to the side
