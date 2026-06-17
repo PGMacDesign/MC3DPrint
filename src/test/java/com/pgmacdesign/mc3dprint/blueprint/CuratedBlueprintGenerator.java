@@ -13369,14 +13369,18 @@ class CuratedBlueprintGenerator {
         for (int x = x0; x <= x1; x++) {
             b.set(x, gDeckY, gz0 - 1, quartzSlabBot);
         }
-        // 8) GROUND ENTRY — a wide glazed sliding-door read: leave the centre-front
-        //    bay open at y=1..2 by over-writing the spandrel/glass there with glass
-        //    (kept glazed full-height, flanked by the gcx mullion) and a quartz step.
-        b.set(gcx - 1, 1, gz0, GLASS); // re-glaze the entry bay base (was spandrel)
+        // 8) GROUND ENTRY — a real dark-oak door set INTO the centre-front glazing
+        //    so the ground floor is actually enterable (the glass curtain wall was a
+        //    sealed box before). The door's two halves (y1..2) OVERWRITE the front-wall
+        //    cells at (gcx, gz0) — air-set is a no-op so we can't carve, but writing the
+        //    passable door over the glass IS the opening. wallFace="N" (front/north
+        //    wall, low z) → facing=south → the door opens inward into the living space.
+        //    The flanking bays stay glazed (the wide sliding-door read) and a quartz
+        //    threshold step sits on the patio just outside the door.
+        b.set(gcx - 1, 1, gz0, GLASS); // re-glaze the flanking entry-bay base (was spandrel)
         b.set(gcx + 1, 1, gz0, GLASS);
-        b.set(gcx, 1, gz0, GLASS);
-        b.set(gcx, 2, gz0, GLASS);
-        b.set(gcx, 1, gz0 - 1, quartzSlabTop); // patio entry step just outside the glass
+        door2(b, gcx, 1, gz0, "dark_oak", "N"); // facing=south → opens into the ground floor
+        b.set(gcx, 1, gz0 - 1, quartzSlabTop); // patio entry step just outside the door
 
         // ════════════════════════════════════════════════════════════════════
         //  UPPER TIER — the setback floor (x:3..11, z:4..9), glass walls y=7..8
@@ -13475,6 +13479,25 @@ class CuratedBlueprintGenerator {
         // Upper bedroom: a bed + bookshelf against the solid SE wall.
         bed(b, ux0 + 1, uFloorY + 1, uz1 - 1, "gray", "south");
         b.set(ux1 - 1, uFloorY + 1, uz1 - 1, BOOKSHELF);
+
+        // ── INTERIOR STAIR-LADDER: GROUND → UPPER FLOOR ───────────────────────
+        // Before this fix the upper room was a sealed box with no path up. A vanilla
+        // ladder climbs the NE interior corner of the upper footprint, from the ground
+        // floor (y=1) up THROUGH the ground roof-deck (y=5) and the upper floor (y=6)
+        // into the upper bedroom (you emerge standing at y=7). The ladder occupies the
+        // deck/floor cells it passes through (those become the climb-hatch, since
+        // air-set can't carve the floor() fills). facing=south → the ladder mounts on
+        // the wall cell at z-1 (one NORTH, == facing.getOpposite()); we add a solid
+        // gray-frame backing pillar there for the ground courses (y=1..4); the deck
+        // (y=5) and upper floor (y=6) are already solid backing at that z. Column chosen
+        // at (ux1-1, uz0+1) so it clears the bed (NW) and bookshelf (SE) and lands in
+        // open upper-room floor.
+        final int ladX = ux1 - 1;           // 10 — NE interior column
+        final int ladZ = uz0 + 1;           // 5  — one south of the north wall
+        BlueprintBlockState ladderS =
+                bs("minecraft:ladder[facing=south,waterlogged=false]");
+        pillar(b, ladX, ladZ - 1, 1, uFloorY - 2, frame); // backing pillar (10,1..4,4) gray frame
+        pillar(b, ladX, ladZ, 1, uFloorY, ladderS);       // rungs (10,1..6,5), hatching the deck+floor
 
         return b.build();
     }
@@ -14241,11 +14264,19 @@ class CuratedBlueprintGenerator {
         }
         corners(b, sx0, sz0, sx1, sz1, 4, 15, deepslateBricks); // corner pilasters
 
-        // arched oak door on the north cardinal (faces south into the shaft); a
-        // polished-deepslate keystone caps the opening, and the door cells (y1..2)
-        // overwrite the plinth wall so you can walk in.
-        door2(b, cx, 1, 0, "oak", "N");
-        b.set(cx, 3, 0, polishedDeepslate); // keystone over the doorway
+        // ENTRANCE — an arched oak door set INTO the south cardinal of the shaft
+        // RING wall (z=sz1=7), opening north into the shaft base. The door is placed
+        // AFTER walls()/corners() above, so its two halves (y1..2) overwrite the solid
+        // band course at (cx, y1..2, sz1) — the door block IS the opening (air-set is a
+        // no-op, so we can't carve; overwriting the wall cell with the passable door is
+        // how the shaft connects to the outside). A player walks in from the south
+        // (z=8, open air outside the ring), through the door, into the hollow, then
+        // crosses to the north-wall ladder and climbs. The door is on the SOUTH wall so
+        // it never touches the north ladder's backing (cx,*,sz0) nor any clock dial
+        // (those sit at y10..14, well above the y1..2 doorway). A polished-deepslate
+        // keystone caps the opening, matching the plinth cap course (y3).
+        door2(b, cx, 1, sz1, "oak", "S"); // facing=north → opens into the shaft
+        b.set(cx, 3, sz1, polishedDeepslate); // keystone over the doorway
 
         // 4) CLOCK FACES (y11..13) on all four cardinal faces. Each dial is a 3×3
         //    white-concrete field set INTO the shaft ring, framed by cut copper, with
