@@ -167,6 +167,8 @@ tasks.named('test', Test).configure {
     systemProperty 'auditNavigability', System.getProperty('auditNavigability', 'false')
     // Same opt-in plumbing for the bed-clearance (embedded-bed) diagnostic audit.
     systemProperty 'auditBeds', System.getProperty('auditBeds', 'false')
+    // Same opt-in plumbing for the fire-hazard (lava/fire near flammable) diagnostic audit.
+    systemProperty 'auditFireHazard', System.getProperty('auditFireHazard', 'false')
     testLogging {
         events 'failed'
         exceptionFormat 'full'

@@ -56,6 +56,7 @@ Every helper should be paired with the gate that proves it (defense in depth: th
 - **Plant support:** flowers/saplings → dirt-family + farmland; crops → farmland; cactus → sand; sugar_cane → dirt/sand + adjacent water; nether_wart → soul_sand; mushrooms are flexible (low light / mycelium-podzol-nylium anywhere).
 - **Printer places with `SUPPRESS_DROPS`** → invalid attachments survive placement but pop on the next block update (silent). This is *why* static audits matter: the GameTests don't re-check survival on their own.
 - **Structural matter prints free** (`isStructuralMatter`): itemless blocks, BushBlock plants, farmland/path. These are the blocks that can be on bad soil and still *print* (then float/pop) — hence the plant audit.
+- **Flammable build → NO raw lava/fire.** Use `campfire` / `lava_cauldron` / `magma_block` / a torch (none of those spread fire) for a hearth/forge look. Raw `lava` (or `fire`/`soul_fire`) within ~2 cells of wood/wool/leaves ignites and burns the build down — even caged behind iron bars across an air gap (this is what burned tavern_inn's spruce shell). Caged in stone/deepslate with no flammable in range is safe. Gated diagnostic: `-DauditFireHazard=true`.
 
 ---
 
