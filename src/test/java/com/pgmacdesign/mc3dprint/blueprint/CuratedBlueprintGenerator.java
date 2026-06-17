@@ -4468,14 +4468,15 @@ class CuratedBlueprintGenerator {
 
         // ── 8) FRONT PERGOLA TERRACE (on the apron in front of the door) ───────
         // Dark-oak fence posts at the two front-apron corners carry dark-oak-slab
-        // rafters spanning toward the wall, with a hanging lantern between them —
-        // the small Mediterranean pergola/terrace. Sits on the z=0 stone apron.
+        // rafters spanning toward the wall — the small Mediterranean pergola/terrace.
+        // Sits on the z=0 stone apron. (No central hanging lantern: it sat at (cx,2,0),
+        // dead-centre on the door's approach at head height, and BLOCKED the entrance —
+        // PGMac's playtest. The interior + wall lanterns light the porch instead.)
         pillar(b, cx - 2, 0, 1, 3, pergPost); pillar(b, cx + 2, 0, 1, 3, pergPost);
         for (int x = cx - 2; x <= cx + 2; x++) {
             b.set(x, 3, 0, pergBeam);          // rafter run along the front
         }
         b.set(cx - 2, 4, 0, beamX); b.set(cx + 2, 4, 0, beamX); // beam caps over the posts
-        b.set(cx, 3, 0, CHAIN); b.set(cx, 2, 0, HANGING_LANTERN); // terrace lantern
 
         // ── 9) MINIMAL INTERIOR FURNISHINGS (walkable y=1 floor) ───────────────
         bed(b, x0 + 1, 1, z1 - 1, "white", "south"); // white bed, head near back wall
