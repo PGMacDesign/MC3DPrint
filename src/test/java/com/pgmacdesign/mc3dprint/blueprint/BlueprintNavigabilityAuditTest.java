@@ -47,6 +47,21 @@ import java.util.zip.GZIPInputStream;
  * can't get there) above a small noise threshold, OR when a door's immediate interior cell is
  * itself not standable-reachable from outside (a blocked threshold).
  *
+ * <h3>FLAT door walk-through (the "can't get through the door" class)</h3>
+ * Beyond reachability, every true door ({@code *_door[half=lower]}) must be a FLAT walk-through.
+ * The owner's rule: a step/stair just inside a door does NOT work — when the player steps UP,
+ * their head clips the door's UPPER half (the door occupies sill+1). The only correct entry is
+ * flat: the cell you step into from the door must be at the SAME walkable level as the door
+ * <b>sill</b> (the top of the solid block below the door's lower half), with 2 blocks of clear
+ * headroom through the open door. So for each door we take its INTERIOR side (the {@code facing}
+ * direction — verified against {@code plains_house}/{@code small_cottage}, where interior is the
+ * facing side, so normal flat-entry houses do NOT flag) and require {@link #isFlatLanding} there:
+ * the interior standing surface is flush with the sill (flat) or below it (a drop-in — always
+ * walkable, never head-clips) or a ≤0.5 bottom-slab step; it is FLAGGED only when the interior
+ * floor sits a FULL block ABOVE the sill (a +1 step up) or a non-passable block fills the entry
+ * (a wall / fence / furniture in the doorway). Fence GATES are exempt from this check — a gate is
+ * a single block with no upper half, so a step beside it can't clip the head.
+ *
  * <h3>Precision (two model fixes + an exempt list) so this can be a hard gate</h3>
  * The raw heuristic false-positived on three structure classes that are <em>not</em> bugs.
  * Two are fixed in the model itself (honestly reducing false positives), the third is a small
@@ -245,6 +260,73 @@ class BlueprintNavigabilityAuditTest {
         return true;
     }
 
+    /**
+     * FLAT door walk-through test — the "can't get through the door" gate (door-axis cell).
+     *
+     * <p><b>The rule (from the owner).</b> A step/stair just inside a door does NOT work: when
+     * the player steps UP, their head hits the door's upper half (the door occupies sill+1). The
+     * only correct entry is a FLAT walk-through — the cell you step into from the door must be at
+     * the SAME walkable level as the door <b>sill</b> (the top of the solid block directly below
+     * the door's lower half), with 2 blocks of clear headroom through the open door (the door
+     * halves are passable). So for a door whose lower half is at {@code (dx,dy,dz)} the sill
+     * surface is the top of {@code (dx,dy-1,dz)} and the player's feet stand at {@code dy}. The
+     * axis-neighbour cell {@code (nx,dy,nz)} is a flat landing iff:
+     * <ul>
+     *   <li>its floor's top is exactly the sill level — the block at {@code (nx,dy-1,nz)} is a
+     *       FLOOR and the cell {@code (nx,dy,nz)} itself is PASSABLE (feet fit, no step UP onto a
+     *       raised floor block), and</li>
+     *   <li>the head cell {@code (nx,dy+1,nz)} is PASSABLE (2-block clearance — no low block
+     *       clipping the head as you cross).</li>
+     * </ul>
+     * A landing whose floor sits ABOVE the sill (a step up) or whose feet/head cell is non-passable
+     * (a blocker in the doorway) is NOT flat and the door is flagged. Used only for the door's
+     * INTERIOR side (the side you walk into the build), determined from the door {@code facing}
+     * (verified against plains_house / small_cottage — interior is the {@code facing} direction in
+     * these builds, so normal flat-entry houses are NOT flagged).
+     */
+    private boolean isFlatLanding(BlueprintBlockState[][][] grid, boolean[][][] passable,
+                                  int nx, int floorY, int nz, int sx, int sy, int sz) {
+        if (nx < 0 || nx >= sx || nz < 0 || nz >= sz) return false;
+        if (floorY < 0 || floorY >= sy) return false;
+        BlueprintBlockState feet = grid[nx][floorY][nz];
+        // The bug the owner described is a step UP onto a raised floor block: the interior floor
+        // sits ABOVE the sill, so crossing forces the player to step up and their head clips the
+        // door's UPPER half (which occupies sill+1). What is allowed:
+        //   • FLAT — the interior floor is flush with the sill (you walk straight in), OR
+        //   • DROP-IN — the interior floor is BELOW the sill (you step down to enter; a drop never
+        //     clips the head and is always walkable), OR
+        //   • a ≤0.5 step — a BOTTOM SLAB at the sill (auto-step, no head clip).
+        // What is FLAGGED:
+        //   • a raised FULL block (or top slab) at the sill cell — a +1 step UP, head clips, OR
+        //   • a hard blocker filling the doorway exit (a wall / fence / furniture at feet AND no
+        //     drop path past it) so you can't cross at all.
+        //
+        // (a) The feet cell at the sill is a BOTTOM SLAB → a 0.5 step, fine.
+        boolean feetBottomSlab = feet != null && !feet.isAir()
+                && feet.blockId().endsWith("_slab")
+                && "bottom".equals(feet.properties().getOrDefault("type", "bottom"));
+        if (feetBottomSlab) {
+            return floorY + 1 >= sy || passable[nx][floorY + 1][nz]; // need head clearance
+        }
+        // (b) The feet cell at the sill is PASSABLE (air / carpet / open door / flower / …).
+        //     Require head clearance, then accept if the standing surface is at the sill (a real
+        //     floor directly below — FLAT) or below it (a drop-in: a floor lower in this column).
+        if (passable[nx][floorY][nz]) {
+            if (floorY + 1 < sy && !passable[nx][floorY + 1][nz]) return false; // head clips
+            boolean floorAtSill = (floorY == 0) || isFloor(grid[nx][floorY - 1][nz]);
+            if (floorAtSill) return true;                 // flat walk-in
+            // No floor right under the sill cell → look for a drop-in: a floor anywhere below in
+            // this column (the player steps DOWN into the interior, which is always walkable).
+            for (int dy = floorY - 1; dy >= 0; dy--) {
+                if (isFloor(grid[nx][dy][nz])) return true; // drop-in landing below the sill
+            }
+            return false; // passable but bottomless (e.g. a pit / opening with no floor at all)
+        }
+        // (c) The feet cell at the sill is a NON-passable full block (raised floor block, wall,
+        //     fence, furniture). That is a +1 step up or a hard blocker in the doorway → NOT flat.
+        return false;
+    }
+
     @Test
     void auditNavigability() throws IOException {
         List<Path> files;
@@ -320,6 +402,13 @@ class BlueprintNavigabilityAuditTest {
             // from outside (a portal is, by definition, an exterior opening) so the fill can
             // spread inward from there.
             List<int[]> doorLandings = new ArrayList<>();
+            // FLAT walk-through check (the "can't get through the door" gate). For each door we
+            // record its INTERIOR-side axis-neighbour cell at the sill level and whether that cell
+            // is a FLAT landing (floor flush with the sill, 2-block headroom — see isFlatLanding).
+            // A non-flat interior side (a step UP onto a raised floor block, or a blocker at the
+            // entry feet/head) means a 2-tall player can't walk straight in — flagged.
+            // {dx,dy,dz, flat(0/1)} per door, deduped by door cell.
+            java.util.Map<String, int[]> doorFlat = new java.util.LinkedHashMap<>();
             for (int x = 0; x < sx; x++) {
                 for (int y = 0; y < sy; y++) {
                     for (int z = 0; z < sz; z++) {
@@ -356,6 +445,46 @@ class BlueprintNavigabilityAuditTest {
                                 }
                             }
                         }
+                        // FLAT walk-through applies ONLY to true DOORS — the rule's head-clip
+                        // mechanism (stepping up under the door's UPPER half) needs a 2-tall door.
+                        // A fence GATE is a single block with no upper half, so a step beside it
+                        // doesn't clip the head; gates are seeded above for reachability but are NOT
+                        // subject to the flat-entry check (that's why a railing gate over a deck,
+                        // e.g. dock_pier, is not a "can't get through the door" defect).
+                        if (!isDoor) continue;
+                        // FLAT walk-through: the INTERIOR side is the door's facing direction
+                        // (verified against plains_house / small_cottage). The sill level is the
+                        // door's own y (feet stand at y; the solid block below at y-1 is the sill).
+                        // The interior cell must be a FLAT landing at the sill — same level, no
+                        // step up, 2-block headroom. We require the interior side to be flat; if the
+                        // facing-side cell is out of bounds (interior would be off-grid) we fall back
+                        // to whichever axis side has a standable cell, so a door whose facing points
+                        // outward isn't a false negative.
+                        int idx, idz;
+                        switch (facing) {
+                            case "north" -> { idx = x; idz = z - 1; }
+                            case "south" -> { idx = x; idz = z + 1; }
+                            case "east"  -> { idx = x + 1; idz = z; }
+                            case "west"  -> { idx = x - 1; idz = z; }
+                            default      -> { idx = x; idz = z; }
+                        }
+                        // Interior side resolution: prefer the facing-direction cell; if it's off
+                        // the grid (door facing outward at a boundary), use the opposite in-bounds
+                        // side as the interior. This keeps the check anchored to the cell a player
+                        // actually walks into.
+                        boolean facingInBounds = idx >= 0 && idx < sx && idz >= 0 && idz < sz;
+                        if (!facingInBounds) {
+                            switch (facing) {
+                                case "north" -> { idx = x; idz = z + 1; }
+                                case "south" -> { idx = x; idz = z - 1; }
+                                case "east"  -> { idx = x - 1; idz = z; }
+                                case "west"  -> { idx = x + 1; idz = z; }
+                                default      -> { idx = x; idz = z; }
+                            }
+                        }
+                        boolean flat = isFlatLanding(grid, passable, idx, y, idz, sx, sy, sz);
+                        String dkey = x + "," + y + "," + z;
+                        doorFlat.put(dkey, new int[]{x, y, z, flat ? 1 : 0, idx, idz});
                     }
                 }
             }
@@ -439,13 +568,26 @@ class BlueprintNavigabilityAuditTest {
                 }
             }
 
-            boolean defect = unreachable >= UNREACHABLE_THRESHOLD || !blockedDoors.isEmpty();
+            // NON-FLAT doors: the door's interior side is not a flat walk-through at the sill —
+            // it requires a step UP onto a raised floor block (head clips the door's upper half)
+            // or has a blocker at the entry feet/head. The "can't get through the door" defect.
+            List<String> nonFlatDoors = new ArrayList<>();
+            for (int[] f : doorFlat.values()) {
+                if (f[3] == 0) {
+                    nonFlatDoors.add(String.format("door(%d,%d,%d)->interior(%d,%d,%d)",
+                            f[0], f[1], f[2], f[4], f[1], f[5]));
+                }
+            }
+
+            boolean defect = unreachable >= UNREACHABLE_THRESHOLD
+                    || !blockedDoors.isEmpty() || !nonFlatDoors.isEmpty();
             String line = String.format(
-                    "%-34s dims=%dx%dx%d  standable=%d  unreachable=%d%s%s",
+                    "%-34s dims=%dx%dx%d  standable=%d  unreachable=%d%s%s%s",
                     name, sx, sy, sz, standableCount, unreachable,
                     unreachable > 0 ? String.format("  pocket-bbox=(%d,%d,%d)..(%d,%d,%d)",
                             umnX, umnY, umnZ, umxX, umxY, umxZ) : "",
-                    blockedDoors.isEmpty() ? "" : "  blockedDoors=" + blockedDoors);
+                    blockedDoors.isEmpty() ? "" : "  blockedDoors=" + blockedDoors,
+                    nonFlatDoors.isEmpty() ? "" : "  nonFlatDoors=" + nonFlatDoors);
             all.add(line);
             if (defect) {
                 StringBuilder reason = new StringBuilder();
@@ -457,6 +599,11 @@ class BlueprintNavigabilityAuditTest {
                 if (!blockedDoors.isEmpty()) {
                     if (reason.length() > 0) reason.append("; ");
                     reason.append("blocked threshold(s): ").append(blockedDoors);
+                }
+                if (!nonFlatDoors.isEmpty()) {
+                    if (reason.length() > 0) reason.append("; ");
+                    reason.append("non-flat door entry (step up / blocked threshold): ")
+                            .append(nonFlatDoors);
                 }
                 if (NAV_EXEMPT.contains(name)) {
                     exempt.add(String.format("[NAV·EXEMPT] %-28s %s", name, reason));
