@@ -4306,8 +4306,8 @@ class CuratedBlueprintGenerator {
     }
 
     /**
-     * Phase 2 §B — Greek Quartz Temple. 11×11 footprint → builder(11, 15, 11). An
-     * open, monumental Greek peristyle temple in the quartz family — a stepped
+     * Phase 2 §B — Greek Quartz Temple. 11×11 footprint → builder(11, 14, 11). An
+     * open, monumental Greek peristyle temple in the quartz family — a single-step
      * stylobate base, a colonnade of quartz_pillar columns ringing the perimeter
      * (each with a quartz-stair base and a chiseled-quartz capital), an entablature
      * frieze ring, a low gabled pediment roof, and a small walled inner cella with
@@ -4315,7 +4315,14 @@ class CuratedBlueprintGenerator {
      *
      * <p>AXES: x=W (0..10), y=up (0..13), z=depth (0..10). The ridge of the
      * pediment runs along X (gableRoofX), so the gabled fronts read on the x=0 /
-     * x=10 ends — the classic "temple front" triangle. Peak at y14.
+     * x=10 ends — the classic "temple front" triangle. Peak at y13.
+     *
+     * <p>GROUND LEVEL: the temple was originally raised on a 2-course solid plinth
+     * (a redundant full-11×11 quartz crepidoma at y0 under the step rim at y1) that
+     * lifted the walkable floor to y2 — too high to enter without external blocks.
+     * That dead bottom course is removed and the whole build re-based down by one,
+     * so the stylobate now reads as a single ascending step (y0 rim → y1 floor) you
+     * can walk straight onto, with the cella doorway at y2..y3.
      *
      * <p>PALETTE (all quartz-family, all FU-valued via the nether-quartz leaf so
      * they derive for free): quartz_block, smooth_quartz, chiseled_quartz_block,
@@ -4325,12 +4332,12 @@ class CuratedBlueprintGenerator {
      * <p>COLONNADE: columns sit on the stylobate-top ring inset 1 from the edge, at
      * x∈{1,3,5,7,9} along the front/back rows (z=1, z=9) and z∈{3,5,7} along the
      * side rows (x=1, x=9) — every-other-cell spacing for the peristyle gaps you
-     * walk between. Shafts are quartz_pillar y3..y6 (4 tall) on a quartz-stair base
-     * ring at y3 and topped by a chiseled-quartz capital at y7, carrying the
+     * walk between. Shafts are quartz_pillar y2..y5 (4 tall) on a quartz-stair base
+     * ring at y2 and topped by a chiseled-quartz capital at y6, carrying the
      * entablature.
      */
     private static Blueprint greekQuartzTemple() {
-        final int W = 11, H = 15, D = 11;
+        final int W = 11, H = 14, D = 11;
         Blueprint.Builder b = Blueprint.builder("Greek Quartz Temple", W, H, D);
 
         BlueprintBlockState quartz       = bs("minecraft:quartz_block");
@@ -4347,28 +4354,29 @@ class CuratedBlueprintGenerator {
         BlueprintBlockState stairE = bs("minecraft:quartz_stairs[facing=east,half=bottom,shape=straight]");
         BlueprintBlockState stairW = bs("minecraft:quartz_stairs[facing=west,half=bottom,shape=straight]");
 
-        // ── 1) STEPPED STYLOBATE (y0..y2) ──────────────────────────────────────
-        // y0: full 11×11 quartz_block crepidoma footing — the bottom step.
-        floor(b, 0, 0, 0, W - 1, D - 1, quartz);
-        // y1: an inset 9×9 quartz course, ringed on its outer edge (y1, footprint
-        //     rim) by outward-facing quartz stairs so the base reads as two clean
-        //     ascending steps you can walk up from any side.
-        floor(b, 1, 1, 1, 9, 9, quartz);
+        // ── 1) SINGLE-STEP STYLOBATE (y0..y1) ──────────────────────────────────
+        // (Re-based: the old full-11×11 solid crepidoma course at y0 was dead weight
+        //  that only lifted the temple too high to enter — removed, whole build
+        //  dropped one. What was the y1 step rim is now the ground course.)
+        // y0: an inset 9×9 quartz course, ringed on its outer edge (footprint rim)
+        //     by outward-facing quartz stairs so the base reads as one clean
+        //     ascending step you can walk up from any side onto the stylobate.
+        floor(b, 0, 1, 1, 9, 9, quartz);
         for (int x = 0; x <= W - 1; x++) {
-            b.set(x, 1, 0, stairS);          // north rim step, tread facing out (-z)... facing=south = tread toward +z (inward) — outer riser reads correctly
-            b.set(x, 1, D - 1, stairN);      // south rim step
+            b.set(x, 0, 0, stairS);          // north rim step, tread facing out (-z)... facing=south = tread toward +z (inward) — outer riser reads correctly
+            b.set(x, 0, D - 1, stairN);      // south rim step
         }
         for (int z = 1; z <= D - 2; z++) {
-            b.set(0, 1, z, stairE);          // west rim step
-            b.set(W - 1, 1, z, stairW);      // east rim step
+            b.set(0, 0, z, stairE);          // west rim step
+            b.set(W - 1, 0, z, stairW);      // east rim step
         }
-        // y2: the stylobate top — the 9×9 smooth-quartz temple floor (walkable).
-        floor(b, 2, 1, 1, 9, 9, smoothQuartz);
+        // y1: the stylobate top — the 9×9 smooth-quartz temple floor (walkable).
+        floor(b, 1, 1, 1, 9, 9, smoothQuartz);
 
         // ── 2) COLONNADE (peristyle) — column ring inset 1 on the stylobate ────
         // Front/back rows at z=1 and z=9; side rows at x=1 and x=9. Every other
         // cell carries a column so you can walk the peristyle between them.
-        final int yBase = 3, yTop = 6;       // shaft y3..y6 (4 tall)
+        final int yBase = 2, yTop = 5;       // shaft y2..y5 (4 tall)
         int[] frontCols = {1, 3, 5, 7, 9};   // x positions on the z=1 / z=9 rows
         int[] sideRows  = {3, 5, 7};         // z positions on the x=1 / x=9 rows (corners already taken by front rows)
         java.util.List<int[]> columns = new java.util.ArrayList<>();
@@ -4377,15 +4385,15 @@ class CuratedBlueprintGenerator {
 
         for (int[] c : columns) {
             int cx = c[0], cz = c[1];
-            // smooth-quartz column base block at y2 (the floor course under the
-            // shaft), the quartz_pillar shaft y3..y6, and a chiseled-quartz capital
-            // at y7 that the architrave above (y8) seats on — so the capital reads.
-            b.set(cx, 2, cz, smoothQuartz);        // dressed column base on the stylobate
+            // smooth-quartz column base block at y1 (the floor course under the
+            // shaft), the quartz_pillar shaft y2..y5, and a chiseled-quartz capital
+            // at y6 that the architrave above (y7) seats on — so the capital reads.
+            b.set(cx, 1, cz, smoothQuartz);        // dressed column base on the stylobate
             pillar(b, cx, cz, yBase, yTop, pillar);
-            b.set(cx, yTop + 1, cz, chiseled);     // chiseled-quartz capital (y7)
+            b.set(cx, yTop + 1, cz, chiseled);     // chiseled-quartz capital (y6)
         }
         // Decorative quartz-stair flares hugging the four CORNER columns' bases at
-        // y3, facing inward toward the temple core (a fluted-base relief).
+        // y2, facing inward toward the temple core (a fluted-base relief).
         int[][] cornerCols = {{1, 1}, {9, 1}, {1, 9}, {9, 9}};
         for (int[] cc : cornerCols) {
             int cx = cc[0], cz = cc[1];
@@ -4393,42 +4401,51 @@ class CuratedBlueprintGenerator {
             if (cz == 1) b.set(cx, yBase, cz + 1, stairN); else b.set(cx, yBase, cz - 1, stairS);
         }
 
-        // ── 3) ENTABLATURE (architrave + frieze) at y8 ─────────────────────────
-        // A single full quartz ring over the y7 capitals, tying the colonnade
+        // ── 3) ENTABLATURE (architrave + frieze) at y7 ─────────────────────────
+        // A single full quartz ring over the y6 capitals, tying the colonnade
         // together. The front/back faces alternate chiseled-quartz (triglyph) and
         // quartz-brick (metope) for the Doric frieze read; the side faces match.
-        // Sits on the 9×9 column-ring footprint (inset 1), roof springs from y9.
+        // Sits on the 9×9 column-ring footprint (inset 1), roof springs from y8.
         for (int x = 1; x <= 9; x++) {
-            b.set(x, 8, 1, (x % 2 == 1) ? chiseled : quartzBricks); // front frieze
-            b.set(x, 8, 9, (x % 2 == 1) ? chiseled : quartzBricks); // back frieze
+            b.set(x, 7, 1, (x % 2 == 1) ? chiseled : quartzBricks); // front frieze
+            b.set(x, 7, 9, (x % 2 == 1) ? chiseled : quartzBricks); // back frieze
         }
         for (int z = 2; z <= 8; z++) {
-            b.set(1, 8, z, (z % 2 == 1) ? chiseled : quartzBricks); // west frieze
-            b.set(9, 8, z, (z % 2 == 1) ? chiseled : quartzBricks); // east frieze
+            b.set(1, 7, z, (z % 2 == 1) ? chiseled : quartzBricks); // west frieze
+            b.set(9, 7, z, (z % 2 == 1) ? chiseled : quartzBricks); // east frieze
         }
 
         // ── 4) INNER CELLA (sanctum) — small walled room inside the colonnade ──
         // Inset to x3..7, z3..7 (5×5) so a 1-wide peristyle walkway rings it. Walls
-        // smooth-quartz y3..y6, an open doorway on the front (north, z=3) centred at
-        // x=5, and a chiseled-quartz altar against the back wall.
+        // smooth-quartz y2..y5, an open doorway on the front (north, z=3) centred at
+        // x=5, and a chiseled-quartz altar against the back wall. The north wall's
+        // door courses (y2..y3 at x=5) are LEFT UNBUILT — Builder.set() silently
+        // skips air, so trying to "clear" a filled cell with air is a no-op; the gap
+        // has to be omitted at build time for the doorway to actually open.
         final int cx0 = 3, cx1 = 7, cz0 = 3, cz1 = 7;
-        walls(b, cx0, cz0, cx1, cz1, 3, 6, smoothQuartz);
-        // doorway: leave the centre two courses of the north wall at x=5 open by
-        // overwriting the wall cells with air (walls() filled them above).
-        b.set(5, 3, cz0, bs("minecraft:air"));
-        b.set(5, 4, cz0, bs("minecraft:air"));
+        final int doorX = 5;
+        for (int y = 2; y <= 5; y++) {
+            line(b, y, cx0, cz1, cx1, cz1, smoothQuartz);   // south (back) wall
+            line(b, y, cx0, cz0, cx0, cz1, smoothQuartz);   // west wall
+            line(b, y, cx1, cz0, cx1, cz1, smoothQuartz);   // east wall
+            // north (front) wall — skip the doorway cell on the two opening courses
+            for (int x = cx0; x <= cx1; x++) {
+                if ((y == 2 || y == 3) && x == doorX) continue; // open doorway
+                b.set(x, y, cz0, smoothQuartz);
+            }
+        }
         // cella floor finish + flat smooth-quartz ceiling/roof slab over the sanctum
-        floor(b, 2, cx0, cz0, cx1, cz1, smoothQuartz);
-        floor(b, 7, cx0, cz0, cx1, cz1, smoothQuartz);   // cella ceiling (under the pediment attic)
+        floor(b, 1, cx0, cz0, cx1, cz1, smoothQuartz);
+        floor(b, 6, cx0, cz0, cx1, cz1, smoothQuartz);   // cella ceiling (under the pediment attic)
         // altar: a chiseled-quartz block topped by a smooth-quartz top-slab, centred
         // against the back (south) wall.
-        b.set(5, 3, cz1 - 1, chiseled);
-        b.set(5, 4, cz1 - 1, slabBottom);
+        b.set(doorX, 2, cz1 - 1, chiseled);
+        b.set(doorX, 3, cz1 - 1, slabBottom);
 
         // ── 5) PEDIMENT (low gabled roof) over the entablature, ridge along X ──
-        // gableRoofX from yBase'=9 across the full z-span; chiseled ends fill the two
-        // triangular pediment faces (the iconic temple-front gable). Peak at y14.
-        final int roofBase = 9;
+        // gableRoofX from yBase'=8 across the full z-span; chiseled ends fill the two
+        // triangular pediment faces (the iconic temple-front gable). Peak at y13.
+        final int roofBase = 8;
         gableRoofX(b, 0, 0, W - 1, D - 1, roofBase, "quartz_stairs", slabTop);
         gableEndFill(b, 0, 0, W - 1, D - 1, roofBase, smoothQuartz);
 
@@ -13731,7 +13748,11 @@ class CuratedBlueprintGenerator {
         b.set(ladderX, deckY, ladderZ - 1, ladder);
 
         // ── 10) ENTERABLE INTERIOR (sparse, elegant; standing floor = top of deckY) ─
-        bed(b, wx0 + 1, wallBottom, wz0 + 1, "light_blue", "south"); // bed at back-left
+        // Bed pulled fully off the back/side walls into the open interior floor: head
+        // (cx-1, wallBottom, wz0+2), foot (cx-1, wallBottom, wz0+1). Both halves have
+        // air directly above (y=wallBottom+1 is open interior, not a wall course) and
+        // air on both long (±x) sides — so it can't read as embedded in the wall.
+        bed(b, cx - 1, wallBottom, wz0 + 2, "light_blue", "south"); // bed in the open back-left, off the walls
         b.set(wx1 - 1, wallBottom, wz0 + 1, BOOKSHELF);              // reading nook, back-right
         b.set(wx0 + 1, wallBottom, wz1 - 1, LECTERN);               // lectern, front-left
         b.set(wx1 - 1, wallBottom, wz1 - 1, SEA_LANTERN);           // floor sea-lantern, front-right
