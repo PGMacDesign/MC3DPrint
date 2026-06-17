@@ -7949,13 +7949,16 @@ class CuratedBlueprintGenerator {
      *       inner 3×3 is hollow: the fall column (≈14 blocks of free fall ≫ the
      *       ~23 needed to soften, but tall enough to read as a tower and stack with
      *       the chamber drop). The tube walls keep mobs in the chute as they fall.</li>
-     *   <li><b>Spawn platform, y=19</b> — a 7×7 deepslate-slab floor (bottom slabs
-     *       give a solid, mob-spawnable surface) with the central 3×3 left OPEN as
-     *       the drop hole. Water sources at the four mid-edges flow inward toward
-     *       the hole, pushing spawned mobs off the platform and down the shaft.</li>
-     *   <li><b>Spawn chamber + dark roof, y=20..23</b> — stone walls box the
-     *       platform and a solid stone slab roof at y=23 seals out skylight so the
-     *       chamber stays dark and mobs spawn. Oak wall signs label the build.</li>
+     *   <li><b>Spawn deck, y=18..19</b> — a solid basin floor (y=18) holds a 1-deep
+     *       water FRAME (y=19) that flows inward and drains down the central 3×3 hole,
+     *       with four DRY 2×2 corner PADS (y=19) as the only spawnable surface. Mobs
+     *       spawn on the dark pads, wander off into the water beside them, and the
+     *       inward current sweeps them to the hole and down the shaft. (A flat flooded
+     *       platform doesn't work — mobs won't spawn on water and a still pool has no
+     *       current; the dry pads + draining frame is the fix.)</li>
+     *   <li><b>Spawn chamber + dark roof, y=20..23</b> — stone walls box the deck and
+     *       a FULL stone roof at y=23 seals out skylight (a slab leaks light) so the
+     *       chamber stays at light 0 and mobs spawn. Oak wall signs label the build.</li>
      * </ul>
      */
     private static Blueprint mobXpTower() {
@@ -7966,8 +7969,6 @@ class CuratedBlueprintGenerator {
         BlueprintBlockState cobble    = COBBLE;
         BlueprintBlockState glass     = GLASS;        // viewing window (solid block → always render-safe)
         BlueprintBlockState bars      = IRON_BARS;    // kill slot, only where backed by a solid neighbour
-        BlueprintBlockState slabBot   = bs("minecraft:deepslate_tile_slab[type=bottom]"); // spawn surface
-        BlueprintBlockState slabRoof  = bs("minecraft:stone_slab[type=top]");
         BlueprintBlockState afkStep   = bs("minecraft:stone_slab[type=bottom]"); // the player's marked stand-on spot
         BlueprintBlockState chest     = bs("minecraft:chest[facing=south,type=single,waterlogged=false]");
         BlueprintBlockState water     = WATER;        // structural (asItem()==AIR) → prints free
@@ -8061,40 +8062,52 @@ class CuratedBlueprintGenerator {
             line(b, y, sx1, sz0, sx1, sz1, stone); // east
         }
 
-        // ── 4) SPAWN PLATFORM at y=19 ────────────────────────────────────────
-        // A 7×7 deepslate-tile-slab floor (bottom slabs = solid spawnable surface)
-        // with the central 3×3 left OPEN as the drop hole. Water at the four
-        // mid-edges flows INWARD to the hole and pushes spawned mobs in.
-        int px0 = x0 + 1, px1 = x1 - 1, pz0 = z0 + 1, pz1 = z1 - 1; // 1..7 (7×7)
+        // ── 4) SPAWN DECK at y=18..19 — dry pads + a flushing water frame ────
+        // REWORKED (the old flat flooded platform didn't work): mobs won't spawn on
+        // water, and four sources on a 7×7 just pool flat with no current. Instead a
+        // solid BASIN floor (y=18) holds a 1-deep water FRAME (y=19) that flows INWARD
+        // and drains down the central 3×3 hole, with four DRY corner PADS (y=19 solid)
+        // as the only spawnable surface. A mob spawns on a dark pad, wanders off into
+        // the water beside it, and the inward current carries it to the hole and down
+        // the shaft. Compact starter rate, but it actually collects.
+        int px0 = x0 + 1, px1 = x1 - 1, pz0 = z0 + 1, pz1 = z1 - 1; // 1..7 (7×7 interior)
+        boolean[][] hole = new boolean[9][9];
+        for (int x = cx - 1; x <= cx + 1; x++)
+            for (int z = cz - 1; z <= cz + 1; z++) hole[x][z] = true; // central 3×3 drain
+        // 4a) BASIN FLOOR at y=18 — solid 7×7 minus the hole, so the water above sits
+        //     in a watertight pan and can only drain through the central hole.
         for (int x = px0; x <= px1; x++) {
             for (int z = pz0; z <= pz1; z++) {
-                if (x >= cx - 1 && x <= cx + 1 && z >= cz - 1 && z <= cz + 1) continue; // drop hole
-                b.set(x, 19, z, slabBot);
+                if (!hole[x][z]) b.set(x, 18, z, deepslate);
             }
         }
-        // 4a) RETAINING LIP at platform level (y=19): a full 9×9 deepslate ring on
-        //     the outer perimeter. WITHOUT this, the spawn-chamber walls only start
-        //     at y=20, so the platform's outer edge was OPEN air and the edge water
-        //     sources spread OUTWARD off the rim and poured down the OUTSIDE of the
-        //     tower. The lip is one block taller than the platform surface, so flow
-        //     can only go INWARD across the slab tops toward the central hole.
+        // 4b) SPAWN PADS at y=19 — four solid 2×2 corner islands (the ONLY dry, dark
+        //     spawnable surface). Mobs spawn here, then step off into the water frame.
+        int[][] padCorners = {{px0, pz0}, {px1 - 1, pz0}, {px0, pz1 - 1}, {px1 - 1, pz1 - 1}};
+        boolean[][] pad = new boolean[9][9];
+        for (int[] c : padCorners)
+            for (int dx = 0; dx <= 1; dx++)
+                for (int dz = 0; dz <= 1; dz++) { pad[c[0] + dx][c[1] + dz] = true; b.set(c[0] + dx, 19, c[1] + dz, deepslate); }
+        // 4c) RETAINING LIP — a 9×9 deepslate ring at y=19 around the deck so the water
+        //     frame can't spill off the outer edge (the chamber walls only start at y=20).
         walls(b, x0, z0, x1, z1, 19, 19, deepslate);
-        // 4b) water sources sit on the platform's OUTER slab edge, hard against the
-        //     lip, so the lip blocks the outward direction and each source flows the
-        //     only way it can — inward toward the central drop hole (≤2 cells away,
-        //     well inside water's 7-block reach), washing spawned mobs in.
-        b.set(px0, 19, cz, water);                    // west  edge → flows east  to hole
-        b.set(px1, 19, cz, water);                    // east  edge → flows west  to hole
-        b.set(cx, 19, pz0, water);                    // north edge → flows south to hole
-        b.set(cx, 19, pz1, water);                    // south edge → flows north to hole
+        // 4d) WATER — four source blocks at the arm mid-edges (y=19), hard against the
+        //     lip so each can only flow INWARD across the basin toward the central hole
+        //     (the lowest point), draining down it. The flow fills the frame between the
+        //     pads and sweeps any mob that steps off a pad into the hole. (Static
+        //     capture — the player re-places a source if one drifts on first power-up.)
+        b.set(cx, 19, pz0, water);   // north arm → flows south to the hole
+        b.set(cx, 19, pz1, water);   // south arm → flows north
+        b.set(px0, 19, cz, water);   // west arm  → flows east
+        b.set(px1, 19, cz, water);   // east arm  → flows west
 
         // ── 5) SPAWN CHAMBER WALLS y=20..22 + DARK ROOF y=23 ─────────────────
-        // Stone walls box the platform; a cobble corner course ties them. The
-        // y=23 stone-slab roof seals out skylight so the chamber stays dark and
-        // hostile mobs spawn on the platform after printing.
+        // Stone walls box the deck; a cobble corner course ties them. A FULL stone roof
+        // (not a slab — slabs leak skylight) seals the chamber so it stays at light 0
+        // and hostile mobs spawn on the pads day or night after printing.
         walls(b, x0, z0, x1, z1, 20, 22, stone);
         corners(b, x0, z0, x1, z1, 20, 22, cobble);
-        floor(b, 23, x0, z0, x1, z1, slabRoof);
+        floor(b, 23, x0, z0, x1, z1, stone);
 
         // ── 6) EXPLANATORY SIGNS (signText — how-it-works at the kill spot) ──
         // All three mount on the PARTITION wall (z6) and read facing SOUTH toward
