@@ -11063,14 +11063,17 @@ class CuratedBlueprintGenerator {
      * automatic and isn't.
      *
      * <p><b>Mushroom biology — why this is the OPPOSITE of the tree farm.</b> Small
-     * mushrooms need <b>darkness</b> (light ≤12 on normal blocks; brighter and they
-     * pop off), so the grow space must be an <b>enclosed, roofed, dark chamber</b>
-     * with no skylight and NO interior lanterns/torches. The catch: on
-     * {@code mycelium} (or podzol) mushrooms survive at <em>any</em> light level, so
-     * we floor the chamber with mycelium — that plus the solid roof makes the farm
-     * bulletproof. The small mushrooms are spaced out on the mycelium with open cells
-     * between them, which is exactly what low-light <b>spreading</b> needs: a dark
-     * mushroom can spread to a nearby empty cell, and the player reaps and replants.
+     * mushrooms need <b>low light</b> (≤12 on normal blocks; brighter and they pop
+     * off), so the grow space must be an <b>enclosed, roofed chamber</b> with no
+     * skylight. The catch that makes it bulletproof: on {@code mycelium} (or podzol)
+     * mushrooms survive AND spread at <em>any</em> light level, so we floor the chamber
+     * with mycelium — that plus the solid roof can't fizzle. We DO light it with
+     * {@code redstone_wall_torch}es: a redstone torch is only <b>light level 7</b>, under
+     * the ≤12 ceiling even on normal blocks (and moot on mycelium), so it reads cleanly
+     * without stopping the spread — unlike a normal torch/lantern at 14–15. The small
+     * mushrooms are spaced out on the mycelium with open cells between them, which is
+     * exactly what <b>spreading</b> needs: a mushroom can spread to a nearby empty cell,
+     * and the player reaps and replants.
      * We do NOT farm by growing giants here: a giant mushroom needs roughly 7 blocks
      * of vertical clearance and a wide footprint, and this chamber's interior is only
      * ~2 blocks tall — so the spread mechanic is the one that actually works.
@@ -11092,9 +11095,9 @@ class CuratedBlueprintGenerator {
      *       (3@1) roof; the {@code chest} derives from a crafting recipe and the
      *       {@code oak_door} / {@code oak_wall_sign} derive too.</li>
      *   <li>No glass panes / iron bars anywhere ⇒ the stub-pane render-integrity gate
-     *       can never apply. No water, no redstone, no observers/pistons/dispensers.
-     *       The chamber is a sealed dark box with a single door and NO interior
-     *       light.</li>
+     *       can never apply. No water, no observers/pistons/dispensers. The only
+     *       "redstone" is the {@code redstone_wall_torch} lighting (light 7, decorative —
+     *       no circuit). A sealed chamber with a single door, dimly lit in red.</li>
      * </ul>
      *
      * <p>Layout (south = +z is the "front"/access side; cx=4):
@@ -11120,8 +11123,12 @@ class CuratedBlueprintGenerator {
      *       (x=4, z=7, facing north) for the reaped mushrooms. Honest semi-auto: the
      *       player tends, reaps, replants, and stores by hand.</li>
      *   <li><b>Label sign, y=2</b> — an {@code oak_wall_sign} on the south wall beside
-     *       the door explaining the workflow (keep it DARK on mycelium so they spread;
+     *       the door explaining the workflow (mycelium + dim light so they spread;
      *       reap & replant).</li>
+     *   <li><b>Redstone wall torches, y=2</b> — a ring of {@code redstone_wall_torch}es
+     *       on the interior walls (off the door/chest/sign cells) for a clean red glow.
+     *       Light 7 ≤ the ≤12 spread ceiling (and moot on mycelium), so it lights the
+     *       chamber without stopping the farm.</li>
      * </ul>
      */
     private static Blueprint mushroomFarm() {
@@ -11215,7 +11222,28 @@ class CuratedBlueprintGenerator {
         // solid light-block and the sign reads to a player walking in. At y=2 (eye level
         // over the y=0 floor).
         signText(b, "minecraft:oak_wall_sign[facing=south]", cx + 1, 2, iz1,
-                "Mushroom farm:", "dark + mycelium", "= they spread.", "Reap & replant.");
+                "Mushroom farm:", "dim + mycelium", "= they spread.", "Reap & replant.");
+
+        // ── 9) REDSTONE WALL TORCHES at y=2 — clean ambient light, spread-safe ──
+        // A pitch-black box is hard to read and looks empty; a ring of redstone WALL
+        // torches gives a clean red glow without breaking the farm. A redstone torch emits
+        // LIGHT LEVEL 7 — below the ≤12 ceiling small mushrooms need to be placed/spread on
+        // normal blocks — and on MYCELIUM mushrooms survive AND spread at ANY light level
+        // anyway, so the lighting can't fizzle the farm. (Plain torches/lanterns at 14–15
+        // WOULD be too bright on normal ground; redstone torches are the on-theme, safe pick.
+        // Light doesn't stack, so even a full ring tops out at 7 per cell.) Each torch is at
+        // y=2 mounted on the solid wall behind it (facing points AWAY from its wall), so it
+        // has a real support face and won't pop. Kept off the door/chest/sign cells.
+        for (int x : new int[]{2, 4, 6}) {
+            b.set(x, 2, iz0, bs("minecraft:redstone_wall_torch[facing=south,lit=true]")); // north wall → point into room
+        }
+        for (int z : new int[]{2, 4, 6}) {
+            b.set(ix0, 2, z, bs("minecraft:redstone_wall_torch[facing=east,lit=true]"));   // west wall
+            b.set(ix1, 2, z, bs("minecraft:redstone_wall_torch[facing=west,lit=true]"));   // east wall
+        }
+        // south wall: only the corners (x=1,7) — the door (x=2), chest (x=4) and sign (x=5) own the rest.
+        b.set(ix0, 2, iz1, bs("minecraft:redstone_wall_torch[facing=north,lit=true]"));
+        b.set(ix1, 2, iz1, bs("minecraft:redstone_wall_torch[facing=north,lit=true]"));
 
         return b.build();
     }
