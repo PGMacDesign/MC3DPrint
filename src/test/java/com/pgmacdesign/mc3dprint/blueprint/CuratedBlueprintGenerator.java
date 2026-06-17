@@ -8465,206 +8465,160 @@ class CuratedBlueprintGenerator {
     }
 
     /**
-     * §F.cactus_farm — a SELF-HARVESTING cactus farm, 5×5×4 (W×L×H)
-     * → builder(5, 4, 5). <b>Rebuilt</b> from a wide flooded pool into a tight, mostly-dry
-     * moat (two cacti, one shared breaker, a 7-cell water moat → one central hopper).
+     * §F.cactus_farm — a SELF-HARVESTING, AUTO-PLANTED cactus farm, 7×7×4 (W×L×H)
+     * → builder(7, 4, 7). <b>Rebuilt</b> to FOUR cacti (Patrick) and to <b>auto-plant
+     * the cactus</b> (the printer places it, no longer player-planted).
      *
-     * <p>The "Tier-1 easy farm", printed as the working STRUCTURE the player plants
-     * into. Vanilla <b>cactus</b> has no producing recipe and is <em>not</em>
-     * structural matter ({@code CactusBlock} is not a {@code BushBlock}), so it is
-     * UNVALUED and would be silently skipped by the printer's strict-mode gate (the
-     * {@code allCuratedBlueprintBlocksArePrintable} guardrail). We therefore
-     * <b>omit the cactus itself</b> — the player drops a cactus on each exposed sand
-     * grow-block after printing — and print the canonical no-redstone harvester
-     * MECHANISM (Minecraft Wiki / 4netplayers): two SPACED sand grow-blocks, a solid
-     * <b>breaker block</b> at the grow-into height beside each, and a flowing-water
-     * collection channel that sweeps each snapped segment to a central hopper → chest.
-     * This mirrors the shipped bamboo_farm pattern (omit the unvalued plant, print the
-     * mechanism). Every printed block is vanilla FU-valued (sand 1@1, stone, cobble,
-     * hopper, chest, oak_wall_sign all derive) or structural-free matter (water prints
-     * free, {@code asItem()==AIR}).
+     * <p><b>Auto-plant:</b> cactus was historically UNVALUED (so the strict-mode printer
+     * skipped it, like bamboo/kelp). To plant it via the print we gave it a small FU value
+     * (cactus=2@1, lowest tier — renewable) and added it to the winder blacklist (so it
+     * can't launder back to FU). The 4 cactus bases are placed at y=2, ABOVE the y=1 water,
+     * so they print AFTER the water (print order is bottom-up Y) — exactly "plant it right
+     * after the water." Every block is FU-valued (sand 1@1, cactus 2@1, stone, cobble,
+     * hopper, chest) or structural-free (water).
      *
-     * <p><b>Why it survives + harvests (the geometry that fixes the old broken build):</b>
-     * a cactus pops the instant ANY solid block is horizontally adjacent to one of its
-     * segments, and two cacti can't be adjacent. So:
+     * <p><b>Cactus survival (the rules that drive the spacing):</b> a cactus pops the
+     * instant ANY solid block — or another cactus — is orthogonally adjacent to one of its
+     * segments. So the 4 cacti are spaced <b>2 apart</b> (never orthogonally adjacent), and
+     * each base at y=2 has only AIR on its four horizontal sides (the water sits one course
+     * below at y=1, so it doesn't touch the base). Diagonal neighbours are fine — that's
+     * why the shared breaker (one cell diagonal-down from each base) doesn't pop it.
+     *
+     * <p><b>Harvest (no redstone):</b> two cobble <b>breakers</b> at y=3 ((cx,3,2) and
+     * (cx,3,4)) each sit orthogonally adjacent to TWO cacti's y=3 grow cells — so when a
+     * cactus grows its second segment into y=3 it touches the breaker and pops. The base at
+     * y=2 is only diagonal to the breaker, so it survives and regrows. The popped segment
+     * falls into the surrounding y=1 water (every horizontal neighbour of a cactus is a
+     * water cell, so wherever the drop nudges it lands in water, never on another cactus or
+     * a dry block) → sinks to the hopper floor at y=0 → chest at the south edge (cx,0,6).
+     *
+     * <p>Layout (south = +z is the front; cacti at x=2,4 × z=2,4; cx=3):
      * <ul>
-     *   <li><b>Air/water on all 4 sides of the planted base.</b> Each sand grow-block
-     *       is at y=1; the cactus base the player plants sits at y=2. At y=2 its four
-     *       horizontal neighbours are flowing WATER (non-solid → does NOT break cactus)
-     *       or air. No solid block, and no other cactus, ever touches a base.</li>
-     *   <li><b>Grow-blocks spaced 4 apart</b> (x=1 and x=5) — cacti are never
-     *       adjacent.</li>
-     *   <li><b>The breaker only touches the GROWN segment.</b> A cobblestone breaker
-     *       sits at y=3 one cell inward from each column ((2,3,3) west / (4,3,3) east) —
-     *       the grow-into height. The base at y=2 has air/water beside it there, so it
-     *       survives; only when the cactus grows up into y=3 does that new segment
-     *       become horizontally adjacent to the breaker and pop. The base regrows — a
-     *       perpetual harvester needing no redstone.</li>
-     * </ul>
-     *
-     * <p><b>Collection (the snapped piece must reach the chest WITHOUT touching a cactus
-     * block — a cactus destroys dropped items it touches).</b> The water sits at the SAND
-     * LEVEL (y=1): a moat rings each base's N/S sides + a shared CENTRE cell, all over a
-     * 3×3 HOPPER FLOOR at y=0. A snapped y=3 segment falls into the moat water and sinks
-     * straight into the hopper below, which chains south to the <b>chest</b> at the open
-     * south edge (cx,0,4). A cobble RIM (y=1) contains the water (no spilling), with one
-     * gap above the chest. (The old build floated the moat a course too high and put the
-     * centre cell as a hopper; now the centre is water and the hopper is below it.)
-     *
-     * <p>Layout (south = +z is the "front"/access side; cacti at x=1 and x=3, z=2):
-     * <ul>
-     *   <li><b>y=0</b> — stone foundation + a 3×3 <b>hopper floor</b> (under the sand-level
-     *       water) chaining to the <b>chest</b> at (2,0,4), open to the south edge.</li>
-     *   <li><b>y=1</b> — a cobble <b>rim</b> (contains the water; gap at the chest), two
-     *       <b>sand</b> grow-blocks at (1,1,2)/(3,1,2), and a <b>water moat</b> at the sand
-     *       level around each base + the shared centre (2,1,2).</li>
-     *   <li><b>y=2</b> — the cactus base (player plants); only air/water beside it.</li>
-     *   <li><b>y=3</b> — ONE cobblestone <b>breaker</b> at (2,3,2), adjacent to BOTH grow
-     *       cells, so each segment pops as it grows into y=3.</li>
-     *   <li><b>Sign</b> — a standing oak sign by the chest (player must plant cactus).</li>
+     *   <li><b>y=0</b> — stone foundation + a 5×5 <b>hopper floor</b> (x=1..5, z=1..5)
+     *       funnelling to the centre column then south into the <b>chest</b> at (3,0,6).</li>
+     *   <li><b>y=1</b> — a cobble <b>rim</b> (contains the water; gap above the chest), four
+     *       <b>sand</b> grow-blocks, and <b>water</b> filling every other inner cell.</li>
+     *   <li><b>y=2</b> — the four AUTO-PLANTED cactus bases (only air beside them).</li>
+     *   <li><b>y=3</b> — two cobble <b>breakers</b> ((3,3,2),(3,3,4)), each popping the two
+     *       cacti flanking it.</li>
+     *   <li><b>Sign</b> — explains the farm auto-plants + self-harvests.</li>
      * </ul>
      */
     private static Blueprint cactusFarm() {
-        Blueprint.Builder b = Blueprint.builder("Cactus Farm", 5, 4, 5);
-        // all vanilla, all FU-valued / structural-free (NO cactus — unvalued; player plants it):
+        Blueprint.Builder b = Blueprint.builder("Cactus Farm", 7, 4, 7);
+        // all vanilla, all FU-valued / structural-free (cactus is now VALUED 2@1 → auto-planted):
         BlueprintBlockState stone  = bs("minecraft:stone");
         BlueprintBlockState sand   = bs("minecraft:sand");   // FU-valued (1@1) — the grow-block
         BlueprintBlockState water  = WATER;                  // source; structural (asItem()==AIR) → prints free
-        BlueprintBlockState cobble = COBBLE;                 // the BREAKER block (solid; pops the grown segment)
+        BlueprintBlockState cobble = COBBLE;                 // rim + BREAKER block
+        BlueprintBlockState cactus = bs("minecraft:cactus"); // FU-valued (2@1) → the printer auto-plants the base
         BlueprintBlockState chest  = bs("minecraft:chest[facing=south,type=single,waterlogged=false]");
 
-        // Rebuilt from scratch — the old build was a wide flooded pool ("WAY too much
-        // water"). Cactus DOES need a little water: a snapped segment that touches a
-        // cactus block is destroyed, so flowing water has to whisk it clear before it
-        // settles. But it only needs a tight MOAT around each base, not a sheet. So:
-        // two cacti 2 apart (never adjacent — a centre cell separates them), ONE shared
-        // breaker between them, and a 7-cell water moat that drains to a single central
-        // hopper → chest. Compact 5×5 footprint, minimal water.
-        int wX = 1, eX = 3;     // cactus columns (2 apart, centre cell between → never adjacent)
-        int cz = 2;             // cactus row (z)
-        int cx = 2;             // centre column (shared breaker / hopper / chest)
+        int x0 = 0, x1 = 6, z0 = 0, z1 = 6;        // 7×7 footprint
+        int cx = 3;                                // centre column (breakers / chest)
+        int ix0 = 1, ix1 = 5, iz0 = 1, iz1 = 5;    // 5×5 inner region (hopper floor / water)
+        int[] cactusX = {2, 4};                    // cactus columns (2 apart → never adjacent)
+        int[] cactusZ = {2, 4};                    // cactus rows
 
-        // ── 1) FOUNDATION (y=0) + HOPPER FLOOR (below the sand) → CHEST ──────
-        // Collection drops a level vs the old build: a 3×3 HOPPER FLOOR at y=0 (BELOW the
-        // sand) lets the water sit at the sand's own level (y=1) with the CENTRE as a
-        // water drain (not a hopper). A snapped segment that lands in the water sinks
-        // straight down into the hopper beneath and chains south to the chest at the open
-        // south edge (cx,0,4), accessible at ground level.
-        floor(b, 0, 0, 0, 4, 4, stone);
-        b.set(cx, 0, 4, chest);                                                  // (2,0,4) chest, faces south
-        for (int x = wX; x <= eX; x++) {
-            for (int z = 1; z <= 3; z++) {
-                String facing = (z < 3) ? "south"                                // z1,z2 → south toward the chest row
-                        : (x < cx ? "east" : x > cx ? "west" : "south");         // z3 row → funnel to centre → chest
+        // ── 1) FOUNDATION (y=0) + HOPPER FLOOR (below the water) → CHEST ─────
+        floor(b, 0, x0, z0, x1, z1, stone);
+        b.set(cx, 0, z1, chest);                                                 // (3,0,6) chest, faces south
+        for (int x = ix0; x <= ix1; x++) {
+            for (int z = iz0; z <= iz1; z++) {
+                String facing = (x < cx) ? "east" : (x > cx) ? "west" : "south"; // funnel to centre, then south → chest
                 b.set(x, 0, z, bs("minecraft:hopper[enabled=true,facing=" + facing + "]"));
             }
         }
 
-        // ── 2) COBBLE RIM (y=1) — contains the water (no spilling) ───────────
-        // A cobble rim around the whole perimeter holds the sand-level water in. A single
-        // gap at the south edge (cx,1,4) lets the chest below it open.
-        for (int x = 0; x <= 4; x++) {
-            for (int z = 0; z <= 4; z++) {
-                if ((x == 0 || x == 4 || z == 0 || z == 4) && !(x == cx && z == 4)) {
+        // ── 2) COBBLE RIM (y=1) — contains the water; gap above the chest ────
+        for (int x = x0; x <= x1; x++) {
+            for (int z = z0; z <= z1; z++) {
+                if ((x == x0 || x == x1 || z == z0 || z == z1) && !(x == cx && z == z1)) {
                     b.set(x, 1, z, cobble);
                 }
             }
         }
+        b.set(cx, 1, z1 - 1, cobble);   // (3,1,5) dry dam so water doesn't reach the chest gap
 
-        // ── 3) SAND + WATER MOAT at the SAND LEVEL (y=1) ─────────────────────
-        // Sand grow-blocks; water rings each base's N/S sides + the shared CENTRE cell
-        // (cx,1,cz) — the old centre hopper is now WATER, its hopper moved down to y=0, so
-        // the water sits at the sand level (below the cactus base), per Patrick. Cobble
-        // fillers box the moat (and a dry barrier at (cx,1,cz+1) keeps water off the chest
-        // gap). A snapped segment lands in the water, never on a cactus, and sinks to the
-        // hopper below. Bases at y=2 have only air/water beside them → never pop.
-        b.set(wX, 1, cz, sand); b.set(eX, 1, cz, sand);                          // (1,1,2),(3,1,2)
-        int[][] moat = {{wX, cz - 1}, {wX, cz + 1}, {eX, cz - 1}, {eX, cz + 1}, {cx, cz}};
-        for (int[] c : moat) b.set(c[0], 1, c[1], water);
-        b.set(cx, 1, cz - 1, cobble);                                            // (2,1,1) box
-        b.set(cx, 1, cz + 1, cobble);                                            // (2,1,3) dry barrier before the chest gap
+        // ── 3) SAND + WATER (y=1), with the cacti AUTO-PLANTED at y=2 ────────
+        // Fill the inner 5×5 with water, then overwrite the 4 cactus columns with sand.
+        // The cactus base (y=2) prints AFTER this water layer (print order is bottom-up).
+        for (int x = ix0; x <= ix1; x++) {
+            for (int z = iz0; z <= iz1; z++) {
+                if (x == cx && z == z1 - 1) continue;           // keep the dry dam cell
+                b.set(x, 1, z, water);
+            }
+        }
+        for (int sx : cactusX) {
+            for (int sz : cactusZ) {
+                b.set(sx, 1, sz, sand);     // sand grow-block (overwrites water)
+                b.set(sx, 2, sz, cactus);   // AUTO-PLANTED cactus base (air on all 4 sides at y=2)
+            }
+        }
 
-        // ── 4) SHARED BREAKER (y=3) — pops both grown segments ───────────────
-        // One cobble block in the centre column at the grow-into height (cx,3,cz),
-        // horizontally adjacent to BOTH cacti's y=3 grow cells → each segment pops as it
-        // grows into y=3 and drops into the moat.
-        b.set(cx, 3, cz, cobble); // (2,3,2)
+        // ── 4) BREAKERS (y=3) — each pops the two cacti flanking it ──────────
+        // (cx,3,2) is orthogonally adjacent to (2,3,2) and (4,3,2); (cx,3,4) to (2,3,4) and
+        // (4,3,4). Each base at y=2 is only DIAGONAL to its breaker → survives + regrows.
+        for (int sz : cactusZ) {
+            b.set(cx, 3, sz, cobble);
+        }
 
         // ── 5) EXPLANATORY SIGN (standing, on the south rim by the chest) ────
-        // NOTE: cactus is unvalued (can't print, like bamboo/kelp), so the build ships
-        // WITHOUT it — the player plants a cactus on each sand block after printing.
-        signText(b, "minecraft:oak_sign[rotation=8]", eX, 2, 4,
-                "PLANT a cactus on", "each sand block.", "Grows, pops on the",
-                "breaker -> chest");
+        signText(b, "minecraft:oak_sign[rotation=8]", ix1, 2, z1,
+                "Auto-planted cactus", "grows + pops on", "the breakers ->",
+                "water -> chest.");
 
         return b.build();
     }
 
     /**
-     * §F.bamboo_farm — a STATIC automatic bamboo farm, 7×7×6 (W×L×H)
-     * → builder(7, 6, 7).
+     * §F.bamboo_farm — a STATIC automatic bamboo farm, 9×9×6 (W×L×H)
+     * → builder(9, 6, 9). <b>Rebuilt</b> to mirror the fixed sugar-cane farm exactly
+     * (clock + repeaters-into-pistons) and to STRIP the old multi-layer water flood.
      *
      * <p>The "Tier-1 post-1.20 farm", printed as the working STRUCTURE the player
      * plants into. Vanilla <b>bamboo</b> has no producing recipe and its grown stalk
      * is not structural matter ({@code BambooStalkBlock} is not a {@code BushBlock}),
      * so it is UNVALUED and would be silently skipped by the printer's strict-mode
      * gate. We therefore <b>omit the bamboo itself</b> — the player plants a shoot on
-     * each grow-block after printing — and print the mechanism: <b>mud</b> grow-blocks
-     * (bamboo plants on dirt/sand/gravel/mud; mud is FU-valued 1@1 and on-theme for
-     * the post-1.20 mangrove-swamp look), an <b>observer</b> RAISED to the cell the
-     * second bamboo segment grows into (NOT the planted base — the base is always
-     * present once planted, so a base-height observer fires once and never again),
-     * a <b>piston</b> above it that snaps the new segment off toward the canal, a
-     * <b>water canal</b> that catches the snapped bamboo, and a hopper → chest at the
-     * south end. This mirrors the shipped auto sugar-cane farm exactly (vertical-grow
-     * plant, observer-watches-the-growth-cell, piston-snap, central water canal). Every
-     * printed block is a vanilla FU-valued block (mud 1@1, stone, cobble, redstone 4@3,
-     * hopper 100@3, observer/piston derive from crafting, chest derives) or
-     * structural-free matter (water prints free, {@code asItem()==AIR}; redstone_wire
-     * is structural).
+     * each mud grow-block after printing.
      *
-     * <p>How it works once printed + planted: the player drops a bamboo shoot on each
-     * mud grow-block (the cells at y=2 are left as air above the mud for exactly this).
-     * Bamboo grows straight up. The planted base sits at y=2 and is permanent; the
-     * <b>second</b> segment grows into y=3, which is the cell the observer faces — so
-     * the observer pulses on every regrowth (this is the fix: the old build watched the
-     * base at y=2, which never changes). The observer's back output runs across a
-     * redstone-dust shelf to the piston at y=4, which snaps the stalk toward the central
-     * water canal. The broken bamboo lands in the canal water (y=2..4), flows south, and
-     * is swept by the hopper into the collection chest.
+     * <p><b>Why the rebuild (the old build's bugs):</b> it poured water at y=0 AND a
+     * full source column at y=2, y=3 AND y=4 — FOUR layers, a flooded mess — and it
+     * used the fire-too-often paired-observer detectors plus a dust ribbon two blocks
+     * above the piston that couldn't actually power it. Bamboo needs NO water to grow
+     * (it grows on soil), so this build uses water ONLY as a single base-layer transport
+     * canal (y=1) and harvests with a Redstone Clock driving pistons through repeaters.
      *
-     * <p>Layout (south = +z is the "front"/access side; the canal runs along Z; cx=3):
+     * <p><b>Mechanism (identical to sugarcane):</b> mud grow-blocks straddle a central
+     * 1-wide water canal; the player plants bamboo on the mud. A piston at the 2nd-
+     * segment height (y=3) beside each plant pushes the grown bamboo (push-destroyed →
+     * drops) INTO the canal, where the base-layer water sweeps it south over a hopper
+     * line → chest; the planted base survives and regrows. Each piston is driven by a
+     * REPEATER pointing into its back (a straight dust line beside a piston can't trigger
+     * it), the repeaters fed by a dust bus one column further out, and a single
+     * <b>Redstone Clock</b> (baked 60s) pulses both buses. Every printed block is vanilla
+     * FU-valued (mud 1@1, stone, cobble, redstone 4@3, hopper, repeater/piston/chest
+     * derive) or structural-free (water/redstone_wire).
+     *
+     * <p>Layout (south = +z is the front; the canal runs along Z; cx=4):
      * <ul>
-     *   <li><b>y=0</b> — stone foundation (7×7) with a central <b>water canal</b>
-     *       punched along Z at x=cx: the trough that carries the snapped bamboo south
-     *       to the hopper.</li>
-     *   <li><b>Hopper + chest, y=0</b> — at the south end of the canal a hopper
-     *       (x=cx, z=5) feeds a collection chest tucked at the south edge (z=6,
-     *       facing north), so every bamboo segment the canal delivers is collected.
-     *       Nothing solid sits above the chest, so it opens freely.</li>
-     *   <li><b>Mud grow-blocks, y=1</b> — two rows of mud straddling the canal at
-     *       x=cx-1 (2) and x=cx+1 (4), z=1..5, with <b>air left above them at y=2</b>
-     *       so the player can plant a bamboo shoot on each.</li>
-     *   <li><b>Canal catch-water, y=2..4</b> — water source column at x=cx along the
-     *       planting rows so the snapped bamboo segment (broken at the harvest height)
-     *       always lands in water and sweeps south, never onto a solid block.</li>
-     *   <li><b>Harvest wall</b> — one column further out (x=1 west / x=5 east) a stone
-     *       backing at y=1..2 raises an <b>observer at y=3</b> facing the grow column
-     *       (west faces east, east faces west) — it watches the cell the SECOND bamboo
-     *       segment grows into — with a <b>piston at y=4</b> above it facing the grow
-     *       column to snap the new segment toward the canal. A stone shelf one column
-     *       further out (x=0 / x=6) carries a redstone-dust ribbon at y=5 tying each
-     *       observer's back output to its piston.</li>
-     *   <li><b>End walls + label signs</b> — cobble end caps (z=0, z=6) box the
-     *       canal; oak wall signs on the south face explain where to plant.</li>
+     *   <li><b>y=0</b> — stone foundation + a hopper LINE along the canal bottom
+     *       (x=cx, z=1..7) facing south → collection chest at (cx,0,8).</li>
+     *   <li><b>Canal water, x=cx, y=1 ONLY</b> — the single transport layer.</li>
+     *   <li><b>Mud grow-blocks, x=cx∓1, y=1</b> — beside the canal; player plants bamboo
+     *       (base y=2). <b>Pistons, x=cx∓2, y=3</b> push the grown bamboo into the canal.
+     *       <b>Repeaters, x=cx∓3, y=3</b> drive the pistons; <b>dust buses, x=cx∓4</b>.</li>
+     *   <li><b>Redstone Clock</b> at the north-centre pulses both buses (tunable GUI).</li>
+     *   <li><b>Glass chest cap + signs</b>.</li>
      * </ul>
      */
     private static Blueprint bambooFarm() {
-        // Height 6 (y=0..5): the harvest wall stacks stone backing (y=1..2),
-        // observer (y=3, the 2nd-bamboo-segment height), piston (y=4) and a
-        // redstone-dust ribbon (y=5) — mirroring the shipped auto sugar-cane farm so
-        // the detectors sit where the bamboo actually grows, not at the planted base.
-        Blueprint.Builder b = Blueprint.builder("Bamboo Farm", 7, 6, 7);
+        // Mirrors the fixed sugar-cane farm: a Redstone Clock (baked 60s) pulses two dust
+        // buses, each driving its piston row THROUGH A REPEATER (a straight dust line beside
+        // a piston won't fire it). Bamboo needs no water to grow, so the only water is the
+        // single base-layer transport canal (y=1) — the old build's y=2/3/4 flood is gone.
+        Blueprint.Builder b = Blueprint.builder("Bamboo Farm", 9, 6, 9);
         // all vanilla, all FU-valued / structural-free (NO bamboo — unvalued; player plants it):
         BlueprintBlockState stone   = bs("minecraft:stone");
         BlueprintBlockState cobble  = COBBLE;
@@ -8673,87 +8627,71 @@ class CuratedBlueprintGenerator {
         BlueprintBlockState chest   = bs("minecraft:chest[facing=north,type=single,waterlogged=false]");
         BlueprintBlockState redDust = bs("minecraft:redstone_wire[east=none,west=none,north=none,south=none,power=0]"); // structural
 
-        int x0 = 0, x1 = 6, z0 = 0, z1 = 6;            // 7×7 footprint
-        int cx = 3;                                    // central water-canal column
-        int wMudX  = cx - 1, eMudX  = cx + 1;          // 2 and 4 (mud grow-block rows)
-        int wWallX = cx - 2, eWallX = cx + 2;          // 1 and 5 (observer/piston harvest walls)
-        int wShelfX = cx - 3, eShelfX = cx + 3;        // 0 and 6 (redstone-dust shelf columns)
-        int rowZ0 = 1, rowZ1 = 5;                      // grow-blocks / canal run along Z
+        int x0 = 0, x1 = 8, z0 = 0, z1 = 8;            // 9×9 footprint
+        int cx = 4;                                    // central water-canal column
+        int rowZ0 = 1, rowZ1 = 7;                      // grow-blocks / canal run along Z
+        int wMudX  = cx - 1, eMudX  = cx + 1;          // 3 / 5 — mud grow-blocks (beside canal)
+        int wWallX = cx - 2, eWallX = cx + 2;          // 2 / 6 — piston columns (push into canal)
+        int wRepX  = cx - 3, eRepX  = cx + 3;          // 1 / 7 — repeaters INTO the pistons
+        int wBusX  = cx - 4, eBusX  = cx + 4;          // 0 / 8 — dust buses (carry the clock pulse)
 
-        // ── 1) STONE FOUNDATION at y=0, with the central WATER CANAL ─────────
+        // ── 1) STONE FOUNDATION + HOPPER LINE + CHEST at y=0 ─────────────────
         floor(b, 0, x0, z0, x1, z1, stone);
-        // canal: water along Z at x=cx (z=1..4); the snapped bamboo floats south.
-        for (int z = rowZ0; z <= rowZ1 - 1; z++) {
-            b.set(cx, 0, z, water);
-        }
-
-        // ── 2) HOPPER + COLLECTION CHEST at the SOUTH end, y=0 ───────────────
-        // The canal terminates over a hopper that feeds the chest. The hopper mouth
-        // (z=5) catches what the flow delivers; it points SOUTH (+z) into the chest
-        // tucked at the south edge (z=6). A hopper ejects toward its FACING, so to feed
-        // a chest one cell SOUTH it must face SOUTH (the old facing=north pointed it back
-        // up the canal into water and never reached the chest). The chest faces north so
-        // its front reads inward. (Air-skip means these overwrite the stone foundation
-        // cells.)
-        b.set(cx, 0, rowZ1, bs("minecraft:hopper[enabled=true,facing=south]")); // z=5 → feeds chest
-        b.set(cx, 0, z1, chest);                                                 // collection chest, faces north
-
-        // ── 2b) CANAL CATCH-WATER (y=2..4) — where the snapped bamboo lands ──
-        // A water SOURCE column at x=cx along the planting rows (z=1..5) through y=2..4:
-        // the bamboo snapped at the harvest height always falls into water (never onto
-        // a solid block) and flows south, dropping down the y=0 canal into the hopper.
         for (int z = rowZ0; z <= rowZ1; z++) {
-            b.set(cx, 2, z, water);
-            b.set(cx, 3, z, water);
-            b.set(cx, 4, z, water);
+            b.set(cx, 0, z, bs("minecraft:hopper[enabled=true,facing=south]")); // canal-bottom hopper line → chest
+        }
+        b.set(cx, 0, z1, chest);                       // (4,0,8) collection chest, faces north
+
+        // ── 2) CANAL WATER at y=1 ONLY (single transport layer) ──────────────
+        // Sits on the hopper line; carries the pushed-in bamboo south over the hoppers.
+        // No higher water layers — bamboo doesn't need water to grow.
+        for (int z = rowZ0; z <= rowZ1; z++) {
+            b.set(cx, 1, z, water);
         }
 
         // ── 3) MUD GROW-BLOCKS — the player plants bamboo on top ─────────────
-        // Two mud rows straddling the canal at x=2 and x=4 (z=1..5). Air is left above
-        // each (y=2) so the player can plant a bamboo shoot; the planted base sits at
-        // y=2, the 2nd segment grows into y=3 (the observer's watch cell), and broken
-        // segments fall into the central canal water.
+        // Two mud rows beside the canal (x=cx∓1, y=1); air above (y=2+) for the shoot.
         for (int z = rowZ0; z <= rowZ1; z++) {
-            b.set(wMudX, 1, z, mud);   // grow-block (player plants bamboo here; air above at y=2)
+            b.set(wMudX, 1, z, mud);
             b.set(eMudX, 1, z, mud);
         }
 
-        // ── 4) HARVEST WALL: stone backing + observer + piston + redstone ────
-        // One column further out from each mud row (x=1 west / x=5 east): stone backing
-        // at y=1..2 RAISES an observer to y=3 facing the grow column — it watches the
-        // cell the SECOND bamboo segment grows into (the planted base at y=2 is always
-        // present, so a base-height observer would fire once and never again; this is
-        // the fix). A piston at y=4 above it faces the grow column and snaps the new
-        // segment toward the central canal. West wall faces east, east wall faces west.
-        // A stone shelf one column further out (x=0 / x=6) carries a redstone-dust
-        // ribbon at y=5 tying each observer's back output across to fire its piston.
+        // ── 4) PISTON HARVEST ROW (y=3) + REPEATER-FED BUSES ─────────────────
+        // Piston at the 2nd-segment height (y=3) beside each plant, on a 2-block stone
+        // backing, facing the canal (west x=2 faces east, east x=6 faces west). A REPEATER
+        // (west x=1 east-facing, east x=7 west-facing) drives each piston from behind; the
+        // dust BUS runs one column further out (x=0 / x=8). On a clock pulse every piston
+        // pushes its grown bamboo into the canal (push-destroyed → drops); the base regrows.
         for (int z = rowZ0; z <= rowZ1; z++) {
-            pillar(b, wWallX, z, 1, 2, stone);   // observer backing → raises detector to y=3
-            pillar(b, eWallX, z, 1, 2, stone);
-            b.set(wWallX, 3, z, bs("minecraft:observer[facing=east,powered=false]"));
-            b.set(eWallX, 3, z, bs("minecraft:observer[facing=west,powered=false]"));
-            b.set(wWallX, 4, z, bs("minecraft:piston[facing=east,extended=false]"));
-            b.set(eWallX, 4, z, bs("minecraft:piston[facing=west,extended=false]"));
-            pillar(b, wShelfX, z, 1, 4, stone);  // solid floor under the dust ribbon
-            pillar(b, eShelfX, z, 1, 4, stone);
-            b.set(wShelfX, 5, z, redDust);
-            b.set(eShelfX, 5, z, redDust);
+            pillar(b, wBusX, z, 1, 2, stone); pillar(b, wRepX, z, 1, 2, stone); pillar(b, wWallX, z, 1, 2, stone);
+            pillar(b, eBusX, z, 1, 2, stone); pillar(b, eRepX, z, 1, 2, stone); pillar(b, eWallX, z, 1, 2, stone);
+            b.set(wBusX, 3, z, redDust);      b.set(eBusX, 3, z, redDust);       // bus dust
+            b.set(wRepX, 3, z, bs("minecraft:repeater[facing=east,delay=1,locked=false,powered=false]")); // → west piston
+            b.set(eRepX, 3, z, bs("minecraft:repeater[facing=west,delay=1,locked=false,powered=false]")); // → east piston
+            b.set(wWallX, 3, z, bs("minecraft:piston[facing=east,extended=false]"));
+            b.set(eWallX, 3, z, bs("minecraft:piston[facing=west,extended=false]"));
         }
 
-        // ── 5) END WALLS (box the canal) + LABEL SIGNS ───────────────────────
-        // North cobble end cap (y=1) closes the north end so the canal reads as a
-        // contained trough. The SOUTH cap is intentionally NOT placed over the centre
-        // (x=cx) column: that cell sits directly above the collection chest at (cx,0,z1)
-        // and must stay open air so the chest opens freely. We cap only the two mud
-        // columns at the south edge and mount the explanatory signs there.
-        line(b, 1, wMudX, z0, eMudX, z0, cobble);   // north end cap, y=1
-        // oak wall signs on the south face flanking the chest, telling the player where
-        // to plant (FU-valued, derived). These overwrite the south mud-column cells at
-        // y=1, leaving the centre chest column above-clear.
+        // ── 4b) REDSTONE CLOCK at the north end (z=0) — the timer ────────────
+        // One Redstone Clock (baked 60s) pulses every side every 60s; its z=0 dust run
+        // feeds both buses → repeaters → pistons. Rides a y=2 stone shelf (y=1 cobble base).
+        line(b, 1, wBusX, z0, eBusX, z0, cobble);      // y=1 base course under the wiring (x=0..8)
+        line(b, 2, wBusX, z0, eBusX, z0, stone);       // y=2 shelf the clock + dust sit on
+        redstoneClock(b, cx, 3, z0, 60);               // (4,3,0) clock, 60s
+        for (int x = wBusX; x <= eBusX; x++) {
+            if (x != cx) {
+                b.set(x, 3, z0, redDust);              // dust run linking the clock to both bus heads
+            }
+        }
+
+        // ── 5) GLASS CHEST CAP + END CAPS + LABEL SIGNS ──────────────────────
+        b.set(cx, 1, z1, GLASS);                       // glass cap over the chest (stops water spill, still opens)
+        b.set(wWallX, 1, z1, cobble);                  // south-west corner
+        b.set(eWallX, 1, z1, cobble);                  // south-east corner
         signText(b, "minecraft:oak_wall_sign[facing=south]", wMudX, 1, z1,
-                "Plant bamboo on", "the mud blocks.", "Observer fires the", "piston -> water.");
+                "Plant bamboo on", "the mud blocks.", "Clock fires the", "pistons -> water.");
         signText(b, "minecraft:oak_wall_sign[facing=south]", eMudX, 1, z1,
-                "Plant bamboo on", "the mud blocks.", "Observer fires the", "piston -> water.");
+                "Plant bamboo on", "the mud blocks.", "Clock fires the", "pistons -> water.");
 
         return b.build();
     }
@@ -9000,34 +8938,31 @@ class CuratedBlueprintGenerator {
      * are not {@code BushBlock}s), so it is UNVALUED and would be silently skipped by
      * the printer's strict-mode gate. We therefore <b>omit the kelp itself</b> — the
      * player plants a kelp shoot on the column floor after printing — and print the
-     * mechanism: a glass-walled <b>water column</b> in which the kelp grows, an
-     * <b>observer</b> at the top that watches the column for the stalk growing one
-     * block taller, a <b>piston</b> beside it that breaks the new growth off, a
-     * <b>hopper</b> floor under the column that sweeps the cut kelp into a collection
-     * <b>chest</b>, and a small <b>furnace bank</b> (the dried-kelp smelter) on the
-     * south side. Every printed block is a vanilla FU-valued block (stone, glass,
-     * observer/piston/hopper/chest/furnace all derive from crafting) or
-     * structural-free matter (water prints free, {@code asItem()==AIR}; redstone_wire
-     * is structural). The water column reads correctly because its walls are glass
-     * <b>blocks</b> (NOT panes) seated on the stone foundation — so the render-integrity
-     * stub-pane gate ({@code IronBarsBlock} with zero connections) never applies.
+     * mechanism: a glass-walled <b>water column</b> in which the kelp grows, a row of
+     * <b>pistons</b> beside it that break the growth off, driven by a <b>Redstone
+     * Clock</b> through <b>repeaters</b>, and a small <b>furnace bank</b> (the dried-kelp
+     * smelter) on the south side. Every printed block is a vanilla FU-valued block
+     * (stone, glass, redstone_clock/repeater/piston/hopper/chest/furnace all derive from
+     * crafting) or structural-free matter (water prints free, {@code asItem()==AIR};
+     * redstone_wire is structural). The water column reads correctly because its walls
+     * are glass <b>blocks</b> (NOT panes) seated on the stone foundation — so the
+     * render-integrity stub-pane gate never applies.
      *
-     * <p>How it works once printed + planted: the player plants a kelp shoot on each
-     * submerged stone grow-block (the two rows straddling the central water canal).
-     * Kelp grows straight up through the water; when a new segment grows into the cell
-     * the side observer faces (the 2nd-segment height, y=2), the observer pulses,
-     * firing the piston above it which snaps the stalk LOW toward the central canal —
-     * leaving the planted base to regrow (self-sustaining). The snapped kelp lands in
-     * the canal water, floats south, and drops onto the hopper canal floor, which
-     * chains it into the collection chest. Smelting it in the furnace bank yields dried
-     * kelp (food / fuel / smelting XP).
+     * <p><b>Harvest (clock + repeaters):</b> the player plants a kelp shoot on each
+     * submerged stone grow-block (the two rows straddling the central canal). Kelp grows
+     * up through the water; a Redstone Clock (baked 60s) pulses two DRY dust buses outside
+     * the glass, each driving its piston row through a REPEATER (a straight dust line
+     * beside a piston can't trigger it — the redstone nuance), and the pistons punch the
+     * lower kelp into the canal, leaving the base to regrow. This replaces the old
+     * fire-too-often paired observers AND the dust-on-piston-tops that washed off on print.
      *
-     * <p>This mirrors the auto bamboo/sugar-cane farm pattern (side harvest walls, not
-     * a top head) — adapted for UNDERWATER growth. The fix from the old build: the
-     * redstone no longer sits on the observer/piston tops (where it washed off on
-     * print) or anywhere touching water. It rides a DEDICATED dry stone shelf one
-     * column beyond each harvest wall; the full-solid, non-waterloggable observer/piston
-     * bodies dam the water in and keep that shelf bone-dry.
+     * <p><b>Collection is SEMI-AUTO (honest):</b> cut kelp, like all items in water,
+     * <b>floats UP</b> to the surface — so a bottom hopper can't catch it. There is no
+     * compact, reliably-printable vanilla way to skim floating items out of a sealed
+     * tank (a surface flowing-water push to a drop hole works in principle but doesn't
+     * settle deterministically on print), so the player scoops the floating kelp off the
+     * open top and smelts it. A bottom hopper→chest is kept for any sinking/deposited
+     * items (and routing validation). Smelting yields dried kelp (food / fuel / XP).
      *
      * <p>Layout (south = +z is the "front"/access side; the canal is centred at cx=4,
      * running along z=2..6):
@@ -9043,17 +8978,17 @@ class CuratedBlueprintGenerator {
      *       z=1..7) boxing the tank so it reads as a contained aquarium and holds the
      *       water in. Glass blocks (not panes) → no stub-pane render risk.</li>
      *   <li><b>Harvest walls, y=1..3</b> — one column out from each grow row (x=2 west /
-     *       x=6 east): stone backing at y=1 raises an <b>observer</b> to y=2 (facing the
-     *       grow-cell — the 2nd-kelp-segment height, so it re-fires each growth cycle),
-     *       with a <b>piston</b> at y=3 above that snaps the cut stalk into the canal.
-     *       These solid mechanism blocks are the dam.</li>
-     *   <li><b>Dry redstone shelves, y=1..4</b> — one column further out (x=1 / x=7): a
-     *       solid stone pillar (y=1..3) carries a <b>redstone-dust</b> ribbon at y=4 in
-     *       AIR, never on a mechanism top, never in/touching water.</li>
+     *       x=6 east): a 2-block stone backing (y=1..2) with a <b>piston</b> at y=3 facing
+     *       the grow-cell that snaps the lower kelp into the canal. These solid mechanism
+     *       blocks are the dam between the tank water and the dry wiring.</li>
+     *   <li><b>Dry wiring, y=1..3</b> — outside the glass: a <b>repeater</b> (x=1 / x=7,
+     *       y=3) drives each piston from behind; a <b>dust bus</b> (x=0 / x=8) feeds the
+     *       repeaters; a <b>Redstone Clock</b> at the north edge (z=0) pulses both. All on
+     *       dry stone, outside the glass ring → never in/touching water.</li>
      *   <li><b>Dried-kelp smelter, y=1</b> — a 2-<b>furnace</b> bank on the south edge
      *       (x=1 and x=7, z=8, facing north) for smelting the collected kelp.</li>
-     *   <li><b>Label signs</b> — oak wall signs on the south face flank the chest,
-     *       telling the player where to plant the kelp.</li>
+     *   <li><b>Label signs</b> — oak wall signs on the south face: where to plant, and
+     *       that cut kelp floats up (scoop it off the top — semi-auto).</li>
      * </ul>
      */
     private static Blueprint kelpFarm() {
@@ -9069,8 +9004,9 @@ class CuratedBlueprintGenerator {
         int x0 = 0, x1 = 8, z0 = 0, z1 = 8;            // 9×9 footprint
         int cx = 4;                                    // central water-canal column
         int wGrowX = cx - 1, eGrowX = cx + 1;          // 3 and 5 — submerged stone grow-blocks (plant kelp here)
-        int wWallX = cx - 2, eWallX = cx + 2;          // 2 and 6 — observer/piston harvest walls (the dry dam)
-        int wShelfX = cx - 3, eShelfX = cx + 3;        // 1 and 7 — dry stone redstone-dust shelf columns
+        int wWallX = cx - 2, eWallX = cx + 2;          // 2 and 6 — piston harvest walls (the dry dam)
+        int wRepX  = cx - 3, eRepX  = cx + 3;          // 1 and 7 — repeaters INTO the pistons (dry, outside the glass)
+        int wBusX  = cx - 4, eBusX  = cx + 4;          // 0 and 8 — dust buses (dry, carry the clock pulse)
         int rowZ0 = 2, rowZ1 = 6;                      // canal + grow rows run along Z (z=2..6)
         int colTop = 6;                                // water rises y=1..6 (grow column height)
 
@@ -9122,52 +9058,60 @@ class CuratedBlueprintGenerator {
             walls(b, wWallX, rowZ0 - 1, eWallX, rowZ1 + 1, y, y, glass); // 5×5 perimeter
         }
 
-        // ── 5) HARVEST WALLS: stone backing + observer + piston + DRY redstone ──
-        // One column out from each grow row (x=2 west / x=6 east): a stone backing at
-        // y=1 RAISES an observer to y=2 — the cell the SECOND kelp segment grows into.
-        // (Kelp's planted base at y=2-water is always present once planted, so a base-
-        // height observer would fire once and never again; watching the 2nd segment
-        // makes it re-fire every growth cycle and break LOW, leaving the base to
-        // regrow. This is the fix.) The observer's FRONT face is directly adjacent to
-        // the grow-block water cell — no glass between, so it watches the kelp, not the
-        // glass. A piston at y=3 above it faces the grow column and snaps the cut stalk
-        // toward the central canal water. The observer + piston bodies (full solid,
-        // NON-waterloggable) form the DAM between the water column and the redstone.
+        // ── 5) HARVEST WALLS: piston dam + REPEATER-FED BUSES (DRY) ─────────
+        // One column out from each grow row (x=2 west / x=6 east): a 2-block stone backing
+        // (y=1..2) with a PISTON at y=3 facing the grow column (west faces east, east faces
+        // west). On a clock pulse the piston punches the kelp's lower segment into the
+        // canal; the planted base regrows. The piston + stone bodies (full solid, NON-
+        // waterloggable) dam the tank water away from the dry wiring beyond them.
         //
-        // The redstone-dust ribbon rides a DEDICATED solid stone shelf one column
-        // FURTHER OUT (x=1 west / x=7 east): its own stone pillar y=1..3 carries the
-        // dust at y=4 in AIR — never on top of the observer/piston, never in or touching
-        // water (the mechanism wall dams the water away). This is the wash-off fix: in
-        // the old build the dust sat on the observer/piston tops and was adjacent to the
-        // wet column, so a piece broke off on print. Now every dust block sits on a dry,
-        // supported stone shelf. West wall faces east, east wall faces west.
+        // Each piston is driven by a REPEATER pointing into its back — a straight dust line
+        // beside a piston can't trigger it (the redstone nuance). The repeater sits one
+        // column out (x=1 west / x=7 east, y=3), fed by a dust BUS one more column out
+        // (x=0 / x=8). x=0/1 and x=7/8 are OUTSIDE the glass ring (x=2..6) → bone dry.
         for (int z = rowZ0; z <= rowZ1; z++) {
-            b.set(wWallX, 1, z, stone);  // observer backing → raises detector to y=2
-            b.set(eWallX, 1, z, stone);
-            b.set(wWallX, 2, z, bs("minecraft:observer[facing=east,powered=false]")); // watches grow cell
-            b.set(eWallX, 2, z, bs("minecraft:observer[facing=west,powered=false]"));
-            b.set(wWallX, 3, z, bs("minecraft:piston[facing=east,extended=false]"));  // snaps stalk → canal
+            pillar(b, wWallX, z, 1, 2, stone);  pillar(b, eWallX, z, 1, 2, stone);   // piston backing/dam
+            b.set(wWallX, 3, z, bs("minecraft:piston[facing=east,extended=false]")); // snaps kelp → canal
             b.set(eWallX, 3, z, bs("minecraft:piston[facing=west,extended=false]"));
-            pillar(b, wShelfX, z, 1, 3, stone);  // dry solid floor under the dust ribbon
-            pillar(b, eShelfX, z, 1, 3, stone);
-            b.set(wShelfX, 4, z, redDust);       // y=4 redstone, on a DRY stone shelf in air
-            b.set(eShelfX, 4, z, redDust);
+            pillar(b, wRepX, z, 1, 2, stone);   pillar(b, eRepX, z, 1, 2, stone);    // dry repeater floor
+            pillar(b, wBusX, z, 1, 2, stone);   pillar(b, eBusX, z, 1, 2, stone);    // dry bus floor
+            b.set(wRepX, 3, z, bs("minecraft:repeater[facing=east,delay=1,locked=false,powered=false]")); // → west piston
+            b.set(eRepX, 3, z, bs("minecraft:repeater[facing=west,delay=1,locked=false,powered=false]")); // → east piston
+            b.set(wBusX, 3, z, redDust);        b.set(eBusX, 3, z, redDust);         // dust buses
         }
+
+        // ── 5b) REDSTONE CLOCK at the north edge (z=0, dry, outside the tank) ─
+        // One Redstone Clock (baked 60s) pulses every side every 60s; a y=3 dust run along
+        // the north edge links it to both bus heads → repeaters → pistons, so every piston
+        // fires as one. Replaces the fire-too-often observers (tune the rate in its GUI).
+        // Rides a y=2 stone shelf spanning x=0..8 at z=0 so the dust has a dry floor.
+        line(b, 2, wBusX, z0, eBusX, z0, stone);       // y=2 shelf under the north wiring
+        redstoneClock(b, cx, 3, z0, 60);               // (4,3,0) clock, 60s
+        for (int x = wBusX; x <= eBusX; x++) {
+            if (x != cx) {
+                b.set(x, 3, z0, redDust);              // north connector dust (links clock → both buses)
+            }
+        }
+        // carry each bus head from the north connector (z=0) down to the bus run (z=2)
+        b.set(wBusX, 3, z0 + 1, redDust); b.set(eBusX, 3, z0 + 1, redDust);
 
         // ── 6) DRIED-KELP SMELTER: 2-furnace bank on the south face, y=1 ────
         // Two furnaces on the south edge (x=1 and x=7, z=8) for smelting the collected
         // kelp into dried kelp (food / fuel / XP). Furnaces derive their FU value from
         // the 8-cobblestone crafting recipe.
-        b.set(wShelfX, 1, z1, furnace);                // west furnace (x=1)
-        b.set(eShelfX, 1, z1, furnace);                // east furnace (x=7)
+        b.set(wRepX, 1, z1, furnace);                  // west furnace (x=1)
+        b.set(eRepX, 1, z1, furnace);                  // east furnace (x=7)
 
         // ── 7) LABEL SIGNS on the south face flanking the chest ─────────────
-        // Tell the player where to plant: the two submerged stone grow rows (x=3/x=5).
-        // These mount on the south glass face flanking the chest column.
+        // Honest semi-auto: the clock auto-cuts the kelp, but CUT KELP FLOATS UP (items
+        // rise in water), so the bottom hopper can't catch it — the player scoops the
+        // floating kelp off the open top and smelts it. (Vanilla has no compact, reliably-
+        // printable way to collect floating items from a sealed tank — see the rebalance
+        // note — so collection is intentionally semi-auto here.)
         signText(b, "minecraft:oak_wall_sign[facing=south]", wGrowX, 1, rowZ1 + 1,
-                "Plant kelp on the", "submerged stone", "rows (sides of", "the water canal).");
+                "Plant kelp on the", "submerged stone", "rows; clock cuts", "it automatically.");
         signText(b, "minecraft:oak_wall_sign[facing=south]", eGrowX, 1, rowZ1 + 1,
-                "Observer fires the", "piston -> snaps", "kelp into the", "canal -> hopper.");
+                "Cut kelp FLOATS UP", "- scoop it off the", "top & smelt it in", "the furnaces.");
 
         return b.build();
     }
@@ -10944,111 +10888,107 @@ class CuratedBlueprintGenerator {
     }
 
     /**
-     * §F.chicken_coop_auto — an automatic cooked-chicken cooker, 7×7×5 (W×L×H) →
-     * builder(7, 5, 7). REBUILT around a CAMPFIRE kill floor with an OPEN-TOP input.
+     * §F.chicken_coop_auto — an automatic cooked-chicken cooker, 5×9×5 (W×H×D) →
+     * builder(5, 9, 5). REBUILT around a LAVA-BLADE DROP (Patrick's experiment).
      *
-     * <p><b>Why the rebuild (the old build did not work):</b> it used
-     * {@code lava_cauldron} blocks as the pen wall, but a cauldron holds its lava
-     * RECESSED behind a full-block face — a chicken beside it never touches the lava, so
-     * nothing ever cooked ("no way to get to the lava") — and the only input was a
-     * cramped 1-block side gap ("no way to drop a chicken in"). Raw lava can't simply
-     * replace it: a chicken is only ~0.7 blocks tall, so it can't reach lava one cell
-     * ABOVE it (the iron-farm "head in the blade" trick needs a TALL mob), and lava in
-     * the chicken's OWN cell burns up the cooked-chicken drop before it can be collected.
+     * <p><b>Why the rebuild:</b> the previous CAMPFIRE floor killed chickens but did NOT
+     * cook them (a campfire deals fire damage but apparently doesn't set the entity's
+     * "on fire" flag, so the drop stayed raw). To get a COOKED drop the chicken must die
+     * while ON FIRE — so this routes it through a lava blade (the iron-farm mechanic):
+     * water on a spawn deck pushes the chicken to a central hole; it washes down a shaft,
+     * passes THROUGH a 1-block lava blade (igniting), and lands on a hopper below where it
+     * burns to death ON FIRE → the meat drop is COOKED, on the hopper (not in the lava) →
+     * chest. Signs do the fluid work: a sign holds the lava up (blocks fluid, passes the
+     * falling chicken + drops) and a second sign above the lava dams the wash-water so it
+     * never touches the lava (no obsidian).
      *
-     * <p><b>The working mechanism — a LIT CAMPFIRE on a HOPPER.</b> A campfire deals fire
-     * damage to any chicken standing on it (fire/lava death → the meat drop is COOKED),
-     * does NOT destroy dropped items (unlike raw lava/fire), and the hopper directly below
-     * pulls the cooked chicken + feathers off the campfire into the chest. The whole pen
-     * floor is campfires-on-hoppers, so a chicken anywhere inside cooks. There is no raw
-     * lava or fire block, so nothing can spread or leak.
+     * <p><b>Fire safety:</b> the lava block has ZERO air neighbours — a sign directly
+     * above and below it, stone on all four sides — and fire only spawns in an AIR cell
+     * adjacent to lava, so it cannot ignite the (oak) signs or anything else. (Same
+     * principle as the iron farm; chicken_coop_auto is allowlisted in the fire-hazard +
+     * reachability gates for the intentional lava + sealed kill shaft.)
      * <pre>
-     *   y=2..4  glass pen walls; OPEN TOP — drop chickens/eggs in here
-     *   y=2     LIT CAMPFIRE on every hopper  ← chickens stand here and cook
-     *   y=1     HOPPER floor (5×5) → front-edge CHEST (glass cap, still opens)
+     *   y=6+    glass pen, OPEN TOP — drop chickens/eggs in; deck water pushes to the hole
+     *   y=5     deck floor with a central drop HOLE (wash water pours in)
+     *   y=4     SIGN (dams the wash-water; chicken passes through)
+     *   y=3     LAVA BLADE (chicken falls through → ignites)
+     *   y=2     SIGN (holds the lava up; chicken passes through)
+     *   y=1     HOPPER (chicken lands ON FIRE, dies → COOKED drop) → chest
      *   y=0     stone foundation
      * </pre>
      *
-     * <p>Layout (south = +z is the front/access side; centre x=3):
-     * <ul>
-     *   <li><b>y=1</b> — a 5×5 hopper grid funnelling to the centre column then SOUTH into
-     *       a chest at the front edge (3,1,6). The chest's south face is exposed for
-     *       pickup and the block above it is GLASS (transparent → the chest still opens).
-     *       A stone rim frames the grid; two label signs flank the chest.</li>
-     *   <li><b>y=2</b> — a LIT CAMPFIRE on every hopper (the kill floor) inside a glass
-     *       wall ring.</li>
-     *   <li><b>y=3..4</b> — glass pen walls (3 courses tall total) with an OPEN TOP: drop
-     *       chickens in, or throw eggs in, from above.</li>
-     * </ul>
-     * Every block is vanilla FU-valued (stone, glass BLOCKS, campfire, hopper, chest,
-     * sign) — no lone panes, no raw lava/fire.
+     * <p><b>EXPERIMENTAL (verify in-game):</b> chickens flap-fall slowly, so there's a
+     * chance one dies IN the lava (burning the drop) rather than on the hopper below.
+     * Patrick asked to try the lava blade and see; if it doesn't cook reliably, the
+     * campfire-floor version is the fire-safe fallback. Every block is vanilla FU-valued
+     * (stone, glass, hopper, chest, sign) or structural (lava/water).
      */
     private static Blueprint chickenCoopAuto() {
-        // AUTO CHICKEN COOKER — rebuilt around a CAMPFIRE kill floor + OPEN-TOP input.
-        // (Old build: lava_cauldron "walls" whose recessed lava no chicken could touch +
-        // a 1-block side gap you couldn't load chickens through.) A lit campfire on a
-        // hopper is the reliable cooked-chicken mechanism: it deals fire damage to a
-        // chicken standing on it (the meat drop is COOKED), does NOT burn up the dropped
-        // items, and the hopper below pulls them into the chest. No raw lava/fire → nothing
-        // spreads or leaks. Drop chickens (or throw eggs) into the open top.
-        Blueprint.Builder b = Blueprint.builder("Auto Chicken Cooker", 7, 5, 7);
-        // all vanilla, all FU-valued / structural-free:
-        BlueprintBlockState stone    = bs("minecraft:stone");
-        BlueprintBlockState glass    = GLASS;                  // solid glass walls (always render)
-        BlueprintBlockState campfire = bs("minecraft:campfire[facing=north,lit=true,signal_fire=false,waterlogged=false]");
-        BlueprintBlockState chest    = bs("minecraft:chest[facing=south,type=single,waterlogged=false]");
+        // AUTO CHICKEN COOKER — lava-blade drop (Patrick's experiment). The campfire floor
+        // killed but didn't COOK (no on-fire flag → raw drops). A chicken must die ON FIRE
+        // for a cooked drop, so it washes down a shaft, falls THROUGH a 1-block lava blade
+        // (ignites), and burns out on a hopper below. Signs hold the lava (and dam the wash
+        // water off it); the lava has no air neighbour so it can't spread fire.
+        Blueprint.Builder b = Blueprint.builder("Auto Chicken Cooker", 5, 9, 5);
+        BlueprintBlockState stone = bs("minecraft:stone");
+        BlueprintBlockState glass = GLASS;
+        BlueprintBlockState lava  = bs("minecraft:lava[level=0]");
+        BlueprintBlockState sign  = bs("minecraft:oak_sign[rotation=0]"); // standing sign: blocks fluid, passes entities
+        BlueprintBlockState water = WATER;
+        BlueprintBlockState chest = bs("minecraft:chest[facing=south,type=single,waterlogged=false]");
 
-        int x0 = 0, x1 = 6, z0 = 0, z1 = 6;                   // 7×7 footprint
-        int cx = 3;                                           // centre column (chest + funnel column)
-        int ix0 = 1, ix1 = 5, iz0 = 1, iz1 = 5;               // 5×5 pen interior (campfire/hopper floor)
+        int x0 = 0, x1 = 4, z0 = 0, z1 = 4;   // 5×5 footprint
+        int cx = 2, cz = 2;                   // kill-shaft column
 
-        // ── 1) STONE FOUNDATION at y=0 ───────────────────────────────────────────
+        // ── 1) FOUNDATION (y=0) ─────────────────────────────────────────────
         floor(b, 0, x0, z0, x1, z1, stone);
 
-        // ── 2) HOPPER FLOOR (y=1) + FRONT-EDGE CHEST ─────────────────────────────
-        // Every interior cell is a hopper: the campfire above drops the cooked chicken
-        // straight down into it. Each row funnels to the centre column (x<cx → east,
-        // x>cx → west) and the centre column chains SOUTH into the chest at the front edge.
-        for (int x = ix0; x <= ix1; x++) {
-            for (int z = iz0; z <= iz1; z++) {
-                String facing = (x < cx) ? "east" : (x > cx) ? "west" : "south";
-                b.set(x, 1, z, bs("minecraft:hopper[enabled=true,facing=" + facing + "]"));
-            }
-        }
-        // stone rim around the foundation perimeter (a base for the glass walls).
-        line(b, 1, x0, z0, x1, z0, stone);   // north
-        line(b, 1, x0, z1, x1, z1, stone);   // south
-        line(b, 1, x0, z0, x0, z1, stone);   // west
-        line(b, 1, x1, z0, x1, z1, stone);   // east
-        // CHEST at the front-edge centre (3,1,6): the centre hopper (3,1,5) feeds south
-        // into it. Its south face is the build edge (exposed for pickup); the block above
-        // it (3,2,6) is GLASS — transparent, so the chest still opens. Overwrites the rim.
-        b.set(cx, 1, z1, chest);
-        // two standing label signs flanking the chest (rest on the foundation, face south).
-        signText(b, "minecraft:oak_sign[rotation=8]", cx - 1, 1, z1,
-                 "AUTO CHICKEN", "COOKER", "Drop chickens in", "the open top.");
-        signText(b, "minecraft:oak_sign[rotation=8]", cx + 1, 1, z1,
-                 "Campfires cook", "them; cooked", "chicken drops", "to this chest.");
+        // ── 2) LANDING + COLLECTION (y=1) — chicken lands here ON FIRE, dies ─
+        // The shaft body is solid stone; carve a 1-wide kill slot at the centre. The
+        // chicken lands on the hopper at (cx,1,cz); a second hopper chains south into the
+        // chest at the south edge. Stone walls the slot on 3 sides so it can't wander far.
+        floor(b, 1, x0, z0, x1, z1, stone);
+        b.set(cx, 1, cz, bs("minecraft:hopper[enabled=true,facing=south]"));     // landing hopper
+        b.set(cx, 1, cz + 1, bs("minecraft:hopper[enabled=true,facing=south]")); // carrier → chest
+        b.set(cx, 1, z1, chest);                                                 // (2,1,4) chest, faces south
 
-        // ── 3) CAMPFIRE KILL FLOOR at y=2 ────────────────────────────────────────
-        // A lit campfire on every interior hopper. A chicken standing on a campfire takes
-        // fire damage (→ COOKED drop) and the hopper directly below collects the items
-        // off the campfire (campfires don't burn dropped items). The whole floor cooks, so
-        // a chicken anywhere inside is over heat.
-        for (int x = ix0; x <= ix1; x++) {
-            for (int z = iz0; z <= iz1; z++) {
-                b.set(x, 2, z, campfire);
-            }
-        }
-
-        // ── 4) GLASS PEN WALLS (y=2..4), OPEN TOP ────────────────────────────────
-        // Three courses of solid-glass wall ring the pen so chickens stay over the fire
-        // and you can watch them cook; the TOP is left OPEN so you drop chickens (or throw
-        // eggs) straight in. The south wall's cell above the chest (3,2,6) is glass —
-        // transparent, so it both contains the chickens AND lets the chest open.
+        // ── 3) KILL SHAFT (y=2..4) — sign / LAVA / sign, stone-encased ──────
+        // Solid stone at each level, with the centre carved to the fluid stack. The lava at
+        // (cx,3,cz) has a sign directly above (y=4) and below (y=2) and stone on all four
+        // sides → ZERO air neighbours → it cannot spread fire. The lower sign holds the lava
+        // from flowing onto the hopper; the upper sign dams the wash-water off the lava.
         for (int y = 2; y <= 4; y++) {
+            floor(b, y, x0, z0, x1, z1, stone);
+        }
+        b.set(cx, 2, cz, sign);   // holds the lava up; chicken + drop pass through
+        b.set(cx, 3, cz, lava);   // the blade — chicken falls through, ignites
+        b.set(cx, 4, cz, sign);   // dams the wash-water; chicken passes through
+        // GLASS cap above the chest (the y=2 floor stamped stone there; a chest can't open
+        // under a solid block, but glass is transparent so it can). Set AFTER the floor.
+        b.set(cx, 2, z1, glass);
+
+        // ── 4) SPAWN DECK (y=5) — solid floor with the central drop HOLE ────
+        // Chickens stand on top of this deck (y=6); the hole at (cx,cz) is the only way down.
+        // NB: Builder.set(pos, air) is a no-op, so the hole is carved by NOT stamping that
+        // cell (stamp the 5×5 minus the centre), never by overwriting stone with air.
+        for (int x = x0; x <= x1; x++) {
+            for (int z = z0; z <= z1; z++) {
+                if (x == cx && z == cz) continue; // leave the drop hole open
+                b.set(x, 5, z, stone);
+            }
+        }
+
+        // ── 5) DECK WATER (y=6) — pushes chickens to the central hole ───────
+        // Four water sources at the deck edge-mids flow inward to the centre hole, washing
+        // any chicken into it. The water pours down the hole and is dammed by the y=4 sign,
+        // 1 course above the lava (never touching it → no obsidian).
+        b.set(cx - 1, 6, cz, water); b.set(cx + 1, 6, cz, water);
+        b.set(cx, 6, cz - 1, water); b.set(cx, 6, cz + 1, water);
+
+        // ── 6) GLASS PEN WALLS (y=6..8), OPEN TOP — drop chickens/eggs in ───
+        for (int y = 6; y <= 8; y++) {
             line(b, y, x0, z0, x1, z0, glass);   // north
-            line(b, y, x0, z1, x1, z1, glass);   // south (incl. the clear cap over the chest)
+            line(b, y, x0, z1, x1, z1, glass);   // south
             line(b, y, x0, z0, x0, z1, glass);   // west
             line(b, y, x1, z0, x1, z1, glass);   // east
         }

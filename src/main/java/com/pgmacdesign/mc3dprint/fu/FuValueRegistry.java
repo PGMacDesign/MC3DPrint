@@ -340,6 +340,10 @@ public final class FuValueRegistry {
                 // floated jungle_hut's stilts). Cheapest tier; abundance-safe (T1 floor).
                 "minecraft:grass_block=1@1",
                 "minecraft:sand=1@1", "minecraft:red_sand=1@1", "minecraft:soul_sand=1@1",
+                // cactus: renewable/farmable → lowest tier (abundance rule). VALUED (was
+                // intentionally unvalued like bamboo/kelp) so the printer can AUTO-PLANT it
+                // into the cactus farm; winder-blacklisted so it can't launder back to FU.
+                "minecraft:cactus=2@1",
                 "minecraft:soul_soil=1@1", "minecraft:clay_ball=1@1", "minecraft:netherrack=1@1",
                 "minecraft:deepslate=1@1", "minecraft:cobbled_deepslate=1@1", "minecraft:tuff=1@1",
                 "minecraft:dripstone_block=1@1", "minecraft:pointed_dripstone=1@1", "minecraft:mud=1@1",

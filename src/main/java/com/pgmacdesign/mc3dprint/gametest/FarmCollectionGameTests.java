@@ -108,10 +108,10 @@ public class FarmCollectionGameTests {
      * ───────────────────── ────────────── ─────────────── ────────────────────── ───────────────────────────────────
      * sugarcane_farm_auto   sugar_cane     (4,0,8)         (4,1,7) above hopper    hopper(4,0,7,facing N) → chest
      * kelp_farm             dried_kelp     (4,0,7)         (4,1,2) above N hopper  hopper floor(4,0,2..6,S) chains S → chest
-     * bamboo_farm           bamboo         (3,0,6)         (3,1,5) above hopper    hopper(3,0,5,facing N) → chest
-     * cactus_farm           cactus (drop)  (3,1,4)         (3,2,3) above hopper    hopper(3,1,3,facing S) → chest
+     * bamboo_farm           bamboo         (4,0,8)         (4,1,5) in canal water  hopper line(4,0,1..7,S) chains S → chest
+     * cactus_farm           cactus (drop)  (3,0,6)         (1,1,2) in water moat   hopper floor(1..5,1..5) funnels → chest
      * iron_farm             iron_ingot     (6,1,9)         (4,2,4) above ring hop  ring(4,1,4,S)→…→(6,1,7)→drain(6,1,8,S)→chest
-     * chicken_coop_auto     cooked_chicken (3,1,6)         (3,2,3) on centre campfire  5×5 hopper grid funnels to centre col → S → chest
+     * chicken_coop_auto     cooked_chicken (2,1,4)         (2,2,2) above landing hopper  landing hopper(2,1,2,S)→carrier→chest
      * </pre>
      *
      * <p>Harvest cells sit above a TRANSPORT hopper. The chicken cooker's drop cell (3,2,3)
@@ -125,13 +125,13 @@ public class FarmCollectionGameTests {
             new Farm("kelp_farm", "minecraft:dried_kelp",
                     new BlockPos(4, 0, 7), new BlockPos(4, 1, 2)),
             new Farm("bamboo_farm", "minecraft:bamboo",
-                    new BlockPos(3, 0, 6), new BlockPos(3, 1, 5)),
+                    new BlockPos(4, 0, 8), new BlockPos(4, 1, 5)),
             new Farm("cactus_farm", "minecraft:cactus",
-                    new BlockPos(3, 1, 4), new BlockPos(3, 2, 3)),
+                    new BlockPos(3, 0, 6), new BlockPos(1, 1, 2)),
             new Farm("iron_farm", "minecraft:iron_ingot",
                     new BlockPos(6, 1, 9), new BlockPos(4, 2, 4)),
             new Farm("chicken_coop_auto", "minecraft:cooked_chicken",
-                    new BlockPos(3, 1, 6), new BlockPos(3, 2, 3)),
+                    new BlockPos(2, 1, 4), new BlockPos(2, 2, 2)),
     };
 
     // ── one @GameTest per farm (each gets its own world instance / pass-fail line) ──
