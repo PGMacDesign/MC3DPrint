@@ -163,6 +163,8 @@ tasks.named('test', Test).configure {
     systemProperty 'auditPlantSupport', System.getProperty('auditPlantSupport', 'false')
     // Same opt-in plumbing for the interior-reachability (no-entrance) diagnostic audit.
     systemProperty 'auditReachability', System.getProperty('auditReachability', 'false')
+    // Same opt-in plumbing for the navigability (walkability / blocked-threshold) diagnostic audit.
+    systemProperty 'auditNavigability', System.getProperty('auditNavigability', 'false')
     // Same opt-in plumbing for the bed-clearance (embedded-bed) diagnostic audit.
     systemProperty 'auditBeds', System.getProperty('auditBeds', 'false')
     testLogging {
