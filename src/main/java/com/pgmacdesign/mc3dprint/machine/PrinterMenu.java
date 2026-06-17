@@ -36,10 +36,28 @@ public class PrinterMenu extends AbstractContainerMenu {
     /** Max upgrade slots across all tiers (T8). Wells are painted up to this. */
     public static final int MAX_UPGRADE_SLOTS = 8;
 
+    // Spool slots: a 2-column grid on the bottom-right so the docked filament
+    // spools can be pulled out / put in from the GUI (previously only Shift+Right
+    // Click on the block worked). Only the slots this tier has are added (T1=1 …
+    // T4-T8=4); the two rows line up with the bottom two inventory rows (y=152 main,
+    // y=174 hotbar → ROW_STEP 22). PrinterScreen draws a well under each LIVE slot
+    // (so lower tiers show fewer wells, not empty ones).
+    public static final int SPOOL_SLOT_X = 178;
+    public static final int SPOOL_SLOT_Y = 152;
+    public static final int SPOOL_COL_STEP = 18;
+    public static final int SPOOL_ROW_STEP = 22;
+    public static final int SPOOL_COLS = 2;
+    /** Max spool slots across all tiers (T4+). */
+    public static final int MAX_SPOOL_SLOTS = 4;
+
     /** Index of the first upgrade slot in this menu (after template + output). */
     private final int upgradeSlotStart;
     /** Number of upgrade slots actually present (this printer's tier). */
     private final int upgradeSlotCount;
+    /** Index of the first spool slot in this menu (after the upgrade slots). */
+    private final int spoolSlotStart;
+    /** Number of spool slots actually present (this printer's tier). */
+    private final int spoolSlotCount;
 
     @Nullable
     private final PrinterBlockEntity printer;
@@ -112,6 +130,31 @@ public class PrinterMenu extends AbstractContainerMenu {
                         return true;
                     }
                     return printer == null || !printer.upgradeTypeAtCap(upgrade.type());
+                }
+            });
+        }
+
+        // Spool slots: a 2-column grid on the bottom-right. Only the tier's slots are
+        // added; the SlotItemHandler's mayPlace delegates to the handler's isItemValid,
+        // which already restricts these to SpoolItem. One spool per slot.
+        IItemHandler spoolHandler = printer != null ? printer.spoolInventory()
+                : new ItemStackHandler(0);
+        this.spoolSlotStart = slots.size();
+        this.spoolSlotCount = spoolHandler.getSlots();
+        for (int i = 0; i < spoolSlotCount; i++) {
+            int col = i % SPOOL_COLS;
+            int rowIdx = i / SPOOL_COLS;
+            int x = SPOOL_SLOT_X + col * SPOOL_COL_STEP;
+            int y = SPOOL_SLOT_Y + rowIdx * SPOOL_ROW_STEP;
+            addSlot(new SlotItemHandler(spoolHandler, i, x, y) {
+                @Override
+                public int getMaxStackSize() {
+                    return 1;
+                }
+
+                @Override
+                public int getMaxStackSize(@Nonnull ItemStack stack) {
+                    return 1;
                 }
             });
         }
@@ -240,19 +283,19 @@ public class PrinterMenu extends AbstractContainerMenu {
         ItemStack moved = slot.getItem();
         ItemStack original = moved.copy();
 
-        // Machine-side slots = template + output + upgrade slots; everything after
-        // that is the player inventory.
-        int firstPlayerSlot = upgradeSlotStart + upgradeSlotCount;
+        // Machine-side slots = template + output + upgrade slots + spool slots;
+        // everything after that is the player inventory.
+        int firstPlayerSlot = spoolSlotStart + spoolSlotCount;
         boolean isMachineSlot = slotIndex < firstPlayerSlot;
         if (isMachineSlot) {
-            // any machine slot (template / output / upgrade) -> player inventory
+            // any machine slot (template / output / upgrade / spool) -> player inventory
             if (!moveItemStackTo(moved, firstPlayerSlot, slots.size(), true)) {
                 return ItemStack.EMPTY;
             }
         } else if (moved.getItem() instanceof SpoolItem) {
-            // spools dock onto the machine, never into the print slot (server authoritative)
-            if (printer == null || printer.getLevel() == null || printer.getLevel().isClientSide
-                    || !printer.attachSpool(moved)) {
+            // spools dock into the spool slots (never into the print slot)
+            if (spoolSlotCount == 0 || !moveItemStackTo(moved, spoolSlotStart,
+                    spoolSlotStart + spoolSlotCount, false)) {
                 return ItemStack.EMPTY;
             }
         } else if (moved.getItem() instanceof UpgradeItem) {

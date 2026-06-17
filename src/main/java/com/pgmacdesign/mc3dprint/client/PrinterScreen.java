@@ -166,6 +166,17 @@ public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
             graphics.fill(left + FU_X, top + FU_Y + FU_HEIGHT - fuPixels,
                     left + FU_X + FU_WIDTH, top + FU_Y + FU_HEIGHT, FILL_FILAMENT);
         }
+
+        // Spool-slot wells — drawn here (not baked into the texture) so a tier shows
+        // exactly its spool count (T1=1 … T4+=4), not four empty wells. The well sprite
+        // is the first baked upgrade well (18×18 incl. rim) at (UPGRADE_SLOT_X-1, -Y-1).
+        int wellU = PrinterMenu.UPGRADE_SLOT_X - 1;
+        int wellV = PrinterMenu.UPGRADE_SLOT_Y - 1;
+        for (int i = 0; i < menu.spoolSlots(); i++) {
+            int sx = PrinterMenu.SPOOL_SLOT_X + (i % PrinterMenu.SPOOL_COLS) * PrinterMenu.SPOOL_COL_STEP;
+            int sy = PrinterMenu.SPOOL_SLOT_Y + (i / PrinterMenu.SPOOL_COLS) * PrinterMenu.SPOOL_ROW_STEP;
+            graphics.blit(TEXTURE, left + sx - 1, top + sy - 1, wellU, wellV, 18, 18);
+        }
     }
 
     @Override
@@ -204,9 +215,20 @@ public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
         if (cost > 0) {
             graphics.drawString(font, Component.translatable("gui.mc3dprint.cost", cost), 36, 58, LABEL, false);
         }
+        // "Spools X/Y" — smaller and moved DOWN to sit just above the spool-slot grid
+        // (roughly in line with the 2nd inventory row), right-aligned over the grid. The
+        // gap left above it (below the upgrade column) is reserved for a future readout.
         Component spools = Component.translatable("gui.mc3dprint.spools", menu.spoolsUsed(), menu.spoolSlots());
         int spoolsColor = menu.spoolsUsed() == 0 ? WARN : LABEL;
-        graphics.drawString(font, spools, imageWidth - 8 - font.width(spools), inventoryLabelY, spoolsColor, false);
+        float spoolScale = 0.85f;
+        float spoolRightEdge = imageWidth - 8;   // right-aligned to the panel margin
+        float spoolTopY = PrinterMenu.SPOOL_SLOT_Y - 16;   // just above the grid (≈ 2nd inv row)
+        graphics.pose().pushPose();
+        graphics.pose().scale(spoolScale, spoolScale, 1f);
+        graphics.drawString(font, spools,
+                Math.round(spoolRightEdge / spoolScale - font.width(spools)),
+                Math.round(spoolTopY / spoolScale), spoolsColor, false);
+        graphics.pose().popPose();
 
         // "Upgrades" header over the upgrade-slot column (only when this tier has slots)
         if (menu.upgradeSlotCount() > 0) {
