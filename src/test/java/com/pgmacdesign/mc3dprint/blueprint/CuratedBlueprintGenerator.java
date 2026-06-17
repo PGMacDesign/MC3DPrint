@@ -14471,8 +14471,16 @@ class CuratedBlueprintGenerator {
         }
         walls(b, sx0, sz0, sx1, sz1, 3, 3, polishedDeepslate); // plinth cap course
         corners(b, sx0, sz0, sx1, sz1, 1, 3, deepslateBricks); // crisp plinth corners
-        // interior finish floor at y1 (walkable; the rest of the shaft is hollow)
-        floor(b, 1, sx0 + 1, sz0 + 1, sx1 - 1, sz1 - 1, deepslateTiles);
+        // interior finish floor — laid at y0 (top elevation 1.0) so it is FLAT with the
+        // door sill, NOT at y1 (which sat a full block ABOVE the sill and made the entry
+        // a step-up the player's head couldn't clear under the door's upper half). The
+        // walkable shaft floor is now the y0 deepslate-tile course; the cell directly
+        // behind the door (cx, 1, sz1-1) is open air at sill level, so you walk straight
+        // into the shaft flat, then climb the existing north-wall ladder. The y1 interior
+        // is left hollow (open shaft) — the ladder's lowest rung at y1 sits at foot level
+        // over this y0 floor, and its backing (the y1 north ring wall at cx,1,sz0) is
+        // untouched.
+        floor(b, 0, sx0 + 1, sz0 + 1, sx1 - 1, sz1 - 1, deepslateTiles);
         // weathering flecks on the plinth faces
         b.set(sx0, 2, cz, cobbledDeepslate);
         b.set(sx1, 1, cz, cobbledDeepslate);
