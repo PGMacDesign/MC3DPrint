@@ -159,6 +159,10 @@ tasks.named('test', Test).configure {
     systemProperty 'auditFoundations', System.getProperty('auditFoundations', 'false')
     // Same opt-in plumbing for the ladder-support (unbacked-ladder) diagnostic audit.
     systemProperty 'auditLadders', System.getProperty('auditLadders', 'false')
+    // Same opt-in plumbing for the plant-support (plant on invalid soil) diagnostic audit.
+    systemProperty 'auditPlantSupport', System.getProperty('auditPlantSupport', 'false')
+    // Same opt-in plumbing for the interior-reachability (no-entrance) diagnostic audit.
+    systemProperty 'auditReachability', System.getProperty('auditReachability', 'false')
     testLogging {
         events 'failed'
         exceptionFormat 'full'
