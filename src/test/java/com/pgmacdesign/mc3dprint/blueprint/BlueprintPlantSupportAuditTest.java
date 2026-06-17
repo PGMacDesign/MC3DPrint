@@ -2,8 +2,8 @@ package com.pgmacdesign.mc3dprint.blueprint;
 
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtIo;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 
 import java.io.DataInputStream;
 import java.io.IOException;
@@ -32,9 +32,9 @@ import java.util.zip.GZIPInputStream;
  * plants, small mushrooms, lily pads, kelp, vines, cocoa, chorus, dripleaf, …) is
  * deliberately EXCLUDED to avoid false positives.
  *
- * <pre>
- *   ./gradlew test --tests *BlueprintPlantSupportAuditTest* -DauditPlantSupport=true --rerun-tasks
- * </pre>
+ * <p>This runs as an ALWAYS-ON hard gate on every {@code ./gradlew build}: zero tolerance,
+ * no allowlist. Any soil-dependent plant on invalid/absent support fails the build. The
+ * report is still written to {@code build/blueprint-plant-support-audit.txt} for inspection.
  */
 class BlueprintPlantSupportAuditTest {
 
@@ -125,7 +125,6 @@ class BlueprintPlantSupportAuditTest {
             "minecraft:crimson_roots", "minecraft:warped_roots", "minecraft:nether_sprouts");
 
     @Test
-    @EnabledIfSystemProperty(named = "auditPlantSupport", matches = "true")
     void auditPlantSupport() throws IOException {
         List<Path> files;
         try (var stream = Files.list(SOURCE_DIR)) {
@@ -178,6 +177,12 @@ class BlueprintPlantSupportAuditTest {
         Files.writeString(OUTPUT, sb.toString());
         System.out.println("[PlantSupportAudit] " + flagged.size() + " flagged / " + plantCount
                 + " plants across " + files.size() + " builds -> " + OUTPUT.toAbsolutePath());
+
+        // Hard gate: zero tolerance — a plant on invalid soil pops into a dropped item on
+        // the first block update after printing (a silent failure). No allowlist.
+        Assertions.assertTrue(flagged.isEmpty(),
+                "Plant(s) on invalid/absent support — fix the soil block beneath them:\n"
+                        + String.join("\n", flagged));
     }
 
     /** Tall (two-block) flowers whose UPPER half legitimately sits on its own lower half. */

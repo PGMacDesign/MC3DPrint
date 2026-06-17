@@ -2,8 +2,8 @@ package com.pgmacdesign.mc3dprint.blueprint;
 
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtIo;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 
 import java.io.DataInputStream;
 import java.io.IOException;
@@ -12,6 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.zip.GZIPInputStream;
 
 /**
@@ -37,15 +38,23 @@ import java.util.zip.GZIPInputStream;
  * (no headroom) and the foot is pinched by birch_log + smooth_quartz on its two
  * long (±x) sides — it trips both signals.
  *
- * <pre>
- *   ./gradlew test --tests *BlueprintBedClearanceAuditTest* -DauditBeds=true --rerun-tasks
- * </pre>
+ * <p>This runs as an ALWAYS-ON hard gate on every {@code ./gradlew build}. One build is
+ * allowlisted: {@code iron_farm}, whose three villager beds are intentionally tight under
+ * the spawn-platform glass (by design). Any OTHER build with a flagged bed fails the build.
+ * The full report is still written to {@code build/blueprint-bed-clearance-audit.txt}.
  */
 class BlueprintBedClearanceAuditTest {
 
     private static final Path SOURCE_DIR =
             Path.of("src", "main", "resources", "data", "mc3dprint", "blueprints");
     private static final Path OUTPUT = Path.of("build", "blueprint-bed-clearance-audit.txt");
+
+    /**
+     * Builds whose flagged beds are tight <b>by design</b> and so are excluded from the
+     * hard gate. {@code iron_farm}'s three villager beds sit intentionally pinched under
+     * the spawn-platform glass — a functional iron-farm layout, not a navigability defect.
+     */
+    private static final Set<String> ALLOWLISTED_BUILDS = Set.of("iron_farm");
 
     // ── Heuristic constants ────────────────────────────────────────────────
     // A neighbour counts as SOLID (blocks clearance) unless its id contains one
@@ -71,7 +80,6 @@ class BlueprintBedClearanceAuditTest {
     };
 
     @Test
-    @EnabledIfSystemProperty(named = "auditBeds", matches = "true")
     void auditBeds() throws IOException {
         List<Path> files;
         try (var stream = Files.list(SOURCE_DIR)) {
@@ -79,6 +87,7 @@ class BlueprintBedClearanceAuditTest {
         }
 
         List<String> flagged = new ArrayList<>();
+        List<String> violations = new ArrayList<>(); // flagged beds NOT on the build allowlist
         List<String> all = new ArrayList<>();
         int bedCount = 0;
 
@@ -141,7 +150,11 @@ class BlueprintBedClearanceAuditTest {
                                 name, x, y, z, fx, y, fz, facing);
                         all.add(line);
                         if (reason != null) {
-                            flagged.add("[EMBEDDED] " + line + " — " + reason);
+                            String flag = "[EMBEDDED] " + line + " — " + reason;
+                            flagged.add(flag);
+                            if (!ALLOWLISTED_BUILDS.contains(name)) {
+                                violations.add(flag);
+                            }
                         }
                     }
                 }
@@ -157,8 +170,16 @@ class BlueprintBedClearanceAuditTest {
         all.forEach(l -> sb.append(l).append('\n'));
         Files.createDirectories(OUTPUT.getParent());
         Files.writeString(OUTPUT, sb.toString());
-        System.out.println("[BedClearanceAudit] " + flagged.size() + " flagged / " + bedCount
+        System.out.println("[BedClearanceAudit] " + flagged.size() + " flagged ("
+                + violations.size() + " non-allowlisted) / " + bedCount
                 + " beds -> " + OUTPUT.toAbsolutePath());
+
+        // Hard gate: an embedded/no-clearance bed is a navigability defect. iron_farm's
+        // villager beds are intentionally tight (allowlisted); any OTHER flagged build fails.
+        Assertions.assertTrue(violations.isEmpty(),
+                "Embedded/no-clearance bed(s) outside the allowlist " + ALLOWLISTED_BUILDS
+                        + " — give the bed headroom and clear long sides:\n"
+                        + String.join("\n", violations));
     }
 
     /** True if (x,y,z) is in bounds and holds a SOLID (non-pass-through) block. OOB / air ⇒ false. */

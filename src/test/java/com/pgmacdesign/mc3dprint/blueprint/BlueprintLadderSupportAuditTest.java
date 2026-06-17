@@ -2,8 +2,8 @@ package com.pgmacdesign.mc3dprint.blueprint;
 
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtIo;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 
 import java.io.DataInputStream;
 import java.io.IOException;
@@ -30,9 +30,9 @@ import java.util.zip.GZIPInputStream;
  * OOB support (ladder on the build edge facing outward, backed by world terrain) is
  * reported separately, not auto-flagged.
  *
- * <pre>
- *   ./gradlew test --tests *BlueprintLadderSupportAuditTest* -DauditLadders=true --rerun-tasks
- * </pre>
+ * <p>This runs as an ALWAYS-ON hard gate on every {@code ./gradlew build}: zero tolerance,
+ * no allowlist. Any air-backed or non-sturdy-backed ladder fails the build. The report is
+ * still written to {@code build/blueprint-ladder-audit.txt} for inspection.
  */
 class BlueprintLadderSupportAuditTest {
 
@@ -49,7 +49,6 @@ class BlueprintLadderSupportAuditTest {
     };
 
     @Test
-    @EnabledIfSystemProperty(named = "auditLadders", matches = "true")
     void auditLadders() throws IOException {
         List<Path> files;
         try (var stream = Files.list(SOURCE_DIR)) {
@@ -115,6 +114,12 @@ class BlueprintLadderSupportAuditTest {
         Files.writeString(OUTPUT, sb.toString());
         System.out.println("[LadderAudit] " + flagged.size() + " flagged / " + oob.size()
                 + " OOB / " + ladderCount + " ladders -> " + OUTPUT.toAbsolutePath());
+
+        // Hard gate: zero tolerance — any air/non-sturdy-backed ladder pops off after
+        // printing (a silent climb failure). No allowlist; the catalog must stay clean.
+        Assertions.assertTrue(flagged.isEmpty(),
+                "Unbacked ladder(s) found — fix the support block or re-face the ladder:\n"
+                        + String.join("\n", flagged));
     }
 
     private static boolean isNonSturdy(String blockId) {

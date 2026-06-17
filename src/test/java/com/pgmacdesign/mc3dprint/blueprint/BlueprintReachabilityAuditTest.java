@@ -3,7 +3,6 @@ package com.pgmacdesign.mc3dprint.blueprint;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtIo;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 
 import java.io.DataInputStream;
 import java.io.IOException;
@@ -52,12 +51,9 @@ import java.util.zip.GZIPInputStream;
  * 6-ways regardless of vertical reachability). Decorative solid builds (statues, obelisks,
  * monuments) have ~0 interior air and are expected NOT to flag.
  *
- * <p>Gated on {@code -DauditReachability=true}; writes
- * {@code build/blueprint-reachability-audit.txt}.
- *
- * <pre>
- *   ./gradlew test --tests *BlueprintReachabilityAuditTest* -DauditReachability=true --rerun-tasks
- * </pre>
+ * <p>Runs as an ALWAYS-ON hard gate on every {@code ./gradlew build}: any non-allowlisted
+ * sealed interior throws an {@link AssertionError} and fails the build. Writes
+ * {@code build/blueprint-reachability-audit.txt} for inspection.
  */
 class BlueprintReachabilityAuditTest {
 
@@ -138,7 +134,6 @@ class BlueprintReachabilityAuditTest {
     );
 
     @Test
-    @EnabledIfSystemProperty(named = "auditReachability", matches = "true")
     void auditReachability() throws IOException {
         List<Path> files;
         try (var stream = Files.list(SOURCE_DIR)) {
