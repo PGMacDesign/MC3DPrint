@@ -2385,11 +2385,14 @@ class CuratedBlueprintGenerator {
         b.set(0, 1, 2, CAULDRON);
         // counter along the open front
         line(b, 1, 1, 1, 5, 1, bs("minecraft:dark_oak_slab[type=top]"));
-        // backed lantern over the anvil (hangs from the y=5 roof slab above)
+        // hanging lantern over the anvil. The y=5 roof is a TOP slab (no sturdy
+        // down-face), so it can't hold a lantern by itself; we re-stamp the cell above
+        // the lantern as a solid block AFTER the roof goes down (below) to anchor it.
         b.set(3, 4, 4, HANGING_LANTERN);
         // roof: a low flat stone-brick-slab roof at y=5 (the H=6 budget can't take a
         // gable above 4-tall walls) with a dark-oak overhang trim on the open front.
         flatRoof(b, 5, 0, 0, 6, 5, STONE_BRICK_SLAB_TOP);
+        b.set(3, 5, 4, STONE_BRICKS); // solid anchor over the lantern (flush with the slab roof)
         line(b, 5, 0, 0, 6, 0, DARK_OAK_PLANKS); // front overhang trim
         return b.build();
     }
@@ -3987,13 +3990,15 @@ class CuratedBlueprintGenerator {
         for (int t = 0; t < halves.length; t++) {
             int h = halves[t];
             int top = pagodaEaveTier(b, cx, cz, ey, h, ROOF, roofSlab);
-            // eave lanterns dangling below this tier's four upturned corner lips
-            // (one course below the corner finger, at the half+1 diagonal).
+            // eave lanterns dangling below this tier's four upturned corner lips. The
+            // bracket lip above them (ey-1) is a top-half STAIR — no sturdy down-face, so
+            // a lantern hung straight off it pops on print. Hang each off a CHAIN instead
+            // (chains float + support a lantern's centre): chain at ey-2, lantern at ey-3.
             int lx0 = cx - (h + 1), lx1 = cx + (h + 1), lz0 = cz - (h + 1), lz1 = cz + (h + 1);
-            b.set(lx0, ey - 2, lz0, HANGING_LANTERN);
-            b.set(lx1, ey - 2, lz0, HANGING_LANTERN);
-            b.set(lx0, ey - 2, lz1, HANGING_LANTERN);
-            b.set(lx1, ey - 2, lz1, HANGING_LANTERN);
+            for (int[] c : new int[][]{{lx0, lz0}, {lx1, lz0}, {lx0, lz1}, {lx1, lz1}}) {
+                b.set(c[0], ey - 2, c[1], CHAIN);
+                b.set(c[0], ey - 3, c[1], HANGING_LANTERN);
+            }
             if (t < halves.length - 1) {
                 // short drum between tiers, telescoped to the next tier footprint
                 int nh = halves[t + 1];
@@ -5140,14 +5145,20 @@ class CuratedBlueprintGenerator {
         for (int t = 0; t < halves.length; t++) {
             int h = halves[t];
             int top = pagodaEaveTier(b, cx, cz, ey, h, ROOF, roofSlab);
-            // eave lanterns dangling below this tier's four upturned corners
-            // (ey-2, hanging off the bracket-lip corner at the half+1 diagonal).
+            // eave lanterns dangling below this tier's four upturned corners. The
+            // bracket-lip corner directly above them (ey-1) is a top-half STAIR, which
+            // presents NO sturdy down-face — a lantern hung straight off it has no
+            // support and pops off on the next block update after printing (the bug
+            // PGMac saw: "all the lanterns broke off immediately"). So hang each off a
+            // CHAIN instead (chains float — no support needed — and DO support a
+            // lantern's centre), mirroring this build's own interior soul-lantern:
+            // chain at ey-2 (visually links up to the eave underside), lantern at ey-3.
             int lx0 = cx - (h + 1), lx1 = cx + (h + 1), lz0 = cz - (h + 1), lz1 = cz + (h + 1);
             if (h >= 1) {
-                b.set(lx0, ey - 2, lz0, HANGING_LANTERN);
-                b.set(lx1, ey - 2, lz0, HANGING_LANTERN);
-                b.set(lx0, ey - 2, lz1, HANGING_LANTERN);
-                b.set(lx1, ey - 2, lz1, HANGING_LANTERN);
+                for (int[] c : new int[][]{{lx0, lz0}, {lx1, lz0}, {lx0, lz1}, {lx1, lz1}}) {
+                    b.set(c[0], ey - 2, c[1], CHAIN);
+                    b.set(c[0], ey - 3, c[1], HANGING_LANTERN);
+                }
             }
             if (t < halves.length - 1) {
                 // short body story above this tier, telescoped to the NEXT tier's
@@ -10705,9 +10716,11 @@ class CuratedBlueprintGenerator {
         // side so each connects horizontally to the other (renders as a real railing).
         b.set(4, 3, z1, IRON_BARS);
         b.set(5, 3, z1, IRON_BARS);
-        // hanging lanterns under the awning (attach to the y=5 awning slab above them)
-        b.set(4, 4, 5, HANGING_LANTERN);
-        b.set(8, 4, 5, HANGING_LANTERN);
+        // hanging lanterns under the awning. The awning roof (y=5) is a TOP slab — no
+        // sturdy down-face — so a lantern hung off it pops on print. Re-stamp the cell
+        // above each lantern as a solid block (flush with the slab top) to anchor it.
+        b.set(4, 5, 5, STONE_BRICKS); b.set(4, 4, 5, HANGING_LANTERN);
+        b.set(8, 5, 5, STONE_BRICKS); b.set(8, 4, 5, HANGING_LANTERN);
         // a standing lantern on the platform deck by the tower base
         b.set(11, 3, 5, LANTERN);
         // oak "STATION" plaque standing on the platform deck beside the booth door
@@ -11415,9 +11428,13 @@ class CuratedBlueprintGenerator {
         b.set(cx, 5, cz, HANGING_LANTERN);
 
         // 7) four hanging eave lanterns under the corner roof brackets (offset one
-        //    cell inward from each corner so they hang in the bay, backed by the
-        //    lowest eave ring at y=4).
+        //    cell inward from each corner so they hang in the bay). The y=4 cell above
+        //    each is the open roof interior (NOT a backing block — the eave ring is at
+        //    the perimeter), so the lantern was floating with no support and popped on
+        //    print. Drop a CHAIN at y=4 (it floats / links to the y=5 eave stair above)
+        //    and hang the lantern off it at y=3.
         for (int[] c : new int[][]{{x0 + 1, z0 + 1}, {x1 - 1, z0 + 1}, {x0 + 1, z1 - 1}, {x1 - 1, z1 - 1}}) {
+            b.set(c[0], 4, c[1], CHAIN);
             b.set(c[0], 3, c[1], HANGING_LANTERN);
         }
 
@@ -16108,11 +16125,13 @@ class CuratedBlueprintGenerator {
         b.set(cx, railY, porchZ0, COBBLE);               // hearth pad
         b.set(cx, railY + 1, porchZ0, CAMPFIRE);         // lit cooking campfire
 
-        // ── 10) LANTERNS — hanging lanterns under the eaves (backed by the solid
-        //    roof/eave above) for the warm lakeside glow, plus an under-deck lantern
-        //    over the open water at the seaward lip.
-        b.set(x0 + 1, wallH - 1, porchZ0, HANGING_LANTERN); // under the porch eave (W)
-        b.set(x1 - 1, wallH - 1, porchZ0, HANGING_LANTERN); // under the porch eave (E)
+        // ── 10) LANTERNS — hanging lanterns for the warm lakeside glow. The two porch
+        //    lanterns sit at the porch/cabin boundary (z=porchZ0) where the gable roof
+        //    does NOT reach — the cell above is open air, so hung straight they'd pop on
+        //    print. Drop a CHAIN at the eave course (it floats) and hang each off it, so
+        //    they keep their height. The under-deck lantern IS backed (deck plank above).
+        b.set(x0 + 1, wallH, porchZ0, CHAIN); b.set(x0 + 1, wallH - 1, porchZ0, HANGING_LANTERN); // porch eave (W)
+        b.set(x1 - 1, wallH, porchZ0, CHAIN); b.set(x1 - 1, wallH - 1, porchZ0, HANGING_LANTERN); // porch eave (E)
         b.set(cx, deckY - 1, porchZ1 - 1, HANGING_LANTERN); // under the deck over water
 
         // ── 11) DOCK STEP — a short spruce-stair step down from the porch deck to
