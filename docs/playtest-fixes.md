@@ -111,3 +111,10 @@ PGMac retested in-game; this round's findings + the audit-surfaced extras. **Bui
 **Guardrails now in place (gated audits):** `-DauditFoundations`, `-DauditLadders`, `-DauditPlantSupport`, `-DauditReachability` (hard-throws, with an intentional-seal allowlist), `-DauditBeds`. All currently clean (bed audit's only flags are iron_farm's by-design villager beds). 69 gametests green, 132 blueprints, jar rebuilt + redeployed.
 
 **Recurring bug class noted:** `Builder.set(pos, AIR)` is a no-op, so "carving" an opening by overwriting a wall with air leaves it solid (door/hatch into stone). Fix by skipping those cells in the wall loop. Hit on greek/copper/villa/diamond_vault/sailing_ship — the reachability audit catches it.
+
+---
+
+## Retest round 3 (2026-06-16, third in-game pass) — NO jar redeploy (Patrick actively testing)
+New bug class: **a fire source (raw `lava`/`fire`) next to flammable blocks (wood/wool/leaves/etc.) ignites and burns the build down.** "Boxing" lava in cobble is NOT enough — lava ignites flammables a couple blocks away. Safe heat sources near wood: campfire, lava_cauldron, magma_block, torch/lantern (none spread fire).
+- [ ] **tavern_inn** — the caged-lava hearth burned the whole (spruce) tavern down. Replace the lava firebox with a **campfire** (no fire spread); keep the cobble surround + chimney + grate.
+- [ ] **flammable-near-fire guardrail** — add an always-on audit that flags any `lava`/`fire` block within ignition range of a flammable block, so a wooden build can never ship with raw lava. Document the convention (flammable build → no raw lava; use campfire/lava_cauldron/magma). Fix whatever other builds it flags (forge/crucible/chicken_coop use raw LAVA — verify each is in a non-flammable context or convert it).
