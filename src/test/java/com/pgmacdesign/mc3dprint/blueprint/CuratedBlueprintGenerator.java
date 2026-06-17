@@ -2559,7 +2559,14 @@ class CuratedBlueprintGenerator {
         pillar(b, 7, 5, 1, 2, HAY);
         pillar(b, 1, 5, 1, 2, HAY);
         fenceRing(b, 1, 2, 1, 6, 5, OAK_FENCE);
+        // The pen gate spans BOTH front door leaves (x=4 AND x=5) so EACH door is a flat
+        // walk-through into the pen. With only the x=4 gate, the x=5 door opened straight
+        // into the pen's north fence wall — a non-passable block in the doorway (you couldn't
+        // walk through that leaf). Two adjacent gates keep the pen closed while making both
+        // door halves real, flat entries (door sill = top of the y0 floor; the gate cell sits
+        // at the same level → flat). The gate is passable; below it is the y0 pen floor.
         b.set(4, 1, 1, bs("minecraft:oak_fence_gate[facing=north,open=false,in_wall=false,powered=false]"));
+        b.set(5, 1, 1, bs("minecraft:oak_fence_gate[facing=north,open=false,in_wall=false,powered=false]"));
         b.set(3, 1, 3, WATER);
         b.set(4, 1, 3, WATER);
         b.set(1, 1, 1, COMPOSTER);
