@@ -7154,21 +7154,21 @@ class CuratedBlueprintGenerator {
         b.set(cx - 1, floorY + 1, doorZ, stem);
         b.set(cx + 1, floorY + 1, doorZ, stem);
         door2(b, cx, floorY, doorZ, "spruce", "N"); // 2-block spruce door, opens south
-        // ── THRESHOLD STEP — fix the blocked entry ───────────────────────────
-        // The interior finish floor (the y=floorY plank disc above) sits one full
-        // block HIGHER than the door sill: outside, the player walks on the top of
-        // the y=0 mycelium (elevation 1.0); the door bottom is at y=floorY so its
-        // sill is flush with that, but the first interior cell behind the door
-        // (cx, floorY, doorZ+1) was a SOLID plank (top elevation 2.0) — a full
-        // 1-block wall right inside the doorway you couldn't step over (the door's
-        // upper half pins your head, so the auto step-up never triggers). Replace
-        // that one threshold plank with a spruce STAIR. The player enters walking
-        // SOUTH (door on the north wall opens inward), so the stair must ascend south
-        // — a stair rises toward its facing, so facing=SOUTH puts the tall riser to
-        // the south and the LOW edge to the north (toward the door). The player climbs
-        // the half-step off the flush sill straight up onto the raised plank floor and
-        // walks in. The stair is FU-valued (spruce_stairs) and render-safe.
-        b.set(cx, floorY, doorZ + 1, bs("minecraft:spruce_stairs[facing=south,half=bottom,shape=straight]"));
+        // ── FLAT THRESHOLD — walk straight in, no step under the doorway ──────
+        // The door sill is the top of the y=0 mycelium (elevation 1.0); outside, the
+        // player walks the mycelium at that level and the door bottom sits flush with
+        // it. The interior finish floor is the y=floorY plank disc (top elevation 2.0),
+        // one block HIGHER — so the first interior cell behind the door must NOT be a
+        // raised floor block or a step: when the player steps UP under the doorway their
+        // head clips the door's upper half (the door occupies sill+1). The ONLY correct
+        // entry is FLAT — the cell you step into from the door is at the SAME walkable
+        // level as the sill. So CLEAR the interior-adjacent cell (cx, floorY, doorZ+1):
+        // the player walks flat off the sill onto the mycelium below it (top elevation
+        // 1.0, the same level as the door), with 2 blocks of clear headroom through the
+        // open door. The single +1 step up onto the raised plank floor then happens one
+        // cell deeper, INSIDE, well clear of the door's upper half. (clear() — not
+        // set(air), which is a silent no-op — actually empties the raised plank here.)
+        b.clear(cx, floorY, doorZ + 1);
 
         // ── 4) RENDER-SAFE GLASS-BLOCK WINDOWS on E/W/S, with spruce sills ────
         // Each window is a glass BLOCK set into a ring cell flanked by stem cells
