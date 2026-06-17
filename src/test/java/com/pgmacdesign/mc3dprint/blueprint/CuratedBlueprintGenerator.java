@@ -8463,23 +8463,25 @@ class CuratedBlueprintGenerator {
      * </ul>
      *
      * <p><b>Collection (the snapped piece must reach the chest WITHOUT touching a cactus
-     * block — a cactus destroys dropped items it touches).</b> A tight WATER MOAT at y=2
-     * (the planted-base level) rings all four sides of each base and shares a centre cell
-     * (cx,2,cz); when the y=3 segment pops it drops into the moat and is swept to that
-     * centre, which sits directly above a <b>hopper at y=1</b> (one block lower, so the
-     * water lips over and the item drops in) → <b>chest</b> at (cx,1,cz+1), open above.
+     * block — a cactus destroys dropped items it touches).</b> The water sits at the SAND
+     * LEVEL (y=1): a moat rings each base's N/S sides + a shared CENTRE cell, all over a
+     * 3×3 HOPPER FLOOR at y=0. A snapped y=3 segment falls into the moat water and sinks
+     * straight into the hopper below, which chains south to the <b>chest</b> at the open
+     * south edge (cx,0,4). A cobble RIM (y=1) contains the water (no spilling), with one
+     * gap above the chest. (The old build floated the moat a course too high and put the
+     * centre cell as a hopper; now the centre is water and the hopper is below it.)
      *
      * <p>Layout (south = +z is the "front"/access side; cacti at x=1 and x=3, z=2):
      * <ul>
-     *   <li><b>y=0..1</b> — stone foundation; a central <b>hopper</b> at (2,1,2) feeds
-     *       the <b>chest</b> at (2,1,3).</li>
-     *   <li><b>y=1</b> — two <b>sand</b> grow-blocks at (1,1,2) and (3,1,2); the player
-     *       plants a cactus on each (base lands at y=2).</li>
-     *   <li><b>y=2</b> — a 7-cell <b>water moat</b> around the two bases, draining to the
-     *       centre (2,2,2) above the hopper.</li>
-     *   <li><b>y=3</b> — ONE cobblestone <b>breaker</b> at (2,3,2), between the cacti and
-     *       adjacent to BOTH grow cells, so each segment pops as it grows into y=3.</li>
-     *   <li><b>Sign</b> — an oak wall sign on the south face explaining the build.</li>
+     *   <li><b>y=0</b> — stone foundation + a 3×3 <b>hopper floor</b> (under the sand-level
+     *       water) chaining to the <b>chest</b> at (2,0,4), open to the south edge.</li>
+     *   <li><b>y=1</b> — a cobble <b>rim</b> (contains the water; gap at the chest), two
+     *       <b>sand</b> grow-blocks at (1,1,2)/(3,1,2), and a <b>water moat</b> at the sand
+     *       level around each base + the shared centre (2,1,2).</li>
+     *   <li><b>y=2</b> — the cactus base (player plants); only air/water beside it.</li>
+     *   <li><b>y=3</b> — ONE cobblestone <b>breaker</b> at (2,3,2), adjacent to BOTH grow
+     *       cells, so each segment pops as it grows into y=3.</li>
+     *   <li><b>Sign</b> — a standing oak sign by the chest (player must plant cactus).</li>
      * </ul>
      */
     private static Blueprint cactusFarm() {
@@ -8502,57 +8504,58 @@ class CuratedBlueprintGenerator {
         int cz = 2;             // cactus row (z)
         int cx = 2;             // centre column (shared breaker / hopper / chest)
 
-        // ── 1) FOUNDATION (y=0) ──────────────────────────────────────────────
+        // ── 1) FOUNDATION (y=0) + HOPPER FLOOR (below the sand) → CHEST ──────
+        // Collection drops a level vs the old build: a 3×3 HOPPER FLOOR at y=0 (BELOW the
+        // sand) lets the water sit at the sand's own level (y=1) with the CENTRE as a
+        // water drain (not a hopper). A snapped segment that lands in the water sinks
+        // straight down into the hopper beneath and chains south to the chest at the open
+        // south edge (cx,0,4), accessible at ground level.
         floor(b, 0, 0, 0, 4, 4, stone);
-
-        // ── 2) HOPPER FLOOR (y=1) + SAND GROW-BLOCKS + CHEST ─────────────────
-        // A connected hopper floor across the interior (z=1..3) sits UNDER the whole moat,
-        // so a snapped segment that lands in ANY moat cell sinks straight into the hopper
-        // below it (no reliance on water flow). Every hopper chains toward the chest at
-        // (cx,1,cz+1). The two sand grow-blocks sit in this floor; the player plants a
-        // cactus on each (base lands at y=2, ringed by the moat).
-        b.set(cx, 1, cz + 1, chest);   // (2,1,3) collection chest, faces south (open edge)
-        for (int x = 0; x <= 4; x++) {
+        b.set(cx, 0, 4, chest);                                                  // (2,0,4) chest, faces south
+        for (int x = wX; x <= eX; x++) {
             for (int z = 1; z <= 3; z++) {
-                if (z == cz && (x == wX || x == eX)) { b.set(x, 1, z, sand); continue; } // grow-blocks
-                if (x == cx && z == cz + 1) continue;                                    // the chest cell
-                String facing;
-                if (z < cz) {
-                    facing = (x < cx) ? "east" : (x > cx) ? "west" : "south"; // funnel to the centre column
-                } else if (z == cz) {
-                    facing = "south";                                         // sand row → back to the chest row (clear of the sand)
-                } else {
-                    facing = (x < cx) ? "east" : "west";                      // chest row → inward to the chest
-                }
-                b.set(x, 1, z, bs("minecraft:hopper[enabled=true,facing=" + facing + "]"));
+                String facing = (z < 3) ? "south"                                // z1,z2 → south toward the chest row
+                        : (x < cx ? "east" : x > cx ? "west" : "south");         // z3 row → funnel to centre → chest
+                b.set(x, 0, z, bs("minecraft:hopper[enabled=true,facing=" + facing + "]"));
             }
         }
 
-        // ── 3) WATER MOAT (y=2 = planted-base level) — catch the segment ─────
-        // A tight ring of water on all four sides of each base: the base has only
-        // non-solid neighbours (→ never pops), and a snapped y=3 segment lands in the
-        // water (never on a cactus, which would destroy the drop) and sinks into the
-        // hopper floor below. Shares the centre cell (cx,2,cz). 7 cells — a moat, not a pool.
-        int[][] moat = {
-            {wX - 1, cz}, {wX, cz - 1}, {wX, cz + 1},   // W/N/S of west base (E side = centre)
-            {eX + 1, cz}, {eX, cz - 1}, {eX, cz + 1},   // E/N/S of east base (W side = centre)
-            {cx, cz}                                     // shared centre, over the hopper → drain
-        };
-        for (int[] c : moat) {
-            b.set(c[0], 2, c[1], water);
+        // ── 2) COBBLE RIM (y=1) — contains the water (no spilling) ───────────
+        // A cobble rim around the whole perimeter holds the sand-level water in. A single
+        // gap at the south edge (cx,1,4) lets the chest below it open.
+        for (int x = 0; x <= 4; x++) {
+            for (int z = 0; z <= 4; z++) {
+                if ((x == 0 || x == 4 || z == 0 || z == 4) && !(x == cx && z == 4)) {
+                    b.set(x, 1, z, cobble);
+                }
+            }
         }
 
+        // ── 3) SAND + WATER MOAT at the SAND LEVEL (y=1) ─────────────────────
+        // Sand grow-blocks; water rings each base's N/S sides + the shared CENTRE cell
+        // (cx,1,cz) — the old centre hopper is now WATER, its hopper moved down to y=0, so
+        // the water sits at the sand level (below the cactus base), per Patrick. Cobble
+        // fillers box the moat (and a dry barrier at (cx,1,cz+1) keeps water off the chest
+        // gap). A snapped segment lands in the water, never on a cactus, and sinks to the
+        // hopper below. Bases at y=2 have only air/water beside them → never pop.
+        b.set(wX, 1, cz, sand); b.set(eX, 1, cz, sand);                          // (1,1,2),(3,1,2)
+        int[][] moat = {{wX, cz - 1}, {wX, cz + 1}, {eX, cz - 1}, {eX, cz + 1}, {cx, cz}};
+        for (int[] c : moat) b.set(c[0], 1, c[1], water);
+        b.set(cx, 1, cz - 1, cobble);                                            // (2,1,1) box
+        b.set(cx, 1, cz + 1, cobble);                                            // (2,1,3) dry barrier before the chest gap
+
         // ── 4) SHARED BREAKER (y=3) — pops both grown segments ───────────────
-        // One cobble block in the centre column at the grow-into height (cx,3,cz). It is
-        // horizontally adjacent to BOTH cacti's y=3 grow cells ((wX,3,cz) and (eX,3,cz)),
-        // so each segment pops the moment it grows up into y=3 and drops into the moat.
-        // The bases at y=2 are clear of it (only water beside them there) → they survive.
+        // One cobble block in the centre column at the grow-into height (cx,3,cz),
+        // horizontally adjacent to BOTH cacti's y=3 grow cells → each segment pops as it
+        // grows into y=3 and drops into the moat.
         b.set(cx, 3, cz, cobble); // (2,3,2)
 
-        // ── 5) EXPLANATORY SIGN on the south face ────────────────────────────
-        signText(b, "minecraft:oak_wall_sign[facing=south]", cx, 1, 4,
-                "Plant cactus on", "each sand block.", "It grows, pops on",
-                "the breaker -> chest");
+        // ── 5) EXPLANATORY SIGN (standing, on the south rim by the chest) ────
+        // NOTE: cactus is unvalued (can't print, like bamboo/kelp), so the build ships
+        // WITHOUT it — the player plants a cactus on each sand block after printing.
+        signText(b, "minecraft:oak_sign[rotation=8]", eX, 2, 4,
+                "PLANT a cactus on", "each sand block.", "Grows, pops on the",
+                "breaker -> chest");
 
         return b.build();
     }
