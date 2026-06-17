@@ -32,7 +32,7 @@ The first ~10 rows are *mechanical* and should become fully automated. The last 
 ### Track A — automated gates (catch regressions at build time)
 A suite of checks that read the `.blueprint` NBT (or place the build in a GameTest) and fail on violations. Two execution modes:
 - **Gated audits** (`-D<flag>=true`): opt-in diagnostic reports, good for discovery + iteration. Current: `auditFoundations`, `auditLadders`, `auditPlantSupport`, `auditReachability`, `auditBeds`. (Each needs a `systemProperty` line in `build.gradle` — gradle doesn't forward `-D` to forked tests.)
-- **Always-on gates** (GameTests in `runGameTestServer`, or ungated assertions): run on every build, **fail the build** on violation. Current: printability, render-integrity (stub panes), double-block. **Target: promote every reliable audit here**, with an allowlist for intentional exceptions (e.g. reachability's `INTENTIONALLY_SEALED`).
+- **Always-on gates** (GameTests in `runGameTestServer`, or ungated JUnit assertions in `./gradlew build`): run on every build, **fail the build** on violation. Current: printability, render-integrity (stub panes), double-block (GameTests); **ladder-support, plant-support, bed-clearance (allowlist: iron_farm), reachability (allowlist: `INTENTIONALLY_SEALED`), gravity-support** (ungated asserting JUnit — promoted 2026-06-16). A new build that floats a ladder/plant/sand, seals a room, or buries a bed now **fails `./gradlew build`** with no human playtest. Foundation + navigability stay opt-in diagnostics (heuristic, false positives).
 
 **The minimal-QA lever:** an author adds a new build → `./gradlew build` runs all always-on gates → mechanical bugs fail immediately, no human playtest needed for that class. The more gates are always-on, the less QA per build.
 
@@ -69,10 +69,13 @@ Every helper should be paired with the gate that proves it (defense in depth: th
 
 ## 5. Roadmap to minimal-QA-at-scale
 
-1. **Promote all reliable audits to always-on hard gates** (with allowlists). *In progress.*
-2. **Add the comprehensive `canSurvive` GameTest** — subsumes ladder + plant + all attachment classes via the real game logic. *In progress.*
-3. **Add a navigability gate** (step≤1 + 2-block headroom flood-fill from the entrance) — catches threshold/drop-in/blocked-aisle.
-4. **Build Track-B safe builders** for the bug-prone patterns; refactor existing builds onto them so the conventions are centralized.
-5. **Per-farm function tests** (scripted GameTests that run the contraption N ticks and assert the chest fills) — the last big mechanical class.
+1. ✅ **Promote all reliable audits to always-on hard gates** (with allowlists). *Done 2026-06-16: ladder/plant/bed/reachability/gravity now fail `./gradlew build`.*
+2. ✅ **Add a navigability audit** (standable-cell flood-fill: passable + 2-block headroom + floor, step≤1) — catches threshold/drop-in/blocked-aisle that sealed-interior reachability misses. *Done as a gated diagnostic (`-DauditNavigability`); heuristic (≈17 false positives on farms/decor/domes), so report-only for now. It already caught a real one: purpur_tower's door opened into a solid wall.*
+3. **Tighten navigability toward a gate** — reduce false positives (model curved/dome headroom, ladder-bridged verticals, mechanical-top exclusions) so it can become always-on with an allowlist.
+4. **Build Track-B safe builders** for the bug-prone patterns (`staircase()` with auto-facing, `doorway()` that skips wall cells, `ladderRun()` that places + backs); refactor existing builds onto them so conventions are centralized. *This kills the stair-facing + door-over-wall classes at the source — they recurred most.*
+5. **Per-farm function tests** (scripted GameTests that run the contraption N ticks and assert the chest fills) — the last big mechanical class; the only one still requiring a human playtest today.
 6. **Build metadata** — declare intent (sealed-on-purpose, decorative-solid, farm-vs-house) so gates self-configure instead of needing per-build allowlists.
 7. With 1–6 in place, a new build's QA is: `./gradlew build` (mechanical gates) + a brief human look for taste/function — minutes, not a playthrough.
+
+## 6. Current gate coverage (as of 2026-06-16)
+Always-on (fail the build): printability, render-integrity, double-block, **ladder-support, plant-support, bed-clearance, reachability, gravity-support**. Opt-in diagnostics: foundation (`-DauditFoundations`), navigability (`-DauditNavigability`). All currently clean across 132 builds; 69 GameTests green. The mechanical bug classes from this QA round are now caught automatically — what remains for human QA is **farm function** and **aesthetics/feel**.
