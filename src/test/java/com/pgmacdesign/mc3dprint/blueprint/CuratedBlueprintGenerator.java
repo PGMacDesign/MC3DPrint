@@ -13597,7 +13597,13 @@ class CuratedBlueprintGenerator {
         b.set(gcx - 1, 1, gz0, GLASS); // re-glaze the flanking entry-bay base (was spandrel)
         b.set(gcx + 1, 1, gz0, GLASS);
         door2(b, gcx, 1, gz0, "dark_oak", "N"); // facing=south → opens into the ground floor
-        b.set(gcx, 1, gz0 - 1, quartzSlabTop); // patio entry step just outside the door
+        // FLAT walk-through: the door sill is the top of the y0 foundation (elevation 1.0).
+        // The earlier "patio entry step" placed a top-slab at (gcx, 1, gz0-1) right outside
+        // the door — a half-block obstruction in the doorway approach (its top sits at
+        // elevation 2.0, above the sill), so you couldn't walk straight through flat. CLEAR
+        // it so the cell just outside the door is empty down to the y0 patio/pool floor,
+        // level with the sill — a flat walk-through. (clear(), not set(air) which no-ops.)
+        b.clear(gcx, 1, gz0 - 1);
 
         // ════════════════════════════════════════════════════════════════════
         //  UPPER TIER — the setback floor (x:3..11, z:4..9), glass walls y=7..8
