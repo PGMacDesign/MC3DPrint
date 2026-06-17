@@ -170,9 +170,45 @@ public final class Blueprint {
             return this;
         }
 
+        /**
+         * Genuinely empties a cell — sets it back to the {@link Blueprint#NO_BLOCK}
+         * sentinel so the printer skips it.
+         *
+         * <p>This is the counterpart {@link #set} cannot provide: {@code set(...)} treats
+         * air states as empty and silently <em>ignores</em> them (see {@link #set}), so
+         * {@code set(x,y,z, air)} is a no-op that leaves any previously placed block in
+         * place. That made the common "place a wall, then carve a doorway/window opening"
+         * pattern a silent failure — the carve did nothing and the door printed into a
+         * solid wall. {@code clear} fixes that: it always writes {@link Blueprint#NO_BLOCK},
+         * so an author can place a wall and then open it afterward.
+         *
+         * <p>Serialization/determinism are unaffected: an unset cell is already the array
+         * default ({@link Blueprint#NO_BLOCK}), so a cleared cell round-trips identically
+         * to one that was never written. A stale block-entity for this cell (if any) is
+         * also dropped, since the cell no longer holds a block. Out-of-range coordinates
+         * throw, matching the rest of the builder.
+         */
+        public Builder clear(int x, int y, int z) {
+            blocks[(y * sizeZ + z) * sizeX + x] = NO_BLOCK;
+            blockEntities.remove(new BlockPos(x, y, z));
+            return this;
+        }
+
         public Builder blockEntity(int x, int y, int z, CompoundTag data) {
             blockEntities.put(new BlockPos(x, y, z), data);
             return this;
+        }
+
+        public int sizeX() {
+            return sizeX;
+        }
+
+        public int sizeY() {
+            return sizeY;
+        }
+
+        public int sizeZ() {
+            return sizeZ;
         }
 
         public Blueprint build() {

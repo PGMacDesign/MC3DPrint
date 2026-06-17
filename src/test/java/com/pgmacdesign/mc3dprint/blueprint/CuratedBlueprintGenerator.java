@@ -803,6 +803,151 @@ class CuratedBlueprintGenerator {
         }
     }
 
+    // ---------------------------------------------------------------------
+    //  CORRECT-BY-CONSTRUCTION HELPERS (docs/blueprint-specs.md §6)
+    //
+    //  These encode the two convention classes authors have gotten wrong most
+    //  often — stair facing and openings-that-don't-breach-the-wall — so that a
+    //  build composed from them CANNOT reproduce those bugs. Prefer them over
+    //  hand-placing stairs / ladders / doors.
+    // ---------------------------------------------------------------------
+
+    /**
+     * (12b) A walkable staircase that ASCENDS TOWARD {@code dir} — a correct-by-construction
+     * stair run that makes the stair-facing bug class unbuildable.
+     *
+     * <p><b>Convention (empirically settled by
+     * {@code StairConventionGameTests.bottomStairRaisedStepIsOnFacingSide}):</b> a vanilla
+     * bottom stair raises its step on its {@code facing} side, i.e. a stair
+     * <b>ascends toward its {@code facing}</b>. So a climb heading north is built with
+     * {@code facing=north}. Every step here is therefore placed with
+     * {@code facing=dir.getName()}, half=bottom, shape=straight.
+     *
+     * <p>Places {@code steps} stairs of {@code material} (which must be a {@code *_stairs}
+     * state — its facing/half/shape are overwritten with the correct values). The bottom
+     * step is at {@code (x,y,z)}; each successive step advances +1 along {@code dir}'s
+     * horizontal axis and +1 in y, forming a traversable climb. {@code dir} must be
+     * horizontal.
+     *
+     * @return the position of the TOP (last) step.
+     */
+    static net.minecraft.core.BlockPos staircase(Blueprint.Builder b, int x, int y, int z,
+                                                 net.minecraft.core.Direction dir, int steps,
+                                                 BlueprintBlockState material) {
+        if (!dir.getAxis().isHorizontal()) {
+            throw new IllegalArgumentException("staircase dir must be horizontal, got " + dir);
+        }
+        // Derive the bare stair block id from the supplied material, then re-state it with
+        // the convention-correct facing so the author can't pass a wrong facing in.
+        String stairId = material.blockId();
+        BlueprintBlockState step = bs(stairId
+                + "[facing=" + dir.getName() + ",half=bottom,shape=straight]");
+        int dx = dir.getStepX();
+        int dz = dir.getStepZ();
+        int cx = x, cy = y, cz = z;
+        for (int i = 0; i < steps; i++) {
+            b.set(cx, cy, cz, step);
+            if (i < steps - 1) {
+                cx += dx;
+                cz += dz;
+                cy += 1;
+            }
+        }
+        return new net.minecraft.core.BlockPos(cx, cy, cz);
+    }
+
+    /**
+     * (12c) A ladder column that is ALWAYS backed against the wall on {@code backingDir} —
+     * a correct-by-construction ladder that makes the unbacked-ladder bug class unbuildable.
+     *
+     * <p><b>Convention:</b> a vanilla ladder mounts on the solid block opposite its
+     * {@code facing} — i.e. the wall behind a ladder is on its {@code facing.getOpposite()}
+     * side. To attach the ladder to the wall sitting on {@code backingDir}, the ladder's
+     * {@code facing} must therefore be {@code backingDir.getOpposite()}. This helper sets
+     * exactly that, so the climbable face points away from the wall and the support side
+     * lands on {@code backingDir} — passing the always-on
+     * {@code BlueprintLadderSupportAuditTest} rule by construction.
+     *
+     * <p>Places a ladder column at column {@code (x,z)} from {@code y0} up to {@code y1}
+     * (inclusive, in either order). <b>The caller MUST ensure a sturdy full block exists in
+     * the {@code backingDir} cell for every rung</b> — this helper places only the ladders;
+     * it can't know your wall material. If {@code ladderBaseOrNull} is non-null it is also
+     * placed in the {@code backingDir} cell of EACH rung as the backing wall (a convenience
+     * for free-standing ladder shafts); pass {@code null} when the wall already exists.
+     * {@code backingDir} must be horizontal.
+     */
+    static void ladderRun(Blueprint.Builder b, int x, int y0, int y1, int z,
+                          net.minecraft.core.Direction backingDir,
+                          BlueprintBlockState ladderBaseOrNull) {
+        if (!backingDir.getAxis().isHorizontal()) {
+            throw new IllegalArgumentException("ladderRun backingDir must be horizontal, got " + backingDir);
+        }
+        net.minecraft.core.Direction facing = backingDir.getOpposite();
+        BlueprintBlockState ladder = bs("minecraft:ladder[facing=" + facing.getName() + "]");
+        int bx = x + backingDir.getStepX();
+        int bz = z + backingDir.getStepZ();
+        int lo = Math.min(y0, y1);
+        int hi = Math.max(y0, y1);
+        for (int y = lo; y <= hi; y++) {
+            b.set(x, y, z, ladder);
+            if (ladderBaseOrNull != null) {
+                b.set(bx, y, bz, ladderBaseOrNull);
+            }
+        }
+    }
+
+    /**
+     * (12d) A 2-tall doorway that ALWAYS BREACHES the wall — a correct-by-construction door
+     * that makes the door-into-solid / opening-that-doesn't-breach bug class unbuildable.
+     *
+     * <p>Two things authors got wrong, fixed here together:
+     * <ul>
+     *   <li><b>Door facing.</b> A door opens INTO the building, so its {@code facing} is the
+     *       passage direction {@code into} (north wall &rarr; you walk south to enter, etc.).
+     *       The door's lower + upper halves are placed at {@code (x,y,z)} / {@code (x,y+1,z)}
+     *       with {@code facing=into}.</li>
+     *   <li><b>The opening must actually be open.</b> Placing a door doesn't remove the wall
+     *       behind it — and {@code set(pos, air)} is a silent no-op (see
+     *       {@link Blueprint.Builder#set}) — so doors used to print into a solid wall. This
+     *       helper uses {@link Blueprint.Builder#clear} to genuinely empty the
+     *       {@code passageDepth} cells (2 tall) running in the {@code into} direction from the
+     *       door, guaranteeing a real walk-through.</li>
+     * </ul>
+     *
+     * <p>Bottom of the door is at {@code (x,y,z)}. The carved passage covers cells
+     * {@code (x,z)+k*into} for {@code k = 1 .. passageDepth} at heights {@code y} and
+     * {@code y+1}. {@code into} must be horizontal. Cells carved out of bounds are skipped.
+     */
+    static void doorway(Blueprint.Builder b, int x, int y, int z,
+                        net.minecraft.core.Direction into, int passageDepth, String woodType) {
+        if (!into.getAxis().isHorizontal()) {
+            throw new IllegalArgumentException("doorway into-dir must be horizontal, got " + into);
+        }
+        String facing = into.getName();
+        b.set(x, y, z, bs("minecraft:" + woodType
+                + "_door[facing=" + facing + ",half=lower,hinge=left,open=false,powered=false]"));
+        b.set(x, y + 1, z, bs("minecraft:" + woodType
+                + "_door[facing=" + facing + ",half=upper,hinge=left,open=false,powered=false]"));
+        // Carve the passage so the door breaches the wall instead of opening into solid.
+        int dx = into.getStepX();
+        int dz = into.getStepZ();
+        for (int k = 1; k <= passageDepth; k++) {
+            int px = x + dx * k;
+            int pz = z + dz * k;
+            clearIfInBounds(b, px, y, pz);
+            clearIfInBounds(b, px, y + 1, pz);
+        }
+    }
+
+    /** {@link Blueprint.Builder#clear} guarded against out-of-range coordinates (carve helper). */
+    private static void clearIfInBounds(Blueprint.Builder b, int x, int y, int z) {
+        if (x < 0 || y < 0 || z < 0
+                || x >= b.sizeX() || y >= b.sizeY() || z >= b.sizeZ()) {
+            return;
+        }
+        b.clear(x, y, z);
+    }
+
     /**
      * (13) A timber-frame wall: a plank ring overlaid with a stripped-log stud/rail
      * grid — vertical studs every 2 cells and horizontal rails at the top & bottom
