@@ -121,7 +121,7 @@ utility rooms; most infrastructure; T7 material tier.
 | fantasy_wizard_tower | 9×9 → T5 | T4 | stone brick, deepslate, purple glass, end rods | fantasy-house notoriety | Med |
 | elven_treehouse | 11×11 → T6 | T4 | birch, quartz, leaves, blue glass, sea lanterns | LOTR elven style | Hard |
 | dwarven_hall | 13×11 → T6 | T2 | stone brick, deepslate, iron blocks, gold accents | LOTR/Moria style | Hard |
-| cottagecore_cottage | 7×7 → T5 | T1 | oak/spruce, cobble, flowers, hay, leaves | cottagecore perennial | Easy |
+| storybook_cottage | 7×7 → T5 | T1 | oak/spruce, cobble, flowers, hay, leaves | cottagecore perennial | Easy |
 | victorian_townhouse | 11×9 → T6 | T2 | brick, granite trim, bay windows, copper roof | urban street builds | Med |
 | nordic_viking_longhouse | 11×15 → T7 | T3 | spruce, stone brick, hay, shields (item frames) | medieval cluster | Med |
 | copper_clocktower | 9×9 → T5 | T2 | copper (all oxidation), deepslate, lanterns | pairs copper_observatory | Med |

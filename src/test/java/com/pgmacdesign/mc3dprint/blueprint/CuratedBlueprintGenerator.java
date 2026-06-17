@@ -270,7 +270,7 @@ class CuratedBlueprintGenerator {
         // Phase 2 — Category B (modern / contemporary)
         builds.put("modern_concrete_house", modernConcreteHouse());
         builds.put("modern_pool_deck", modernPoolDeck());
-        builds.put("cottagecore_cottage", cottagecoreCottage());
+        builds.put("storybook_cottage", storybookCottage());
         builds.put("torii_gate", toriiGate());
         builds.put("japanese_tea_house", japaneseTeaHouse());
         builds.put("zen_garden", zenGarden());
@@ -3679,7 +3679,7 @@ class CuratedBlueprintGenerator {
     }
 
     /**
-     * Cottagecore Cottage (Phase 2 §B). 7×7 footprint → builder(7, 8, 7). A
+     * Storybook Cottage (Phase 2 §B). 7×7 footprint → builder(7, 8, 7). A
      * storybook perennial cottage: a mossy-cobble base course under warm oak walls
      * with spruce-log corner posts, a steep spruce gable roof (thatch read) over a
      * mossy-cobble ridge, flower-box windows (interior slab sill + potted bloom by
@@ -3704,8 +3704,8 @@ class CuratedBlueprintGenerator {
      * composter, lanterns, flower_pot/potted_* (itemless-structural — NO loose
      * flowers/leaves), and fence porch posts.
      */
-    private static Blueprint cottagecoreCottage() {
-        Blueprint.Builder b = Blueprint.builder("Cottagecore Cottage", 7, 8, 7);
+    private static Blueprint storybookCottage() {
+        Blueprint.Builder b = Blueprint.builder("Storybook Cottage", 7, 8, 7);
         final int wallH = 4;
         BlueprintBlockState mossyCobbleSlab = bs("minecraft:mossy_cobblestone_slab[type=bottom]");
         BlueprintBlockState awningStair = bs("minecraft:spruce_stairs[facing=south,half=top,shape=straight]");
@@ -3735,7 +3735,8 @@ class CuratedBlueprintGenerator {
         door2(b, 3, 1, 0, "oak", "N");      // occupies (3, y=1..2, 0)
         b.set(3, 3, 0, OAK_PLANKS);          // close the wall above the door head
         b.set(3, wallH, 1, awningStair);     // little eave awning over the entry (interior side, top stair)
-        b.set(3, 1, 1, mossyCobbleSlab);     // worn doorstep mat just inside
+        // (no doorstep slab — the cell just inside the door stays FLAT at floor level so you
+        //  walk straight in; a half-slab here was a step-up that blocked the entrance.)
         // porch fence posts flanking the entry, with hanging lanterns
         pillar(b, 1, 0, 1, wallH - 1, OAK_FENCE);
         pillar(b, 5, 0, 1, wallH - 1, OAK_FENCE);
@@ -10002,9 +10003,10 @@ class CuratedBlueprintGenerator {
      *   <li>{@code y=1..3} ground storey: bookshelf / chiseled-bookshelf stacks
      *       lining the side walls, lectern reading nooks on carpet runners, a
      *       central aisle; a ladder climbs the SE corner to the mezzanine.</li>
-     *   <li>{@code y=4} U-shaped mezzanine plank floor (the central atrium is left
-     *       open so the hall reads double-height), {@code y=5} dark-oak-fence
-     *       railing around the atrium edge + a ladder hatch.</li>
+     *   <li>{@code y=4} U-shaped mezzanine plank floor, each arm 3 cells deep so it
+     *       reads bookshelf | walk lane | rail (the central atrium is left open so the
+     *       hall reads double-height), {@code y=5} dark-oak-fence railing set on the
+     *       atrium lip (one cell in from the shelves) + a ladder hatch.</li>
      *   <li>{@code y=5..7} upper storey: more bookshelf stacks on the gallery, lit
      *       by the upper windows.</li>
      *   <li>{@code y=8} dark-oak tie-beams span the hall; hanging chandeliers
@@ -10019,7 +10021,6 @@ class CuratedBlueprintGenerator {
         BlueprintBlockState darkOakLogY = bs("minecraft:dark_oak_log[axis=y]");
         BlueprintBlockState darkOakLogX = bs("minecraft:dark_oak_log[axis=x]");
         BlueprintBlockState darkOakFence = DARK_OAK_FENCE;
-        BlueprintBlockState darkOakSlabBottom = bs("minecraft:dark_oak_slab[type=bottom]");
         BlueprintBlockState darkOakSlabTop = bs("minecraft:dark_oak_slab[type=top]");
         BlueprintBlockState redCarpet = bs("minecraft:red_carpet");
         BlueprintBlockState ladderE = bs("minecraft:ladder[facing=east,waterlogged=false]");
@@ -10112,32 +10113,34 @@ class CuratedBlueprintGenerator {
         b.set(7, 1, 7, lecternW);
 
         // ── 7) MEZZANINE (y=4) — U-shaped gallery, open central atrium ──────
-        // A plank gallery floor around three sides (west, east, south runs) two
-        // cells deep; the centre is left OPEN so the hall reads double-height.
-        // The SE access column is left open here so the ladder can run up through
-        // it; its deck-layer cell (y=mezzY) is filled by the top ladder rung (§9).
+        // A plank gallery floor around three sides (west, east, south runs) THREE
+        // cells deep so each arm reads bookshelf (outer wall) | WALK LANE | rail. The
+        // old 2-deep arm put the fence rail directly in front of the bookshelf with no
+        // standing room, so the gallery wasn't walkable — bumping the whole gallery one
+        // cell toward the centre opens a walk lane between the shelves and the rail. The
+        // centre stays OPEN (atrium x=4..6, z=1..6) so the hall still reads double-height.
+        // The SE column is left open for the ladder; its deck cell is the top rung (§9).
         int hatchX = 8, hatchZ = 8;               // ladder hatch (SE)
         for (int x = 1; x <= 9; x++) {
             for (int z = 1; z <= 9; z++) {
-                boolean onGallery = (x <= 2) || (x >= 8) || (z >= 8);
-                if (!onGallery) continue;          // open atrium
+                boolean onGallery = (x <= 3) || (x >= 7) || (z >= 7);
+                if (!onGallery) continue;          // open atrium (x=4..6, z=1..6)
                 if (x == hatchX && z == hatchZ) continue; // ladder hatch
                 b.set(x, mezzY, z, DARK_OAK_PLANKS);
             }
         }
-        // ── 8) MEZZANINE RAILING (y=5) — dark-oak fence around the atrium edge
-        // Fence posts ring the inner edge of the gallery (where it meets the open
-        // atrium) so the player doesn't walk off. The inner edge runs along
-        // x=2 / x=8 (between gallery and atrium) and z=7 (south gallery lip).
+        // ── 8) MEZZANINE RAILING (y=5) — dark-oak fence at the ATRIUM edge ───
+        // The rail rings the inner (atrium) lip of the gallery, one cell IN from the
+        // bookshelves, so each arm is bookshelf | walk lane | rail: west rail x=3 (walk
+        // lane x=2), east rail x=7 (walk lane x=8), south rail z=7 (walk lane z=8). The
+        // rail sits on the gallery deck — nothing extra is needed beneath it.
         for (int z = 1; z <= 7; z++) {
-            b.set(2, mezzY + 1, z, darkOakFence);  // west gallery inner rail
-            b.set(8, mezzY + 1, z, darkOakFence);  // east gallery inner rail
+            b.set(3, mezzY + 1, z, darkOakFence);  // west gallery rail (walk lane x=2)
+            b.set(7, mezzY + 1, z, darkOakFence);  // east gallery rail (walk lane x=8)
         }
-        for (int x = 2; x <= 8; x++) {
-            b.set(x, mezzY + 1, 7, darkOakFence);  // south gallery inner rail
+        for (int x = 3; x <= 7; x++) {
+            b.set(x, mezzY + 1, 7, darkOakFence);  // south gallery rail (walk lane z=8)
         }
-        // re-open the hatch + an access gap in the rail so the ladder is reachable
-        b.set(hatchX, mezzY + 1, 7, darkOakSlabBottom); // step off the ladder onto the gallery
 
         // ── 9) LADDER — SE corner, continuous climb y=1..mezzY to the deck ──
         // Runs all the way to the deck layer (top rung at y=mezzY=4, filling the
@@ -12072,158 +12075,135 @@ class CuratedBlueprintGenerator {
     }
 
     /**
-     * §I — Dragon Statue. 7×11×11 (W×H×D) → builder(7,11,11). A crouching, coiled
-     * dragon sculpture on a dark stone plinth: a coiled tail at the rear (low z),
-     * a rising scaled body, spread wings suggested with stairs/slabs, and a raised
-     * neck + horned head with an open jaw at the front (high z). A Hard organic
-     * build — the goal is a readable blocky-dragon silhouette, not anatomical
-     * perfection.
+     * §I — Dragon Statue. 15×22×17 (W×H×D) → builder(15,22,17). A REARING dragon
+     * guardian on a stepped plinth: haunches planted, chest thrust out, a long neck
+     * arcing up to a roaring horned head with glowing eyes, two great wings spread
+     * wide overhead, raised clawed forelegs, and a tail sweeping back to a curled
+     * tip. A Hard organic build — the goal is a dramatic, readable rearing-dragon
+     * silhouette at T5 scale (~20 blocks tall, full-width wingspan), far more
+     * impressive than the old crouching 11-tall version.
      *
-     * <p>AXES: x=W (0..6, centred on x=3), z=depth (0..10), y=up (0..10). The dragon
-     * faces the viewer at HIGH z; tail coils at LOW z. Everything sits on a 1-thick
-     * plinth (y0), so the creature body lives at y1+.
+     * <p>AXES: x=W (0..14, spine centred on x=7), z=depth (0..16; tail at LOW z, the
+     * dragon faces the viewer and thrusts its head/snout toward HIGH z), y=up (0..21).
+     * The whole creature is SOLID (no hollow interior ⇒ no enclosed air for the
+     * reachability gate); the only cavity is the open roaring maw, which vents out the
+     * front, so it is not a sealed pocket.
      *
-     * <p>PALETTE (all FU-valued or recipe-derived from valued leaves):
-     * stone_bricks / deepslate_bricks / polished_blackstone for the plinth;
-     * deepslate, blackstone, coal_block and dark_prismarine for the dark scaled
-     * hide; stairs & slabs of those for shaping the tail, wings, snout and brow;
-     * sea_lantern eyes; end_rod horns / dorsal spines; chain whiskers.
+     * <p>PALETTE (all FU-valued or recipe-derived from valued leaves): deepslate_bricks
+     * + polished_blackstone for the stepped plinth; blackstone + polished_deepslate +
+     * coal_block for the dark scaled hide and wing membranes; blackstone stairs/slabs
+     * for the snout, jaw, toes and tail curl; sea_lantern eyes + plinth-corner glow;
+     * end_rod horns / dorsal crest / wing-finger claws; chain whisker barbels.
+     * dark_prismarine is gate-flagged (unvalued — its recipe needs black_dye), so the
+     * "scales" use coal_block: glossy-black, FU-valued (9× coal), tonally on-theme.
      *
-     * <p>RENDER-SAFETY: NO iron_bars/glass panes are used anywhere — every thin
-     * element (horns, dorsal spikes) is {@code end_rod}, which is not an
-     * {@code IronBarsBlock} and renders as a clean vertical rod regardless of
-     * neighbours, so the render-integrity guardrail has nothing to flag. Chains
-     * are anchored to a solid block above so they read as hanging.
+     * <p>RENDER-SAFETY: no iron_bars / glass panes anywhere — every thin element
+     * (horns, spines, claws) is {@code end_rod} (not an {@code IronBarsBlock}; renders
+     * as a clean rod regardless of neighbours), so the render-integrity gate has nothing
+     * to flag. Chains hang from a solid jaw block above. No falling blocks, no lava/fire,
+     * no doors/beds — the statue trips none of the structural gates.
      */
     private static Blueprint dragonStatue() {
-        final int W = 7, H = 11, D = 11;
+        final int W = 15, H = 22, D = 17;
         Blueprint.Builder b = Blueprint.builder("Dragon Statue", W, H, D);
+        final int cx = 7; // spine centreline
 
-        // ── PALETTE ───────────────────────────────────────────────────────────
-        final BlueprintBlockState deepslateBricks   = bs("minecraft:deepslate_bricks");
+        // ── PALETTE (all FU-valued / recipe-derived; the proven dark set) ──────
+        final BlueprintBlockState deepslateBricks    = bs("minecraft:deepslate_bricks");
         final BlueprintBlockState polishedBlackstone = bs("minecraft:polished_blackstone");
-        final BlueprintBlockState blackstone        = bs("minecraft:blackstone");
-        final BlueprintBlockState deepslate         = bs("minecraft:polished_deepslate");
-        final BlueprintBlockState coalBlock         = bs("minecraft:coal_block");
-        // dark scaled hide accent. dark_prismarine is gate-flagged (no FU value and
-        // can't derive — its recipe needs black_dye, which is unvalued), so the
-        // "scales" use coal_block instead: glossy-black, FU-valued (9× coal), and
-        // tonally on-theme for a dark dragon hide.
-        final BlueprintBlockState darkScale         = coalBlock;
-        final BlueprintBlockState seaLantern        = bs("minecraft:sea_lantern");
-        // stair states for shaping (facing = the LOW side the step faces toward)
-        final BlueprintBlockState blackstoneStairN  = bs("minecraft:blackstone_stairs[facing=north,half=bottom,shape=straight]");
-        final BlueprintBlockState blackstoneStairS  = bs("minecraft:blackstone_stairs[facing=south,half=bottom,shape=straight]");
-        final BlueprintBlockState deepslateStairE   = bs("minecraft:polished_deepslate_stairs[facing=east,half=bottom,shape=straight]");
-        final BlueprintBlockState deepslateStairW   = bs("minecraft:polished_deepslate_stairs[facing=west,half=bottom,shape=straight]");
-        final BlueprintBlockState blackstoneSlabTop = bs("minecraft:blackstone_slab[type=top]");
-        // wing-membrane trailing edge: blackstone slab (FU-valued via blackstone),
-        // replacing the gate-flagged dark_prismarine_slab.
-        final BlueprintBlockState wingSlabTop       = blackstoneSlabTop;
+        final BlueprintBlockState blackstone         = bs("minecraft:blackstone");
+        final BlueprintBlockState deepslate          = bs("minecraft:polished_deepslate");
+        final BlueprintBlockState coalBlock          = bs("minecraft:coal_block"); // glossy scales/ridge
+        final BlueprintBlockState seaLantern         = bs("minecraft:sea_lantern");
+        final BlueprintBlockState bsStairS = bs("minecraft:blackstone_stairs[facing=south,half=bottom,shape=straight]");
+        final BlueprintBlockState bsStairN = bs("minecraft:blackstone_stairs[facing=north,half=bottom,shape=straight]");
 
-        final int cx = 3; // centre column (the spine runs up x=3)
-
-        // ── PLINTH (y0) — 7×11 dark footing the whole creature rests on ───────
+        // ── 1) STEPPED PLINTH (y0..1) — a dressed two-tier footing ────────────
         floor(b, 0, 0, 0, W - 1, D - 1, deepslateBricks);
-        // polished-blackstone rim course around the footing edge (dressed border)
-        line(b, 0, 0, 0, W - 1, 0, polishedBlackstone);
+        line(b, 0, 0, 0, W - 1, 0, polishedBlackstone);            // dressed rim
         line(b, 0, 0, D - 1, W - 1, D - 1, polishedBlackstone);
         line(b, 0, 0, 0, 0, D - 1, polishedBlackstone);
         line(b, 0, W - 1, 0, W - 1, D - 1, polishedBlackstone);
+        solid(b, 1, 1, 1, W - 2, 1, D - 2, polishedBlackstone);    // inset upper tier
+        b.set(1, 1, 1, seaLantern);     b.set(W - 2, 1, 1, seaLantern);     // corner glow
+        b.set(1, 1, D - 2, seaLantern); b.set(W - 2, 1, D - 2, seaLantern);
 
-        // ── COILED TAIL (z=0..2) — a low spiral curling in from the rear ──────
-        // The tail enters at the rear-right, sweeps across, and thickens as it
-        // approaches the body. Kept to y1..y2 so it reads as resting on the plinth.
-        // tail tip — a single end_rod-free coal-block nub curling at the corner
-        b.set(5, 1, 0, coalBlock);
-        b.set(4, 1, 0, deepslate);
-        b.set(4, 1, 1, deepslate);
-        b.set(3, 1, 1, deepslate);
-        b.set(2, 1, 1, deepslate);
-        b.set(2, 1, 2, deepslate);
-        b.set(3, 1, 2, blackstone);
-        b.set(4, 1, 2, blackstone);
-        // the coil rises a touch toward the body so the tail "lifts" into the hips
-        b.set(3, 2, 2, deepslate);
-        b.set(4, 2, 1, blackstoneStairN); // curl lip catching the light
+        // ── 2) BODY MASS — rearing, the spine arcing forward (+z) as it rises ──
+        // Each solid() is a vertebra "slab"; cz climbs from the seated haunches
+        // (z~6) forward to the head (z~11). All SOLID → no enclosed interior air.
+        solid(b, cx - 3, 2, 3, cx + 3, 4, 9, blackstone);   // haunches (broad base) x4..10 z3..9
+        solid(b, cx - 2, 5, 4, cx + 2, 5, 8, blackstone);   // haunch crown taper
+        solid(b, cx - 2, 5, 5, cx + 2, 6, 9, blackstone);   // lower back / belly  x5..9 z5..9
+        solid(b, cx - 2, 7, 6, cx + 2, 10, 10, blackstone); // chest (thrust forward) z6..10
+        solid(b, cx - 2, 11, 7, cx + 2, 12, 9, blackstone); // broad shoulders (wing roots) z7..9
+        solid(b, cx - 1, 13, 8, cx + 1, 13, 10, blackstone);// upper back / neck base
+        solid(b, cx - 1, 14, 8, cx + 1, 15, 10, deepslate); // neck
+        solid(b, cx - 1, 16, 9, cx + 1, 16, 11, deepslate); // neck arches forward
 
-        // ── HAUNCHES / HIPS (z=3..4) — the body's heavy rear, 3 wide, rising ──
-        solid(b, 2, 1, 3, 4, 2, 4, deepslate);     // bulk hip mass x2..4, y1..2
-        b.set(cx, 3, 3, blackstone);               // hip ridge rising onto the back
-        b.set(cx, 3, 4, blackstone);
-        // hind-leg hints: a darker coal-block foot pad either side at the front of
-        // the haunch, with a polished-deepslate stair toe so the legs read planted.
-        b.set(1, 1, 4, coalBlock);
-        b.set(5, 1, 4, coalBlock);
-        b.set(1, 1, 5, deepslateStairW); // left toe steps down off the pad
-        b.set(5, 1, 5, deepslateStairE); // right toe
+        // glossy coal-block scale accents on the chest flanks
+        b.set(cx - 2, 8, 10, coalBlock); b.set(cx + 2, 8, 10, coalBlock);
+        b.set(cx - 2, 9, 10, coalBlock); b.set(cx + 2, 9, 10, coalBlock);
+        // dorsal CREST — end_rod spines marching up the back ridge (behind each part)
+        b.set(cx, 8, 5, END_ROD); b.set(cx, 11, 6, END_ROD);
+        b.set(cx, 13, 7, END_ROD); b.set(cx, 15, 8, END_ROD);
 
-        // ── MAIN BODY / RIBCAGE (z=5..6) — the tall scaled barrel of the chest ─
-        solid(b, 2, 1, 5, 4, 3, 6, blackstone);    // ribcage core, 3w × 3 tall
-        // dark-prismarine scale band wrapping the flanks (the patterned hide)
-        b.set(2, 2, 5, darkScale); // left flank scales
-        b.set(2, 2, 6, darkScale);
-        b.set(4, 2, 5, darkScale); // right flank scales
-        b.set(4, 2, 6, darkScale);
-        b.set(cx, 3, 5, coalBlock);                // glossy spine ridge
-        b.set(cx, 3, 6, coalBlock);
+        // ── 3) HEAD (top, z~10..14) — roaring, open maw, eyes, horns, whiskers ─
+        solid(b, cx - 1, 18, 10, cx + 1, 19, 12, blackstone); // upper skull y18..19 z10..12
+        b.set(cx, 19, 11, deepslate);                          // domed crown
+        solid(b, cx - 1, 17, 10, cx + 1, 17, 11, blackstone);  // throat / back of head (maw vents at z12+)
+        // upper jaw / snout thrust forward (z13)
+        b.set(cx - 1, 18, 13, blackstone); b.set(cx, 18, 13, blackstone); b.set(cx + 1, 18, 13, blackstone);
+        b.set(cx, 19, 13, bsStairS);                           // snout ridge stepping down-forward
+        // lower jaw a level down, set forward → mouth gapes (y17 z12..13 open to the front)
+        solid(b, cx - 1, 16, 12, cx + 1, 16, 13, blackstone);
+        b.set(cx, 16, 14, bsStairS);                           // chin/jaw tip
+        // EYES — glowing sea-lanterns in the brow either side of the snout
+        b.set(cx - 1, 18, 12, seaLantern); b.set(cx + 1, 18, 12, seaLantern);
+        // HORNS — tall end_rod pair off the crown + a central crest spike (render-safe)
+        b.set(cx - 1, 20, 11, END_ROD); b.set(cx + 1, 20, 11, END_ROD);
+        b.set(cx - 1, 21, 11, END_ROD); b.set(cx + 1, 21, 11, END_ROD);
+        b.set(cx, 20, 10, END_ROD);
+        // WHISKERS — chains hanging off the solid lower jaw (anchor above each link)
+        b.set(cx, 15, 13, CHAIN); b.set(cx - 1, 15, 13, CHAIN); b.set(cx + 1, 15, 13, CHAIN);
 
-        // ── SPREAD WINGS — stair "membranes" fanning off the shoulders (z=5..6)
-        // Suggested, not solid: each wing is a short run of stairs stepping UP and
-        // OUT from the ribcage so the silhouette reads as a half-folded wing.
-        // LEFT wing (west, x decreasing) at the shoulder height y3.
-        b.set(1, 3, 5, deepslateStairW);
-        b.set(0, 3, 5, blackstoneStairN);
-        b.set(1, 3, 6, wingSlabTop); // trailing membrane edge
-        b.set(0, 4, 5, deepslate);       // raised wing tip / shoulder spar
-        // RIGHT wing (east, x increasing), mirror.
-        b.set(5, 3, 5, deepslateStairE);
-        b.set(6, 3, 5, blackstoneStairN);
-        b.set(5, 3, 6, wingSlabTop);
-        b.set(6, 4, 5, deepslate);
+        // ── 4) SPREAD WINGS (the showpiece) — membrane fans rising up-and-out ──
+        // from the shoulders, filling the full wingspan. Indexed i=0 (root) .. 5 (tip);
+        // outer columns sweep one block back (z) so the wings read in 3-D. Leading edge
+        // is a polished-deepslate "bone"; a few end_rod claws spike the finger knuckles.
+        final int[] wTop  = {14, 16, 17, 18, 19, 20}; // leading-edge y per column
+        final int[] wBase = {10, 11, 11, 12, 13, 14}; // trailing-edge y per column (deep membrane)
+        final int[] wZ    = { 6,  6,  6,  5,  5,  5}; // z-plane per column (outer = swept back)
+        for (int i = 0; i <= 5; i++) {
+            int lx = cx - 2 - i;   // left  columns x=5,4,3,2,1,0
+            int rx = cx + 2 + i;   // right columns x=9,10,11,12,13,14
+            for (int y = wBase[i]; y <= wTop[i]; y++) {
+                b.set(lx, y, wZ[i], blackstone);
+                b.set(rx, y, wZ[i], blackstone);
+            }
+            b.set(lx, wTop[i], wZ[i], deepslate); // leading-edge bone
+            b.set(rx, wTop[i], wZ[i], deepslate);
+        }
+        for (int i : new int[]{1, 3, 5}) {        // finger claws on alternating knuckles
+            b.set(cx - 2 - i, wTop[i] + 1, wZ[i], END_ROD);
+            b.set(cx + 2 + i, wTop[i] + 1, wZ[i], END_ROD);
+        }
 
-        // dorsal SPINES along the back ridge — slender end_rods marching forward
-        // from the hips, over the shoulders, toward the neck (render-safe rods).
-        b.set(cx, 4, 4, END_ROD);
-        b.set(cx, 4, 5, END_ROD);
-        b.set(cx, 4, 6, END_ROD);
+        // ── 5) LEGS ────────────────────────────────────────────────────────────
+        // hind feet + clawed toes at the front base of the haunches
+        b.set(cx - 3, 2, 9, coalBlock); b.set(cx + 3, 2, 9, coalBlock);
+        b.set(cx - 3, 2, 10, bsStairS); b.set(cx + 3, 2, 10, bsStairS);   // toes step forward
+        b.set(cx - 4, 2, 10, END_ROD);  b.set(cx + 4, 2, 10, END_ROD);    // outer claws
+        // raised forelegs/arms reaching forward off the chest
+        b.set(cx - 2, 9, 11, deepslate); b.set(cx + 2, 9, 11, deepslate); // upper arm
+        b.set(cx - 2, 8, 11, deepslate); b.set(cx + 2, 8, 11, deepslate);
+        b.set(cx - 2, 7, 11, bsStairS);  b.set(cx + 2, 7, 11, bsStairS);  // forearm / hand
+        b.set(cx - 2, 7, 12, END_ROD);   b.set(cx + 2, 7, 12, END_ROD);   // hand claws reaching
 
-        // ── NECK (z=7..8) — rises and arches forward toward the raised head ───
-        b.set(cx, 1, 7, blackstone);
-        b.set(cx, 2, 7, blackstone);
-        b.set(cx, 3, 7, deepslate);
-        b.set(cx, 4, 7, deepslate);   // the neck climbs
-        b.set(cx, 5, 7, coalBlock);
-        b.set(cx, 5, 8, blackstone);  // arches forward over z
-        b.set(cx, 6, 8, deepslate);
-        // neck scale collar — dark-prismarine flaring at the base of the skull
-        b.set(2, 5, 7, darkScale);
-        b.set(4, 5, 7, darkScale);
-
-        // ── HEAD (z=9..10, top of the build) — raised, with an open jaw ───────
-        // skull block, 3 wide for a proper dragon brow, at y6..y7
-        solid(b, 2, 6, 9, 4, 7, 9, blackstone);    // skull, x2..4, y6..7, z9
-        b.set(cx, 7, 9, deepslate);                // domed crown
-        // SNOUT thrusting forward (z=10): a blackstone stair muzzle so the head
-        // reads as pointing/roaring rather than a flat cube.
-        b.set(cx, 7, 10, blackstoneStairS);        // upper snout, stepping down/forward
-        b.set(cx, 6, 10, blackstone);              // upper jaw mass
-        // LOWER JAW — a slab dropped a level, set forward, so the mouth gapes open.
-        b.set(cx, 5, 10, blackstoneSlabTop);       // lower jaw (gap above = open maw)
-        // EYES — sea-lantern set into the brow either side of the snout (glowing).
-        b.set(2, 7, 9, seaLantern);
-        b.set(4, 7, 9, seaLantern);
-
-        // HORNS — a pair of end_rods sweeping up-back off the crown (render-safe).
-        b.set(2, 8, 9, END_ROD);
-        b.set(4, 8, 9, END_ROD);
-        b.set(2, 9, 9, END_ROD); // left horn tip, taller
-        // a single central crest end_rod just behind the crown for a regal silhouette
-        b.set(cx, 8, 9, END_ROD);
-
-        // WHISKERS / chin barbels — short chains hanging off the lower jaw. The jaw
-        // slab at (cx,5,10) is the solid anchor above each chain link so it hangs.
-        b.set(cx, 4, 10, CHAIN);
+        // ── 6) TAIL — sweeps back off the haunches, curling up at the rear ─────
+        b.set(cx, 2, 2, blackstone); b.set(cx - 1, 2, 2, blackstone); b.set(cx + 1, 2, 2, blackstone);
+        b.set(cx, 2, 1, deepslate);  b.set(cx - 1, 2, 1, deepslate);
+        b.set(cx, 2, 0, coalBlock);                                       // tail-tip nub
+        b.set(cx, 3, 1, bsStairN);                                        // curl lifting up at the rear
 
         return b.build();
     }

@@ -109,7 +109,7 @@
 ### B — Architectural styles (17)
 - [x] modern_concrete_house
 - [x] modern_pool_deck
-- [x] cottagecore_cottage
+- [x] storybook_cottage (renamed from cottagecore_cottage)
 - [x] torii_gate
 - [x] japanese_tea_house
 - [x] zen_garden

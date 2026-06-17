@@ -95,8 +95,8 @@ public final class CuratedBlueprints {
             "modern_concrete_house",
             // Phase 2 — Category B (modern_pool_deck)
             "modern_pool_deck",
-            // Phase 2 — Category B (cottagecore_cottage)
-            "cottagecore_cottage",
+            // Phase 2 — Category B (storybook_cottage)
+            "storybook_cottage",
             // Phase 2 — Category B (torii_gate)
             "torii_gate",
             // Phase 2 — Category B (japanese_tea_house)
