@@ -14735,7 +14735,15 @@ class CuratedBlueprintGenerator {
             walls(b, sx0, sz0, sx1, sz1, y, y, endBricks);
         }
         corners(b, sx0, sz0, sx1, sz1, 1, 3, endStone); // raw end-stone quoins
-        floor(b, 1, sx0 + 1, sz0 + 1, sx1 - 1, sz1 - 1, endBricks); // interior floor
+        // interior finish floor laid at y0 (top elevation 1.0) so it is FLAT with the door
+        // sill, NOT at y1 (which sat a full block ABOVE the sill, forcing a step UP under the
+        // south doorway where the player's head clipped the door's upper half). The walkable
+        // shaft floor is now the y0 end-brick course; the cell behind the door (cx,1,sz1-1) is
+        // open air at sill level → you walk straight into the shaft flat, then climb the
+        // north-wall ladder. The y1 interior is left hollow; the ladder's lowest rung at y1
+        // sits at foot level over this y0 floor and its backing (the y1 north ring wall at
+        // cx,1,sz0) is untouched.
+        floor(b, 0, sx0 + 1, sz0 + 1, sx1 - 1, sz1 - 1, endBricks); // interior floor (flat with sill)
         // end-stone-brick-wall plinth corner kiss on the 9×9 footprint (street base)
         b.set(0, 1, 0, endBrickWall);
         b.set(8, 1, 0, endBrickWall);
