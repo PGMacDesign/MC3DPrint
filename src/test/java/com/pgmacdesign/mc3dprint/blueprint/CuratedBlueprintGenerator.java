@@ -8278,67 +8278,49 @@ class CuratedBlueprintGenerator {
     }
 
     /**
-     * §F.pumpkin_melon_farm — a STATIC pumpkin/melon farm, 9×9×5 (W×L×H)
-     * → builder(9, 5, 9). <b>Rearchitected</b> for how gourds <em>actually</em> grow:
-     * a melon/pumpkin stem does NOT fruit upward like sugar-cane — when it matures it
-     * spawns a melon/pumpkin block on a dirt-like block <b>HORIZONTALLY ADJACENT</b>
-     * to the stem, on that block's top face. The old upward observer/piston wall never
-     * intersected the real fruit cell, so it harvested nothing. This build places the
-     * sideways growth geometry correctly and collects by flowing water.
+     * §F.pumpkin_melon_farm — a STATIC pumpkin/melon farm, 9×9×4 (W×L×H)
+     * → builder(9, 4, 9). <b>Rebuilt from scratch</b> after the old build flooded the
+     * whole plane with "sweep" water into a useless pool. Gourds grow SIDEWAYS — a mature
+     * stem spawns a melon/pumpkin block on a soil block horizontally adjacent to the stem,
+     * on that block's top face. This build keeps that geometry and collects with a single
+     * 1-wide water channel instead of a sheet.
      *
-     * <p><b>Why SEMI-AUTO (player breaks the fruit; water auto-collects):</b> for
-     * sideways growth the fruit cell has only four horizontal neighbours, and the stem
-     * already claims one of them — so a single repeating lane can't host a piston
-     * (must touch the fruit), an immovable crush-wall (opposite the piston), AND a
-     * BUD-free observer→piston link without multi-layer redstone-dust routing, which is
-     * fragile and unverifiable in a static print. So we ship the robust, fully
-     * verifiable design: hydrated stems → dedicated dirt growth blocks where the fruit
-     * spawns → a flowing-water sheet that washes the player-broken drop into a central
-     * trench → hopper → chest. Observers are kept as <em>growth indicators</em> facing
-     * each fruit cell (a visual/redstone "ready" tap), not as the harvest mechanism.
+     * <p><b>Semi-auto + minimal water (the fix for the flood):</b> the only water is ONE
+     * source line down the centre (x=cx, y=1), sitting on a hopper line. Stems are OUTER
+     * (x=cx∓2) and the dirt growth blocks INNER (x=cx∓1, right beside the channel), so the
+     * gourd grows in the cell touching the channel. The player breaks a gourd; the drop
+     * falls into the channel and the hopper line below sucks it to the chest. Water at the
+     * fruit's level (y=2) would block the gourd from spawning, so the channel water stays
+     * at y=1 and the y=2 cell above it is air — the drop falls through it into the water.
+     *
+     * <p><b>Why not the vertical sticky-piston auto-harvest:</b> the dirt growth block
+     * sits BETWEEN the fruit (what an observer must watch, at y=2) and a piston below the
+     * dirt (y=0) — there's no clean direct observer→piston link, so it needs fragile
+     * multi-block redstone routing around the dirt that won't reliably reproduce in a
+     * compact static print. The robust minimal-water semi-auto ships instead.
      *
      * <p>Pumpkin/melon stems are {@link net.minecraft.world.level.block.BushBlock}
-     * descendants → <b>structural-free</b> (print at no FU; the item is a seed). We
-     * place no produce blocks (the stems grow their own). farmland/water are
-     * structural; dirt/stone/cobble/observer/hopper/chest are FU-valued and derive.
+     * descendants → <b>structural-free</b> (print at no FU; the item is a seed). We place
+     * no produce blocks (the stems grow their own). farmland/water are structural;
+     * dirt/stone/cobble/hopper/chest are FU-valued and derive.
      *
-     * <p>Correctness guarantees (traceable in the dump):
+     * <p>Layout (south = +z is the "front"/access side; cx=4):
      * <ul>
-     *   <li><b>Hydration</b> — every farmland cell is exactly one block from the
-     *       central water channel (x=cx, y=2) → always {@code moisture=7}, stems grow.</li>
-     *   <li><b>Fruit lands on the growth block, only there</b> — each stem (x=cx∓1) has
-     *       its one dirt growth block at x=cx∓2 as its <em>only</em> air-topped soil
-     *       neighbour: its other horizontal neighbours are the water channel (not soil)
-     *       and, along Z, farmland cells whose stems occupy the cell above (no air → not
-     *       a spawn target). So the gourd always spawns on the dirt growth block.</li>
-     *   <li><b>Collection</b> — a water source at each outer edge (x=0 / x=8, y=2) flows
-     *       inward across the fruit-row tops (the growth blocks) toward the central
-     *       channel; the player-broken gourd drop is swept off the growth block into the
-     *       channel, floats south, and the hopper feeds the chest.</li>
-     * </ul>
-     *
-     * <p>Layout (south = +z is the "front"/access side; cx=4; the harvest plane is y=2):
-     * <ul>
-     *   <li><b>y=0..1</b> — stone foundation (9×9) at y=0; at y=1 a stone bed under the
-     *       planting plane, with the central trench column (x=cx) left open so the y=2
-     *       channel water has a body and the south end can drop to the hopper.</li>
-     *   <li><b>Central channel, x=cx</b> — water at y=2 (z=1..7) hydrates both farmland
-     *       rows and carries drops south; at z=7 it falls to a hopper (y=1) → chest
-     *       (y=1, z=8, facing north).</li>
-     *   <li><b>Stems, x=cx∓1</b> — farmland at y=1 with a melon/pumpkin stem (alternating)
-     *       at y=2, each one block from the channel → hydrated.</li>
-     *   <li><b>Growth blocks, x=cx∓2</b> — dirt at y=1; the gourd spawns on top at y=2.
-     *       An observer at y=1 below-… (see indicators) flags growth.</li>
-     *   <li><b>Sweep water, x=0 / x=8</b> — a water source at y=2 on each outer edge
-     *       flows inward over the growth-block tops, washing the drop toward the channel.</li>
-     *   <li><b>Growth-indicator observers</b> — an observer beside each fruit cell facing
-     *       it (the "ready" tap), purely a sensor; the player does the breaking.</li>
-     *   <li><b>End caps + label signs</b> — cobble end caps box the plane; oak wall signs
-     *       on the south face explain the farm.</li>
+     *   <li><b>y=0</b> — stone foundation (9×9) with a hopper LINE along the channel
+     *       bottom (x=cx, z=1..7) facing south → collection chest at (cx, 0, 8).</li>
+     *   <li><b>Channel, x=cx, y=1</b> — a single water source line, on the hoppers:
+     *       hydrates both farmland rows (≤2 blocks, same level) AND catches the broken
+     *       gourd drop. y=2 above it is air so it never floods the fruit cells.</li>
+     *   <li><b>Stems, x=cx∓2</b> — farmland at y=1, melon/pumpkin stem (alternating) at
+     *       y=2; the outer column (x=1/7) is non-soil stone so no gourd spawns past them.</li>
+     *   <li><b>Growth blocks, x=cx∓1</b> — dirt at y=1 beside the channel; the gourd
+     *       spawns on top at y=2, touching the channel, so a broken drop falls in.</li>
+     *   <li><b>End caps + signs</b> — cobble end caps box the plane; oak wall signs on
+     *       the south face explain the semi-auto harvest.</li>
      * </ul>
      */
     private static Blueprint pumpkinMelonFarm() {
-        Blueprint.Builder b = Blueprint.builder("Pumpkin/Melon Farm", 9, 5, 9);
+        Blueprint.Builder b = Blueprint.builder("Pumpkin/Melon Farm", 9, 4, 9);
         // all vanilla, all FU-valued / structural-free:
         BlueprintBlockState stone     = bs("minecraft:stone");
         BlueprintBlockState cobble    = COBBLE;
@@ -8350,91 +8332,74 @@ class CuratedBlueprintGenerator {
         BlueprintBlockState chest     = bs("minecraft:chest[facing=south,type=single,waterlogged=false]"); // front faces the open south edge → accessible
 
         int x0 = 0, x1 = 8, z0 = 0, z1 = 8;            // 9×9 footprint
-        int cx = 4;                                    // central water-channel / collection column
-        int rowZ0 = 1, rowZ1 = 7;                      // planting + channel run along Z
-        int plantY = 2;                                // the harvest plane (stems + fruit + channel water)
-        int wStemX = cx - 1, eStemX = cx + 1;          // 3 and 5 — farmland + stems
-        int wGrowX = cx - 2, eGrowX = cx + 2;          // 2 and 6 — dirt growth blocks (fruit spawns on top)
+        int cx = 4;                                    // central collection column (water channel + hopper line)
+        int rowZ0 = 1, rowZ1 = 7;                      // planting run along Z
+        int wStemX = cx - 2, eStemX = cx + 2;          // 2 and 6 — farmland + stems (OUTER)
+        int wGrowX = cx - 1, eGrowX = cx + 1;          // 3 and 5 — dirt growth blocks (INNER, beside the channel)
 
-        // ── 1) FOUNDATION ───────────────────────────────────────────────────
-        // y=0 full stone slab; y=1 stone bed under the planting plane (everything except
-        // the central trench column, which stays hollow so the y=2 channel has a body and
-        // can drop to the hopper at the south end).
+        // ── 1) FOUNDATION (y=0) + HOPPER LINE + CHEST ────────────────────────
+        // Reworked from scratch: the old build flooded the whole plane with sweep water
+        // (a useless pool). Now the ONLY water is a single 1-wide channel down the centre,
+        // sitting on a hopper line. Stems are OUTER, the dirt growth blocks INNER (right
+        // beside the channel) so a broken gourd drops into the channel and is collected.
         floor(b, 0, x0, z0, x1, z1, stone);
-        for (int x = x0; x <= x1; x++) {
-            for (int z = z0; z <= z1; z++) {
-                if (x == cx && z >= rowZ0 && z <= rowZ1) continue; // leave the trench column open
-                b.set(x, 1, z, stone);
-            }
+        // Hopper line the length of the channel bottom (x=cx, z=1..7), each facing south,
+        // chaining the gourd drops into the chest at the south edge (z=8).
+        for (int z = rowZ0; z <= rowZ1; z++) {
+            b.set(cx, 0, z, bs("minecraft:hopper[enabled=true,facing=south]"));
+        }
+        b.set(cx, 0, z1, chest);                       // collection chest at the south edge, faces south (front = open)
+
+        // ── 2) CENTRAL WATER CHANNEL at y=1 (hydration + collection) ─────────
+        // A single source line at x=cx, y=1, sitting on the hopper line. It hydrates BOTH
+        // farmland rows (≤2 blocks away at the same level → moisture=7) and is the only
+        // open cell beside the inner dirt, so a broken gourd's drop falls in here and the
+        // hopper below sucks it. y=2 above the channel stays AIR so it never floods the
+        // fruit cells (water at the fruit's level would block the gourd from spawning).
+        for (int z = rowZ0; z <= rowZ1; z++) {
+            b.set(cx, 1, z, water);
         }
 
-        // ── 2) CENTRAL CHANNEL: hydration + collection (x=cx, y=plantY) ──────
-        // Water along Z at x=cx (z=1..6) flows south; it hydrates both farmland rows
-        // (1 block away) and carries the swept gourd drops to the hopper mouth.
-        for (int z = rowZ0; z <= rowZ1 - 1; z++) {
-            b.set(cx, plantY, z, water);
-        }
-
-        // ── 3) HOPPER + COLLECTION CHEST at the SOUTH end ────────────────────
-        // The channel drops at z=7 into a hopper (in the open trench column at y=1) that
-        // points SOUTH, depositing into a chest tucked at the south edge (z=8, y=1). The
-        // chest faces south so its front reads onto the open south edge → accessible.
-        b.set(cx, 1, rowZ1, bs("minecraft:hopper[enabled=true,facing=south]")); // z=7, y=1 → outputs south into chest at z=8
-        b.set(cx, 1, z1, chest);                                                 // collection chest, faces south (front = open edge)
-
-        // ── 4) STEMS (hydrated) + DIRT GROWTH BLOCKS ─────────────────────────
-        // Two farmland rows at x=cx∓1, each with an (alternating) melon/pumpkin stem on
-        // top. The dedicated dirt growth block sits one column further out (x=cx∓2); the
-        // gourd spawns on its top face at y=plantY. Each stem's ONLY air-topped soil
-        // neighbour is that growth block (the channel side is water; the Z neighbours are
-        // farmland already capped by a stem) → the gourd can spawn nowhere else.
+        // ── 3) STEMS (outer, hydrated) + DIRT GROWTH BLOCKS (inner) ─────────
+        // Farmland rows at x=cx∓2 (2 and 6) with an alternating melon/pumpkin stem on top
+        // (y=2). Each stem's dedicated dirt growth block sits one column INWARD (x=cx∓1,
+        // i.e. 3 and 5) at soil level (y=1); the gourd spawns on its top face at y=2,
+        // right beside the channel. The stem's other neighbours can't host a gourd: the
+        // OUTER side (x=1/7) is non-soil stone, and the Z neighbours are farmland already
+        // capped by a stem (no air) — so the gourd spawns only on the inner dirt.
         for (int z = rowZ0; z <= rowZ1; z++) {
             b.set(wStemX, 1, z, farmland);
             b.set(eStemX, 1, z, farmland);
             boolean melon = (z % 2 == 0);
-            b.set(wStemX, plantY, z, melon ? melonStem : pumpkinStem);
-            b.set(eStemX, plantY, z, melon ? pumpkinStem : melonStem);
-            b.set(wGrowX, 1, z, dirt);   // growth block (gourd spawns on top at y=plantY)
+            b.set(wStemX, 2, z, melon ? melonStem : pumpkinStem);
+            b.set(eStemX, 2, z, melon ? pumpkinStem : melonStem);
+            b.set(wGrowX, 1, z, dirt);   // inner growth block (gourd spawns on top at y=2, beside the channel)
             b.set(eGrowX, 1, z, dirt);
+            b.set(x0 + 1, 1, z, stone);  // outer filler (non-soil) so no gourd spawns past the stems
+            b.set(x1 - 1, 1, z, stone);
         }
 
-        // ── 5) SWEEP WATER (outer edges) → washes drops to the channel ───────
-        // A water source at each outer edge (x=0 / x=8) at the harvest plane flows inward
-        // across the growth-block tops; when the player breaks a gourd the drop is swept
-        // off the dirt toward the central channel. (Flowing water doesn't break the gourd
-        // block itself — it only moves the dropped item.)
-        for (int z = rowZ0; z <= rowZ1; z++) {
-            b.set(x0, plantY, z, water);  // west sweep source, flows east
-            b.set(x1, plantY, z, water);  // east sweep source, flows west
-        }
-
-        // ── 6) GROWTH-INDICATOR OBSERVERS (sensors, not the harvest) ─────────
-        // An observer below each growth block faces UP at the fruit cell, pulsing when the
-        // gourd appears — a "ready" tap the player can wire a lamp/note-block to. It is NOT
-        // the harvester (sideways growth makes a clean BUD-free observer→piston lane
-        // impossible without fragile dust routing). Sits in the y=0 stone, facing up into
-        // the dirt growth block / fruit above; render-safe (a full block, no pane gate).
-        for (int z = rowZ0; z <= rowZ1; z++) {
-            b.set(wGrowX, 0, z, bs("minecraft:observer[facing=up,powered=false]"));
-            b.set(eGrowX, 0, z, bs("minecraft:observer[facing=up,powered=false]"));
-        }
-
-        // ── 7) END CAPS + LABEL SIGNS ────────────────────────────────────────
-        // Cobble end caps at z=0 and z=8 across the planting span box the harvest plane;
-        // oak wall signs on the south face explain how the farm works.
-        line(b, plantY, x0, z0, x1, z0, cobble);   // north end cap at the plant plane
-        line(b, plantY, x0, z1, x1, z1, cobble);   // south end cap at the plant plane
+        // ── 4) END CAPS + LABEL SIGNS ────────────────────────────────────────
+        // Cobble end caps at z=0 and z=8 across the planting span box the plane; oak wall
+        // signs on the south face explain how the farm works (semi-auto: the gourds grow
+        // sideways onto the dirt beside the channel; break one and the channel + hopper
+        // line catch the drop). A piston auto-harvest needs fragile multi-block redstone
+        // around the dirt that won't reliably reproduce in a print, so this ships the
+        // robust, minimal-water version.
+        line(b, 2, x0, z0, x1, z0, cobble);   // north end cap at the stem plane
+        line(b, 2, x0, z1, x1, z1, cobble);   // south end cap at the stem plane
         signText(b, "minecraft:oak_wall_sign[facing=south]", wStemX, 1, z1,
-                "Pumpkin/Melon", "stems fruit", "SIDEWAYS onto", "the dirt blocks");
+                "Stems fruit", "SIDEWAYS onto", "the inner dirt,", "by the channel");
         signText(b, "minecraft:oak_wall_sign[facing=south]", eStemX, 1, z1,
-                "Break a gourd:", "water sweeps", "it to the", "center chest");
+                "Break a gourd:", "it drops in the", "channel -> hopper", "-> this chest");
 
         return b.build();
     }
 
     /**
-     * §F.cactus_farm — a SELF-HARVESTING cactus farm, 7×7×5 (W×L×H)
-     * → builder(7, 5, 7).
+     * §F.cactus_farm — a SELF-HARVESTING cactus farm, 5×5×4 (W×L×H)
+     * → builder(5, 4, 5). <b>Rebuilt</b> from a wide flooded pool into a tight, mostly-dry
+     * moat (two cacti, one shared breaker, a 7-cell water moat → one central hopper).
      *
      * <p>The "Tier-1 easy farm", printed as the working STRUCTURE the player plants
      * into. Vanilla <b>cactus</b> has no producing recipe and is <em>not</em>
@@ -8469,90 +8434,97 @@ class CuratedBlueprintGenerator {
      *       perpetual harvester needing no redstone.</li>
      * </ul>
      *
-     * <p><b>Collection (the snapped piece must reach the chest WITHOUT touching a
-     * cactus block — a cactus destroys dropped items it touches).</b> A flowing-water
-     * channel at y=2 (the planted-base level) wraps each base and runs to the centre;
-     * when the y=3 segment pops, the item drops into that flowing water and is swept to
-     * the centre cell (3,2,3), which sits directly above a <b>hopper at y=1</b> (one
-     * block LOWER than the water, per the canonical design, so the water stops at the
-     * lip and the item drops in). The hopper feeds the <b>collection chest</b> at
-     * (3,1,4), which has <b>nothing solid above it</b> (open air) so it opens freely.
+     * <p><b>Collection (the snapped piece must reach the chest WITHOUT touching a cactus
+     * block — a cactus destroys dropped items it touches).</b> A tight WATER MOAT at y=2
+     * (the planted-base level) rings all four sides of each base and shares a centre cell
+     * (cx,2,cz); when the y=3 segment pops it drops into the moat and is swept to that
+     * centre, which sits directly above a <b>hopper at y=1</b> (one block lower, so the
+     * water lips over and the item drops in) → <b>chest</b> at (cx,1,cz+1), open above.
      *
-     * <p>Layout (south = +z is the "front"/access side; grow-blocks at x=1 and x=5, z=3):
+     * <p>Layout (south = +z is the "front"/access side; cacti at x=1 and x=3, z=2):
      * <ul>
-     *   <li><b>y=0..1</b> — stone foundation; a central <b>hopper</b> at (3,1,3) (the
-     *       channel drop-off, one block below the y=2 water) feeds the <b>chest</b> at
-     *       (3,1,4).</li>
-     *   <li><b>y=1</b> — two <b>sand</b> grow-blocks at (1,1,3) and (5,1,3); the player
+     *   <li><b>y=0..1</b> — stone foundation; a central <b>hopper</b> at (2,1,2) feeds
+     *       the <b>chest</b> at (2,1,3).</li>
+     *   <li><b>y=1</b> — two <b>sand</b> grow-blocks at (1,1,2) and (3,1,2); the player
      *       plants a cactus on each (base lands at y=2).</li>
-     *   <li><b>y=2</b> — a flowing <b>water</b> channel surrounding each planted base
-     *       and running to the centre (3,2,3) above the hopper, sweeping snapped pieces
-     *       to collection.</li>
-     *   <li><b>y=3</b> — two cobblestone <b>breaker</b> blocks at (2,3,3) and (4,3,3),
-     *       each beside (and only touching) the cactus segment that grows up into
-     *       y=3.</li>
+     *   <li><b>y=2</b> — a 7-cell <b>water moat</b> around the two bases, draining to the
+     *       centre (2,2,2) above the hopper.</li>
+     *   <li><b>y=3</b> — ONE cobblestone <b>breaker</b> at (2,3,2), between the cacti and
+     *       adjacent to BOTH grow cells, so each segment pops as it grows into y=3.</li>
      *   <li><b>Sign</b> — an oak wall sign on the south face explaining the build.</li>
      * </ul>
      */
     private static Blueprint cactusFarm() {
-        Blueprint.Builder b = Blueprint.builder("Cactus Farm", 7, 5, 7);
+        Blueprint.Builder b = Blueprint.builder("Cactus Farm", 5, 4, 5);
         // all vanilla, all FU-valued / structural-free (NO cactus — unvalued; player plants it):
         BlueprintBlockState stone  = bs("minecraft:stone");
         BlueprintBlockState sand   = bs("minecraft:sand");   // FU-valued (1@1) — the grow-block
         BlueprintBlockState water  = WATER;                  // source; structural (asItem()==AIR) → prints free
         BlueprintBlockState cobble = COBBLE;                 // the BREAKER block (solid; pops the grown segment)
-        BlueprintBlockState chest  = bs("minecraft:chest[facing=north,type=single,waterlogged=false]");
+        BlueprintBlockState chest  = bs("minecraft:chest[facing=south,type=single,waterlogged=false]");
 
-        // Two grow-blocks, SPACED 4 apart so planted cacti are never adjacent. The
-        // collection channel + hopper drop run down the centre (cx=3).
-        int wX = 1, eX = 5;     // cactus columns (4 apart → never adjacent)
-        int cz = 3;             // cactus row (z)
-        int cx = 3;             // centre column (channel drop-off / hopper / chest)
+        // Rebuilt from scratch — the old build was a wide flooded pool ("WAY too much
+        // water"). Cactus DOES need a little water: a snapped segment that touches a
+        // cactus block is destroyed, so flowing water has to whisk it clear before it
+        // settles. But it only needs a tight MOAT around each base, not a sheet. So:
+        // two cacti 2 apart (never adjacent — a centre cell separates them), ONE shared
+        // breaker between them, and a 7-cell water moat that drains to a single central
+        // hopper → chest. Compact 5×5 footprint, minimal water.
+        int wX = 1, eX = 3;     // cactus columns (2 apart, centre cell between → never adjacent)
+        int cz = 2;             // cactus row (z)
+        int cx = 2;             // centre column (shared breaker / hopper / chest)
 
-        // ── 1) FOUNDATION (y=0) + central HOPPER/CHEST drop (y=1) ─────────────
-        floor(b, 0, 0, 0, 6, 6, stone);
-        // The hopper sits ONE BLOCK BELOW the y=2 water channel so the swept cactus
-        // piece drops into it; it feeds the chest one cell south. Nothing solid sits
-        // above the chest (open air at y=2..) so it opens freely.
-        b.set(cx, 1, cz, bs("minecraft:hopper[enabled=true,facing=south]")); // (3,1,3) under channel centre
-        b.set(cx, 1, cz + 1, chest);                                         // (3,1,4) collection chest
+        // ── 1) FOUNDATION (y=0) ──────────────────────────────────────────────
+        floor(b, 0, 0, 0, 4, 4, stone);
 
-        // ── 2) SAND GROW-BLOCKS (y=1) — player plants cactus on top (base → y=2) ──
-        // Each grow-block is a single exposed sand block. The planted base lands at y=2
-        // with air/water on all 4 sides (see channel below), so it survives.
-        b.set(wX, 1, cz, sand);   // west grow-block
-        b.set(eX, 1, cz, sand);   // east grow-block
+        // ── 2) HOPPER FLOOR (y=1) + SAND GROW-BLOCKS + CHEST ─────────────────
+        // A connected hopper floor across the interior (z=1..3) sits UNDER the whole moat,
+        // so a snapped segment that lands in ANY moat cell sinks straight into the hopper
+        // below it (no reliance on water flow). Every hopper chains toward the chest at
+        // (cx,1,cz+1). The two sand grow-blocks sit in this floor; the player plants a
+        // cactus on each (base lands at y=2, ringed by the moat).
+        b.set(cx, 1, cz + 1, chest);   // (2,1,3) collection chest, faces south (open edge)
+        for (int x = 0; x <= 4; x++) {
+            for (int z = 1; z <= 3; z++) {
+                if (z == cz && (x == wX || x == eX)) { b.set(x, 1, z, sand); continue; } // grow-blocks
+                if (x == cx && z == cz + 1) continue;                                    // the chest cell
+                String facing;
+                if (z < cz) {
+                    facing = (x < cx) ? "east" : (x > cx) ? "west" : "south"; // funnel to the centre column
+                } else if (z == cz) {
+                    facing = "south";                                         // sand row → back to the chest row (clear of the sand)
+                } else {
+                    facing = (x < cx) ? "east" : "west";                      // chest row → inward to the chest
+                }
+                b.set(x, 1, z, bs("minecraft:hopper[enabled=true,facing=" + facing + "]"));
+            }
+        }
 
-        // ── 3) Flowing WATER collection channel (y=2 = planted-base level) ────
-        // Wraps each base and runs to the centre cell (cx,2,cz), which sits directly
-        // above the hopper, so the flow drops the swept piece in. Water is a SOURCE
-        // block (level=0); in-game it flows down into the lower hopper cell. Every base
-        // neighbour at y=2 is WATER (non-solid → safe) or air — no solid ever touches a
-        // base, and the snapped y=3 segment lands in this water (never on a cactus).
-        int[][] channel = {
-            {0, cz}, {2, cz}, {cx, cz},          // west base flanks + centre (over hopper)
-            {4, cz}, {6, cz},                    // east base flanks
-            {wX, cz - 1}, {wX, cz + 1},          // N/S of west base
-            {eX, cz - 1}, {eX, cz + 1},          // N/S of east base
-            {cx, cz - 1}                          // centre channel arm (feeds toward hopper)
+        // ── 3) WATER MOAT (y=2 = planted-base level) — catch the segment ─────
+        // A tight ring of water on all four sides of each base: the base has only
+        // non-solid neighbours (→ never pops), and a snapped y=3 segment lands in the
+        // water (never on a cactus, which would destroy the drop) and sinks into the
+        // hopper floor below. Shares the centre cell (cx,2,cz). 7 cells — a moat, not a pool.
+        int[][] moat = {
+            {wX - 1, cz}, {wX, cz - 1}, {wX, cz + 1},   // W/N/S of west base (E side = centre)
+            {eX + 1, cz}, {eX, cz - 1}, {eX, cz + 1},   // E/N/S of east base (W side = centre)
+            {cx, cz}                                     // shared centre, over the hopper → drain
         };
-        for (int[] c : channel) {
+        for (int[] c : moat) {
             b.set(c[0], 2, c[1], water);
         }
 
-        // ── 4) BREAKER BLOCKS (y=3) — pop ONLY the grown segment ─────────────
-        // A cobble breaker one cell inward from each grow-block, at y=3 (the grow-into
-        // height). The base at y=2 has water/air beside it here, so it survives; the
-        // segment that grows up into y=3 becomes horizontally adjacent to the breaker
-        // and pops, dropping into the y=2 water below to be swept to the hopper.
-        b.set(wX + 1, 3, cz, cobble); // (2,3,3) — beside west cactus's y=3 segment
-        b.set(eX - 1, 3, cz, cobble); // (4,3,3) — beside east cactus's y=3 segment
+        // ── 4) SHARED BREAKER (y=3) — pops both grown segments ───────────────
+        // One cobble block in the centre column at the grow-into height (cx,3,cz). It is
+        // horizontally adjacent to BOTH cacti's y=3 grow cells ((wX,3,cz) and (eX,3,cz)),
+        // so each segment pops the moment it grows up into y=3 and drops into the moat.
+        // The bases at y=2 are clear of it (only water beside them there) → they survive.
+        b.set(cx, 3, cz, cobble); // (2,3,2)
 
         // ── 5) EXPLANATORY SIGN on the south face ────────────────────────────
-        // Mounted on the south edge (z=6) at the centre; nothing solid above the chest.
-        signText(b, "minecraft:oak_wall_sign[facing=south]", cx, 1, 6,
-                "Plant cactus on", "the sand. It grows", "into the breaker;",
-                "water -> hopper.");
+        signText(b, "minecraft:oak_wall_sign[facing=south]", cx, 1, 4,
+                "Plant cactus on", "each sand block.", "It grows, pops on",
+                "the breaker -> chest");
 
         return b.build();
     }
