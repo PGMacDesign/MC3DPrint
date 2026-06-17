@@ -14,6 +14,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
+import java.util.Set;
 import java.util.zip.GZIPInputStream;
 
 /**
@@ -32,6 +33,14 @@ import java.util.zip.GZIPInputStream;
  * build is FLAGGED {@code [SEALED]} when its enclosed unreachable volume meets the noise
  * threshold ({@value #SEALED_THRESHOLD} cells), with the pocket bounding box and the
  * count of distinct sealed pockets reported.
+ *
+ * <p>A handful of builds seal an interior <b>on purpose</b> (a mob-spawn shaft, a machinery
+ * cavity, a decorative balloon envelope, a hull bilge — see {@link #INTENTIONALLY_SEALED}).
+ * Those are split off into a separate {@code [SEALED·OK]} allowlisted section and do NOT
+ * fail the test. Everything else that seals an interior is treated as a real navigability
+ * defect: the test throws an {@link AssertionError} so the audit is a clean guardrail, not
+ * just a report. To clear a new flag: add a real opening, or — if the seal is intentional —
+ * add the build to the allowlist with a justification.
  *
  * <p>Reads palette strings directly (no Forge registry / running server), so passability
  * is a conservative id heuristic: when unsure, a block is treated SOLID, which avoids a
@@ -94,6 +103,40 @@ class BlueprintReachabilityAuditTest {
             "grass_block", "snow_block", "mushroom_block", "sea_lantern", "_mushroom_block"
     };
 
+    /**
+     * Builds whose enclosed interior is sealed <b>by design</b> — the audit detecting them
+     * is correct, but they are NOT defects, so they're excluded from the FLAGGED list and
+     * reported separately for transparency. Each entry is a deliberate, non-room cavity:
+     * <ul>
+     *   <li>{@code mob_xp_tower} — the internal mob-spawn shaft is meant to be a sealed,
+     *       dark drop chute (mobs fall through it); a player never walks in.</li>
+     *   <li>{@code super_smelter} — the internal furnace/hopper machinery cavity; a
+     *       packed redstone/smelting core, not a room.</li>
+     *   <li>{@code gatehouse} — the portcullis-mechanism channels (the vertical slots the
+     *       gate rides in) are intentionally enclosed.</li>
+     *   <li>{@code hot_air_balloon} — the balloon envelope is a sealed decorative sphere
+     *       (a hollow wool/fabric shell), not an interior space.</li>
+     *   <li>{@code victorian_townhouse} — the sealed attic roof-void above the top floor
+     *       (dead space inside the roof pitch), not a habitable room.</li>
+     *   <li>{@code sailing_ship} — the below-deck hull/bilge void: a 1-block-tall cavity
+     *       between the keel (y=1) and the deck (y=3), the hollow hull below the
+     *       waterline. It is decorative ship structure (no deck hatch leads into it and
+     *       it's too short to stand in); the captain's cabin above it IS reachable via the
+     *       roof hatch. Only the bilge is sealed, by design.</li>
+     * </ul>
+     * NOTE: {@code diamond_vault} is deliberately NOT here — its sealed interior was a real
+     * bug (the iron door butted against a solid inner wall) and has been fixed so the vault
+     * chamber is reachable through the door.
+     */
+    private static final Set<String> INTENTIONALLY_SEALED = Set.of(
+            "mob_xp_tower",
+            "super_smelter",
+            "gatehouse",
+            "hot_air_balloon",
+            "victorian_townhouse",
+            "sailing_ship"
+    );
+
     @Test
     @EnabledIfSystemProperty(named = "auditReachability", matches = "true")
     void auditReachability() throws IOException {
@@ -102,7 +145,8 @@ class BlueprintReachabilityAuditTest {
             files = stream.filter(p -> p.toString().endsWith(".blueprint")).sorted().toList();
         }
 
-        List<String> flagged = new ArrayList<>();
+        List<String> flagged = new ArrayList<>();      // unexpected sealed builds (defects)
+        List<String> allowlisted = new ArrayList<>();   // intentionally-sealed builds
         List<String> all = new ArrayList<>();
         int openBuilds = 0;
 
@@ -203,7 +247,11 @@ class BlueprintReachabilityAuditTest {
                                 + "bbox=(%d,%d,%d)..(%d,%d,%d)",
                         name, sx, sy, sz, unreachable, pockets,
                         pmnX, pmnY, pmnZ, pmxX, pmxY, pmxZ);
-                flagged.add("[SEALED] " + line);
+                if (INTENTIONALLY_SEALED.contains(name)) {
+                    allowlisted.add("[SEALED·OK] " + line);
+                } else {
+                    flagged.add("[SEALED] " + line);
+                }
             } else {
                 line = String.format("%-34s dims=%dx%dx%d  enclosed=%d cells",
                         name, sx, sy, sz, unreachable);
@@ -215,16 +263,34 @@ class BlueprintReachabilityAuditTest {
         StringBuilder sb = new StringBuilder();
         sb.append("Reachability (sealed-interior) audit — ").append(files.size())
                 .append(" builds, threshold=").append(SEALED_THRESHOLD).append(" enclosed cells\n\n");
-        sb.append("=== FLAGGED — sealed/unreachable interior (").append(flagged.size()).append(") ===\n");
+        sb.append("=== FLAGGED — UNEXPECTED sealed/unreachable interior (")
+                .append(flagged.size()).append(") ===\n");
+        if (flagged.isEmpty()) {
+            sb.append("(none — every sealed build is either fixed or on the "
+                    + "INTENTIONALLY_SEALED allowlist)\n");
+        }
         flagged.forEach(l -> sb.append(l).append('\n'));
+        sb.append("\n=== ALLOWLISTED — intentionally sealed by design (")
+                .append(allowlisted.size()).append(") ===\n");
+        allowlisted.forEach(l -> sb.append(l).append('\n'));
         sb.append("\nINFO: ").append(openBuilds)
                 .append(" builds fully open/reachable (0 enclosed cells)\n");
         sb.append("\n=== ALL (").append(all.size()).append(") ===\n");
         all.forEach(l -> sb.append(l).append('\n'));
         Files.createDirectories(OUTPUT.getParent());
         Files.writeString(OUTPUT, sb.toString());
-        System.out.println("[ReachabilityAudit] " + flagged.size() + " flagged / " + openBuilds
-                + " fully-open / " + all.size() + " builds -> " + OUTPUT.toAbsolutePath());
+        System.out.println("[ReachabilityAudit] " + flagged.size() + " UNEXPECTED-flagged / "
+                + allowlisted.size() + " allowlisted / " + openBuilds + " fully-open / "
+                + all.size() + " builds -> " + OUTPUT.toAbsolutePath());
+
+        // Guardrail: any build that seals an interior and ISN'T on the allowlist is a
+        // navigability defect (a printed structure you can't enter). Fail loudly so the
+        // audit is a real gate, not just a report.
+        if (!flagged.isEmpty()) {
+            throw new AssertionError("Unexpected sealed-interior build(s) — add a real "
+                    + "opening or, if intentional, add to INTENTIONALLY_SEALED:\n"
+                    + String.join("\n", flagged));
+        }
     }
 
     /** Empty cells and pass-throughable block ids are PASSABLE; everything else is SOLID. */

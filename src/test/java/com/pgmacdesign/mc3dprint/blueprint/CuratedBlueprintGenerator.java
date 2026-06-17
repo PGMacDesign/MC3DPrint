@@ -2538,25 +2538,43 @@ class CuratedBlueprintGenerator {
         BlueprintBlockState gildedBlackstone = bs("minecraft:gilded_blackstone");
         BlueprintBlockState polishedDeepslateSlabTop = bs("minecraft:polished_deepslate_slab[type=top]");
         floor(b, 0, 0, 0, 8, 8, polishedDeepslate);
-        // thick vault walls: deepslate-brick outer + reinforced inner accents
+        // thick vault walls: deepslate-brick outer + reinforced inner accents. The inner
+        // ring (z=1 north face) is built with a 2-tall doorway GAP at (4,1..2,1) — left
+        // unset per the air-skip rule — so the iron door at z=0 opens into a real passage
+        // into the chamber instead of butting against a solid wall (the sealed-vault bug).
         walls(b, 0, 0, 8, 8, 1, 5, deepslateBricks);
-        walls(b, 1, 1, 7, 7, 1, 5, reinforcedDeepslate);
+        for (int y = 1; y <= 5; y++) {
+            for (int x = 1; x <= 7; x++) {
+                // north face (z=1): skip (4, y=1..2) to leave the 2-tall doorway gap
+                if (!(x == 4 && (y == 1 || y == 2))) b.set(x, y, 1, reinforcedDeepslate);
+                b.set(x, y, 7, reinforcedDeepslate); // south face (z=7)
+            }
+            for (int z = 1; z <= 7; z++) {
+                b.set(1, y, z, reinforcedDeepslate); // west face (x=1)
+                b.set(7, y, z, reinforcedDeepslate); // east face (x=7)
+            }
+        }
         // chiseled pilasters
         pillar(b, 0, 0, 1, 5, chiseledDeepslate);
         pillar(b, 8, 0, 1, 5, chiseledDeepslate);
         pillar(b, 0, 8, 1, 5, chiseledDeepslate);
         pillar(b, 8, 8, 1, 5, chiseledDeepslate);
-        // vault door: netherite-framed iron door behind an iron-bars cage (front z=0)
+        // vault door: netherite-framed iron door — a REAL opening through both wall rings
+        // (front z=0 outer wall + z=1 inner reinforced wall) into the vault chamber. The
+        // iron door stays the secured entrance (lever/redstone), but the passage behind it
+        // is hollow air, not bars, so you can actually walk in.
         pillar(b, 3, 0, 1, 3, netheriteBlock);
         pillar(b, 5, 0, 1, 3, netheriteBlock);
         line(b, 4, 3, 0, 5, 0, netheriteBlock);
         b.set(4, 1, 0, bs("minecraft:iron_door[facing=south,half=lower,hinge=left,open=false,powered=false]"));
         b.set(4, 2, 0, bs("minecraft:iron_door[facing=south,half=upper,hinge=left,open=false,powered=false]"));
-        b.set(4, 1, 1, IRON_BARS);
-        b.set(4, 2, 1, IRON_BARS);
+        // (the inner-wall doorway gap at (4,1..2,1) is left open above, in the wall loop)
         b.set(3, 1, 0, CHAIN);
         b.set(5, 1, 0, CHAIN);
-        // treasure core: 3×3 diamond plinth on gilded blackstone, caged in iron bars
+        // treasure core: 3×3 diamond plinth on gilded blackstone, ringed by an iron-bars
+        // railing. The railing only stands one block tall on the ambulatory floor in front
+        // of the plinth, so the walkway around the plinth stays open top-to-bottom — the
+        // chamber reads (and floods) as one enterable room, not a sealed cap.
         floor(b, 1, 3, 3, 5, 5, gildedBlackstone);
         for (int x = 3; x <= 5; x++) {
             for (int z = 3; z <= 5; z++) {
@@ -2565,18 +2583,20 @@ class CuratedBlueprintGenerator {
             }
         }
         b.set(4, 4, 4, diamondBlock); // apex of the plinth
-        // iron-bars cage around the plinth
-        for (int x = 2; x <= 6; x++) {
-            b.set(x, 2, 2, IRON_BARS);
-            b.set(x, 2, 6, IRON_BARS);
-            b.set(x, 3, 2, IRON_BARS);
-            b.set(x, 3, 6, IRON_BARS);
-        }
-        for (int z = 2; z <= 6; z++) {
-            b.set(2, 2, z, IRON_BARS);
-            b.set(6, 2, z, IRON_BARS);
-            b.set(2, 3, z, IRON_BARS);
-            b.set(6, 3, z, IRON_BARS);
+        // iron-bars cage ringing the plinth (y=2..3) along the straight runs only — the four
+        // ambulatory corners (x=2/6 × z=2/6) are left as open air columns, so the walkway
+        // floor (y=1) connects vertically up to the open chamber above (y=4..5) and the whole
+        // interior floods as ONE reachable room. You view the diamonds through the cage; the
+        // caged core stays a secured inner sub-vault you can't walk into.
+        for (int y = 2; y <= 3; y++) {
+            for (int x = 3; x <= 5; x++) {   // north/south runs (corners x=2,6 left open)
+                if (x != 4) b.set(x, y, 2, IRON_BARS); // gap at x=4,z=2: viewing slot in line
+                b.set(x, y, 6, IRON_BARS);             //   with the door so you enter cleanly
+            }
+            for (int z = 3; z <= 5; z++) {   // west/east runs (corners z=2,6 left open)
+                b.set(2, y, z, IRON_BARS);
+                b.set(6, y, z, IRON_BARS);
+            }
         }
         // security: sculk + sculk sensors in the floor
         b.set(1, 0, 1, bs("minecraft:sculk"));
@@ -17090,18 +17110,18 @@ class CuratedBlueprintGenerator {
         b.set(cx - 1, deckY + 2, cabZ0 + 1, glass);                  // port window (y=5)
         b.set(cx + 1, deckY + 2, cabZ0 + 1, glass);                  // starboard window
         b.set(cx, deckY + 2, cabZ0, glass);                          // stern (transom) window
-        // CABIN DOORWAY onto the quarterdeck — the forward wall is z=cabZ1 (z=3). The
-        // wall ring set its three cells; carve a doorway by overwriting NOTHING is a
-        // no-op (air-skip), so instead leave the forward-centre cells unbuilt: re-open
-        // them is impossible after walls(), so we DON'T re-add them — walls() set the
-        // full forward face, but we want a door. Rebuild the forward wall WITHOUT its
-        // centre at y=5/6 by overwriting the centre with the doorway… can't unset, so:
-        // the cabin is instead entered from ABOVE via an open roof hatch (below).
-        // slab roof over the cabin (y=7) with the forward-centre cell left OPEN as the
-        // hatch you drop through from the quarterdeck.
+        // CABIN ENTRY — the wall ring (walls()) sealed the full 3×3, leaving only the
+        // single centre column (cx, z=cabZ0+1) as cabin interior; the air-skip rule means
+        // a doorway can't be carved back out of the placed wall. So the cabin is entered
+        // from ABOVE through an open roof hatch. The hatch MUST sit directly over that
+        // interior column (cx, z=cabZ0+1) — a previous version put it at the forward-centre
+        // (cx, cabZ1), which dropped onto the solid forward wall and sealed the cabin (the
+        // hatch-over-a-wall bug). Leave (cx, cabZ0+1) open in the y=7 slab roof so the drop
+        // lands in the cabin interior.
+        final int hatchZ = cabZ0 + 1;                                // z=2, over the interior
         for (int z = cabZ0; z <= cabZ1; z++) {
             for (int x = cx - 1; x <= cx + 1; x++) {
-                if (x == cx && z == cabZ1) continue;                // open roof hatch (forward centre)
+                if (x == cx && z == hatchZ) continue;               // open roof hatch (centre, over interior)
                 b.set(x, deckY + 4, z, slabTop);                    // y=7 slab roof
             }
         }
