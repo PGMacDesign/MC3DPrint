@@ -62,6 +62,17 @@ class BlueprintFireHazardAuditTest {
     private static final int IGNITION_RANGE = 2;
 
     /**
+     * Builds whose raw lava is an INTENTIONAL, contained kill — not a hazard. iron_farm
+     * runs a LAVA BLADE held up by oak dam signs (a sign is the only block that blocks
+     * fluid yet passes mobs+items, so the design needs them). The signs sit 1 cell from
+     * the lava (so the audit's Chebyshev<=2 flags them), but the nearest AIR to the lava
+     * is 2 cells away — beyond fire's ~1-block ignition reach — so the signs don't actually
+     * ignite. This is the same reason real lava-blade farms hold lava on signs. The lava is
+     * otherwise caged in stone with no building material nearby.
+     */
+    private static final java.util.Set<String> INTENTIONAL_LAVA = java.util.Set.of("iron_farm");
+
+    /**
      * The ONLY blocks that actively spread fire to neighbouring blocks. Matched by exact id.
      * Deliberately excludes lava_cauldron, campfire/soul_campfire, magma_block, torches,
      * lanterns, glowstone, shroomlight — none of those ignite flammable blocks, so a build
@@ -184,7 +195,7 @@ class BlueprintFireHazardAuditTest {
                             }
                         }
 
-                        if (inRange > 0) {
+                        if (inRange > 0 && !INTENTIONAL_LAVA.contains(name)) {
                             flaggedSources++;
                             flagged.add(String.format(
                                     "%-30s %s at (%d,%d,%d) — flammable %s at (%d,%d,%d) dist=%d  [%d flammable(s) in range]",

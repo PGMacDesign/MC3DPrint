@@ -7661,31 +7661,30 @@ class CuratedBlueprintGenerator {
         //
         //  ┌ LEVELS ──────────────────────────────────────────────────────────────┐
         //  │ y=0       stone foundation                                            │
-        //  │ y=1       COLLECTION ROOM floor + KILL CHAMBER. A 2×2 LAVA-CAULDRON    │
-        //  │           kill spot (golems land IN the lava and die) ringed by a      │
-        //  │           hopper floor that funnels iron → a chest in the walk-in room.│
-        //  │           Walk-in DOOR on the south wall (sill at y=1).                │
-        //  │ y=2       kill-chamber head room (golems are 2.7 tall); explanatory     │
-        //  │           signs; ceiling lanterns.                                     │
-        //  │ y=3       collection-room ceiling (2×2 drop mouth left OPEN).           │
-        //  │ y=4..8    DROP SHAFT — a stone tube whose 2×2 core funnels the golem     │
-        //  │           down from the spawn platform into the kill chamber. A 2×2     │
-        //  │           core clears the 1.4-block-wide iron golem with room to spare. │
+        //  │ y=1       COLLECTION ROOM floor + KILL COLUMN floor: the 2×2 core is    │
+        //  │           HOPPERS the golem stands on, ringed by a hopper floor that    │
+        //  │           funnels iron → a chest. Walk-in DOOR on the south wall.       │
+        //  │ y=2       kill-column CONTAINMENT walls (4×4 collar) so the golem can't │
+        //  │           path off the lava blade; explanatory signs; ceiling lanterns.│
+        //  │ y=3       collection-room ceiling (2×2 mouth) — LAVA-BLADE FLOOR signs   │
+        //  │           hold the lava up + pass the golem's head and the iron drops.  │
+        //  │ y=4       LAVA BLADE (2×2): the standing golem's head burns here → dies.│
+        //  │ y=5..7    DROP SHAFT (2×2 core) — the golem free-falls through.          │
+        //  │ y=8       UPPER WATER DAM (2×2 signs): stops the wash water above the    │
+        //  │           lava (water on lava → obsidian).                              │
         //  │ y=9       SPAWN PLATFORM — lit stone deck, water flowing INWARD pushes   │
         //  │           golems to the central 2×2 drop hole.                          │
-        //  │ y=10..12  VILLAGER PODS (3 glass cells + beds) and the ZOMBIE cell;     │
-        //  │           glass-walled spawn enclosure.                                 │
+        //  │ y=10..12  VILLAGER PODS (3 glass cells + beds) and the ZOMBIE cell.     │
         //  │ y=13      slab roof.                                                    │
         //  └───────────────────────────────────────────────────────────────────────┘
         //
-        // WHY LAVA-CAULDRON (the kill-chamber fix): the spawn-platform wash water
-        // pours straight down the central drop hole onto the kill block. A raw lava
-        // block touched by that water turns to OBSIDIAN — the kill dies and golems
-        // pile up. A minecraft:lava_cauldron is a single self-contained block that
-        // holds lava: it never flows/spreads and never converts to obsidian when
-        // water touches it, so the wash water pours down onto it harmlessly and it
-        // keeps killing. lava_cauldron is itemless (asItem()==AIR) → prints free as
-        // structural matter, same as the water/lava it replaces.
+        // WHY A LAVA BLADE (not the old cauldrons): the 1.4-wide iron golem can't fit a
+        // 1×1 lava cauldron — it straddles the rims and survives. Instead the golem
+        // stands on a 2×2 hopper floor and a 2×2 LAVA sheet sits one course above the
+        // y=3 dam signs at head height, burning it; the iron drops fall below the lava
+        // to the hoppers. Signs hold the lava from flowing down (a sign blocks fluid but
+        // passes mobs/items), and a SECOND sign dam at y=8 keeps the spawn wash-water off
+        // the lava so it never turns to obsidian. (lava block asItem()==AIR → prints free.)
         Blueprint.Builder b = Blueprint.builder("Iron Farm", 13, 14, 13);
         // all vanilla, all FU-valued / structural-free:
         BlueprintBlockState stone     = bs("minecraft:stone");
@@ -7698,7 +7697,6 @@ class CuratedBlueprintGenerator {
         BlueprintBlockState chest     = bs("minecraft:chest[facing=north,type=single,waterlogged=false]");
         BlueprintBlockState lantern   = LANTERN;           // glowstone-free lighting, FU-valued
         BlueprintBlockState water     = WATER;             // structural (asItem()==AIR) → prints free
-        BlueprintBlockState lavaCauldron = bs("minecraft:lava_cauldron"); // structural (asItem()==AIR) → prints free; water-safe kill block
 
         int x0 = 0, x1 = 12, z0 = 0, z1 = 12;            // 13×13 footprint
         int cx = 6, cz = 6;                               // centre column (kill / drop shaft)
@@ -7728,17 +7726,24 @@ class CuratedBlueprintGenerator {
                 b.set(x, 3, z, bricks);
             }
         }
-        // 2c) KILL CHAMBER + HOPPER FLOOR + chest, all at y=1.
-        //     • Inner 2×2 (the drop core) = LAVA CAULDRONS: golems fall down the shaft
-        //       and land IN the lava → they die. The wash water pouring down the shaft
-        //       lands on these cauldrons harmlessly (no obsidian, no spread).
-        //     • The 12-cell hopper ring around the cauldrons catches the iron that the
-        //       dying golems scatter outward and funnels it south to a collection hopper
-        //       → the chest. The chest sits 2 cells south of the ring, in the open room,
-        //       so the player walks in and grabs the iron.
+        // 2c) KILL COLUMN (lava blade) + HOPPER FLOOR + chest, at y=1. The 1.4-wide
+        //     golem can't fit the old 1×1 lava cauldrons — it straddled the rims and
+        //     survived — so the kill is a LAVA BLADE: the 2×2 core floor is HOPPERS the
+        //     golem stands on, and a 2×2 LAVA sheet sits up at y=4 (§4c) where the
+        //     standing golem's HEAD burns. The iron drops fall below the lava, past the
+        //     y=3 dam signs, onto these hoppers → ring → chest.
         for (int x = dx0; x <= dx1; x++) {
             for (int z = dz0; z <= dz1; z++) {
-                b.set(x, 1, z, lavaCauldron);            // 2×2 lava-cauldron kill spot
+                b.set(x, 1, z, bs("minecraft:hopper[enabled=true,facing=south]")); // golem stands here; drops → ring → chest
+            }
+        }
+        //     CONTAINMENT: wall the 4×4 collar at y=2 (the golem's lower-body level) so it
+        //     can't path off the lava blade. The 2×2 kill core stays open (the golem), y=1
+        //     stays the hopper ring (collection), y=3 is the ceiling → a sealed kill column.
+        for (int x = rx0; x <= rx1; x++) {
+            for (int z = rz0; z <= rz1; z++) {
+                if (x >= dx0 && x <= dx1 && z >= dz0 && z <= dz1) continue; // keep the kill core open
+                b.set(x, 2, z, bricks);
             }
         }
         //     Hopper ring: north/west/east rows feed SOUTH into the z=rz1 row; the
@@ -7784,18 +7789,41 @@ class CuratedBlueprintGenerator {
             }
         }
 
-        // ── 4b) WATER DAM at the drop mouth (y=3) ────────────────────────────
-        // The spawn-deck wash water pours down the 2×2 shaft and, with nothing to stop
-        // it, floods the walk-in collection room. SIGNS block water flow but let mobs
-        // and item drops fall straight through, so a sign in each of the 4 drop-mouth
-        // cells dams the water right at the ceiling: the shaft above fills, the room
-        // below (y=1..2) stays DRY, and the golem still drops onto the cauldrons and
-        // dies. Each wall-sign attaches to the solid y=3 ceiling brick beside it (the
-        // 4×4 collar around the 2×2 mouth), so it's render-safe.
+        // ── 4b) LAVA-BLADE FLOOR signs at the drop mouth (y=3) ───────────────
+        // SIGNS in the 2×2 mouth hold up the y=4 lava blade (lava can't flow into a sign
+        // cell) AND stay permeable to the golem's head reaching up into the lava + the
+        // iron drops falling down to the hoppers — a sign is the one block that blocks
+        // fluid yet passes mobs and items. (The wash water is stopped higher, at the y=8
+        // dam in §4c, so it never reaches this lava → no obsidian.) Each attaches to the
+        // y=3 ceiling brick beside it → render-safe. The nearest AIR to the lava is 2
+        // cells away (below the signs, under the lava), beyond fire's ~1-block ignition
+        // reach, so the signs don't burn — this is why lava-blade farms hold lava on signs.
         b.set(dx0, 3, dz0, bs("minecraft:oak_wall_sign[facing=east]")); // attaches to (dx0-1,3,*) brick
         b.set(dx0, 3, dz1, bs("minecraft:oak_wall_sign[facing=east]"));
         b.set(dx1, 3, dz0, bs("minecraft:oak_wall_sign[facing=west]")); // attaches to (dx1+1,3,*) brick
         b.set(dx1, 3, dz1, bs("minecraft:oak_wall_sign[facing=west]"));
+
+        // ── 4c) LAVA BLADE (y=4) + UPPER WATER DAM (y=8) ─────────────────────
+        // A 2×2 LAVA sheet one course ABOVE the y=3 dam signs. The golem falls through it,
+        // lands on the y=1 hoppers (feet ~y=2 on the hopper rim), and stands with its HEAD
+        // (~y=4.7) back up in the lava → continuous burn → dies; the iron drops fall below
+        // the lava, past the signs, to the hoppers. (lava block asItem()==AIR → prints free
+        // like water; it's caged in stone with only the dam signs nearby — see the
+        // fire-hazard allowlist.)
+        for (int x = dx0; x <= dx1; x++) {
+            for (int z = dz0; z <= dz1; z++) {
+                b.set(x, 4, z, bs("minecraft:lava[level=0]"));
+            }
+        }
+        // The spawn wash-water must NOT reach the lava (water on lava → obsidian → the
+        // kill dies). A SECOND 2×2 sign dam up at y=8 (top of the shaft) stops the water
+        // four courses above the lava: the shaft fills above y=8 and stays dry from y=7
+        // down, and the golem still falls through the signs. Each attaches to the y=8
+        // shaft wall (the 4×4 collar) beside it → render-safe.
+        b.set(dx0, 8, dz0, bs("minecraft:oak_wall_sign[facing=east]"));
+        b.set(dx0, 8, dz1, bs("minecraft:oak_wall_sign[facing=east]"));
+        b.set(dx1, 8, dz0, bs("minecraft:oak_wall_sign[facing=west]"));
+        b.set(dx1, 8, dz1, bs("minecraft:oak_wall_sign[facing=west]"));
 
         // ── 5) SPAWN PLATFORM at y=9 ─────────────────────────────────────────
         // A 13×13 stone deck — the lit area where iron golems spawn within the
@@ -7900,18 +7928,18 @@ class CuratedBlueprintGenerator {
                  "Iron golems", "spawn on this", "platform. Water", "pushes them down");
         // "Water pushes golems down to the kill chamber" — near the west water source.
         signText(b, "minecraft:oak_sign[rotation=4]", x0 + 2, 10, cz - 2,
-                 "Water flows IN", "to the 2x2 hole", "-> golems fall", "to the cauldrons");
+                 "Water flows IN", "to the 2x2 hole", "-> golems fall", "to the lava blade");
         // Collection-room sign: mounted on the INNER face of the north wall (z=z0),
         // one cell in (z0+1) facing south so it reads as the player walks in through
         // the south door and looks across the room. (facing=south attaches to the
         // solid brick wall block at z=z0 to its north → render-safe.)
         signText(b, "minecraft:oak_wall_sign[facing=south]", cx, 2, z0 + 1,
-                 "COLLECTION", "Golems die in the", "lava cauldrons;", "iron -> this chest");
+                 "COLLECTION", "Golems burn in the", "lava blade above;", "iron -> this chest");
         // Kill-chamber explainer, mounted on the INNER face of the EAST wall (x=x1),
         // one cell in (x1-1) facing west so the wall block at x1 to its east backs it
-        // → render-safe. Explains the water-safe lava-cauldron kill.
+        // → render-safe. Explains the lava-blade kill.
         signText(b, "minecraft:oak_wall_sign[facing=west]", x1 - 1, 2, cz,
-                 "KILL CHAMBER", "Lava cauldrons", "(water-safe, no", "obsidian) kill here");
+                 "KILL CHAMBER", "A lava blade up", "top burns the", "golem's head");
 
         return b.build();
     }

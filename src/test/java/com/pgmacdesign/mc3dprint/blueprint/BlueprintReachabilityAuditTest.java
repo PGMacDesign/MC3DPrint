@@ -130,7 +130,13 @@ class BlueprintReachabilityAuditTest {
             "gatehouse",
             "hot_air_balloon",
             "victorian_townhouse",
-            "sailing_ship"
+            "sailing_ship",
+            // iron_farm — a mob farm: the player only enters the walk-in COLLECTION room
+            // (door). The sealed pockets are all by design — the lava-blade KILL column
+            // (walled so the golem can't escape), the drop SHAFT + glass SPAWN ENCLOSURE
+            // above the lava blade (mobs spawn and fall; the player never goes up there),
+            // and the zombie containment cell. Same intent as mob_xp_tower's spawn shaft.
+            "iron_farm"
     );
 
     @Test
