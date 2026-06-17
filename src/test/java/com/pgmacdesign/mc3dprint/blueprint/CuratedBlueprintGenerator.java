@@ -12277,20 +12277,23 @@ class CuratedBlueprintGenerator {
         b.set(cx - 1, g0, z1 - 1, CAULDRON);
         b.set(cx - 2, g0, z1 - 1, BARREL);
 
-        // Fireplace on the WEST wall (x0), centred in z: a caged-lava hearth boxed
-        // by cobble so the lava can't flow, with a chimney rising through the roof.
+        // Fireplace on the WEST wall (x0), centred in z: a CAMPFIRE hearth in a cobble
+        // surround, with a chimney rising through the roof. **Campfire, NOT lava** — this
+        // is a spruce (flammable) building, and raw lava ignites flammable blocks within a
+        // couple cells even when "boxed" in cobble: the original caged-lava hearth burned
+        // the whole tavern down. Campfires give the fire + light without spreading fire.
         int fz = cz;
-        // hearth surround: cobble box one cell in from the wall around the lava cell
+        // hearth surround: cobble box one cell in from the wall around the firebox cell
         b.set(x0 + 1, g0, fz - 1, cobble);
         b.set(x0 + 1, g0, fz + 1, cobble);
         b.set(x0 + 1, g0 + 1, fz - 1, cobble);
         b.set(x0 + 1, g0 + 1, fz + 1, cobble);
         b.set(x0, g0, fz, cobble);           // back of the hearth (replaces wall plank)
         b.set(x0, g0 + 1, fz, cobble);
-        // lava firebox at the hearth mouth, boxed: iron-bar grate fronts it and a
-        // cobble cap closes the top so the lava is fully enclosed and can't spread.
-        b.set(x0 + 1, g0, fz, LAVA);
-        b.set(x0 + 1, g0 + 2, fz, cobble);   // cap over the lava
+        // campfire at the hearth mouth behind an iron-bar grate, with a cobble cap above
+        // (smoke gathers in the air cell under the cap). Campfire = no fire spread → safe.
+        b.set(x0 + 1, g0, fz, bs("minecraft:campfire[facing=east,lit=true,signal_fire=false,waterlogged=false]"));
+        b.set(x0 + 1, g0 + 2, fz, cobble);   // cap over the firebox
         // cobble jambs flanking the grate (z=fz±1 at the mouth column x0+2) give the
         // iron bars a sturdy full face on both sides → it renders (no stub) and the
         // firebox front reads as a hearth grate set in masonry.
