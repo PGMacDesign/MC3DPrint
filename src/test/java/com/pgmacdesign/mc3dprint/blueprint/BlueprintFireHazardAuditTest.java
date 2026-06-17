@@ -2,8 +2,8 @@ package com.pgmacdesign.mc3dprint.blueprint;
 
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtIo;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 
 import java.io.DataInputStream;
 import java.io.IOException;
@@ -41,12 +41,15 @@ import java.util.zip.GZIPInputStream;
  * nether plants are EXCLUDED — they don't burn. When unsure, a block is treated non-flammable
  * to avoid false positives.
  *
- * <p>Reads palette strings directly (no Forge registry / running server). NOT a guardrail yet
- * — it will flag existing builds that still need fixing — so it only REPORTS: gated on
- * {@code -DauditFireHazard=true} and writes {@code build/blueprint-fire-hazard-audit.txt}.
+ * <p>Reads palette strings directly (no Forge registry / running server). This is now an
+ * ALWAYS-ON GATE: all curated builds are clean, so the test FAILS if any build prints a raw
+ * fire source within ignition range of a flammable block. It always writes the full report to
+ * {@code build/blueprint-fire-hazard-audit.txt} regardless of pass/fail. The
+ * {@code -DauditFireHazard=true} system property is no longer required (it remains harmless if
+ * set); run it directly with:
  *
  * <pre>
- *   ./gradlew test --tests *BlueprintFireHazardAuditTest* -DauditFireHazard=true --rerun-tasks
+ *   ./gradlew test --tests *BlueprintFireHazardAuditTest*
  * </pre>
  */
 class BlueprintFireHazardAuditTest {
@@ -132,7 +135,6 @@ class BlueprintFireHazardAuditTest {
     }
 
     @Test
-    @EnabledIfSystemProperty(named = "auditFireHazard", matches = "true")
     void auditFireHazard() throws IOException {
         List<Path> files;
         try (var stream = Files.list(SOURCE_DIR)) {
@@ -210,6 +212,17 @@ class BlueprintFireHazardAuditTest {
         System.out.println("[FireHazardAudit] " + flaggedSources + " flagged / "
                 + fireSourceCells + " fire-source cells across " + files.size()
                 + " builds -> " + OUTPUT.toAbsolutePath());
+
+        // ALWAYS-ON GATE: every curated build must be fire-safe. A non-empty flagged list
+        // means some build prints a raw lava/fire/soul_fire source within ignition range of
+        // a flammable block — it would ignite and burn down after printing (the tavern_inn
+        // bug). Fail the build; the full report (above) lists every offending cell. Fix the
+        // forge/hearth (e.g. magma_block or lava_cauldron) and regenerate the blueprint.
+        Assertions.assertTrue(flagged.isEmpty(),
+                "Fire hazard(s) found: " + flaggedSources + " raw fire-source cell(s) within "
+                        + "Chebyshev <= " + IGNITION_RANGE + " of a flammable block. See "
+                        + OUTPUT.toAbsolutePath() + "\n"
+                        + String.join("\n", flagged));
     }
 
     private static Blueprint readBlueprint(Path file) throws IOException {
