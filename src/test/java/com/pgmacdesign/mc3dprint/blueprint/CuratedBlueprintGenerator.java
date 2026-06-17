@@ -6956,6 +6956,19 @@ class CuratedBlueprintGenerator {
         b.set(cx - 1, floorY + 1, doorZ, stem);
         b.set(cx + 1, floorY + 1, doorZ, stem);
         door2(b, cx, floorY, doorZ, "spruce", "N"); // 2-block spruce door, opens south
+        // ── THRESHOLD STEP — fix the blocked entry ───────────────────────────
+        // The interior finish floor (the y=floorY plank disc above) sits one full
+        // block HIGHER than the door sill: outside, the player walks on the top of
+        // the y=0 mycelium (elevation 1.0); the door bottom is at y=floorY so its
+        // sill is flush with that, but the first interior cell behind the door
+        // (cx, floorY, doorZ+1) was a SOLID plank (top elevation 2.0) — a full
+        // 1-block wall right inside the doorway you couldn't step over (the door's
+        // upper half pins your head, so the auto step-up never triggers). Replace
+        // that one threshold plank with a spruce STAIR whose low edge faces NORTH
+        // (toward the door): the player now climbs the half-step off the flush sill
+        // straight up onto the raised plank floor and walks in. The stair is
+        // FU-valued (spruce_stairs) and render-safe.
+        b.set(cx, floorY, doorZ + 1, bs("minecraft:spruce_stairs[facing=north,half=bottom,shape=straight]"));
 
         // ── 4) RENDER-SAFE GLASS-BLOCK WINDOWS on E/W/S, with spruce sills ────
         // Each window is a glass BLOCK set into a ring cell flanked by stem cells
@@ -12528,18 +12541,12 @@ class CuratedBlueprintGenerator {
         // aisle-edge rail (x=3 west, x=5 east) closes each stall except for one
         // fence-gate opening into the aisle. Connecting fences self-reconcile.
         for (int zDiv : new int[]{3, 6, 9}) {
-            // The west front-stall (x=1..3, z=7..8) is the LOFT STAIR BAY (stairs
-            // climb x=2, z=8→5). LEAVE its south side open at x=2 by skipping that
-            // z=9 divider cell, so the player walks in from the open south bay
-            // straight to the bottom step. (set() can't punch air — the gap must be
-            // left UNWRITTEN, not overwritten — so we just don't place x=2 here.)
-            if (zDiv == 9) {
-                b.set(1, 1, zDiv, OAK_FENCE);          // west post
-                b.set(3, 1, zDiv, OAK_FENCE);          // aisle-edge post (x=2 left open)
-            } else {
-                line(b, 1, 1, zDiv, 3, zDiv, OAK_FENCE); // west divider
-            }
-            line(b, 1, 5, zDiv, 7, zDiv, OAK_FENCE);   // east divider
+            // Loft access is now a backed LADDER in the west-middle stall (see §4),
+            // not a stair bay, so every divider is a full fence run — the old z=9
+            // x=2 gap (which existed only to open the front-stall stair bay to the
+            // south riding bay) is gone.
+            line(b, 1, 1, zDiv, 3, zDiv, OAK_FENCE); // west divider
+            line(b, 1, 5, zDiv, 7, zDiv, OAK_FENCE); // east divider
         }
         // aisle-edge rails (x=3 west, x=5 east) along z=1..9
         line(b, 1, 3, 1, 3, 9, OAK_FENCE);
@@ -12556,12 +12563,11 @@ class CuratedBlueprintGenerator {
             b.set(1, 1, zb, HAY);
             b.set(7, 1, zb, HAY);
         }
-        // water troughs in the middle stall of each side: an empty cauldron
-        // (FU-valued; the player fills it) over a sunken water cell at y=0
-        // (water is structural → prints free).
-        b.set(1, 1, 4, CAULDRON);   // west trough
+        // water trough in the EAST middle stall: an empty cauldron (FU-valued; the
+        // player fills it) over a sunken water cell at y=0 (water is structural →
+        // prints free). The WEST middle stall hosts the loft LADDER instead (see §4
+        // — its base lands on (1,1,4)), so it gets no trough here.
         b.set(7, 1, 4, CAULDRON);   // east trough
-        b.set(1, 0, 5, WATER);
         b.set(7, 0, 5, WATER);
 
         // ── 4) HAY LOFT (y=4) — spruce-slab floor over the back half ─────────
@@ -12576,38 +12582,32 @@ class CuratedBlueprintGenerator {
         b.set(6, 5, 2, HAY);
         b.set(6, 5, 3, HAY);
         b.set(4, 5, 3, HAY);
-        // ── LOFT ACCESS — a 4-step spruce stair run climbing NORTH onto the loft ─
-        // The old north-wall ladder at (2,y,1) dead-ended into the solid loft slab
-        // at (2,4,1) (the eave, where the roof cell (2,5,1) leaves no climbing
-        // headroom), so there was no way up without breaking blocks. Replace it with
-        // an open stair flight in the front half (full roof headroom) that walks the
-        // player straight up onto a standable loft cell.
+        // ── LOFT ACCESS — a backed LADDER up the west-middle stall (owner's ask) ─
+        // The old loft access was a 4-step spruce stair run climbing the x=2 column
+        // (z=8→5) — mis-oriented and visually wrong for a barn. Replace it with a
+        // wall-backed LADDER, the authentic hay-loft climb.
         //
-        // The run climbs the x=2 column from z=8 up to z=5 (the loft's south edge).
-        // Per this build's stair convention the tall riser is OPPOSITE the facing
-        // (cf. the table-stool stairs: facing=east → tall back on the WEST), so a
-        // flight ascending NORTHWARD uses facing=SOUTH — the climber meets each
-        // step's low side and steps up smoothly. The top step sits at cell y=4 so its
-        // tall-side top = 5.0 = the loft surface, landing flush (no hop):
+        // The ladder mounts on the WEST PERIMETER WALL (x=0) in the west-MIDDLE
+        // stall, climbing the x=1, z=4 column. facing=EAST → the ladder attaches to
+        // the block at x=0 (facing.getOpposite() = west), and x=0 is solid full-block
+        // backing at every rung:
+        //   (0,1,4) stripped_spruce_log[axis=y] post · (0,2,4) post ·
+        //   (0,3,4) stripped_spruce_log[axis=z] top-plate · (0,4,4) spruce_planks (gable end)
+        // — all sturdy, so the ladder-support audit does not flag it.
         //
-        //   bottom step (2,1,8)  ← mounted from the open south bay / aisle gate
-        //               (2,2,7)     roof at z=7 is y=7 → 4 clear cells of headroom
-        //               (2,3,6)     roof at z=6 is y=8 → ample headroom
-        //   top step    (2,4,5)  ← cell y=4, tall-top 5.0, flush with the loft edge
-        //
-        // From the top step the player walks north onto the SOLID loft slab at
-        // (2,4,4) (z=4 ≥ 3 → standable; roof at z=4 is y=8, three clear cells) and on
-        // across the loft. Every climb/landing cell clears the roof schedule, so the
-        // whole ascent is break-free.
-        for (int i = 0; i < 4; i++) {
-            int sy = 1 + i;          // y = 1,2,3,4
-            int sz = 8 - i;          // z = 8,7,6,5
-            b.set(2, sy, sz, bs("minecraft:spruce_stairs[facing=south,half=bottom,shape=straight]"));
+        // Climb schedule (z=4 → roof above is at y=8, so 3+ clear cells the whole way):
+        //   base rung (1,1,4) ← reached from the stall floor: the player opens the
+        //                       west-middle aisle gate (3,1,5), steps in, stands at
+        //                       (2,1,4) [air] and climbs the ladder facing them.
+        //   (1,2,4) · (1,3,4) · top rung (1,4,4) ← this rung REPLACES the loft slab
+        //                       at (1,4,4), so it doubles as the climb-through HATCH:
+        //                       the player rises through the loft floor on the ladder.
+        // From the top rung the player steps off onto the SOLID loft slab at (2,4,4)
+        // (z=4 ≥ 3 → standable; roof at z=4 is y=8 → head y=6 clear) and on across the
+        // loft. Every climb/landing cell clears the gable-roof schedule → break-free.
+        for (int ly = 1; ly <= 4; ly++) {
+            b.set(1, ly, 4, bs("minecraft:ladder[facing=east]"));
         }
-        // The west z=9 divider deliberately SKIPS x=2 (see the stalls section), so
-        // that cell is the stair bay's open south doorway: the player walks in from
-        // the open south riding bay straight onto the bottom step. (set() can't punch
-        // air, so the gap must be left unwritten, not cleared.)
 
         // ── 5) TACK ROOM NOOK (NW corner) — barrels + wall signs ─────────────
         b.set(1, 1, 1, BARREL);
