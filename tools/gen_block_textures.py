@@ -537,6 +537,41 @@ def clock_generator():
     return img
 
 
+def redstone_clock():
+    # A dark console block with a recessed round clock DIAL: a redstone-red rim,
+    # two red hands and a bright center pulse dot, plus a small red emitter stud on
+    # each of the four edge midpoints (it pulses out every side). Redstone-themed
+    # and distinct from the FTB clock look.
+    img = new(S); px = s_acc(img)
+    s_frame(px)
+    red_hot, red_mid, red_deep = (0xFF, 0x4D, 0x4D), (0xD0, 0x2A, 0x2A), (0x7A, 0x12, 0x12)
+    field = (0x10, 0x14, 0x1E)
+    cx, cy, r = 8, 8, 4
+    # recessed dark dial face
+    for dy in range(-r, r + 1):
+        for dx in range(-r, r + 1):
+            if (dx * dx + dy * dy) ** 0.5 <= r + 0.3:
+                put(px, cx + dx, cy + dy, field)
+    # red dial rim (lit top-left, shadow bottom-right)
+    for dy in range(-r, r + 1):
+        for dx in range(-r, r + 1):
+            d = (dx * dx + dy * dy) ** 0.5
+            if r - 0.9 <= d <= r + 0.3:
+                put(px, cx + dx, cy + dy, red_deep if (dx + dy) > 0 else red_mid)
+    # two clock hands from the centre (up + right)
+    for k in range(3):
+        put(px, cx, cy - k, red_hot)
+        put(px, cx + k, cy, red_mid)
+    # bright centre pulse dot
+    put(px, cx, cy, red_hot)
+    put(px, cx - 1, cy, red_mid); put(px, cx, cy + 1, red_mid)
+    # emitter studs on the four edge midpoints (= pulses on all sides)
+    for (x, y) in [(8, 1), (8, 14), (1, 8), (14, 8)]:
+        put(px, x, y, red_hot)
+    quantize_to_palette(img, extra=[red_hot, red_mid, red_deep, field])
+    return img
+
+
 def creative_energy_source():
     img = new(S); px = s_acc(img)
     s_frame(px, base=FRAME[3], inner=FRAME[2])
@@ -664,6 +699,7 @@ def main():
     written.append(save_block(filament_converter(), "filament_converter"))
     written.append(save_block(remote_terminal(), "remote_terminal"))
     written.append(save_block(clock_generator(), "clock_generator"))
+    written.append(save_block(redstone_clock(), "redstone_clock"))
     written.append(save_block(creative_energy_source(), "creative_energy_source"))
     written.append(save_block(printite_ore(), "printite_ore"))
     # formed-multiblock casing top faces

@@ -40,6 +40,11 @@ public final class ModBlockEntities {
                     BlockEntityType.Builder.of(com.pgmacdesign.mc3dprint.machine.CreativeEnergyBlockEntity::new,
                             ModBlocks.CREATIVE_ENERGY_SOURCE.get()).build(null));
 
+    public static final RegistryObject<BlockEntityType<com.pgmacdesign.mc3dprint.machine.RedstoneClockBlockEntity>> REDSTONE_CLOCK =
+            BLOCK_ENTITIES.register("redstone_clock", () ->
+                    BlockEntityType.Builder.of(com.pgmacdesign.mc3dprint.machine.RedstoneClockBlockEntity::new,
+                            ModBlocks.REDSTONE_CLOCK.get()).build(null));
+
     public static final RegistryObject<BlockEntityType<WinderBlockEntity>> FILAMENT_WINDER =
             BLOCK_ENTITIES.register("filament_winder", () ->
                     BlockEntityType.Builder.of(WinderBlockEntity::new,

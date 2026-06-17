@@ -46,6 +46,7 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.PRINTER_CASING.get());
                         ModItems.WINDERS.forEach(winder -> output.accept(winder.get()));
                         output.accept(ModItems.CLOCK_GENERATOR.get());
+                        output.accept(ModItems.REDSTONE_CLOCK.get());
                         if (ae2) {
                             output.accept(ModItems.FILAMENT_CONVERTER.get());
                         }

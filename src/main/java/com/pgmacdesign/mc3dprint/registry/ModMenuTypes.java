@@ -2,6 +2,7 @@ package com.pgmacdesign.mc3dprint.registry;
 
 import com.pgmacdesign.mc3dprint.MC3DPrint;
 import com.pgmacdesign.mc3dprint.machine.PrinterMenu;
+import com.pgmacdesign.mc3dprint.machine.RedstoneClockMenu;
 import com.pgmacdesign.mc3dprint.machine.SimpleGeneratorMenu;
 import com.pgmacdesign.mc3dprint.machine.WinderMenu;
 import net.minecraft.world.inventory.MenuType;
@@ -25,6 +26,10 @@ public final class ModMenuTypes {
     public static final RegistryObject<MenuType<SimpleGeneratorMenu>> SIMPLE_GENERATOR =
             MENU_TYPES.register("simple_generator",
                     () -> IForgeMenuType.create(SimpleGeneratorMenu::new));
+
+    public static final RegistryObject<MenuType<RedstoneClockMenu>> REDSTONE_CLOCK =
+            MENU_TYPES.register("redstone_clock",
+                    () -> IForgeMenuType.create(RedstoneClockMenu::new));
 
     private ModMenuTypes() {}
 }

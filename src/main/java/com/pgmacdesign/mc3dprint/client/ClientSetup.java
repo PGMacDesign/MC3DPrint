@@ -20,6 +20,7 @@ public final class ClientSetup {
             MenuScreens.register(ModMenuTypes.TIER1_PRINTER.get(), PrinterScreen::new);
             MenuScreens.register(ModMenuTypes.FILAMENT_WINDER.get(), WinderScreen::new);
             MenuScreens.register(ModMenuTypes.SIMPLE_GENERATOR.get(), SimpleGeneratorScreen::new);
+            MenuScreens.register(ModMenuTypes.REDSTONE_CLOCK.get(), RedstoneClockScreen::new);
         });
     }
 

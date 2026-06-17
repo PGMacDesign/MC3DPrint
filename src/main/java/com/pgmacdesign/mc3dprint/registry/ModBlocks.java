@@ -53,6 +53,10 @@ public final class ModBlocks {
     public static final RegistryObject<Block> CLOCK_GENERATOR = BLOCKS.register("clock_generator",
             () -> new com.pgmacdesign.mc3dprint.machine.ClockGeneratorBlock(machineProperties()));
 
+    /** Autonomous, silent redstone timer: pulses all 6 sides every N (1-60) seconds. */
+    public static final RegistryObject<Block> REDSTONE_CLOCK = BLOCKS.register("redstone_clock",
+            () -> new com.pgmacdesign.mc3dprint.machine.RedstoneClockBlock(machineProperties()));
+
     /** Creative-only infinite RF source (no recipe). */
     public static final RegistryObject<Block> CREATIVE_ENERGY_SOURCE = BLOCKS.register("creative_energy_source",
             () -> new com.pgmacdesign.mc3dprint.machine.CreativeEnergyBlock(machineProperties()));

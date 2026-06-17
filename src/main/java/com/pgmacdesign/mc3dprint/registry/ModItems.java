@@ -61,6 +61,9 @@ public final class ModItems {
     public static final RegistryObject<Item> CLOCK_GENERATOR = ITEMS.register("clock_generator",
             () -> new BlockItem(ModBlocks.CLOCK_GENERATOR.get(), new Item.Properties()));
 
+    public static final RegistryObject<Item> REDSTONE_CLOCK = ITEMS.register("redstone_clock",
+            () -> new BlockItem(ModBlocks.REDSTONE_CLOCK.get(), new Item.Properties()));
+
     public static final RegistryObject<Item> CREATIVE_ENERGY_SOURCE = ITEMS.register("creative_energy_source",
             () -> new BlockItem(ModBlocks.CREATIVE_ENERGY_SOURCE.get(), new Item.Properties()));
 
