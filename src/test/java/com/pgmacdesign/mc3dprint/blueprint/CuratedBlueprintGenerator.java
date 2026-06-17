@@ -2361,16 +2361,19 @@ class CuratedBlueprintGenerator {
             line(b, y, 6, 1, 6, 5, mat); // east wall
         }
         corners(b, 0, 0, 6, 5, 1, 4, OAK_LOG_Y);
-        // forge: lava source caged in iron bars, back-right alcove
-        b.set(5, 1, 4, LAVA);
+        // forge: a glowing magma_block hot-bed caged in iron bars, back-right alcove.
+        // FIRE-SAFETY: raw lava here (caged or not) ignites the oak_log corner posts
+        // within Chebyshev≤2 and burns the build down — magma_block glows like a hot
+        // forge bed but does NOT spread fire to the surrounding wood.
+        b.set(5, 1, 4, bs("minecraft:magma_block"));
         b.set(5, 1, 3, IRON_BARS);
         b.set(5, 2, 3, IRON_BARS);
         b.set(5, 2, 4, IRON_BARS);
         b.set(4, 1, 4, IRON_BARS);
         b.set(6, 1, 4, IRON_BARS);
         // chimney venting the forge up to the roof line (H=6 budget tops out at y=5).
-        // Starts at y=2 so it CAPS the lava (5,1,4) rather than overwriting the source —
-        // the forge stays a glowing, iron-bar-caged lava cell, not dead cobble.
+        // Starts at y=2 so it CAPS the magma hot-bed (5,1,4) rather than overwriting it —
+        // the forge stays a glowing, iron-bar-caged heat source, not dead cobble.
         pillar(b, 5, 4, 2, 5, COBBLE);
         // furniture
         b.set(3, 1, 4, ANVIL);              // faces north (out the open front)
@@ -9658,12 +9661,16 @@ class CuratedBlueprintGenerator {
         window2(b, x0, 3, 2, GLASS_PANE, null);
         window2(b, x1, 3, 2, GLASS_PANE, null);
 
-        // ── 4) CAGED-LAVA FORGE — back-right corner ─────────────────────────
-        // The forge heart: a lava source at (5,1,7), one cell in from the back (z=8)
-        // and east (x=6) shell walls. A netherrack hearth at floor level frames the
-        // open diagonal corner (4,1,6). The two OPEN inner faces — north (5,1,6) and
-        // west (4,1,7) — are walled by iron_bars so the player can't fall in but the
-        // glow shines through; the back and east faces are the solid stone-brick shell.
+        // ── 4) CONTAINED-MOLTEN FORGE — back-right corner ───────────────────
+        // The forge heart: a lava_cauldron at (5,1,7), one cell in from the back (z=8)
+        // and east (x=6) shell walls. FIRE-SAFETY: raw lava here ignites the spruce_log
+        // corner posts + oak wall signs within Chebyshev≤2 and burns the build down.
+        // lava_cauldron is a CONTAINED molten crucible — it still reads as glowing lava
+        // through the bars, but it never spreads fire to the surrounding timber.
+        // A netherrack hearth at floor level frames the open diagonal corner (4,1,6).
+        // The two OPEN inner faces — north (5,1,6) and west (4,1,7) — are walled by
+        // iron_bars so the player can't fall in but the glow shines through; the back
+        // and east faces are the solid stone-brick shell.
         // RENDER-SAFETY (each iron_bars cell needs ONE connecting ±x/±z neighbour):
         //   • (4,1,7) west bar  → +z neighbour (4,1,6) is netherrack (sturdy full face) ✓
         //   • (5,1,6) north bar → +x neighbour (6,1,6) is the east stone-brick wall ✓
@@ -9671,7 +9678,7 @@ class CuratedBlueprintGenerator {
         //   • (4,2,7) upper bar → -y is (4,1,7) bars, +z (4,2,6) is the upper north bar ✓
         //   • (5,2,6) upper bar → +x (6,2,6) east wall, -x (4,2,6) upper west bar ✓
         //   • (4,2,6) corner bar → connects to BOTH upper face bars (±x and ±z) ✓
-        b.set(5, yB, 7, LAVA);           // lava source (forge heart)
+        b.set(5, yB, 7, bs("minecraft:lava_cauldron")); // contained molten heart (no fire spread)
         b.set(4, yB, 6, netherrack);     // hearth corner (diagonal, floor level)
         // iron-bar cage on the two inner-facing faces, y=1..2:
         b.set(4, yB, 7, IRON_BARS);      // west face, lower
@@ -9679,8 +9686,8 @@ class CuratedBlueprintGenerator {
         b.set(5, yB, 6, IRON_BARS);      // north face, lower
         b.set(5, yB + 1, 6, IRON_BARS);  // north face, upper
         b.set(4, yB + 1, 6, IRON_BARS);  // upper diagonal corner bar — ties both upper faces
-        // chimney: cobble pillar CAPPING the lava from y=2 to the ceiling (y=4) so the
-        // source cell at y=1 survives as a glowing, caged forge rather than dead stone.
+        // chimney: cobble pillar CAPPING the forge from y=2 to the ceiling (y=4) so the
+        // lava_cauldron at y=1 survives as a glowing, caged forge rather than dead stone.
         pillar(b, 5, 7, yB + 1, yT, COBBLE);
 
         // ── 5) WORKSTATIONS around the walls, central walk lane left clear ──
