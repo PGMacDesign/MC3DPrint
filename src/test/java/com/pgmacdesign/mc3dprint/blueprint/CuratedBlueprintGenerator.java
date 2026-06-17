@@ -381,6 +381,22 @@ class CuratedBlueprintGenerator {
         b.blockEntity(x, y, z, be);
     }
 
+    /**
+     * Place a {@code mc3dprint:redstone_clock} and BAKE its pulse interval (seconds,
+     * 1–60) into the block-entity NBT, so the printed clock ticks at exactly that rate.
+     * Like {@link #signText}, the interval rides the blueprint's block-entity round-trip
+     * ({@code IntervalSeconds}) and the printer applies it via {@code placedBe.load(beData)}.
+     * This is the timer that drives the farm harvesters (replacing the fire-too-often
+     * paired-observer "clock").
+     */
+    private static void redstoneClock(Blueprint.Builder b, int x, int y, int z, int intervalSeconds) {
+        b.set(x, y, z, bs("mc3dprint:redstone_clock"));
+        CompoundTag be = new CompoundTag();
+        be.putString("id", "mc3dprint:redstone_clock");
+        be.putInt("IntervalSeconds", Math.max(1, Math.min(60, intervalSeconds)));
+        b.blockEntity(x, y, z, be);
+    }
+
     /** Build a 1.20.1 sign-face compound (messages = 4 JSON text components). */
     private static CompoundTag signFace(String[] lines) {
         CompoundTag face = new CompoundTag();
@@ -8205,15 +8221,14 @@ class CuratedBlueprintGenerator {
      * </ul>
      */
     private static Blueprint sugarcaneFarmAuto() {
-        // Height 6 (y=0..5). HARVEST IS TIMER-DRIVEN (rebuilt). A self-starting observer
-        // CLOCK at the north end pulses two redstone buses that fire a row of pistons at
-        // the cane's 2nd-block height (y=3), snapping every grown cane toward the central
-        // water channel each cycle. This replaces the old per-cane observer→piston wiring,
-        // which only fired on the FIRST growth: the observer watched the 2nd block (y=3)
-        // but the piston broke a different cell (the 3rd, y=4), and the observer's back
-        // signal never climbed the stone pillar up to the dust ribbon at y=5. A clock
-        // trades a little yield for reliability — the tradeoff the design intends. Mirrors
-        // the pumpkin/melon clock harvester so the two read identically.
+        // Height 6 (y=0..5). HARVEST IS TIMER-DRIVEN by a REDSTONE CLOCK (baked to 60s):
+        // it pulses every side every 60s; the pulse runs out two dust buses and through a
+        // REPEATER into each piston, snapping every grown cane into the central water
+        // channel. Two redstone nuances this build now respects: (1) a straight dust line
+        // running PAST a piston doesn't power it — only a repeater (or redstone block)
+        // pointed into the piston does, so the bus sits one column out and a repeater drives
+        // each piston; (2) the paired observers fired far too often, so the configurable
+        // Redstone Clock replaces them (tune the rate in the block's GUI).
         Blueprint.Builder b = Blueprint.builder("Auto Sugar Cane Farm", 9, 6, 9);
         // all vanilla, all FU-valued / structural-free:
         BlueprintBlockState stone   = bs("minecraft:stone");
@@ -8271,50 +8286,49 @@ class CuratedBlueprintGenerator {
             b.set(eStripX, 2, z, cane);                // cane bottom block, east strip
         }
 
-        // ── 4) PISTON HARVEST ROW (y=3) + CLOCK-DRIVEN REDSTONE BUSES ─────────
-        // A piston sits at the cane's 2nd-block height (y=3) beside every cane, facing it,
-        // raised on a 2-block stone backing. West pistons (x=2) face east; east pistons
-        // (x=6) face west. On each pulse the piston punches the grown cane (the y=3 block,
-        // and any 3rd block above it — sugar cane is push-destroyed, so it snaps into
-        // drops) toward the central channel; the always-present bottom block at y=2
-        // survives and regrows. Each piston is powered FROM BEHIND by a redstone-dust bus
-        // one column further out (west x=1, east x=7) on its own 2-block stone floor at the
-        // SAME y=3 — no fragile vertical signal climb (the old build's failure mode).
-        int wWallX = cx - 2, eWallX = cx + 2;          // 2 and 6 — piston columns (face the cane)
-        int wBusX  = cx - 3, eBusX  = cx + 3;          // 1 and 7 — redstone buses (behind the pistons)
+        // ── 4) PISTON HARVEST ROW (y=3) + REPEATER-FED BUSES ─────────────────
+        // A piston at the cane's 2nd-block height (y=3) beside every cane, facing it (west
+        // pistons x=2 face east, east pistons x=6 face west), on a 2-block stone backing. On
+        // a pulse it punches the grown cane (push-destroyed → drops) into the channel; the
+        // y=2 bottom block survives and regrows. Each piston is driven by a REPEATER pointing
+        // into its back — a straight dust line beside a piston does NOT power it. So the dust
+        // BUS runs one column further out (west x=0, east x=8) and a repeater (west x=1 east-
+        // facing, east x=7 west-facing) carries the clock pulse from the bus into the piston.
+        // All of it rides a 2-block stone floor so the dust/repeaters have support.
+        int wWallX = cx - 2, eWallX = cx + 2;          // 2 / 6 — piston columns
+        int wRepX  = cx - 3, eRepX  = cx + 3;          // 1 / 7 — repeaters INTO the pistons
+        int wBusX  = cx - 4, eBusX  = cx + 4;          // 0 / 8 — dust buses (carry the clock pulse)
         for (int z = stripZ0; z <= stripZ1; z++) {
-            pillar(b, wWallX, z, 1, 2, stone);  pillar(b, eWallX, z, 1, 2, stone);   // raise the pistons to y=3
-            b.set(wWallX, 3, z, bs("minecraft:piston[facing=east,extended=false]")); // breaks the west cane's 2nd block
-            b.set(eWallX, 3, z, bs("minecraft:piston[facing=west,extended=false]")); // breaks the east cane's 2nd block
-            pillar(b, wBusX, z, 1, 2, stone);   pillar(b, eBusX, z, 1, 2, stone);    // dust floor at y=2
-            b.set(wBusX, 3, z, redDust);        b.set(eBusX, 3, z, redDust);         // bus dust, directly behind each piston
+            pillar(b, wBusX, z, 1, 2, stone); pillar(b, wRepX, z, 1, 2, stone); pillar(b, wWallX, z, 1, 2, stone);
+            pillar(b, eBusX, z, 1, 2, stone); pillar(b, eRepX, z, 1, 2, stone); pillar(b, eWallX, z, 1, 2, stone);
+            b.set(wBusX, 3, z, redDust);      b.set(eBusX, 3, z, redDust);       // bus dust
+            b.set(wRepX, 3, z, bs("minecraft:repeater[facing=east,delay=1,locked=false,powered=false]")); // → west piston
+            b.set(eRepX, 3, z, bs("minecraft:repeater[facing=west,delay=1,locked=false,powered=false]")); // → east piston
+            b.set(wWallX, 3, z, bs("minecraft:piston[facing=east,extended=false]"));
+            b.set(eWallX, 3, z, bs("minecraft:piston[facing=west,extended=false]"));
         }
 
-        // ── 4b) OBSERVER CLOCK (self-starting) at the north end (z=0), y=3 ────
-        // Two ADJACENT observers facing each other = the canonical self-starting clock: it
-        // begins pulsing the instant it prints (no lever needed). Each back-output feeds one
-        // bus. It rides a stone shelf at y=2 spanning the buses so the z=0 dust has a floor.
-        //   (2,3,0) faces east → watches (3,3,0); back faces west → powers (1,3,0)=west bus
-        //   (3,3,0) faces west → watches (2,3,0); back faces east → (4,3,0)…(7,3,0)=east bus
-        // It's a FAST clock; splice a repeater into a bus to slow it (more cane grow-time →
-        // higher yield) if the constant cycling is too busy.
-        line(b, 2, wBusX, z0, eBusX, z0, stone);                                     // y=2 shelf under the north wiring (x=1..7)
-        b.set(wBusX, 3, z0, redDust);                                                // (1,3,0) west bus head
-        b.set(wWallX, 3, z0, bs("minecraft:observer[facing=east,powered=false]"));   // (2,3,0) watches (3,3,0)
-        b.set(cx - 1, 3, z0, bs("minecraft:observer[facing=west,powered=false]"));   // (3,3,0) face-to-face partner
-        b.set(cx,     3, z0, redDust);                                               // (4,3,0) ← east observer back-output
-        b.set(cx + 1, 3, z0, redDust);                                               // (5,3,0) carry east
-        b.set(eWallX, 3, z0, redDust);                                               // (6,3,0) carry east
-        b.set(eBusX,  3, z0, redDust);                                               // (7,3,0) east bus head
+        // ── 4b) REDSTONE CLOCK at the north end (z=0) — the timer ────────────
+        // One Redstone Clock (baked to 60s) pulses every side every 60s; its dust run along
+        // z=0 feeds both buses, so all pistons fire as one. Replaces the fire-too-often
+        // paired-observer clock (tune the rate in the clock's GUI). It rides a y=2 stone
+        // shelf (with a y=1 cobble base course) so the z=0 dust has a floor.
+        line(b, 1, wBusX, z0, eBusX, z0, cobble);      // y=1 base course under the wiring (x=0..8)
+        line(b, 2, wBusX, z0, eBusX, z0, stone);       // y=2 shelf the clock + dust sit on
+        redstoneClock(b, cx, 3, z0, 60);               // (4,3,0) clock, 60s
+        for (int x = wBusX; x <= eBusX; x++) {
+            if (x != cx) {
+                b.set(x, 3, z0, redDust);              // dust run linking the clock to both bus heads
+            }
+        }
 
-        // ── 5) END CAPS + LABEL SIGNS ────────────────────────────────────────
-        // North: a cobble base course under the clock shelf (x=1..7). South: corner cobbles
-        // + two south-facing wall signs flanking the chest. The chest top (cx,1,z1) is LEFT
-        // OPEN so the player can actually open it (the old build capped it with cobble).
-        line(b, 1, wBusX, z0, eBusX, z0, cobble);     // north base course, y=1 (x=1..7)
-        b.set(wWallX, 1, z1, cobble);                 // south-west corner
-        b.set(eWallX, 1, z1, cobble);                 // south-east corner
-        b.set(wStripX, 1, z1, bs("minecraft:oak_wall_sign[facing=south]"));  // sign (attaches to the sand strip behind)
+        // ── 5) GLASS CHEST CAP + END CAPS + LABEL SIGNS ──────────────────────
+        // Glass directly over the chest so the channel water can't flow out over it (still
+        // opens — glass is transparent). Cobble corners + two south-facing wall signs.
+        b.set(cx, 1, z1, GLASS);                       // glass cap over the chest (stops water spill)
+        b.set(wWallX, 1, z1, cobble);                  // south-west corner
+        b.set(eWallX, 1, z1, cobble);                  // south-east corner
+        b.set(wStripX, 1, z1, bs("minecraft:oak_wall_sign[facing=south]"));
         b.set(eStripX, 1, z1, bs("minecraft:oak_wall_sign[facing=south]"));
 
         return b.build();
@@ -8380,14 +8394,15 @@ class CuratedBlueprintGenerator {
         int x0 = 0, x1 = 8, z0 = 0, z1 = 8;            // 9×9 footprint, now 5 tall
         int cx = 4;                                    // central collection column (water channel + hopper line)
         int rowZ0 = 1, rowZ1 = 7;                      // planting run along Z
-        int wStemX = cx - 2, eStemX = cx + 2;          // 2 and 6 — farmland + stems (OUTER)
-        int wGrowX = cx - 1, eGrowX = cx + 1;          // 3 and 5 — dirt growth blocks (INNER, on the pistons)
-        int wBusX = cx - 2, eBusX = cx + 2;            // 2 and 6 — the redstone bus runs UNDER the farmland
+        int wStemX = cx - 2, eStemX = cx + 2;          // 2 and 6 — farmland + stems (also the repeater columns, y=1)
+        int wGrowX = cx - 1, eGrowX = cx + 1;          // 3 and 5 — dirt growth blocks on the up-pistons (INNER)
+        int wRepX  = cx - 2, eRepX  = cx + 2;          // 2 and 6 — repeaters (y=1) that drive the up-pistons
+        int wBusX  = cx - 3, eBusX  = cx + 3;          // 1 and 7 — dust buses, one column further out
 
         // ── 1) FOUNDATION (y=0) + HOPPER LINE + CHEST (glass-capped) ─────────
-        // AUTOMATED rebuild: sticky pistons UNDER the dirt growth blocks push the dirt UP
-        // into the fully-formed gourd to break it (Patrick's design), driven by a
-        // self-starting observer CLOCK — no fragile per-fruit detector wiring. The whole
+        // AUTOMATED: sticky pistons UNDER the dirt growth blocks shove the dirt UP into the
+        // formed gourd to break it, driven by a REDSTONE CLOCK (baked 60s) — a REPEATER
+        // drives each up-piston (a straight dust line beside a piston can't trigger it). The
         // plane is raised one course (soil y=2, fruit y=3) to fit the pistons at y=1.
         floor(b, 0, x0, z0, x1, z1, stone);
         for (int z = rowZ0; z <= rowZ1; z++) {
@@ -8415,30 +8430,28 @@ class CuratedBlueprintGenerator {
         // gourd). The outer column (x=1/7) is non-soil stone so the gourd spawns only on
         // the inner dirt.
         for (int z = rowZ0; z <= rowZ1; z++) {
-            b.set(wBusX, 1, z, dust);      b.set(eBusX, 1, z, dust);        // redstone bus (under the farmland)
-            b.set(wStemX, 2, z, farmland); b.set(eStemX, 2, z, farmland);   // stem soil
+            b.set(wBusX, 1, z, dust);      b.set(eBusX, 1, z, dust);        // dust bus (out one more, under the filler)
+            b.set(wRepX, 1, z, bs("minecraft:repeater[facing=east,delay=1,locked=false,powered=false]"));  // → west up-piston
+            b.set(eRepX, 1, z, bs("minecraft:repeater[facing=west,delay=1,locked=false,powered=false]"));  // → east up-piston
+            b.set(wStemX, 2, z, farmland); b.set(eStemX, 2, z, farmland);   // stem soil (sits above the repeaters)
             boolean melon = (z % 2 == 0);
             b.set(wStemX, 3, z, melon ? melonStem : pumpkinStem);
             b.set(eStemX, 3, z, melon ? pumpkinStem : melonStem);
             b.set(wGrowX, 1, z, pistonUp); b.set(eGrowX, 1, z, pistonUp);   // sticky piston under each dirt block
             b.set(wGrowX, 2, z, dirt);     b.set(eGrowX, 2, z, dirt);       // dirt growth block (gourd spawns on top at y=3)
-            b.set(x0 + 1, 2, z, stone);    b.set(x1 - 1, 2, z, stone);      // outer non-soil filler
+            b.set(x0 + 1, 2, z, stone);    b.set(x1 - 1, 2, z, stone);      // outer non-soil filler (above the bus)
         }
 
-        // ── 4) OBSERVER CLOCK (self-starting) at the north end (z=0) ────────
-        // Two ADJACENT observers facing each other form the canonical self-starting clock:
-        // each watches the other's block, so the moment they print, the placement update
-        // kicks off a perpetual pulse train — no manual start, no lever. An observer outputs
-        // from its BACK (opposite its facing), so we route each back-output to one piston bus.
-        //   (3,1,0) facing east  → watches (4,1,0); back faces west  → powers (2,1,0)=west bus
-        //   (4,1,0) facing west  → watches (3,1,0); back faces east  → (5,1,0)→(6,1,0)=east bus
-        // It's a FAST clock (pistons cycle hard); the player can splice a repeater into either
-        // bus to slow it so gourds get more rest time to form. Yield loss is acceptable here.
-        b.set(wGrowX, 1, z0, bs("minecraft:observer[facing=east,powered=false]"));  // (3,1,0)
-        b.set(cx,     1, z0, bs("minecraft:observer[facing=west,powered=false]"));  // (4,1,0) — face-to-face
-        b.set(wBusX, 1, z0, dust);     // (2,1,0) ← west observer back-output → connects to west bus (2,1,1..7)
-        b.set(eGrowX, 1, z0, dust);    // (5,1,0) ← east observer back-output, carries east
-        b.set(eBusX, 1, z0, dust);     // (6,1,0) → connects to east bus (6,1,1..7)
+        // ── 4) REDSTONE CLOCK at the north end (z=0) ────────────────────────
+        // One Redstone Clock (baked 60s) pulses every side every 60s; its z=0 dust run feeds
+        // both buses → repeaters → up-pistons, shoving every dirt block up to break its gourd.
+        // Replaces the fire-too-often paired observers (tune the rate in the clock's GUI).
+        redstoneClock(b, cx, 1, z0, 60);               // (4,1,0) clock, 60s
+        for (int x = wBusX; x <= eBusX; x++) {
+            if (x != cx) {
+                b.set(x, 1, z0, dust);                 // dust run linking the clock to both bus heads
+            }
+        }
 
         // ── 5) END CAPS + LABEL SIGNS ────────────────────────────────────────
         line(b, 3, x0, z0, x1, z0, cobble);   // north end cap at the stem plane
