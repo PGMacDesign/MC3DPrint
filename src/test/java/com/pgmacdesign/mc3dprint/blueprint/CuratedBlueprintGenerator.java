@@ -7784,6 +7784,19 @@ class CuratedBlueprintGenerator {
             }
         }
 
+        // ── 4b) WATER DAM at the drop mouth (y=3) ────────────────────────────
+        // The spawn-deck wash water pours down the 2×2 shaft and, with nothing to stop
+        // it, floods the walk-in collection room. SIGNS block water flow but let mobs
+        // and item drops fall straight through, so a sign in each of the 4 drop-mouth
+        // cells dams the water right at the ceiling: the shaft above fills, the room
+        // below (y=1..2) stays DRY, and the golem still drops onto the cauldrons and
+        // dies. Each wall-sign attaches to the solid y=3 ceiling brick beside it (the
+        // 4×4 collar around the 2×2 mouth), so it's render-safe.
+        b.set(dx0, 3, dz0, bs("minecraft:oak_wall_sign[facing=east]")); // attaches to (dx0-1,3,*) brick
+        b.set(dx0, 3, dz1, bs("minecraft:oak_wall_sign[facing=east]"));
+        b.set(dx1, 3, dz0, bs("minecraft:oak_wall_sign[facing=west]")); // attaches to (dx1+1,3,*) brick
+        b.set(dx1, 3, dz1, bs("minecraft:oak_wall_sign[facing=west]"));
+
         // ── 5) SPAWN PLATFORM at y=9 ─────────────────────────────────────────
         // A 13×13 stone deck — the lit area where iron golems spawn within the
         // villagers' range. The central 2×2 (the drop core) is left OPEN as the drop
@@ -7847,14 +7860,24 @@ class CuratedBlueprintGenerator {
             // a bed inside the bay: head at z=11 (back-ish), foot at z=10 → south.
             bed(b, pc, 10, z1 - 1, "white", "south");
         }
-        // ZOMBIE cell: a small 1-deep glass-fronted box on the EAST wall (x=x1),
-        // mid-Z, walled in stone so the zombie can't reach the villagers but is
-        // close enough to scare them. Player drops 1 zombie (ideally in a boat).
-        int zcz = cz;                             // zombie cell centred on cz
-        pillar(b, x1 - 1, zcz - 1, 11, 12, stone);
-        pillar(b, x1 - 1, zcz + 1, 11, 12, stone);
-        for (int y = 11; y <= 12; y++) {
-            b.set(x1 - 1, y, zcz, glass);         // glass inner face so villagers SEE the zombie
+        // ZOMBIE CELL — a FULLY ENCLOSED 1×2 glass box on the EAST wall (the villager-
+        // panic trigger). Earlier this was a 1-wide slot walled only at y=11+, so a
+        // dropped zombie stepped out onto the spawn deck (feet at y=10) and walked into
+        // the central drop hole and fell. Now it's a sealed 1(x)×2(z) cell standing on
+        // the y=9 deck, walled on EVERY deck-facing side from deck level (y=10) up to
+        // the y=12 glass and capped by the y=13 roof, so the zombie CANNOT escape. Glass
+        // faces keep the villagers' line-of-sight (they panic → spawn golems); the 1×2
+        // footprint fits a boat (place the zombie in a boat so it can't despawn-wander).
+        int zcx = x1 - 1;                          // 11, one cell in from the east wall
+        int zz0 = cz - 1, zz1 = cz;                // interior z = 5..6 (1 wide in x, 2 long in z)
+        for (int y = 10; y <= 12; y++) {
+            b.set(zcx - 1, y, zz0, glass);         // west face (faces the deck) — line-of-sight
+            b.set(zcx - 1, y, zz1, glass);
+            b.set(zcx, y, zz0 - 1, glass);         // north end cap — LOS toward the pods
+            b.set(zcx, y, zz1 + 1, glass);
+            b.set(zcx - 1, y, zz0 - 1, stone);     // corner posts seal the NW/SW diagonals
+            b.set(zcx - 1, y, zz1 + 1, stone);
+            // east face = the x=12 perimeter wall (already glass/cobble) — left intact
         }
 
         // ── 8) SLAB ROOF at y=13 ─────────────────────────────────────────────
