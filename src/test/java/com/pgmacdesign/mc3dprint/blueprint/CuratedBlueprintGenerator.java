@@ -8127,11 +8127,14 @@ class CuratedBlueprintGenerator {
         }
 
         // ── 2) HOPPER + COLLECTION CHEST at the SOUTH end, y=0 ───────────────
-        // The channel terminates over a hopper that feeds the chest. The hopper
-        // mouth (z=7) catches what the flow delivers; it points north into the
-        // chest tucked at the south edge (z=8), facing north so its front reads
-        // inward. (Air-skip means these overwrite the stone foundation cells.)
-        b.set(cx, 0, stripZ1, bs("minecraft:hopper[enabled=true,facing=north]")); // z=7 → feeds chest at z=8
+        // The channel terminates over a hopper that feeds the chest. The hopper mouth
+        // (z=7) catches what the flow delivers; it points SOUTH (+z) into the chest
+        // tucked at the south edge (z=8). A hopper ejects toward its FACING, so to
+        // feed a chest one cell SOUTH it must face SOUTH (the old facing=north pointed
+        // it back up the channel into water and never reached the chest). The chest
+        // faces north so its front reads inward. (Air-skip means these overwrite the
+        // stone foundation cells.)
+        b.set(cx, 0, stripZ1, bs("minecraft:hopper[enabled=true,facing=south]")); // z=7 → feeds chest at z=8
         b.set(cx, 0, z1, chest);                                                   // collection chest, faces north
 
         // ── 2b) CENTRAL WATER COLUMN at y=1..2 (THE canSurvive FIX) ──────────
@@ -8570,10 +8573,13 @@ class CuratedBlueprintGenerator {
 
         // ── 2) HOPPER + COLLECTION CHEST at the SOUTH end, y=0 ───────────────
         // The canal terminates over a hopper that feeds the chest. The hopper mouth
-        // (z=5) catches what the flow delivers; it points north into a chest tucked
-        // at the south edge (z=6), facing north so its front reads inward. (Air-skip
-        // means these overwrite the stone foundation cells.)
-        b.set(cx, 0, rowZ1, bs("minecraft:hopper[enabled=true,facing=north]")); // z=5 → feeds chest
+        // (z=5) catches what the flow delivers; it points SOUTH (+z) into the chest
+        // tucked at the south edge (z=6). A hopper ejects toward its FACING, so to feed
+        // a chest one cell SOUTH it must face SOUTH (the old facing=north pointed it back
+        // up the canal into water and never reached the chest). The chest faces north so
+        // its front reads inward. (Air-skip means these overwrite the stone foundation
+        // cells.)
+        b.set(cx, 0, rowZ1, bs("minecraft:hopper[enabled=true,facing=south]")); // z=5 → feeds chest
         b.set(cx, 0, z1, chest);                                                 // collection chest, faces north
 
         // ── 2b) CANAL CATCH-WATER (y=2..4) — where the snapped bamboo lands ──
@@ -10910,13 +10916,19 @@ class CuratedBlueprintGenerator {
 
         // ── 2) HOPPER PEN-FLOOR + ACCESSIBLE CHEST at y=1 ────────────────────────
         // A 3×3 hopper grid centred on (cx,cz): the chickens STAND on it and the cooked
-        // chicken/feathers/eggs DROP onto it. Every hopper points SOUTH, chaining the
-        // grid toward the front, where the front-centre hopper (cx, cz+1) feeds into a
-        // CHEST one cell further south (cx, cz+2). The chest faces south and its south
-        // side is OPEN to the world, so the player reaches it at floor level — no door.
+        // chicken/feathers/eggs DROP onto it ANYWHERE in the 3×3. The grid FUNNELS to the
+        // centre column first (west column → east, east column → west) and the centre
+        // column then chains SOUTH into the front-centre carrier hopper (cx, cz+1), which
+        // feeds the CHEST one cell further south (cx, cz+2). Funnelling to centre is the
+        // fix for the old "every hopper faces south" layout: there, a drop in the x=cx∓1
+        // column chained south to (cx∓1, cz+1) and then ejected into AIR (only the centre
+        // column sits north of the chest), so two-thirds of the pen never collected. The
+        // chest faces south and its south side is OPEN to the world, so the player reaches
+        // it at floor level — no door.
         for (int x = px0; x <= px1; x++) {
             for (int z = pz0; z <= pz1; z++) {
-                b.set(x, 1, z, bs("minecraft:hopper[enabled=true,facing=south]"));  // chain south
+                String facing = (x < cx) ? "east" : (x > cx) ? "west" : "south"; // funnel to centre, then south
+                b.set(x, 1, z, bs("minecraft:hopper[enabled=true,facing=" + facing + "]"));
             }
         }
         // front-centre carrier hopper at (cx, cz+1) already faces south (set above);
