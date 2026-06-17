@@ -2654,11 +2654,15 @@ class CuratedBlueprintGenerator {
         // levers mounted ON the z=8 display wall (face=wall,facing=north backs onto z+1=8)
         b.set(2, 1, 7, bs("minecraft:lever[face=wall,facing=north,powered=false]"));
         b.set(6, 1, 7, bs("minecraft:lever[face=wall,facing=north,powered=false]"));
-        // workbench / contraption diorama
+        // workbench / contraption diorama along the front wall (z=1). The door is at x=4,
+        // so its interior entry cell (4,1,1) MUST stay clear — a block there is a solid
+        // obstruction right in the doorway you can't walk through. The target moves to x=5
+        // (clear of the door column); the dispenser at x=3 still "fires" across the open
+        // doorway gap toward it, so the contraption reads and the door is a FLAT walk-through.
         b.set(1, 1, 1, CRAFTING_TABLE);
         b.set(2, 1, 1, BARREL);
         b.set(3, 1, 1, bs("minecraft:dispenser[facing=south,triggered=false]"));
-        b.set(4, 1, 1, bs("minecraft:target"));
+        b.set(5, 1, 1, bs("minecraft:target")); // was (4,1,1) — that blocked the door
         line(b, 1, 1, 3, 6, 3, blackstone); // bench
         b.set(2, 2, 3, bs("minecraft:observer[facing=up,powered=false]"));
         b.set(3, 2, 3, bs("minecraft:repeater[facing=south,delay=1,locked=false,powered=false]"));
