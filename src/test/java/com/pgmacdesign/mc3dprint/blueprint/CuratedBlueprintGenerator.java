@@ -6964,11 +6964,13 @@ class CuratedBlueprintGenerator {
         // (cx, floorY, doorZ+1) was a SOLID plank (top elevation 2.0) — a full
         // 1-block wall right inside the doorway you couldn't step over (the door's
         // upper half pins your head, so the auto step-up never triggers). Replace
-        // that one threshold plank with a spruce STAIR whose low edge faces NORTH
-        // (toward the door): the player now climbs the half-step off the flush sill
-        // straight up onto the raised plank floor and walks in. The stair is
-        // FU-valued (spruce_stairs) and render-safe.
-        b.set(cx, floorY, doorZ + 1, bs("minecraft:spruce_stairs[facing=north,half=bottom,shape=straight]"));
+        // that one threshold plank with a spruce STAIR. The player enters walking
+        // SOUTH (door on the north wall opens inward), so the stair must ascend south
+        // — a stair rises toward its facing, so facing=SOUTH puts the tall riser to
+        // the south and the LOW edge to the north (toward the door). The player climbs
+        // the half-step off the flush sill straight up onto the raised plank floor and
+        // walks in. The stair is FU-valued (spruce_stairs) and render-safe.
+        b.set(cx, floorY, doorZ + 1, bs("minecraft:spruce_stairs[facing=south,half=bottom,shape=straight]"));
 
         // ── 4) RENDER-SAFE GLASS-BLOCK WINDOWS on E/W/S, with spruce sills ────
         // Each window is a glass BLOCK set into a ring cell flanked by stem cells
