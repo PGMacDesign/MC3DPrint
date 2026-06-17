@@ -14465,8 +14465,10 @@ class CuratedBlueprintGenerator {
      *   <li>y0 — end-stone-bricks foundation slab, full 9×9; an end-stone skirt
      *       fleck on the cardinals for the chunky End-base read.</li>
      *   <li>y1..3 — END-STONE-BRICK PLINTH: a 7×7 (x/z 1..7) base ring with an
-     *       end-stone-brick-wall plinth corner kiss; oak door on the north face;
-     *       an interior end-stone-brick finish floor (walkable, enterable).</li>
+     *       end-stone-brick-wall plinth corner kiss; oak door breaching the SOUTH
+     *       ring wall (the climb ladder is on the north wall, so the entrance lives
+     *       on the opposite face); an interior end-stone-brick finish floor (walkable,
+     *       enterable — you enter from the south, then climb the north-wall ladder).</li>
      *   <li>y4..15 — the PURPUR SHAFT: a 7×7 hollow ring of purpur block with
      *       PURPUR-PILLAR corner columns (axis=y) running the full height for the
      *       End-City pier read, a purpur-block banding course every fourth row,
@@ -14558,11 +14560,17 @@ class CuratedBlueprintGenerator {
         pillar(b, sx0, sz1, 4, 15, purpurPillar);
         pillar(b, sx1, sz1, 4, 15, purpurPillar);
 
-        // arched oak door on the north cardinal (faces south into the shaft); the
-        // door cells (y1..2) overwrite the plinth wall so you can walk in, with an
-        // end-stone keystone capping the opening.
-        door2(b, cx, 1, 0, "oak", "N");
-        b.set(cx, 3, 0, endStone); // keystone over the doorway
+        // arched oak door on the SOUTH cardinal, breaching the RING WALL at z=sz1=7
+        // (faces north, opening inward into the shaft). The climb ladder is on the
+        // NORTH ring wall (backed by (cx,*,sz0)), so the entrance MUST be on a
+        // different wall — putting it on the north plinth edge (z=0) breaches nothing
+        // (the ring wall behind it stays solid) and opening the north ring wall would
+        // unback the ladder. door2's set() overwrites the south ring-wall cells
+        // (cx,1..2,sz1) → a real opening: enter from z=8 outside, step onto the
+        // interior floor (z=6), walk north across the shaft to the ladder at (cx,*,2)
+        // and climb. An end-stone keystone caps the opening for the End-City arch read.
+        door2(b, cx, 1, sz1, "oak", "S");
+        b.set(cx, 3, sz1, endStone); // keystone over the south doorway
 
         // magenta/purple stained-GLASS-BLOCK windows seated FLUSH on the shaft-ring
         // cardinal faces (x=1, x=7, z=1, z=7), two courses high so they read as
