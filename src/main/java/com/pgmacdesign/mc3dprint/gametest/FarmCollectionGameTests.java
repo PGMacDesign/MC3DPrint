@@ -111,12 +111,13 @@ public class FarmCollectionGameTests {
      * bamboo_farm           bamboo         (3,0,6)         (3,1,5) above hopper    hopper(3,0,5,facing N) → chest
      * cactus_farm           cactus (drop)  (3,1,4)         (3,2,3) above hopper    hopper(3,1,3,facing S) → chest
      * iron_farm             iron_ingot     (6,1,9)         (4,2,4) above ring hop  ring(4,1,4,S)→…→(6,1,7)→drain(6,1,8,S)→chest
-     * chicken_coop_auto     cooked_chicken (3,1,5)         (3,2,3) above hopper    3×3 hopper grid(S) → carrier(3,1,4) → chest
+     * chicken_coop_auto     cooked_chicken (3,1,6)         (3,2,3) on centre campfire  5×5 hopper grid funnels to centre col → S → chest
      * </pre>
      *
-     * <p>Harvest cells deliberately avoid the lava-cauldron kill/cook blocks (iron_farm
-     * 2×2 core at x∈{5,6},z∈{5,6}; chicken cooker row at z=2) so the spawned product
-     * isn't incinerated before it can route — the drop sits above a TRANSPORT hopper.
+     * <p>Harvest cells sit above a TRANSPORT hopper. The chicken cooker's drop cell (3,2,3)
+     * is a lit campfire — campfires DON'T destroy dropped items (only living entities), so
+     * the cooked chicken sits on it and the hopper below routes it. The iron_farm harvest
+     * cell deliberately avoids its lava blade (2×2 core at x∈{5,6},z∈{5,6}).
      */
     private static final Farm[] FARMS = {
             new Farm("sugarcane_farm_auto", "minecraft:sugar_cane",
@@ -130,7 +131,7 @@ public class FarmCollectionGameTests {
             new Farm("iron_farm", "minecraft:iron_ingot",
                     new BlockPos(6, 1, 9), new BlockPos(4, 2, 4)),
             new Farm("chicken_coop_auto", "minecraft:cooked_chicken",
-                    new BlockPos(3, 1, 5), new BlockPos(3, 2, 3)),
+                    new BlockPos(3, 1, 6), new BlockPos(3, 2, 3)),
     };
 
     // ── one @GameTest per farm (each gets its own world instance / pass-fail line) ──
