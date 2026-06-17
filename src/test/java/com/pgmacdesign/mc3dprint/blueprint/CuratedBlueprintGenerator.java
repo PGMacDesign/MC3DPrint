@@ -12095,11 +12095,10 @@ class CuratedBlueprintGenerator {
         // ── 4) FLOOR BREAK (y=6) — upper floor with a stair hatch ────────────
         // interior STAIR run climbing column x=x0+2 (one bay east of the chimney/west
         // wall, clear of the fireplace at x≤x0+2/y=1, the keg & bar at the back, and
-        // the east-side tables). It climbs toward -z (north). For a stair the TALL
-        // riser sits OPPOSITE the facing (cf. the table stools: facing=east → tall back
-        // on the WEST), so to walk NORTH up a smooth flight the steps must be
-        // facing=SOUTH — the tall riser faces north and each step's low side meets the
-        // ascending player. The ground story is 5 blocks tall: the footing top is at
+        // the east-side tables). It climbs toward -z (north). A stair ASCENDS TOWARD
+        // its facing (the raised step is on the facing side), so to walk NORTH up a
+        // smooth flight the steps must be facing=NORTH — each step rises to the north
+        // and the player walking north steps up onto it. The ground story is 5 blocks tall: the footing top is at
         // elevation 1.0 and the deck's walkable top is 7.0, so a full climb needs SIX
         // steps at cells y=1..6 (a 5-step run would leave a 1-block hop at the top):
         //
@@ -12122,7 +12121,7 @@ class CuratedBlueprintGenerator {
         for (int i = 0; i <= 5; i++) {
             int sz = stairBotZ - i;    // 10,9,8,7,6,5
             int sy = g0 + i;           // 1,2,3,4,5,6
-            b.set(stairCol, sy, sz, bs("minecraft:spruce_stairs[facing=south,half=bottom,shape=straight]"));
+            b.set(stairCol, sy, sz, bs("minecraft:spruce_stairs[facing=north,half=bottom,shape=straight]"));
         }
         // spruce-plank deck over the whole footprint. The hatch (UNSET deck cells) is
         // opened only over the two steps whose climbing head reaches into y=6 — the
