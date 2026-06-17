@@ -121,9 +121,9 @@ New bug class: **a fire source (raw `lava`/`fire`) next to flammable blocks (woo
 - [x] **blacksmith** — DONE: forge lava → magma_block (glowing hot bed, no fire spread).
 - [x] **smithy_workshop** — DONE: forge lava → lava_cauldron (contained molten crucible, no fire spread).
 - [x] **fire-hazard audit promoted to always-on gate** — 0 flagged; raw lava near flammables now fails the build.
-- [ ] **modern_glass_villa** — a quartz slab/block blocks the front door (the threshold step the entrance-fix added). Remove/relocate it so the door is walk-through.
-- [ ] **copper_clocktower** — door opens but interior floor is a block higher → can't get in. FIX = FLAT entry (level the threshold so you walk straight through at sill level). NOT a stair (head hits the door upper half).
+- [x] **modern_glass_villa** — DONE: cleared the smooth-quartz slab the entrance-fix left in the door approach; flat walk-through.
+- [x] **copper_clocktower** — DONE: lowered interior shaft floor y=1→y=0 (flat walk-in to the shaft, then climb the ladder).
 - [ ] **CORRECTED THRESHOLD RULE (Patrick):** a stair just inside the door does NOT work — your head hits the door's upper half stepping up. The fix is a FLAT walk-through: the cell you step into must be at the SAME level as the door sill (leave it empty / level it), with 2-block headroom through the open door. Applies to mushroom_island_hut (the stair I added is wrong → flatten) + copper + any raised-floor entry.
-- [ ] **mushroom_island_hut REOPENED** — the threshold stair I added makes you hit your head walking in. Remove the stair; level the entry so you walk in flat.
-- [ ] **navigability gate — enforce flat walk-through** — tighten the door check: from each door you must reach a standable interior cell at sill level with no step-up under the door's upper half. This regresses copper/mushroom/villa (will flag them until flattened), then stays a gate.
+- [x] **mushroom_island_hut** — DONE: removed the wrong threshold stair; cleared to a flat mycelium walk-in at sill level.
+- [x] **navigability gate — flat walk-through enforced** — every door must walk in flat at sill level (≤½-block slab/drop-in OK; full step-up or blocker fails). Flagged + fixed 7 builds (copper, mushroom_island_hut, modern_glass_villa, purpur_tower, mushroom_farm, redstone_workshop, barn); fence-gates/slab/carpet thresholds correctly NOT flagged. Always-on gate, green.
 - [ ] **bee_apiary** — hanging lanterns on chains are at head height (can't walk under). Remove the chains and attach the lanterns directly to the ceiling (raises them a block), OR move the one lantern to hang over the workbench (a spot you can't walk anyway).
