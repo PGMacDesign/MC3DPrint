@@ -14,6 +14,7 @@ import com.pgmacdesign.mc3dprint.fu.FuValueRegistry;
 import com.pgmacdesign.mc3dprint.fu.SpoolItem;
 import com.pgmacdesign.mc3dprint.item.BlueprintDiscItem;
 import com.pgmacdesign.mc3dprint.item.ResinItem;
+import com.pgmacdesign.mc3dprint.machine.resin.ResinEffects;
 import com.pgmacdesign.mc3dprint.machine.upgrade.UpgradeItem;
 import com.pgmacdesign.mc3dprint.registry.ModBlockEntities;
 import net.minecraft.core.BlockPos;
@@ -38,6 +39,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraftforge.common.capabilities.Capability;
+import net.minecraft.world.Container;
 import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.common.world.ForgeChunkManager;
@@ -173,6 +175,11 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
     private ResinItem.Effect armedResinEffect;
     private int armedResinTier;
     private boolean resinConsumed;
+    // Per-print caps (reset at job start). bankedXp persists across jobs and is released
+    // when the printed disc is pulled from the output slot (furnace-style XP yield).
+    private int saltedThisJob;
+    private int treasureThisJob;
+    private int bankedXp;
 
     private State state = State.IDLE;
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -296,6 +303,17 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
                         worldPosition,
                         notPrintableReason.isEmpty() ? "no reason recorded" : notPrintableReason);
             }
+        }
+
+        // XP Yield: release banked XP once the printed disc is pulled from the output
+        // slot (furnace-style — to whoever collects it).
+        if (bankedXp > 0 && inventory.getStackInSlot(SLOT_OUTPUT).isEmpty()
+                && level instanceof ServerLevel sl) {
+            int xp = bankedXp;
+            bankedXp = 0;
+            setChanged();
+            net.minecraft.world.entity.ExperienceOrb.award(sl,
+                    net.minecraft.world.phys.Vec3.atCenterOf(worldPosition.above()), xp);
         }
     }
 
@@ -632,6 +650,8 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             armedResinTier = 0;
         }
         resinConsumed = false;
+        saltedThisJob = 0;
+        treasureThisJob = 0;
     }
 
     private void clearArmedResin() {
@@ -651,6 +671,43 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             }
         }
         return null;
+    }
+
+    /** Verdant / Ore-Salting transform of the to-be-placed state (pre-setBlock). */
+    private BlockState applyPlacementResin(ServerLevel serverLevel, BlockState placedState) {
+        if (armedResinEffect == ResinItem.Effect.VERDANT) {
+            return ResinEffects.matureState(placedState, armedResinTier);
+        }
+        if (armedResinEffect == ResinItem.Effect.ORE_SALTING
+                && saltedThisJob < MC3DPrintConfig.RESIN_ORE_SALT_MAX.get()
+                && ResinEffects.isSaltableHost(placedState)
+                && serverLevel.random.nextDouble() < MC3DPrintConfig.RESIN_ORE_SALT_CHANCE.get()) {
+            saltedThisJob++;
+            return ResinEffects.pickOre(placedState, serverLevel.random,
+                    MC3DPrintConfig.RESIN_ORE_SALT_GEM_SHARE.get());
+        }
+        return placedState;
+    }
+
+    /** Treasure / Quartermaster injection into a freshly-placed container BE. */
+    private void applyContainerResin(ServerLevel serverLevel, BlockPos worldPos, BlockEntity placedBe) {
+        if (armedResinEffect == ResinItem.Effect.TREASURE) {
+            int cap = armedResinTier >= 3 ? MC3DPrintConfig.RESIN_TREASURE_CAP_T3.get()
+                    : MC3DPrintConfig.RESIN_TREASURE_CAP_T2.get();
+            double chance = armedResinTier >= 3 ? MC3DPrintConfig.RESIN_TREASURE_CHANCE_T3.get()
+                    : MC3DPrintConfig.RESIN_TREASURE_CHANCE_T2.get();
+            if (treasureThisJob < cap && ResinEffects.isStorageContainer(placedBe)
+                    && placedBe instanceof Container container
+                    && serverLevel.random.nextDouble() < chance) {
+                ResinEffects.fillTreasure(serverLevel, worldPos, container,
+                        ResinEffects.treasureTable(armedResinTier, serverLevel.random,
+                                MC3DPrintConfig.RESIN_TREASURE_T2_RARE.get(),
+                                MC3DPrintConfig.RESIN_TREASURE_T3_EPIC.get()));
+                treasureThisJob++;
+            }
+        } else if (armedResinEffect == ResinItem.Effect.QUARTERMASTER) {
+            ResinEffects.quartermaster(placedBe);
+        }
     }
 
     /** True while a structure job is running or an item is mid-print. */
@@ -854,6 +911,13 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         // unknown block (e.g. blueprint from a modded world) — skip it, never stall the job
         if (resolved.isPresent()) {
             int fuCost = blockFuCost(resolved.get());
+            if (armedResinEffect == ResinItem.Effect.OVERDRIVE) {
+                int baseFu = blockFuValue(resolved.get()).map(FuValue::fu).orElse(0);
+                if (baseFu > 0) {
+                    fuCost = Math.min(fuCost, ResinEffects.overdriveFloor(baseFu, armedResinTier,
+                            MC3DPrintConfig.RESIN_OVERDRIVE_T3_BELOW.get()));
+                }
+            }
             int costTier = blockFuTier(resolved.get());
             if (effectiveFu(costTier) < fuCost) {
                 state = State.PAUSED_NO_FILAMENT;
@@ -862,6 +926,7 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             BlockState placedState = resolved.get()
                     .mirror(activeJob.orientation().mirror())
                     .rotate(activeJob.orientation().rotation());
+            placedState = applyPlacementResin(serverLevel, placedState); // Verdant / Ore Salting
             // Place the exact captured state WITHOUT updateShape, so two-block pieces
             // (beds, doors, tall plants) and support-dependent blocks (crops on farmland)
             // don't self-break before their partner/support lands, and the blueprint's
@@ -871,10 +936,17 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
                     Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE | Block.UPDATE_SUPPRESS_DROPS);
 
             CompoundTag beData = blueprint.blockEntities().get(entry.local());
-            if (beData != null) {
+            boolean containerResin = armedResinEffect == ResinItem.Effect.TREASURE
+                    || armedResinEffect == ResinItem.Effect.QUARTERMASTER;
+            if (beData != null || containerResin) {
                 BlockEntity placedBe = serverLevel.getBlockEntity(worldPos);
                 if (placedBe != null) {
-                    placedBe.load(beData);
+                    if (beData != null) {
+                        placedBe.load(beData);
+                    }
+                    if (containerResin) {
+                        applyContainerResin(serverLevel, worldPos, placedBe);
+                    }
                     placedBe.setChanged();
                     // Push the block-entity data to clients now, otherwise BE-backed
                     // visuals (sign text, etc.) don't appear until the chunk reloads.
@@ -1057,6 +1129,11 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         releaseJobResources(serverLevel);
         inventory.setStackInSlot(SLOT_OUTPUT, disc.copy());
         inventory.setStackInSlot(SLOT_TEMPLATE, ItemStack.EMPTY);
+        if (armedResinEffect == ResinItem.Effect.XP) {
+            bankedXp += ResinEffects.bankedXpFor(BlueprintDiscItem.getPrintCost(disc), armedResinTier,
+                    MC3DPrintConfig.RESIN_XP_CAP_T1.get(), MC3DPrintConfig.RESIN_XP_CAP_T2.get(),
+                    MC3DPrintConfig.RESIN_XP_CAP_T3.get(), MC3DPrintConfig.RESIN_XP_REF.get());
+        }
         activeJob = null;
         clearArmedResin();
         cachedBlueprint = null;
@@ -1659,6 +1736,9 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             tag.putInt("ArmedResinTier", armedResinTier);
         }
         tag.putBoolean("ResinConsumed", resinConsumed);
+        tag.putInt("SaltedThisJob", saltedThisJob);
+        tag.putInt("TreasureThisJob", treasureThisJob);
+        tag.putInt("BankedXp", bankedXp);
         tag.putInt("Energy", energy.getEnergyStored());
         tag.putInt("Progress", itemProgress);
         tag.putInt("State", state.ordinal());
@@ -1689,6 +1769,9 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         armedResinEffect = parseResinEffect(tag.getString("ArmedResin"));
         armedResinTier = tag.getInt("ArmedResinTier");
         resinConsumed = tag.getBoolean("ResinConsumed");
+        saltedThisJob = tag.getInt("SaltedThisJob");
+        treasureThisJob = tag.getInt("TreasureThisJob");
+        bankedXp = tag.getInt("BankedXp");
         refreshEnergyCapacity();
         energy.setStored(tag.getInt("Energy"));
         itemProgress = tag.getInt("Progress");

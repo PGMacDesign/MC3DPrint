@@ -403,7 +403,9 @@ pool (XP, Treasure, Overdrive, Quartermaster, Ore Salting). **6 craftable recipe
 
 ### Build sequence (each phase compiles + its gametests green before the next)
 
-> **Progress:** Phases 1–3 ✅ DONE (committed; 76 gametests green). Phase 4 (effects) next.
+> **Progress:** Phases 1–4 ✅ DONE (committed; 84 gametests green — all six effects wired +
+> tested). Phase 5 (T3 loot GLM) + Phase 6 (Patchouli guide) remain. Treasure modded-loot
+> entries deferred (vanilla-only tables for now; mods extend via their own GLMs).
 
 1. **Scaffold** — ResinItem/Effect/Tier + ResinBase + registration + textures + creative tab +
    recipes + `resin_gem` tag. Resins exist and craft but do nothing yet.

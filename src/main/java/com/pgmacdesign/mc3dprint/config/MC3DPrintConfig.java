@@ -42,6 +42,20 @@ public final class MC3DPrintConfig {
     public static final ForgeConfigSpec.IntValue FILAMENT_CONVERSION_RATIO;
     public static final ForgeConfigSpec.IntValue PREVIEW_MAX_BLOCKS;
     public static final ForgeConfigSpec.IntValue PREVIEW_RENDER_DISTANCE;
+    public static final ForgeConfigSpec.DoubleValue RESIN_OVERDRIVE_T3_BELOW;
+    public static final ForgeConfigSpec.DoubleValue RESIN_TREASURE_CHANCE_T2;
+    public static final ForgeConfigSpec.DoubleValue RESIN_TREASURE_CHANCE_T3;
+    public static final ForgeConfigSpec.IntValue RESIN_TREASURE_CAP_T2;
+    public static final ForgeConfigSpec.IntValue RESIN_TREASURE_CAP_T3;
+    public static final ForgeConfigSpec.DoubleValue RESIN_TREASURE_T2_RARE;
+    public static final ForgeConfigSpec.DoubleValue RESIN_TREASURE_T3_EPIC;
+    public static final ForgeConfigSpec.DoubleValue RESIN_ORE_SALT_CHANCE;
+    public static final ForgeConfigSpec.DoubleValue RESIN_ORE_SALT_GEM_SHARE;
+    public static final ForgeConfigSpec.IntValue RESIN_ORE_SALT_MAX;
+    public static final ForgeConfigSpec.IntValue RESIN_XP_CAP_T1;
+    public static final ForgeConfigSpec.IntValue RESIN_XP_CAP_T2;
+    public static final ForgeConfigSpec.IntValue RESIN_XP_CAP_T3;
+    public static final ForgeConfigSpec.IntValue RESIN_XP_REF;
     public static final ForgeConfigSpec.ConfigValue<List<? extends String>> FU_VALUES;
 
     private static final int[] DEFAULT_ITEM_RF_PER_TICK = {40, 60, 80, 100, 120, 150, 200, 250};
@@ -161,6 +175,51 @@ public final class MC3DPrintConfig {
                 .comment("Filament Unit values: '<item_or_#tag>=<fu>@<min_tier>'. Symmetric: wind yield == print cost (before efficiency).")
                 .defineListAllowEmpty("fuValues", FuValueRegistry.defaultEntries(),
                         o -> o instanceof String s && s.contains("=") && s.contains("@"));
+        builder.pop();
+
+        builder.comment("Resin: consumed-per-print blueprint modifiers. All effects apply only",
+                        "to official/found blueprints, never player-scanned ones.").push("resin");
+        RESIN_OVERDRIVE_T3_BELOW = builder
+                .comment("Overdrive Tier 3: fraction below break-even the print costs (net FU gain).",
+                        "Tier 2 is always exactly break-even (0).")
+                .defineInRange("overdriveT3BelowBreakEven", 0.20, 0.0, 0.9);
+        RESIN_TREASURE_CHANCE_T2 = builder
+                .comment("Treasure Tier 2: per-container chance a printed chest/barrel/shulker gets loot")
+                .defineInRange("treasureChanceT2", 0.25, 0.0, 1.0);
+        RESIN_TREASURE_CHANCE_T3 = builder
+                .comment("Treasure Tier 3: per-container chance")
+                .defineInRange("treasureChanceT3", 0.5, 0.0, 1.0);
+        RESIN_TREASURE_CAP_T2 = builder
+                .comment("Treasure Tier 2: max containers that can pop treasure per print")
+                .defineInRange("treasureCapT2", 2, 0, 256);
+        RESIN_TREASURE_CAP_T3 = builder
+                .comment("Treasure Tier 3: max containers per print")
+                .defineInRange("treasureCapT3", 4, 0, 256);
+        RESIN_TREASURE_T2_RARE = builder
+                .comment("Treasure Tier 2: chance a roll upgrades from the common to the rare table")
+                .defineInRange("treasureT2RareChance", 0.2, 0.0, 1.0);
+        RESIN_TREASURE_T3_EPIC = builder
+                .comment("Treasure Tier 3: chance a roll upgrades from the rare to the epic table")
+                .defineInRange("treasureT3EpicChance", 0.4, 0.0, 1.0);
+        RESIN_ORE_SALT_CHANCE = builder
+                .comment("Ore Salting: per-block chance a natural stone block prints as an ore vein")
+                .defineInRange("oreSaltChance", 0.05, 0.0, 1.0);
+        RESIN_ORE_SALT_GEM_SHARE = builder
+                .comment("Ore Salting: share of salted ores that are diamond/emerald (rest common)")
+                .defineInRange("oreSaltGemShare", 0.05, 0.0, 1.0);
+        RESIN_ORE_SALT_MAX = builder
+                .comment("Ore Salting: max ore veins salted per print")
+                .defineInRange("oreSaltMaxPerPrint", 64, 0, 100_000);
+        RESIN_XP_CAP_T1 = builder.comment("XP Yield Tier 1: max banked XP (~level 10 from 0)")
+                .defineInRange("xpCapT1", 160, 0, Integer.MAX_VALUE);
+        RESIN_XP_CAP_T2 = builder.comment("XP Yield Tier 2: max banked XP (~level 20 from 0)")
+                .defineInRange("xpCapT2", 550, 0, Integer.MAX_VALUE);
+        RESIN_XP_CAP_T3 = builder.comment("XP Yield Tier 3: max banked XP (~level 30 from 0)")
+                .defineInRange("xpCapT3", 1500, 0, Integer.MAX_VALUE);
+        RESIN_XP_REF = builder
+                .comment("XP Yield reference: bankedXP = min(cap, round(cap * printCost / ref)).",
+                        "Default 33000 ~ priciest curated build's print cost, so it reaches the cap.")
+                .defineInRange("xpReference", 33000, 1, Integer.MAX_VALUE);
         builder.pop();
 
         SPEC = builder.build();
