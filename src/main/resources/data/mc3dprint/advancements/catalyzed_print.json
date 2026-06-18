@@ -1,0 +1,19 @@
+{
+  "parent": "mc3dprint:fabricator",
+  "display": {
+    "icon": {
+      "item": "mc3dprint:resin_treasure_t3"
+    },
+    "title": {
+      "translate": "advancement.mc3dprint.catalyzed_print.title"
+    },
+    "description": {
+      "translate": "advancement.mc3dprint.catalyzed_print.desc"
+    }
+  },
+  "criteria": {
+    "catalyzed": {
+      "trigger": "mc3dprint:catalyzed_print"
+    }
+  }
+}

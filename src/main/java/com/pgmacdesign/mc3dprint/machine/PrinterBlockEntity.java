@@ -1124,6 +1124,9 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         net.minecraft.server.level.ServerPlayer player = ownerPlayer();
         if (player != null) {
             com.pgmacdesign.mc3dprint.advancement.ModCriteria.STRUCTURE_PRINTED.trigger(player);
+            if (armedResinEffect != null) { // this print was catalyzed by a resin
+                com.pgmacdesign.mc3dprint.advancement.ModCriteria.CATALYZED_PRINT.trigger(player);
+            }
         }
 
         releaseJobResources(serverLevel);

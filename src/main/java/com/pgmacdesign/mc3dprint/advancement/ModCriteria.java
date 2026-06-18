@@ -18,6 +18,8 @@ public final class ModCriteria {
     public static final BasicTrigger FU_CONVERTED = new BasicTrigger(id("fu_converted"));
     /** "Found in the Wild" — discover a blueprint disc in world loot. */
     public static final BasicTrigger LOOT_DISC_FOUND = new BasicTrigger(id("loot_disc_found"));
+    /** "Refined Print" — complete a blueprint print catalyzed by a Resin. */
+    public static final BasicTrigger CATALYZED_PRINT = new BasicTrigger(id("catalyzed_print"));
 
     /** Cumulative wound-FU threshold for Matter Matters (design doc: 1,000). */
     public static final int MATTER_MATTERS_FU = 1_000;
@@ -30,6 +32,7 @@ public final class ModCriteria {
         CriteriaTriggers.register(STRUCTURE_SCANNED);
         CriteriaTriggers.register(FU_CONVERTED);
         CriteriaTriggers.register(LOOT_DISC_FOUND);
+        CriteriaTriggers.register(CATALYZED_PRINT);
     }
 
     private static ResourceLocation id(String path) {

@@ -88,6 +88,8 @@
   "advancement.mc3dprint.t7_online.desc": "Form a Tier 7 Fabricator",
   "advancement.mc3dprint.draconic.title": "Draconic Fabricator",
   "advancement.mc3dprint.draconic.desc": "Form the Tier 8 Fabricator",
+  "advancement.mc3dprint.catalyzed_print.title": "Refined Print",
+  "advancement.mc3dprint.catalyzed_print.desc": "Refine a blueprint print with a Resin",
   "block.mc3dprint.tier5_fabricator": "Tier 5 Fabricator",
   "block.mc3dprint.tier6_fabricator": "Tier 6 Fabricator",
   "block.mc3dprint.tier7_fabricator": "Tier 7 Fabricator",
