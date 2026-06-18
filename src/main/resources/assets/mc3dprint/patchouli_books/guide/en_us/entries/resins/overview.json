@@ -1,0 +1,22 @@
+{
+  "name": "Resins",
+  "category": "mc3dprint:resins",
+  "icon": "mc3dprint:resin_base",
+  "sortnum": 0,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "A $(l)Resin$() is a one-shot additive that makes a blueprint print come out $(l)finer$() — better, not just bigger. Drop one into the $(l)Resin slot$() (between the upgrade and spool columns) before you print.$(br2)Two rules: a resin is $(l)used up$() each print, and it only works on $(l)found blueprints$() — the curated discs you loot or take from creative, never ones you scanned yourself."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Tiers",
+      "text": "Resins come in three tiers. $(l)Tier 1-2$() are craftable; $(l)Tier 3$() is found only, in end-game loot. Higher tiers are stronger — and a few effects exist only at the top."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "mc3dprint:resin_base",
+      "text": "Everything starts with $(item)Resin Base$() — $(item)Printite Crystal$() plus any slimeball. Add a tier ingredient (a gem for Tier 2) and an effect ingredient to finish a resin."
+    }
+  ]
+}

@@ -403,9 +403,12 @@ pool (XP, Treasure, Overdrive, Quartermaster, Ore Salting). **6 craftable recipe
 
 ### Build sequence (each phase compiles + its gametests green before the next)
 
-> **Progress:** Phases 1–4 ✅ DONE (committed; 84 gametests green — all six effects wired +
-> tested). Phase 5 (T3 loot GLM) + Phase 6 (Patchouli guide) remain. Treasure modded-loot
-> entries deferred (vanilla-only tables for now; mods extend via their own GLMs).
+> **Progress:** ✅ FEATURE COMPLETE — Phases 1–6 all done, 84 gametests green, built as
+> `mc3dprint-0.4.0.jar` and deployed to Prism. Phase 5 = `AddCatalystModifier` GLM (uniform
+> pick of 5 T3 resins, ~10% in end-game chests; flavor-bias TODO in the class). Phase 6 =
+> Patchouli "Resins" category (overview/craft, effects, finding-T3). Deferred follow-ups:
+> treasure modded-loot entries (mods extend via their own GLMs); resin-pick flavor-bias;
+> in-game tuning of all the numbers + slot-render nudge (Patrick to eyeball).
 
 1. **Scaffold** — ResinItem/Effect/Tier + ResinBase + registration + textures + creative tab +
    recipes + `resin_gem` tag. Resins exist and craft but do nothing yet.

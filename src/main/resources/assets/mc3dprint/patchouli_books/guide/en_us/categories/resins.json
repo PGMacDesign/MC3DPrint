@@ -1,0 +1,6 @@
+{
+  "name": "Resins",
+  "description": "Consumable resins that refine a blueprint print.",
+  "icon": "mc3dprint:resin_treasure_t3",
+  "sortnum": 2
+}

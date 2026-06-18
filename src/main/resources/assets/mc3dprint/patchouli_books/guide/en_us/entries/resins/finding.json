@@ -1,0 +1,16 @@
+{
+  "name": "Finding Tier 3 Resins",
+  "category": "mc3dprint:resins",
+  "icon": "mc3dprint:resin_quartermaster_t3",
+  "sortnum": 2,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "The strongest resins can't be crafted at all — $(l)Quartermaster$() and $(l)Ore Salting$() exist only here. Find them while exploring end-game structures:$(br)$(li)End cities$(li)Ancient cities$(li)Nether fortresses & bastions$(li)Woodland mansions$(li)Strongholds$(li)Buried treasure"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "Each qualifying chest has a small chance to hold one random Tier 3 resin. They're rare on purpose — pair a hard-won resin with a hard-won blueprint for the best print of your life."
+    }
+  ]
+}

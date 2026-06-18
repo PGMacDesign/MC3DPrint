@@ -1,0 +1,27 @@
+{
+  "type": "mc3dprint:add_catalyst",
+  "conditions": [
+    {
+      "condition": "minecraft:any_of",
+      "terms": [
+        { "condition": "forge:loot_table_id", "loot_table_id": "minecraft:chests/end_city_treasure" },
+        { "condition": "forge:loot_table_id", "loot_table_id": "minecraft:chests/ancient_city" },
+        { "condition": "forge:loot_table_id", "loot_table_id": "minecraft:chests/nether_bridge" },
+        { "condition": "forge:loot_table_id", "loot_table_id": "minecraft:chests/bastion_treasure" },
+        { "condition": "forge:loot_table_id", "loot_table_id": "minecraft:chests/woodland_mansion" },
+        { "condition": "forge:loot_table_id", "loot_table_id": "minecraft:chests/stronghold_library" },
+        { "condition": "forge:loot_table_id", "loot_table_id": "minecraft:chests/stronghold_corridor" },
+        { "condition": "forge:loot_table_id", "loot_table_id": "minecraft:chests/stronghold_crossing" },
+        { "condition": "forge:loot_table_id", "loot_table_id": "minecraft:chests/buried_treasure" }
+      ]
+    }
+  ],
+  "chance": 0.1,
+  "resins": [
+    "resin_xp_t3",
+    "resin_treasure_t3",
+    "resin_overdrive_t3",
+    "resin_quartermaster_t3",
+    "resin_ore_salting_t3"
+  ]
+}

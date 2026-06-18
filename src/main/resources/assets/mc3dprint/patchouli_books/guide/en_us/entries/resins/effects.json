@@ -1,0 +1,27 @@
+{
+  "name": "What Resins Do",
+  "category": "mc3dprint:resins",
+  "icon": "mc3dprint:resin_overdrive_t3",
+  "sortnum": 1,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "$(li)$(item)Verdant$() — plants print fully grown$(li)$(item)Experience$() — the print banks XP for you$(li)$(item)Treasure$() — printed chests may hold loot$(li)$(item)Overdrive$() — the print costs less filament$(li)$(item)Quartermaster$() — printed fixtures arrive stocked$(li)$(item)Ore Salting$() — printed stone hides ore veins"
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Overdrive",
+      "text": "$(l)Tier 2$() prints at exact $(l)break-even$(); $(l)Tier 3$() prints at a $(l)profit$() — you get back more filament than you spent."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Experience",
+      "text": "A catalyzed print stores XP on the machine, furnace-style. Pull the finished disc from the output slot and the orbs are yours. A big build with a Tier 3 resin is worth roughly a level 0-to-30 jump."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Treasure vs Quartermaster",
+      "text": "$(l)Treasure$() drops rare loot into printed chests, barrels and shulkers. $(l)Quartermaster$() instead stocks $(l)useful$() things: fuelled furnaces, a ready brewing stand, and a move-in kit with enchanted iron tools."
+    }
+  ]
+}
