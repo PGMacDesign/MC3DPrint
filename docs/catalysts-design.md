@@ -331,6 +331,11 @@ Patrick's two seeds plus additions. Each is feasible per the map above.
   after upgrade modules. Patchouli = "Resins" category (intro + per-effect pages + find-T3
   page; soft-dep). Gametests = `CatalystGameTests` forcing RNG knobs to 1.0 to deterministically
   assert each effect + the player-made-blueprint rejection.
+  - **Guide framing/voice (Patrick):** spin Resin as **"makes your print finer / better"** — the
+    in-game docs should read as "Resin is a way to *improve* your print," not a dry feature list.
+    Lean into the SLA-resin "finer detail" metaphor. **Confirm/update the in-game Patchouli docs
+    as part of this feature** (per CLAUDE.md's update-the-guide rule) — this is net-new, so it
+    must be authored.
 
 ---
 

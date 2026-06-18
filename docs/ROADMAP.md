@@ -56,6 +56,26 @@ single printer blocks; T5–T8 are multiblock fabricators (an N×N Printer Casin
   status readouts. Coordinates in `gen_printer_gui.py` MUST stay in lockstep with
   `PrinterMenu`/`PrinterScreen`.
 
+### 5. Catalysts / "Resin" system — DESIGNED, ready to build
+- **What:** a consumed-per-print **Resin** slot on the printer/fabricator that improves a
+  blueprint print. 6 effects (Verdant Growth, XP Yield, Treasure Infusion, Overdrive,
+  Quartermaster, Ore Salting) over 3 tiers = 11 resin items + a Resin Base intermediate.
+  Works ONLY on official/found blueprints (not player-scanned); T3 resins are loot-only.
+- **Full spec + phased build plan:** `docs/catalysts-design.md` (grill Q1–Q18 resolved;
+  all hooks mapped to real `PrinterBlockEntity` lines). Economy is multiply-gated (official-
+  blueprint + consumed + T3-found/gem-craft + caps + winder-blacklist).
+- **Status:** design complete, no code yet. Build sequence: scaffold → slot → official-flag +
+  lifecycle → effects (one-at-a-time + gametests) → T3 loot GLM → Patchouli guide → deploy.
+
+### 6. Rename `printite` → `Extrudium` (project-wide) — DECIDED, not started
+- **What:** Patrick officially renamed the signature ore/crystal **printite → Extrudium**.
+  Coordinated id change across **~27 files** (registry consts, worldgen, loot, recipes, tags,
+  advancements, lang, models/blockstates, texture generators). Pairs with the long-standing
+  **retexture** goal (see memory `printite-revamp`).
+- **Watch:** the Catalysts Resin Base recipe uses "printite crystal" → "extrudium crystal".
+  Do it as one lockstep sweep (consider a sub-agent to catch every ref); verify GameTests +
+  a build. Grep `printite|Printite|PRINTITE` across `src` + `tools`.
+
 ---
 
 ## Long-term / someday (not next up)
