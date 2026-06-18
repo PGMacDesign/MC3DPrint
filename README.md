@@ -8,6 +8,10 @@ or Fabricator can reach. Prints are paid for in **Filament Units (FU)** and
 Eight tiers run from a desktop single-block printer (Tiers 1–4) up to multiblock
 Fabricators (Tiers 5–8), ending at the Draconic-powered Tier 8.
 
+Prints can be refined with a consumed **Resin** — a one-shot modifier that adds
+loot, instant crop growth, cheaper prints, stocked fixtures, banked XP, or hidden
+ore veins (see Design notes).
+
 ## In-game guide
 
 Player-facing documentation lives in the Patchouli guidebook
@@ -85,6 +89,24 @@ Pack makers can set `unknownBlocksPrintable=true` to price unknowns instead of
 refusing them. For structure prints the machine skips any block it can't print
 (too high a tier, or un-priced) and builds the rest; only an item print, or a
 structure where nothing is printable, shows **Not Printable** outright.
+
+### Resins (print modifiers)
+
+A **Resin** is a one-shot modifier dropped into the printer's Resin slot to make a
+blueprint print come out better; it's consumed each print. Six effects: **Verdant**
+(plants print grown), **XP Yield** (the print banks experience), **Treasure** (printed
+chests may hold loot), **Overdrive** (the print costs less filament), **Quartermaster**
+(printed furnaces/chests arrive stocked), and **Ore Salting** (printed stone hides ore
+veins). Resins craft from a **Resin Base** (Extrudium Crystal + a slimeball); Tier 1–2
+are craftable, Tier 3 is found only, in end-game loot.
+
+Several effects mint value (loot, free ore, net-gain FU), so each is **multiply-gated**
+against duplication: a resin works **only on official/found blueprints**, never ones you
+scanned yourself (so you can't catalyze a hand-picked cheap build); it's **consumed per
+print**; the strongest tier is **unfarmable, loot-only** while the rest cost a gem to
+craft; and value effects are **capped per print**. Overdrive can dip below break-even at
+Tier 3 — a genuine net FU gain — but only on an unfarmable, single-use, official-blueprint
+print, so it can't become an engine. All chances and amounts are configurable.
 
 ### Spool capacities (reference)
 

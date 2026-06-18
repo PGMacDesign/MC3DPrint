@@ -1,6 +1,6 @@
 # MC3DPrint — Roadmap & Outstanding Items
 
-_Last updated: 2026-06-13 · **v0.3.0** · HEAD `31a65f0` · 65 GameTests passing · deployed to Prism._
+_Last updated: 2026-06-18 · **v0.4.0** · 84 GameTests passing · deployed to Prism._
 
 **Recently shipped (2026-06-13):** FU efficiency rework (break-even at max Efficiency
 modules, 4/type cap); curated blueprint set rebuilt (23 builds + dump/validate tool) +
@@ -11,9 +11,11 @@ caps, naturally-spawned blocks, utility overrides, unprintables, draconium T8 �
 `docs/rebalance/`); **AE2 + Thermal modded FU compat** (soft-dep, invisible when absent);
 **released v0.3.0** (jar at `6b1155d`, vanilla only).
 
-**⚠ OPEN:** version bump for the modded compat — repo HEAD has AE2/Thermal but is still
-labeled `0.3.0`; user deciding **0.3.1 vs 0.4.0**, then bump `gradle.properties` + rebuild.
-Next workstream is **UI cleanup** (printer/winder GUI polish). Rebalance amounts are tunable.
+**Recently shipped (2026-06-18):** the full **Resin** print-modifier system (workstream #5 —
+6 effects, T3 loot, Patchouli guide) and the project-wide **printite → Extrudium** rename (#6);
+version is now **0.4.0** (AE2/Thermal compat + Resin). Next up: **UI cleanup** (printer/winder
+GUI polish) and in-game tuning of the new Resin numbers + a Resin-slot render nudge. Rebalance
+and Resin amounts are all tunable in config.
 
 MC3DPrint is a Forge **1.20.1** tech mod: "WorldEdit for survival." Scan a build
 with the Structure Scanner → save it to a Blueprint Disc → print it anywhere with
@@ -56,16 +58,17 @@ single printer blocks; T5–T8 are multiblock fabricators (an N×N Printer Casin
   status readouts. Coordinates in `gen_printer_gui.py` MUST stay in lockstep with
   `PrinterMenu`/`PrinterScreen`.
 
-### 5. Catalysts / "Resin" system — DESIGNED, ready to build
-- **What:** a consumed-per-print **Resin** slot on the printer/fabricator that improves a
-  blueprint print. 6 effects (Verdant Growth, XP Yield, Treasure Infusion, Overdrive,
-  Quartermaster, Ore Salting) over 3 tiers = 11 resin items + a Resin Base intermediate.
-  Works ONLY on official/found blueprints (not player-scanned); T3 resins are loot-only.
-- **Full spec + phased build plan:** `docs/catalysts-design.md` (grill Q1–Q18 resolved;
-  all hooks mapped to real `PrinterBlockEntity` lines). Economy is multiply-gated (official-
-  blueprint + consumed + T3-found/gem-craft + caps + winder-blacklist).
-- **Status:** design complete, no code yet. Build sequence: scaffold → slot → official-flag +
-  lifecycle → effects (one-at-a-time + gametests) → T3 loot GLM → Patchouli guide → deploy.
+### 5. Catalysts / "Resin" system — ✅ DONE (2026-06-18)
+- **Shipped:** the consumed-per-print **Resin** slot on printer/fabricator. 6 effects
+  (Verdant, XP Yield, Treasure, Overdrive, Quartermaster, Ore Salting) over 3 tiers = 11
+  resin items + a Resin Base. Works ONLY on official/found blueprints; T1–T2 craftable, T3
+  loot-only (~10% in end-game chests via `AddCatalystModifier` GLM). New `resin` config
+  section; 3 treasure loot tables; Patchouli "Resins" category.
+- **Built across 6 phases** (84 GameTests green; jar `0.4.0` deployed). Economy multiply-gated
+  (official-blueprint + consumed + T3-found/gem-craft + caps + winder-blacklist). Full spec +
+  decisions: `docs/catalysts-design.md`.
+- **Deferred follow-ups:** flavor-biased T3 resin pick (TODO in the GLM), treasure modded-loot
+  entries (mods extend via GLM), in-game number tuning + slot-render nudge.
 
 ### 6. Rename `printite` → `Extrudium` (project-wide) — ✅ DONE (2026-06-18)
 - **Shipped:** coordinated id rename across all of `src` + `tools` — registry consts

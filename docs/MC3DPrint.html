@@ -715,6 +715,7 @@
       <li><a href="#power">Power — Redstone Flux</a></li>
       <li><a href="#matter">Filament System</a></li>
       <li><a href="#enhancements">Enhancements & Slots</a></li>
+      <li><a href="#resins">Resins (Print Modifiers)</a></li>
       <li><a href="#io">I/O Design</a></li>
       <li><a href="#animation">Print Head Animation</a></li>
       <li><a href="#scanner">Scanner & Blueprint Discs</a></li>
@@ -1143,6 +1144,22 @@
       <div class="card"><h3>📦 Buffer Upgrade</h3><p>Increases internal Matter and RF storage capacity.</p></div>
     </div>
     <p style="margin-top:12px">Upgrades are themselves tiered — a T1 Speed Upgrade vs. a T5 Speed Upgrade provide meaningfully different performance. All values tunable in config.</p>
+  </section>
+
+  <!-- RESINS -->
+  <section id="resins">
+    <h2><span class="icon">🧫</span> Resins (Print Modifiers)</h2>
+    <p>A <strong>Resin</strong> is a consumed-per-print modifier dropped into the printer/fabricator's <strong>Resin slot</strong>. It refines the next blueprint print, then is used up. Resins work <strong>only on official/found blueprints</strong> — never player-scanned ones — the anti-exploit gate that stops a player scanning a cheap build and mass-printing value.</p>
+    <div class="card-grid">
+      <div class="card"><h3>🌱 Verdant Growth</h3><p>In-place plants (crops, nether wart, sweet berries, cocoa) print fully grown. <em>T1–T2.</em></p></div>
+      <div class="card"><h3>✨ XP Yield</h3><p>The print banks XP, furnace-style, released when you pull the disc from the output slot. <em>T1–T3.</em></p></div>
+      <div class="card"><h3>💰 Treasure Infusion</h3><p>Printed chests/barrels/shulkers may spawn holding loot (Common/Rare/Epic tables). <em>T2–T3.</em></p></div>
+      <div class="card"><h3>⚡ Overdrive</h3><p>The print costs less filament — T2 = break-even, T3 = ~20% below (net FU gain). <em>T2–T3.</em></p></div>
+      <div class="card"><h3>📦 Quartermaster</h3><p>Printed furnaces/brewing-stands/chests arrive stocked — fuel, plus a move-in kit with enchanted iron tools. <em>T3.</em></p></div>
+      <div class="card"><h3>⛏️ Ore Salting</h3><p>Printed natural stone has a chance to come out as a mineable ore vein. <em>T3.</em></p></div>
+    </div>
+    <p style="margin-top:12px"><strong>Crafting:</strong> a shared <strong>Resin Base</strong> (Extrudium Crystal + any slimeball) + a tier ingredient (a diamond/emerald for T2) + an effect ingredient. T1–T2 are craftable; <strong>T3 is loot-only</strong>, found at ~10% in end-game chests via a global loot modifier.</p>
+    <p><strong>Anti-exploit:</strong> every value-minting effect is multiply-gated — official-blueprints-only + consumed-per-print + (T3 unfarmable / T2 gem-cost) + per-print caps + the winder-blacklist and down-only/exact-tier winding — so none can become a duplication engine. All chances and amounts live in the <code>resin</code> config section.</p>
   </section>
 
   <!-- I/O -->

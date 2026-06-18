@@ -7,6 +7,7 @@
 - [ ] Compat instance: AE2 + Mekanism + Thermal + Create + WorldEdit installed — energy input, ME interface → Filament Converter, `/mc3dprint import` of a real Create schematic and WorldEdit `.schem`
 - [ ] Balancing playtest: FU values, RF rates, print speeds (all in `mc3dprint-common.toml`)
 - [ ] Survival progression walkthrough: craft chain T1 → T8 (T8 with DE installed)
+- [ ] Resin pass: each of the 6 effects on a found blueprint (Verdant/XP/Treasure/Overdrive/Quartermaster/Ore Salting); confirm a resin is rejected on a player-scanned blueprint and consumed only on an official one; tune chances/amounts in `mc3dprint-common.toml` [resin]
 
 ## Release engineering
 
@@ -29,6 +30,7 @@ Scan any structure with the handheld Scanner, save it to a Blueprint Disc, and p
 - **Multiplayer-ready**: print zone conflict detection, built-in chunk loading, Remote Terminals
 - **Interop**: import WorldEdit `.schem` and Create schematics, export your scans back to `.schem`
 - **Find blueprints in the wild**: village and exploration loot ships printable structures
+- **Refine prints with Resins**: consumed modifiers that grow crops, bank XP, fill chests with loot or supplies, salt stone with ore, or print at a profit — crafted or found in end-game loot
 - JEI + Patchouli guidebook included
 
 ## Community
