@@ -7,15 +7,16 @@ All notable changes to **MC3DPrint** (Minecraft 1.20.1 / Forge). Format loosely 
 
 ### Added
 - **Resins — print modifiers.** A consumed-per-print Resin slot on every printer/fabricator that
-  refines the next blueprint print. Six effects across three tiers (11 items + a Resin Base):
-  - **Verdant Growth** (T1–2) — in-place plants print fully grown
-  - **XP Yield** (T1–3) — the print banks XP, released when you pull the disc from the output slot
-  - **Treasure Infusion** (T2–3) — printed chests/barrels/shulkers may hold loot (Common/Rare/Epic)
-  - **Overdrive** (T2–3) — cheaper prints; T2 = break-even, T3 = ~20% below (a net FU gain)
-  - **Quartermaster** (T3) — printed furnaces/brewing-stands/chests arrive stocked (incl. enchanted iron tools)
-  - **Ore Salting** (T3) — printed natural stone can come out as mineable ore veins
-  - Resins work **only on official/found blueprints** (never player-scanned). T1–2 craftable,
-    T3 loot-only (~10% in end-game chests). New Patchouli "Resins" guide category and a
+  refines the next blueprint print. Six effects across three rarities — Common / Uncommon /
+  Rare (11 items + a Resin Base):
+  - **Verdant Growth** (Common–Uncommon) — in-place plants print fully grown
+  - **XP Yield** (Common–Rare) — the print banks XP, released when you pull the disc from the output slot
+  - **Treasure Infusion** (Uncommon–Rare) — printed chests/barrels/shulkers may hold loot (common/rare/epic pools)
+  - **Overdrive** (Uncommon–Rare) — cheaper prints; Uncommon = break-even, Rare = ~20% below (a net FU gain)
+  - **Quartermaster** (Rare) — printed furnaces/brewing-stands/chests arrive stocked (incl. enchanted iron tools)
+  - **Ore Salting** (Rare) — printed natural stone can come out as mineable ore veins
+  - Resins work **only on official/found blueprints** (never player-scanned). Common/Uncommon
+    craftable, Rare loot-only (~10% in end-game chests). New Patchouli "Resins" guide category and a
     "Refined Print" advancement. All chances/amounts in the `resin` config section.
 - **AE2 + Thermal modded FU compat** — soft-dependency hooks valuing those mods' items (invisible when absent).
 

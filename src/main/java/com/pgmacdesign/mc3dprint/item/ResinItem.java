@@ -74,15 +74,32 @@ public class ResinItem extends Item {
 
     @Override
     public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
-        tooltip.add(Component.translatable("tooltip.mc3dprint.resin." + effect.id())
-                .withStyle(ChatFormatting.GRAY));
-        tooltip.add(Component.translatable("tooltip.mc3dprint.resin.tier", tier)
-                .withStyle(tierColor(tier)));
+        String descKey = "tooltip.mc3dprint.resin." + effect.id();
+        if (effect == Effect.VERDANT) {
+            // The two Verdant rarities genuinely differ (see ResinEffects.matureState): Common
+            // ripens staple crops + nether wart; Uncommon ALSO ripens cocoa & sweet berries. So
+            // each rarity gets its own line instead of one identical "fully grown" blurb.
+            descKey += (tier >= 2) ? ".uncommon" : ".common";
+        }
+        tooltip.add(Component.translatable(descKey).withStyle(ChatFormatting.GRAY));
+        // Resin strength reads as a RARITY (Common/Uncommon/Rare), not a "Tier" —
+        // the word "tier" is already the printer/spool axis (T1–T8) and seeing it on
+        // resins too was confusing. The internal tier int (1-3) still drives it.
+        tooltip.add(Component.translatable(rarityKey(tier)).withStyle(rarityColor(tier)));
         tooltip.add(Component.translatable("tooltip.mc3dprint.resin.footer")
                 .withStyle(ChatFormatting.DARK_GRAY));
     }
 
-    private static ChatFormatting tierColor(int tier) {
+    /** Lang key for the resin's rarity label (tier 1→common, 2→uncommon, 3→rare). */
+    private static String rarityKey(int tier) {
+        return switch (tier) {
+            case 1 -> "tooltip.mc3dprint.resin.rarity.common";
+            case 2 -> "tooltip.mc3dprint.resin.rarity.uncommon";
+            default -> "tooltip.mc3dprint.resin.rarity.rare";
+        };
+    }
+
+    private static ChatFormatting rarityColor(int tier) {
         return switch (tier) {
             case 1 -> ChatFormatting.WHITE;
             case 2 -> ChatFormatting.AQUA;

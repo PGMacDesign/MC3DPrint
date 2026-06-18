@@ -8932,13 +8932,14 @@ class CuratedBlueprintGenerator {
      * §F.kelp_farm — a STATIC automatic kelp farm + dried-kelp smelter, 9×9×9
      * (W×L×H) → builder(9, 9, 9).
      *
-     * <p>The "food / fuel / XP" kelp farm, printed as the working STRUCTURE the
-     * player plants into. Vanilla <b>kelp</b> has no producing recipe and its
-     * grown stalk is not structural matter ({@code KelpBlock}/{@code KelpPlantBlock}
-     * are not {@code BushBlock}s), so it is UNVALUED and would be silently skipped by
-     * the printer's strict-mode gate. We therefore <b>omit the kelp itself</b> — the
-     * player plants a kelp shoot on the column floor after printing — and print the
-     * mechanism: a glass-walled <b>water column</b> in which the kelp grows, a row of
+     * <p>The "food / fuel / XP" kelp farm, printed as a working STRUCTURE that comes
+     * pre-seeded. Vanilla <b>kelp</b> has no producing recipe and its grown stalk is not
+     * structural matter ({@code KelpBlock}/{@code KelpPlantBlock} are not {@code BushBlock}s),
+     * so it used to be UNVALUED and silently skipped by the printer's strict-mode gate. We now
+     * give kelp a small FU value + winder-blacklist (the same treatment as cactus), so the
+     * printer <b>auto-plants the first kelp layer</b> on each grow-block (y=2) and it grows up
+     * on its own. The rest is the mechanism: a glass-walled <b>water column</b> in which the
+     * kelp grows, a row of
      * <b>pistons</b> beside it that break the growth off, driven by a <b>Redstone
      * Clock</b> through <b>repeaters</b>, and a small <b>furnace bank</b> (the dried-kelp
      * smelter) on the south side. Every printed block is a vanilla FU-valued block
@@ -8948,7 +8949,7 @@ class CuratedBlueprintGenerator {
      * are glass <b>blocks</b> (NOT panes) seated on the stone foundation — so the
      * render-integrity stub-pane gate never applies.
      *
-     * <p><b>Harvest (clock + repeaters):</b> the player plants a kelp shoot on each
+     * <p><b>Harvest (clock + repeaters):</b> the first kelp layer is auto-planted on each
      * submerged stone grow-block (the two rows straddling the central canal). Kelp grows
      * up through the water; a Redstone Clock (baked 60s) pulses two DRY dust buses outside
      * the glass, each driving its piston row through a REPEATER (a straight dust line
@@ -8969,8 +8970,10 @@ class CuratedBlueprintGenerator {
      * <ul>
      *   <li><b>y=0</b> — stone foundation (9×9). The central canal floor (x=4, z=2..6)
      *       is <b>hoppers</b> that catch the snapped kelp and chain it south.</li>
-     *   <li><b>Collection chest, y=0</b> — at the south edge (x=4, z=7, facing north):
-     *       the hopper canal empties into it.</li>
+     *   <li><b>Collection chest, y=0</b> — at the FRONT centre (x=4, z=8, opens south),
+     *       fed by the canal bridge hopper (from the north) and the two furnace under-hoppers
+     *       (from the sides). It REPLACES the front-centre foundation stone that used to sit
+     *       in front of the chest and block it from opening.</li>
      *   <li><b>Water, y=1..6</b> — the central canal (x=4) is water full height; the two
      *       grow rows (x=3 and x=5) are solid <b>stone</b> grow-blocks at y=1 with
      *       <b>water</b> above (y=2..6) so the planted kelp grows submerged.</li>
@@ -8985,8 +8988,9 @@ class CuratedBlueprintGenerator {
      *       y=3) drives each piston from behind; a <b>dust bus</b> (x=0 / x=8) feeds the
      *       repeaters; a <b>Redstone Clock</b> at the north edge (z=0) pulses both. All on
      *       dry stone, outside the glass ring → never in/touching water.</li>
-     *   <li><b>Dried-kelp smelter, y=1</b> — a 2-<b>furnace</b> bank on the south edge
-     *       (x=1 and x=7, z=8, facing north) for smelting the collected kelp.</li>
+     *   <li><b>Dried-kelp smelter, y=1</b> — two <b>furnaces</b> flanking the front chest
+     *       (x=3 and x=5, z=8, facing SOUTH toward the player), each seated on a hopper that
+     *       routes its smelted output sideways into the centre chest.</li>
      *   <li><b>Label signs</b> — oak wall signs on the south face: where to plant, and
      *       that cut kelp floats up (scoop it off the top — semi-auto).</li>
      * </ul>
@@ -8997,8 +9001,9 @@ class CuratedBlueprintGenerator {
         BlueprintBlockState stone   = bs("minecraft:stone");
         BlueprintBlockState glass   = GLASS;                 // window blocks (NOT panes) → no stub-pane gate
         BlueprintBlockState water   = WATER;                 // structural (asItem()==AIR) → prints free
-        BlueprintBlockState chest   = bs("minecraft:chest[facing=north,type=single,waterlogged=false]");
-        BlueprintBlockState furnace = bs("minecraft:furnace[facing=north,lit=false]");
+        BlueprintBlockState kelp    = bs("minecraft:kelp[age=0]"); // first layer auto-planted (valued+blacklisted); grows up
+        BlueprintBlockState chest   = bs("minecraft:chest[facing=south,type=single,waterlogged=false]"); // front-centre, opens toward player
+        BlueprintBlockState furnace = bs("minecraft:furnace[facing=south,lit=false]"); // front toward player (turned around)
         BlueprintBlockState redDust = bs("minecraft:redstone_wire[east=none,west=none,north=none,south=none,power=0]"); // structural
 
         int x0 = 0, x1 = 8, z0 = 0, z1 = 8;            // 9×9 footprint
@@ -9020,9 +9025,15 @@ class CuratedBlueprintGenerator {
         // kelp the pistons snap inward and chain it SOUTH into the chest tucked at the
         // south edge (x=cx, z=7, facing north). (Air-skip overwrites the foundation.)
         for (int z = rowZ0; z <= rowZ1; z++) {
-            b.set(cx, 0, z, bs("minecraft:hopper[enabled=true,facing=south]")); // chain south to the chest
+            b.set(cx, 0, z, bs("minecraft:hopper[enabled=true,facing=south]")); // chain south
         }
-        b.set(cx, 0, rowZ1 + 1, chest);                // collection chest at z=7, faces north
+        // Bridge hopper carries the canal chain past the south glass wall to the FRONT chest.
+        b.set(cx, 0, rowZ1 + 1, bs("minecraft:hopper[enabled=true,facing=south]")); // (4,0,7) → (4,0,8)
+        // The collection chest now sits at the FRONT-CENTRE (4,0,8), opening south — accessible
+        // with nothing above it (this REPLACES the front-centre foundation stone that used to
+        // block it from opening). It's fed by BOTH the canal bridge (north) and the two furnace
+        // under-hoppers (the sides) — so cut kelp AND smelted dried-kelp end up here.
+        b.set(cx, 0, z1, chest);                        // (4,0,8) front-centre collection chest
 
         // ── 3) WATER COLUMN (canal + the two submerged grow rows), y=1..colTop ──
         // Water fills the central canal (x=cx) AND the two grow-block rows above the
@@ -9034,15 +9045,20 @@ class CuratedBlueprintGenerator {
         // are full solid NON-waterloggable blocks → they dam the water in and keep the
         // redstone shelves beyond them DRY.
         for (int z = rowZ0; z <= rowZ1; z++) {
-            // submerged grow-blocks: solid base at y=1, water above (player plants kelp here)
+            // submerged grow-blocks: solid base at y=1, kelp planted at y=2, water above
             b.set(wGrowX, 1, z, stone);
             b.set(eGrowX, 1, z, stone);
             // central canal: water full height
             for (int y = 1; y <= colTop; y++) {
                 b.set(cx, y, z, water);
             }
-            // water over the grow-blocks (y=2..colTop) so the kelp grows submerged
-            for (int y = 2; y <= colTop; y++) {
+            // FIRST KELP LAYER auto-planted on each grow-block (y=2); water fills above
+            // (y=3..colTop) so it's submerged and grows up on its own. Kelp is now FU-valued
+            // + winder-blacklisted (like cactus) so the printer actually places it — it used
+            // to be unvalued and silently skipped (the "not planting kelp" bug).
+            b.set(wGrowX, 2, z, kelp);
+            b.set(eGrowX, 2, z, kelp);
+            for (int y = 3; y <= colTop; y++) {
                 b.set(wGrowX, y, z, water);
                 b.set(eGrowX, y, z, water);
             }
@@ -9092,15 +9108,26 @@ class CuratedBlueprintGenerator {
                 b.set(x, 3, z0, redDust);              // north connector dust (links clock → both buses)
             }
         }
-        // carry each bus head from the north connector (z=0) down to the bus run (z=2)
+        // carry each bus head from the north connector (z=0) down to the bus run (z=2).
+        // These carry-dust cells (z=1) sit OUTSIDE the z=2..6 bus pillars AND the z=0 north
+        // shelf, so without their own floor the dust had no support block beneath it and
+        // POPPED on print — severing the clock→bus link (the "missing stone + redstone" break
+        // the build showed). Give each a 2-block stone pillar so the carry dust survives.
+        pillar(b, wBusX, z0 + 1, 1, 2, stone); pillar(b, eBusX, z0 + 1, 1, 2, stone);
         b.set(wBusX, 3, z0 + 1, redDust); b.set(eBusX, 3, z0 + 1, redDust);
 
-        // ── 6) DRIED-KELP SMELTER: 2-furnace bank on the south face, y=1 ────
-        // Two furnaces on the south edge (x=1 and x=7, z=8) for smelting the collected
-        // kelp into dried kelp (food / fuel / XP). Furnaces derive their FU value from
-        // the 8-cobblestone crafting recipe.
-        b.set(wRepX, 1, z1, furnace);                  // west furnace (x=1)
-        b.set(eRepX, 1, z1, furnace);                  // east furnace (x=7)
+        // ── 6) DRIED-KELP SMELTER + AUTO-COLLECT: 2 furnaces flanking the front chest ──
+        // Two furnaces on the FRONT face (x=3 and x=5, z=8), facing SOUTH so their fronts
+        // face the player (turned around from the old north-facing bank). Each furnace sits
+        // on a HOPPER that pulls the furnace's OUTPUT slot (the smelted dried kelp) and feeds
+        // it sideways into the centre chest at (4,0,8): the west hopper points east, the east
+        // hopper points west. So the loop is: scoop floating cut kelp → drop in a furnace →
+        // dried kelp drops to the hopper below → routes itself into the centre chest.
+        int wFurnX = cx - 1, eFurnX = cx + 1;          // 3 and 5 — flank the front chest
+        b.set(wFurnX, 0, z1, bs("minecraft:hopper[enabled=true,facing=east]"));  // furnace output → chest
+        b.set(eFurnX, 0, z1, bs("minecraft:hopper[enabled=true,facing=west]"));  // furnace output → chest
+        b.set(wFurnX, 1, z1, furnace);                 // (3,1,8) furnace on its output hopper
+        b.set(eFurnX, 1, z1, furnace);                 // (5,1,8) furnace on its output hopper
 
         // ── 7) LABEL SIGNS on the south face flanking the chest ─────────────
         // Honest semi-auto: the clock auto-cuts the kelp, but CUT KELP FLOATS UP (items
@@ -9108,9 +9135,10 @@ class CuratedBlueprintGenerator {
         // floating kelp off the open top and smelts it. (Vanilla has no compact, reliably-
         // printable way to collect floating items from a sealed tank — see the rebalance
         // note — so collection is intentionally semi-auto here.)
-        signText(b, "minecraft:oak_wall_sign[facing=south]", wGrowX, 1, rowZ1 + 1,
-                "Plant kelp on the", "submerged stone", "rows; clock cuts", "it automatically.");
-        signText(b, "minecraft:oak_wall_sign[facing=south]", eGrowX, 1, rowZ1 + 1,
+        // Mounted on the south glass wall (z=7) above each front furnace, facing the player.
+        signText(b, "minecraft:oak_wall_sign[facing=south]", wFurnX, 2, z1,
+                "Kelp auto-plants", "& the clock cuts", "it; the base", "regrows.");
+        signText(b, "minecraft:oak_wall_sign[facing=south]", eFurnX, 2, z1,
                 "Cut kelp FLOATS UP", "- scoop it off the", "top & smelt it in", "the furnaces.");
 
         return b.build();

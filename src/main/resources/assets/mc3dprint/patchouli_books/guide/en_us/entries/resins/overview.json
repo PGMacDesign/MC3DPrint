@@ -10,13 +10,13 @@
     },
     {
       "type": "patchouli:text",
-      "title": "Tiers",
-      "text": "Resins come in three tiers. $(l)Tier 1-2$() are craftable; $(l)Tier 3$() is found only, in end-game loot. Higher tiers are stronger — and a few effects exist only at the top."
+      "title": "Rarity",
+      "text": "Resins come in three rarities. $(l)Common$() and $(l)Uncommon$() are craftable; $(l)Rare$() is found only, in end-game loot. Rarer resins are stronger — and a few effects exist only at the top."
     },
     {
       "type": "patchouli:crafting",
       "recipe": "mc3dprint:resin_base",
-      "text": "Everything starts with $(item)Resin Base$() — $(item)Extrudium Crystal$() plus any slimeball. Add a tier ingredient (a gem for Tier 2) and an effect ingredient to finish a resin."
+      "text": "Everything starts with $(item)Resin Base$() — $(item)Extrudium Crystal$() plus any slimeball. Add a rarity ingredient (a gem makes it $(l)Uncommon$()) and an effect ingredient to finish a resin."
     }
   ]
 }

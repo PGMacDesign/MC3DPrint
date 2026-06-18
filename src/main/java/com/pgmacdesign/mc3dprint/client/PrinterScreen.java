@@ -1,14 +1,19 @@
 package com.pgmacdesign.mc3dprint.client;
 
 import com.pgmacdesign.mc3dprint.MC3DPrint;
+import com.pgmacdesign.mc3dprint.config.MC3DPrintConfig;
+import com.pgmacdesign.mc3dprint.item.BlueprintDiscItem;
 import com.pgmacdesign.mc3dprint.machine.PrinterBlockEntity;
 import com.pgmacdesign.mc3dprint.machine.PrinterMenu;
+import com.pgmacdesign.mc3dprint.machine.resin.ResinEffects;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.item.ItemStack;
 
 public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
     private static final ResourceLocation TEXTURE = java.util.Objects.requireNonNull(
@@ -131,6 +136,48 @@ public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
             }
             graphics.renderComponentTooltip(font, lines, mouseX, mouseY);
         }
+    }
+
+    /**
+     * Overdrive cost preview: when an Overdrive resin sits in the resin slot, a blueprint
+     * disc's "Print Cost" line is rewritten in place — the original cost struck through, the
+     * Overdrive-reduced cost beside it — so you can see the saving before printing. Only the
+     * cost that actually drops is shown (Rare Overdrive prints below break-even; Uncommon is
+     * exactly break-even, so its base cost is unchanged and we leave the line as-is). Resins
+     * only work on official discs, so a player-scanned disc always shows its normal cost.
+     */
+    @Override
+    protected java.util.List<Component> getTooltipFromContainerItem(ItemStack stack) {
+        java.util.List<Component> tooltip = new java.util.ArrayList<>(super.getTooltipFromContainerItem(stack));
+        int odTier = menu.overdriveResinTierInSlot();
+        if (odTier <= 0 || !(stack.getItem() instanceof BlueprintDiscItem)
+                || !BlueprintDiscItem.hasBlueprint(stack) || !BlueprintDiscItem.isOfficial(stack)) {
+            return tooltip;
+        }
+        int cost = BlueprintDiscItem.getPrintCost(stack);
+        int tier = BlueprintDiscItem.getTier(stack);
+        if (cost <= 0 || tier <= 0) {
+            return tooltip;
+        }
+        int reduced = ResinEffects.overdriveFloor(cost, odTier, MC3DPrintConfig.RESIN_OVERDRIVE_T3_BELOW.get());
+        if (reduced >= cost) {
+            return tooltip; // Uncommon Overdrive = break-even: no base reduction to preview
+        }
+        // Rebuild the exact normal cost line (same key/args/style) so we can swap it in place.
+        Component normal = Component.translatable("tooltip.mc3dprint.disc_print_cost", cost, tier)
+                .withStyle(ChatFormatting.LIGHT_PURPLE);
+        Component original = Component.literal(Integer.toString(cost))
+                .withStyle(ChatFormatting.GRAY, ChatFormatting.STRIKETHROUGH);
+        Component savings = Component.literal(Integer.toString(reduced)).withStyle(ChatFormatting.GREEN);
+        Component overdriveLine = Component.translatable("tooltip.mc3dprint.disc_print_cost_overdrive",
+                original, savings, tier).withStyle(ChatFormatting.LIGHT_PURPLE);
+        for (int i = 0; i < tooltip.size(); i++) {
+            if (tooltip.get(i).equals(normal)) {
+                tooltip.set(i, overdriveLine);
+                break;
+            }
+        }
+        return tooltip;
     }
 
     @Override

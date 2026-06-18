@@ -56,6 +56,9 @@ public final class MC3DPrintConfig {
     public static final ForgeConfigSpec.IntValue RESIN_XP_CAP_T2;
     public static final ForgeConfigSpec.IntValue RESIN_XP_CAP_T3;
     public static final ForgeConfigSpec.IntValue RESIN_XP_REF;
+    public static final ForgeConfigSpec.IntValue RESIN_QM_COAL_BUDGET;
+    public static final ForgeConfigSpec.IntValue RESIN_QM_FOOD_BUDGET;
+    public static final ForgeConfigSpec.IntValue RESIN_QM_TORCH_BUDGET;
     public static final ForgeConfigSpec.ConfigValue<List<? extends String>> FU_VALUES;
 
     private static final int[] DEFAULT_ITEM_RF_PER_TICK = {40, 60, 80, 100, 120, 150, 200, 250};
@@ -220,6 +223,18 @@ public final class MC3DPrintConfig {
                 .comment("XP Yield reference: bankedXP = min(cap, round(cap * printCost / ref)).",
                         "Default 33000 ~ priciest curated build's print cost, so it reaches the cap.")
                 .defineInRange("xpReference", 33000, 1, Integer.MAX_VALUE);
+        RESIN_QM_COAL_BUDGET = builder
+                .comment("Quartermaster: total COAL BLOCKS shared across all printed furnaces,",
+                        "split evenly (2 furnaces => 32 each). A premium Rare-tier fuel stockpile.")
+                .defineInRange("quartermasterCoalBlockBudget", 64, 0, 1024);
+        RESIN_QM_FOOD_BUDGET = builder
+                .comment("Quartermaster: total FOOD (bread) shared across all printed storage",
+                        "containers (chests/barrels), split evenly.")
+                .defineInRange("quartermasterFoodBudget", 64, 0, 1024);
+        RESIN_QM_TORCH_BUDGET = builder
+                .comment("Quartermaster: total TORCHES shared across all printed storage",
+                        "containers (chests/barrels), split evenly.")
+                .defineInRange("quartermasterTorchBudget", 64, 0, 1024);
         builder.pop();
 
         SPEC = builder.build();

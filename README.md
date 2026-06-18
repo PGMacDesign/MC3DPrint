@@ -97,15 +97,15 @@ blueprint print come out better; it's consumed each print. Six effects: **Verdan
 (plants print grown), **XP Yield** (the print banks experience), **Treasure** (printed
 chests may hold loot), **Overdrive** (the print costs less filament), **Quartermaster**
 (printed furnaces/chests arrive stocked), and **Ore Salting** (printed stone hides ore
-veins). Resins craft from a **Resin Base** (Extrudium Crystal + a slimeball); Tier 1–2
-are craftable, Tier 3 is found only, in end-game loot.
+veins). Resins craft from a **Resin Base** (Extrudium Crystal + a slimeball); **Common**
+and **Uncommon** are craftable, **Rare** is found only, in end-game loot.
 
 Several effects mint value (loot, free ore, net-gain FU), so each is **multiply-gated**
 against duplication: a resin works **only on official/found blueprints**, never ones you
 scanned yourself (so you can't catalyze a hand-picked cheap build); it's **consumed per
-print**; the strongest tier is **unfarmable, loot-only** while the rest cost a gem to
+print**; the strongest resins are **unfarmable, loot-only** while the rest cost a gem to
 craft; and value effects are **capped per print**. Overdrive can dip below break-even at
-Tier 3 — a genuine net FU gain — but only on an unfarmable, single-use, official-blueprint
+**Rare** — a genuine net FU gain — but only on an unfarmable, single-use, official-blueprint
 print, so it can't become an engine. All chances and amounts are configurable.
 
 ### Spool capacities (reference)

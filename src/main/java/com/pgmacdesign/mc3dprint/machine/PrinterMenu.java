@@ -272,6 +272,16 @@ public class PrinterMenu extends AbstractContainerMenu {
         return BlueprintDiscItem.hasBlueprint(disc) && !BlueprintDiscItem.isOfficial(disc);
     }
 
+    /** The tier (2 or 3) of an Overdrive resin currently in the resin slot, else 0. Client-safe
+     *  (reads synced slot contents) — drives the disc's Overdrive cost-preview tooltip. */
+    public int overdriveResinTierInSlot() {
+        ItemStack resin = slots.get(resinSlotStart).getItem();
+        if (resin.getItem() instanceof ResinItem r && r.effect() == ResinItem.Effect.OVERDRIVE) {
+            return r.tier();
+        }
+        return 0;
+    }
+
     /** Build offset for axis 0=X, 1=Y, 2=Z. */
     public int offset(int axis) {
         return SplitContainerData.combine(data, PrinterBlockEntity.DATA_OFFSET_X + axis);

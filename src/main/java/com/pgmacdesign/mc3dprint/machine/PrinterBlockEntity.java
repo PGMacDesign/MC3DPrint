@@ -34,8 +34,15 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.AbstractFurnaceBlock;
+import net.minecraft.world.level.block.BarrelBlock;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.ChestBlock;
+import net.minecraft.world.level.block.entity.AbstractFurnaceBlockEntity;
+import net.minecraft.world.level.block.entity.BarrelBlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BrewingStandBlockEntity;
+import net.minecraft.world.level.block.entity.ChestBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraftforge.common.capabilities.Capability;
@@ -180,6 +187,15 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
     private int saltedThisJob;
     private int treasureThisJob;
     private int bankedXp;
+    // Quartermaster shared budgets, pre-counted at job start and drained evenly as each
+    // container is stocked (so e.g. 64 coal blocks split exactly across however many furnaces
+    // the print contains). The enchanted move-in tools go to the first storage container only.
+    private int qmFurnaceRemaining;
+    private int qmCoalRemaining;
+    private int qmStorageRemaining;
+    private int qmFoodRemaining;
+    private int qmTorchRemaining;
+    private boolean qmToolsGiven;
 
     private State state = State.IDLE;
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -233,6 +249,13 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             @Override
             protected void onContentsChanged(int slot) {
                 setChanged();
+                // The exterior spool reels are drawn by the BER from synced BE data
+                // (clientSpools), NOT from the open container's slot sync. Pulling a
+                // spool out through the GUI mutates the handler here but never sent a
+                // block-update packet, so the in-world reels stayed until the chunk
+                // reloaded (relog). Syncing on every handler mutation covers the GUI,
+                // hopper, attach/detach, and drain paths uniformly.
+                syncToClients();
             }
 
             @Override
@@ -577,9 +600,8 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
                     : FuConversion.fromBaseCeil(remainingBase, spoolItem.tier(), ratio);
             int drained = SpoolItem.drain(spool, FuConversion.clampToInt(drainUnits));
             remainingBase -= FuConversion.toBase(drained, spoolItem.tier(), ratio);
-            spools.setStackInSlot(i, spool);
+            spools.setStackInSlot(i, spool); // onContentsChanged syncs the shrinking reel
         }
-        syncToClients(); // the exterior spool render shrinks with the fill level
     }
 
     /** Spool contents changed externally (e.g. Filament Converter top-off). */
@@ -592,8 +614,7 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
     public boolean attachSpool(ItemStack held) {
         for (int i = 0; i < spools.getSlots(); i++) {
             if (spools.getStackInSlot(i).isEmpty()) {
-                spools.setStackInSlot(i, held.split(1));
-                syncToClients();
+                spools.setStackInSlot(i, held.split(1)); // onContentsChanged syncs the reel
                 return true;
             }
         }
@@ -605,8 +626,7 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         for (int i = spools.getSlots() - 1; i >= 0; i--) {
             ItemStack spool = spools.getStackInSlot(i);
             if (!spool.isEmpty()) {
-                spools.setStackInSlot(i, ItemStack.EMPTY);
-                syncToClients();
+                spools.setStackInSlot(i, ItemStack.EMPTY); // onContentsChanged syncs the reel
                 return spool;
             }
         }
@@ -706,8 +726,55 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
                 treasureThisJob++;
             }
         } else if (armedResinEffect == ResinItem.Effect.QUARTERMASTER) {
-            ResinEffects.quartermaster(placedBe);
+            if (placedBe instanceof AbstractFurnaceBlockEntity furnace && qmFurnaceRemaining > 0) {
+                // hand this furnace its even share of the shared coal-block budget
+                int give = (int) Math.ceil((double) qmCoalRemaining / qmFurnaceRemaining);
+                ResinEffects.quartermasterFurnace(furnace, give);
+                qmCoalRemaining = Math.max(0, qmCoalRemaining - give);
+                qmFurnaceRemaining--;
+            } else if (placedBe instanceof BrewingStandBlockEntity stand) {
+                ResinEffects.quartermasterBrewing(stand);
+            } else if ((placedBe instanceof ChestBlockEntity || placedBe instanceof BarrelBlockEntity)
+                    && qmStorageRemaining > 0 && placedBe instanceof Container storage) {
+                int bread = (int) Math.ceil((double) qmFoodRemaining / qmStorageRemaining);
+                int torches = (int) Math.ceil((double) qmTorchRemaining / qmStorageRemaining);
+                ResinEffects.quartermasterStorage(storage, bread, torches, !qmToolsGiven);
+                qmFoodRemaining = Math.max(0, qmFoodRemaining - bread);
+                qmTorchRemaining = Math.max(0, qmTorchRemaining - torches);
+                qmStorageRemaining--;
+                qmToolsGiven = true;
+            }
         }
+    }
+
+    /**
+     * Pre-count the print's Quartermaster targets and seed the shared budgets, so coal /
+     * food / torches split evenly across however many furnaces / storage containers the
+     * blueprint actually contains. Called once at job start when a Quartermaster resin is armed.
+     */
+    private void initQuartermasterBudget(Blueprint blueprint) {
+        int paletteSize = blueprint.palette().size();
+        byte[] kind = new byte[paletteSize]; // 0 other, 1 furnace, 2 storage
+        for (int i = 0; i < paletteSize; i++) {
+            BlockState st = blueprint.palette().get(i).resolve().orElse(null);
+            if (st == null) {
+                continue;
+            }
+            Block bl = st.getBlock();
+            if (bl instanceof AbstractFurnaceBlock) {
+                kind[i] = 1;
+            } else if (bl instanceof ChestBlock || bl instanceof BarrelBlock) {
+                kind[i] = 2;
+            }
+        }
+        int[] counts = new int[3];
+        blueprint.forEachBlock((local, paletteIndex) -> counts[kind[paletteIndex]]++);
+        qmFurnaceRemaining = counts[1];
+        qmStorageRemaining = counts[2];
+        qmCoalRemaining = MC3DPrintConfig.RESIN_QM_COAL_BUDGET.get();
+        qmFoodRemaining = MC3DPrintConfig.RESIN_QM_FOOD_BUDGET.get();
+        qmTorchRemaining = MC3DPrintConfig.RESIN_QM_TORCH_BUDGET.get();
+        qmToolsGiven = false;
     }
 
     /** True while a structure job is running or an item is mid-print. */
@@ -1058,6 +1125,9 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         activeJob = new PrintJob(blueprintId, blueprint.name(), origin, orientation, size, blueprint.blockCount());
         cachedBlueprint = blueprint;
         armResin(disc); // catalyze this job iff a resin is slotted and the disc is official
+        if (armedResinEffect == ResinItem.Effect.QUARTERMASTER) {
+            initQuartermasterBudget(blueprint); // pre-count furnaces/chests to split the shared kit
+        }
         placementOrder = buildPlacementOrder(blueprint);
         placementCooldown = 0;
         forceChunks(serverLevel, box, true);

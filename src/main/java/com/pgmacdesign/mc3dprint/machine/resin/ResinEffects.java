@@ -30,6 +30,7 @@ import net.minecraft.world.level.storage.loot.parameters.LootContextParamSets;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraft.world.phys.Vec3;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -163,29 +164,48 @@ public final class ResinEffects {
 
     // ============================ QUARTERMASTER ============================
 
-    /** Deterministically stock a printed functional block with practical supplies. */
-    public static void quartermaster(BlockEntity be) {
-        if (be instanceof AbstractFurnaceBlockEntity furnace) {
-            insertSlot(furnace, 1, new ItemStack(Blocks.COAL_BLOCK, 3)); // fuel slot
-        } else if (be instanceof BrewingStandBlockEntity stand) {
-            insertSlot(stand, 4, new ItemStack(Items.BLAZE_POWDER)); // fuel slot
-            ItemStack water = PotionUtils.setPotion(new ItemStack(Items.POTION), Potions.WATER);
-            for (int s = 0; s < 3; s++) {
-                insertSlot(stand, s, water.copy());
-            }
-        } else if (be instanceof ChestBlockEntity || be instanceof BarrelBlockEntity) {
-            insertIntoEmpty((Container) be, moveInKit());
+    // Quartermaster stocks each printed functional block. Coal (furnaces) and food/torches
+    // (chests) come from SHARED per-print budgets split evenly across all such containers —
+    // see PrinterBlockEntity, which pre-counts the containers and hands each its share. That's
+    // why these take an amount instead of hard-coding one: a Rare-tier kit should feel generous
+    // (a full stack of coal blocks across the furnaces, a stack of food across the chests),
+    // not 3 coal per furnace regardless of how many there are.
+
+    /** Stock a printed furnace's fuel slot with its share of coal blocks (clamped to one stack). */
+    public static void quartermasterFurnace(AbstractFurnaceBlockEntity furnace, int coalBlocks) {
+        if (coalBlocks > 0) {
+            insertSlot(furnace, 1, new ItemStack(Blocks.COAL_BLOCK, Math.min(coalBlocks, 64)));
         }
     }
 
-    private static List<ItemStack> moveInKit() {
-        return List.of(
-                new ItemStack(Blocks.TORCH, 16),
-                new ItemStack(Items.BREAD, 8),
-                new ItemStack(Blocks.COAL_BLOCK, 2),
-                enchantedTool(Items.IRON_PICKAXE),
-                enchantedTool(Items.IRON_AXE),
-                enchantedTool(Items.IRON_SHOVEL));
+    /** Stock a printed brewing stand: blaze-powder fuel + three water bottles, ready to brew. */
+    public static void quartermasterBrewing(BrewingStandBlockEntity stand) {
+        insertSlot(stand, 4, new ItemStack(Items.BLAZE_POWDER, 8)); // fuel slot (a real stockpile)
+        ItemStack water = PotionUtils.setPotion(new ItemStack(Items.POTION), Potions.WATER);
+        for (int s = 0; s < 3; s++) {
+            insertSlot(stand, s, water.copy());
+        }
+    }
+
+    /**
+     * Stock a printed chest/barrel with its share of food + torches; the FIRST storage
+     * container of the print also gets the one-time enchanted move-in tool kit (so 5 chests
+     * don't hand out 5 sets of tools).
+     */
+    public static void quartermasterStorage(Container container, int bread, int torches, boolean includeTools) {
+        List<ItemStack> kit = new ArrayList<>();
+        if (bread > 0) {
+            kit.add(new ItemStack(Items.BREAD, Math.min(bread, 64)));
+        }
+        if (torches > 0) {
+            kit.add(new ItemStack(Blocks.TORCH, Math.min(torches, 64)));
+        }
+        if (includeTools) {
+            kit.add(enchantedTool(Items.IRON_PICKAXE));
+            kit.add(enchantedTool(Items.IRON_AXE));
+            kit.add(enchantedTool(Items.IRON_SHOVEL));
+        }
+        insertIntoEmpty(container, kit);
     }
 
     private static ItemStack enchantedTool(net.minecraft.world.item.Item tool) {

@@ -107,7 +107,7 @@ public class FarmCollectionGameTests {
      * farm                  product        chest (local)   harvest drop (local)   routing path under test
      * ───────────────────── ────────────── ─────────────── ────────────────────── ───────────────────────────────────
      * sugarcane_farm_auto   sugar_cane     (4,0,8)         (4,1,7) above hopper    hopper(4,0,7,facing N) → chest
-     * kelp_farm             dried_kelp     (4,0,7)         (4,1,2) above N hopper  hopper floor(4,0,2..6,S) chains S → chest
+     * kelp_farm             dried_kelp     (4,0,8)         (4,1,2) above N hopper  hopper floor(4,0,2..6,S)→bridge(4,0,7,S)→front chest
      * bamboo_farm           bamboo         (4,0,8)         (4,1,5) in canal water  hopper line(4,0,1..7,S) chains S → chest
      * cactus_farm           cactus (drop)  (3,0,6)         (1,1,2) in water moat   hopper floor(1..5,1..5) funnels → chest
      * iron_farm             iron_ingot     (6,1,9)         (4,2,4) above ring hop  ring(4,1,4,S)→…→(6,1,7)→drain(6,1,8,S)→chest
@@ -123,7 +123,7 @@ public class FarmCollectionGameTests {
             new Farm("sugarcane_farm_auto", "minecraft:sugar_cane",
                     new BlockPos(4, 0, 8), new BlockPos(4, 1, 7)),
             new Farm("kelp_farm", "minecraft:dried_kelp",
-                    new BlockPos(4, 0, 7), new BlockPos(4, 1, 2)),
+                    new BlockPos(4, 0, 8), new BlockPos(4, 1, 2)),
             new Farm("bamboo_farm", "minecraft:bamboo",
                     new BlockPos(4, 0, 8), new BlockPos(4, 1, 5)),
             new Farm("cactus_farm", "minecraft:cactus",

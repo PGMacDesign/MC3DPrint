@@ -81,7 +81,5 @@ public class RedstoneClockScreen extends AbstractContainerScreen<RedstoneClockMe
         // big interval value, centred in the recessed field at panel y=44
         Component value = Component.translatable("gui.mc3dprint.redstone_clock.seconds", menu.intervalSeconds());
         graphics.drawString(font, value, (imageWidth - font.width(value)) / 2, 47, ACCENT, false);
-        Component hint = Component.translatable("gui.mc3dprint.redstone_clock.hint");
-        graphics.drawString(font, hint, (imageWidth - font.width(hint)) / 2, 70, LABEL, false);
     }
 }

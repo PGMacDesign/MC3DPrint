@@ -117,6 +117,12 @@ public class BlueprintDiscItem extends Item {
         return tag == null ? 0 : tag.getInt(TAG_PRINT_COST);
     }
 
+    /** The stored blueprint tier (the FU tier of the print cost), or 0 if absent. */
+    public static int getTier(ItemStack stack) {
+        CompoundTag tag = stack.getTag();
+        return tag == null ? 0 : tag.getInt(TAG_TIER);
+    }
+
     /**
      * The blueprint's tier = the highest material tier among its blocks (one
      * diamond block in a pile of stone still reads as that block's tier), or 1 if

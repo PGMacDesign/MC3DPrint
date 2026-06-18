@@ -244,20 +244,21 @@ Each printer has expansion slots for upgrade modules. Slot count mirrors tier (T
 
 A **Resin** is a consumed-per-print modifier dropped into the printer/fabricator's **Resin slot** (a single stack-holding slot beside the upgrade and spool columns). It refines the *next* blueprint print, then is used up. Resins work **only on official/found blueprints** — never player-scanned ones — the anti-exploit gate that stops a player scanning a cheap build and mass-printing value.
 
-Six effects, gated across three tiers:
+Six effects, gated across three rarities (Common / Uncommon / Rare). *Internally these are
+tiers 1–3; players see rarity names so "tier" stays the printer/spool axis.*
 
-| Effect | Tiers | What it does |
-|--------|-------|--------------|
-| Verdant Growth | T1, T2 | in-place plants (crops, nether wart, sweet berries, cocoa) print fully grown |
-| XP Yield | T1–T3 | the print banks XP (furnace-style), released when the disc is pulled from the output slot |
-| Treasure Infusion | T2, T3 | printed chests/barrels/shulkers may spawn holding loot (Common/Rare/Epic tables) |
-| Overdrive | T2, T3 | the print costs less filament — T2 = break-even, T3 = ~20% below (net FU gain) |
-| Quartermaster | T3 | printed furnaces/brewing-stands/chests arrive stocked (fuel, a move-in kit with enchanted iron tools) |
-| Ore Salting | T3 | printed natural stone has a chance to come out as a mineable ore vein |
+| Effect | Rarity | What it does |
+|--------|--------|--------------|
+| Verdant Growth | Common, Uncommon | in-place plants (crops, nether wart, sweet berries, cocoa) print fully grown |
+| XP Yield | Common–Rare | the print banks XP (furnace-style), released when the disc is pulled from the output slot |
+| Treasure Infusion | Uncommon, Rare | printed chests/barrels/shulkers may spawn holding loot (common/rare/epic loot pools) |
+| Overdrive | Uncommon, Rare | the print costs less filament — Uncommon = break-even, Rare = ~20% below (net FU gain) |
+| Quartermaster | Rare | printed furnaces/brewing-stands/chests arrive stocked (fuel, a move-in kit with enchanted iron tools) |
+| Ore Salting | Rare | printed natural stone has a chance to come out as a mineable ore vein |
 
-- **Crafting:** a shared **Resin Base** (Extrudium Crystal + any `forge:slimeballs`) + a tier ingredient (a diamond/emerald for T2) + an effect ingredient. **T1–T2 are craftable; T3 is loot-only**, found at ~10% in end-game chests (end cities, ancient cities, fortresses, bastions, mansions, strongholds, buried treasure) via a global loot modifier.
+- **Crafting:** a shared **Resin Base** (Extrudium Crystal + any `forge:slimeballs`) + a rarity ingredient (a diamond/emerald makes it Uncommon) + an effect ingredient. **Common/Uncommon are craftable; Rare is loot-only**, found at ~10% in end-game chests (end cities, ancient cities, fortresses, bastions, mansions, strongholds, buried treasure) via a global loot modifier.
 - **Lifecycle:** reserved when a catalyzed job starts, consumed on its first placed block (a print that can't even start doesn't waste a rare resin); the slot holds a stack, so Auto-printing keeps catalyzing until it runs dry, then prints normally.
-- **Anti-exploit:** every value-minting effect is multiply-gated — official-blueprints-only + consumed-per-print + (T3 unfarmable / T2 gem-cost) + per-print caps + the existing winder-blacklist and down-only/exact-tier winding — so none can become a duplication engine.
+- **Anti-exploit:** every value-minting effect is multiply-gated — official-blueprints-only + consumed-per-print + (Rare unfarmable / Uncommon gem-cost) + per-print caps + the existing winder-blacklist and down-only/exact-tier winding — so none can become a duplication engine.
 - All chances, caps, and amounts live in the `resin` section of the config. Full design + decision record: `docs/catalysts-design.md`.
 
 ---

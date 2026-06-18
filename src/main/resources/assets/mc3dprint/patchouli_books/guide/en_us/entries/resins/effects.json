@@ -11,12 +11,12 @@
     {
       "type": "patchouli:text",
       "title": "Overdrive",
-      "text": "$(l)Tier 2$() prints at exact $(l)break-even$(); $(l)Tier 3$() prints at a $(l)profit$() — you get back more filament than you spent."
+      "text": "$(l)Uncommon$() prints at exact $(l)break-even$(); $(l)Rare$() prints at a $(l)profit$() — you get back more filament than you spent."
     },
     {
       "type": "patchouli:text",
       "title": "Experience",
-      "text": "A catalyzed print stores XP on the machine, furnace-style. Pull the finished disc from the output slot and the orbs are yours. A big build with a Tier 3 resin is worth roughly a level 0-to-30 jump."
+      "text": "A catalyzed print stores XP on the machine, furnace-style. Pull the finished disc from the output slot and the orbs are yours. A big build with a Rare resin is worth roughly a level 0-to-30 jump."
     },
     {
       "type": "patchouli:text",
