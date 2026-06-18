@@ -140,7 +140,8 @@ public class ScannerItem extends Item {
         UUID id = store.save(blueprint);
 
         ItemStack disc = new ItemStack(ModItems.BLUEPRINT_DISC.get());
-        BlueprintDiscItem.writeBlueprint(disc, id, blueprint);
+        // playerCreated = true: a scanned disc is NOT official, so it can't take resin.
+        BlueprintDiscItem.writeBlueprint(disc, id, blueprint, true);
 
         // consume one blank disc; hand back the written disc (into the inventory, else drop)
         inv.getItem(blankSlot).shrink(1);

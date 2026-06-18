@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    { "item": "mc3dprint:printite_crystal" },
+    { "tag": "forge:slimeballs" }
+  ],
+  "result": {
+    "item": "mc3dprint:resin_base",
+    "count": 2
+  }
+}

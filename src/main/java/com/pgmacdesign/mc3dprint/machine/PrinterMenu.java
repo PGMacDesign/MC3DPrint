@@ -1,6 +1,8 @@
 package com.pgmacdesign.mc3dprint.machine;
 
 import com.pgmacdesign.mc3dprint.fu.SpoolItem;
+import com.pgmacdesign.mc3dprint.item.BlueprintDiscItem;
+import com.pgmacdesign.mc3dprint.item.ResinItem;
 import com.pgmacdesign.mc3dprint.machine.upgrade.UpgradeItem;
 import com.pgmacdesign.mc3dprint.registry.ModMenuTypes;
 import net.minecraft.network.FriendlyByteBuf;
@@ -50,6 +52,12 @@ public class PrinterMenu extends AbstractContainerMenu {
     /** Max spool slots across all tiers (T4+). */
     public static final int MAX_SPOOL_SLOTS = 4;
 
+    // Resin slot: a single slot in the gap between the upgrade column (top) and the
+    // spool column (bottom). PrinterScreen blits a well sprite here at runtime (like the
+    // spool wells), so there's no baked coord in gen_printer_gui.py to keep in lockstep.
+    public static final int RESIN_SLOT_X = 187;
+    public static final int RESIN_SLOT_Y = 106;
+
     /** Index of the first upgrade slot in this menu (after template + output). */
     private final int upgradeSlotStart;
     /** Number of upgrade slots actually present (this printer's tier). */
@@ -58,6 +66,8 @@ public class PrinterMenu extends AbstractContainerMenu {
     private final int spoolSlotStart;
     /** Number of spool slots actually present (this printer's tier). */
     private final int spoolSlotCount;
+    /** Index of the single resin slot (sits after the spool slots). */
+    private final int resinSlotStart;
 
     @Nullable
     private final PrinterBlockEntity printer;
@@ -159,6 +169,23 @@ public class PrinterMenu extends AbstractContainerMenu {
             });
         }
 
+        // Resin slot: a single stack-holding slot for the consumed-per-print modifier,
+        // in the gap between upgrades and spools. Locked (mayPickup=false) while a
+        // catalyzed job hasn't yet spent it (Q6).
+        IItemHandler resinHandler = printer != null ? printer.resinInventory() : new ItemStackHandler(1);
+        this.resinSlotStart = slots.size();
+        addSlot(new SlotItemHandler(resinHandler, 0, RESIN_SLOT_X, RESIN_SLOT_Y) {
+            @Override
+            public boolean mayPlace(@Nonnull ItemStack stack) {
+                return stack.getItem() instanceof ResinItem;
+            }
+
+            @Override
+            public boolean mayPickup(@Nonnull Player player) {
+                return printer == null || !printer.isResinLocked();
+            }
+        });
+
         // player inventory sits below the control strip (Start/Auto/Ghost +
         // build-offset rows) that lives between the machine and the inventory
         for (int row = 0; row < 3; row++) {
@@ -234,6 +261,17 @@ public class PrinterMenu extends AbstractContainerMenu {
         return upgradeSlotCount;
     }
 
+    /** True when a resin is slotted but the loaded blueprint is player-made, so the
+     *  resin won't apply (Q9 gate). Client-safe — reads synced slot contents. */
+    public boolean resinBlockedByPlayerBlueprint() {
+        ItemStack resin = slots.get(resinSlotStart).getItem();
+        if (!(resin.getItem() instanceof ResinItem)) {
+            return false;
+        }
+        ItemStack disc = slots.get(0).getItem(); // template slot
+        return BlueprintDiscItem.hasBlueprint(disc) && !BlueprintDiscItem.isOfficial(disc);
+    }
+
     /** Build offset for axis 0=X, 1=Y, 2=Z. */
     public int offset(int axis) {
         return SplitContainerData.combine(data, PrinterBlockEntity.DATA_OFFSET_X + axis);
@@ -283,9 +321,9 @@ public class PrinterMenu extends AbstractContainerMenu {
         ItemStack moved = slot.getItem();
         ItemStack original = moved.copy();
 
-        // Machine-side slots = template + output + upgrade slots + spool slots;
+        // Machine-side slots = template + output + upgrade slots + spool slots + resin;
         // everything after that is the player inventory.
-        int firstPlayerSlot = spoolSlotStart + spoolSlotCount;
+        int firstPlayerSlot = resinSlotStart + 1;
         boolean isMachineSlot = slotIndex < firstPlayerSlot;
         if (isMachineSlot) {
             // any machine slot (template / output / upgrade / spool) -> player inventory
@@ -302,6 +340,11 @@ public class PrinterMenu extends AbstractContainerMenu {
             // upgrade modules -> the upgrade slots (only ones this tier has)
             if (upgradeSlotCount == 0 || !moveItemStackTo(moved, upgradeSlotStart,
                     upgradeSlotStart + upgradeSlotCount, false)) {
+                return ItemStack.EMPTY;
+            }
+        } else if (moved.getItem() instanceof ResinItem) {
+            // resin -> the single resin slot
+            if (!moveItemStackTo(moved, resinSlotStart, resinSlotStart + 1, false)) {
                 return ItemStack.EMPTY;
             }
         } else {

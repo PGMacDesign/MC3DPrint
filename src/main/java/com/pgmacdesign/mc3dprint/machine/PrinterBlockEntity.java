@@ -13,6 +13,7 @@ import com.pgmacdesign.mc3dprint.fu.FuValue;
 import com.pgmacdesign.mc3dprint.fu.FuValueRegistry;
 import com.pgmacdesign.mc3dprint.fu.SpoolItem;
 import com.pgmacdesign.mc3dprint.item.BlueprintDiscItem;
+import com.pgmacdesign.mc3dprint.item.ResinItem;
 import com.pgmacdesign.mc3dprint.machine.upgrade.UpgradeItem;
 import com.pgmacdesign.mc3dprint.registry.ModBlockEntities;
 import net.minecraft.core.BlockPos;
@@ -114,6 +115,21 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         }
     };
 
+    // Resin slot (one slot, holds a stack up to 64): a consumed-per-print modifier
+    // that improves a blueprint print. Accepts only ResinItem; the effect is applied
+    // during the blueprint print loop and only on official/found blueprints.
+    private final ItemStackHandler resins = new ItemStackHandler(1) {
+        @Override
+        protected void onContentsChanged(int slot) {
+            setChanged();
+        }
+
+        @Override
+        public boolean isItemValid(int slot, @Nonnull ItemStack stack) {
+            return stack.getItem() instanceof ResinItem;
+        }
+    };
+
     private final MachineTier tier;
     private final ItemStackHandler spools;
     private final ItemStackHandler upgrades;
@@ -148,6 +164,15 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
     private int placementCooldown;
     private int retryCooldown;
     private final List<CompoundTag> history = new ArrayList<>();
+
+    // Resin (catalyst) state for the active blueprint job. Captured at job start from
+    // the Resin slot IF the disc is official; the resin stays locked in the slot until
+    // the job's first committed placement, where it's consumed (Q6). Phase 4 effects
+    // read armedResinEffect/armedResinTier on each placed block.
+    @Nullable
+    private ResinItem.Effect armedResinEffect;
+    private int armedResinTier;
+    private boolean resinConsumed;
 
     private State state = State.IDLE;
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -574,6 +599,60 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         return spools;
     }
 
+    public ItemStackHandler resinInventory() {
+        return resins;
+    }
+
+    /** Q6 lock: the resin committed to the active job can't be pulled until it's
+     *  consumed on the first placement (after that the rest of a stack is free).
+     *  Drives the GUI slot's mayPickup. */
+    public boolean isResinLocked() {
+        return activeJob != null && armedResinEffect != null && !resinConsumed;
+    }
+
+    /** Effect armed for the active job, or null if this print isn't catalyzed. */
+    @Nullable
+    public ResinItem.Effect armedResinEffect() {
+        return armedResinEffect;
+    }
+
+    public int armedResinTier() {
+        return armedResinTier;
+    }
+
+    /** Capture the slotted resin for this job iff the disc is an official blueprint. */
+    private void armResin(ItemStack disc) {
+        ItemStack resin = resins.getStackInSlot(0);
+        if (!resin.isEmpty() && resin.getItem() instanceof ResinItem r
+                && BlueprintDiscItem.isOfficial(disc)) {
+            armedResinEffect = r.effect();
+            armedResinTier = r.tier();
+        } else {
+            armedResinEffect = null;
+            armedResinTier = 0;
+        }
+        resinConsumed = false;
+    }
+
+    private void clearArmedResin() {
+        armedResinEffect = null;
+        armedResinTier = 0;
+        resinConsumed = false;
+    }
+
+    @Nullable
+    private static ResinItem.Effect parseResinEffect(String id) {
+        if (id == null || id.isEmpty()) {
+            return null;
+        }
+        for (ResinItem.Effect e : ResinItem.Effect.values()) {
+            if (e.id().equals(id)) {
+                return e;
+            }
+        }
+        return null;
+    }
+
     /** True while a structure job is running or an item is mid-print. */
     public boolean isActivelyPrinting() {
         return activeJob != null || state == State.PRINTING;
@@ -805,6 +884,14 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             energy.consume(rfPerBlock);
             drainFu(fuCost, costTier);
 
+            // First committed placement: spend the armed resin (Q6 — locked until now,
+            // unrefundable after). The effect itself is applied in Phase 4.
+            if (armedResinEffect != null && !resinConsumed) {
+                resins.extractItem(0, 1, false);
+                resinConsumed = true;
+                setChanged();
+            }
+
             // zap: the head fires a beam and the block materializes
             serverLevel.sendParticles(net.minecraft.core.particles.ParticleTypes.ELECTRIC_SPARK,
                     worldPos.getX() + 0.5, worldPos.getY() + 0.5, worldPos.getZ() + 0.5,
@@ -898,6 +985,7 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         skippedTypesLogged.clear();
         activeJob = new PrintJob(blueprintId, blueprint.name(), origin, orientation, size, blueprint.blockCount());
         cachedBlueprint = blueprint;
+        armResin(disc); // catalyze this job iff a resin is slotted and the disc is official
         placementOrder = buildPlacementOrder(blueprint);
         placementCooldown = 0;
         forceChunks(serverLevel, box, true);
@@ -970,6 +1058,7 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         inventory.setStackInSlot(SLOT_OUTPUT, disc.copy());
         inventory.setStackInSlot(SLOT_TEMPLATE, ItemStack.EMPTY);
         activeJob = null;
+        clearArmedResin();
         cachedBlueprint = null;
         placementOrder = null;
         lastPlacedPos = null;
@@ -1020,6 +1109,7 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             releaseJobResources(serverLevel);
         }
         activeJob = null;
+        clearArmedResin();
         cachedBlueprint = null;
         placementOrder = null;
         placementCooldown = 0;
@@ -1563,6 +1653,12 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         tag.put("Inventory", inventory.serializeNBT());
         tag.put("Spools", spools.serializeNBT());
         tag.put("Upgrades", upgrades.serializeNBT());
+        tag.put("Resins", resins.serializeNBT());
+        if (armedResinEffect != null) {
+            tag.putString("ArmedResin", armedResinEffect.id());
+            tag.putInt("ArmedResinTier", armedResinTier);
+        }
+        tag.putBoolean("ResinConsumed", resinConsumed);
         tag.putInt("Energy", energy.getEnergyStored());
         tag.putInt("Progress", itemProgress);
         tag.putInt("State", state.ordinal());
@@ -1589,6 +1685,10 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         inventory.deserializeNBT(tag.getCompound("Inventory"));
         spools.deserializeNBT(tag.getCompound("Spools"));
         upgrades.deserializeNBT(tag.getCompound("Upgrades"));
+        resins.deserializeNBT(tag.getCompound("Resins"));
+        armedResinEffect = parseResinEffect(tag.getString("ArmedResin"));
+        armedResinTier = tag.getInt("ArmedResinTier");
+        resinConsumed = tag.getBoolean("ResinConsumed");
         refreshEnergyCapacity();
         energy.setStored(tag.getInt("Energy"));
         itemProgress = tag.getInt("Progress");

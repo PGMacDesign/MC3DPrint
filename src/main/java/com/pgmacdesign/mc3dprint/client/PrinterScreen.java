@@ -177,6 +177,10 @@ public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
             int sy = PrinterMenu.SPOOL_SLOT_Y + (i / PrinterMenu.SPOOL_COLS) * PrinterMenu.SPOOL_ROW_STEP;
             graphics.blit(TEXTURE, left + sx - 1, top + sy - 1, wellU, wellV, 18, 18);
         }
+
+        // Resin-slot well (same baked sprite) in the gap between upgrades and spools.
+        graphics.blit(TEXTURE, left + PrinterMenu.RESIN_SLOT_X - 1, top + PrinterMenu.RESIN_SLOT_Y - 1,
+                wellU, wellV, 18, 18);
     }
 
     @Override
@@ -229,6 +233,13 @@ public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
                 Math.round(spoolRightEdge / spoolScale - font.width(spools)),
                 Math.round(spoolTopY / spoolScale), spoolsColor, false);
         graphics.pose().popPose();
+
+        // "Resin" label over the resin slot. Turns warm-red when a resin is slotted but
+        // the loaded blueprint is player-made (resin won't apply — the Q9 gate).
+        Component resinLabel = Component.translatable("gui.mc3dprint.resin");
+        int resinColor = menu.resinBlockedByPlayerBlueprint() ? WARN : LABEL;
+        graphics.drawString(font, resinLabel, PrinterMenu.RESIN_SLOT_X - 3,
+                PrinterMenu.RESIN_SLOT_Y - 10, resinColor, false);
 
         // "Upgrades" header over the upgrade-slot column (only when this tier has slots)
         if (menu.upgradeSlotCount() > 0) {

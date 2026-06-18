@@ -3,6 +3,7 @@ package com.pgmacdesign.mc3dprint.registry;
 import com.pgmacdesign.mc3dprint.MC3DPrint;
 import com.pgmacdesign.mc3dprint.fu.SpoolItem;
 import com.pgmacdesign.mc3dprint.item.BlueprintDiscItem;
+import com.pgmacdesign.mc3dprint.item.ResinItem;
 import com.pgmacdesign.mc3dprint.machine.multiblock.FabricatorBlockItem;
 import com.pgmacdesign.mc3dprint.machine.upgrade.UpgradeItem;
 import com.pgmacdesign.mc3dprint.scanner.ScannerItem;
@@ -84,6 +85,26 @@ public final class ModItems {
             () -> new UpgradeItem(UpgradeItem.Type.RF_EFFICIENCY, new Item.Properties().stacksTo(16)));
     public static final RegistryObject<Item> BUFFER_UPGRADE = ITEMS.register("buffer_upgrade",
             () -> new UpgradeItem(UpgradeItem.Type.BUFFER, new Item.Properties().stacksTo(16)));
+
+    /** Crafting intermediate for all craftable resins (printite crystal + slime). */
+    public static final RegistryObject<Item> RESIN_BASE = ITEMS.register("resin_base",
+            () -> new Item(new Item.Properties()));
+
+    /** All resin variants (effect × its valid tiers — the gated matrix). 11 items. */
+    public static final List<RegistryObject<Item>> RESINS = buildResins();
+
+    private static List<RegistryObject<Item>> buildResins() {
+        List<RegistryObject<Item>> resins = new ArrayList<>();
+        for (ResinItem.Effect effect : ResinItem.Effect.values()) {
+            for (int tier : effect.tiers()) {
+                final ResinItem.Effect e = effect;
+                final int t = tier;
+                resins.add(ITEMS.register(ResinItem.registryId(e, t),
+                        () -> new ResinItem(e, t, new Item.Properties().stacksTo(64))));
+            }
+        }
+        return List.copyOf(resins);
+    }
 
     /** Fabricator (controller) items, index 0 = Tier 5. Collapsed stacks re-form the multiblock. */
     public static final List<RegistryObject<Item>> FABRICATORS = buildFabricators();

@@ -42,6 +42,13 @@ public class BlueprintDiscItem extends Item {
     public static final String TAG_TIER = "Tier";
     public static final String TAG_PRINT_COST = "PrintCost";
     public static final String TAG_LOCKED = "Locked";
+    /**
+     * True when a player authored this disc (Structure Scanner or {@code /import}).
+     * Absent/false means the disc is OFFICIAL (curated or found-in-loot). The Resin
+     * system only works on official blueprints — this is the anti-exploit gate that
+     * stops a player scanning a cheap build and mass-printing treasure.
+     */
+    public static final String TAG_PLAYER_CREATED = "PlayerCreated";
 
     public BlueprintDiscItem(Properties properties) {
         super(properties);
@@ -79,6 +86,29 @@ public class BlueprintDiscItem extends Item {
         tag.putInt(TAG_TIER, blueprintTier(blueprint));
         tag.putInt(TAG_PRINT_COST, blueprintPrintCost(blueprint));
         return true;
+    }
+
+    /**
+     * As {@link #writeBlueprint(ItemStack, UUID, Blueprint)}, but also records whether
+     * a player authored this disc. Scanner/import pass {@code true}; curated + loot
+     * paths use the 3-arg form (official, flag absent).
+     */
+    public static boolean writeBlueprint(ItemStack stack, UUID id, Blueprint blueprint, boolean playerCreated) {
+        if (!writeBlueprint(stack, id, blueprint)) {
+            return false;
+        }
+        stack.getOrCreateTag().putBoolean(TAG_PLAYER_CREATED, playerCreated);
+        return true;
+    }
+
+    /**
+     * Whether this disc is an OFFICIAL/found blueprint (curated or loot) rather than
+     * one a player scanned/imported. Resin only applies to official blueprints. An
+     * absent flag reads as official (so all pre-existing discs stay official).
+     */
+    public static boolean isOfficial(ItemStack stack) {
+        CompoundTag tag = stack.getTag();
+        return tag == null || !tag.getBoolean(TAG_PLAYER_CREATED);
     }
 
     /**

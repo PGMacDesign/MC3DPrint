@@ -403,6 +403,8 @@ pool (XP, Treasure, Overdrive, Quartermaster, Ore Salting). **6 craftable recipe
 
 ### Build sequence (each phase compiles + its gametests green before the next)
 
+> **Progress:** Phases 1–3 ✅ DONE (committed; 76 gametests green). Phase 4 (effects) next.
+
 1. **Scaffold** — ResinItem/Effect/Tier + ResinBase + registration + textures + creative tab +
    recipes + `resin_gem` tag. Resins exist and craft but do nothing yet.
 2. **Slot + plumbing** — resin `ItemStackHandler`, menu slot (gap coords, lockstep), screen well +

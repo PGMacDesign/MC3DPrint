@@ -134,7 +134,8 @@ public final class ImportCommand {
         BlueprintFileStore store = BlueprintFileStore.forServer(source.getServer());
         UUID id = store.save(blueprint);
         ItemStack disc = new ItemStack(ModItems.BLUEPRINT_DISC.get());
-        BlueprintDiscItem.writeBlueprint(disc, id, blueprint);
+        // playerCreated = true: an imported disc is treated as player-authored (not official).
+        BlueprintDiscItem.writeBlueprint(disc, id, blueprint, true);
 
         if (source.getEntity() instanceof ServerPlayer player) {
             if (!player.getInventory().add(disc)) {
