@@ -1,5 +1,5 @@
 {
-  "parent": "mc3dprint:printite",
+  "parent": "mc3dprint:extrudium",
   "display": {
     "icon": {
       "item": "mc3dprint:tier7_fabricator"

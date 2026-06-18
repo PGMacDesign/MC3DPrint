@@ -1,5 +1,5 @@
 {
-  "feature": "mc3dprint:printite_ore",
+  "feature": "mc3dprint:extrudium_ore",
   "placement": [
     { "type": "minecraft:rarity_filter", "chance": 9 },
     { "type": "minecraft:in_square" },

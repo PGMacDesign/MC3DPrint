@@ -139,7 +139,7 @@ Requirements from the original design doc that were rewritten/dropped without a 
 ## Open Decisions
 
 - [x] Blueprint storage: ✅ file store + disc reference (see M1)
-- [ ] Final ore name (Printite is placeholder)
+- [x] Final ore name → **Extrudium** (chosen 2026-06-18; project-wide rename from the Printite placeholder shipped)
 - [x] ~~Clarify the 16:1 down-conversion rule~~ — resolved 2026-06-11: tiered FU, down-only at 4:1 per tier, up-conversion hard-blocked (see design doc)
 - [ ] Patrick's full favorite-mod list for compat evaluation
 

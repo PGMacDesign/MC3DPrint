@@ -1,7 +1,7 @@
 {
   "type": "minecraft:crafting_shapeless",
   "ingredients": [
-    { "item": "mc3dprint:printite_crystal" },
+    { "item": "mc3dprint:extrudium_crystal" },
     { "tag": "forge:slimeballs" }
   ],
   "result": {

@@ -59,8 +59,8 @@ public final class ModCreativeTabs {
                                 output.accept(ModItems.SPOOLS.get(i).get());
                             }
                         }
-                        output.accept(ModItems.PRINTITE_ORE.get());
-                        output.accept(ModItems.PRINTITE_CRYSTAL.get());
+                        output.accept(ModItems.EXTRUDIUM_ORE.get());
+                        output.accept(ModItems.EXTRUDIUM_CRYSTAL.get());
                         output.accept(ModItems.SPEED_UPGRADE.get());
                         output.accept(ModItems.EFFICIENCY_UPGRADE.get());
                         output.accept(ModItems.RF_EFFICIENCY_UPGRADE.get());

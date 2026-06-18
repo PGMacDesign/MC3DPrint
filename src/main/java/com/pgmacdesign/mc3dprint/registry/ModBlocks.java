@@ -62,7 +62,7 @@ public final class ModBlocks {
             () -> new com.pgmacdesign.mc3dprint.machine.CreativeEnergyBlock(machineProperties()));
 
     /** End-only ore for T5+ machine components (name placeholder per design doc). */
-    public static final RegistryObject<Block> PRINTITE_ORE = BLOCKS.register("printite_ore",
+    public static final RegistryObject<Block> EXTRUDIUM_ORE = BLOCKS.register("extrudium_ore",
             () -> new Block(BlockBehaviour.Properties.of()
                     .mapColor(MapColor.COLOR_BLUE)
                     .strength(4.5F, 9.0F)

@@ -16,7 +16,7 @@
     {
       "type": "patchouli:crafting",
       "recipe": "mc3dprint:tier5_fabricator",
-      "text": "The $(item)Tier 5 Fabricator$() controller, built around a Tier 4 printer and $(item)Printite Crystal$()."
+      "text": "The $(item)Tier 5 Fabricator$() controller, built around a Tier 4 printer and $(item)Extrudium Crystal$()."
     },
     {
       "type": "patchouli:text",

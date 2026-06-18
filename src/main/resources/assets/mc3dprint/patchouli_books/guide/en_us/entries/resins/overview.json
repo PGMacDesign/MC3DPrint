@@ -16,7 +16,7 @@
     {
       "type": "patchouli:crafting",
       "recipe": "mc3dprint:resin_base",
-      "text": "Everything starts with $(item)Resin Base$() — $(item)Printite Crystal$() plus any slimeball. Add a tier ingredient (a gem for Tier 2) and an effect ingredient to finish a resin."
+      "text": "Everything starts with $(item)Resin Base$() — $(item)Extrudium Crystal$() plus any slimeball. Add a tier ingredient (a gem for Tier 2) and an effect ingredient to finish a resin."
     }
   ]
 }

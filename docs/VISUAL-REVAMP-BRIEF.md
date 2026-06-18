@@ -16,7 +16,7 @@ pixel art). Magic = the cyan emissive hotend/filament.
 - **32×32** hero pieces: T1–T4 printers, T5–T8 fabricators (+active), filament
   winder, filament spools T1–T8, blueprint discs (blank+written), scanner.
 - **16×16** secondary: printer casing, converter, remote terminal, simple/clock
-  generator, creative energy source, printite ore+crystal, the 4 upgrade items,
+  generator, creative energy source, extrudium ore+crystal, the 4 upgrade items,
   creative spool. (Casing/fabricator *_active variants follow their base res.)
 - Models stay `cube_all` (blocks) / `item/generated` (items) — resolution is
   texture-only, no model changes. **Do NOT attempt custom block geometry** — it

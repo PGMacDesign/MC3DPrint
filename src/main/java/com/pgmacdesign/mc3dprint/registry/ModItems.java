@@ -71,10 +71,10 @@ public final class ModItems {
     public static final RegistryObject<Item> CREATIVE_SPOOL = ITEMS.register("creative_filament_spool",
             () -> new com.pgmacdesign.mc3dprint.fu.CreativeSpoolItem(new Item.Properties()));
 
-    public static final RegistryObject<Item> PRINTITE_ORE = ITEMS.register("printite_ore",
-            () -> new BlockItem(ModBlocks.PRINTITE_ORE.get(), new Item.Properties()));
+    public static final RegistryObject<Item> EXTRUDIUM_ORE = ITEMS.register("extrudium_ore",
+            () -> new BlockItem(ModBlocks.EXTRUDIUM_ORE.get(), new Item.Properties()));
 
-    public static final RegistryObject<Item> PRINTITE_CRYSTAL = ITEMS.register("printite_crystal",
+    public static final RegistryObject<Item> EXTRUDIUM_CRYSTAL = ITEMS.register("extrudium_crystal",
             () -> new Item(new Item.Properties()));
 
     public static final RegistryObject<Item> SPEED_UPGRADE = ITEMS.register("speed_upgrade",
@@ -86,7 +86,7 @@ public final class ModItems {
     public static final RegistryObject<Item> BUFFER_UPGRADE = ITEMS.register("buffer_upgrade",
             () -> new UpgradeItem(UpgradeItem.Type.BUFFER, new Item.Properties().stacksTo(16)));
 
-    /** Crafting intermediate for all craftable resins (printite crystal + slime). */
+    /** Crafting intermediate for all craftable resins (extrudium crystal + slime). */
     public static final RegistryObject<Item> RESIN_BASE = ITEMS.register("resin_base",
             () -> new Item(new Item.Properties()));
 

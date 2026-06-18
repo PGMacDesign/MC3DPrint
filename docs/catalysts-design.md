@@ -299,7 +299,7 @@ Patrick's two seeds plus additions. Each is feasible per the map above.
 
 - **Q16 — Crafting (T1/T2 craftable; T3 loot-only). Each resin = Resin Base + tier anchor +
   effect ingredient.**
-  - **Resin Base item:** printite crystal + slime ball via the **`forge:slimeballs` tag** (any
+  - **Resin Base item:** extrudium crystal + slime ball via the **`forge:slimeballs` tag** (any
     variant, incl. modded purple/blue — interchangeable). **NO honey** (annoying to farm).
     Verify exact tag id (`forge:slimeballs` vs `forge:slime_balls`) at impl.
   - **Tier anchor:** T1 = common mats (iron/redstone/gold). T2 = a single **diamond OR emerald**
@@ -307,7 +307,7 @@ Patrick's two seeds plus additions. Each is feasible per the map above.
     (extensible). **NO nether stars** (too steep for a per-print consumable).
   - **Yield:** T1 = **2** per craft (cheap, softens per-print grind); T2 = **1** (precious gem).
   - **Effect ingredients:** Verdant → bone meal/moss; Treasure → gold; Overdrive → redstone
-    block / printite; **XP → LAPIS LAZULI** (replaces bottle o' enchanting — that's cleric-trade
+    block / extrudium; **XP → LAPIS LAZULI** (replaces bottle o' enchanting — that's cleric-trade
     gated and miserable early; lapis is the vanilla enchanting reagent, cheap + mineable +
     recognizable). Optional fancier T2-XP flavor: sculk/echo shard (deferred; keep base lapis).
   - Exact 3×3 shaped patterns drafted at build time.
@@ -390,7 +390,7 @@ pool (XP, Treasure, Overdrive, Quartermaster, Ore Salting). **6 craftable recipe
   pick of 5 T3 resins; **code comment: TODO flavor-bias per table**). Register in
   `registry/ModLootModifiers.java`. `data/mc3dprint/loot_modifiers/catalysts_*.json` (tables +
   ~10% chance) + entry in `data/forge/loot_modifiers/global_loot_modifiers.json`.
-- **Recipes & tags** — `data/mc3dprint/recipes/resin_base.json` (printite + `forge:slimeballs`),
+- **Recipes & tags** — `data/mc3dprint/recipes/resin_base.json` (extrudium + `forge:slimeballs`),
   6 resin recipes (Base + tier-anchor + effect ingredient; T1 yield 2 / T2 yield 1). Tag
   `data/mc3dprint/tags/items/resin_gem.json` {diamond, emerald}. (Verify `forge:slimeballs` id.)
 - **Config** — `config/MC3DPrintConfig`: `RESIN` section — Treasure {chance, per-print cap,

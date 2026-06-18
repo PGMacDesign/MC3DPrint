@@ -4,7 +4,7 @@ Generate the MC3DPrint ITEM textures to the VISUAL-REVAMP-BRIEF.
 
 Hero (32x32): filament_spool_t1..t8, blank_blueprint_disc, blueprint_disc,
               scanner.
-Secondary (16x16): printite_crystal, speed/efficiency/rf_efficiency/buffer
+Secondary (16x16): extrudium_crystal, speed/efficiency/rf_efficiency/buffer
               upgrade, creative_filament_spool.
 
 Same filenames -> item/generated models still resolve. Run from repo root:
@@ -278,7 +278,7 @@ def scanner():
 # ---------------------------------------------------------------------------
 # SECONDARY 16x16 items
 # ---------------------------------------------------------------------------
-def printite_crystal():
+def extrudium_crystal():
     S = 16
     img = new(S); px = acc(img)
     # a faceted cyan gem: a tall hexagonal-cut crystal with a bright top table,
@@ -411,7 +411,7 @@ def main():
     written.append(save_item(blank_blueprint_disc(), "blank_blueprint_disc"))
     written.append(save_item(blueprint_disc(), "blueprint_disc"))
     written.append(save_item(scanner(), "scanner"))
-    written.append(save_item(printite_crystal(), "printite_crystal"))
+    written.append(save_item(extrudium_crystal(), "extrudium_crystal"))
     written.append(save_item(speed_upgrade(), "speed_upgrade"))
     written.append(save_item(efficiency_upgrade(), "efficiency_upgrade"))
     written.append(save_item(rf_efficiency_upgrade(), "rf_efficiency_upgrade"))

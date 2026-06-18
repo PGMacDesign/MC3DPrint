@@ -4,7 +4,7 @@ Generate the MC3DPrint BLOCK textures to the VISUAL-REVAMP-BRIEF.
 
 Hero (32x32): tier1..4_printer, tier5..8_fabricator (base), filament_winder.
 Secondary (16x16): printer_casing, filament_converter, remote_terminal,
-                   clock_generator, creative_energy_source, printite_ore.
+                   clock_generator, creative_energy_source, extrudium_ore.
 
 Filenames are kept identical so existing cube_all models still resolve. Run
 from repo root:  python3 tools/gen_block_textures.py
@@ -599,7 +599,7 @@ def creative_energy_source():
     return img
 
 
-def printite_ore():
+def extrudium_ore():
     img = new(S); px = s_acc(img)
     # stone base (use frame greys as "stone")
     stone = [(0x88, 0x88, 0x90), (0x70, 0x70, 0x78), (0x58, 0x58, 0x60),
@@ -612,7 +612,7 @@ def printite_ore():
         put(px, x, y, stone[1] if i % 2 else stone[3])
     hline(px, 0, 0, S, stone[0]); vline(px, 0, 0, S, stone[0])
     hline(px, 0, S - 1, S, stone[3]); vline(px, S - 1, 0, S, stone[3])
-    # cyan crystal clusters (printite = cyan-glow ore)
+    # cyan crystal clusters (extrudium = cyan-glow ore)
     clusters = [(5, 5), (10, 8), (7, 11)]
     for (cx, cy) in clusters:
         put(px, cx, cy, GLOW[0])
@@ -701,7 +701,7 @@ def main():
     written.append(save_block(clock_generator(), "clock_generator"))
     written.append(save_block(redstone_clock(), "redstone_clock"))
     written.append(save_block(creative_energy_source(), "creative_energy_source"))
-    written.append(save_block(printite_ore(), "printite_ore"))
+    written.append(save_block(extrudium_ore(), "extrudium_ore"))
     # formed-multiblock casing top faces
     written.append(save_block(casing_bed_top(), "casing_bed_top"))
     written.append(save_block(casing_rail_top(), "casing_rail_top"))

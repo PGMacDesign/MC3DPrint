@@ -67,14 +67,14 @@ single printer blocks; T5–T8 are multiblock fabricators (an N×N Printer Casin
 - **Status:** design complete, no code yet. Build sequence: scaffold → slot → official-flag +
   lifecycle → effects (one-at-a-time + gametests) → T3 loot GLM → Patchouli guide → deploy.
 
-### 6. Rename `printite` → `Extrudium` (project-wide) — DECIDED, not started
-- **What:** Patrick officially renamed the signature ore/crystal **printite → Extrudium**.
-  Coordinated id change across **~27 files** (registry consts, worldgen, loot, recipes, tags,
-  advancements, lang, models/blockstates, texture generators). Pairs with the long-standing
-  **retexture** goal (see memory `printite-revamp`).
-- **Watch:** the Catalysts Resin Base recipe uses "printite crystal" → "extrudium crystal".
-  Do it as one lockstep sweep (consider a sub-agent to catch every ref); verify GameTests +
-  a build. Grep `printite|Printite|PRINTITE` across `src` + `tools`.
+### 6. Rename `printite` → `Extrudium` (project-wide) — ✅ DONE (2026-06-18)
+- **Shipped:** coordinated id rename across all of `src` + `tools` — registry consts
+  (`EXTRUDIUM_ORE`/`EXTRUDIUM_CRYSTAL`), ids (`extrudium_ore`/`extrudium_crystal`), worldgen,
+  loot, recipes, tags, advancements, lang, models/blockstates/textures, generators. Zero
+  `printite` left in code/resources; compileJava + 84 GameTests green; built + deployed `0.4.0`.
+- **Note:** a registry-id rename is a breaking change — existing worlds drop old `printite`
+  entries on load (fine pre-launch). The **retexture** half (memory `printite-revamp`) is still
+  open: Extrudium reuses the old art for now.
 
 ---
 

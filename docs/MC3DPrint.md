@@ -23,7 +23,7 @@ A tech mod centered on a tiered 3D Printing Machine capable of fabricating items
 6. [[#Print Head Animation]]
 7. [[#Scanner Tool & Blueprint Discs]]
 8. [[#Printer GUI]]
-9. [[#Custom Ore — Printite]]
+9. [[#Custom Ore — Extrudium]]
 10. [[#Mod Compatibility]]
 11. [[#World Loot & Blueprint Discovery]]
 12. [[#Multiplayer & Server Features]]
@@ -44,7 +44,7 @@ Tiers 1–4 are single craftable blocks. Tiers 5–8 are true multiblock structu
 | 2 | Single block | 1×1 | Unlocks structure scanning & blueprints |
 | 3 | Single block | 3×3 print area | Small structures, mid-tier items |
 | 4 | Single block | 5×5 print area | Larger structures, advanced items |
-| 5 | Multiblock | 9×9 | Complex builds, elite items; **requires Printite** |
+| 5 | Multiblock | 9×9 | Complex builds, elite items; **requires Extrudium** |
 | 6 | Multiblock | 15×15 | Large structures, exotic materials |
 | 7 | Multiblock | 23×23 | Maximum base-game size; legendary items & massive builds |
 | 8 ⭐ | Multiblock | 33×33 | **Draconic tier** — Awakened Draconium required; pattern-consistent prestige tier |
@@ -273,7 +273,7 @@ Inspired by the BuildCraft Quarry — but in reverse. The quarry destroys top-do
 A craftable handheld tool used to capture structures as portable blueprints.
 
 **Workflow:**
-1. Craft the Scanner (mid-tier, requires tech components + Printite at higher scanner tiers)
+1. Craft the Scanner (mid-tier, requires tech components + Extrudium at higher scanner tiers)
 2. Right-click two corners to define a bounding box (WorldEdit wand style)
 3. Trigger scan — structure is captured
 4. Output: **Blueprint Disc** — a physical inventory item storing the schematic
@@ -319,9 +319,9 @@ All controls in one clean interface:
 
 ---
 
-## Custom Ore — Printite
+## Custom Ore — Extrudium
 
-> ⚠️ *Name placeholder: currently **"Printite"** — rename TBD. Find/replace when finalized.*
+> ⚠️ *Name placeholder: currently **"Extrudium"** — rename TBD. Find/replace when finalized.*
 
 - **Dimension:** The End only — zero overworld generation, keeps world gen clean
 - **Rarity:** Rare (comparable to ancient debris)
@@ -549,4 +549,4 @@ Start conservative — easier to buff than nerf post-release. All values exposed
 - **Blueprint file format:** NBT schematics, JSON, or custom `.blueprint` format? **New constraint (2026-06):** v1 must *import* vanilla structure `.nbt` (Create schematics) and Sponge `.schem` (WorldEdit) — so whatever the native format is, it needs an importer pipeline from day one.
 - **Print area:** ✅ Must be pre-cleared — the printer cannot replace existing blocks. Players are responsible for clearing the space before printing.
 - **Mod list:** Patrick to provide full list of favorite mods for compatibility evaluation and T8 tier candidates
-- **Ore name:** Printite is a placeholder — final name TBD
+- **Ore name:** Extrudium is a placeholder — final name TBD

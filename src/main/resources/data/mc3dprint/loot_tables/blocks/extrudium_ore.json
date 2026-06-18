@@ -9,7 +9,7 @@
           "children": [
             {
               "type": "minecraft:item",
-              "name": "mc3dprint:printite_ore",
+              "name": "mc3dprint:extrudium_ore",
               "conditions": [
                 {
                   "condition": "minecraft:match_tool",
@@ -19,7 +19,7 @@
             },
             {
               "type": "minecraft:item",
-              "name": "mc3dprint:printite_crystal",
+              "name": "mc3dprint:extrudium_crystal",
               "functions": [
                 { "function": "minecraft:apply_bonus", "enchantment": "minecraft:fortune", "formula": "minecraft:ore_drops" },
                 { "function": "minecraft:explosion_decay" }

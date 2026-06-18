@@ -5,7 +5,7 @@
     "size": 4,
     "targets": [
       {
-        "state": { "Name": "mc3dprint:printite_ore" },
+        "state": { "Name": "mc3dprint:extrudium_ore" },
         "target": {
           "predicate_type": "minecraft:block_match",
           "block": "minecraft:end_stone"
