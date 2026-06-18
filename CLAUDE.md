@@ -29,7 +29,7 @@ Two rules that bite if skipped:
 |---|---|
 | `MC3DPrint.java` | Mod entry; registries + event-listener wiring (incl. compat hooks) |
 | `fu/` | **FU economy core** — `FuValueRegistry` (values + tiers), `RecipeFuValuator`, `FuEvents` |
-| `machine/` | Printer block entity, menu, upgrades; `machine/multiblock/` fabricator |
+| `machine/` | Printer block entity, menu, upgrades, **Resin slot + `machine/resin/` effects**; `machine/multiblock/` fabricator |
 | `blueprint/` | `.blueprint` GZIP-NBT I/O, `CuratedBlueprints` install |
 | `scanner/` | Structure Scanner (capture builds) |
 | `integration/` | Soft-dep hooks: `ae2`, `thermal`, `tinkers`, `draconic`, `jei`, `patchouli` |
@@ -52,6 +52,9 @@ coords MUST stay in lockstep with `client/PrinterScreen` + `machine/PrinterMenu`
   something rarer (why chorus=T4, manyullyn=T6). Some items are intentionally **unvalued**
   (strict mode → unprintable): dragon egg, wither skeleton skull, survival-unobtainables.
 - Tier tests assert specific values (`gametest/`, `fu/`) — update them with any rebalance.
+- **Resins** (`item/ResinItem`, `machine/resin/`): consumed-per-print blueprint modifiers,
+  **official-blueprints-only** (`BlueprintDiscItem.isOfficial` — never player-scanned discs; the
+  anti-exploit gate). 6 effects, T1–T2 craftable / T3 loot-only; knobs in config `resin` section.
 
 ## Modded FU compat pattern
 
@@ -76,7 +79,8 @@ exact values: `docs/rebalance/{ae2,thermal,tconstruct}.md`.
 
 ## Where deeper context lives
 
-`docs/ROADMAP.md` (state + next-up), `docs/rebalance/` (FU rebalance plan + per-mod
-research), `docs/blueprint-specs.md`, `docs/popular-mods-1.20.1.md` (FU-synergy shortlist),
-and the project memory (`active-roadmap`, `fu-economy`, `upgrade-system`,
-`blueprint-pipeline`, `modded-fu-compat`, `winder-blacklist`, `multiblock-corner-blocks`).
+`docs/ROADMAP.md` (state + next-up), `docs/catalysts-design.md` (Resin/Catalyst spec +
+decisions), `docs/rebalance/` (FU rebalance plan + per-mod research), `docs/blueprint-specs.md`,
+`docs/popular-mods-1.20.1.md` (FU-synergy shortlist), and the project memory (`active-roadmap`,
+`fu-economy`, `resin-system`, `upgrade-system`, `blueprint-pipeline`, `modded-fu-compat`,
+`winder-blacklist`, `multiblock-corner-blocks`).
