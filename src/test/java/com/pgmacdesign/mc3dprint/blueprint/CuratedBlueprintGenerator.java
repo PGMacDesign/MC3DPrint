@@ -13335,11 +13335,9 @@ class CuratedBlueprintGenerator {
         BlueprintBlockState quartz     = bs("minecraft:smooth_quartz");          // structural framing accent
         BlueprintBlockState quartzSlabTop = bs("minecraft:smooth_quartz_slab[type=top]"); // top rail / coping
         BlueprintBlockState quartzSlabBot = bs("minecraft:smooth_quartz_slab[type=bottom]"); // overhang fascia
-        BlueprintBlockState poolFloor  = bs("minecraft:prismarine");
-        BlueprintBlockState poolLining = bs("minecraft:prismarine_bricks");
 
         // GROUND BODY footprint: the wide floor occupies the rear of the plot
-        // (z=2..10); the front strip z=0..1 is the patio + sunken pool. Full width.
+        // (z=2..10); the front strip z=0..1 is a flat patio. Full width.
         final int gz0 = 2, gz1 = z1;          // body z:2..10  (9 deep)
         final int gWallH = 4;                 // ground glass walls y=1..4
         final int gDeckY = gWallH + 1;        // ground flat roof deck y=5
@@ -13354,31 +13352,14 @@ class CuratedBlueprintGenerator {
         final int uParapetY = uDeckY + 1;      // roof-terrace parapet y=11
         final int ucx = (ux0 + ux1) / 2;       // 7
 
-        // Sunken pool basin in the front patio: a 7×1 strip-ish reflecting pool.
-        // x:4..10, z:0 (front edge row only is the open infinity lip); basin
-        // occupies z:0..1 so it reads as a real sunken water feature.
-        final int px0 = 4, px1 = 10, pz0 = 0, pz1 = 1;
-
         // ── y=0 : FOUNDATION ──────────────────────────────────────────────────
         floor(b, 0, x0, z0, x1, z1, foundation);            // full plinth
-        floor(b, 0, px0, pz0, px1, pz1, poolFloor);         // pool basin floor (prismarine)
-        // flush sea-lantern uplights down the pool floor (glow up through the water)
-        for (int x = px0 + 1; x <= px1 - 1; x += 2) {
-            b.set(x, 0, pz0, SEA_LANTERN);
-        }
 
-        // ── PATIO + POOL (y=1) ────────────────────────────────────────────────
-        // The front patio surface is light-grey concrete; the pool cells get WATER
-        // flush with it. A prismarine-brick lining rings the basin at y=0.
-        floor(b, 1, x0, pz0, x1, gz0 - 1, foundation);      // patio deck across the front strip
-        floor(b, 1, px0, pz0, px1, pz1, WATER);             // …water over the basin cells
-        line(b, 0, px0, pz1, px1, pz1, poolLining);         // basin inner (north) wall lining
-        line(b, 0, px0, pz0, px0, pz1, poolLining);         // basin west wall lining
-        line(b, 0, px1, pz0, px1, pz1, poolLining);         // basin east wall lining
-        // smooth-quartz coping ring around the inner pool edge (the bright reveal)
-        for (int x = px0 - 1; x <= px1 + 1; x++) {
-            b.set(x, 1, pz1 + 1, quartzSlabTop);            // coping behind the pool (patio side)
-        }
+        // ── FRONT PATIO (y=1) ─────────────────────────────────────────────────
+        // A flat light-grey concrete patio across the front strip (z=0..1). The sunken
+        // reflecting pool that used to sit here was removed (Patrick: no water out front),
+        // so the front reads as a clean modern entrance terrace.
+        floor(b, 1, x0, z0, x1, gz0 - 1, foundation);
 
         // ════════════════════════════════════════════════════════════════════
         //  GROUND TIER — the wide floor (z=2..10), glass curtain walls y=1..4
@@ -13573,7 +13554,13 @@ class CuratedBlueprintGenerator {
         BlueprintBlockState ladderS =
                 bs("minecraft:ladder[facing=south,waterlogged=false]");
         pillar(b, ladX, ladZ - 1, 1, uFloorY - 2, frame); // backing pillar (10,1..4,4) gray frame
-        pillar(b, ladX, ladZ, 1, uFloorY, ladderS);       // rungs (10,1..6,5), hatching the deck+floor
+        // The rungs now run ALL THE WAY to the upper ROOF DECK (y=uDeckY=10), hatching the
+        // deck so you climb out onto the roof terrace (Patrick: make the 3rd story reachable).
+        // Backing at z-1 is solid the whole climb — frame pillar (y1..4), ground deck (y5),
+        // upper floor (y6), spandrel (y7), top rail (y9), roof deck (y10) — EXCEPT the y8
+        // window band, so plug that one cell solid or the rung there pops (unbacked-ladder class).
+        b.set(ladX, uFloorY + 2, ladZ - 1, wallMass);     // (10,8,4) solid backing through the glass band
+        pillar(b, ladX, ladZ, 1, uDeckY, ladderS);        // rungs (10,1..10,5) → emerge on the roof
 
         return b.build();
     }
