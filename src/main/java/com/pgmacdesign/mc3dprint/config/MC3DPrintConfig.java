@@ -24,6 +24,7 @@ public final class MC3DPrintConfig {
     private static final ForgeConfigSpec.DoubleValue[] EFFICIENCY = new ForgeConfigSpec.DoubleValue[8];
 
     public static final ForgeConfigSpec.IntValue T1_SCANNER_MAX_EDGE;
+    public static final ForgeConfigSpec.BooleanValue UNLOCK_SCANNER_SIZE;
     public static final ForgeConfigSpec.IntValue WINDER_RF_PER_ITEM;
     public static final ForgeConfigSpec.IntValue WINDER_TICKS_PER_ITEM;
     public static final ForgeConfigSpec.IntValue WINDER_ENERGY_BUFFER;
@@ -97,6 +98,13 @@ public final class MC3DPrintConfig {
                         "official/curated discs can print larger builds on a high-tier fabricator.",
                         "Lower it for a smaller scanner; raising it does not change what a printer can build.")
                 .defineInRange("t1MaxEdge", 33, 1, 256);
+        UNLOCK_SCANNER_SIZE = builder
+                .comment("Scanner size override. FALSE (default): the scanner is capped at the flat",
+                        "t1MaxEdge above. TRUE: raise the scan cap to the largest footprint a buildable",
+                        "fabricator can actually print — T8=51 with Draconic Evolution installed, otherwise",
+                        "T7=33 — so you can scan a very large build and turn it into a printable blueprint.",
+                        "Advanced/opt-in; off by default.")
+                .define("unlockScannerSize", false);
         builder.pop();
 
         builder.comment("Filament Winder").push("winder");

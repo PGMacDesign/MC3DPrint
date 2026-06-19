@@ -4,6 +4,8 @@ import com.pgmacdesign.mc3dprint.blueprint.Blueprint;
 import com.pgmacdesign.mc3dprint.blueprint.BlueprintFileStore;
 import com.pgmacdesign.mc3dprint.config.MC3DPrintConfig;
 import com.pgmacdesign.mc3dprint.item.BlueprintDiscItem;
+import com.pgmacdesign.mc3dprint.machine.MachineTier;
+import com.pgmacdesign.mc3dprint.machine.multiblock.MultiblockPattern;
 import com.pgmacdesign.mc3dprint.registry.ModItems;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
@@ -22,6 +24,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
+import net.minecraftforge.fml.ModList;
 
 import javax.annotation.Nullable;
 import java.util.List;
@@ -101,6 +104,14 @@ public class ScannerItem extends Item {
         // footprint: hand-scans stay a sane size while official/curated discs can print larger
         // builds on a high-tier fabricator. Tune via the `t1MaxEdge` config.
         int maxEdge = MC3DPrintConfig.T1_SCANNER_MAX_EDGE.get();
+        // Opt-in override (config `unlockScannerSize`): raise the cap to the largest footprint a
+        // buildable fabricator can print — T8=51 with Draconic Evolution, else T7=33 — so a very
+        // large build can be captured and printed. Off by default; never lowers the configured cap.
+        if (MC3DPrintConfig.UNLOCK_SCANNER_SIZE.get()) {
+            MachineTier top = ModList.get().isLoaded(MultiblockPattern.DRACONIC_MOD_ID)
+                    ? MachineTier.T8 : MachineTier.T7;
+            maxEdge = Math.max(maxEdge, top.maxFootprint());
+        }
         BlockPos a = cornerA.get();
         BlockPos b = cornerB.get();
         int dx = Math.abs(a.getX() - b.getX()) + 1;

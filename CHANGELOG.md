@@ -8,6 +8,9 @@ All notable changes to **MC3DPrint** (Minecraft 1.20.1 / Forge). Format loosely 
 A testing-phase polish + rebalance pass over the Resin system and the curated farms.
 
 ### Added
+- **`unlockScannerSize` config** — opt-in override (default off) that raises the Structure Scanner's
+  per-axis cap from the flat `t1MaxEdge` (33) up to the largest printable footprint (T8=51 with
+  Draconic Evolution, else T7=33), so a very large in-world build can be captured and printed.
 - **Grand Cathedral** — a new showpiece curated build (13×22×23): twin west-front bell towers with
   ladders, hung bells and spires; a vaulted nave with an arcade of columns, clerestory lancets, a
   rose window, hanging-lantern chandeliers and a processional aisle; a raised chancel with a great

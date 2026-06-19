@@ -13,6 +13,11 @@
       "type": "patchouli:text",
       "title": "Discs in Creative",
       "text": "In $(l)Creative$(), MC3DPrint can list $(l)every$() curated $(item)Blueprint Disc$() it ships, or just a small hand-picked launch set — your call. Toggle it in $(o)mc3dprint-common.toml$():$(br)$(o)[general]$()$(br)$(o)allowAllDiscsInCreative$()$(br2)Cosmetic only — survival still finds every build as $(l)world loot$() either way."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Scan Size",
+      "text": "The $(item)Structure Scanner$() caps each axis at $(l)33$() by default. Capturing something $(l)bigger$()? Set$(br)$(o)[scanner]$()$(br)$(o)unlockScannerSize = true$()$(br)in $(o)mc3dprint-common.toml$() to scan up to the largest printable size (51 with a $(l)Tier 8$() fabricator)."
     }
   ]
 }
