@@ -6,7 +6,7 @@
   "pages": [
     {
       "type": "patchouli:text",
-      "text": "FU is denominated $(l)by tier$(): a Tier 5 spool stores Tier 5 FU, a Tier 1 spool stores Tier 1 FU. One unit of Tier N FU is worth several units of Tier N-1 (the $(l)conversion ratio$(), set in config).$(br2)Each unit is worth more the higher its tier — tier is value, not just capacity."
+      "text": "FU (Filament Units) is denominated $(l)by tier$(): a Tier 5 spool stores Tier 5 FU, a Tier 1 spool stores Tier 1 FU. One unit of Tier N FU is worth several units of Tier N-1 (the $(l)conversion ratio$(), set in config).$(br2)Each unit is worth more the higher its tier — tier is value, not just capacity."
     },
     {
       "type": "patchouli:text",

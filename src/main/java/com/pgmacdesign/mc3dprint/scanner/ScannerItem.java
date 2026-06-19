@@ -4,8 +4,6 @@ import com.pgmacdesign.mc3dprint.blueprint.Blueprint;
 import com.pgmacdesign.mc3dprint.blueprint.BlueprintFileStore;
 import com.pgmacdesign.mc3dprint.config.MC3DPrintConfig;
 import com.pgmacdesign.mc3dprint.item.BlueprintDiscItem;
-import com.pgmacdesign.mc3dprint.machine.MachineTier;
-import com.pgmacdesign.mc3dprint.machine.multiblock.MultiblockPattern;
 import com.pgmacdesign.mc3dprint.registry.ModItems;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
@@ -24,7 +22,6 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.fml.ModList;
 
 import javax.annotation.Nullable;
 import java.util.List;
@@ -99,13 +96,11 @@ public class ScannerItem extends Item {
             return InteractionResultHolder.fail(stack);
         }
 
-        // Cap the scan at the largest footprint a buildable printer can actually print,
-        // so you can scan anything you could later print. That ceiling is Draconic-gated:
-        // the T8 fabricator (footprint 33) only forms when Draconic Evolution is present,
-        // so without DE the top buildable tier is T7 (footprint 23). The config value is
-        // an optional further restriction (a smaller scanner); it never raises the cap
-        // above what's buildable.
-        int maxEdge = Math.min(MC3DPrintConfig.T1_SCANNER_MAX_EDGE.get(), maxBuildableFootprint());
+        // Flat scan cap per axis (default 33), independent of machine tier and of whether
+        // Draconic Evolution is installed. The scanner is deliberately decoupled from the print
+        // footprint: hand-scans stay a sane size while official/curated discs can print larger
+        // builds on a high-tier fabricator. Tune via the `t1MaxEdge` config.
+        int maxEdge = MC3DPrintConfig.T1_SCANNER_MAX_EDGE.get();
         BlockPos a = cornerA.get();
         BlockPos b = cornerB.get();
         int dx = Math.abs(a.getX() - b.getX()) + 1;
@@ -156,17 +151,6 @@ public class ScannerItem extends Item {
                 blueprint.blockCount()), true);
         level.playSound(null, player.blockPosition(), SoundEvents.PLAYER_LEVELUP, SoundSource.PLAYERS, 0.5F, 1.5F);
         return InteractionResultHolder.consume(stack);
-    }
-
-    /**
-     * The largest footprint any buildable printer supports, used as the scan cap so
-     * you can scan anything you could print. T8 (33) requires Draconic Evolution to
-     * form its fabricator; without DE the top buildable tier is T7 (23).
-     */
-    private static int maxBuildableFootprint() {
-        MachineTier top = ModList.get().isLoaded(MultiblockPattern.DRACONIC_MOD_ID)
-                ? MachineTier.T8 : MachineTier.T7;
-        return top.maxFootprint();
     }
 
     private static Optional<BlockPos> readCorner(ItemStack stack, String key) {

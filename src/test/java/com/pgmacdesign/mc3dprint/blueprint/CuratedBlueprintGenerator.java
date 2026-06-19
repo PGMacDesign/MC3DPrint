@@ -2945,7 +2945,10 @@ class CuratedBlueprintGenerator {
                 bs("minecraft:blue_stained_glass"), bs("minecraft:red_stained_glass"),
                 bs("minecraft:yellow_stained_glass"), bs("minecraft:lime_stained_glass"),
                 bs("minecraft:purple_stained_glass"), bs("minecraft:cyan_stained_glass")};
-        BlueprintBlockState pew = bs("minecraft:spruce_stairs[facing=south,half=bottom,shape=straight]");
+        // facing=north: stairs ascend toward their facing, so a seated worshipper faces the
+        // OPPOSITE way — south, toward the altar at the +Z (back) end. (facing=south sat them
+        // backwards, looking at the entrance.)
+        BlueprintBlockState pew = bs("minecraft:spruce_stairs[facing=north,half=bottom,shape=straight]");
         BlueprintBlockState carpet = bs("minecraft:red_carpet");
 
         // ---- footing + nave outer shell (walls y=1..8; towers/roof extend it later) ----
@@ -3041,6 +3044,10 @@ class CuratedBlueprintGenerator {
             b.set(7, 1, z, pew);
             b.set(8, 1, z, pew);
         }
+
+        // ---- narthex chests in the entrance-end corners (handy for a Treasure resin) ----
+        b.set(3, 1, 1, CHEST); // NW corner, tucked against the west tower; opens into the nave
+        b.set(9, 1, 1, CHEST); // NE corner
 
         // ---- raised chancel + altar + great east window ----
         floor(b, 1, 4, 19, 8, 21, STONE_BRICK_SLAB_BOTTOM); // dais

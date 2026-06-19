@@ -27,6 +27,12 @@ A testing-phase polish + rebalance pass over the Resin system and the curated fa
 - **Acknowledgements** guide page.
 
 ### Changed
+- **Bigger prints on the top tiers** — print footprint caps raised: **T7 23→33, T8 33→51** (kept odd
+  for a centered controller). The fabricator frames are unchanged; only the projected print zone grows.
+- **Scanner decoupled from the print cap** — scanning is now a flat per-axis cap (default **33**,
+  `t1MaxEdge` config), independent of machine tier and of Draconic Evolution (no more 23-vs-33 split).
+  Hand-scans stay a sane size while official/curated discs can print larger builds on a high-tier
+  fabricator.
 - **Resin rarity wording: Tier I/II/III → Common / Uncommon / Rare** everywhere player-facing
   (item names, tooltips, Patchouli, docs). Registry IDs unchanged.
 - **Treasure loot pools unified to common/uncommon/rare** (was common/rare/epic) and ~**50% more
