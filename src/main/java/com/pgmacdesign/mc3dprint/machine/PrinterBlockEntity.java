@@ -434,6 +434,9 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
     }
 
     private Optional<FuValue> blockFuValue(BlockState state) {
+        // A block is charged against its own item. Powder snow's item is the powder_snow_bucket
+        // (a SolidBucketItem, registered as the block's item), so valuing that bucket in
+        // FuValueRegistry is enough to price the printed block — no special-casing needed here.
         Item item = state.getBlock().asItem();
         return item == Items.AIR ? Optional.empty() : FuValueRegistry.valueOf(new ItemStack(item));
     }

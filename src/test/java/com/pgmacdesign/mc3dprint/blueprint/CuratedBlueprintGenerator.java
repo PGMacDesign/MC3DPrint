@@ -333,6 +333,8 @@ class CuratedBlueprintGenerator {
         builds.put("bee_apiary", beeApiary());
         // Showpiece — Grand Cathedral (twin towers + vaulted nave; the Library's companion)
         builds.put("grand_cathedral", grandCathedral());
+        // Imported player scan — Tristan's Castle (gift build; powder snow priced via the bucket)
+        builds.put("tristans_castle", tristansCastle());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -8561,6 +8563,40 @@ class CuratedBlueprintGenerator {
         // baked redstone-clock interval — is preserved verbatim from the scan.
         Blueprint scan = loadScannedBlueprint("pumpkin_melon_farm");
         return normalizeScannedFarm(scan, "Pumpkin & Melon Farm");
+    }
+
+    /**
+     * Tristan's Castle — a castle hand-built and scanned in-world by PGMacDesign (a gift build for
+     * his son), loaded from {@code src/test/resources/scanned/tristans_castle.blueprint} rather than
+     * built procedurally. 22×10×19. Every block state (stone bricks + stairs, dark-oak planks,
+     * powder snow, tripwire) carries over verbatim; only the title is set — no farm normalization.
+     *
+     * <p>Printability of the two odd blocks: <b>powder snow</b>'s block-item is the
+     * {@code powder_snow_bucket} (which has no recipe), so it's priced by valuing that bucket
+     * (16 FU @ T2 in {@code FuValueRegistry}); the bucket is winder-blacklisted, so it prints with a
+     * cost but can't be laundered into FU. <b>Tripwire</b> is itemless structural and prints free.
+     * At 22 wide the build needs a <b>Tier 7+ fabricator</b> (footprint cap).
+     */
+    private static Blueprint tristansCastle() {
+        Blueprint scan = loadScannedBlueprint("tristans_castle");
+        Blueprint.Builder b = Blueprint.builder("Tristan's Castle", scan.sizeX(), scan.sizeY(), scan.sizeZ());
+        for (int y = 0; y < scan.sizeY(); y++) {
+            for (int z = 0; z < scan.sizeZ(); z++) {
+                for (int x = 0; x < scan.sizeX(); x++) {
+                    BlueprintBlockState st = scan.get(x, y, z);
+                    if (st != null) {
+                        b.set(x, y, z, st); // verbatim — a static build needs no normalization
+                    }
+                }
+            }
+        }
+        for (Map.Entry<net.minecraft.core.BlockPos, CompoundTag> e : scan.blockEntities().entrySet()) {
+            CompoundTag tag = e.getValue().copy();
+            tag.remove("Items"); // never ship captured container contents (none expected here)
+            net.minecraft.core.BlockPos p = e.getKey();
+            b.blockEntity(p.getX(), p.getY(), p.getZ(), tag);
+        }
+        return b.build();
     }
 
     /** Reads a raw player-scan from {@code src/test/resources/scanned/<name>.blueprint} (GZIP-NBT). */

@@ -8,6 +8,11 @@ All notable changes to **MC3DPrint** (Minecraft 1.20.1 / Forge). Format loosely 
 A testing-phase polish + rebalance pass over the Resin system and the curated farms.
 
 ### Added
+- **Tristan's Castle** — a new curated build imported from PGMacDesign's in-world scan (22×10×19;
+  stone bricks, dark oak, powder snow, tripwire). Needs a Tier 7+ fabricator (footprint).
+- **Powder snow is now printable with a cost** — its block-item is the `powder_snow_bucket` (which
+  has no recipe), so it had no FU value and strict mode refused it. Valued at 16 FU @ T2 and added to
+  the winder blacklist: it prints with a cost but can't be wound/laundered into FU.
 - **`unlockScannerSize` config** — opt-in override (default off) that raises the Structure Scanner's
   per-axis cap from the flat `t1MaxEdge` (33) up to the largest printable footprint (T8=51 with
   Draconic Evolution, else T7=33), so a very large in-world build can be captured and printed.

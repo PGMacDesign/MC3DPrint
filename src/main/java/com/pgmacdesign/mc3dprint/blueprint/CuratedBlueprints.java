@@ -174,7 +174,9 @@ public final class CuratedBlueprints {
             // Phase 2 — Category F (bee_apiary) — unblocked: honeycomb valued -> beehive/honeycomb_block derive
             "bee_apiary",
             // Showpiece — Grand Cathedral (twin towers + vaulted nave; the Library's companion)
-            "grand_cathedral");
+            "grand_cathedral",
+            // Imported player scan — Tristan's Castle (gift build; powder snow priced via the bucket)
+            "tristans_castle");
 
     /**
      * Load a bundled curated blueprint straight from the mod's resources (no world

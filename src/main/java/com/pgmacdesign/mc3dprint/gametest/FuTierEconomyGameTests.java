@@ -189,6 +189,46 @@ public class FuTierEconomyGameTests {
         });
     }
 
+    @GameTest(template = "empty5", timeoutTicks = 100)
+    public static void powderSnowPricedViaBucket(GameTestHelper helper) {
+        // Powder snow's block-item IS the powder_snow_bucket (a SolidBucketItem), and the bucket has
+        // no recipe — so valuing the bucket is what gives the printed block an FU cost. Without it the
+        // block is unpriced and strict mode silently skips it. Verify both halves of that chain.
+        boolean blockItemIsBucket =
+                net.minecraft.world.level.block.Blocks.POWDER_SNOW.asItem() == Items.POWDER_SNOW_BUCKET;
+        var bucket = com.pgmacdesign.mc3dprint.fu.FuValueRegistry.valueOf(new ItemStack(Items.POWDER_SNOW_BUCKET));
+        boolean valued = bucket.isPresent() && bucket.get().fu() == 16 && bucket.get().tier() == 2;
+        if (!blockItemIsBucket) {
+            helper.fail("Powder snow's block-item should be the powder_snow_bucket, got "
+                    + net.minecraft.world.level.block.Blocks.POWDER_SNOW.asItem());
+        } else if (!valued) {
+            helper.fail("powder_snow_bucket should be 16 FU @ T2, got " + bucket);
+        } else {
+            helper.succeed();
+        }
+    }
+
+    @GameTest(template = "empty5", timeoutTicks = 150)
+    public static void powderSnowBucketIsNotWindable(GameTestHelper helper) {
+        WinderBlockEntity winder = placePoweredWinder(helper, new BlockPos(2, 1, 2));
+        // Priced at T2 for printing, but winder-blacklisted: even a matching T2 spool must refuse it,
+        // so powder snow can't be laundered into FU despite carrying a print value.
+        winder.inventory().setStackInSlot(WinderBlockEntity.SLOT_SPOOL, spoolWithFu(2, 0));
+        winder.inventory().setStackInSlot(WinderBlockEntity.SLOT_INPUT, new ItemStack(Items.POWDER_SNOW_BUCKET, 1));
+
+        helper.runAfterDelay(100, () -> {
+            int fu = SpoolItem.getFu(winder.inventory().getStackInSlot(WinderBlockEntity.SLOT_SPOOL));
+            boolean inputKept = !winder.inventory().getStackInSlot(WinderBlockEntity.SLOT_INPUT).isEmpty();
+            if (fu != 0) {
+                helper.fail("Blacklisted powder_snow_bucket was wound: spool gained " + fu + " FU");
+            } else if (!inputKept) {
+                helper.fail("Winder consumed a blacklisted powder_snow_bucket");
+            } else {
+                helper.succeed();
+            }
+        });
+    }
+
     @GameTest(template = "empty5", timeoutTicks = 150)
     public static void winderWindsIntoMatchingTierSpool(GameTestHelper helper) {
         WinderBlockEntity winder = placePoweredWinder(helper, new BlockPos(2, 1, 2));
