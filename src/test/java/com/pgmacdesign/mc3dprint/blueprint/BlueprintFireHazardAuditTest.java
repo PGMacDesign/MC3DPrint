@@ -70,10 +70,10 @@ class BlueprintFireHazardAuditTest {
      * ignite. This is the same reason real lava-blade farms hold lava on signs. The lava is
      * otherwise caged in stone with no building material nearby.
      */
-    // iron_farm + chicken_coop_auto both hold a lava blade on signs: the lava has no air
-    // neighbour (sign above + below, stone on all sides), and fire only spawns in air
-    // adjacent to lava, so the (oak) signs can't ignite. Same lava-blade reasoning.
-    private static final java.util.Set<String> INTENTIONAL_LAVA = java.util.Set.of("iron_farm", "chicken_coop_auto");
+    // iron_farm holds a lava blade on signs: the lava has no air neighbour (sign above +
+    // below, stone on all sides), and fire only spawns in air adjacent to lava, so nearby
+    // blocks can't ignite. (chicken_coop_auto used the same trick but was archived 2026-06-18.)
+    private static final java.util.Set<String> INTENTIONAL_LAVA = java.util.Set.of("iron_farm");
 
     /**
      * The ONLY blocks that actively spread fire to neighbouring blocks. Matched by exact id.

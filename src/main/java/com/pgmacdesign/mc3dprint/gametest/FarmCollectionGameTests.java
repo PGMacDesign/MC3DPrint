@@ -111,13 +111,10 @@ public class FarmCollectionGameTests {
      * bamboo_farm           bamboo         (4,0,8)         (4,1,5) in canal water  hopper line(4,0,1..7,S) chains S → chest
      * cactus_farm           cactus (drop)  (3,0,6)         (1,1,2) in water moat   hopper floor(1..5,1..5) funnels → chest
      * iron_farm             iron_ingot     (6,1,9)         (4,2,4) above ring hop  ring(4,1,4,S)→…→(6,1,7)→drain(6,1,8,S)→chest
-     * chicken_coop_auto     cooked_chicken (2,1,4)         (2,2,2) above landing hopper  landing hopper(2,1,2,S)→carrier→chest
      * </pre>
      *
-     * <p>Harvest cells sit above a TRANSPORT hopper. The chicken cooker's drop cell (3,2,3)
-     * is a lit campfire — campfires DON'T destroy dropped items (only living entities), so
-     * the cooked chicken sits on it and the hopper below routes it. The iron_farm harvest
-     * cell deliberately avoids its lava blade (2×2 core at x∈{5,6},z∈{5,6}).
+     * <p>Harvest cells sit above a TRANSPORT hopper. The iron_farm harvest cell deliberately
+     * avoids its lava blade (2×2 core at x∈{5,6},z∈{5,6}).
      */
     private static final Farm[] FARMS = {
             new Farm("sugarcane_farm_auto", "minecraft:sugar_cane",
@@ -130,8 +127,6 @@ public class FarmCollectionGameTests {
                     new BlockPos(3, 0, 6), new BlockPos(1, 1, 2)),
             new Farm("iron_farm", "minecraft:iron_ingot",
                     new BlockPos(6, 1, 9), new BlockPos(4, 2, 4)),
-            new Farm("chicken_coop_auto", "minecraft:cooked_chicken",
-                    new BlockPos(2, 1, 4), new BlockPos(2, 2, 2)),
     };
 
     // ── one @GameTest per farm (each gets its own world instance / pass-fail line) ──
@@ -159,11 +154,6 @@ public class FarmCollectionGameTests {
     @GameTest(template = "empty5", timeoutTicks = ROUTE_TICKS + 60)
     public static void ironFarmRoutesToChest(GameTestHelper helper) {
         runRoutingTest(helper, FARMS[4]);
-    }
-
-    @GameTest(template = "empty5", timeoutTicks = ROUTE_TICKS + 60)
-    public static void chickenCoopRoutesToChest(GameTestHelper helper) {
-        runRoutingTest(helper, FARMS[5]);
     }
 
     // ── shared routing harness ──────────────────────────────────────────────────

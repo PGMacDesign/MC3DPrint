@@ -224,7 +224,6 @@ class CuratedBlueprintGenerator {
         builds.put("kelp_farm", kelpFarm());
         builds.put("villager_trading_hall", villagerTradingHall());
         builds.put("animal_pen", animalPen());
-        builds.put("chicken_coop_auto", chickenCoopAuto());
         builds.put("fishery_pond", fisheryPond());
         builds.put("tree_farm", treeFarm());
         builds.put("mushroom_farm", mushroomFarm());
@@ -10859,115 +10858,6 @@ class CuratedBlueprintGenerator {
         b.set(3, 2, z1, LANTERN);
         b.set(5, 2, z1, LANTERN);
         b.set(x1, 2, z0, LANTERN);  // atop the NE corner fence post
-
-        return b.build();
-    }
-
-    /**
-     * §F.chicken_coop_auto — an automatic cooked-chicken cooker, 5×9×5 (W×H×D) →
-     * builder(5, 9, 5). REBUILT around a LAVA-BLADE DROP (Patrick's experiment).
-     *
-     * <p><b>Why the rebuild:</b> the previous CAMPFIRE floor killed chickens but did NOT
-     * cook them (a campfire deals fire damage but apparently doesn't set the entity's
-     * "on fire" flag, so the drop stayed raw). To get a COOKED drop the chicken must die
-     * while ON FIRE — so this routes it through a lava blade (the iron-farm mechanic):
-     * water on a spawn deck pushes the chicken to a central hole; it washes down a shaft,
-     * passes THROUGH a 1-block lava blade (igniting), and lands on a hopper below where it
-     * burns to death ON FIRE → the meat drop is COOKED, on the hopper (not in the lava) →
-     * chest. Signs do the fluid work: a sign holds the lava up (blocks fluid, passes the
-     * falling chicken + drops) and a second sign above the lava dams the wash-water so it
-     * never touches the lava (no obsidian).
-     *
-     * <p><b>Fire safety:</b> the lava block has ZERO air neighbours — a sign directly
-     * above and below it, stone on all four sides — and fire only spawns in an AIR cell
-     * adjacent to lava, so it cannot ignite the (oak) signs or anything else. (Same
-     * principle as the iron farm; chicken_coop_auto is allowlisted in the fire-hazard +
-     * reachability gates for the intentional lava + sealed kill shaft.)
-     * <pre>
-     *   y=6+    glass pen, OPEN TOP — drop chickens/eggs in; deck water pushes to the hole
-     *   y=5     deck floor with a central drop HOLE (wash water pours in)
-     *   y=4     SIGN (dams the wash-water; chicken passes through)
-     *   y=3     LAVA BLADE (chicken falls through → ignites)
-     *   y=2     SIGN (holds the lava up; chicken passes through)
-     *   y=1     HOPPER (chicken lands ON FIRE, dies → COOKED drop) → chest
-     *   y=0     stone foundation
-     * </pre>
-     *
-     * <p><b>EXPERIMENTAL (verify in-game):</b> chickens flap-fall slowly, so there's a
-     * chance one dies IN the lava (burning the drop) rather than on the hopper below.
-     * Patrick asked to try the lava blade and see; if it doesn't cook reliably, the
-     * campfire-floor version is the fire-safe fallback. Every block is vanilla FU-valued
-     * (stone, glass, hopper, chest, sign) or structural (lava/water).
-     */
-    private static Blueprint chickenCoopAuto() {
-        // AUTO CHICKEN COOKER — lava-blade drop (Patrick's experiment). The campfire floor
-        // killed but didn't COOK (no on-fire flag → raw drops). A chicken must die ON FIRE
-        // for a cooked drop, so it washes down a shaft, falls THROUGH a 1-block lava blade
-        // (ignites), and burns out on a hopper below. Signs hold the lava (and dam the wash
-        // water off it); the lava has no air neighbour so it can't spread fire.
-        Blueprint.Builder b = Blueprint.builder("Auto Chicken Cooker", 5, 9, 5);
-        BlueprintBlockState stone = bs("minecraft:stone");
-        BlueprintBlockState glass = GLASS;
-        BlueprintBlockState lava  = bs("minecraft:lava[level=0]");
-        BlueprintBlockState sign  = bs("minecraft:oak_sign[rotation=0]"); // standing sign: blocks fluid, passes entities
-        BlueprintBlockState water = WATER;
-        BlueprintBlockState chest = bs("minecraft:chest[facing=south,type=single,waterlogged=false]");
-
-        int x0 = 0, x1 = 4, z0 = 0, z1 = 4;   // 5×5 footprint
-        int cx = 2, cz = 2;                   // kill-shaft column
-
-        // ── 1) FOUNDATION (y=0) ─────────────────────────────────────────────
-        floor(b, 0, x0, z0, x1, z1, stone);
-
-        // ── 2) LANDING + COLLECTION (y=1) — chicken lands here ON FIRE, dies ─
-        // The shaft body is solid stone; carve a 1-wide kill slot at the centre. The
-        // chicken lands on the hopper at (cx,1,cz); a second hopper chains south into the
-        // chest at the south edge. Stone walls the slot on 3 sides so it can't wander far.
-        floor(b, 1, x0, z0, x1, z1, stone);
-        b.set(cx, 1, cz, bs("minecraft:hopper[enabled=true,facing=south]"));     // landing hopper
-        b.set(cx, 1, cz + 1, bs("minecraft:hopper[enabled=true,facing=south]")); // carrier → chest
-        b.set(cx, 1, z1, chest);                                                 // (2,1,4) chest, faces south
-
-        // ── 3) KILL SHAFT (y=2..4) — sign / LAVA / sign, stone-encased ──────
-        // Solid stone at each level, with the centre carved to the fluid stack. The lava at
-        // (cx,3,cz) has a sign directly above (y=4) and below (y=2) and stone on all four
-        // sides → ZERO air neighbours → it cannot spread fire. The lower sign holds the lava
-        // from flowing onto the hopper; the upper sign dams the wash-water off the lava.
-        for (int y = 2; y <= 4; y++) {
-            floor(b, y, x0, z0, x1, z1, stone);
-        }
-        b.set(cx, 2, cz, sign);   // holds the lava up; chicken + drop pass through
-        b.set(cx, 3, cz, lava);   // the blade — chicken falls through, ignites
-        b.set(cx, 4, cz, sign);   // dams the wash-water; chicken passes through
-        // GLASS cap above the chest (the y=2 floor stamped stone there; a chest can't open
-        // under a solid block, but glass is transparent so it can). Set AFTER the floor.
-        b.set(cx, 2, z1, glass);
-
-        // ── 4) SPAWN DECK (y=5) — solid floor with the central drop HOLE ────
-        // Chickens stand on top of this deck (y=6); the hole at (cx,cz) is the only way down.
-        // NB: Builder.set(pos, air) is a no-op, so the hole is carved by NOT stamping that
-        // cell (stamp the 5×5 minus the centre), never by overwriting stone with air.
-        for (int x = x0; x <= x1; x++) {
-            for (int z = z0; z <= z1; z++) {
-                if (x == cx && z == cz) continue; // leave the drop hole open
-                b.set(x, 5, z, stone);
-            }
-        }
-
-        // ── 5) DECK WATER (y=6) — pushes chickens to the central hole ───────
-        // Four water sources at the deck edge-mids flow inward to the centre hole, washing
-        // any chicken into it. The water pours down the hole and is dammed by the y=4 sign,
-        // 1 course above the lava (never touching it → no obsidian).
-        b.set(cx - 1, 6, cz, water); b.set(cx + 1, 6, cz, water);
-        b.set(cx, 6, cz - 1, water); b.set(cx, 6, cz + 1, water);
-
-        // ── 6) GLASS PEN WALLS (y=6..8), OPEN TOP — drop chickens/eggs in ───
-        for (int y = 6; y <= 8; y++) {
-            line(b, y, x0, z0, x1, z0, glass);   // north
-            line(b, y, x0, z1, x1, z1, glass);   // south
-            line(b, y, x0, z0, x0, z1, glass);   // west
-            line(b, y, x1, z0, x1, z1, glass);   // east
-        }
 
         return b.build();
     }

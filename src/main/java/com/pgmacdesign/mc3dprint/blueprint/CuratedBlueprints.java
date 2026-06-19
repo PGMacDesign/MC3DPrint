@@ -64,7 +64,7 @@ public final class CuratedBlueprints {
             // Phase 2 — Category F (functional farms)
             "iron_farm", "mob_xp_tower", "sugarcane_farm_auto", "pumpkin_melon_farm",
             "cactus_farm", "bamboo_farm", "kelp_farm", "villager_trading_hall",
-            "animal_pen", "chicken_coop_auto", "fishery_pond", "tree_farm",
+            "animal_pen", "fishery_pond", "tree_farm",
             "mushroom_farm",
             // Phase 2 — Category I (ornamental / garden)
             "koi_pond", "gazebo", "pergola_garden", "wishing_well",

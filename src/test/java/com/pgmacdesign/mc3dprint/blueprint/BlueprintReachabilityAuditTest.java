@@ -136,10 +136,7 @@ class BlueprintReachabilityAuditTest {
             // (walled so the golem can't escape), the drop SHAFT + glass SPAWN ENCLOSURE
             // above the lava blade (mobs spawn and fall; the player never goes up there),
             // and the zombie containment cell. Same intent as mob_xp_tower's spawn shaft.
-            "iron_farm",
-            // chicken_coop_auto — the lava-blade KILL SHAFT (sign/lava/sign, stone-encased)
-            // is sealed by design; the player only uses the open-top pen + the front chest.
-            "chicken_coop_auto"
+            "iron_farm"
     );
 
     @Test
