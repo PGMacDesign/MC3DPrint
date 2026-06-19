@@ -2298,19 +2298,25 @@ class CuratedBlueprintGenerator {
         Blueprint.Builder b = Blueprint.builder("Wheat Farm", 7, 3, 7);
         // dirt-path walking border
         floor(b, 0, 0, 0, 6, 6, DIRT_PATH);
-        // inner 5×5 of fully-grown farmland — NO flowing water source. Printing is
-        // incremental (one block per tick), so a water source set in the middle of the
-        // field flows into the cells that haven't printed yet and can never be enclosed
-        // in time — the farm came out a bare pool with no soil/crops. Instead: moisture=7
-        // soil prints hydrated-looking, and a crop on EVERY tile stops the soil reverting
-        // to dirt as it dries, so it stays a full, recognisable crop field.
+        // inner 5×5 of farmland with FRESHLY-PLANTED (age 0) crops — NO flowing water
+        // source. Printing is incremental (one block per tick), so a water source set in the
+        // middle of the field flows into cells that haven't printed yet and can never be
+        // enclosed in time — the farm came out a bare pool. Instead: moisture=7 soil prints
+        // hydrated-looking, and a crop on EVERY tile stops the soil reverting to dirt as it
+        // dries. Crops are AGE 0 (just-planted sprouts) so the print is ungrown by default and
+        // a Verdant resin actually does something — it matures them to full (CropBlock → max
+        // age in ResinEffects.matureState). (NOT the shared WHEAT/CARROTS/POTATOES age-7
+        // constants, which other decorative builds still want fully grown.)
+        BlueprintBlockState wheat0    = bs("minecraft:wheat[age=0]");
+        BlueprintBlockState carrots0  = bs("minecraft:carrots[age=0]");
+        BlueprintBlockState potatoes0 = bs("minecraft:potatoes[age=0]");
         for (int x = 1; x <= 5; x++) {
             for (int z = 1; z <= 5; z++) {
                 b.set(x, 0, z, FARMLAND);
                 BlueprintBlockState crop;
-                if (z <= 3) crop = WHEAT;
-                else if (z == 4) crop = CARROTS;
-                else crop = POTATOES;
+                if (z <= 3) crop = wheat0;
+                else if (z == 4) crop = carrots0;
+                else crop = potatoes0;
                 b.set(x, 1, z, crop);
             }
         }
@@ -8291,8 +8297,9 @@ class CuratedBlueprintGenerator {
         // a pulse it punches the grown cane (push-destroyed → drops) into the channel; the
         // y=2 bottom block survives and regrows. Each piston is driven by a REPEATER pointing
         // into its back — a straight dust line beside a piston does NOT power it. So the dust
-        // BUS runs one column further out (west x=0, east x=8) and a repeater (west x=1 east-
-        // facing, east x=7 west-facing) carries the clock pulse from the bus into the piston.
+        // BUS runs one column further out (west x=0, east x=8) and a repeater FACES ITS BUS
+        // (west x=1 facing=west, east x=7 facing=east) — a repeater outputs OPPOSITE its facing,
+        // so facing the bus is what drives the pulse INTO the piston.
         // All of it rides a 2-block stone floor so the dust/repeaters have support.
         int wWallX = cx - 2, eWallX = cx + 2;          // 2 / 6 — piston columns
         int wRepX  = cx - 3, eRepX  = cx + 3;          // 1 / 7 — repeaters INTO the pistons
@@ -8301,8 +8308,12 @@ class CuratedBlueprintGenerator {
             pillar(b, wBusX, z, 1, 2, stone); pillar(b, wRepX, z, 1, 2, stone); pillar(b, wWallX, z, 1, 2, stone);
             pillar(b, eBusX, z, 1, 2, stone); pillar(b, eRepX, z, 1, 2, stone); pillar(b, eWallX, z, 1, 2, stone);
             b.set(wBusX, 3, z, redDust);      b.set(eBusX, 3, z, redDust);       // bus dust
-            b.set(wRepX, 3, z, bs("minecraft:repeater[facing=east,delay=1,locked=false,powered=false]")); // → west piston
-            b.set(eRepX, 3, z, bs("minecraft:repeater[facing=west,delay=1,locked=false,powered=false]")); // → east piston
+            // REPEATER FACING: a repeater's `facing` points toward its INPUT (the dust feeding
+            // it) and it outputs the OPPOSITE way → it must FACE THE BUS, not the piston. West
+            // bus at x=0 → facing=west (output east into the W piston); east bus at x=8 →
+            // facing=east (output west into the E piston). (Was reversed → pistons never fired.)
+            b.set(wRepX, 3, z, bs("minecraft:repeater[facing=west,delay=1,locked=false,powered=false]")); // bus → W piston
+            b.set(eRepX, 3, z, bs("minecraft:repeater[facing=east,delay=1,locked=false,powered=false]")); // bus → E piston
             b.set(wWallX, 3, z, bs("minecraft:piston[facing=east,extended=false]"));
             b.set(eWallX, 3, z, bs("minecraft:piston[facing=west,extended=false]"));
         }
@@ -8566,10 +8577,11 @@ class CuratedBlueprintGenerator {
         // a piston won't fire it). Bamboo needs no water to grow, so the only water is the
         // single base-layer transport canal (y=1) — the old build's y=2/3/4 flood is gone.
         Blueprint.Builder b = Blueprint.builder("Bamboo Farm", 9, 6, 9);
-        // all vanilla, all FU-valued / structural-free (NO bamboo — unvalued; player plants it):
+        // all vanilla, all FU-valued / structural-free:
         BlueprintBlockState stone   = bs("minecraft:stone");
         BlueprintBlockState cobble  = COBBLE;
         BlueprintBlockState mud     = bs("minecraft:mud");   // FU-valued (1@1) — the grow-block (on-theme post-1.20)
+        BlueprintBlockState bamboo  = bs("minecraft:bamboo[age=0,leaves=none,stage=0]"); // auto-planted (valued+blacklisted)
         BlueprintBlockState water   = WATER;                 // structural (asItem()==AIR) → prints free
         BlueprintBlockState chest   = bs("minecraft:chest[facing=north,type=single,waterlogged=false]");
         BlueprintBlockState redDust = bs("minecraft:redstone_wire[east=none,west=none,north=none,south=none,power=0]"); // structural
@@ -8596,25 +8608,35 @@ class CuratedBlueprintGenerator {
             b.set(cx, 1, z, water);
         }
 
-        // ── 3) MUD GROW-BLOCKS — the player plants bamboo on top ─────────────
-        // Two mud rows beside the canal (x=cx∓1, y=1); air above (y=2+) for the shoot.
+        // ── 3) MUD GROW-BLOCKS + AUTO-PLANTED BAMBOO ─────────────────────────
+        // Two mud rows beside the canal (x=cx∓1, y=1); the printer plants the first bamboo
+        // shoot on each (y=2) and it grows up on its own. Bamboo is now FU-valued + winder-
+        // blacklisted (like cactus/kelp) so the printer actually places it — it was unvalued
+        // and silently skipped before (hence the old "player plants it").
         for (int z = rowZ0; z <= rowZ1; z++) {
             b.set(wMudX, 1, z, mud);
             b.set(eMudX, 1, z, mud);
+            b.set(wMudX, 2, z, bamboo);   // first bamboo shoot, west row
+            b.set(eMudX, 2, z, bamboo);   // first bamboo shoot, east row
         }
 
         // ── 4) PISTON HARVEST ROW (y=3) + REPEATER-FED BUSES ─────────────────
         // Piston at the 2nd-segment height (y=3) beside each plant, on a 2-block stone
         // backing, facing the canal (west x=2 faces east, east x=6 faces west). A REPEATER
-        // (west x=1 east-facing, east x=7 west-facing) drives each piston from behind; the
+        // (west x=1 facing=west, east x=7 facing=east — it outputs opposite its facing, INTO
+        // the piston) drives each piston from behind; the
         // dust BUS runs one column further out (x=0 / x=8). On a clock pulse every piston
         // pushes its grown bamboo into the canal (push-destroyed → drops); the base regrows.
         for (int z = rowZ0; z <= rowZ1; z++) {
             pillar(b, wBusX, z, 1, 2, stone); pillar(b, wRepX, z, 1, 2, stone); pillar(b, wWallX, z, 1, 2, stone);
             pillar(b, eBusX, z, 1, 2, stone); pillar(b, eRepX, z, 1, 2, stone); pillar(b, eWallX, z, 1, 2, stone);
             b.set(wBusX, 3, z, redDust);      b.set(eBusX, 3, z, redDust);       // bus dust
-            b.set(wRepX, 3, z, bs("minecraft:repeater[facing=east,delay=1,locked=false,powered=false]")); // → west piston
-            b.set(eRepX, 3, z, bs("minecraft:repeater[facing=west,delay=1,locked=false,powered=false]")); // → east piston
+            // REPEATER FACING: a repeater's `facing` points toward its INPUT (the dust feeding
+            // it) and it outputs the OPPOSITE way → it must FACE THE BUS, not the piston. West
+            // bus at x=0 → facing=west (output east into the W piston); east bus at x=8 →
+            // facing=east (output west into the E piston). (Was reversed → pistons never fired.)
+            b.set(wRepX, 3, z, bs("minecraft:repeater[facing=west,delay=1,locked=false,powered=false]")); // bus → W piston
+            b.set(eRepX, 3, z, bs("minecraft:repeater[facing=east,delay=1,locked=false,powered=false]")); // bus → E piston
             b.set(wWallX, 3, z, bs("minecraft:piston[facing=east,extended=false]"));
             b.set(eWallX, 3, z, bs("minecraft:piston[facing=west,extended=false]"));
         }
@@ -9038,8 +9060,12 @@ class CuratedBlueprintGenerator {
             b.set(eWallX, 3, z, bs("minecraft:piston[facing=west,extended=false]"));
             pillar(b, wRepX, z, 1, 2, stone);   pillar(b, eRepX, z, 1, 2, stone);    // dry repeater floor
             pillar(b, wBusX, z, 1, 2, stone);   pillar(b, eBusX, z, 1, 2, stone);    // dry bus floor
-            b.set(wRepX, 3, z, bs("minecraft:repeater[facing=east,delay=1,locked=false,powered=false]")); // → west piston
-            b.set(eRepX, 3, z, bs("minecraft:repeater[facing=west,delay=1,locked=false,powered=false]")); // → east piston
+            // REPEATER FACING: a repeater's `facing` points toward its INPUT (the dust feeding
+            // it) and it outputs the OPPOSITE way → it must FACE THE BUS, not the piston. West
+            // bus at x=0 → facing=west (output east into the W piston); east bus at x=8 →
+            // facing=east (output west into the E piston). (Was reversed → pistons never fired.)
+            b.set(wRepX, 3, z, bs("minecraft:repeater[facing=west,delay=1,locked=false,powered=false]")); // bus → W piston
+            b.set(eRepX, 3, z, bs("minecraft:repeater[facing=east,delay=1,locked=false,powered=false]")); // bus → E piston
             b.set(wBusX, 3, z, redDust);        b.set(eBusX, 3, z, redDust);         // dust buses
         }
 
@@ -9502,7 +9528,7 @@ class CuratedBlueprintGenerator {
         // all FU-valued / derive-for-free:
         BlueprintBlockState furnaceS = bs("minecraft:furnace[facing=south,lit=false]");
         BlueprintBlockState comparator = bs("minecraft:comparator[facing=north,mode=compare,powered=false]");
-        BlueprintBlockState repeater   = bs("minecraft:repeater[facing=north,delay=1,locked=false,powered=false]");
+        BlueprintBlockState repeater   = bs("minecraft:repeater[facing=east,delay=1,locked=false,powered=false]"); // along the E–W readout line (faces its input, the comparator side)
         BlueprintBlockState wire       = bs("minecraft:redstone_wire[east=none,north=none,power=0,south=none,west=none]");
         BlueprintBlockState rsTorch    = bs("minecraft:redstone_torch[lit=true]");
 

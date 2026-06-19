@@ -348,6 +348,9 @@ public final class FuValueRegistry {
                 // auto-plants the first kelp layer into the kelp farm (it was unvalued/skipped);
                 // winder-blacklisted so it can't launder back to FU.
                 "minecraft:kelp=2@1",
+                // bamboo: same treatment again — VALUED so the printer auto-plants the first
+                // bamboo shoot into the bamboo farm (was unvalued/skipped); winder-blacklisted.
+                "minecraft:bamboo=2@1",
                 "minecraft:soul_soil=1@1", "minecraft:clay_ball=1@1", "minecraft:netherrack=1@1",
                 "minecraft:deepslate=1@1", "minecraft:cobbled_deepslate=1@1", "minecraft:tuff=1@1",
                 "minecraft:dripstone_block=1@1", "minecraft:pointed_dripstone=1@1", "minecraft:mud=1@1",
