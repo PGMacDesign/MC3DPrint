@@ -8,6 +8,14 @@ All notable changes to **MC3DPrint** (Minecraft 1.20.1 / Forge). Format loosely 
 A testing-phase polish + rebalance pass over the Resin system and the curated farms.
 
 ### Added
+- **Grand Cathedral** — a new showpiece curated build (13×22×23): twin west-front bell towers with
+  ladders, hung bells and spires; a vaulted nave with an arcade of columns, clerestory lancets, a
+  rose window, hanging-lantern chandeliers and a processional aisle; a raised chancel with a great
+  east window; and a flèche over the crossing.
+- **Resin "no-waste" guard** — a resin is no longer consumed on a print it can't affect (Treasure
+  with no containers, Ore Salting with no natural stone, Verdant with no plants, Quartermaster with
+  no fixtures). The printer leaves the inert resin in the slot, and the disc tooltip warns before you
+  print. XP Yield and Overdrive (content-independent) are unaffected.
 - **`allowAllDiscsInCreative` config** — toggle whether the creative tab lists every curated
   Blueprint Disc (default) or just a small hand-picked launch set; cosmetic only, world-loot drops
   are unaffected. Documented in the in-game guide (FAQ → "How do I get blueprints?").

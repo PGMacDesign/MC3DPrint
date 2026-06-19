@@ -5,6 +5,7 @@ import com.pgmacdesign.mc3dprint.blueprint.BlueprintBlockState;
 import com.pgmacdesign.mc3dprint.fu.FuConversion;
 import com.pgmacdesign.mc3dprint.fu.FuValue;
 import com.pgmacdesign.mc3dprint.fu.FuValueRegistry;
+import com.pgmacdesign.mc3dprint.machine.resin.ResinEffects;
 import net.minecraft.ChatFormatting;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
@@ -49,6 +50,18 @@ public class BlueprintDiscItem extends Item {
      * stops a player scanning a cheap build and mass-printing treasure.
      */
     public static final String TAG_PLAYER_CREATED = "PlayerCreated";
+    /**
+     * A small bitmask of which resin effects could possibly do something on this print,
+     * pre-computed from the blueprint's palette at write time (see {@link #resinTargetMask}).
+     * The client has only this cached metadata (never the full block data), so it's what the
+     * printer GUI uses to warn that a slotted resin would be wasted. Absent reads as "unknown"
+     * (all effects assumed useful) so older discs never show a false "no effect".
+     */
+    public static final String TAG_RESIN_TARGETS = "ResinTargets";
+    public static final int RESIN_TARGET_VERDANT = 1;
+    public static final int RESIN_TARGET_TREASURE = 1 << 1;
+    public static final int RESIN_TARGET_QUARTERMASTER = 1 << 2;
+    public static final int RESIN_TARGET_ORE_SALTING = 1 << 3;
 
     public BlueprintDiscItem(Properties properties) {
         super(properties);
@@ -85,6 +98,7 @@ public class BlueprintDiscItem extends Item {
         tag.putInt(TAG_BLOCK_COUNT, blueprint.blockCount());
         tag.putInt(TAG_TIER, blueprintTier(blueprint));
         tag.putInt(TAG_PRINT_COST, blueprintPrintCost(blueprint));
+        tag.putInt(TAG_RESIN_TARGETS, resinTargetMask(blueprint));
         return true;
     }
 
@@ -121,6 +135,65 @@ public class BlueprintDiscItem extends Item {
     public static int getTier(ItemStack stack) {
         CompoundTag tag = stack.getTag();
         return tag == null ? 0 : tag.getInt(TAG_TIER);
+    }
+
+    /** The stored resin-target bitmask, or -1 ("unknown") for a disc written before this
+     *  metadata existed — unknown is treated as "could benefit", so we never warn falsely. */
+    public static int getResinTargets(ItemStack stack) {
+        CompoundTag tag = stack.getTag();
+        return tag != null && tag.contains(TAG_RESIN_TARGETS) ? tag.getInt(TAG_RESIN_TARGETS) : -1;
+    }
+
+    /**
+     * Scan a blueprint's palette and flag which resin effects have at least one valid target
+     * in the build (a container for Treasure, natural stone for Ore Salting, etc.). This is the
+     * single source for "would a resin do anything here", used both at write time (to stamp the
+     * disc for the GUI warning) and — recomputed live with the full blueprint — by the printer's
+     * consume guard. Scanning the palette (the set of DISTINCT states the build uses) is the
+     * cheapest exact answer: a state is in the palette iff at least one block uses it.
+     *
+     * Verdant is flagged with the broadest tier (2) so the stamped mask never under-reports;
+     * the printer's live guard re-checks Verdant against the actual resin tier for full precision.
+     */
+    public static int resinTargetMask(Blueprint blueprint) {
+        int mask = 0;
+        for (BlueprintBlockState paletteState : blueprint.palette()) {
+            BlockState state = paletteState.resolve().orElse(null);
+            if (state == null) {
+                continue;
+            }
+            if (!ResinEffects.matureState(state, 2).equals(state)) {
+                mask |= RESIN_TARGET_VERDANT;
+            }
+            if (ResinEffects.isStorageContainerBlock(state)) {
+                mask |= RESIN_TARGET_TREASURE;
+            }
+            if (ResinEffects.isQuartermasterTargetBlock(state)) {
+                mask |= RESIN_TARGET_QUARTERMASTER;
+            }
+            if (ResinEffects.isSaltableHost(state)) {
+                mask |= RESIN_TARGET_ORE_SALTING;
+            }
+        }
+        return mask;
+    }
+
+    /**
+     * Whether an effect could benefit a build with the given target mask. XP Yield and Overdrive
+     * benefit any non-trivial print (content-independent), so they always read as useful. An
+     * unknown mask (-1, legacy disc) also reads as useful so we never warn falsely.
+     */
+    public static boolean maskBenefits(ResinItem.Effect effect, int mask) {
+        if (mask < 0) {
+            return true;
+        }
+        return switch (effect) {
+            case VERDANT -> (mask & RESIN_TARGET_VERDANT) != 0;
+            case TREASURE -> (mask & RESIN_TARGET_TREASURE) != 0;
+            case QUARTERMASTER -> (mask & RESIN_TARGET_QUARTERMASTER) != 0;
+            case ORE_SALTING -> (mask & RESIN_TARGET_ORE_SALTING) != 0;
+            case XP, OVERDRIVE -> true;
+        };
     }
 
     /**

@@ -331,6 +331,8 @@ class CuratedBlueprintGenerator {
         builds.put("mushroom_island_hut", mushroomIslandHut());
         // Phase 2 — Category F (bee_apiary) — unblocked: honeycomb valued → beehive/honeycomb_block derive
         builds.put("bee_apiary", beeApiary());
+        // Showpiece — Grand Cathedral (twin towers + vaulted nave; the Library's companion)
+        builds.put("grand_cathedral", grandCathedral());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -2925,6 +2927,186 @@ class CuratedBlueprintGenerator {
         b.set(4, 6, 10, CHAIN);
         b.set(4, 5, 10, HANGING_LANTERN);
         return b.build();
+    }
+
+    /**
+     * Grand Cathedral — the showpiece companion to the Library: scale + verticality + dense
+     * detail. A twin-tower west front (3×3 bell towers with ladders, hung bells and spires)
+     * flanks a grand portal + rose window; a vaulted nave with an arcade of columns, clerestory
+     * lancets, hanging-lantern chandeliers, a red-carpet processional aisle and a raised chancel
+     * with a great east window; a slender flèche crowns the crossing. 13×22×23 (W×H×D); the
+     * twin-tower west front faces -Z (z=0). Compliant by construction: full footing, doors/arches
+     * keep every interior cell reachable, ladders are backed by solid wall, hanging lanterns hang
+     * from beams, and nothing flammable sits by fire (it uses none).
+     */
+    private static Blueprint grandCathedral() {
+        Blueprint.Builder b = Blueprint.builder("Grand Cathedral", 13, 22, 23);
+        BlueprintBlockState[] glass = {
+                bs("minecraft:blue_stained_glass"), bs("minecraft:red_stained_glass"),
+                bs("minecraft:yellow_stained_glass"), bs("minecraft:lime_stained_glass"),
+                bs("minecraft:purple_stained_glass"), bs("minecraft:cyan_stained_glass")};
+        BlueprintBlockState pew = bs("minecraft:spruce_stairs[facing=south,half=bottom,shape=straight]");
+        BlueprintBlockState carpet = bs("minecraft:red_carpet");
+
+        // ---- footing + nave outer shell (walls y=1..8; towers/roof extend it later) ----
+        floor(b, 0, 0, 0, 12, 22, COBBLE);
+        walls(b, 0, 0, 12, 22, 1, 8, STONE_BRICKS);
+        // weathering flecks
+        b.set(0, 4, 9, MOSSY_STONE_BRICKS);
+        b.set(12, 5, 14, MOSSY_STONE_BRICKS);
+        b.set(0, 3, 17, CRACKED_STONE_BRICKS);
+        b.set(12, 6, 6, MOSSY_STONE_BRICKS);
+
+        // ---- clerestory: tall lancet windows + base buttress pilasters down both long walls ----
+        int gi = 0;
+        for (int z : new int[]{5, 8, 11, 14, 17}) {
+            BlueprintBlockState g = glass[gi++ % glass.length];
+            for (int y = 3; y <= 6; y++) {
+                b.set(0, y, z, g);
+                b.set(12, y, z, g);
+            }
+            for (int dz : new int[]{-1, 1}) {
+                b.set(0, 1, z + dz, bs("minecraft:stone_brick_stairs[facing=east,half=bottom,shape=straight]"));
+                b.set(12, 1, z + dz, bs("minecraft:stone_brick_stairs[facing=west,half=bottom,shape=straight]"));
+            }
+        }
+
+        // ---- west front: grand portal (twin doors + arch) and rose window ----
+        door2(b, 5, 1, 0, "dark_oak", "N");
+        door2(b, 7, 1, 0, "dark_oak", "N");
+        line(b, 3, 4, 0, 8, 0, CHISELED_STONE_BRICKS); // arch lintel over the portal
+        for (int x = 4; x <= 8; x++) {
+            for (int y = 4; y <= 8; y++) {
+                boolean corner = (x == 4 || x == 8) && (y == 4 || y == 8);
+                if (corner) {
+                    continue; // round the roundel's corners
+                }
+                b.set(x, y, 0, glass[(x + y) % glass.length]);
+            }
+        }
+        b.set(6, 6, 0, CHISELED_STONE_BRICKS); // rose-window tracery hub
+
+        // ---- vaulted roof: gable with the ridge along Z, sloping across the 13-wide X span ----
+        // (gableRoofX slopes the wrong way for a long nave, so it's built inline like the church.)
+        {
+            BlueprintBlockState wSlope = bs("minecraft:stone_brick_stairs[facing=east,half=bottom,shape=straight]");
+            BlueprintBlockState eSlope = bs("minecraft:stone_brick_stairs[facing=west,half=bottom,shape=straight]");
+            int y = 9, xw = 0, xe = 12;
+            while (xe - xw > 1) {
+                for (int z = 0; z <= 22; z++) {
+                    b.set(xw, y, z, wSlope);
+                    b.set(xe, y, z, eSlope);
+                }
+                xw++;
+                xe--;
+                y++;
+            }
+            for (int z = 0; z <= 22; z++) {
+                b.set(xw, y, z, STONE_BRICK_SLAB_TOP); // ridge cap, running the full nave depth
+            }
+            for (int zEnd : new int[]{0, 22}) { // close the gable ends up to the ridge
+                int yy = 9, a = 0, c = 12;
+                while (c - a > 1) {
+                    for (int x = a + 1; x <= c - 1; x++) {
+                        b.set(x, yy, zEnd, STONE_BRICKS);
+                    }
+                    a++;
+                    c--;
+                    yy++;
+                }
+                b.set(6, yy, zEnd, STONE_BRICKS);
+            }
+        }
+
+        // ---- twin west-front bell towers (built last on the front corners, over the roof) ----
+        cathedralTower(b, 0, 0, glass[0]);   // west tower
+        cathedralTower(b, 10, 0, glass[1]);  // east tower
+
+        // ---- interior: arcade columns with lit capitals ----
+        for (int z : new int[]{5, 8, 11, 14, 17}) {
+            for (int cxk : new int[]{3, 9}) {
+                pillar(b, cxk, z, 1, 6, STONE_BRICKS);
+                b.set(cxk, 7, z, CHISELED_STONE_BRICKS); // capital
+                b.set(cxk, 8, z, LANTERN);               // capital light
+            }
+        }
+
+        // ---- processional aisle + pews facing the altar ----
+        for (int z = 3; z <= 18; z++) {
+            b.set(6, 1, z, carpet);
+        }
+        for (int z = 5; z <= 17; z += 2) {
+            b.set(4, 1, z, pew);
+            b.set(5, 1, z, pew);
+            b.set(7, 1, z, pew);
+            b.set(8, 1, z, pew);
+        }
+
+        // ---- raised chancel + altar + great east window ----
+        floor(b, 1, 4, 19, 8, 21, STONE_BRICK_SLAB_BOTTOM); // dais
+        b.set(6, 2, 20, CHISELED_STONE_BRICKS);             // altar
+        b.set(5, 2, 20, LANTERN);
+        b.set(7, 2, 20, LANTERN);
+        for (int x = 4; x <= 8; x++) {
+            for (int y = 3; y <= 7; y++) {
+                b.set(x, y, 22, glass[(x + y) % glass.length]);
+            }
+        }
+
+        // ---- chandeliers: transverse tie-beams with hanging lanterns ----
+        for (int z : new int[]{6, 11, 16}) {
+            line(b, 9, 1, z, 11, z, OAK_LOG_X); // truss beam just under the roof
+            b.set(6, 8, z, CHAIN);
+            b.set(6, 7, z, HANGING_LANTERN);
+        }
+
+        // ---- central flèche over the crossing (sits on the ridge, z=11) ----
+        pillar(b, 6, 11, 16, 18, CHISELED_STONE_BRICKS);
+        b.set(5, 18, 11, DARK_OAK_FENCE); // cross arms
+        b.set(7, 18, 11, DARK_OAK_FENCE);
+        b.set(6, 19, 11, DARK_OAK_FENCE);
+        b.set(6, 20, 11, LIGHTNING_ROD);
+        return b.build();
+    }
+
+    /**
+     * One 3×3 west-front bell tower for {@link #grandCathedral}, footprint corner at (x0,z0).
+     * Solid walls to y=15 with a 2-tall nave-side base arch and 1-wide belfry openings, a ladder
+     * up the shaft (backed by the solid north wall) to a ceiling-hung bell, then a stone spire and
+     * a lightning-rod finial. A single tall lancet lights the outward side face.
+     */
+    private static void cathedralTower(Blueprint.Builder b, int x0, int z0, BlueprintBlockState lancet) {
+        int x1 = x0 + 2, z1 = z0 + 2;
+        int cx = x0 + 1, cz = z0 + 1;
+        int outerX = (x0 == 0) ? x0 : x1; // the side facing away from the nave centre
+        for (int y = 1; y <= 15; y++) {
+            for (int x = x0; x <= x1; x++) {
+                for (int z = z0; z <= z1; z++) {
+                    if (x != x0 && x != x1 && z != z0 && z != z1) {
+                        continue; // hollow shaft
+                    }
+                    boolean baseArch = (x == cx && z == z1 && (y == 1 || y == 2)); // doorway into the nave
+                    boolean faceCentre = (x == cx && (z == z0 || z == z1)) || (z == cz && (x == x0 || x == x1));
+                    boolean belfry = faceCentre && (y == 13 || y == 14);
+                    if (baseArch || belfry) {
+                        continue;
+                    }
+                    b.set(x, y, z, (y % 5 == 0) ? MOSSY_STONE_BRICKS : STONE_BRICKS);
+                }
+            }
+        }
+        for (int y = 6; y <= 9; y++) {
+            b.set(outerX, y, cz, lancet); // tall lancet on the outward side (north face stays solid for the ladder)
+        }
+        b.set(outerX, 4, cz, GLOWSTONE);          // sconce lighting the shaft
+        pillar(b, cx, cz, 1, 12, LADDER_SOUTH);   // ladder, backed by the solid north wall (cx,*,z0)
+        b.set(cx, 15, cz, CHISELED_STONE_BRICKS); // bell anchor (top-ring centre)
+        b.set(cx, 14, cz, BELL_CEILING);          // bell hangs from the anchor into the belfry
+        pyramidRoof(b, x0, z0, x1, z1, 16, "stone_brick_stairs", CHISELED_STONE_BRICKS);
+        b.set(cx, 16, cz, CHISELED_STONE_BRICKS); // fill under the apex cap so the finial rests solid
+        b.set(cx, 18, cz, DARK_OAK_FENCE);
+        b.set(cx, 19, cz, DARK_OAK_FENCE);
+        b.set(cx, 20, cz, LIGHTNING_ROD);
     }
 
     /** §3.15 Manor House. 13×11×11 (W×L×H) → builder(13,11,11). Timber upper + hip roof. */

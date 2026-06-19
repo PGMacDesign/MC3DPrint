@@ -139,19 +139,34 @@ public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
     }
 
     /**
-     * Overdrive cost preview: when an Overdrive resin sits in the resin slot, a blueprint
-     * disc's "Print Cost" line is rewritten in place — the original cost struck through, the
-     * Overdrive-reduced cost beside it — so you can see the saving before printing. Only the
-     * cost that actually drops is shown (Rare Overdrive prints below break-even; Uncommon is
-     * exactly break-even, so its base cost is unchanged and we leave the line as-is). Resins
-     * only work on official discs, so a player-scanned disc always shows its normal cost.
+     * Disc tooltip augments when a resin is slotted (resins apply only to official discs):
+     *
+     *  - "No effect" warning: if the slotted resin has nothing to act on in this build (Treasure
+     *    with no containers, Ore Salting with no stone, …), we append a warning so the player
+     *    knows it would be wasted BEFORE printing. The printer also refuses to consume an inert
+     *    resin server-side; this is just the heads-up. Driven by the disc's cached resin-target
+     *    mask (the client never has the full block data).
+     *  - Overdrive cost preview: with an Overdrive resin slotted, the "Print Cost" line is
+     *    rewritten in place — original struck through, the Overdrive-reduced cost beside it. Only
+     *    a cost that actually drops is shown (Rare prints below break-even; Uncommon is exactly
+     *    break-even, so its base cost is unchanged and the line is left as-is).
      */
     @Override
     protected java.util.List<Component> getTooltipFromContainerItem(ItemStack stack) {
         java.util.List<Component> tooltip = new java.util.ArrayList<>(super.getTooltipFromContainerItem(stack));
-        int odTier = menu.overdriveResinTierInSlot();
-        if (odTier <= 0 || !(stack.getItem() instanceof BlueprintDiscItem)
+        if (!(stack.getItem() instanceof BlueprintDiscItem)
                 || !BlueprintDiscItem.hasBlueprint(stack) || !BlueprintDiscItem.isOfficial(stack)) {
+            return tooltip;
+        }
+        com.pgmacdesign.mc3dprint.item.ResinItem.Effect slotted = menu.slottedResinEffect();
+        if (slotted != null
+                && !BlueprintDiscItem.maskBenefits(slotted, BlueprintDiscItem.getResinTargets(stack))) {
+            tooltip.add(Component.translatable("tooltip.mc3dprint.resin_no_effect")
+                    .withStyle(ChatFormatting.GOLD));
+        }
+
+        int odTier = menu.overdriveResinTierInSlot();
+        if (odTier <= 0) {
             return tooltip;
         }
         int cost = BlueprintDiscItem.getPrintCost(stack);

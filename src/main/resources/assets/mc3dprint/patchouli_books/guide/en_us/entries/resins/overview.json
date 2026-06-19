@@ -6,7 +6,7 @@
   "pages": [
     {
       "type": "patchouli:text",
-      "text": "A $(l)Resin$() is a one-shot additive that makes a blueprint print come out $(l)finer$() — better, not just bigger. Drop one into the $(l)Resin slot$() (between the upgrade and spool columns) before you print.$(br2)Two rules: a resin is $(l)used up$() each print, and it only works on $(l)found blueprints$() — the curated discs you loot or take from creative, never ones you scanned yourself."
+      "text": "A $(l)Resin$() is a one-shot additive that makes a blueprint print come out $(l)finer$() — better, not just bigger. Drop one into the $(l)Resin slot$() (between the upgrade and spool columns) before you print.$(br2)A resin only works on $(l)found blueprints$() (looted or creative discs, never your own scans), and it's $(l)consumed$() per print — but only when it has something to do. Slot one with nothing to act on (Treasure with no chests, say) and the printer leaves it untouched."
     },
     {
       "type": "patchouli:text",

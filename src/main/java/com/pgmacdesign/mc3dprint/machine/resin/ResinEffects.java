@@ -11,11 +11,16 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.item.alchemy.PotionUtils;
 import net.minecraft.world.item.alchemy.Potions;
 import net.minecraft.world.item.enchantment.Enchantments;
+import net.minecraft.world.level.block.AbstractFurnaceBlock;
+import net.minecraft.world.level.block.BarrelBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.BrewingStandBlock;
+import net.minecraft.world.level.block.ChestBlock;
 import net.minecraft.world.level.block.CocoaBlock;
 import net.minecraft.world.level.block.CropBlock;
 import net.minecraft.world.level.block.NetherWartBlock;
+import net.minecraft.world.level.block.ShulkerBoxBlock;
 import net.minecraft.world.level.block.StemBlock;
 import net.minecraft.world.level.block.SweetBerryBushBlock;
 import net.minecraft.world.level.block.entity.AbstractFurnaceBlockEntity;
@@ -145,6 +150,29 @@ public final class ResinEffects {
     public static boolean isStorageContainer(BlockEntity be) {
         return be instanceof ChestBlockEntity || be instanceof BarrelBlockEntity
                 || be instanceof ShulkerBoxBlockEntity;
+    }
+
+    // ---- Block-level target tests (palette pre-scan) ----
+    // These mirror the block-entity checks above/in PrinterBlockEntity, but operate on a
+    // BlockState so a blueprint's palette can be scanned BEFORE printing to decide whether a
+    // resin could do anything at all (see PrinterBlockEntity#resinWouldBenefit and
+    // BlueprintDiscItem#resinTargetMask). Keeping the block classification here keeps the
+    // "what does each effect target" knowledge in one place so the pre-scan can't drift from
+    // the actual effect. (ChestBlock also covers trapped chests, matching ChestBlockEntity.)
+
+    /** Block-level form of {@link #isStorageContainer} — what Treasure can fill. */
+    public static boolean isStorageContainerBlock(BlockState state) {
+        Block b = state.getBlock();
+        return b instanceof ChestBlock || b instanceof BarrelBlock || b instanceof ShulkerBoxBlock;
+    }
+
+    /** Block-level form of the Quartermaster target set: furnace / brewing stand / chest / barrel
+     *  (matches the block entities stocked in PrinterBlockEntity#applyContainerResin — note
+     *  Quartermaster does NOT stock shulker boxes, so this is intentionally narrower than Treasure). */
+    public static boolean isQuartermasterTargetBlock(BlockState state) {
+        Block b = state.getBlock();
+        return b instanceof AbstractFurnaceBlock || b instanceof BrewingStandBlock
+                || b instanceof ChestBlock || b instanceof BarrelBlock;
     }
 
     /** Which rarity table this roll uses. Uncommon resin (tier 2): common, sometimes uncommon.

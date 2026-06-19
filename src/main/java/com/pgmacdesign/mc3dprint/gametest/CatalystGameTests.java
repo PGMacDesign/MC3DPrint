@@ -159,6 +159,50 @@ public class CatalystGameTests {
         });
     }
 
+    @GameTest(template = "empty5", timeoutTicks = 40)
+    public static void resinTargetMaskAndBenefit(GameTestHelper helper) {
+        // Block-level target predicates (what each effect can act on).
+        assertTrue(helper, ResinEffects.isStorageContainerBlock(Blocks.CHEST.defaultBlockState()), "chest is a treasure container");
+        assertTrue(helper, ResinEffects.isStorageContainerBlock(Blocks.BARREL.defaultBlockState()), "barrel is a treasure container");
+        assertTrue(helper, !ResinEffects.isStorageContainerBlock(Blocks.STONE.defaultBlockState()), "stone is not a container");
+        assertTrue(helper, ResinEffects.isQuartermasterTargetBlock(Blocks.FURNACE.defaultBlockState()), "furnace is a QM target");
+        assertTrue(helper, ResinEffects.isQuartermasterTargetBlock(Blocks.BREWING_STAND.defaultBlockState()), "brewing stand is a QM target");
+        assertTrue(helper, !ResinEffects.isQuartermasterTargetBlock(Blocks.SHULKER_BOX.defaultBlockState()), "QM does not stock shulkers");
+
+        // A build whose only block is a chest: treasure + QM bits set, verdant/ore-salt clear.
+        int chestMask = BlueprintDiscItem.resinTargetMask(Blueprint.builder("gt-mask-chest", 1, 1, 1)
+                .set(0, 0, 0, BlueprintBlockState.parse("minecraft:chest")).build());
+        assertTrue(helper, (chestMask & BlueprintDiscItem.RESIN_TARGET_TREASURE) != 0, "chest -> treasure target");
+        assertTrue(helper, (chestMask & BlueprintDiscItem.RESIN_TARGET_QUARTERMASTER) != 0, "chest -> QM target");
+        assertTrue(helper, (chestMask & BlueprintDiscItem.RESIN_TARGET_ORE_SALTING) == 0, "chest -> no ore-salt target");
+
+        // Benefit decision: treasure benefits a chest build, ore-salting is wasted, XP always benefits,
+        // and an unknown (legacy) mask is assumed beneficial so we never warn falsely.
+        assertTrue(helper, BlueprintDiscItem.maskBenefits(ResinItem.Effect.TREASURE, chestMask), "treasure benefits a chest build");
+        assertTrue(helper, !BlueprintDiscItem.maskBenefits(ResinItem.Effect.ORE_SALTING, chestMask), "ore-salting wasted on a chest build");
+        assertTrue(helper, BlueprintDiscItem.maskBenefits(ResinItem.Effect.XP, chestMask), "XP always benefits");
+        assertTrue(helper, BlueprintDiscItem.maskBenefits(ResinItem.Effect.TREASURE, -1), "unknown mask assumes benefit");
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty5", timeoutTicks = 200)
+    public static void inertResinIsRetainedOnPrint(GameTestHelper helper) {
+        PrinterBlockEntity printer = poweredPrinter(helper, new BlockPos(2, 1, 2));
+        // Treasure resin on an official build with no containers -> nothing to act on.
+        printer.resinInventory().setStackInSlot(0, resin(helper, ResinItem.Effect.TREASURE, 2));
+        printer.inventory().setStackInSlot(PrinterBlockEntity.SLOT_TEMPLATE,
+                discFor(helper, wheatBlueprint(), false)); // official, but holds no chests
+
+        BlockPos wheatPos = new BlockPos(2, 2, 2);
+        helper.succeedWhen(() -> {
+            helper.assertBlockPresent(Blocks.WHEAT, wheatPos); // print still completes
+            if (printer.resinInventory().getStackInSlot(0).isEmpty()) {
+                throw new GameTestAssertException(
+                        "Inert resin (Treasure on a build with no containers) must NOT be consumed");
+            }
+        });
+    }
+
     // ----------------------------------------------------------------- helpers
 
     private static Blueprint wheatBlueprint() {

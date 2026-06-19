@@ -8,6 +8,7 @@
   "tooltip.mc3dprint.disc_tier": "Tier %s",
   "tooltip.mc3dprint.disc_print_cost": "Print Cost: %1$s Tier %2$s FU",
   "tooltip.mc3dprint.disc_print_cost_overdrive": "Print Cost: %1$s %2$s Tier %3$s FU",
+  "tooltip.mc3dprint.resin_no_effect": "⚠ Slotted resin has no effect on this build",
   "tooltip.mc3dprint.disc_locked": "Locked",
   "message.mc3dprint.disc_locked": "Blueprint Disc locked",
   "message.mc3dprint.disc_unlocked": "Blueprint Disc unlocked",

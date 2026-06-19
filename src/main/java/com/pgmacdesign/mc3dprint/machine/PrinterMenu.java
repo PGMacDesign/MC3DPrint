@@ -282,6 +282,14 @@ public class PrinterMenu extends AbstractContainerMenu {
         return 0;
     }
 
+    /** The effect of the resin currently in the resin slot, or null if the slot is empty.
+     *  Client-safe (reads synced slot contents) — drives the disc's "no effect" tooltip warning. */
+    @javax.annotation.Nullable
+    public ResinItem.Effect slottedResinEffect() {
+        ItemStack resin = slots.get(resinSlotStart).getItem();
+        return resin.getItem() instanceof ResinItem r ? r.effect() : null;
+    }
+
     /** Build offset for axis 0=X, 1=Y, 2=Z. */
     public int offset(int axis) {
         return SplitContainerData.combine(data, PrinterBlockEntity.DATA_OFFSET_X + axis);

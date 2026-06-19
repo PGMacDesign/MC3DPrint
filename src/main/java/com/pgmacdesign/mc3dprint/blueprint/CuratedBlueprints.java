@@ -172,7 +172,9 @@ public final class CuratedBlueprints {
             // Phase 2 — Category A (mushroom_island_hut) — unblocked: mushroom blocks/mycelium now valued
             "mushroom_island_hut",
             // Phase 2 — Category F (bee_apiary) — unblocked: honeycomb valued -> beehive/honeycomb_block derive
-            "bee_apiary");
+            "bee_apiary",
+            // Showpiece — Grand Cathedral (twin towers + vaulted nave; the Library's companion)
+            "grand_cathedral");
 
     /**
      * Load a bundled curated blueprint straight from the mod's resources (no world

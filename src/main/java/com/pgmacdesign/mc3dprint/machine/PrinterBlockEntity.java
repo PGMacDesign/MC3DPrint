@@ -748,6 +748,41 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
     }
 
     /**
+     * Would the armed resin do anything on this blueprint? We refuse to arm it (so it's never
+     * consumed and stays in the slot) when the build contains zero blocks the effect can touch:
+     * Treasure with no containers, Ore Salting with no natural stone, Verdant with no plants,
+     * Quartermaster with no furnaces/chests. The refusal is on structural impossibility ONLY,
+     * never on bad RNG — a build WITH chests can still roll zero Treasure, and that's the resin
+     * working as intended. XP Yield and Overdrive benefit any non-trivial print, so they always arm.
+     *
+     * Uses the same {@link ResinEffects} target tests as {@link BlueprintDiscItem#resinTargetMask}
+     * (which stamps the disc for the GUI warning), but is tier-precise for Verdant since the actual
+     * resin tier is known here. Scanning the palette is exact: a state is in it iff a block uses it.
+     */
+    private boolean resinWouldBenefit(ResinItem.Effect effect, int tier, Blueprint blueprint) {
+        if (effect == ResinItem.Effect.XP || effect == ResinItem.Effect.OVERDRIVE) {
+            return true;
+        }
+        for (BlueprintBlockState paletteState : blueprint.palette()) {
+            BlockState state = paletteState.resolve().orElse(null);
+            if (state == null) {
+                continue;
+            }
+            boolean hit = switch (effect) {
+                case VERDANT -> !ResinEffects.matureState(state, tier).equals(state);
+                case TREASURE -> ResinEffects.isStorageContainerBlock(state);
+                case QUARTERMASTER -> ResinEffects.isQuartermasterTargetBlock(state);
+                case ORE_SALTING -> ResinEffects.isSaltableHost(state);
+                default -> false;
+            };
+            if (hit) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * Pre-count the print's Quartermaster targets and seed the shared budgets, so coal /
      * food / torches split evenly across however many furnaces / storage containers the
      * blueprint actually contains. Called once at job start when a Quartermaster resin is armed.
@@ -1125,6 +1160,10 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         activeJob = new PrintJob(blueprintId, blueprint.name(), origin, orientation, size, blueprint.blockCount());
         cachedBlueprint = blueprint;
         armResin(disc); // catalyze this job iff a resin is slotted and the disc is official
+        if (armedResinEffect != null && !resinWouldBenefit(armedResinEffect, armedResinTier, blueprint)) {
+            // The build has nothing this resin can affect — leave it in the slot, don't burn it.
+            clearArmedResin();
+        }
         if (armedResinEffect == ResinItem.Effect.QUARTERMASTER) {
             initQuartermasterBudget(blueprint); // pre-count furnaces/chests to split the shared kit
         }
