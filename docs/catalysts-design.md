@@ -173,9 +173,10 @@ Patrick's two seeds plus additions. Each is feasible per the map above.
   pre-launch goal (low priority, NOT in this feature):** solve config-merge so players can
   retune without wiping config — see memory `config-no-wipe-goal`.
 
-- **Q8 — Treasure Infusion model: LOOT-TABLE-BASED, rarity = Common/Rare/Epic.**
-  - Treasure rolls **MC3DPrint-authored loot tables**, one per rarity (`Common/Rare/Epic`) —
-    NOT a hardcoded item list and NOT the 1–8 FU tiers. Curated for quality (no junk).
+- **Q8 — Treasure Infusion model: LOOT-TABLE-BASED, rarity = Common/Uncommon/Rare.**
+  - Treasure rolls **MC3DPrint-authored loot tables**, one per rarity (`Common/Uncommon/Rare`,
+    unified with the resin rarity scheme) — NOT a hardcoded item list and NOT the 1–8 FU tiers.
+    Curated for quality (no junk).
   - **Enchanted gear** via loot functions (`enchant_randomly`/`set_enchantments`):
     Sharpness IV, Protection IV, Unbreaking III, etc.
   - **Modded extensibility, two ways:** (a) other mods/packs inject into our tables via their

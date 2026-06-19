@@ -47,8 +47,8 @@ public final class MC3DPrintConfig {
     public static final ForgeConfigSpec.DoubleValue RESIN_TREASURE_CHANCE_T3;
     public static final ForgeConfigSpec.IntValue RESIN_TREASURE_CAP_T2;
     public static final ForgeConfigSpec.IntValue RESIN_TREASURE_CAP_T3;
-    public static final ForgeConfigSpec.DoubleValue RESIN_TREASURE_T2_RARE;
-    public static final ForgeConfigSpec.DoubleValue RESIN_TREASURE_T3_EPIC;
+    public static final ForgeConfigSpec.DoubleValue RESIN_TREASURE_T2_UNCOMMON;
+    public static final ForgeConfigSpec.DoubleValue RESIN_TREASURE_T3_RARE;
     public static final ForgeConfigSpec.DoubleValue RESIN_ORE_SALT_CHANCE;
     public static final ForgeConfigSpec.DoubleValue RESIN_ORE_SALT_GEM_SHARE;
     public static final ForgeConfigSpec.IntValue RESIN_ORE_SALT_MAX;
@@ -198,12 +198,12 @@ public final class MC3DPrintConfig {
         RESIN_TREASURE_CAP_T3 = builder
                 .comment("Treasure Tier 3: max containers per print")
                 .defineInRange("treasureCapT3", 4, 0, 256);
-        RESIN_TREASURE_T2_RARE = builder
-                .comment("Treasure Tier 2: chance a roll upgrades from the common to the rare table")
-                .defineInRange("treasureT2RareChance", 0.2, 0.0, 1.0);
-        RESIN_TREASURE_T3_EPIC = builder
-                .comment("Treasure Tier 3: chance a roll upgrades from the rare to the epic table")
-                .defineInRange("treasureT3EpicChance", 0.4, 0.0, 1.0);
+        RESIN_TREASURE_T2_UNCOMMON = builder
+                .comment("Treasure Uncommon resin: chance a roll upgrades from the common to the uncommon table")
+                .defineInRange("treasureT2UncommonChance", 0.2, 0.0, 1.0);
+        RESIN_TREASURE_T3_RARE = builder
+                .comment("Treasure Rare resin: chance a roll upgrades from the uncommon to the rare table")
+                .defineInRange("treasureT3RareChance", 0.4, 0.0, 1.0);
         RESIN_ORE_SALT_CHANCE = builder
                 .comment("Ore Salting: per-block chance a natural stone block prints as an ore vein")
                 .defineInRange("oreSaltChance", 0.05, 0.0, 1.0);

@@ -721,8 +721,8 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
                     && serverLevel.random.nextDouble() < chance) {
                 ResinEffects.fillTreasure(serverLevel, worldPos, container,
                         ResinEffects.treasureTable(armedResinTier, serverLevel.random,
-                                MC3DPrintConfig.RESIN_TREASURE_T2_RARE.get(),
-                                MC3DPrintConfig.RESIN_TREASURE_T3_EPIC.get()));
+                                MC3DPrintConfig.RESIN_TREASURE_T2_UNCOMMON.get(),
+                                MC3DPrintConfig.RESIN_TREASURE_T3_RARE.get()));
                 treasureThisJob++;
             }
         } else if (armedResinEffect == ResinItem.Effect.QUARTERMASTER) {

@@ -147,12 +147,13 @@ public final class ResinEffects {
                 || be instanceof ShulkerBoxBlockEntity;
     }
 
-    /** Which rarity table this roll uses. T2: common, sometimes rare. T3: rare, sometimes epic. */
-    public static ResourceLocation treasureTable(int tier, RandomSource rng, double t2Rare, double t3Epic) {
+    /** Which rarity table this roll uses. Uncommon resin (tier 2): common, sometimes uncommon.
+     *  Rare resin (tier 3): uncommon, sometimes rare. */
+    public static ResourceLocation treasureTable(int tier, RandomSource rng, double t2Uncommon, double t3Rare) {
         if (tier >= 3) {
-            return table(rng.nextDouble() < t3Epic ? "epic" : "rare");
+            return table(rng.nextDouble() < t3Rare ? "rare" : "uncommon");
         }
-        return table(rng.nextDouble() < t2Rare ? "rare" : "common");
+        return table(rng.nextDouble() < t2Uncommon ? "uncommon" : "common");
     }
 
     private static ResourceLocation table(String rarity) {

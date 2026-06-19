@@ -251,7 +251,7 @@ tiers 1–3; players see rarity names so "tier" stays the printer/spool axis.*
 |--------|--------|--------------|
 | Verdant Growth | Common, Uncommon | in-place plants (crops, nether wart, sweet berries, cocoa) print fully grown |
 | XP Yield | Common–Rare | the print banks XP (furnace-style), released when the disc is pulled from the output slot |
-| Treasure Infusion | Uncommon, Rare | printed chests/barrels/shulkers may spawn holding loot (common/rare/epic loot pools) |
+| Treasure Infusion | Uncommon, Rare | printed chests/barrels/shulkers may spawn holding loot (common/uncommon/rare loot pools) |
 | Overdrive | Uncommon, Rare | the print costs less filament — Uncommon = break-even, Rare = ~20% below (net FU gain) |
 | Quartermaster | Rare | printed furnaces/brewing-stands/chests arrive stocked (fuel, a move-in kit with enchanted iron tools) |
 | Ore Salting | Rare | printed natural stone has a chance to come out as a mineable ore vein |

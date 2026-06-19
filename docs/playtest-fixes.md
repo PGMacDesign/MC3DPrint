@@ -228,5 +228,14 @@ Fixes are applied to source + committed; the deployed jar is **NOT** rebuilt/red
 
 **In-game verify (after redeploy):** villa front has no water + a ladder climbs to the roof terrace; a Rare Treasure print drops noticeably more. **Jar NOT redeployed — Patrick still testing.**
 
+---
+
+## Round 12 (2026-06-18) — unify treasure loot pools to common/uncommon/rare + REDEPLOY
+Earlier I'd left the treasure **loot pools** named common/rare/epic as a separate axis; Patrick wants the whole scheme unified with the resin rarity names. Mapping: `rare`→**uncommon**, `epic`→**rare** (common unchanged), so the pools now match the resin rarities (and progress common < uncommon < rare = iron/gold → diamond/emerald → netherite).
+- [x] Renamed loot tables `treasure_rare.json`→`treasure_uncommon.json`, `treasure_epic.json`→`treasure_rare.json` (git mv; content preserved).
+- [x] `ResinEffects.treasureTable` now returns common/uncommon/rare (Uncommon resin: common→uncommon; Rare resin: uncommon→rare).
+- [x] Config renamed: `RESIN_TREASURE_T2_RARE`→`_T2_UNCOMMON` (key `treasureT2UncommonChance`), `RESIN_TREASURE_T3_EPIC`→`_T3_RARE` (key `treasureT3RareChance`) + comments; call site in `PrinterBlockEntity` updated.
+- [x] `CatalystGameTests.treasureTableChoice` assertions updated; docs (catalysts-design Q8, MC3DPrint.md/.html, CHANGELOG) updated.
+
 ### Reusable: importing a hand-built farm from a scan
 Patrick scans a build in-game → the native `.blueprint` lands in `…/saves/<world>/mc3dprint/blueprints/<uuid>.blueprint` (random UUID = player scan). I read the newest one directly from the Prism save, drop it at `src/test/resources/scanned/<name>.blueprint`, and point `<name>Farm()` at `loadScannedBlueprint` + `normalizeScannedFarm`. Same format as the curated bundle, so the mechanism (redstone/repeater stagger/BE NBT) survives intact.

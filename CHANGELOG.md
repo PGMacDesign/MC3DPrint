@@ -11,7 +11,7 @@ All notable changes to **MC3DPrint** (Minecraft 1.20.1 / Forge). Format loosely 
   Rare (11 items + a Resin Base):
   - **Verdant Growth** (Common–Uncommon) — in-place plants print fully grown
   - **XP Yield** (Common–Rare) — the print banks XP, released when you pull the disc from the output slot
-  - **Treasure Infusion** (Uncommon–Rare) — printed chests/barrels/shulkers may hold loot (common/rare/epic pools)
+  - **Treasure Infusion** (Uncommon–Rare) — printed chests/barrels/shulkers may hold loot (common/uncommon/rare pools)
   - **Overdrive** (Uncommon–Rare) — cheaper prints; Uncommon = break-even, Rare = ~20% below (a net FU gain)
   - **Quartermaster** (Rare) — printed furnaces/brewing-stands/chests arrive stocked (incl. enchanted iron tools)
   - **Ore Salting** (Rare) — printed natural stone can come out as mineable ore veins

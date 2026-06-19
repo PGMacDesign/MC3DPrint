@@ -89,11 +89,11 @@ public class CatalystGameTests {
     public static void treasureTableChoice(GameTestHelper helper) {
         RandomSource rng = RandomSource.create(1);
         assertTrue(helper, ResinEffects.treasureTable(2, rng, 0.0, 0.0).getPath().endsWith("treasure_common"),
-                "T2 with 0 rare-chance -> common table");
-        assertTrue(helper, ResinEffects.treasureTable(3, rng, 0.0, 0.0).getPath().endsWith("treasure_rare"),
-                "T3 base -> rare table");
-        assertTrue(helper, ResinEffects.treasureTable(3, rng, 0.0, 1.0).getPath().endsWith("treasure_epic"),
-                "T3 with epic-chance 1 -> epic table");
+                "Uncommon resin with 0 upgrade-chance -> common table");
+        assertTrue(helper, ResinEffects.treasureTable(3, rng, 0.0, 0.0).getPath().endsWith("treasure_uncommon"),
+                "Rare resin base -> uncommon table");
+        assertTrue(helper, ResinEffects.treasureTable(3, rng, 0.0, 1.0).getPath().endsWith("treasure_rare"),
+                "Rare resin with upgrade-chance 1 -> rare table");
         helper.succeed();
     }
 
