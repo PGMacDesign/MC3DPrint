@@ -42,6 +42,7 @@ public final class MC3DPrintConfig {
     public static final ForgeConfigSpec.IntValue FILAMENT_CONVERSION_RATIO;
     public static final ForgeConfigSpec.IntValue PREVIEW_MAX_BLOCKS;
     public static final ForgeConfigSpec.IntValue PREVIEW_RENDER_DISTANCE;
+    public static final ForgeConfigSpec.BooleanValue ALLOW_ALL_DISCS_IN_CREATIVE;
     public static final ForgeConfigSpec.DoubleValue RESIN_OVERDRIVE_T3_BELOW;
     public static final ForgeConfigSpec.DoubleValue RESIN_TREASURE_CHANCE_T2;
     public static final ForgeConfigSpec.DoubleValue RESIN_TREASURE_CHANCE_T3;
@@ -174,6 +175,15 @@ public final class MC3DPrintConfig {
                 .comment("Hologram preview: ghost blocks render within this distance of the camera",
                         "(the frame outline always shows the full extent)")
                 .defineInRange("previewRenderDistance", 16, 4, 64);
+        ALLOW_ALL_DISCS_IN_CREATIVE = builder
+                .comment("Creative tab: which curated Blueprint Discs are grabbable in the creative menu.",
+                        "TRUE  - show EVERY curated build the mod ships (the full set). Handy for",
+                        "        development, testing, and creative play.",
+                        "FALSE - show only the small hand-picked launch set (ModCreativeTabs.CREATIVE_LAUNCH_DISCS),",
+                        "        so players discover the rest as world loot.",
+                        "This toggle is purely a creative-menu convenience and does NOT affect survival:",
+                        "every curated build can still be found as world loot regardless of this setting.")
+                .define("allowAllDiscsInCreative", true);
         FU_VALUES = builder
                 .comment("Filament Unit values: '<item_or_#tag>=<fu>@<min_tier>'. Symmetric: wind yield == print cost (before efficiency).")
                 .defineListAllowEmpty("fuValues", FuValueRegistry.defaultEntries(),

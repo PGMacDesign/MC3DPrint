@@ -8,6 +8,11 @@
       "type": "patchouli:text",
       "title": "Getting Blueprints",
       "text": "Two ways:$(br)$(li)$(l)Scan$() your own builds with the $(item)Structure Scanner$() (right-click two corners, scan with a $(item)Blank Blueprint Disc$() in your off-hand)$(li)$(l)Find$() curated written $(item)Blueprint Discs$() in $(l)village and exploration loot$()$(br2)Server operators can also import $(l).schem$() / $(l).nbt$() files with $(o)/mc3dprint import$()."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Discs in Creative",
+      "text": "In $(l)Creative$(), MC3DPrint can list $(l)every$() curated $(item)Blueprint Disc$() it ships, or just a small hand-picked launch set — your call. Toggle it in $(o)mc3dprint-common.toml$():$(br)$(o)[general]$()$(br)$(o)allowAllDiscsInCreative$()$(br2)Cosmetic only — survival still finds every build as $(l)world loot$() either way."
     }
   ]
 }

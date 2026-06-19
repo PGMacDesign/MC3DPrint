@@ -8,6 +8,9 @@ All notable changes to **MC3DPrint** (Minecraft 1.20.1 / Forge). Format loosely 
 A testing-phase polish + rebalance pass over the Resin system and the curated farms.
 
 ### Added
+- **`allowAllDiscsInCreative` config** — toggle whether the creative tab lists every curated
+  Blueprint Disc (default) or just a small hand-picked launch set; cosmetic only, world-loot drops
+  are unaffected. Documented in the in-game guide (FAQ → "How do I get blueprints?").
 - **Overdrive cost preview** — with an Overdrive resin in the slot, a blueprint disc's Print Cost
   tooltip shows the original struck through and the reduced cost beside it (in the printer GUI).
 - **Player-scan import for curated builds** — the pumpkin/melon farm is now PGMacDesign's hand-built

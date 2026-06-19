@@ -23,6 +23,10 @@ resin makes them print fully grown). Found and curated discs count as **official
 and only official discs accept Resins (a disc you scanned yourself never will, which
 is the anti-exploit gate).
 
+In **creative**, the `allowAllDiscsInCreative` config toggles between handing out every
+curated disc (default) and only a small hand-picked launch set — cosmetic only, world-loot
+drops are unaffected.
+
 ## Upgrade modules
 
 Printers take **upgrade modules** in slots that grow with tier — a Tier 3 printer has
