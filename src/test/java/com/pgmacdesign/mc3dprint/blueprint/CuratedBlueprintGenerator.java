@@ -8571,10 +8571,10 @@ class CuratedBlueprintGenerator {
      * built procedurally. 22×10×19. Every block state (stone bricks + stairs, dark-oak planks,
      * powder snow, tripwire) carries over verbatim; only the title is set — no farm normalization.
      *
-     * <p>Printability of the two odd blocks: <b>powder snow</b>'s block-item is the
-     * {@code powder_snow_bucket} (which has no recipe), so it's priced by valuing that bucket
-     * (16 FU @ T2 in {@code FuValueRegistry}); the bucket is winder-blacklisted, so it prints with a
-     * cost but can't be laundered into FU. <b>Tripwire</b> is itemless structural and prints free.
+     * <p>Printability of the two odd blocks: <b>powder snow</b> and <b>tripwire</b> both print FREE as
+     * structural matter, so the build reproduces exactly. Powder snow is a deliberate exception in
+     * {@code PrinterBlockEntity.isStructuralMatter} (its item is a bucket, so it's technically
+     * obtainable, but we print it free); it carries no FU value, so it can't be wound/laundered either.
      * At 22 wide the build needs a <b>Tier 7+ fabricator</b> (footprint cap).
      */
     private static Blueprint tristansCastle() {
