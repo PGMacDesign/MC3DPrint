@@ -245,5 +245,12 @@ Earlier I'd left the treasure **loot pools** named common/rare/epic as a separat
 
 **Status: DONE + REDEPLOYED.** 83 gametests + all gates green. Rebuilt + redeployed the jar (single copy, checksums match) and deleted the game-instance config (bamboo FU). **Restart MC** to load it. **In-game verify:** sugarcane/bamboo/kelp pistons fire + harvest; bamboo prints planted; wheat farm prints ungrown (Verdant grows it).
 
+## Round 14 (2026-06-19) — guide-book polish + T7 upgrade slots (NOT yet redeployed)
+- [x] **Resin guide page title overflowed** ("Treasure vs Quartermaster" ran off the page) → split into two clean pages, "Treasure" and "Quartermaster".
+- [x] **T7 printers now get 8 upgrade slots** (`MachineTier.upgradeSlots()` → `number >= 7 ? 8 : number`), so the top *visible* tier gets the full upgrade column without needing Draconic. T8 (hidden Draconic tier) is also 8. The GUI already supported 8 (2×4 grid, `MAX_UPGRADE_SLOTS=8`), so no GUI change. Guide text updated: "slots equal to its tier (T3 = 3, **T8 = 8**)" → "slots that grow with its tier (T3 = 3, **T7 = 8**)" in faq/upgrades + machines/upgrades — **T8 is never mentioned** (stays a Draconic surprise).
+- [x] **Acknowledgements page** filled in (was a placeholder): thanks to TMTOWTDI (testing/rubber-duck) + Tristan (inspiration + signature builds). Split across two pages so it doesn't overflow.
+
+Verified: 83 gametests + all gates green. **Not redeployed** — Patrick still reviewing the guide; build on request.
+
 ### Reusable: importing a hand-built farm from a scan
 Patrick scans a build in-game → the native `.blueprint` lands in `…/saves/<world>/mc3dprint/blueprints/<uuid>.blueprint` (random UUID = player scan). I read the newest one directly from the Prism save, drop it at `src/test/resources/scanned/<name>.blueprint`, and point `<name>Farm()` at `loadScannedBlueprint` + `normalizeScannedFarm`. Same format as the curated bundle, so the mechanism (redstone/repeater stagger/BE NBT) survives intact.

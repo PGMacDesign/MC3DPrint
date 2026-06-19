@@ -20,8 +20,13 @@
     },
     {
       "type": "patchouli:text",
-      "title": "Treasure vs Quartermaster",
-      "text": "$(l)Treasure$() drops rare loot into printed chests, barrels and shulkers. $(l)Quartermaster$() instead stocks $(l)useful$() things: fuelled furnaces, a ready brewing stand, and a move-in kit with enchanted iron tools."
+      "title": "Treasure",
+      "text": "$(l)Treasure$() drops rare loot into printed chests, barrels and shulkers — the haul scales with the resin's rarity."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Quartermaster",
+      "text": "$(l)Quartermaster$() instead stocks $(l)useful$() things: fuelled furnaces, a ready brewing stand, and a move-in kit with enchanted iron tools."
     }
   ]
 }

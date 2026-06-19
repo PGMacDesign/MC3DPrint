@@ -7,7 +7,11 @@
     {
       "type": "patchouli:text",
       "title": "Acknowledgements",
-      "text": "$(o)Credits and thanks coming soon.$()$(br2)$(o)[ placeholder — real text to follow ]$()"
+      "text": "Special thanks to $(l)TMTOWTDI$() who helped me test and was an exceptional rubber duck."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "A very special thanks to $(l)Tristan$() for his inspiration and providing me incredible builds that bear his signature."
     }
   ]
 }

@@ -55,7 +55,10 @@ public enum MachineTier {
     }
 
     public int upgradeSlots() {
-        return number;
+        // Slots scale with tier, but T7 jumps straight to the full 8 (so the top *visible*
+        // tier gets the complete upgrade column without needing Draconic). T8 is the hidden
+        // Draconic surprise and also gets 8. Lower tiers = their tier number.
+        return number >= 7 ? 8 : number;
     }
 
     public boolean isMultiblock() {
