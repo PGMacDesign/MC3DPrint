@@ -355,8 +355,12 @@ public final class FuValueRegistry {
                 "minecraft:deepslate=1@1", "minecraft:cobbled_deepslate=1@1", "minecraft:tuff=1@1",
                 "minecraft:dripstone_block=1@1", "minecraft:pointed_dripstone=1@1", "minecraft:mud=1@1",
                 "minecraft:snow_block=1@1", "minecraft:ice=1@1",
-                // NOTE: powder snow is intentionally NOT valued — it prints FREE as structural matter
-                // (see PrinterBlockEntity.isStructuralMatter) so curated builds reproduce it exactly.
+                // powder snow: its block-item IS the powder_snow_bucket (a SolidBucketItem), and the
+                // bucket has no recipe — so without this entry the block has no derivable FU value and
+                // strict mode refuses it (the "powder snow needs support" case). Priced at T2
+                // (iron-bucket-gated) and winder-blacklisted, so it prints with a cost yet can't be
+                // laundered into FU (powder snow is renewable in cold biomes).
+                "minecraft:powder_snow_bucket=16@2",
                 // white_concrete_powder anchored as a canonical for cosmetic-variant
                 // normalization (the 16 dyed *_concrete_powder fall back to it). Can't
                 // derive (white dye is unvalued); valued by composition = 4 sand + 4

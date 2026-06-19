@@ -434,6 +434,9 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
     }
 
     private Optional<FuValue> blockFuValue(BlockState state) {
+        // A block is charged against its own item. Powder snow's item is the powder_snow_bucket
+        // (a SolidBucketItem, registered as the block's item), so valuing that bucket in
+        // FuValueRegistry is enough to price the printed block — no special-casing needed here.
         Item item = state.getBlock().asItem();
         return item == Items.AIR ? Optional.empty() : FuValueRegistry.valueOf(new ItemStack(item));
     }
@@ -484,13 +487,6 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         }
         if (state.getBlock().asItem() == Items.AIR) {
             return true; // water, fire, wall torches, redstone wire, …
-        }
-        if (state.getBlock() == net.minecraft.world.level.block.Blocks.POWDER_SNOW) {
-            // Deliberate exception: powder snow IS obtainable (its item is a powder_snow_bucket), but
-            // we print it FREE as structural matter so curated builds reproduce it exactly with no FU
-            // friction — and since it carries no FU value it can't be wound/laundered either. It's a
-            // renewable, decorative/trap block, so the freebie is harmless. (Tristan's Castle.)
-            return true;
         }
         Block block = state.getBlock();
         return block instanceof net.minecraft.world.level.block.BushBlock     // crops/stems/saplings/flowers/wart
