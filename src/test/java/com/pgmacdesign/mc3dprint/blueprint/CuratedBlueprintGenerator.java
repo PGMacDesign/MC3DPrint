@@ -8335,133 +8335,81 @@ class CuratedBlueprintGenerator {
     }
 
     /**
-     * §F.pumpkin_melon_farm — a STATIC pumpkin/melon farm, 9×9×4 (W×L×H)
-     * → builder(9, 4, 9). <b>Rebuilt from scratch</b> after the old build flooded the
-     * whole plane with "sweep" water into a useless pool. Gourds grow SIDEWAYS — a mature
-     * stem spawns a melon/pumpkin block on a soil block horizontally adjacent to the stem,
-     * on that block's top face. This build keeps that geometry and collects with a single
-     * 1-wide water channel instead of a sheet.
+     * §F.pumpkin_melon_farm — PGMacDesign's hand-built, automated pumpkin/melon farm,
+     * 9×5×10, loaded from a player SCAN rather than built procedurally (the generated version
+     * never satisfied). The scan is the source of truth at
+     * {@code src/test/resources/scanned/pumpkin_melon_farm.blueprint}; {@link #pumpkinMelonFarm()}
+     * loads it and {@link #normalizeScannedFarm} prepares it for shipping.
      *
-     * <p><b>Semi-auto + minimal water (the fix for the flood):</b> the only water is ONE
-     * source line down the centre (x=cx, y=1), sitting on a hopper line. Stems are OUTER
-     * (x=cx∓2) and the dirt growth blocks INNER (x=cx∓1, right beside the channel), so the
-     * gourd grows in the cell touching the channel. The player breaks a gourd; the drop
-     * falls into the channel and the hopper line below sucks it to the chest. Water at the
-     * fruit's level (y=2) would block the gourd from spawning, so the channel water stays
-     * at y=1 and the y=2 cell above it is air — the drop falls through it into the water.
+     * <p>Mechanism (preserved verbatim from the scan): a {@code mc3dprint:redstone_clock} pulses
+     * a redstone bus through <b>staggered repeaters</b> (delays 1/3/4 — intentional timing) into a
+     * row of {@code sticky_piston[facing=up]} harvesters that shove each dirt growth block up into
+     * the gourd forming beside the stem, breaking it into the central water channel → hopper line
+     * → chest at (4,0,9). Horizontal pistons + redstone routing all carry over byte-for-byte.
      *
-     * <p><b>Why not the vertical sticky-piston auto-harvest:</b> the dirt growth block
-     * sits BETWEEN the fruit (what an observer must watch, at y=2) and a piston below the
-     * dirt (y=0) — there's no clean direct observer→piston link, so it needs fragile
-     * multi-block redstone routing around the dirt that won't reliably reproduce in a
-     * compact static print. The robust minimal-water semi-auto ships instead.
-     *
-     * <p>Pumpkin/melon stems are {@link net.minecraft.world.level.block.BushBlock}
-     * descendants → <b>structural-free</b> (print at no FU; the item is a seed). We place
-     * no produce blocks (the stems grow their own). farmland/water are structural;
-     * dirt/stone/cobble/hopper/chest are FU-valued and derive.
-     *
-     * <p>Layout (south = +z is the "front"/access side; cx=4):
-     * <ul>
-     *   <li><b>y=0</b> — stone foundation (9×9) with a hopper LINE along the channel
-     *       bottom (x=cx, z=1..7) facing south → collection chest at (cx, 0, 8).</li>
-     *   <li><b>Channel, x=cx, y=1</b> — a single water source line, on the hoppers:
-     *       hydrates both farmland rows (≤2 blocks, same level) AND catches the broken
-     *       gourd drop. y=2 above it is air so it never floods the fruit cells.</li>
-     *   <li><b>Stems, x=cx∓2</b> — farmland at y=1, melon/pumpkin stem (alternating) at
-     *       y=2; the outer column (x=1/7) is non-soil stone so no gourd spawns past them.</li>
-     *   <li><b>Growth blocks, x=cx∓1</b> — dirt at y=1 beside the channel; the gourd
-     *       spawns on top at y=2, touching the channel, so a broken drop falls in.</li>
-     *   <li><b>End caps + signs</b> — cobble end caps box the plane; oak wall signs on
-     *       the south face explain the semi-auto harvest.</li>
-     * </ul>
+     * <p>Two normalizations only: (1) pumpkin/melon stems are planted YOUNG (age 0) so the print
+     * is ungrown by default — a <b>Verdant</b> resin matures them (stem support added to
+     * {@code ResinEffects.matureState}); (2) the captured chest's test contents are stripped.
+     * Stems are structural-free (the item is a seed) so they print at no FU; farmland/water are
+     * structural; stone/dirt/cobble/redstone/pistons/hoppers/chest derive their FU.
      */
     private static Blueprint pumpkinMelonFarm() {
-        Blueprint.Builder b = Blueprint.builder("Pumpkin/Melon Farm", 9, 5, 9);
-        // all vanilla, all FU-valued / structural-free:
-        BlueprintBlockState stone     = bs("minecraft:stone");
-        BlueprintBlockState cobble    = COBBLE;
-        BlueprintBlockState dirt      = bs("minecraft:dirt");               // FU-valued (1@1) → growth block (pushed by the piston)
-        BlueprintBlockState farmland  = FARMLAND;                           // FarmBlock → structural-free, moisture=7
-        BlueprintBlockState water     = WATER;                              // structural (asItem()==AIR) → prints free
-        BlueprintBlockState glass     = GLASS;                              // over the chest: stops the channel water spilling, still opens
-        BlueprintBlockState melonStem = bs("minecraft:melon_stem[age=0]");  // BushBlock → structural-free (planted, grows)
-        BlueprintBlockState pumpkinStem = bs("minecraft:pumpkin_stem[age=0]"); // BushBlock → structural-free
-        BlueprintBlockState chest     = bs("minecraft:chest[facing=south,type=single,waterlogged=false]");
-        BlueprintBlockState pistonUp  = bs("minecraft:sticky_piston[facing=up,extended=false]"); // pushes the dirt UP into the fruit
-        BlueprintBlockState dust      = bs("minecraft:redstone_wire[east=none,north=none,power=0,south=none,west=none]");
+        // Hand-built + scanned by PGMacDesign — the procedural version never satisfied. We load
+        // the raw scan and normalize it: pumpkin/melon stems are planted YOUNG (age 0) so a fresh
+        // print is ungrown by default (a Verdant resin matures them — see ResinEffects.matureState),
+        // and any captured container contents (the scan's test items) are stripped. EVERYTHING else
+        // — the staggered repeater delays, redstone routing, sticky-piston harvesters, hoppers, the
+        // baked redstone-clock interval — is preserved verbatim from the scan.
+        Blueprint scan = loadScannedBlueprint("pumpkin_melon_farm");
+        return normalizeScannedFarm(scan, "Pumpkin & Melon Farm");
+    }
 
-        int x0 = 0, x1 = 8, z0 = 0, z1 = 8;            // 9×9 footprint, now 5 tall
-        int cx = 4;                                    // central collection column (water channel + hopper line)
-        int rowZ0 = 1, rowZ1 = 7;                      // planting run along Z
-        int wStemX = cx - 2, eStemX = cx + 2;          // 2 and 6 — farmland + stems (also the repeater columns, y=1)
-        int wGrowX = cx - 1, eGrowX = cx + 1;          // 3 and 5 — dirt growth blocks on the up-pistons (INNER)
-        int wRepX  = cx - 2, eRepX  = cx + 2;          // 2 and 6 — repeaters (y=1) that drive the up-pistons
-        int wBusX  = cx - 3, eBusX  = cx + 3;          // 1 and 7 — dust buses, one column further out
-
-        // ── 1) FOUNDATION (y=0) + HOPPER LINE + CHEST (glass-capped) ─────────
-        // AUTOMATED: sticky pistons UNDER the dirt growth blocks shove the dirt UP into the
-        // formed gourd to break it, driven by a REDSTONE CLOCK (baked 60s) — a REPEATER
-        // drives each up-piston (a straight dust line beside a piston can't trigger it). The
-        // plane is raised one course (soil y=2, fruit y=3) to fit the pistons at y=1.
-        floor(b, 0, x0, z0, x1, z1, stone);
-        for (int z = rowZ0; z <= rowZ1; z++) {
-            b.set(cx, 0, z, bs("minecraft:hopper[enabled=true,facing=south]")); // channel-bottom hopper line → chest
+    /** Reads a raw player-scan from {@code src/test/resources/scanned/<name>.blueprint} (GZIP-NBT). */
+    private static Blueprint loadScannedBlueprint(String name) {
+        Path file = Path.of("src", "test", "resources", "scanned", name + ".blueprint");
+        try (java.io.InputStream in = Files.newInputStream(file)) {
+            CompoundTag tag = NbtIo.read(new java.io.DataInputStream(new java.util.zip.GZIPInputStream(in)));
+            return BlueprintSerializer.read(tag);
+        } catch (java.io.IOException e) {
+            throw new IllegalStateException("Failed to read scanned blueprint " + file, e);
         }
-        b.set(cx, 0, z1, chest);                       // (4,0,8) collection chest, faces south (open edge)
-        b.set(cx, 1, z1, glass);                       // GLASS cap over the chest — stops the channel water spilling, still opens
+    }
 
-        // ── 2) CENTRAL WATER CHANNEL (y=1 + y=2) — hydration + collection ────
-        // Water at x=cx, y=1 (on the hopper line) AND y=2 (the soil level, so it hydrates
-        // both farmland rows ≤2 away → moisture=7). y=3 above the channel stays AIR so it
-        // never floods the fruit cells. A broken gourd's slices scatter into the channel,
-        // fall to the water, and the hopper line sucks them to the chest.
-        for (int z = rowZ0; z <= rowZ1; z++) {
-            b.set(cx, 1, z, water);
-            b.set(cx, 2, z, water);
-        }
-
-        // ── 3) STEMS + DIRT-ON-PISTON GROWTH BLOCKS + REDSTONE BUS ──────────
-        // Stems on farmland at x=cx∓2 (soil y=2, stem y=3). The dirt growth block sits one
-        // column inward (x=cx∓1) ON a sticky piston (y=1) — the gourd spawns on its top at
-        // y=3, beside the channel. A redstone dust bus runs at y=1 UNDER each farmland row
-        // (x=cx∓2), one cell from its piston, so a clock pulse powers every piston at once
-        // (the dust is adjacent to the piston → it extends, shoving the dirt up into the
-        // gourd). The outer column (x=1/7) is non-soil stone so the gourd spawns only on
-        // the inner dirt.
-        for (int z = rowZ0; z <= rowZ1; z++) {
-            b.set(wBusX, 1, z, dust);      b.set(eBusX, 1, z, dust);        // dust bus (out one more, under the filler)
-            b.set(wRepX, 1, z, bs("minecraft:repeater[facing=east,delay=1,locked=false,powered=false]"));  // → west up-piston
-            b.set(eRepX, 1, z, bs("minecraft:repeater[facing=west,delay=1,locked=false,powered=false]"));  // → east up-piston
-            b.set(wStemX, 2, z, farmland); b.set(eStemX, 2, z, farmland);   // stem soil (sits above the repeaters)
-            boolean melon = (z % 2 == 0);
-            b.set(wStemX, 3, z, melon ? melonStem : pumpkinStem);
-            b.set(eStemX, 3, z, melon ? pumpkinStem : melonStem);
-            b.set(wGrowX, 1, z, pistonUp); b.set(eGrowX, 1, z, pistonUp);   // sticky piston under each dirt block
-            b.set(wGrowX, 2, z, dirt);     b.set(eGrowX, 2, z, dirt);       // dirt growth block (gourd spawns on top at y=3)
-            b.set(x0 + 1, 2, z, stone);    b.set(x1 - 1, 2, z, stone);      // outer non-soil filler (above the bus)
-        }
-
-        // ── 4) REDSTONE CLOCK at the north end (z=0) ────────────────────────
-        // One Redstone Clock (baked 60s) pulses every side every 60s; its z=0 dust run feeds
-        // both buses → repeaters → up-pistons, shoving every dirt block up to break its gourd.
-        // Replaces the fire-too-often paired observers (tune the rate in the clock's GUI).
-        redstoneClock(b, cx, 1, z0, 60);               // (4,1,0) clock, 60s
-        for (int x = wBusX; x <= eBusX; x++) {
-            if (x != cx) {
-                b.set(x, 1, z0, dust);                 // dust run linking the clock to both bus heads
+    /**
+     * Normalizes a raw scan into a shippable curated farm: re-titles it, plants any pumpkin/melon
+     * stems YOUNG (age 0) so the print is ungrown unless a Verdant resin matures it, and strips
+     * captured container contents (the scan's test items). All other block states and block-entity
+     * NBT — the redstone clock's baked interval, sign text, the staggered repeater delays — carry
+     * over verbatim, so the working mechanism reproduces exactly.
+     */
+    private static Blueprint normalizeScannedFarm(Blueprint scan, String title) {
+        Blueprint.Builder b = Blueprint.builder(title, scan.sizeX(), scan.sizeY(), scan.sizeZ());
+        for (int y = 0; y < scan.sizeY(); y++) {
+            for (int z = 0; z < scan.sizeZ(); z++) {
+                for (int x = 0; x < scan.sizeX(); x++) {
+                    BlueprintBlockState st = scan.get(x, y, z);
+                    if (st != null) {
+                        b.set(x, y, z, youngStem(st));
+                    }
+                }
             }
         }
-
-        // ── 5) END CAPS + LABEL SIGNS ────────────────────────────────────────
-        line(b, 3, x0, z0, x1, z0, cobble);   // north end cap at the stem plane
-        line(b, 3, x0, z1, x1, z1, cobble);   // south end cap at the stem plane
-        signText(b, "minecraft:oak_wall_sign[facing=south]", wStemX, 2, z1,
-                "AUTO: stems fruit", "onto the dirt;", "pistons shove it", "up to break it");
-        signText(b, "minecraft:oak_wall_sign[facing=south]", eStemX, 2, z1,
-                "Slices wash to", "the centre channel", "-> hopper -> chest", "(clock-driven)");
-
+        for (Map.Entry<net.minecraft.core.BlockPos, CompoundTag> e : scan.blockEntities().entrySet()) {
+            CompoundTag tag = e.getValue().copy();
+            tag.remove("Items"); // drop captured container test-contents; keep functional NBT (clock interval, signs)
+            net.minecraft.core.BlockPos p = e.getKey();
+            b.blockEntity(p.getX(), p.getY(), p.getZ(), tag);
+        }
         return b.build();
+    }
+
+    /** A pumpkin/melon stem becomes a freshly-planted age-0 stem; every other state passes through. */
+    private static BlueprintBlockState youngStem(BlueprintBlockState state) {
+        String id = state.blockId();
+        if (id.equals("minecraft:pumpkin_stem") || id.equals("minecraft:melon_stem")) {
+            return new BlueprintBlockState(id, Map.of("age", "0"));
+        }
+        return state;
     }
 
     /**

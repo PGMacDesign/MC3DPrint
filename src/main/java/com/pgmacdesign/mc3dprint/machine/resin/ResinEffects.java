@@ -16,6 +16,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.CocoaBlock;
 import net.minecraft.world.level.block.CropBlock;
 import net.minecraft.world.level.block.NetherWartBlock;
+import net.minecraft.world.level.block.StemBlock;
 import net.minecraft.world.level.block.SweetBerryBushBlock;
 import net.minecraft.world.level.block.entity.AbstractFurnaceBlockEntity;
 import net.minecraft.world.level.block.entity.BarrelBlockEntity;
@@ -57,6 +58,11 @@ public final class ResinEffects {
         }
         if (block instanceof NetherWartBlock) {
             return state.setValue(NetherWartBlock.AGE, 3);
+        }
+        if (block instanceof StemBlock) {
+            // pumpkin/melon stems mature to age 7 (ready to fruit). A staple crop → Common+.
+            // Without this, Verdant silently no-op'd on pumpkin/melon farms (the reported bug).
+            return state.setValue(StemBlock.AGE, StemBlock.MAX_AGE);
         }
         if (tier >= 2) {
             if (block instanceof SweetBerryBushBlock) {
