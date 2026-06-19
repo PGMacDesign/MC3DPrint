@@ -3,6 +3,42 @@
 All notable changes to **MC3DPrint** (Minecraft 1.20.1 / Forge). Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/). Versions before 0.3.0 predate this file.
 
+## [0.5.0] — 2026-06-19
+
+A testing-phase polish + rebalance pass over the Resin system and the curated farms.
+
+### Added
+- **Overdrive cost preview** — with an Overdrive resin in the slot, a blueprint disc's Print Cost
+  tooltip shows the original struck through and the reduced cost beside it (in the printer GUI).
+- **Player-scan import for curated builds** — the pumpkin/melon farm is now PGMacDesign's hand-built
+  in-game scan (mechanism/redstone preserved byte-for-byte); kelp, cactus and bamboo farms now
+  **auto-plant** their first crop instead of leaving it to the player.
+- **Acknowledgements** guide page.
+
+### Changed
+- **Resin rarity wording: Tier I/II/III → Common / Uncommon / Rare** everywhere player-facing
+  (item names, tooltips, Patchouli, docs). Registry IDs unchanged.
+- **Treasure loot pools unified to common/uncommon/rare** (was common/rare/epic) and ~**50% more
+  loot** per loot-bearing chest.
+- **Quartermaster** is far more generous — furnaces share a 64 coal-block budget split evenly, chests
+  share 64-food + 64-torch budgets, move-in tools go to the first chest, brewing fuel bumped.
+- **Verdant** now matures pumpkin/melon stems; farms (kelp / pumpkin-melon / bamboo / wheat) print
+  **ungrown** so a Verdant resin actually has something to grow.
+- **T7 printers now have the full 8 upgrade slots** (T8 unchanged at 8).
+- Resin footer "used up per print" → "consumable"; guide-book cleanups (split an overflowing page,
+  removed the Redstone Clock GUI footer).
+
+### Fixed
+- **Redstone repeaters were backwards on every piston farm** (sugarcane / bamboo / kelp) — they
+  output away from the pistons, so the pistons never fired. Corrected the facing convention.
+- Exterior spool reels not clearing when the last spool is pulled out through the GUI.
+- Kelp farm: clock-bus support gap (a dust cell popped on print), front-chest collection + furnace facing.
+- Modern glass villa: removed the front water feature and made the roof terrace reachable by ladder.
+
+### Removed
+- Archived the auto chicken cooker (`chicken_coop_auto`) — the lava-blade cooker couldn't be made
+  reliable; kept under `archive/` for reference.
+
 ## [0.4.0] — 2026-06-18
 
 ### Added
@@ -42,5 +78,6 @@ All notable changes to **MC3DPrint** (Minecraft 1.20.1 / Forge). Format loosely 
 - Itemless structural blocks now print (free); captured block-state placement; obstruction
   re-check when a disc is loaded.
 
+[0.5.0]: https://github.com/PGMacDesign/MC3DPrint/releases/tag/v0.5.0
 [0.4.0]: https://github.com/PGMacDesign/MC3DPrint/releases/tag/v0.4.0
 [0.3.0]: https://github.com/PGMacDesign/MC3DPrint/releases/tag/v0.3.0
