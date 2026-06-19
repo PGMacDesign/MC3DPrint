@@ -12,6 +12,40 @@ Prints can be refined with a consumed **Resin** — a one-shot modifier that add
 loot, instant crop growth, cheaper prints, stocked fixtures, banked XP, or hidden
 ore veins (see Design notes).
 
+## Blueprints & found builds
+
+Scan your own builds with the Structure Scanner, or **find Blueprint Discs in world
+loot**. The mod ships a curated library of **130+ builds** — houses, towers,
+monuments, gardens — plus **working auto-farms**: sugar cane, kelp, bamboo,
+pumpkin/melon, cactus, iron, mob-XP and more. The redstone-timed harvesters run on a
+built-in **Redstone Clock** block; the crop farms print already planted (a **Verdant**
+resin makes them print fully grown). Found and curated discs count as **official** —
+and only official discs accept Resins (a disc you scanned yourself never will, which
+is the anti-exploit gate).
+
+## Upgrade modules
+
+Printers take **upgrade modules** in slots that grow with tier — a Tier 3 printer has
+3, topping out at **8 by Tier 7**. Four module types, capped at 4 of each per machine:
+
+- **Speed** — faster printing
+- **Efficiency** — less FU per block (4 reach exact 1:1 break-even)
+- **RF Efficiency** — less RF per print
+- **Buffer** — a bigger RF tank
+
+Speed, RF Efficiency and Buffer stack **multiplicatively** (two Speed modules = 0.8 ×
+0.8 = 64% print time); Efficiency is linear.
+
+## Modded compatibility
+
+Optional **soft-dependency** hooks value other mods' items so they wind into filament
+and print — **AE2, Thermal Series, Tinkers' Construct, Mekanism, Create, Botania,
+EnderIO, Immersive Engineering**, and **Draconic Evolution** (which also powers the
+Tier 8 Fabricator). The hooks are pure `ResourceLocation` strings with **no hard
+dependency**: completely invisible — no crash, warning, or config — when a mod isn't
+installed. **JEI** (FU/recipe viewer) and **Patchouli** (the in-game guide) are also
+supported.
+
 ## In-game guide
 
 Player-facing documentation lives in the Patchouli guidebook
