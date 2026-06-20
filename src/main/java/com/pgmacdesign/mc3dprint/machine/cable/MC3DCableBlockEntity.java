@@ -49,13 +49,13 @@ import java.util.Set;
  * stores only <em>positions</em> (topology); spool contents and energy levels are
  * always read live at use time, so a spool draining or a rack refilling needs no
  * invalidation. The trade-off is bounded staleness: a rack added or removed mid-
- * window is seen within ~2 seconds (a freshly broken one is skipped immediately
+ * window is seen within ~5 seconds (a freshly broken one is skipped immediately
  * via an isRemoved check). Direct-touch (no cable) is never throttled — printers
  * scan their own neighbors live.
  */
 public class MC3DCableBlockEntity extends BlockEntity implements IFilamentSource {
     private static final int MAX_NETWORK = 4096;   // runaway-flood backstop
-    private static final int RECOMPUTE_INTERVAL = 40; // ticks between membership refloods (~2s)
+    private static final int RECOMPUTE_INTERVAL = 100; // ticks between membership refloods (~5s)
 
     private final CableEnergyStorage energy;
     private final LazyOptional<IEnergyStorage> energyCap;
