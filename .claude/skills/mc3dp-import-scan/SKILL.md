@@ -97,17 +97,12 @@ in `CuratedBlueprintGenerator.java` first; you're adding a third of the same sha
 9. **Ship** — `./gradlew build`, copy the jar over the Prism mods folder (replace, never
    duplicate), then commit & push (no Claude attribution).
 
-## The scaffolding rule (always strip it)
+## The scaffolding rule (always ignore it)
 
-The user places **`minecraft:scaffolding`** as a temporary platform to reach the far corners and
-upper edges of a build the scanner box can't otherwise cover. It is **scanning apparatus, never
-part of the build**, so it must never ship. Strip every scaffolding cell on import (don't try to
-detect "only the corner ones" — all scaffolding in a scan is a crutch) and **report the count**
-you removed so the user can catch a false positive in the rare case a build genuinely uses
-scaffolding as decor.
-
-In the builder, skip the cell instead of copying it (an unset cell is `NO_BLOCK`, which the
-printer skips):
+`minecraft:scaffolding` is always the user's temporary platform for reaching corners and upper
+edges while scanning — never part of the build. **Always omit all scaffolding on import**, no
+exceptions, no per-cell judgment. Skip the cell instead of copying it (an unset cell is
+`NO_BLOCK`, which the printer skips):
 
 ```java
 BlueprintBlockState st = scan.get(x, y, z);
@@ -115,10 +110,6 @@ if (st != null && !st.blockId().equals("minecraft:scaffolding")) {
     b.set(x, y, z, st);   // scaffolding cells fall through → left empty
 }
 ```
-
-Count what you skip and report it: *"Stripped 47 scaffolding cells (corner-scan apparatus)."*
-If the count is surprisingly high or zero when you expected some, say so — it's a signal the
-scan or the strip is off.
 
 ## FU economy guard — value it, or raise the question
 
