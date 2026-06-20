@@ -12,30 +12,41 @@ import net.minecraftforge.items.IItemHandlerModifiable;
 public final class FilamentDrain {
 
     /**
-     * Drains a cost (already converted to base units) across {@code spools} in
-     * slot order, converting down at {@code ratio}. Spools below {@code costTier}
-     * are skipped (FU never converts up); when a spool's unit is worth more than
-     * the remaining cost, a whole unit is consumed (ceil). Returns the leftover
-     * base still owed — {@code <= 0} means the cost was fully covered (a negative
-     * value is the single allowed ceil overshoot on the last spool touched).
+     * Drains {@code remainingBase} (already in base units) from spools of
+     * <b>exactly</b> {@code exactTier} in {@code spools}, in slot order. When a
+     * spool's unit is worth more than the remaining cost, a whole unit is
+     * consumed (ceil). Returns the leftover base still owed — {@code <= 0} means
+     * covered (a negative value is the single allowed ceil overshoot on the
+     * covering spool). Callers sweep tiers from the cost tier upward so the
+     * cheapest qualifying filament is always spent first.
      */
-    public static long drain(IItemHandlerModifiable spools, long remainingBase, int costTier, int ratio) {
+    public static long drainTier(IItemHandlerModifiable spools, long remainingBase, int exactTier, int ratio) {
         for (int i = 0; i < spools.getSlots() && remainingBase > 0; i++) {
             ItemStack spool = spools.getStackInSlot(i);
-            if (!(spool.getItem() instanceof SpoolItem spoolItem)
-                    || !FuConversion.canCover(spoolItem.tier(), costTier)) {
+            if (!(spool.getItem() instanceof SpoolItem spoolItem) || spoolItem.tier() != exactTier) {
                 continue;
             }
             long stored = SpoolItem.getFu(spool);
-            long storedBase = FuConversion.toBase(stored, spoolItem.tier(), ratio);
+            long storedBase = FuConversion.toBase(stored, exactTier, ratio);
             long drainUnits = storedBase <= remainingBase
                     ? stored
-                    : FuConversion.fromBaseCeil(remainingBase, spoolItem.tier(), ratio);
+                    : FuConversion.fromBaseCeil(remainingBase, exactTier, ratio);
             int drained = SpoolItem.drain(spool, FuConversion.clampToInt(drainUnits));
-            remainingBase -= FuConversion.toBase(drained, spoolItem.tier(), ratio);
+            remainingBase -= FuConversion.toBase(drained, exactTier, ratio);
             spools.setStackInSlot(i, spool); // onContentsChanged syncs the shrinking reel
         }
         return remainingBase;
+    }
+
+    /** Base-FU stored in spools of exactly {@code exactTier} (non-draining). */
+    public static long availableTier(IItemHandlerModifiable spools, int exactTier, int ratio) {
+        long base = 0;
+        for (int i = 0; i < spools.getSlots(); i++) {
+            if (spools.getStackInSlot(i).getItem() instanceof SpoolItem spool && spool.tier() == exactTier) {
+                base += FuConversion.toBase(SpoolItem.getFu(spools.getStackInSlot(i)), exactTier, ratio);
+            }
+        }
+        return base;
     }
 
     private FilamentDrain() {}

@@ -52,23 +52,22 @@ public class RackCableGameTests {
     // --- Rack as a Filament-Unit source ---
 
     @GameTest(template = "empty5", timeoutTicks = 100)
-    public static void rackDrainsDownOnly(GameTestHelper helper) {
+    public static void rackDrainsExactTier(GameTestHelper helper) {
         FilamentRackBlockEntity rack = placeRack(helper, new BlockPos(2, 1, 2));
         rack.spools().setStackInSlot(0, spoolWithFu(3, 100)); // 100 T3 FU = 1600 base (ratio 4)
 
-        // down-conversion: a T3 spool covers T1 costs at the compounded rate
-        long availT1 = rack.availableFilament(1);
-        if (availT1 != 1600) {
-            helper.fail("Expected 1600 base available toward T1, got " + availT1);
+        // A spool reports only at its EXACT tier — the printer's tier sweep is what
+        // down-converts, so a T3 spool is 0 at every other tier band.
+        if (rack.availableExactTier(3) != 1600) {
+            helper.fail("Expected 1600 base at exact T3, got " + rack.availableExactTier(3));
             return;
         }
-        // up-conversion is forbidden: T3 spool contributes nothing toward T4 costs
-        if (rack.availableFilament(4) != 0) {
-            helper.fail("T3 spool must not cover T4 costs, got " + rack.availableFilament(4));
+        if (rack.availableExactTier(1) != 0 || rack.availableExactTier(4) != 0) {
+            helper.fail("T3 spool must report only at tier 3");
             return;
         }
-        // draining 400 base @ T1 leaves 1200 base (i.e. 75 T3 FU) on the spool
-        long drained = rack.drainFilament(400, 1);
+        // draining 400 base from the T3 band leaves 1200 base (75 T3 FU) on the spool
+        long drained = rack.drainExactTier(3, 400);
         if (drained != 400) {
             helper.fail("Expected to drain 400 base, got " + drained);
             return;
@@ -113,7 +112,7 @@ public class RackCableGameTests {
             throw new GameTestAssertException("Far cable block entity missing");
         }
         // Draining the far cable floods the network and drains the rack two cables away.
-        long drained = ((IFilamentSource) farCable).drainFilament(100, 1);
+        long drained = ((IFilamentSource) farCable).drainExactTier(1, 100);
         if (drained != 100) {
             helper.fail("Cable should relay 100 base from the rack, got " + drained);
             return;
@@ -182,6 +181,56 @@ public class RackCableGameTests {
             int now = SpoolItem.getFu(rack.spools().getStackInSlot(0));
             if (now >= initialFu) {
                 throw new GameTestAssertException("Rack was not drained during the print: " + now);
+            }
+        });
+    }
+
+    /**
+     * Tier-smart selection: a printer with a docked T4 spool AND an adjacent rack
+     * holding a T1 spool, printing only T1-cost blocks, must spend the rack's
+     * cheap T1 and leave the docked T4 untouched — even though the T4 is "docked
+     * first" and could cover the cost. Proves selection is lowest-tier-global, not
+     * dock-order. (Old slot-order logic would have wasted the T4 on stone.)
+     */
+    @GameTest(template = "empty5", timeoutTicks = 300)
+    public static void tierSmartPrefersCheapRackOverDockedHighTier(GameTestHelper helper) {
+        BlockPos printerPos = new BlockPos(2, 1, 2);
+        helper.setBlock(printerPos, ModBlocks.PRINTERS.get(2).get()); // T3
+        if (!(helper.getBlockEntity(printerPos) instanceof PrinterBlockEntity printer)) {
+            throw new GameTestAssertException("Printer block entity missing");
+        }
+        printer.getCapability(ForgeCapabilities.ENERGY).ifPresent(energy -> {
+            for (int i = 0; i < 60; i++) {
+                energy.receiveEnergy(1_000, false);
+            }
+        });
+        printer.setAutoStart(true);
+
+        // Docked: an expensive T4 spool. Adjacent rack: a cheap T1 spool.
+        printer.spoolInventory().setStackInSlot(0, spoolWithFu(4, 20_000));
+        FilamentRackBlockEntity rack = placeRack(helper, new BlockPos(1, 1, 2));
+        rack.spools().setStackInSlot(0, spoolWithFu(1, 500));
+
+        // T1-only blueprint so the cheapest qualifying tier is always T1.
+        Blueprint blueprint = Blueprint.builder("gametest-tier-smart", 2, 1, 2)
+                .set(0, 0, 0, BlueprintBlockState.parse("minecraft:stone"))
+                .set(1, 0, 1, BlueprintBlockState.parse("minecraft:stone"))
+                .build();
+        BlueprintFileStore store = BlueprintFileStore.forServer(helper.getLevel().getServer());
+        UUID id = store.save(blueprint);
+        ItemStack disc = new ItemStack(ModItems.BLUEPRINT_DISC.get());
+        BlueprintDiscItem.writeBlueprint(disc, id, blueprint);
+        printer.inventory().setStackInSlot(PrinterBlockEntity.SLOT_TEMPLATE, disc);
+
+        helper.succeedWhen(() -> {
+            helper.assertBlockPresent(Blocks.STONE, new BlockPos(1, 2, 1));
+            helper.assertBlockPresent(Blocks.STONE, new BlockPos(2, 2, 2));
+            if (SpoolItem.getFu(rack.spools().getStackInSlot(0)) >= 500) {
+                throw new GameTestAssertException("Cheap T1 rack spool should have been spent");
+            }
+            if (SpoolItem.getFu(printer.spoolInventory().getStackInSlot(0)) != 20_000) {
+                throw new GameTestAssertException("Docked T4 spool must stay untouched for T1 blocks, got "
+                        + SpoolItem.getFu(printer.spoolInventory().getStackInSlot(0)));
             }
         });
     }

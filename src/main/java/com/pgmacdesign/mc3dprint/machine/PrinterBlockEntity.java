@@ -60,7 +60,10 @@ import net.minecraftforge.items.wrapper.RangedWrapper;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Set;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -573,27 +576,38 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
      * empty docked spools but a stocked rack still prints.
      */
     private int affordableFu(int costTier) {
-        long base = effectiveFuBase(costTier) + networkFuBase(costTier);
-        return FuConversion.clampToInt(FuConversion.fromBase(base, costTier, FuConversion.ratio()));
+        int ratio = FuConversion.ratio();
+        List<IFilamentSource> sources = reachableSources();
+        long base = 0;
+        for (int tier = costTier; tier <= SpoolItem.CAPACITY_BY_TIER.length; tier++) {
+            base += FilamentDrain.availableTier(spools, tier, ratio); // docked
+            for (IFilamentSource src : sources) {
+                base += src.availableExactTier(tier);
+            }
+        }
+        return FuConversion.clampToInt(FuConversion.fromBase(base, costTier, ratio));
     }
 
-    private long networkFuBase(int costTier) {
+    /**
+     * Every distinct Filament-Unit leaf source reachable from this printer:
+     * direct-touch racks plus the racks behind any adjacent cable, flattened and
+     * identity-deduped so a rack reachable by more than one path counts once.
+     * The cable's flood is throttle-cached, so this is a cheap per-call gather.
+     */
+    private List<IFilamentSource> reachableSources() {
         if (level == null) {
-            return 0;
+            return List.of();
         }
-        long total = 0;
+        Set<IFilamentSource> set = Collections.newSetFromMap(new IdentityHashMap<>());
         for (Direction dir : Direction.values()) {
             BlockEntity neighbor = level.getBlockEntity(worldPosition.relative(dir));
             if (neighbor == null) {
                 continue;
             }
-            IFilamentSource source = neighbor.getCapability(ModCapabilities.FILAMENT_SOURCE,
-                    dir.getOpposite()).orElse(null);
-            if (source != null) {
-                total += source.availableFilament(costTier);
-            }
+            neighbor.getCapability(ModCapabilities.FILAMENT_SOURCE, dir.getOpposite())
+                    .ifPresent(src -> src.collectSources(set));
         }
-        return total;
+        return new ArrayList<>(set);
     }
 
     /** Capacity counterpart of {@link #effectiveFu} for the GUI gauge. */
@@ -620,44 +634,32 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
     }
 
     /**
-     * Drains a cost denominated at {@code costTier} across attached spools in
-     * order, converting down at the exchange rate. Spools below the cost tier
-     * are skipped (FU never converts up). When a spool's unit is worth more
-     * than the remaining cost, a whole unit is consumed (ceil) — at most one
-     * high-tier unit of rounding per print.
+     * Drains a cost denominated at {@code costTier}, globally tier-smart: it
+     * sweeps tier bands from the cost tier upward, spending the cheapest
+     * qualifying filament first across docked spools AND every reachable rack —
+     * so a high-tier spool is never wasted on a low-tier block because of dock
+     * order. Within a tier, docked spools feed before the network. Down-only
+     * (tiers below the cost never contribute), with at most one ceil unit of
+     * overshoot on the covering spool. The source gather is lazy: a printer that
+     * covers the cost from its own docked spools never touches the network.
      */
     private void drainFu(int amount, int costTier) {
         int ratio = FuConversion.ratio();
         long remainingBase = FuConversion.toBase(amount, costTier, ratio);
-        // Docked spools feed first (the printer's own loadout)...
-        remainingBase = FilamentDrain.drain(spools, remainingBase, costTier, ratio);
-        // ...then the Filament-Unit network is the reserve (direct-touch rack or cable).
-        if (remainingBase > 0) {
-            drainFromNetwork(remainingBase, costTier);
-        }
-    }
-
-    /**
-     * Pulls the remaining cost from adjacent Filament-Unit sources after the
-     * docked spools run dry: a directly-touching Filament Rack, or an MC3DCable
-     * that relays its whole network of racks. Drained in place, down-only.
-     */
-    private void drainFromNetwork(long remainingBase, int costTier) {
-        if (level == null) {
-            return;
-        }
-        for (Direction dir : Direction.values()) {
+        List<IFilamentSource> sources = null;
+        for (int tier = costTier; tier <= SpoolItem.CAPACITY_BY_TIER.length && remainingBase > 0; tier++) {
+            remainingBase = FilamentDrain.drainTier(spools, remainingBase, tier, ratio); // docked first
             if (remainingBase <= 0) {
                 break;
             }
-            BlockEntity neighbor = level.getBlockEntity(worldPosition.relative(dir));
-            if (neighbor == null) {
-                continue;
+            if (sources == null) {
+                sources = reachableSources();
             }
-            IFilamentSource source = neighbor.getCapability(ModCapabilities.FILAMENT_SOURCE,
-                    dir.getOpposite()).orElse(null);
-            if (source != null) {
-                remainingBase -= source.drainFilament(remainingBase, costTier);
+            for (IFilamentSource src : sources) {
+                if (remainingBase <= 0) {
+                    break;
+                }
+                remainingBase -= src.drainExactTier(tier, remainingBase);
             }
         }
     }

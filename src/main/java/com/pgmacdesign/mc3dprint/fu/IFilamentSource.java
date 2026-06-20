@@ -1,36 +1,42 @@
 package com.pgmacdesign.mc3dprint.fu;
 
+import java.util.Set;
+
 /**
  * A drainable Filament-Unit reservoir exposed to neighbors as a Forge
  * capability. A {@code FilamentRack} exposes its shelved spools directly; an
- * {@code MC3DCable} exposes its whole connected network of racks. A printer
- * that exhausts its own docked spools mid-print pulls the remainder from
- * adjacent sources through this capability (direct-touch rack, or a cable).
+ * {@code MC3DCable} exposes its whole connected network of racks.
  *
- * <p>Draining is expressed in <b>base units</b> (tier-1 FU) so the down-only
- * tier rule ({@link FuConversion#canCover}) and the cross-tier exchange math
- * stay identical to the printer's internal drain. An implementation must only
- * drain spools whose tier {@link FuConversion#canCover(int, int) canCover}s the
- * cost tier, and must honor the same ceil-rounding contract as the printer:
- * at most one high-tier unit of overshoot per drain call (see
- * {@link FilamentDrain#drain}).
+ * <p><b>Exact-tier contract.</b> All amounts are <b>base units</b> (tier-1 FU),
+ * and every operation is scoped to spools of <b>exactly one tier</b>. This is
+ * what lets a printer drain in a globally tier-smart order: it sweeps tier bands
+ * from the cost tier upward, draining every reachable spool at the cheapest
+ * qualifying tier first, so a high-tier spool is never wasted on a low-tier
+ * block just because of where it was docked. Whole-unit (ceil) rounding still
+ * applies on the spool that finally covers a cost — at most one unit of
+ * overshoot per drain. See {@link FilamentDrain}.
  */
 public interface IFilamentSource {
 
     /**
-     * Drains up to {@code maxBase} base-FU worth of filament able to cover a
-     * cost denominated at {@code costTier}, mutating the backing spools in
-     * place. Returns the base-FU actually drained — which may slightly exceed
-     * {@code maxBase} on the final spool due to whole-unit (ceil) rounding, and
-     * is 0 when nothing qualified.
+     * Drains up to {@code maxBase} base-FU from spools of <b>exactly</b>
+     * {@code tier}, mutating them in place. Returns the base-FU actually drained
+     * (may slightly exceed {@code maxBase} on the covering spool due to ceil
+     * rounding), or 0 if this source holds none of that tier.
      */
-    long drainFilament(long maxBase, int costTier);
+    long drainExactTier(int tier, long maxBase);
+
+    /** Non-draining peek: base-FU available from spools of exactly {@code tier}. */
+    long availableExactTier(int tier);
 
     /**
-     * Non-draining peek: the base-FU this source could currently supply toward a
-     * cost at {@code costTier} (down-only — spools below the cost tier count for
-     * nothing). Used by a printer's affordability check so it doesn't stall when
-     * its own docked spools are empty but a connected rack has stock.
+     * Adds the concrete leaf sources reachable through this one to {@code out}
+     * (identity-deduped by the caller). A rack adds itself; a cable adds the
+     * racks across its network. The caller then sweeps tier bands across the
+     * flattened set so draining is globally tier-smart and never double-counts a
+     * rack reachable by more than one path.
      */
-    long availableFilament(int costTier);
+    default void collectSources(Set<IFilamentSource> out) {
+        out.add(this);
+    }
 }

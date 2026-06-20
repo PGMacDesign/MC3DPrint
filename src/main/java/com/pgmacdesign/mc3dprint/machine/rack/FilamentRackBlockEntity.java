@@ -100,25 +100,17 @@ public class FilamentRackBlockEntity extends BlockEntity implements IFilamentSou
     // --- IFilamentSource ---
 
     @Override
-    public long drainFilament(long maxBase, int costTier) {
+    public long drainExactTier(int tier, long maxBase) {
         if (maxBase <= 0) {
             return 0;
         }
-        long leftover = FilamentDrain.drain(spools, maxBase, costTier, FuConversion.ratio());
+        long leftover = FilamentDrain.drainTier(spools, maxBase, tier, FuConversion.ratio());
         return maxBase - leftover; // may exceed maxBase by one ceil unit (the source contract)
     }
 
     @Override
-    public long availableFilament(int costTier) {
-        int ratio = FuConversion.ratio();
-        long base = 0;
-        for (int i = 0; i < spools.getSlots(); i++) {
-            if (spools.getStackInSlot(i).getItem() instanceof SpoolItem spool
-                    && FuConversion.canCover(spool.tier(), costTier)) {
-                base += FuConversion.toBase(SpoolItem.getFu(spools.getStackInSlot(i)), spool.tier(), ratio);
-            }
-        }
-        return base;
+    public long availableExactTier(int tier) {
+        return FilamentDrain.availableTier(spools, tier, FuConversion.ratio());
     }
 
     // --- Capability ---
