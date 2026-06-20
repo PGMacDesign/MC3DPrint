@@ -3,6 +3,34 @@
 All notable changes to **MC3DPrint** (Minecraft 1.20.1 / Forge). Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/). Versions before 0.3.0 predate this file.
 
+## [0.7.0] — 2026-06-20
+
+Spool storage + a unified transport cable, with a tier-smart filament economy pass.
+
+### Added
+- **Filament Rack** — an 8-slot (2×4) bookshelf for the non-stacking Filament Spools: right-click to
+  shelve a spool, empty-hand to pop the last one back (LIFO). A block-entity renderer shows each
+  shelved spool's own tier-colored model so the shelf fills visibly, and it emits a comparator signal
+  scaled to its fill. It also doubles as a drainable FU reservoir for adjacent machines.
+- **MC3D Cable** — one connected-texture cable that carries BOTH RF and FU. RF rides standard Forge
+  Energy (capped at `cable.transferRate`, default 2000 FE/t — deliberately modest, but it powers any
+  mod's FE machines, not just this one's). FU is pulled on demand. Lossless; cheap recipe (yields 6).
+- Patchouli guide entries for the Filament Rack and MC3D Cable.
+
+### Changed
+- **Printer filament draw is now globally tier-smart**, not dock-order. The printer sweeps tier bands
+  from the block's cost tier upward, spending the cheapest qualifying spool first across its docked
+  spools AND every reachable rack — so a high-tier spool is never wasted on a low-tier block because
+  of where it was docked. Docked spools feed first only as the within-tier tiebreak. The print
+  affordability gate counts network supply too, so a printer with empty docked spools still prints
+  from a connected rack (direct-touch, or wired via cable).
+
+### Performance
+- Cable network membership (which racks / FE acceptors are reachable) is recomputed lazily on a
+  ~100-tick throttle and cached as positions only; spool contents and energy are read live, so a
+  spool draining or a rack refilling needs no cache invalidation. Replaces the previous
+  flood-the-network-every-block behavior.
+
 ## [0.5.0] — 2026-06-19
 
 A testing-phase polish + rebalance pass over the Resin system and the curated farms.
