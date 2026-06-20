@@ -59,7 +59,7 @@ jobs:
             name=$(basename "$path" .blueprint)
             raw="https://raw.githubusercontent.com/${HEAD_REPO}/${HEAD_SHA}/${path}"
             if curl -fsSL --max-filesize 6000000 "$raw" -o bp.blueprint 2>/dev/null; then
-              stats=$(python3 web/build/blueprint_stats.py bp.blueprint)
+              stats=$(python3 web/tools/blueprint_stats.py bp.blueprint)
             else
               stats="(couldn't fetch file)"
             fi

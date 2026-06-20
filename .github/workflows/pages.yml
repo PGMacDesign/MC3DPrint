@@ -39,9 +39,9 @@ jobs:
         run: |
           mkdir -p _site/blueprints
           cp -r web/. _site/
-          rm -rf _site/build            # build scripts aren't part of the published site
+          rm -rf _site/tools            # build scripts aren't part of the published site
           cp src/main/resources/data/mc3dprint/blueprints/*.blueprint _site/blueprints/
-          node web/build/gen_manifest.mjs \
+          node web/tools/gen_manifest.mjs \
             src/main/resources/data/mc3dprint/blueprints \
             _site/manifest.json \
             blueprints/
