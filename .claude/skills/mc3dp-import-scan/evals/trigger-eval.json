@@ -1,0 +1,16 @@
+[
+  {"query": "I scanned a castle in survival and want to add it to the mod — the file's in my new world's mc3dprint/blueprints folder somewhere", "should_trigger": true},
+  {"query": "import this scan as windmill_two", "should_trigger": true},
+  {"query": "I built a barn in-game and captured it with the structure scanner, make it a curated build", "should_trigger": true},
+  {"query": "here's a uuid-named .blueprint from my world, add it to the curated set. i placed scaffolding in the corners so the scanner could reach them", "should_trigger": true},
+  {"query": "add my hand-built iron farm scan to the curated blueprints, call it bedrock_iron_farm", "should_trigger": true},
+  {"query": "take the build i just scanned and ship it as a curated blueprint — display name Grand Observatory", "should_trigger": true},
+  {"query": "the scanned file is at ~/Library/.../instances/1.20.1/saves/Testing/mc3dprint/blueprints/3441fe14.blueprint, import it", "should_trigger": true},
+  {"query": "add a windmill blueprint to the mod with sails", "should_trigger": false},
+  {"query": "implement the church spec from docs/blueprint-specs.md as a parametric builder", "should_trigger": false},
+  {"query": "validate the curated blueprints for defects and fix any open roofs", "should_trigger": false},
+  {"query": "give Mekanism's osmium and steel FU values so they print", "should_trigger": false},
+  {"query": "the cactus farm blueprint looks wrong, why isn't it harvesting properly", "should_trigger": false},
+  {"query": "research a good lighthouse build and turn it into a spec for the mod", "should_trigger": false},
+  {"query": "rebalance the vanilla FU tiers, netherite feels too cheap", "should_trigger": false}
+]

@@ -1,0 +1,24 @@
+{
+  "skill_name": "mc3dp-import-scan",
+  "note": "Functional evals — run against a REAL scanned .blueprint. Each mutates the repo (adds a builder, generates a file, maybe edits FuValueRegistry), so run in a throwaway worktree or revert after.",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I scanned a build in-game — the file is at src/test/resources/scanned/<uuid>.blueprint. Import it into the curated set as 'grand_observatory' (display: Grand Observatory). It's a static build, no redstone.",
+      "expected_output": "Scan copied to scanned/grand_observatory.blueprint; builder added + registered in builds map AND CURATED_NAMES; scaffolding stripped (count reported); container Items stripped; gated generator run; printability gametest + validate-blueprint pass.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Add my hand-built sugarcane farm scan to the curated builds, call it river_sugarcane. I used scaffolding to reach the top corners while scanning, and it's an automated farm with a redstone clock.",
+      "expected_output": "Scaffolding stripped + count reported; redstone/clock interval + sign NBT preserved verbatim; crops normalized young if applicable; container Items stripped; registered; generated; validated. No FU economy break.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Import this scanned build as end_shrine — heads up, it contains an end portal frame and a budding amethyst block.",
+      "expected_output": "Raises a QUESTION about budding_amethyst / end_portal_frame (survival-unobtainable / should-be-unprintable) rather than silently valuing them; explains the tradeoff and offers value / swap / ship-exempt options.",
+      "files": []
+    }
+  ]
+}
