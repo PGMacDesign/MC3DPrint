@@ -1,0 +1,92 @@
+name: Blueprint PR Preview
+
+# Posts a sticky comment linking each added/changed .blueprint in a PR to the
+# live viewer, with parsed size/blocks/tier stats.
+#
+# SECURITY: uses pull_request_target so it can comment on FORK PRs (a plain
+# pull_request token is read-only for forks and couldn't post). The footgun of
+# pull_request_target is running untrusted PR code with a write token — we never
+# do that. We check out only the BASE repo, run only base-branch scripts, and
+# treat the blueprint files purely as DATA fetched read-only from the PR head and
+# parsed by a hardened decoder (decompression-bomb + volume caps). No PR code,
+# script, or build ever executes here.
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '**/*.blueprint'
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: blueprint-preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout base repo (trusted scripts only)
+        uses: actions/checkout@v4   # default ref = base branch, NOT the PR head
+
+      - name: Build preview comment
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          OWNER: ${{ github.repository_owner }}
+          REPO_NAME: ${{ github.event.repository.name }}
+        run: |
+          set -euo pipefail
+          PAGES_BASE="https://${OWNER,,}.github.io/${REPO_NAME}"   # custom domain: override here
+          {
+            echo "<!-- blueprint-preview -->"
+            echo "### 🧱 Blueprint preview"
+            echo
+            echo "View each changed blueprint in the browser (rotate / zoom / scrub layers):"
+            echo
+          } > comment.md
+
+          count=0
+          while IFS=$'\t' read -r st path; do
+            [ "$st" = "removed" ] && continue
+            case "$path" in *.blueprint) ;; *) continue ;; esac
+            count=$((count+1))
+            name=$(basename "$path" .blueprint)
+            raw="https://raw.githubusercontent.com/${HEAD_REPO}/${HEAD_SHA}/${path}"
+            if curl -fsSL --max-filesize 6000000 "$raw" -o bp.blueprint 2>/dev/null; then
+              stats=$(python3 web/build/blueprint_stats.py bp.blueprint)
+            else
+              stats="(couldn't fetch file)"
+            fi
+            src=$(printf %s "$raw" | jq -sRr @uri)
+            echo "- **${name}** — \`${stats}\` — [▶ view](${PAGES_BASE}/?src=${src})" >> comment.md
+          done < <(gh api --paginate "repos/${REPO}/pulls/${PR}/files" \
+                     -q '.[] | [.status, .filename] | @tsv')
+
+          {
+            echo
+            echo "_Colors are a flat MapColor massing preview; shapes render as full cubes. Magenta = unrecognized block._"
+          } >> comment.md
+          echo "changed=$count" >> "$GITHUB_OUTPUT"
+
+      - name: Upsert sticky comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const body = fs.readFileSync('comment.md', 'utf8');
+            const marker = '<!-- blueprint-preview -->';
+            const { owner, repo } = context.repo;
+            const issue_number = context.payload.pull_request.number;
+            const { data: comments } = await github.rest.issues.listComments({ owner, repo, issue_number });
+            const existing = comments.find(c => c.body && c.body.includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body });
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number, body });
+            }

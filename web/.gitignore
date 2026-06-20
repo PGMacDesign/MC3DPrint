@@ -1,0 +1,3 @@
+# Generated locally for testing the gallery; the Pages workflow builds the real
+# one into the published site at deploy time.
+manifest.json

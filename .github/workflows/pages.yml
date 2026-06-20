@@ -1,0 +1,55 @@
+name: Deploy Blueprint Viewer
+
+# Publishes the static viewer in web/ to GitHub Pages. Runs ONLY on push to main
+# (i.e. after a merge), never on a PR, so a fork PR can never trigger a deploy or
+# touch the live site.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'web/**'
+      - 'src/main/resources/data/mc3dprint/blueprints/**'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Never run two deploys at once; let an in-flight one finish (don't cancel a live deploy).
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - uses: actions/configure-pages@v5
+
+      - name: Assemble site
+        run: |
+          mkdir -p _site/blueprints
+          cp -r web/. _site/
+          rm -rf _site/build            # build scripts aren't part of the published site
+          cp src/main/resources/data/mc3dprint/blueprints/*.blueprint _site/blueprints/
+          node web/build/gen_manifest.mjs \
+            src/main/resources/data/mc3dprint/blueprints \
+            _site/manifest.json \
+            blueprints/
+          touch _site/.nojekyll          # serve underscore paths verbatim, skip Jekyll
+          # For a custom domain later: echo blueprints.example.com > _site/CNAME
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@v4
