@@ -59,6 +59,12 @@ public final class ModItems {
             () -> new com.pgmacdesign.mc3dprint.machine.RemoteTerminalBlock.TerminalBlockItem(
                     ModBlocks.REMOTE_TERMINAL.get(), new Item.Properties()));
 
+    public static final RegistryObject<Item> FILAMENT_RACK = ITEMS.register("filament_rack",
+            () -> new BlockItem(ModBlocks.FILAMENT_RACK.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> MC3DCABLE = ITEMS.register("mc3dcable",
+            () -> new BlockItem(ModBlocks.MC3DCABLE.get(), new Item.Properties()));
+
     public static final RegistryObject<Item> CLOCK_GENERATOR = ITEMS.register("clock_generator",
             () -> new BlockItem(ModBlocks.CLOCK_GENERATOR.get(), new Item.Properties()));
 

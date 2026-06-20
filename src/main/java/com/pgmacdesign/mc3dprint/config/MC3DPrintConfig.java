@@ -29,6 +29,7 @@ public final class MC3DPrintConfig {
     public static final ForgeConfigSpec.IntValue WINDER_TICKS_PER_ITEM;
     public static final ForgeConfigSpec.IntValue WINDER_ENERGY_BUFFER;
     public static final ForgeConfigSpec.IntValue WINDER_MAX_ENERGY_RECEIVE;
+    public static final ForgeConfigSpec.IntValue CABLE_TRANSFER_RATE;
     public static final ForgeConfigSpec.IntValue CLOCK_GENERATOR_RF_PER_TICK;
     public static final ForgeConfigSpec.DoubleValue UPGRADE_SPEED_FACTOR;
     public static final ForgeConfigSpec.DoubleValue UPGRADE_RF_FACTOR;
@@ -120,6 +121,18 @@ public final class MC3DPrintConfig {
         WINDER_MAX_ENERGY_RECEIVE = builder
                 .comment("Max RF accepted per tick from cables")
                 .defineInRange("maxEnergyReceive", 1_000, 1, Integer.MAX_VALUE);
+        builder.pop();
+
+        builder.comment("MC3D Cable: a single deliberately-modest cable that carries BOTH RF",
+                        "(standard Forge Energy, so it powers any mod's machines) and Filament Units",
+                        "(pulled on demand by printers from connected Filament Racks). Kept weak on",
+                        "purpose so it never replaces a real power-management mod's cabling.").push("cable");
+        CABLE_TRANSFER_RATE = builder
+                .comment("Max RF moved per cable segment per tick (also its internal buffer size).",
+                        "Default 2000 FE/t ~ Ender IO's basic tier: comfortably runs this mod's",
+                        "machines (a printer draws <=250 FE/t under load) without being a base backbone.",
+                        "Filament-Unit transfer is demand-driven and intentionally uncapped.")
+                .defineInRange("transferRate", 2_000, 1, Integer.MAX_VALUE);
         builder.pop();
 
         builder.comment("Upgrade modules. Speed/RF/Buffer stack multiplicatively per module;",
@@ -284,6 +297,10 @@ public final class MC3DPrintConfig {
 
     public static double efficiency(MachineTier tier) {
         return EFFICIENCY[tier.number() - 1].get();
+    }
+
+    public static int cableTransferRate() {
+        return CABLE_TRANSFER_RATE.get();
     }
 
     private MC3DPrintConfig() {}

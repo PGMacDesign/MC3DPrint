@@ -66,6 +66,8 @@
   "command.mc3dprint.export_failed": "Export failed: %s",
   "command.mc3dprint.export_success": "Exported to world/mc3dprint/export/%s",
   "block.mc3dprint.filament_converter": "Filament Converter",
+  "block.mc3dprint.filament_rack": "Filament Rack",
+  "block.mc3dprint.mc3dcable": "MC3D Cable",
   "message.mc3dprint.converter_filter_set": "Converter filter: %s",
   "message.mc3dprint.converter_filter_cleared": "Converter filter cleared",
   "message.mc3dprint.converter_no_filter": "none — right-click with an item",

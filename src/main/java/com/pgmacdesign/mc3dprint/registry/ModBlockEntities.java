@@ -45,6 +45,16 @@ public final class ModBlockEntities {
                     BlockEntityType.Builder.of(com.pgmacdesign.mc3dprint.machine.RedstoneClockBlockEntity::new,
                             ModBlocks.REDSTONE_CLOCK.get()).build(null));
 
+    public static final RegistryObject<BlockEntityType<com.pgmacdesign.mc3dprint.machine.rack.FilamentRackBlockEntity>> FILAMENT_RACK =
+            BLOCK_ENTITIES.register("filament_rack", () ->
+                    BlockEntityType.Builder.of(com.pgmacdesign.mc3dprint.machine.rack.FilamentRackBlockEntity::new,
+                            ModBlocks.FILAMENT_RACK.get()).build(null));
+
+    public static final RegistryObject<BlockEntityType<com.pgmacdesign.mc3dprint.machine.cable.MC3DCableBlockEntity>> MC3DCABLE =
+            BLOCK_ENTITIES.register("mc3dcable", () ->
+                    BlockEntityType.Builder.of(com.pgmacdesign.mc3dprint.machine.cable.MC3DCableBlockEntity::new,
+                            ModBlocks.MC3DCABLE.get()).build(null));
+
     public static final RegistryObject<BlockEntityType<WinderBlockEntity>> FILAMENT_WINDER =
             BLOCK_ENTITIES.register("filament_winder", () ->
                     BlockEntityType.Builder.of(WinderBlockEntity::new,

@@ -27,5 +27,6 @@ public final class ClientSetup {
     @SubscribeEvent
     public static void onRegisterRenderers(EntityRenderersEvent.RegisterRenderers event) {
         event.registerBlockEntityRenderer(ModBlockEntities.PRINTER.get(), PrinterRenderer::new);
+        event.registerBlockEntityRenderer(ModBlockEntities.FILAMENT_RACK.get(), FilamentRackRenderer::new);
     }
 }

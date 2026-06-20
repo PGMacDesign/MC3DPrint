@@ -77,6 +77,8 @@ public final class ModCreativeTabs {
                             output.accept(ModItems.FILAMENT_CONVERTER.get());
                         }
                         output.accept(ModItems.REMOTE_TERMINAL.get());
+                        output.accept(ModItems.FILAMENT_RACK.get());
+                        output.accept(ModItems.MC3DCABLE.get());
                         output.accept(ModItems.BLANK_BLUEPRINT_DISC.get());
                         output.accept(ModItems.BLUEPRINT_DISC.get());
                         output.accept(ModItems.SCANNER.get());

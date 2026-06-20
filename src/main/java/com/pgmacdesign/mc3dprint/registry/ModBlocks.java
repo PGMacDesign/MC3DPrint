@@ -29,6 +29,23 @@ public final class ModBlocks {
                 .requiresCorrectToolForDrops();
     }
 
+    /** Cables break fast by hand and aren't full cubes (noOcclusion lets neighbors render). */
+    private static BlockBehaviour.Properties cableProperties() {
+        return BlockBehaviour.Properties.of()
+                .mapColor(MapColor.COLOR_GRAY)
+                .strength(0.5F)
+                .sound(SoundType.METAL)
+                .noOcclusion();
+    }
+
+    /** Bookshelf-style spool storage that doubles as a Filament-Unit reservoir. */
+    public static final RegistryObject<Block> FILAMENT_RACK = BLOCKS.register("filament_rack",
+            () -> new com.pgmacdesign.mc3dprint.machine.rack.FilamentRackBlock(machineProperties()));
+
+    /** Single dual-carry (RF + Filament Units) cable. */
+    public static final RegistryObject<Block> MC3DCABLE = BLOCKS.register("mc3dcable",
+            () -> new com.pgmacdesign.mc3dprint.machine.cable.MC3DCableBlock(cableProperties()));
+
     /** Single-block printers, index 0 = Tier 1. T5-T8 are multiblock controllers (phase b). */
     public static final List<RegistryObject<Block>> PRINTERS = buildPrinters();
 

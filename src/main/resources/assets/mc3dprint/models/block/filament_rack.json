@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/orientable",
+  "textures": {
+    "top": "mc3dprint:block/filament_rack_top",
+    "front": "mc3dprint:block/filament_rack_front",
+    "side": "mc3dprint:block/filament_rack_side"
+  }
+}

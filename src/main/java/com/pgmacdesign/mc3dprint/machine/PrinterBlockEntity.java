@@ -8,7 +8,10 @@ import com.pgmacdesign.mc3dprint.blueprint.BlueprintBlockState;
 import com.pgmacdesign.mc3dprint.blueprint.BlueprintFileStore;
 import com.pgmacdesign.mc3dprint.blueprint.PrintOrientation;
 import com.pgmacdesign.mc3dprint.config.MC3DPrintConfig;
+import com.pgmacdesign.mc3dprint.fu.FilamentDrain;
 import com.pgmacdesign.mc3dprint.fu.FuConversion;
+import com.pgmacdesign.mc3dprint.fu.IFilamentSource;
+import com.pgmacdesign.mc3dprint.registry.ModCapabilities;
 import com.pgmacdesign.mc3dprint.fu.FuValue;
 import com.pgmacdesign.mc3dprint.fu.FuValueRegistry;
 import com.pgmacdesign.mc3dprint.fu.SpoolItem;
@@ -370,7 +373,7 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             }
         } else if (!canEmitCopy(template)) {
             state = State.PAUSED_OUTPUT_FULL;
-        } else if (effectiveFu(costTier) < fuCost) {
+        } else if (affordableFu(costTier) < fuCost) {
             state = State.PAUSED_NO_FILAMENT;
         } else if (!energy.hasAtLeast(rfAdjusted(MC3DPrintConfig.itemRfPerTick(tier)))) {
             state = State.PAUSED_NO_POWER;
@@ -545,6 +548,12 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
      * nothing — FU never converts up.
      */
     public int effectiveFu(int costTier) {
+        return FuConversion.clampToInt(
+                FuConversion.fromBase(effectiveFuBase(costTier), costTier, FuConversion.ratio()));
+    }
+
+    /** Docked-spool FU toward a {@code costTier} cost, in base units (down-only). */
+    private long effectiveFuBase(int costTier) {
         int ratio = FuConversion.ratio();
         long base = 0;
         for (int i = 0; i < spools.getSlots(); i++) {
@@ -554,7 +563,37 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
                 base += FuConversion.toBase(SpoolItem.getFu(spool), spoolItem.tier(), ratio);
             }
         }
-        return FuConversion.clampToInt(FuConversion.fromBase(base, costTier, ratio));
+        return base;
+    }
+
+    /**
+     * Affordability for the print gate: docked spools PLUS what adjacent
+     * Filament-Unit sources (direct-touch racks, or a cable's whole network of
+     * racks) can supply. Mirrors the docked-first/reserve drain so a printer with
+     * empty docked spools but a stocked rack still prints.
+     */
+    private int affordableFu(int costTier) {
+        long base = effectiveFuBase(costTier) + networkFuBase(costTier);
+        return FuConversion.clampToInt(FuConversion.fromBase(base, costTier, FuConversion.ratio()));
+    }
+
+    private long networkFuBase(int costTier) {
+        if (level == null) {
+            return 0;
+        }
+        long total = 0;
+        for (Direction dir : Direction.values()) {
+            BlockEntity neighbor = level.getBlockEntity(worldPosition.relative(dir));
+            if (neighbor == null) {
+                continue;
+            }
+            IFilamentSource source = neighbor.getCapability(ModCapabilities.FILAMENT_SOURCE,
+                    dir.getOpposite()).orElse(null);
+            if (source != null) {
+                total += source.availableFilament(costTier);
+            }
+        }
+        return total;
     }
 
     /** Capacity counterpart of {@link #effectiveFu} for the GUI gauge. */
@@ -590,20 +629,36 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
     private void drainFu(int amount, int costTier) {
         int ratio = FuConversion.ratio();
         long remainingBase = FuConversion.toBase(amount, costTier, ratio);
-        for (int i = 0; i < spools.getSlots() && remainingBase > 0; i++) {
-            ItemStack spool = spools.getStackInSlot(i);
-            if (!(spool.getItem() instanceof SpoolItem spoolItem)
-                    || !FuConversion.canCover(spoolItem.tier(), costTier)) {
+        // Docked spools feed first (the printer's own loadout)...
+        remainingBase = FilamentDrain.drain(spools, remainingBase, costTier, ratio);
+        // ...then the Filament-Unit network is the reserve (direct-touch rack or cable).
+        if (remainingBase > 0) {
+            drainFromNetwork(remainingBase, costTier);
+        }
+    }
+
+    /**
+     * Pulls the remaining cost from adjacent Filament-Unit sources after the
+     * docked spools run dry: a directly-touching Filament Rack, or an MC3DCable
+     * that relays its whole network of racks. Drained in place, down-only.
+     */
+    private void drainFromNetwork(long remainingBase, int costTier) {
+        if (level == null) {
+            return;
+        }
+        for (Direction dir : Direction.values()) {
+            if (remainingBase <= 0) {
+                break;
+            }
+            BlockEntity neighbor = level.getBlockEntity(worldPosition.relative(dir));
+            if (neighbor == null) {
                 continue;
             }
-            long stored = SpoolItem.getFu(spool);
-            long storedBase = FuConversion.toBase(stored, spoolItem.tier(), ratio);
-            long drainUnits = storedBase <= remainingBase
-                    ? stored
-                    : FuConversion.fromBaseCeil(remainingBase, spoolItem.tier(), ratio);
-            int drained = SpoolItem.drain(spool, FuConversion.clampToInt(drainUnits));
-            remainingBase -= FuConversion.toBase(drained, spoolItem.tier(), ratio);
-            spools.setStackInSlot(i, spool); // onContentsChanged syncs the shrinking reel
+            IFilamentSource source = neighbor.getCapability(ModCapabilities.FILAMENT_SOURCE,
+                    dir.getOpposite()).orElse(null);
+            if (source != null) {
+                remainingBase -= source.drainFilament(remainingBase, costTier);
+            }
         }
     }
 
@@ -1024,7 +1079,7 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
                 }
             }
             int costTier = blockFuTier(resolved.get());
-            if (effectiveFu(costTier) < fuCost) {
+            if (affordableFu(costTier) < fuCost) {
                 state = State.PAUSED_NO_FILAMENT;
                 return;
             }
