@@ -8608,6 +8608,11 @@ class CuratedBlueprintGenerator {
      * temporary platform Patrick placed to scan into the far corners, never part of the build
      * (see the {@code mc3dp-import-scan} skill). Captured container contents (the smokers) are
      * dropped. At 24 wide the build needs a <b>Tier 7+ fabricator</b> (footprint cap).
+     *
+     * <p>The re-scan added decorative entities — armor stands (with their armor), item frames,
+     * and paintings. They carry over verbatim: because this is an <b>official</b> blueprint, the
+     * printer reproduces armor-stand armor and item-frame contents intentionally (the
+     * official-only gate in {@code PrinterBlockEntity.spawnPrintedEntities}).
      */
     private static Blueprint tristansPigHouse() {
         Blueprint scan = loadScannedBlueprint("tristans_pig_house");
@@ -8628,6 +8633,9 @@ class CuratedBlueprintGenerator {
             tag.remove("Items"); // drop captured smoker contents; keep functional NBT
             net.minecraft.core.BlockPos p = e.getKey();
             b.blockEntity(p.getX(), p.getY(), p.getZ(), tag);
+        }
+        for (BlueprintEntity ent : scan.entities()) {
+            b.entity(ent.x(), ent.y(), ent.z(), ent.nbt().copy());
         }
         return b.build();
     }
