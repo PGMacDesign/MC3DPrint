@@ -18,12 +18,16 @@ import java.util.List;
 
 /**
  * A Filament Spool: stores FU, wound by the Filament Winder, attached to
- * printer sides (Shift+Right Click). Capacities follow the design table.
+ * printer sides (Shift+Right Click). Every tier holds a uniform 100,000 FU —
+ * the spool's tier gates which materials it accepts, not how much it stores.
  */
 public class SpoolItem extends Item {
     public static final String TAG_FU = "FU";
+    public static final int SPOOL_CAPACITY = 100_000;
+    // One entry per tier (T1–T8); the array length is the canonical tier count.
     public static final int[] CAPACITY_BY_TIER =
-            {500, 2_000, 6_000, 20_000, 75_000, 250_000, 1_000_000, 5_000_000};
+            {SPOOL_CAPACITY, SPOOL_CAPACITY, SPOOL_CAPACITY, SPOOL_CAPACITY,
+             SPOOL_CAPACITY, SPOOL_CAPACITY, SPOOL_CAPACITY, SPOOL_CAPACITY};
 
     private final int tier; // 1-based
 

@@ -164,18 +164,8 @@ FU is **denominated by spool tier** — a tier-S spool holds tier-S FU.
 
 FU is stored on physical **Filament Spool** items, wound by the Filament Winder and attached to the printer sides.
 
-**Spool capacities:**
-
-| Spool Tier | FU Capacity |
-|------------|-------------|
-| T1 | 500 FU |
-| T2 | 2,000 FU |
-| T3 | 6,000 FU |
-| T4 | 20,000 FU |
-| T5 | 75,000 FU |
-| T6 | 250,000 FU |
-| T7 | 1,000,000 FU |
-| T8 | 5,000,000 FU |
+**Spool capacities:** every spool, T1–T8, holds a uniform **100,000 FU**. A spool's
+tier gates which materials it accepts (exact-tier winding), not how much it stores.
 
 **Spool slots by tier:**
 

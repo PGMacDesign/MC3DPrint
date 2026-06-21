@@ -11,7 +11,7 @@
     {
       "type": "patchouli:text",
       "title": "Spool Capacities",
-      "text": "Raw FU a single spool can hold:$(br)$(li)T1 — 500$(li)T2 — 2,000$(li)T3 — 6,000$(li)T4 — 20,000$(li)T5 — 75,000$(li)T6 — 250,000$(li)T7 — 1,000,000$(li)T8 — 5,000,000"
+      "text": "Every spool — T1 through T8 — holds a uniform $(l)100,000 FU$(). A spool's tier sets $(l)which materials it accepts$(), not how much it stores.$(br2)So a higher tier never means a bigger tank; it means a more valuable one."
     },
     {
       "type": "patchouli:text",

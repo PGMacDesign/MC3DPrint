@@ -11,7 +11,7 @@
     {
       "type": "patchouli:crafting",
       "recipe": "mc3dprint:filament_spool_t1",
-      "text": "A Tier 1 spool holds $(l)500 FU$(). Higher tiers hold far more (see FU Economy)."
+      "text": "Every spool holds $(l)100,000 FU$(), regardless of tier — the tier gates which materials it accepts, not its capacity (see FU Economy)."
     },
     {
       "type": "patchouli:text",
