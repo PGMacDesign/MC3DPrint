@@ -2,12 +2,14 @@ package com.pgmacdesign.mc3dprint.item;
 
 import com.pgmacdesign.mc3dprint.blueprint.Blueprint;
 import com.pgmacdesign.mc3dprint.blueprint.BlueprintBlockState;
+import com.pgmacdesign.mc3dprint.blueprint.BlueprintEntity;
 import com.pgmacdesign.mc3dprint.fu.FuConversion;
 import com.pgmacdesign.mc3dprint.fu.FuValue;
 import com.pgmacdesign.mc3dprint.fu.FuValueRegistry;
 import com.pgmacdesign.mc3dprint.machine.resin.ResinEffects;
 import net.minecraft.ChatFormatting;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -23,6 +25,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 
 import javax.annotation.Nullable;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -272,12 +275,81 @@ public class BlueprintDiscItem extends Item {
                 totalBase += FuConversion.toBase(fv.fu(), fv.tier(), ratio) * count;
             }
 
+            // Decorative entities cost their contents (stand + armor; frame + framed item).
+            for (BlueprintEntity entity : blueprint.entities()) {
+                for (ItemStack content : entityContentItems(entity.nbt())) {
+                    Optional<FuValue> v = FuValueRegistry.valueOf(content);
+                    if (v.isPresent()) {
+                        totalBase += FuConversion.toBase(v.get().fu(), v.get().tier(), ratio) * content.getCount();
+                    }
+                }
+            }
+
             long cost = FuConversion.fromBaseCeil(totalBase, topTier, ratio);
             return FuConversion.clampToInt(cost);
         } catch (RuntimeException ignored) {
             // FU registry may not be bound yet (e.g. early datagen) — fall back to 0
             return 0;
         }
+    }
+
+    /**
+     * The chargeable item contents of a captured decorative entity — the entity's
+     * own item plus what it carries: an armor stand's armor/hand items, an item
+     * frame's framed item. The painting/frame/stand base item derives its FU like
+     * any craftable. Shared by the print-cost quote and the printer's per-entity
+     * charge so the two never disagree.
+     */
+    /** The entity's own item (the stand/frame/painting/minecart/boat), or EMPTY if unknown. */
+    public static ItemStack entityBaseItem(CompoundTag nbt) {
+        Item base = switch (nbt.getString("id")) {
+            case "minecraft:armor_stand" -> Items.ARMOR_STAND;
+            case "minecraft:item_frame" -> Items.ITEM_FRAME;
+            case "minecraft:glow_item_frame" -> Items.GLOW_ITEM_FRAME;
+            case "minecraft:painting" -> Items.PAINTING;
+            case "minecraft:minecart" -> Items.MINECART;
+            case "minecraft:boat" -> boatItem(nbt.getString("Type"));
+            default -> null;
+        };
+        return base == null ? ItemStack.EMPTY : new ItemStack(base);
+    }
+
+    public static List<ItemStack> entityContentItems(CompoundTag nbt) {
+        List<ItemStack> items = new ArrayList<>();
+        ItemStack base = entityBaseItem(nbt);
+        if (!base.isEmpty()) {
+            items.add(base);
+        }
+        for (String slot : new String[]{"ArmorItems", "HandItems"}) {
+            for (Tag tag : nbt.getList(slot, Tag.TAG_COMPOUND)) {
+                ItemStack stack = ItemStack.of((CompoundTag) tag);
+                if (!stack.isEmpty()) {
+                    items.add(stack);
+                }
+            }
+        }
+        if (nbt.contains("Item")) { // item frame's framed item
+            ItemStack framed = ItemStack.of(nbt.getCompound("Item"));
+            if (!framed.isEmpty()) {
+                items.add(framed);
+            }
+        }
+        return items;
+    }
+
+    /** A regular boat's item, keyed by its wood {@code Type} ("oak", "bamboo" = raft, …). */
+    private static Item boatItem(String type) {
+        return switch (type) {
+            case "spruce" -> Items.SPRUCE_BOAT;
+            case "birch" -> Items.BIRCH_BOAT;
+            case "jungle" -> Items.JUNGLE_BOAT;
+            case "acacia" -> Items.ACACIA_BOAT;
+            case "dark_oak" -> Items.DARK_OAK_BOAT;
+            case "mangrove" -> Items.MANGROVE_BOAT;
+            case "cherry" -> Items.CHERRY_BOAT;
+            case "bamboo" -> Items.BAMBOO_RAFT;
+            default -> Items.OAK_BOAT;
+        };
     }
 
     /**

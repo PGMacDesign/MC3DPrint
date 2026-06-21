@@ -2,6 +2,7 @@ package com.pgmacdesign.mc3dprint.blueprint;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.DoubleTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;
@@ -17,7 +18,9 @@ import java.util.Map;
  * {@code .blueprint} format can evolve without breaking old files.
  */
 public final class BlueprintSerializer {
-    public static final int FORMAT_VERSION = 1;
+    // v2 added KEY_ENTITIES (decorative entities). The reader accepts v1 too — v1
+    // files (and pre-v2 player scans) simply have no entities.
+    public static final int FORMAT_VERSION = 2;
 
     private static final String KEY_VERSION = "Version";
     private static final String KEY_NAME = "Name";
@@ -25,6 +28,7 @@ public final class BlueprintSerializer {
     private static final String KEY_PALETTE = "Palette";
     private static final String KEY_BLOCKS = "Blocks";
     private static final String KEY_BLOCK_ENTITIES = "BlockEntities";
+    private static final String KEY_ENTITIES = "Entities";
     private static final String KEY_BE_POS = "Pos";
     private static final String KEY_BE_DATA = "Data";
 
@@ -61,14 +65,34 @@ public final class BlueprintSerializer {
             blockEntities.add(be);
         }
         root.put(KEY_BLOCK_ENTITIES, blockEntities);
+
+        // Decorative entities, sorted (pos then type) so regen is byte-deterministic.
+        ListTag entities = new ListTag();
+        List<BlueprintEntity> sortedEntities = new ArrayList<>(blueprint.entities());
+        sortedEntities.sort(Comparator
+                .comparingDouble(BlueprintEntity::x)
+                .thenComparingDouble(BlueprintEntity::y)
+                .thenComparingDouble(BlueprintEntity::z)
+                .thenComparing(BlueprintEntity::typeId));
+        for (BlueprintEntity e : sortedEntities) {
+            CompoundTag et = new CompoundTag();
+            ListTag pos = new ListTag();
+            pos.add(DoubleTag.valueOf(e.x()));
+            pos.add(DoubleTag.valueOf(e.y()));
+            pos.add(DoubleTag.valueOf(e.z()));
+            et.put(KEY_BE_POS, pos);
+            et.put(KEY_BE_DATA, e.nbt().copy());
+            entities.add(et);
+        }
+        root.put(KEY_ENTITIES, entities);
         return root;
     }
 
     public static Blueprint read(CompoundTag root) {
         int version = root.getInt(KEY_VERSION);
-        if (version != FORMAT_VERSION) {
+        if (version < 1 || version > FORMAT_VERSION) {
             throw new BlueprintFormatException("Unsupported blueprint format version " + version
-                    + " (this build reads version " + FORMAT_VERSION + ")");
+                    + " (this build reads versions 1.." + FORMAT_VERSION + ")");
         }
         int[] size = root.getIntArray(KEY_SIZE);
         if (size.length != 3) {
@@ -98,6 +122,20 @@ public final class BlueprintSerializer {
             blockEntities.put(new BlockPos(pos[0], pos[1], pos[2]), be.getCompound(KEY_BE_DATA).copy());
         }
 
-        return new Blueprint(root.getString(KEY_NAME), size[0], size[1], size[2], palette, blocks, blockEntities);
+        // Entities — absent in v1 files (getList returns empty), so old blueprints
+        // and pre-v2 player scans still load with no entities.
+        List<BlueprintEntity> entities = new ArrayList<>();
+        for (Tag tag : root.getList(KEY_ENTITIES, Tag.TAG_COMPOUND)) {
+            CompoundTag et = (CompoundTag) tag;
+            ListTag pos = et.getList(KEY_BE_POS, Tag.TAG_DOUBLE);
+            if (pos.size() != 3) {
+                throw new BlueprintFormatException("Entity Pos must be [x, y, z]");
+            }
+            entities.add(new BlueprintEntity(pos.getDouble(0), pos.getDouble(1), pos.getDouble(2),
+                    et.getCompound(KEY_BE_DATA).copy()));
+        }
+
+        return new Blueprint(root.getString(KEY_NAME), size[0], size[1], size[2],
+                palette, blocks, blockEntities, entities);
     }
 }

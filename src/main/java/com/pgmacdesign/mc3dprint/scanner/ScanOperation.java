@@ -4,9 +4,12 @@ import com.pgmacdesign.mc3dprint.blueprint.Blueprint;
 import com.pgmacdesign.mc3dprint.blueprint.BlueprintBlockState;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
 
 /**
  * Captures a world region into a blueprint. Air imports as empty (the printer
@@ -48,6 +51,50 @@ public final class ScanOperation {
                 builder.blockEntity(localX, localY, localZ, data);
             }
         }
+
+        // Decorative entities live in a separate system from blocks/block-entities,
+        // so capture them explicitly. Position is stored blueprint-local (continuous);
+        // Pos/UUID are stripped (pos carried separately, fresh UUID assigned at spawn).
+        AABB region = new AABB(min.getX(), min.getY(), min.getZ(),
+                max.getX() + 1, max.getY() + 1, max.getZ() + 1);
+        for (Entity entity : level.getEntities((Entity) null, region, ScanOperation::isCapturable)) {
+            CompoundTag nbt = new CompoundTag();
+            if (!entity.save(nbt)) {
+                continue; // passenger / unsaveable
+            }
+            nbt.remove("Pos");
+            nbt.remove("UUID");
+            nbt.remove("Motion");      // spawn at rest (carts/boats don't drift)
+            nbt.remove("Passengers");  // strip dangling references to uncaptured riders
+            nbt.remove("Leash");       // and to uncaptured leash holders
+            // Hanging entities (frames/paintings) attach to an absolute block via TileX/Y/Z —
+            // store it blueprint-local so the print can re-anchor it at any location.
+            if (nbt.contains("TileX")) {
+                nbt.putInt("TileX", nbt.getInt("TileX") - min.getX());
+                nbt.putInt("TileY", nbt.getInt("TileY") - min.getY());
+                nbt.putInt("TileZ", nbt.getInt("TileZ") - min.getZ());
+            }
+            builder.entity(
+                    entity.getX() - min.getX(),
+                    entity.getY() - min.getY(),
+                    entity.getZ() - min.getZ(),
+                    nbt);
+        }
         return builder.build();
+    }
+
+    /**
+     * Decorative entities we capture/reprint — explicitly NOT mobs/players/items.
+     * Regular minecart/boat only; their container variants (chest_minecart,
+     * chest_boat, …) are distinct EntityTypes and so excluded for free.
+     */
+    private static boolean isCapturable(Entity entity) {
+        EntityType<?> type = entity.getType();
+        return type == EntityType.ARMOR_STAND
+                || type == EntityType.ITEM_FRAME
+                || type == EntityType.GLOW_ITEM_FRAME
+                || type == EntityType.PAINTING
+                || type == EntityType.MINECART
+                || type == EntityType.BOAT;
     }
 }

@@ -29,10 +29,11 @@ public final class Blueprint {
     private final List<BlueprintBlockState> palette;
     private final int[] blocks; // palette index per position, NO_BLOCK for empty
     private final Map<BlockPos, CompoundTag> blockEntities;
+    private final List<BlueprintEntity> entities; // armor stands, frames, paintings
 
     Blueprint(String name, int sizeX, int sizeY, int sizeZ,
               List<BlueprintBlockState> palette, int[] blocks,
-              Map<BlockPos, CompoundTag> blockEntities) {
+              Map<BlockPos, CompoundTag> blockEntities, List<BlueprintEntity> entities) {
         if (blocks.length != sizeX * sizeY * sizeZ) {
             throw new IllegalArgumentException("Block array length " + blocks.length
                     + " does not match volume " + sizeX + "x" + sizeY + "x" + sizeZ);
@@ -44,6 +45,7 @@ public final class Blueprint {
         this.palette = List.copyOf(palette);
         this.blocks = blocks;
         this.blockEntities = Map.copyOf(blockEntities);
+        this.entities = List.copyOf(entities);
     }
 
     public static Builder builder(String name, int sizeX, int sizeY, int sizeZ) {
@@ -72,6 +74,10 @@ public final class Blueprint {
 
     public Map<BlockPos, CompoundTag> blockEntities() {
         return blockEntities;
+    }
+
+    public List<BlueprintEntity> entities() {
+        return entities;
     }
 
     int[] rawBlocks() {
@@ -126,12 +132,14 @@ public final class Blueprint {
                 && name.equals(other.name)
                 && palette.equals(other.palette)
                 && Arrays.equals(blocks, other.blocks)
-                && blockEntities.equals(other.blockEntities);
+                && blockEntities.equals(other.blockEntities)
+                && entities.equals(other.entities);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, sizeX, sizeY, sizeZ, palette, Arrays.hashCode(blocks), blockEntities);
+        return Objects.hash(name, sizeX, sizeY, sizeZ, palette, Arrays.hashCode(blocks),
+                blockEntities, entities);
     }
 
     public static final class Builder {
@@ -143,6 +151,7 @@ public final class Blueprint {
         private final Map<BlueprintBlockState, Integer> paletteLookup = new HashMap<>();
         private final int[] blocks;
         private final Map<BlockPos, CompoundTag> blockEntities = new HashMap<>();
+        private final List<BlueprintEntity> entities = new ArrayList<>();
 
         private Builder(String name, int sizeX, int sizeY, int sizeZ) {
             if (sizeX <= 0 || sizeY <= 0 || sizeZ <= 0) {
@@ -199,6 +208,12 @@ public final class Blueprint {
             return this;
         }
 
+        /** Adds a decorative entity at blueprint-local (continuous) coordinates. */
+        public Builder entity(double x, double y, double z, CompoundTag nbt) {
+            entities.add(new BlueprintEntity(x, y, z, nbt));
+            return this;
+        }
+
         public int sizeX() {
             return sizeX;
         }
@@ -212,7 +227,7 @@ public final class Blueprint {
         }
 
         public Blueprint build() {
-            return new Blueprint(name, sizeX, sizeY, sizeZ, palette, blocks, blockEntities);
+            return new Blueprint(name, sizeX, sizeY, sizeZ, palette, blocks, blockEntities, entities);
         }
     }
 }

@@ -83,4 +83,25 @@ class PrintOrientationTest {
         PrintOrientation frontBack = new PrintOrientation(Rotation.NONE, Mirror.FRONT_BACK);
         assertEquals(new BlockPos(SX - 1, 0, 2), frontBack.transform(new BlockPos(0, 0, 2), SX, SY, SZ));
     }
+
+    @Test
+    void continuousTransformMatchesBlockTransformAtCenters() {
+        // The entity (continuous) transform must agree with the block transform for a
+        // block center idx+0.5 — that consistency is what keeps printed entities aligned
+        // with the rotated/mirrored blocks under them, for all 8 orientations.
+        for (Rotation rotation : Rotation.values()) {
+            for (Mirror mirror : Mirror.values()) {
+                PrintOrientation o = new PrintOrientation(rotation, mirror);
+                for (int x = 0; x < SX; x++) {
+                    for (int z = 0; z < SZ; z++) {
+                        BlockPos block = o.transform(new BlockPos(x, 0, z), SX, SY, SZ);
+                        double[] point = o.transformPoint(x + 0.5, 1.0, z + 0.5, SX, SZ);
+                        assertEquals(block.getX() + 0.5, point[0], 1e-9, rotation + "/" + mirror + " X");
+                        assertEquals(1.0, point[1], 1e-9);
+                        assertEquals(block.getZ() + 0.5, point[2], 1e-9, rotation + "/" + mirror + " Z");
+                    }
+                }
+            }
+        }
+    }
 }

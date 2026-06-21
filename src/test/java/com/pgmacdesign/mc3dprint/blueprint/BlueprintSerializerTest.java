@@ -69,4 +69,29 @@ class BlueprintSerializerTest {
         tag.putIntArray("Blocks", blocks);
         assertThrows(BlueprintFormatException.class, () -> BlueprintSerializer.read(tag));
     }
+
+    @Test
+    void roundTripsEntities() {
+        CompoundTag standNbt = new CompoundTag();
+        standNbt.putString("id", "minecraft:armor_stand");
+        Blueprint original = Blueprint.builder("Entity Test", 2, 3, 2)
+                .set(0, 0, 0, BlueprintBlockState.parse("minecraft:stone"))
+                .entity(0.5, 1.0, 0.5, standNbt)
+                .build();
+        Blueprint restored = BlueprintSerializer.read(BlueprintSerializer.write(original));
+        assertEquals(original, restored);
+        assertEquals(1, restored.entities().size());
+        assertEquals("minecraft:armor_stand", restored.entities().get(0).typeId());
+        assertEquals(1.0, restored.entities().get(0).y());
+    }
+
+    @Test
+    void readsV1FilesWithoutEntities() {
+        // A v1 file (pre-entity format) must still load — entities default to empty.
+        CompoundTag tag = BlueprintSerializer.write(sample());
+        tag.putInt("Version", 1);
+        tag.remove("Entities");
+        Blueprint restored = BlueprintSerializer.read(tag);
+        assertEquals(0, restored.entities().size());
+    }
 }

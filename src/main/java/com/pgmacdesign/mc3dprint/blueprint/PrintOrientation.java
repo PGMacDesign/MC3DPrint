@@ -47,6 +47,29 @@ public record PrintOrientation(Rotation rotation, Mirror mirror) {
         };
     }
 
+    /**
+     * Continuous analogue of {@link #transform(BlockPos, int, int, int)} for entity
+     * coordinates (doubles, not grid-snapped). Mirror is applied before rotation, and
+     * rotations are about the volume re-anchored to the min corner — using
+     * {@code size − c} rather than {@code size − 1 − index} so a block center
+     * {@code idx + 0.5} maps identically to {@link #transform}. Returns {x, y, z}.
+     */
+    public double[] transformPoint(double x, double y, double z, int sizeX, int sizeZ) {
+        double cx = x;
+        double cz = z;
+        switch (mirror) {
+            case LEFT_RIGHT -> cz = sizeZ - cz;
+            case FRONT_BACK -> cx = sizeX - cx;
+            case NONE -> {}
+        }
+        return switch (rotation) {
+            case NONE -> new double[]{cx, y, cz};
+            case CLOCKWISE_90 -> new double[]{sizeZ - cz, y, cx};
+            case CLOCKWISE_180 -> new double[]{sizeX - cx, y, sizeZ - cz};
+            case COUNTERCLOCKWISE_90 -> new double[]{cz, y, sizeX - cx};
+        };
+    }
+
     public PrintOrientation rotated(Rotation by) {
         return new PrintOrientation(rotation.getRotated(by), mirror);
     }

@@ -1272,6 +1272,7 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         // against the finished neighborhood (see reconcilePlacedShapes). Runs once,
         // here at real completion — not on the PAUSED_OUTPUT_FULL re-entries above.
         reconcilePlacedShapes(serverLevel, cachedBlueprint);
+        spawnPrintedEntities(serverLevel, cachedBlueprint, BlueprintDiscItem.isOfficial(disc));
         recordHistory(activeJob);
 
         if (skippedThisJob > 0) {
@@ -1314,6 +1315,138 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         state = State.IDLE;
         setChanged();
         syncToClients();
+    }
+
+    /**
+     * Spawns the blueprint's decorative entities (armor stands, item frames,
+     * paintings, regular minecarts/boats) once every block has landed, so they have
+     * their support. Handles every print orientation: position via
+     * {@link PrintOrientation#transformPoint}, an armor-stand/cart/boat yaw via
+     * vanilla {@link net.minecraft.world.entity.Entity#rotate}/{@code mirror}, and a
+     * hanging frame/painting's attach block + facing via the block transform +
+     * {@link net.minecraft.core.Direction} rotation.
+     *
+     * <p><b>Contents are official-only and affordability-gated:</b> on an official
+     * disc the framed item / armor reproduce (and cost Filament Units, dropping any
+     * one piece the printer can't afford); on a player-scanned disc they're stripped
+     * so the entity spawns empty (anti-dupe). The base entity always spawns. A fresh
+     * UUID is assigned on load (the scan stripped it), and an entity already present
+     * at the target is skipped so reprint/repair never duplicates decorations.
+     */
+    private void spawnPrintedEntities(net.minecraft.server.level.ServerLevel level, Blueprint blueprint,
+                                      boolean official) {
+        java.util.List<com.pgmacdesign.mc3dprint.blueprint.BlueprintEntity> entities = blueprint.entities();
+        if (entities.isEmpty()) {
+            return;
+        }
+        PrintOrientation o = activeJob.orientation();
+        BlockPos origin = activeJob.origin();
+        int sx = blueprint.sizeX(), sy = blueprint.sizeY(), sz = blueprint.sizeZ();
+        for (com.pgmacdesign.mc3dprint.blueprint.BlueprintEntity be : entities) {
+            CompoundTag nbt = be.nbt().copy();
+            boolean hanging = nbt.contains("TileX");
+
+            double[] t = o.transformPoint(be.x(), be.y(), be.z(), sx, sz);
+            double wx = origin.getX() + t[0];
+            double wy = origin.getY() + t[1];
+            double wz = origin.getZ() + t[2];
+
+            if (hanging) { // re-anchor attach block (local → oriented → world) + rotate facing
+                BlockPos ot = o.transform(new BlockPos(nbt.getInt("TileX"), nbt.getInt("TileY"),
+                        nbt.getInt("TileZ")), sx, sy, sz);
+                nbt.putInt("TileX", origin.getX() + ot.getX());
+                nbt.putInt("TileY", origin.getY() + ot.getY());
+                nbt.putInt("TileZ", origin.getZ() + ot.getZ());
+                if (nbt.contains("Facing")) {
+                    net.minecraft.core.Direction d =
+                            net.minecraft.core.Direction.from3DDataValue(nbt.getByte("Facing"));
+                    d = o.rotation().rotate(o.mirror().mirror(d)); // mirror before rotation
+                    nbt.putByte("Facing", (byte) d.get3DDataValue());
+                }
+            }
+
+            prepareEntityContents(nbt, official);
+            chargeBestEffort(BlueprintDiscItem.entityBaseItem(nbt)); // base always charged + spawns
+
+            net.minecraft.nbt.ListTag pos = new net.minecraft.nbt.ListTag();
+            pos.add(net.minecraft.nbt.DoubleTag.valueOf(wx));
+            pos.add(net.minecraft.nbt.DoubleTag.valueOf(wy));
+            pos.add(net.minecraft.nbt.DoubleTag.valueOf(wz));
+            nbt.put("Pos", pos);
+            net.minecraft.world.entity.Entity entity =
+                    net.minecraft.world.entity.EntityType.loadEntityRecursive(nbt, level, e -> e);
+            if (entity == null) {
+                continue;
+            }
+            if (!hanging) { // armor stand / cart / boat yaw (hanging facing already set above)
+                float yaw = entity.rotate(o.rotation());
+                yaw += entity.mirror(o.mirror()) - entity.getYRot();
+                entity.moveTo(wx, wy, wz, yaw, entity.getXRot());
+            }
+            // Dedup: skip if a same-type entity already occupies this spot (reprint/repair).
+            net.minecraft.world.phys.AABB box = entity.getBoundingBox().inflate(0.3);
+            if (!level.getEntities(entity, box, e -> e.getType() == entity.getType()).isEmpty()) {
+                continue;
+            }
+            level.addFreshEntity(entity);
+        }
+    }
+
+    /**
+     * On an official disc, charges (and keeps) the entity's framed item + armor,
+     * dropping any single piece the printer can't afford; on a non-official disc,
+     * strips all contents so the entity spawns empty. Mutates {@code nbt} in place.
+     */
+    private void prepareEntityContents(CompoundTag nbt, boolean official) {
+        if (!official) {
+            nbt.remove("ArmorItems");
+            nbt.remove("HandItems");
+            nbt.remove("Item");
+            return;
+        }
+        if (nbt.contains("Item")) { // item frame's framed item
+            ItemStack framed = ItemStack.of(nbt.getCompound("Item"));
+            if (!framed.isEmpty() && !chargeIfAffordable(framed)) {
+                nbt.remove("Item");
+            }
+        }
+        for (String slot : new String[]{"ArmorItems", "HandItems"}) {
+            if (!nbt.contains(slot)) {
+                continue;
+            }
+            net.minecraft.nbt.ListTag list = nbt.getList(slot, net.minecraft.nbt.Tag.TAG_COMPOUND);
+            for (int i = 0; i < list.size(); i++) {
+                ItemStack stack = ItemStack.of(list.getCompound(i));
+                if (!stack.isEmpty() && !chargeIfAffordable(stack)) {
+                    list.set(i, new CompoundTag()); // unpaid → clear the slot
+                }
+            }
+        }
+    }
+
+    /** Charges an item if the printer can pay; unvalued items are kept free (designer intent). */
+    private boolean chargeIfAffordable(ItemStack stack) {
+        Optional<FuValue> v = FuValueRegistry.valueOf(stack);
+        if (v.isEmpty()) {
+            return true; // no FU value → reproduce free on the (official) build
+        }
+        int cost = applyEfficiency(v.get().fu() * stack.getCount());
+        if (affordableFu(v.get().tier()) < cost) {
+            return false;
+        }
+        drainFu(cost, v.get().tier());
+        return true;
+    }
+
+    /** Charges a (cheap, always-printed) base item for whatever filament is available. */
+    private void chargeBestEffort(ItemStack stack) {
+        if (stack.isEmpty()) {
+            return;
+        }
+        Optional<FuValue> v = FuValueRegistry.valueOf(stack);
+        if (v.isPresent()) {
+            drainFu(applyEfficiency(v.get().fu() * stack.getCount()), v.get().tier());
+        }
     }
 
     /**
