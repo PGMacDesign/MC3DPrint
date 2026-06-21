@@ -30,8 +30,8 @@ public class FilamentRackRenderer implements BlockEntityRenderer<FilamentRackBlo
     private static final float ROW_Y = 0.21875F; // px {9,23} → ±this
     // The item's FIXED display transform seats the spool up-and-left of the bay
     // center; nudge it down-right to center it in the circle. (Tunable dials.)
-    private static final float NUDGE_X = 0.06F;  // right
-    private static final float NUDGE_Y = 0.06F;  // down
+    private static final float NUDGE_X = 0.03F;  // right
+    private static final float NUDGE_Y = 0.03F;  // down
 
     private final ItemRenderer itemRenderer;
 
