@@ -23,16 +23,11 @@ import net.minecraftforge.items.ItemStackHandler;
  */
 public class FilamentRackRenderer implements BlockEntityRenderer<FilamentRackBlockEntity> {
     private static final int COLUMNS = 4;
-    // Sized to fill the r6 bay (~0.375 face dia) with a little overlap onto its rim.
-    private static final float SPOOL_SCALE = 0.32F;
-    // Bay centers on the 32px Concept-A front face (px {5,13,19,27} → face/32 − 0.5).
+    private static final float SPOOL_SCALE = 0.18F;
+    // Bay centers on the 32px Concept-A front face (px {4,12,20,28} → face/32 − 0.5).
     // Must stay in lockstep with RACK_COLS/RACK_ROWS in tools/gen_storage_cable_textures.py.
-    private static final float[] COLUMN_X = {-0.34375F, -0.09375F, 0.09375F, 0.34375F};
+    private static final float[] COLUMN_X = {-0.375F, -0.125F, 0.125F, 0.375F};
     private static final float ROW_Y = 0.21875F; // px {9,23} → ±this
-    // The item's FIXED display transform seats the spool up-and-left of the bay
-    // center; nudge it down-right so it sits centered in the bay. (Tunable dials.)
-    private static final float NUDGE_X = 0.06F;  // right
-    private static final float NUDGE_Y = 0.12F;  // down
 
     private final ItemRenderer itemRenderer;
 
@@ -60,9 +55,9 @@ public class FilamentRackRenderer implements BlockEntityRenderer<FilamentRackBlo
             }
             int col = i % COLUMNS;
             int row = i / COLUMNS;
-            // Sit each spool in its painted bay (Concept A grid), nudged to center.
-            float x = COLUMN_X[col] + NUDGE_X;
-            float y = ((row == 0) ? ROW_Y : -ROW_Y) - NUDGE_Y; // top / bottom row
+            // Sit each spool in its painted bay (Concept A grid).
+            float x = COLUMN_X[col];
+            float y = (row == 0) ? ROW_Y : -ROW_Y; // top / bottom row
 
             pose.pushPose();
             pose.translate(0.5, 0.5, 0.5);

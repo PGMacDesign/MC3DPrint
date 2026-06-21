@@ -31,9 +31,9 @@ def _ring(d, cx, cy, r, c, w=1):
 # read crisply. Slot grid below MUST stay in lockstep with FilamentRackRenderer's
 # spool positions (the spools render as 3D items proud of this backing).
 RACK_S = 32
-RACK_COLS = [5, 13, 19, 27]   # face px → renderer offsets {-0.34375, -0.09375, +0.09375, +0.34375}
+RACK_COLS = [4, 12, 20, 28]   # evenly spaced → renderer offsets {-0.375, -0.125, +0.125, +0.375}
 RACK_ROWS = [9, 23]           # face px → renderer offsets {+0.21875 (top), -0.21875 (bottom)}
-RACK_BAY_R = 6                # big bays that overlap slightly into a cohesive recessed strip
+RACK_BAY_R = 4                # discrete bays: diameter 8 == column spacing (no overlap)
 
 
 def rack_front():
@@ -52,9 +52,9 @@ def rack_front():
             _disc(d, cx, cy, r, FRAME[2])           # bay opening
             _disc(d, cx, cy, r - 1, FRAME[3])       # recess depth
             _ring(d, cx, cy, r, BODY[1], w=1)       # brushed bezel rim
-            led = min(cx + 4, S - 2)
-            rect(d, led, cy + 5, led, cy + 5, GLOW[2])          # cyan status LED
-            rect(d, led - 1, cy + 5, led - 1, cy + 5, GLOW[3])
+            led = min(cx + r, S - 1)
+            rect(d, led, cy + r + 1, led, cy + r + 1, GLOW[2])      # cyan status LED
+            rect(d, led - 1, cy + r + 1, led - 1, cy + r + 1, GLOW[3])
     rect(d, 0, 0, S - 1, 0, BODY[1])                # light bevel — all edges light
     rect(d, 0, 0, 0, S - 1, BODY[1])
     rect(d, S - 1, 0, S - 1, S - 1, BODY[1])
