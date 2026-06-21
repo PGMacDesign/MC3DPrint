@@ -27,13 +27,15 @@ def rack_front():
     rect(d, 0, 0, 0, 15, BODY[1])           # left highlight
     rect(d, 15, 0, 15, 15, FRAME[1])        # right shade
     rect(d, 0, 15, 15, 15, FRAME[1])        # bottom shade
-    # 2 rows x 4 columns of recessed cubbies
+    # 2 rows x 4 columns of recessed cubbies. 2px-wide cells at x={1,5,9,13}
+    # span pixels {1,2}{5,6}{9,10}{13,14} — symmetric about center and clear of
+    # the px15 right-edge shade, so the right column no longer reads as cut off.
     cols = [1, 5, 9, 13]
     rows = [2, 9]
     for ry in rows:
         for cx in cols:
-            rect(d, cx, ry, cx + 2, ry + 4, FRAME[2])      # recess
-            rect(d, cx, ry, cx + 2, ry, FRAME[3])          # inner top shadow
+            rect(d, cx, ry, cx + 1, ry + 4, FRAME[2])      # recess
+            rect(d, cx, ry, cx + 1, ry, FRAME[3])          # inner top shadow
             rect(d, cx, ry, cx, ry + 4, FRAME[3])          # inner left shadow
     # mid shelf divider
     rect(d, 1, 7, 14, 7, FRAME[1])
@@ -82,15 +84,21 @@ def cable():
 
 def cable_item():
     """Inventory/GUI icon — a thin diagonal cable strand (AE2 fluix-style), NOT a
-    full block face, so it reads as a wire in the menu. Transparent background."""
+    full block face, so it reads as a wire in the menu. Transparent background.
+    Each end terminates in a squared-off connector pad rather than a tapered tip,
+    so the icon reads as a cable with plugs and not a dagger."""
     img = new(16)
     d = ImageDraw.Draw(img)
-    a, b = (3, 12), (12, 3)                       # bottom-left -> top-right diagonal
+    a, b = (4, 11), (11, 4)                       # bottom-left -> top-right diagonal
     d.line([a, b], fill=FRAME[3] + (255,), width=4)   # dark outline / AO
     d.line([a, b], fill=FRAME[1] + (255,), width=2)   # metal jacket
     d.line([a, b], fill=GLOW[2] + (255,), width=1)    # cyan emissive core
-    for (cx, cy) in (a, b):                       # connector plugs at each end
-        rect(d, cx - 1, cy - 1, cx + 1, cy + 1, FRAME[2])
+    for (cx, cy) in (a, b):                       # flat squared connector pad per end
+        rect(d, cx - 2, cy - 2, cx + 2, cy + 2, FRAME[3])   # pad outline / shade
+        rect(d, cx - 2, cy - 2, cx + 1, cy + 1, FRAME[1])   # pad face
+        rect(d, cx - 1, cy - 1, cx, cy, FRAME[0])           # pad top sheen
+        put = (cx, cy)
+        rect(d, put[0], put[1], put[0], put[1], GLOW[2])    # cyan core contact
     return img
 
 
