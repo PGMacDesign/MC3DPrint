@@ -10,7 +10,7 @@ Run:  python3 tools/gen_storage_cable_textures.py
 (16x16, quantized to the shared brief palette, same as the other block art.)
 """
 from tex_common import (
-    BODY, FRAME, GLOW, new, quantize_to_palette, save_block, shade,
+    BODY, FRAME, GLOW, new, quantize_to_palette, save_block, save_item, shade,
 )
 from PIL import ImageDraw
 
@@ -80,12 +80,27 @@ def cable():
     return quantize_to_palette(img)
 
 
+def cable_item():
+    """Inventory/GUI icon — a thin diagonal cable strand (AE2 fluix-style), NOT a
+    full block face, so it reads as a wire in the menu. Transparent background."""
+    img = new(16)
+    d = ImageDraw.Draw(img)
+    a, b = (3, 12), (12, 3)                       # bottom-left -> top-right diagonal
+    d.line([a, b], fill=FRAME[3] + (255,), width=4)   # dark outline / AO
+    d.line([a, b], fill=FRAME[1] + (255,), width=2)   # metal jacket
+    d.line([a, b], fill=GLOW[2] + (255,), width=1)    # cyan emissive core
+    for (cx, cy) in (a, b):                       # connector plugs at each end
+        rect(d, cx - 1, cy - 1, cx + 1, cy + 1, FRAME[2])
+    return img
+
+
 def main():
     written = [
         save_block(rack_front(), "filament_rack_front"),
         save_block(rack_side(), "filament_rack_side"),
         save_block(rack_top(), "filament_rack_top"),
         save_block(cable(), "mc3dcable"),
+        save_item(cable_item(), "mc3dcable"),
     ]
     for p in written:
         print("wrote", p)
