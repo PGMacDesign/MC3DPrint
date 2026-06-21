@@ -7,7 +7,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.registries.ForgeRegistries;
 
@@ -66,8 +65,7 @@ public final class MultiblockPattern {
      * when the corners are plain Printer Casing like every other base cell.
      *
      * <ul>
-     *   <li>T5 → {@link Blocks#DIAMOND_BLOCK}</li>
-     *   <li>T6, T7 → {@code null} (plain casing for now; a later rebalance assigns these)</li>
+     *   <li>T5, T6, T7 → {@code null} (plain casing — no premium corner required)</li>
      *   <li>T8 → the Draconic Evolution Awakened Draconium block, or {@code null} if DE
      *       is not loaded / the block is not registered</li>
      * </ul>
@@ -75,7 +73,6 @@ public final class MultiblockPattern {
     @Nullable
     public static Block cornerBlock(MachineTier tier) {
         return switch (tier) {
-            case T5 -> Blocks.DIAMOND_BLOCK;
             case T8 -> AWAKENED_DRACONIUM != null
                     ? ForgeRegistries.BLOCKS.getValue(AWAKENED_DRACONIUM) : null;
             default -> null;
