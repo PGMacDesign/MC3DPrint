@@ -55,9 +55,11 @@ class BlueprintSerializerTest {
     }
 
     @Test
-    void rejectsUnknownFormatVersion() {
+    void rejectsMissingFormatVersion() {
+        // A missing/invalid version (0) is rejected; the reader is otherwise
+        // version-tolerant (any version >= 1 loads), so there's no v1/v2 variant.
         CompoundTag tag = BlueprintSerializer.write(sample());
-        tag.putInt("Version", 999);
+        tag.putInt("Version", 0);
         assertThrows(BlueprintFormatException.class, () -> BlueprintSerializer.read(tag));
     }
 

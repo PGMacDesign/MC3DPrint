@@ -14,13 +14,16 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * NBT round-trip for the native blueprint format. Versioned so the on-disk
- * {@code .blueprint} format can evolve without breaking old files.
+ * NBT round-trip for the native blueprint format. There is a single canonical
+ * format version: optional features (decorative entities) are carried by key
+ * presence ({@link #KEY_ENTITIES}), not a version bump, so the format stays one
+ * consistent version with no v1/v2 variants. The reader is version-tolerant
+ * (any version ≥ 1 loads, reading whatever keys are present) so a blueprint
+ * scanned during the brief format-2 window still loads.
  */
 public final class BlueprintSerializer {
-    // v2 added KEY_ENTITIES (decorative entities). The reader accepts v1 too — v1
-    // files (and pre-v2 player scans) simply have no entities.
-    public static final int FORMAT_VERSION = 2;
+    /** The single canonical on-disk format version. */
+    public static final int FORMAT_VERSION = 1;
 
     private static final String KEY_VERSION = "Version";
     private static final String KEY_NAME = "Name";
@@ -90,10 +93,11 @@ public final class BlueprintSerializer {
 
     public static Blueprint read(CompoundTag root) {
         int version = root.getInt(KEY_VERSION);
-        if (version < 1 || version > FORMAT_VERSION) {
-            throw new BlueprintFormatException("Unsupported blueprint format version " + version
-                    + " (this build reads versions 1.." + FORMAT_VERSION + ")");
+        if (version < 1) {
+            throw new BlueprintFormatException("Missing or invalid blueprint format version " + version);
         }
+        // No per-version branching: optional keys (entities) are read by presence,
+        // so any version ≥ 1 loads. New writes are always FORMAT_VERSION.
         int[] size = root.getIntArray(KEY_SIZE);
         if (size.length != 3) {
             throw new BlueprintFormatException("Blueprint Size must be [x, y, z], got length " + size.length);
@@ -122,8 +126,8 @@ public final class BlueprintSerializer {
             blockEntities.put(new BlockPos(pos[0], pos[1], pos[2]), be.getCompound(KEY_BE_DATA).copy());
         }
 
-        // Entities — absent in v1 files (getList returns empty), so old blueprints
-        // and pre-v2 player scans still load with no entities.
+        // Entities — optional; absent in older files (getList returns empty), so a
+        // blueprint with no decorative entities just loads with an empty list.
         List<BlueprintEntity> entities = new ArrayList<>();
         for (Tag tag : root.getList(KEY_ENTITIES, Tag.TAG_COMPOUND)) {
             CompoundTag et = (CompoundTag) tag;
