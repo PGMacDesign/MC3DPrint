@@ -599,15 +599,30 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             return List.of();
         }
         Set<IFilamentSource> set = Collections.newSetFromMap(new IdentityHashMap<>());
+        collectAdjacentFilamentSources(worldPosition, set);
+        // A formed multiblock fabricator pulls from anything adjacent to ANY part of
+        // its casing pad — so a rack or cable plugged into the structure (not just the
+        // buried controller) feeds it.
+        BlockState self = getBlockState();
+        if (self.getBlock() instanceof com.pgmacdesign.mc3dprint.machine.multiblock.ControllerBlock
+                && self.getValue(com.pgmacdesign.mc3dprint.machine.multiblock.ControllerBlock.FORMED)) {
+            for (BlockPos offset : com.pgmacdesign.mc3dprint.machine.multiblock.MultiblockPattern
+                    .componentOffsets(tier)) {
+                collectAdjacentFilamentSources(worldPosition.offset(offset), set);
+            }
+        }
+        return new ArrayList<>(set);
+    }
+
+    private void collectAdjacentFilamentSources(BlockPos center, Set<IFilamentSource> out) {
         for (Direction dir : Direction.values()) {
-            BlockEntity neighbor = level.getBlockEntity(worldPosition.relative(dir));
+            BlockEntity neighbor = level.getBlockEntity(center.relative(dir));
             if (neighbor == null) {
                 continue;
             }
             neighbor.getCapability(ModCapabilities.FILAMENT_SOURCE, dir.getOpposite())
-                    .ifPresent(src -> src.collectSources(set));
+                    .ifPresent(src -> src.collectSources(out));
         }
-        return new ArrayList<>(set);
     }
 
     /** Capacity counterpart of {@link #effectiveFu} for the GUI gauge. */

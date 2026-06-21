@@ -4,10 +4,14 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.EntityBlock;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
+
+import javax.annotation.Nullable;
 
 /**
  * Structural block for T5-T8 multiblocks. Breaking one unforms any formed
@@ -15,7 +19,7 @@ import net.minecraft.world.level.block.state.properties.EnumProperty;
  * belongs to is formed, the casing switches to its glowing ACTIVE appearance
  * and emits light, so the whole base visibly "powers on" together.
  */
-public class CasingBlock extends Block {
+public class CasingBlock extends Block implements EntityBlock {
     public static final BooleanProperty ACTIVE = BooleanProperty.create("active");
     public static final EnumProperty<CasingPart> PART = EnumProperty.create("part", CasingPart.class);
 
@@ -51,6 +55,12 @@ public class CasingBlock extends Block {
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
         builder.add(ACTIVE, PART);
+    }
+
+    @Nullable
+    @Override
+    public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
+        return new CasingBlockEntity(pos, state);
     }
 
     @Override
