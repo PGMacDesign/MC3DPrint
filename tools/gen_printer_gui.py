@@ -275,25 +275,23 @@ def build_machine():
 
 
 def build_repository():
-    """Server Blueprint Repository sheet (248x210). A wide library browser: a
+    """Server Blueprint Repository sheet (248x186). A wide library browser: a tall
     recessed list well (left), a detail well with a preview sub-channel (right),
-    an action bar with the blank/written disc slots, then player inventory. The
-    Deposit / STL-to-GCODE buttons are vanilla widgets drawn by the screen, not
-    painted here. Lockstep with BlueprintRepositoryScreen/Menu."""
+    then an action bar — Deposit button (left) | disc in/out slots (centre) | STL
+    to GCODE button (right) — and only the hotbar (the 3 main inventory rows are
+    hidden to free space). Buttons are vanilla widgets the screen draws, not painted
+    here. Lockstep with BlueprintRepositoryScreen/Menu."""
     img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     px = img.load()
-    pw, ph = 248, 210
+    pw, ph = 248, 186
     panel(px, pw, ph)
-    card_well(px, 7, 18, 120, 84)     # blueprint list (LIST_X/Y/W)
-    card_well(px, 131, 18, 110, 84)   # detail pane (DETAIL_X/Y/W)
-    channel(px, 135, 22, 102, 34)     # preview sub-channel (PREVIEW_X/Y/W/H)
-    slot(px, 8, 106)                  # disc in  (SLOT_IN_X/Y)
-    slot(px, 40, 106)                 # disc out (SLOT_OUT_X/Y)
-    for row in range(3):              # player inventory (INV_X=43, INV_Y=134)
-        for col in range(9):
-            slot(px, 43 + col * 18, 134 + row * 18)
-    for col in range(9):
-        slot(px, 43 + col * 18, 192)  # hotbar (HOTBAR_Y)
+    card_well(px, 7, 18, 118, 108)    # blueprint list (LIST_X/Y/W, ROWS*ROW_H)
+    card_well(px, 131, 18, 110, 108)  # detail pane (DETAIL_X/Y/W)
+    channel(px, 135, 22, 102, 30)     # preview sub-channel (PREVIEW_X/Y/W/H)
+    slot(px, 106, 133)                # disc in  (SLOT_IN_X/Y) — centred in the action bar
+    slot(px, 124, 133)                # disc out (SLOT_OUT_X/Y)
+    for col in range(9):              # hotbar only (INV_X=43, HOTBAR_Y=164)
+        slot(px, 43 + col * 18, 164)
     status_leds(px, pw)
     return img
 

@@ -26,9 +26,12 @@ public class BlueprintRepositoryMenu extends AbstractContainerMenu {
     public static final int SELECT_BASE = 100; // row select buttons are SELECT_BASE + rowIndex
 
     // Layout (lockstep with BlueprintRepositoryScreen + the painted texture).
-    public static final int SLOT_IN_X = 8, SLOT_IN_Y = 106;
-    public static final int SLOT_OUT_X = 40, SLOT_OUT_Y = 106;
-    private static final int INV_X = 43, INV_Y = 134, HOTBAR_Y = 192;
+    // The IN/OUT slots sit centred between the Deposit (left) and STL-to-GCODE
+    // (right) buttons. Only the hotbar is shown — the 3 main inventory rows are
+    // hidden to free vertical space (so they aren't accessible from this GUI).
+    public static final int SLOT_IN_X = 106, SLOT_IN_Y = 133;
+    public static final int SLOT_OUT_X = 124, SLOT_OUT_Y = 133;
+    private static final int INV_X = 43, HOTBAR_Y = 164;
 
     @Nullable
     private final BlueprintRepositoryBlockEntity repository;
@@ -65,11 +68,7 @@ public class BlueprintRepositoryMenu extends AbstractContainerMenu {
             }
         });
 
-        for (int row = 0; row < 3; row++) {
-            for (int col = 0; col < 9; col++) {
-                addSlot(new Slot(playerInventory, col + row * 9 + 9, INV_X + col * 18, INV_Y + row * 18));
-            }
-        }
+        // Hotbar only (indices 0-8); the 3 main rows are intentionally not added.
         for (int col = 0; col < 9; col++) {
             addSlot(new Slot(playerInventory, col, INV_X + col * 18, HOTBAR_Y));
         }

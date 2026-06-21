@@ -1,6 +1,5 @@
 package com.pgmacdesign.mc3dprint.client;
 
-import com.mojang.blaze3d.vertex.PoseStack;
 import com.pgmacdesign.mc3dprint.MC3DPrint;
 import com.pgmacdesign.mc3dprint.blueprint.repository.RepoEntry;
 import com.pgmacdesign.mc3dprint.machine.repository.BlueprintRepositoryMenu;
@@ -15,17 +14,19 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Library Browser (R-A): a searchable list of catalogued blueprints (left), a
- * detail pane (right), and an action bar to deposit found discs / re-burn a
- * selected build onto a blank disc ("STL to GCODE", keeping the disc theme).
+ * Library Browser (R-A): a list of catalogued blueprints (left), a detail pane
+ * (right), and an action bar — Deposit Disc (left), the disc in/out slots
+ * (centre), STL to GCODE (right). Only the hotbar is shown to keep the panel
+ * compact. Lockstep with {@code gen_printer_gui.py:build_repository}.
  */
 public class BlueprintRepositoryScreen extends AbstractContainerScreen<BlueprintRepositoryMenu> {
     private static final ResourceLocation TEXTURE = Objects.requireNonNull(
             ResourceLocation.tryParse(MC3DPrint.MOD_ID + ":textures/gui/blueprint_repository.png"));
 
-    private static final int LIST_X = 7, LIST_Y = 18, LIST_W = 120, ROW_H = 13, ROWS = 6;
+    private static final int LIST_X = 7, LIST_Y = 18, LIST_W = 118, ROW_H = 13, ROWS = 8;
     private static final int DETAIL_X = 131, DETAIL_Y = 18, DETAIL_W = 110;
-    private static final int PREVIEW_X = 135, PREVIEW_Y = 22, PREVIEW_W = 102, PREVIEW_H = 34;
+    private static final int PREVIEW_X = 135, PREVIEW_Y = 22, PREVIEW_W = 102, PREVIEW_H = 30;
+    private static final int ACTION_Y = 132;
 
     private static final int LABEL = 0xFFC0C0C8;
     private static final int LABEL_DIM = 0xFF7D8597;
@@ -40,9 +41,9 @@ public class BlueprintRepositoryScreen extends AbstractContainerScreen<Blueprint
     public BlueprintRepositoryScreen(BlueprintRepositoryMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
         this.imageWidth = 248;
-        this.imageHeight = 210;
+        this.imageHeight = 186;
         this.inventoryLabelX = 43;
-        this.inventoryLabelY = 124;
+        this.inventoryLabelY = 154;
     }
 
     @Override
@@ -51,11 +52,11 @@ public class BlueprintRepositoryScreen extends AbstractContainerScreen<Blueprint
         addRenderableWidget(net.minecraft.client.gui.components.Button.builder(
                         Component.translatable("gui.mc3dprint.repository.deposit"),
                         b -> clickButton(BlueprintRepositoryMenu.BUTTON_DEPOSIT))
-                .bounds(leftPos + 70, topPos + 105, 78, 18).build());
+                .bounds(leftPos + 8, topPos + ACTION_Y, 84, 18).build());
         addRenderableWidget(net.minecraft.client.gui.components.Button.builder(
                         Component.translatable("gui.mc3dprint.repository.burn"),
                         b -> clickButton(BlueprintRepositoryMenu.BUTTON_BURN))
-                .bounds(leftPos + 152, topPos + 105, 88, 18).build());
+                .bounds(leftPos + 156, topPos + ACTION_Y, 84, 18).build());
     }
 
     private void clickButton(int id) {
@@ -83,8 +84,8 @@ public class BlueprintRepositoryScreen extends AbstractContainerScreen<Blueprint
         int left = leftPos + LIST_X;
         int top = topPos + LIST_Y;
         if (entries.isEmpty()) {
-            graphics.drawString(font, Component.translatable("gui.mc3dprint.repository.empty"),
-                    left + 4, top + 6, LABEL_DIM, false);
+            graphics.drawWordWrap(font, Component.translatable("gui.mc3dprint.repository.empty"),
+                    left + 4, top + 6, LIST_W - 8, LABEL_DIM);
             return;
         }
         int max = Math.min(ROWS, entries.size() - scroll);
@@ -101,7 +102,6 @@ public class BlueprintRepositoryScreen extends AbstractContainerScreen<Blueprint
             graphics.drawString(font, "T" + entry.tier(), left + 2, rowY + 3, ACCENT, false);
             String name = font.plainSubstrByWidth(displayName(entry), LIST_W - 38);
             graphics.drawString(font, name, left + 20, rowY + 3, LABEL, false);
-            // tiny official/scanned dot at the right edge
             graphics.fill(left + LIST_W - 6, rowY + 4, left + LIST_W - 2, rowY + 8,
                     entry.official() ? OFFICIAL : SCANNED);
         }
@@ -112,23 +112,22 @@ public class BlueprintRepositoryScreen extends AbstractContainerScreen<Blueprint
         RepoEntry entry = selected();
         if (entry == null) {
             graphics.drawString(font, Component.translatable("gui.mc3dprint.repository.select_hint"),
-                    x + 4, topPos + PREVIEW_Y + 14, LABEL_DIM, false);
+                    leftPos + PREVIEW_X + 4, topPos + PREVIEW_Y + PREVIEW_H / 2 - 4, LABEL_DIM, false);
             return;
         }
-        // Preview placeholder: name centered in the box.
-        String name = font.plainSubstrByWidth(displayName(entry), PREVIEW_W - 8);
-        graphics.drawString(font, name, leftPos + PREVIEW_X + (PREVIEW_W - font.width(name)) / 2,
-                topPos + PREVIEW_Y + PREVIEW_H / 2 - 4, ACCENT, false);
+        // Full name, word-wrapped inside the preview box (no more truncation).
+        graphics.drawWordWrap(font, Component.literal(displayName(entry)),
+                leftPos + PREVIEW_X + 4, topPos + PREVIEW_Y + 4, PREVIEW_W - 8, ACCENT);
 
-        int y = topPos + 62;
+        int y = topPos + 58;
         line(graphics, x, y, "gui.mc3dprint.repository.size",
                 entry.sizeX() + "x" + entry.sizeY() + "x" + entry.sizeZ());
-        line(graphics, x, y += 11, "gui.mc3dprint.repository.blocks", Integer.toString(entry.blockCount()));
-        line(graphics, x, y += 11, "gui.mc3dprint.repository.tier", "T" + entry.tier());
-        line(graphics, x, y += 11, "gui.mc3dprint.repository.cost", entry.cost() + " FU");
+        line(graphics, x, y += 13, "gui.mc3dprint.repository.blocks", Integer.toString(entry.blockCount()));
+        line(graphics, x, y += 13, "gui.mc3dprint.repository.tier", "T" + entry.tier());
+        line(graphics, x, y += 13, "gui.mc3dprint.repository.cost", entry.cost() + " FU");
         graphics.drawString(font, Component.translatable(entry.official()
                         ? "gui.mc3dprint.repository.official" : "gui.mc3dprint.repository.scanned"),
-                x + 4, y + 11, entry.official() ? OFFICIAL : SCANNED, false);
+                x + 4, y + 13, entry.official() ? OFFICIAL : SCANNED, false);
     }
 
     private void line(GuiGraphics graphics, int x, int y, String key, String value) {
