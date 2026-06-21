@@ -29,9 +29,8 @@ public class MultiblockGameTests {
     private static final BlockPos CONTROLLER_POS = new BlockPos(2, 1, 2);
 
     /**
-     * Lays the 8 base cells of a T5 3x3: the four corners take {@code cornerBlock}
-     * and the four edges take Printer Casing. With diamond corners this is a valid
-     * T5 pattern; with casing corners it is intentionally invalid.
+     * Lays the 8 base cells of a T5 3x3 — corners take {@code cornerBlock}, edges
+     * take Printer Casing. T5 now forms from all-casing (no premium corner required).
      */
     private static void placeT5Base(GameTestHelper helper, Block cornerBlock) {
         for (BlockPos offset : MultiblockPattern.componentOffsets(MachineTier.T5)) {
@@ -42,9 +41,9 @@ public class MultiblockGameTests {
         }
     }
 
-    /** Builds a valid T5 base (diamond corners + casing edges, controller center) and returns the controller BE. */
+    /** Builds a valid T5 base (all Printer Casing, controller center) and returns the controller BE. */
     private static PrinterBlockEntity buildT5(GameTestHelper helper) {
-        placeT5Base(helper, Blocks.DIAMOND_BLOCK);
+        placeT5Base(helper, ModBlocks.PRINTER_CASING.get());
         helper.setBlock(CONTROLLER_POS, ModBlocks.CONTROLLERS.get(0).get());
         if (!(helper.getBlockEntity(CONTROLLER_POS) instanceof PrinterBlockEntity printer)) {
             throw new GameTestAssertException("Controller block entity missing");
@@ -137,9 +136,6 @@ public class MultiblockGameTests {
                 return;
             }
             for (BlockPos offset : MultiblockPattern.componentOffsets(MachineTier.T5)) {
-                if (MultiblockPattern.isCorner(offset, MachineTier.T5)) {
-                    continue; // corners are diamond blocks, not ACTIVE casings
-                }
                 BlockState casing = helper.getLevel().getBlockState(
                         helper.absolutePos(CONTROLLER_POS.offset(offset)));
                 if (!(casing.getBlock() instanceof CasingBlock) || !casing.getValue(CasingBlock.ACTIVE)) {
@@ -183,53 +179,26 @@ public class MultiblockGameTests {
     }
 
     @GameTest(template = "empty5", timeoutTicks = 100)
-    public static void t5FormsWithDiamondCornersOnRightClick(GameTestHelper helper) {
-        // 4 casing edges + 4 diamond_block corners + right-click → forms
-        placeT5Base(helper, Blocks.DIAMOND_BLOCK);
+    public static void t5FormsWithCasingCornersOnRightClick(GameTestHelper helper) {
+        // all Printer Casing (no premium corner) + right-click → forms
+        placeT5Base(helper, ModBlocks.PRINTER_CASING.get());
         helper.setBlock(CONTROLLER_POS, ModBlocks.CONTROLLERS.get(0).get());
         helper.useBlock(CONTROLLER_POS, helper.makeMockSurvivalPlayer());
 
         helper.runAfterDelay(5, () -> {
             BlockState controller = helper.getLevel().getBlockState(helper.absolutePos(CONTROLLER_POS));
             if (!controller.getValue(ControllerBlock.FORMED)) {
-                helper.fail("T5 did not form with diamond corners on right-click");
+                helper.fail("T5 did not form with casing corners on right-click");
                 return;
             }
-            // corners must still be diamond blocks (rendered as themselves, not casing)
+            // every base cell — corners included — is now an ACTIVE casing
             for (BlockPos offset : MultiblockPattern.componentOffsets(MachineTier.T5)) {
-                if (!MultiblockPattern.isCorner(offset, MachineTier.T5)) {
-                    continue;
-                }
-                Block corner = helper.getLevel().getBlockState(
-                        helper.absolutePos(CONTROLLER_POS.offset(offset))).getBlock();
-                if (corner != Blocks.DIAMOND_BLOCK) {
-                    helper.fail("T5 corner at " + offset + " is not a diamond block: " + corner);
+                BlockState casing = helper.getLevel().getBlockState(
+                        helper.absolutePos(CONTROLLER_POS.offset(offset)));
+                if (!(casing.getBlock() instanceof CasingBlock) || !casing.getValue(CasingBlock.ACTIVE)) {
+                    helper.fail("T5 base cell at " + offset + " not an ACTIVE casing: " + casing.getBlock());
                     return;
                 }
-            }
-            helper.succeed();
-        });
-    }
-
-    @GameTest(template = "empty5", timeoutTicks = 100)
-    public static void t5RefusesToFormWithCasingCorners(GameTestHelper helper) {
-        // corners are Printer Casing instead of diamond → invalid T5 pattern
-        placeT5Base(helper, ModBlocks.PRINTER_CASING.get());
-        helper.setBlock(CONTROLLER_POS, ModBlocks.CONTROLLERS.get(0).get());
-
-        if (MultiblockPattern.validate(
-                helper.getLevel(), helper.absolutePos(CONTROLLER_POS), MachineTier.T5) == null) {
-            helper.fail("T5 validated with casing corners (diamond required)");
-            return;
-        }
-
-        // and the real right-click path must NOT form it either
-        helper.useBlock(CONTROLLER_POS, helper.makeMockSurvivalPlayer());
-        helper.runAfterDelay(5, () -> {
-            BlockState controller = helper.getLevel().getBlockState(helper.absolutePos(CONTROLLER_POS));
-            if (controller.getValue(ControllerBlock.FORMED)) {
-                helper.fail("T5 formed with casing corners");
-                return;
             }
             helper.succeed();
         });
