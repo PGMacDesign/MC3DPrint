@@ -223,8 +223,9 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
     @Nullable
     private UUID owner;
 
-    // hologram preview: ghost-renders the loaded disc at the build position
-    private boolean previewEnabled;
+    // hologram preview: ghost-renders the loaded disc at the build position.
+    // Defaults ON for freshly-placed printers (loaded printers restore from NBT).
+    private boolean previewEnabled = true;
     @Nullable
     private Blueprint previewBlueprint;
     @Nullable

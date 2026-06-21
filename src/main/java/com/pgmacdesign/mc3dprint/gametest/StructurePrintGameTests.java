@@ -166,6 +166,12 @@ public class StructurePrintGameTests {
         PrinterBlockEntity printer = poweredPrinter(helper, printerPos);
         printer.setAutoStart(false); // preview is a pre-print feature
 
+        // New printers default preview ON; normalize to OFF so this test exercises
+        // the off→on→off toggle transitions regardless of the placement default.
+        if (printer.getUpdateTag().getBoolean("PreviewOn")) {
+            printer.togglePreview(null);
+        }
+
         // no disc: the toggle now flips on regardless (nothing to ghost-render),
         // but no Preview payload is emitted until a disc is loaded.
         printer.togglePreview(null);
