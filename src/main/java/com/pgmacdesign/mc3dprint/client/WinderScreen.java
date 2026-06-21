@@ -1,6 +1,9 @@
 package com.pgmacdesign.mc3dprint.client;
 
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.math.Axis;
 import com.pgmacdesign.mc3dprint.MC3DPrint;
+import com.pgmacdesign.mc3dprint.fu.SpoolItem;
 import com.pgmacdesign.mc3dprint.machine.WinderBlockEntity;
 import com.pgmacdesign.mc3dprint.machine.WinderMenu;
 import net.minecraft.client.gui.GuiGraphics;
@@ -8,31 +11,66 @@ import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.item.ItemStack;
 
 import java.util.Objects;
 
+/**
+ * Filament Winder GUI — the "Throughput Panel" layout: energy + filament gauges
+ * flank a centre group of input -> spinning reel -> spool, with a live status
+ * line and three info cards (Material / Spool / Rate) above the player inventory.
+ * Coords stay in lockstep with {@code tools/gen_printer_gui.py:build_machine}.
+ */
 public class WinderScreen extends AbstractContainerScreen<WinderMenu> {
     private static final ResourceLocation TEXTURE = Objects.requireNonNull(
             ResourceLocation.tryParse(MC3DPrint.MOD_ID + ":textures/gui/machine.png"));
 
     private static final int ENERGY_X = 11, ENERGY_Y = 18, ENERGY_W = 12, ENERGY_H = 50;
-    private static final int FU_X = 153, FU_Y = 18, FU_W = 12, FU_H = 50;
-    private static final int ARROW_X = 80, ARROW_Y = 36, ARROW_W = 22, ARROW_H = 15;
+    private static final int FU_X = 177, FU_Y = 18, FU_W = 12, FU_H = 50;
 
-    // Dark tech-console code colors (see VISUAL-REVAMP-BRIEF). Labels are light on
-    // the new charcoal panel; error message is a warm red that reads on dark.
+    // Spinning reel sprite parked in the spare top-right of machine.png.
+    private static final int REEL_U = 208, REEL_V = 0, REEL_SIZE = 32;
+    private static final int REEL_CX = 100, REEL_CY = 38;
+    private static final float REEL_STEP = 9f; // degrees per client tick while winding
+
+    private static final int STATUS_Y = 55;
+    // Three info-card wells: x origins, shared y/size (match build_machine).
+    private static final int[] CARD_X = {10, 71, 132};
+    private static final int CARD_Y = 68, CARD_W = 58, CARD_H = 28, CARD_PAD = 4;
+
+    // Dark tech-console code colors.
     private static final int LABEL = 0xFFC0C0C8;
+    private static final int LABEL_DIM = 0xFF7D8597;
+    private static final int ACCENT = 0xFF3FE0C0;
+    private static final int ACCENT_DIM = 0xFF9FE9D8;
     private static final int WARN = 0xFFE57A7A;
     private static final int FILL_ENERGY = 0xFFD32F2F;
     private static final int FILL_FILAMENT = 0xFF4FC3F7;
-    private static final int FILL_PROGRESS = 0xCC4FC3F7;
-    private static final int SHIMMER = 0xFFBFE9FF;
+
+    private float reelAngle;
 
     public WinderScreen(WinderMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
-        this.imageWidth = 176;
-        this.imageHeight = 166;
-        this.inventoryLabelY = this.imageHeight - 94;
+        this.imageWidth = 200;
+        this.imageHeight = 188;
+        this.inventoryLabelX = 19;
+        this.inventoryLabelY = 97;
+    }
+
+    @Override
+    protected void containerTick() {
+        if (isWinding()) {
+            reelAngle = (reelAngle + REEL_STEP) % 360f;
+        }
+    }
+
+    private boolean isWinding() {
+        return menu.status() == WinderBlockEntity.STATUS_OK
+                && !menu.inputStack().isEmpty()
+                && menu.spoolStack().getItem() instanceof SpoolItem
+                && menu.spoolFu() < menu.spoolCapacity()
+                && menu.energy() > 0
+                && menu.yieldPerItem() > 0;
     }
 
     @Override
@@ -72,45 +110,141 @@ public class WinderScreen extends AbstractContainerScreen<WinderMenu> {
                     left + FU_X + FU_W, top + FU_Y + FU_H, FILL_FILAMENT);
         }
 
-        if (menu.status() != WinderBlockEntity.STATUS_OK) {
-            // wrong-tier / non-convertible input: red X over the (empty) progress channel
-            drawRedX(graphics, left + ARROW_X + ARROW_W / 2 - 1, top + ARROW_Y + ARROW_H / 2 - 1, 6);
-        } else {
-            int progressPixels = menu.progress() * ARROW_W / menu.maxProgress();
-            if (progressPixels > 0) {
-                graphics.fill(left + ARROW_X, top + ARROW_Y,
-                        left + ARROW_X + progressPixels, top + ARROW_Y + ARROW_H, FILL_PROGRESS);
-                if (progressPixels < ARROW_W) {
-                    graphics.fill(left + ARROW_X + progressPixels - 1, top + ARROW_Y,
-                            left + ARROW_X + progressPixels, top + ARROW_Y + ARROW_H, SHIMMER);
-                }
-            }
-        }
+        drawReel(graphics, left, top, partialTick);
     }
 
-    private static void drawRedX(GuiGraphics graphics, int cx, int cy, int half) {
-        int red = 0xFFE53935;
-        for (int t = -half; t <= half; t++) {
-            graphics.fill(cx + t, cy + t, cx + t + 2, cy + t + 2, red);
-            graphics.fill(cx + t, cy - t, cx + t + 2, cy - t + 2, red);
+    /** The spool-end reel sprite, spinning while winding and dimmed/still when idle. */
+    private void drawReel(GuiGraphics graphics, int left, int top, float partialTick) {
+        boolean winding = isWinding();
+        float angle = reelAngle + (winding ? partialTick * REEL_STEP : 0f);
+        PoseStack pose = graphics.pose();
+        pose.pushPose();
+        pose.translate(left + REEL_CX, top + REEL_CY, 0);
+        pose.mulPose(Axis.ZP.rotationDegrees(angle));
+        if (!winding) {
+            graphics.setColor(0.55f, 0.55f, 0.55f, 1f);
         }
+        graphics.blit(TEXTURE, -REEL_SIZE / 2, -REEL_SIZE / 2, REEL_U, REEL_V, REEL_SIZE, REEL_SIZE);
+        graphics.setColor(1f, 1f, 1f, 1f);
+        pose.popPose();
     }
 
     @Override
     protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
-        // Draw the title + inventory label ourselves in light text instead of
-        // super's dark-grey (invisible on the new charcoal console).
         graphics.drawString(font, title, titleLabelX, titleLabelY, LABEL, false);
         graphics.drawString(font, playerInventoryTitle, inventoryLabelX, inventoryLabelY, LABEL, false);
 
+        drawStatusLine(graphics);
+        drawMaterialCard(graphics);
+        drawSpoolCard(graphics);
+        drawRateCard(graphics);
+    }
+
+    private void drawStatusLine(GuiGraphics graphics) {
+        Component msg;
+        int color;
         int status = menu.status();
-        if (status == WinderBlockEntity.STATUS_OK) {
+        if (status == WinderBlockEntity.STATUS_WRONG_TIER) {
+            msg = Component.translatable("gui.mc3dprint.winder.requires_tier", menu.requiredTier());
+            color = WARN;
+        } else if (status == WinderBlockEntity.STATUS_NOT_CONVERTIBLE) {
+            msg = Component.translatable("gui.mc3dprint.winder.not_convertible");
+            color = WARN;
+        } else if (isWinding()) {
+            msg = Component.translatable("gui.mc3dprint.winder.winding");
+            color = ACCENT;
+        } else if (menu.inputStack().isEmpty()) {
+            msg = Component.translatable("gui.mc3dprint.winder.idle");
+            color = LABEL_DIM;
+        } else if (menu.spoolStack().getItem() instanceof SpoolItem && menu.spoolFu() >= menu.spoolCapacity()) {
+            msg = Component.translatable("gui.mc3dprint.winder.spool_full");
+            color = LABEL_DIM;
+        } else if (menu.energy() <= 0) {
+            msg = Component.translatable("gui.mc3dprint.winder.no_power");
+            color = WARN;
+        } else {
+            msg = Component.translatable("gui.mc3dprint.winder.ready");
+            color = ACCENT;
+        }
+        int x = (imageWidth - font.width(msg)) / 2;
+        graphics.drawString(font, msg, x, STATUS_Y, color, false);
+    }
+
+    private void drawMaterialCard(GuiGraphics graphics) {
+        int x = CARD_X[0];
+        drawCardHeader(graphics, x, Component.translatable("gui.mc3dprint.winder.material"));
+        ItemStack input = menu.inputStack();
+        if (input.isEmpty()) {
+            drawCardValue(graphics, x, "—");
             return;
         }
-        Component message = status == WinderBlockEntity.STATUS_WRONG_TIER
-                ? Component.translatable("gui.mc3dprint.winder.requires_tier", menu.requiredTier())
-                : Component.translatable("gui.mc3dprint.winder.not_convertible");
-        int x = (imageWidth - font.width(message)) / 2;
-        graphics.drawString(font, message, x, 58, WARN, false);
+        String name = font.plainSubstrByWidth(input.getHoverName().getString(),
+                (int) ((CARD_W - 2 * CARD_PAD) / 0.9f));
+        drawCardValue(graphics, x, name);
+        int tier = menu.requiredTier();
+        int yield = menu.yieldPerItem();
+        String sub = "T" + tier + (yield > 0 ? " · " + fmtK(yield) + " FU" : "");
+        drawCardSub(graphics, x, sub);
+    }
+
+    private void drawSpoolCard(GuiGraphics graphics) {
+        int x = CARD_X[1];
+        drawCardHeader(graphics, x, Component.translatable("gui.mc3dprint.winder.spool"));
+        if (!(menu.spoolStack().getItem() instanceof SpoolItem spool)) {
+            drawCardValue(graphics, x, "—");
+            return;
+        }
+        int fu = menu.spoolFu();
+        int cap = Math.max(1, menu.spoolCapacity());
+        drawCardValue(graphics, x, fmtK(fu) + " / " + fmtK(cap));
+        int pct = (int) ((long) fu * 100 / cap);
+        drawCardSub(graphics, x, "T" + spool.tier() + " · " + pct + "%");
+    }
+
+    private void drawRateCard(GuiGraphics graphics) {
+        int x = CARD_X[2];
+        drawCardHeader(graphics, x, Component.translatable("gui.mc3dprint.winder.rate"));
+        int yield = menu.yieldPerItem();
+        int rate = yield > 0 ? Math.round(yield * 20f / menu.maxProgress()) : 0;
+        if (rate <= 0) {
+            drawCardValue(graphics, x, "—");
+            return;
+        }
+        drawCardValue(graphics, x, fmtK(rate) + " FU/s");
+        int room = Math.max(0, menu.spoolCapacity() - menu.spoolFu());
+        int secs = room / rate;
+        drawCardSub(graphics, x, "~" + fmtK(secs) + "s full");
+    }
+
+    private void drawCardHeader(GuiGraphics graphics, int x, Component header) {
+        drawScaled(graphics, header.getString(), x + CARD_PAD, CARD_Y + 3, 0.75f, LABEL_DIM);
+    }
+
+    private void drawCardValue(GuiGraphics graphics, int x, String value) {
+        drawScaled(graphics, value, x + CARD_PAD, CARD_Y + 11, 0.9f, LABEL);
+    }
+
+    private void drawCardSub(GuiGraphics graphics, int x, String sub) {
+        drawScaled(graphics, sub, x + CARD_PAD, CARD_Y + 20, 0.75f, ACCENT_DIM);
+    }
+
+    private void drawScaled(GuiGraphics graphics, String text, int x, int y, float scale, int color) {
+        PoseStack pose = graphics.pose();
+        pose.pushPose();
+        pose.translate(x, y, 0);
+        pose.scale(scale, scale, 1f);
+        graphics.drawString(font, text, 0, 0, color, false);
+        pose.popPose();
+    }
+
+    /** Compact FU formatter: 850, 12k, 1.2k, 3.4M. */
+    private static String fmtK(int v) {
+        if (v < 1000) {
+            return Integer.toString(v);
+        }
+        if (v < 1_000_000) {
+            return v % 1000 == 0 ? (v / 1000) + "k" : String.format("%.1fk", v / 1000.0);
+        }
+        return String.format("%.1fM", v / 1_000_000.0);
     }
 }

@@ -20,9 +20,10 @@ Palette (VISUAL-REVAMP-BRIEF, "GUI — dark tech-console"):
     bevel-light  #2C3342   bevel-dark   #0A0D14
     accent line  #3FE0C0   label text   #C0C0C8
 """
+import math
 import os
 
-from PIL import Image
+from PIL import Image, ImageDraw
 
 # ---------------------------------------------------------------------------
 # Console palette (RGBA)
@@ -44,6 +45,10 @@ WELL_HILITE = (0x33, 0x3C, 0x4E, 255)  # 1px lit edge on the bottom/right of the
 CHAN_RIM    = (0x07, 0x0A, 0x10, 255)
 CHAN_FLOOR  = (0x0D, 0x10, 0x18, 255)
 CHAN_HILITE = (0x2C, 0x33, 0x42, 255)
+
+# Recessed info-card floor (winder): a touch lighter than a channel so the small
+# readout text stays legible against it.
+CARD_FLOOR  = (0x12, 0x17, 0x22, 255)
 
 # Status LED dots (drawn dim/off in the static sheet; the Screen can brighten in
 # code, but a couple of subtle housings give the corner a console feel).
@@ -137,12 +142,56 @@ def led(px, x, y, c):
 # ---------------------------------------------------------------------------
 # Sheet builders
 # ---------------------------------------------------------------------------
-def machine_band(px):
-    """The energy/filament bars + progress arrow shared by both machines.
-    Coordinates come straight from PrinterScreen/WinderScreen (identical)."""
-    channel(px, 11, 18, 12, 50)    # energy   (ENERGY_X/Y/W/H)
-    channel(px, 153, 18, 12, 50)   # filament (FU_X/Y/W/H)
-    channel(px, 80, 36, 22, 15)    # progress (ARROW_X/Y/W/H)
+def bars(px, fu_x):
+    """The energy (left, fixed x=11) + filament (right, x=fu_x) gauges. The fill
+    is painted in code; here we only sink the recessed channels. fu_x differs per
+    machine because the panels are different widths (printer 153, winder 177)."""
+    channel(px, 11, 18, 12, 50)      # energy   (ENERGY_X/Y/W/H)
+    channel(px, fu_x, 18, 12, 50)    # filament (FU_X/Y/W/H)
+
+
+def progress_arrow(px):
+    """Printer-only horizontal progress channel (ARROW_X/Y/W/H). The winder uses
+    a spinning reel motif instead (see reel_socket / build_reel_sprite)."""
+    channel(px, 80, 36, 22, 15)
+
+
+def card_well(px, x, y, w, h):
+    """Shallow recessed info-card backing for the winder readouts. Lighter floor
+    than a channel so the small Material/Spool/Rate text reads on top."""
+    rect(px, x, y, w, h, CARD_FLOOR)
+    hline(px, x - 1, y - 1, w + 2, WELL_RIM)
+    vline(px, x - 1, y - 1, h + 2, WELL_RIM)
+    hline(px, x - 1, y + h, w + 2, BEVEL_LIGHT)
+    vline(px, x + w, y - 1, h + 2, BEVEL_LIGHT)
+
+
+def reel_socket(draw, cx, cy, r):
+    """A recessed dark circular socket the spinning reel sprite sits inside."""
+    draw.ellipse([cx - r, cy - r, cx + r, cy + r], fill=CHAN_FLOOR, outline=CHAN_RIM)
+    draw.ellipse([cx - r + 1, cy - r + 1, cx + r - 1, cy + r - 1], outline=CHAN_RIM)
+
+
+def build_reel_sprite():
+    """A 32x32 spool-end motif (rings + spokes + hub) blitted by WinderScreen and
+    rotated in code while winding. Lives in the spare top-right of machine.png."""
+    s = Image.new("RGBA", (32, 32), (0, 0, 0, 0))
+    d = ImageDraw.Draw(s)
+    cx = cy = 16
+    d.ellipse([2, 2, 29, 29], outline=ACCENT_DIM, width=2)   # outer flange
+    d.ellipse([6, 6, 25, 25], outline=ACCENT, width=2)       # inner ring (the wound thread)
+    for k in range(6):                                        # six spokes
+        a = math.radians(k * 60)
+        d.line([cx + 5 * math.cos(a), cy + 5 * math.sin(a),
+                cx + 11 * math.cos(a), cy + 11 * math.sin(a)], fill=ACCENT_DIM, width=2)
+    d.ellipse([11, 11, 20, 20], fill=PANEL, outline=ACCENT_DIM)  # hub
+    d.ellipse([14, 14, 17, 17], fill=ACCENT)                     # axle dot
+    return s
+
+
+# Winder reel sprite location in the machine.png sheet (spare area right of the
+# 200px panel). Must match WinderScreen.REEL_U / REEL_V.
+REEL_U, REEL_V, REEL_SIZE = 208, 0, 32
 
 
 def status_leds(px, panel_w):
@@ -172,7 +221,8 @@ def build_printer():
     # heightened from 200 to host the dedicated Rotate row below the XYZ offsets
     pw, ph = 230, 216
     panel(px, pw, ph)
-    machine_band(px)
+    bars(px, 153)       # energy + filament (PrinterScreen FU_X=153)
+    progress_arrow(px)
     slot(px, 53, 35)    # template (PrinterMenu.TEMPLATE_SLOT_X/Y)
     slot(px, 116, 35)   # output   (PrinterMenu.OUTPUT_SLOT_X/Y)
     # upgrade-slot wells (2-col grid, row-major), up to MAX_UPGRADE_SLOTS
@@ -192,23 +242,35 @@ def build_printer():
 
 
 def build_machine():
-    """Filament Winder sheet (176x166). Same machine band; the input + spool
-    slots sit at the same x as the printer (53 / 116) but the player inventory
-    starts higher (y=84) because the winder panel is shorter."""
+    """Filament Winder sheet (200x188 panel — the "Throughput Panel" layout).
+
+    Energy gauge (left) and filament gauge (right, x=177) flank a centre group of
+    input slot -> spinning reel -> spool slot. Below them sit three recessed
+    info-card wells (Material / Spool / Rate) the screen fills with live text, then
+    the player inventory. All coords are in lockstep with WinderScreen/WinderMenu."""
     img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     px = img.load()
-    pw, ph = 176, 166
+    pw, ph = 200, 188
     panel(px, pw, ph)
-    machine_band(px)
-    slot(px, 53, 35)    # input  (WinderMenu addSlot SLOT_INPUT 53,35)
-    slot(px, 116, 35)   # spool  (WinderMenu addSlot SLOT_SPOOL 116,35)
-    # player inventory: 3x9 grid + hotbar (WinderMenu slot Y = 84/102/120 + 142)
+    bars(px, 177)        # energy (11) + filament (WinderScreen FU_X=177)
+    slot(px, 58, 30)     # input  (WinderMenu addSlot SLOT_INPUT 58,30)
+    slot(px, 126, 30)    # spool  (WinderMenu addSlot SLOT_SPOOL 126,30)
+    # three info-card wells (WinderScreen CARD_X = 10 / 71 / 132, CARD_Y=68, 58x28)
+    for cx in (10, 71, 132):
+        card_well(px, cx, 68, 58, 28)
+    # player inventory: 3x9 grid + hotbar (WinderMenu slot Y = 108/126/144 + 168,
+    # x centred at 19 for the 200px panel)
     for row in range(3):
         for col in range(9):
-            slot(px, 8 + col * 18, 84 + row * 18)
+            slot(px, 19 + col * 18, 108 + row * 18)
     for col in range(9):
-        slot(px, 8 + col * 18, 142)
+        slot(px, 19 + col * 18, 168)
     status_leds(px, pw)
+
+    # recessed reel socket + the rotating reel sprite parked in the spare sheet area
+    draw = ImageDraw.Draw(img)
+    reel_socket(draw, 100, 38, 17)   # WinderScreen REEL_CX/REEL_CY=100,38
+    img.paste(build_reel_sprite(), (REEL_U, REEL_V), build_reel_sprite())
     return img
 
 

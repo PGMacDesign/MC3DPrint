@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MC3DPrint — GUI Proposals: Filament Winder + Blueprint Repository</title>
+<style>
+  :root{
+    /* Pulled from the live gen_printer_gui.py palette so mockups read true-to-game */
+    --panel:#1A1F2B; --field:#10141E; --bevel-light:#2C3342; --bevel-dark:#0A0D14;
+    --accent:#3FE0C0; --accent-dim:#278676; --cyan-fill:#4FC3F7; --shimmer:#BFE9FF;
+    --well-floor:#232A39; --well-rim:#0E121A; --well-hi:#333C4E;
+    --chan-floor:#0D1018; --energy:#D32F2F; --fu:#4FC3F7;
+    --txt:#C0C0C8; --txt-dim:#7d8597; --warn:#E57A7A; --good:#7BE0A0; --amber:#E0B23F;
+    --ink:#0c0f16; --card:#161b26; --line:#283142;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:#0a0d13; color:#cdd3df;
+    font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  }
+  .wrap{max-width:1120px;margin:0 auto;padding:40px 28px 80px}
+  h1{font-size:30px;margin:0 0 6px;color:#fff;letter-spacing:.2px}
+  h2{font-size:22px;margin:54px 0 4px;color:#fff;border-bottom:1px solid var(--line);padding-bottom:10px}
+  h3{font-size:17px;margin:0 0 2px;color:var(--accent)}
+  .sub{color:var(--txt-dim);margin:0 0 8px}
+  .lead{color:#aeb6c4;max-width:760px}
+  code{background:#1b2230;padding:1px 6px;border-radius:4px;font-size:13px;color:#9fe9d8}
+  .meta{color:var(--txt-dim);font-size:13px}
+
+  .callout{background:#10261f;border:1px solid #1f5e4c;border-left:4px solid var(--accent);
+    padding:12px 16px;border-radius:8px;margin:14px 0 28px;color:#bfe9dc}
+  .callout b{color:#fff}
+
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-top:18px}
+  @media(max-width:880px){.grid{grid-template-columns:1fr}}
+  .concept{background:var(--card);border:1px solid var(--line);border-radius:12px;
+    padding:18px;display:flex;flex-direction:column;gap:12px}
+  .concept.rec{border-color:var(--accent-dim);box-shadow:0 0 0 1px #1f5e4c inset}
+  .tag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;
+    padding:2px 8px;border-radius:20px;background:#1f5e4c;color:#bfe9dc;vertical-align:middle;margin-left:8px}
+  .prosconz{font-size:13.5px;color:#b6bdca}
+  .prosconz .p{color:var(--good)} .prosconz .c{color:var(--warn)}
+  .prosconz ul{margin:4px 0 0;padding-left:18px} .prosconz li{margin:2px 0}
+
+  /* ---- MC panel mockups ---- */
+  .stage{background:#05070b;border-radius:10px;padding:18px;display:flex;justify-content:center;
+    border:1px solid #161c28}
+  .panel{
+    background:var(--panel);border-radius:3px;color:var(--txt);
+    border-top:2px solid var(--bevel-light);border-left:2px solid var(--bevel-light);
+    border-bottom:2px solid var(--bevel-dark);border-right:2px solid var(--bevel-dark);
+    box-shadow:0 6px 22px rgba(0,0,0,.5);
+    font-family:ui-monospace,"SF Mono",Menlo,monospace;position:relative;padding:8px;
+  }
+  .panel .stripe{height:2px;background:var(--accent);margin:-2px -2px 6px;border-radius:2px 2px 0 0;
+    box-shadow:0 1px 0 var(--accent-dim)}
+  .ptitle{font-size:12px;color:#dfe4ee;margin:0 2px 8px;letter-spacing:.4px}
+  .row{display:flex;align-items:center;gap:8px}
+  .well{width:34px;height:34px;background:var(--well-floor);
+    border-top:2px solid var(--well-rim);border-left:2px solid var(--well-rim);
+    border-bottom:2px solid var(--well-hi);border-right:2px solid var(--well-hi);
+    border-radius:2px;display:flex;align-items:center;justify-content:center;font-size:18px}
+  .invgrid{margin-top:8px;display:grid;grid-template-columns:repeat(9,16px);gap:2px}
+  .invslot{width:16px;height:16px;background:var(--well-floor);border:1px solid var(--well-rim);border-radius:1px}
+  .hot{margin-top:5px}
+  /* vertical gauges */
+  .gauge{width:14px;height:54px;background:var(--chan-floor);border:1px solid #060910;border-radius:2px;
+    position:relative;overflow:hidden}
+  .gauge .fill{position:absolute;left:0;right:0;bottom:0}
+  .gauge .fe{background:var(--energy)} .gauge .ff{background:var(--fu)}
+  .arrow{height:16px;background:var(--chan-floor);border:1px solid #060910;border-radius:2px;position:relative;overflow:hidden}
+  .arrow .af{position:absolute;left:0;top:0;bottom:0;background:var(--cyan-fill);
+    border-right:1px solid var(--shimmer)}
+  .led{width:6px;height:6px;border-radius:50%;display:inline-block}
+  .led.g{background:var(--good);box-shadow:0 0 6px var(--good)}
+  .led.a{background:var(--amber);box-shadow:0 0 6px var(--amber)}
+  .led.off{background:#1b2230}
+  .chip{font-size:11px;padding:2px 7px;border-radius:5px;background:#0f1622;
+    border:1px solid #2a3445;color:#cfe;}
+  .chip.t{color:#bfe9dc;border-color:#1f5e4c}
+  .chip.bad{color:var(--warn);border-color:#5e2a2a}
+  .status{font-size:11px;letter-spacing:.4px}
+  .status.ok{color:var(--accent)} .status.bad{color:var(--warn)} .status.idle{color:var(--txt-dim)}
+  .link{font-size:18px}
+  .micro{font-size:10.5px;color:var(--txt-dim)}
+  .card2{background:#0f1622;border:1px solid #232c3c;border-radius:5px;padding:6px 8px;font-size:11px;min-width:96px}
+  .card2 .k{color:var(--txt-dim);font-size:10px;text-transform:uppercase;letter-spacing:.5px}
+  .card2 .v{color:#e7ecf5;font-size:12.5px}
+  .reel{width:44px;height:44px;border-radius:50%;border:4px solid var(--accent-dim);
+    border-top-color:var(--accent);display:flex;align-items:center;justify-content:center;
+    font-size:10px;color:#bfe9dc;animation:spin 2.4s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* repository list */
+  .repo{width:100%}
+  .repobar{display:flex;gap:6px;margin-bottom:8px}
+  .search{flex:1;background:#0f1622;border:1px solid #2a3445;border-radius:5px;color:#cfe;font-size:11px;padding:4px 8px}
+  .tabs{display:flex;gap:4px;margin-bottom:8px}
+  .tabx{font-size:11px;padding:3px 10px;border-radius:6px 6px 0 0;background:#0f1622;border:1px solid #232c3c;border-bottom:none;color:var(--txt-dim)}
+  .tabx.on{background:#17202e;color:var(--accent);border-color:#1f5e4c}
+  .repobody{display:grid;grid-template-columns:1.1fr .9fr;gap:10px}
+  .list{background:#0c121c;border:1px solid #232c3c;border-radius:6px;padding:6px;max-height:230px;overflow:auto}
+  .lrow{display:flex;align-items:center;gap:8px;padding:5px 7px;border-radius:5px;font-size:11.5px;cursor:default}
+  .lrow.sel{background:#17202e;outline:1px solid #1f5e4c}
+  .lrow:hover{background:#131b27}
+  .lrow .nm{flex:1;color:#dfe4ee}
+  .badge{font-size:9.5px;padding:1px 6px;border-radius:10px;border:1px solid}
+  .badge.off{color:#bfe9dc;border-color:#1f5e4c;background:#10261f}
+  .badge.scan{color:#d8c08a;border-color:#5e4f2a;background:#241f10}
+  .tnum{font-size:9.5px;color:#9fe9d8;width:20px;text-align:right}
+  .detail{background:#0c121c;border:1px solid #232c3c;border-radius:6px;padding:10px;font-size:11px;display:flex;flex-direction:column;gap:7px}
+  .prev{height:74px;background:#070b12;border:1px solid #1c2433;border-radius:5px;display:flex;align-items:center;justify-content:center;color:var(--txt-dim);font-size:10px}
+  .kv{display:flex;justify-content:space-between;font-size:11px}
+  .kv .k{color:var(--txt-dim)} .kv .v{color:#e7ecf5}
+  .btn{font-size:11px;text-align:center;padding:5px 10px;border-radius:5px;background:#10261f;border:1px solid #1f5e4c;color:#bfe9dc}
+  .btn.ghost{background:#131b27;border-color:#2a3445;color:#aeb6c4}
+  .gridcards{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+  .gcard{background:#0f1622;border:1px solid #232c3c;border-radius:6px;padding:8px;text-align:center;font-size:10.5px}
+  .gcard .th{height:38px;background:#070b12;border:1px solid #1c2433;border-radius:4px;margin-bottom:5px;display:flex;align-items:center;justify-content:center;font-size:16px}
+  .gcard .gn{color:#dfe4ee;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .footer{margin-top:60px;color:var(--txt-dim);font-size:12.5px;border-top:1px solid var(--line);padding-top:16px}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--txt-dim);margin-top:10px}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .sw{width:12px;height:12px;border-radius:3px;display:inline-block}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>MC3DPrint — GUI Proposals</h1>
+  <p class="sub">Filament Winder polish &amp; Server Blueprint Repository · v0.7.0 · drafted for review</p>
+  <p class="lead">Three concepts each. Mockups use the live console palette from
+  <code>gen_printer_gui.py</code> (charcoal&nbsp;<code>#1A1F2B</code>, accent cyan&nbsp;<code>#3FE0C0</code>),
+  so what you see here is close to how it would read in-game. Nothing below is built yet —
+  pick a direction (or mix elements) and I'll implement it.</p>
+
+  <div class="legend">
+    <span><i class="sw" style="background:#3FE0C0"></i>accent / active</span>
+    <span><i class="sw" style="background:#4FC3F7"></i>FU fill</span>
+    <span><i class="sw" style="background:#D32F2F"></i>RF energy</span>
+    <span><i class="sw" style="background:#E57A7A"></i>error / blocked</span>
+    <span><i class="sw" style="background:#7BE0A0"></i>ready LED</span>
+  </div>
+
+  <!-- ============================ WINDER ============================ -->
+  <h2>1 · Filament Winder GUI</h2>
+  <p class="lead"><b>Today:</b> 176×166 panel, input slot + spool slot, an RF bar (left) and FU gauge (right),
+  a center progress arrow, and exactly two error states (a red X + one line of text). No live status text,
+  no material/tier preview, the painted status LEDs are never lit, and the exact-tier rule is invisible —
+  a tier mismatch just silently does nothing. That opacity is the core thing to fix.</p>
+
+  <div class="grid">
+
+    <!-- W-A -->
+    <div class="concept">
+      <div><h3>W-A · Status Console</h3><span class="tag">low-touch</span></div>
+      <p class="meta">Keep 176×166. Pure additive polish — no layout shift, fastest to ship.</p>
+      <div class="stage">
+        <div class="panel" style="width:300px">
+          <div class="stripe"></div>
+          <div class="ptitle">FILAMENT WINDER <span style="float:right"><span class="led g"></span> <span class="led off" style="margin-left:3px"></span></span></div>
+          <div class="row" style="justify-content:space-between;align-items:stretch">
+            <div class="gauge"><div class="fill fe" style="height:62%"></div></div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;justify-content:center">
+              <div class="row">
+                <div class="well">🪨</div>
+                <div style="text-align:center">
+                  <div class="arrow" style="width:60px"><div class="af" style="width:55%"></div></div>
+                  <div class="micro">+12 FU</div>
+                </div>
+                <div class="well">🧵</div>
+              </div>
+              <div class="status ok">● Winding… &nbsp; T2 → T2 matched</div>
+            </div>
+            <div class="gauge"><div class="fill ff" style="height:40%"></div></div>
+          </div>
+          <div class="invgrid">
+            <div class="invslot"></div><div class="invslot"></div><div class="invslot"></div><div class="invslot"></div><div class="invslot"></div><div class="invslot"></div><div class="invslot"></div><div class="invslot"></div><div class="invslot"></div>
+          </div>
+          <div class="invgrid hot">
+            <div class="invslot"></div><div class="invslot"></div><div class="invslot"></div><div class="invslot"></div><div class="invslot"></div><div class="invslot"></div><div class="invslot"></div><div class="invslot"></div><div class="invslot"></div>
+          </div>
+        </div>
+      </div>
+      <div class="prosconz">
+        Adds: a live status line (<i>Idle / Winding… / Wrong Tier / Can't convert</i>),
+        a <code>+N FU</code> per-cycle readout under the arrow, tier-match echo
+        (<code>T2 → T2</code>), animated LEDs (green=working, amber=blocked), and
+        richer slot tooltips (material's tier + FU value; spool fill).
+        <ul>
+          <li class="p">Smallest diff — texture barely changes; mostly screen-side draw calls.</li>
+          <li class="p">Resolves the silent-mismatch confusion with zero relayout.</li>
+          <li class="c">Cramped — limited room for richer material/spool cards.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- W-B -->
+    <div class="concept rec">
+      <div><h3>W-B · Throughput Panel</h3><span class="tag">recommended</span></div>
+      <p class="meta">Grow to ~200×184. Adds an info band + a spinning reel that mirrors the block's exterior spool.</p>
+      <div class="stage">
+        <div class="panel" style="width:330px">
+          <div class="stripe"></div>
+          <div class="ptitle">FILAMENT WINDER <span style="float:right"><span class="led g"></span></span></div>
+          <div class="row" style="justify-content:space-between;align-items:center">
+            <div class="gauge"><div class="fill fe" style="height:62%"></div></div>
+            <div class="well">🪨</div>
+            <div class="reel">WIND</div>
+            <div class="well">🧵</div>
+            <div class="gauge"><div class="fill ff" style="height:40%"></div></div>
+          </div>
+          <div class="row" style="gap:6px;margin-top:8px;justify-content:center">
+            <div class="card2"><div class="k">Material</div><div class="v">Cobblestone</div><div class="micro">T2 · 12 FU ea</div></div>
+            <div class="card2"><div class="k">Spool</div><div class="v">40,000 / 100,000</div><div class="micro">T2 · 40% full</div></div>
+            <div class="card2"><div class="k">Rate</div><div class="v">~120 FU/s</div><div class="micro">64 items left</div></div>
+          </div>
+          <div class="invgrid" style="margin-top:8px">
+            <div class="invslot"></div><div class="invslot"></div><div class="invslot"></div><div class="invslot"></div><div class="invslot"></div><div class="invslot"></div><div class="invslot"></div><div class="invslot"></div><div class="invslot"></div>
+          </div>
+          <div class="invgrid hot">
+            <div class="invslot"></div><div class="invslot"></div><div class="invslot"></div><div class="invslot"></div><div class="invslot"></div><div class="invslot"></div><div class="invslot"></div><div class="invslot"></div><div class="invslot"></div>
+          </div>
+        </div>
+      </div>
+      <div class="prosconz">
+        The reel spins while winding (cadence follows RF, like the exterior animation) and stops/greys when idle —
+        instantly legible "is it working?". Three info cards turn the winder from a black box into a readout:
+        what's being wound, how full the spool is, and throughput.
+        <ul>
+          <li class="p">Most informative; matches the printer's "console" density and feel.</li>
+          <li class="p">The reel reuses the existing spool-spin concept — coherent identity.</li>
+          <li class="c">New texture region + a few more data slots; medium effort.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- W-C -->
+    <div class="concept">
+      <div><h3>W-C · Match-Gate</h3><span class="tag">teaching</span></div>
+      <p class="meta">Compact, but makes the exact-tier rule the hero element.</p>
+      <div class="stage">
+        <div class="panel" style="width:300px">
+          <div class="stripe"></div>
+          <div class="ptitle">FILAMENT WINDER</div>
+          <div class="row" style="justify-content:center;gap:10px;align-items:center;margin:6px 0 4px">
+            <div style="text-align:center"><div class="well">⛏️</div><div class="chip t" style="margin-top:4px">MAT&nbsp;T4</div></div>
+            <div style="text-align:center"><div class="link" style="color:var(--warn)">⛓️‍💥</div><div class="micro" style="color:var(--warn)">mismatch</div></div>
+            <div style="text-align:center"><div class="well">🧵</div><div class="chip bad" style="margin-top:4px">SPOOL&nbsp;T2</div></div>
+          </div>
+          <div class="status bad" style="text-align:center;margin:2px 0 4px">Insert a Tier 4 spool to wind this</div>
+          <div class="arrow" style="margin:0 auto;width:80%"><div class="af" style="width:0%"></div></div>
+          <div class="invgrid" style="margin-top:8px">
+            <div class="invslot"></div><div class="invslot"></div><div class="invslot"></div><div class="invslot"></div><div class="invslot"></div><div class="invslot"></div><div class="invslot"></div><div class="invslot"></div><div class="invslot"></div>
+          </div>
+          <div class="invgrid hot">
+            <div class="invslot"></div><div class="invslot"></div><div class="invslot"></div><div class="invslot"></div><div class="invslot"></div><div class="invslot"></div><div class="invslot"></div><div class="invslot"></div><div class="invslot"></div>
+          </div>
+        </div>
+      </div>
+      <div class="prosconz">
+        Two tier chips with a link icon between them: green chain when tiers match, broken red chain when they don't,
+        plus a one-line fix ("Insert a Tier 4 spool"). Directly targets the #1 new-player wall — the winder doing
+        nothing with no explanation.
+        <ul>
+          <li class="p">Best at teaching the exact-tier mechanic; great for first-time users.</li>
+          <li class="p">Stays compact.</li>
+          <li class="c">Less useful once you know the rules — fewer ongoing readouts than W-B.</li>
+        </ul>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="callout" style="margin-top:24px">
+    <b>My pick: W-B (Throughput Panel), folding in W-C's tier-match chips for the blocked state.</b>
+    You get the at-a-glance "is it running" reel, real throughput/spool readouts to match the printer's polish,
+    and the match-gate chips solve the silent-mismatch confusion without a separate concept.
+  </div>
+
+  <!-- ============================ REPOSITORY ============================ -->
+  <h2>2 · Server Blueprint Repository</h2>
+  <p class="lead"><b>Today:</b> the storage layer is fully built — <code>BlueprintFileStore</code> already does
+  <code>save / load / list / delete</code> by UUID, curated builds auto-install, and discs carry cached metadata
+  (name, size, tier, cost, official-vs-scanned). What's missing is a <i>player-facing</i> way to browse the store
+  and burn any stored blueprint onto a blank disc — right now that only happens via creative tab, loot, scanning,
+  or admin commands. These three concepts are the new block + GUI on top of that existing plumbing.</p>
+
+  <div class="grid">
+
+    <!-- R-A -->
+    <div class="concept rec">
+      <div><h3>R-A · Library Browser</h3><span class="tag">recommended</span></div>
+      <p class="meta">Standalone wide GUI: searchable list (left) + detail &amp; burn (right).</p>
+      <div class="stage">
+        <div class="panel repo" style="width:420px">
+          <div class="stripe"></div>
+          <div class="ptitle">BLUEPRINT REPOSITORY</div>
+          <div class="repobar">
+            <input class="search" value="🔎  search builds…" readonly>
+            <span class="btn ghost">Tier ▾</span><span class="btn ghost">Type ▾</span>
+          </div>
+          <div class="repobody">
+            <div class="list">
+              <div class="lrow"><span class="tnum">T1</span><span class="nm">small_cottage</span><span class="badge off">official</span></div>
+              <div class="lrow sel"><span class="tnum">T3</span><span class="nm">castle_keep</span><span class="badge off">official</span></div>
+              <div class="lrow"><span class="tnum">T2</span><span class="nm">windmill</span><span class="badge off">official</span></div>
+              <div class="lrow"><span class="tnum">T7</span><span class="nm">tristans_pig_house</span><span class="badge scan">scanned</span></div>
+              <div class="lrow"><span class="tnum">T4</span><span class="nm">iron_farm</span><span class="badge off">official</span></div>
+              <div class="lrow"><span class="tnum">T2</span><span class="nm">my_starter_base</span><span class="badge scan">scanned</span></div>
+              <div class="lrow"><span class="tnum">T5</span><span class="nm">grand_library</span><span class="badge off">official</span></div>
+            </div>
+            <div class="detail">
+              <div class="prev">⌖ isometric preview</div>
+              <div style="color:#dfe4ee;font-size:12.5px">Castle Keep</div>
+              <div class="kv"><span class="k">Size</span><span class="v">15 × 22 × 15</span></div>
+              <div class="kv"><span class="k">Blocks</span><span class="v">3,418</span></div>
+              <div class="kv"><span class="k">Tier</span><span class="v">T3</span></div>
+              <div class="kv"><span class="k">Print cost</span><span class="v">28,500 FU</span></div>
+              <div class="row" style="gap:6px;align-items:center;margin-top:2px">
+                <div class="well">💿</div><span class="micro">blank disc →</span><div class="well">📀</div>
+              </div>
+              <div class="btn">⤓ Burn to Disc</div>
+            </div>
+          </div>
+          <div class="invgrid" style="margin-top:8px">
+            <div class="invslot"></div><div class="invslot"></div><div class="invslot"></div><div class="invslot"></div><div class="invslot"></div><div class="invslot"></div><div class="invslot"></div><div class="invslot"></div><div class="invslot"></div>
+          </div>
+        </div>
+      </div>
+      <div class="prosconz">
+        One screen does it all: scroll/search every stored build, click for full metadata + a preview pane,
+        drop a blank disc and hit <i>Burn to Disc</i>. Official/scanned badges keep the resin anti-dupe rule
+        visible (burning a scanned build yields a scanned disc).
+        <ul>
+          <li class="p">Complete owner workflow in one place; closes the M9 deferral cleanly.</li>
+          <li class="p">Search + tier/type filters scale to 130+ curated builds.</li>
+          <li class="c">Widest panel + needs a metadata list payload synced to the client.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- R-B -->
+    <div class="concept">
+      <div><h3>R-B · Tabbed Catalog</h3><span class="tag">tab-native</span></div>
+      <p class="meta">Card grid with category tabs — literally the "GUI tab" framing.</p>
+      <div class="stage">
+        <div class="panel" style="width:420px">
+          <div class="stripe"></div>
+          <div class="ptitle">BLUEPRINT REPOSITORY</div>
+          <div class="tabs">
+            <span class="tabx on">All</span><span class="tabx">Curated</span><span class="tabx">Scanned</span><span class="tabx">Loot</span>
+          </div>
+          <div class="gridcards">
+            <div class="gcard"><div class="th">🏠</div><div class="gn">small_cottage</div><div class="micro">T1</div></div>
+            <div class="gcard"><div class="th">🏰</div><div class="gn">castle_keep</div><div class="micro">T3</div></div>
+            <div class="gcard"><div class="th">🌬️</div><div class="gn">windmill</div><div class="micro">T2</div></div>
+            <div class="gcard"><div class="th">🐷</div><div class="gn">pig_house</div><div class="micro">T7</div></div>
+            <div class="gcard"><div class="th">⚙️</div><div class="gn">iron_farm</div><div class="micro">T4</div></div>
+            <div class="gcard"><div class="th">📚</div><div class="gn">grand_library</div><div class="micro">T5</div></div>
+          </div>
+          <div class="row" style="justify-content:space-between;margin-top:9px;align-items:center">
+            <span class="micro">Selected: castle_keep · T3 · 28,500 FU</span>
+            <div class="row" style="gap:6px"><div class="well">💿</div><span class="btn">Burn</span></div>
+          </div>
+          <div class="invgrid" style="margin-top:8px">
+            <div class="invslot"></div><div class="invslot"></div><div class="invslot"></div><div class="invslot"></div><div class="invslot"></div><div class="invslot"></div><div class="invslot"></div><div class="invslot"></div><div class="invslot"></div>
+          </div>
+        </div>
+      </div>
+      <div class="prosconz">
+        Tabs split <i>Curated / Scanned / Loot</i>; a card grid shows thumbnail + tier. Click a card to select,
+        burn from the footer. Could also be embedded as a tab inside a future unified machine GUI rather than a
+        standalone block.
+        <ul>
+          <li class="p">Most visual; thumbnails make browsing pleasant.</li>
+          <li class="p">Tab model maps to the existing official/scanned/loot distinctions.</li>
+          <li class="c">Per-build thumbnails are real work (needs render/datagen, like the web viewer).</li>
+          <li class="c">Less metadata visible at a glance than R-A's detail pane.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- R-C -->
+    <div class="concept">
+      <div><h3>R-C · Admin Terminal</h3><span class="tag">power-user</span></div>
+      <p class="meta">Server-owner hub: browse + manage (rename, delete, lock, export .schem).</p>
+      <div class="stage">
+        <div class="panel" style="width:420px">
+          <div class="stripe"></div>
+          <div class="ptitle">REPOSITORY TERMINAL <span style="float:right;color:var(--txt-dim);font-size:10px">137 builds · 8.2 MB</span></div>
+          <div class="repobar">
+            <input class="search" value="🔎  filter…" readonly>
+            <span class="btn ghost">Sort: Tier ▾</span>
+          </div>
+          <div class="list" style="max-height:150px">
+            <div class="lrow sel"><span class="tnum">T7</span><span class="nm">tristans_pig_house</span><span class="badge scan">scanned</span></div>
+            <div class="lrow"><span class="tnum">T2</span><span class="nm">my_starter_base</span><span class="badge scan">scanned</span></div>
+            <div class="lrow"><span class="tnum">T3</span><span class="nm">castle_keep</span><span class="badge off">official 🔒</span></div>
+          </div>
+          <div class="row" style="gap:6px;margin-top:8px;flex-wrap:wrap">
+            <span class="btn">⤓ Burn Disc</span>
+            <span class="btn ghost">✎ Rename</span>
+            <span class="btn ghost">🔒 Lock</span>
+            <span class="btn ghost">⤴ Export .schem</span>
+            <span class="btn ghost" style="color:var(--warn);border-color:#5e2a2a">🗑 Delete</span>
+          </div>
+          <div class="invgrid" style="margin-top:9px">
+            <div class="invslot"></div><div class="invslot"></div><div class="invslot"></div><div class="invslot"></div><div class="invslot"></div><div class="invslot"></div><div class="invslot"></div><div class="invslot"></div><div class="invslot"></div>
+          </div>
+        </div>
+      </div>
+      <div class="prosconz">
+        Turns the block into the server's blueprint control panel: everything in R-A plus management — rename a
+        cryptic <code>Scan @ x,y,z</code>, delete junk scans, lock favourites, export to <code>.schem</code> (surfacing
+        the existing <code>/mc3dprint export</code> in the GUI).
+        <ul>
+          <li class="p">Best for server owners / curators; agent-native parity with the commands.</li>
+          <li class="p">Reuses existing export + delete APIs directly.</li>
+          <li class="c">Destructive actions need permission gating + confirm dialogs.</li>
+          <li class="c">Heaviest scope of the three.</li>
+        </ul>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="callout" style="margin-top:24px">
+    <b>My pick: R-A (Library Browser) as the v1, designed so R-C's management actions can bolt on later.</b>
+    R-A delivers the missing core capability — browse the store, preview, burn to disc — with search/filters that
+    scale to the full curated set, and it doesn't block on per-build thumbnail rendering the way R-B does.
+    Rename/delete/export (R-C) can land as a follow-up behind a permission check.
+  </div>
+
+  <div class="footer">
+    MC3DPrint v0.7.0 · GUI proposals · mockups are CSS approximations of the in-game console panels, not pixel-final.
+    Tell me which winder concept and which repository concept to build (mixing elements is fine) and I'll implement,
+    keeping <code>gen_printer_gui.py</code> coords in lockstep with the screen/menu.
+  </div>
+
+</div>
+</body>
+</html>

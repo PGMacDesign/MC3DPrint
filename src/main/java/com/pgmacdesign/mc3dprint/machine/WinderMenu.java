@@ -38,21 +38,22 @@ public class WinderMenu extends AbstractContainerMenu {
         this.data = data;
 
         IItemHandler inventory = winder != null ? winder.inventory() : new ItemStackHandler(WinderBlockEntity.SLOT_COUNT);
-        addSlot(new SlotItemHandler(inventory, WinderBlockEntity.SLOT_INPUT, 53, 35));
-        addSlot(new SlotItemHandler(inventory, WinderBlockEntity.SLOT_SPOOL, 116, 35) {
+        addSlot(new SlotItemHandler(inventory, WinderBlockEntity.SLOT_INPUT, 58, 30));
+        addSlot(new SlotItemHandler(inventory, WinderBlockEntity.SLOT_SPOOL, 126, 30) {
             @Override
             public boolean mayPlace(ItemStack stack) {
                 return stack.getItem() instanceof SpoolItem;
             }
         });
 
+        // Player inventory is centred at x=19 under the 200px-wide Throughput panel.
         for (int row = 0; row < 3; row++) {
             for (int col = 0; col < 9; col++) {
-                addSlot(new Slot(playerInventory, col + row * 9 + 9, 8 + col * 18, 84 + row * 18));
+                addSlot(new Slot(playerInventory, col + row * 9 + 9, 19 + col * 18, 108 + row * 18));
             }
         }
         for (int col = 0; col < 9; col++) {
-            addSlot(new Slot(playerInventory, col, 8 + col * 18, 142));
+            addSlot(new Slot(playerInventory, col, 19 + col * 18, 168));
         }
 
         addDataSlots(data);
@@ -96,6 +97,21 @@ public class WinderMenu extends AbstractContainerMenu {
     /** {@link WinderBlockEntity#STATUS_OK} / WRONG_TIER / NOT_CONVERTIBLE. */
     public int status() {
         return SplitContainerData.combine(data, WinderBlockEntity.DATA_STATUS);
+    }
+
+    /** FU produced per item wound with the current input+spool (0 if no valid pair). */
+    public int yieldPerItem() {
+        return SplitContainerData.combine(data, WinderBlockEntity.DATA_YIELD);
+    }
+
+    /** The item currently in the input slot (for the Material readout / icon). */
+    public ItemStack inputStack() {
+        return slots.get(WinderBlockEntity.SLOT_INPUT).getItem();
+    }
+
+    /** The spool currently docked (for tier + fill readouts). */
+    public ItemStack spoolStack() {
+        return slots.get(WinderBlockEntity.SLOT_SPOOL).getItem();
     }
 
     @Override

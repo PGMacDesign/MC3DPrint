@@ -55,7 +55,8 @@ public class WinderBlockEntity extends BlockEntity implements MenuProvider {
     public static final int DATA_SPOOL_CAP = 5;
     public static final int DATA_REQUIRED_TIER = 6;
     public static final int DATA_STATUS = 7;
-    public static final int DATA_COUNT = 8;
+    public static final int DATA_YIELD = 8;   // FU produced per item with the current input+spool
+    public static final int DATA_COUNT = 9;
 
     /** Winder status surfaced to the GUI. */
     public static final int STATUS_OK = 0;          // empty, or material + matching spool
@@ -148,6 +149,21 @@ public class WinderBlockEntity extends BlockEntity implements MenuProvider {
                 .map(FuValue::tier).orElse(0);
     }
 
+    /** FU produced per item with the current input+spool, 0 if the pair can't wind. */
+    public int currentYield() {
+        ItemStack input = inventory.getStackInSlot(SLOT_INPUT);
+        ItemStack spool = inventory.getStackInSlot(SLOT_SPOOL);
+        Optional<FuValue> value = FuValueRegistry.valueOf(input);
+        if (value.isEmpty()
+                || input.is(ModItemTags.WINDER_BLACKLIST)
+                || !(spool.getItem() instanceof SpoolItem spoolItem) || spoolItem.creative()
+                || !FuConversion.canWindInto(value.get().tier(), spoolItem.tier())) {
+            return 0;
+        }
+        return FuConversion.clampToInt(FuConversion.windYield(
+                value.get().fu(), value.get().tier(), spoolItem.tier(), FuConversion.ratio()));
+    }
+
     /** {@link #STATUS_OK}/{@link #STATUS_WRONG_TIER}/{@link #STATUS_NOT_CONVERTIBLE} for the GUI. */
     public int winderStatus() {
         ItemStack input = inventory.getStackInSlot(SLOT_INPUT);
@@ -187,6 +203,7 @@ public class WinderBlockEntity extends BlockEntity implements MenuProvider {
             case DATA_SPOOL_CAP -> spool.getItem() instanceof SpoolItem s ? s.capacity() : 0;
             case DATA_REQUIRED_TIER -> requiredSpoolTier();
             case DATA_STATUS -> winderStatus();
+            case DATA_YIELD -> currentYield();
             default -> 0;
         };
     }
