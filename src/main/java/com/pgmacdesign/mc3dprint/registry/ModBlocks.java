@@ -84,7 +84,7 @@ public final class ModBlocks {
                     .mapColor(MapColor.COLOR_BLUE)
                     .strength(4.5F, 9.0F)
                     .sound(SoundType.STONE)
-                    .lightLevel(state -> 4)
+                    .lightLevel(state -> 6)
                     .requiresCorrectToolForDrops()));
 
     // Aliases for the most-referenced blocks

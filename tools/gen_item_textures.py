@@ -15,7 +15,8 @@ import math
 from PIL import Image, ImageDraw
 
 from tex_common import (BODY, FRAME, GLOW, TIER, ACCENT_TEAL, ramp3, shade,
-                        new, quantize_to_palette, save_item)
+                        new, quantize_to_palette, save_item,
+                        save_animated_item)
 
 
 def acc(img):
@@ -278,11 +279,13 @@ def scanner():
 # ---------------------------------------------------------------------------
 # SECONDARY 16x16 items
 # ---------------------------------------------------------------------------
-def extrudium_crystal():
+def extrudium_crystal_frames():
+    """The mined drop: a faceted cyan gem (tall hexagonal cut, bright top table,
+    crisp facet seams) that now carries the same Stardust shimmer as the ore — a
+    white sparkle travels across the facets and a few ambient flecks twinkle, so
+    the gem reads as the concentrated form of the glowing rock. 4 frames; the
+    sibling .mcmeta interpolates them for a smooth glint."""
     S = 16
-    img = new(S); px = acc(img)
-    # a faceted cyan gem: a tall hexagonal-cut crystal with a bright top table,
-    # crisp facet seams, and a dark outline-free silhouette.
     cx = 8
     # gem silhouette rows: (y, x_left, x_right)
     rows = [
@@ -299,29 +302,38 @@ def extrudium_crystal():
         (12, 7, 8),
         (13, 8, 8),
     ]
+    # base gem (identical every frame); sparkle is overlaid per-frame.
+    base = new(S); bpx = acc(base)
     for (y, xl, xr) in rows:
         for x in range(xl, xr + 1):
-            # facet shading by which side of the vertical seam + vertical band
             if x < cx:
                 c = GLOW[1] if y < 8 else GLOW[2]      # left lit
             elif x > cx:
                 c = GLOW[2] if y < 8 else GLOW[3]      # right mid/shadow
             else:
                 c = GLOW[2]                            # center seam column
-            put(px, x, y, c)
-    # bright top table (the cut surface catching the light)
-    for x in range(6, 10):
-        put(px, x, 4, GLOW[0] if x < 8 else GLOW[1])
-    put(px, 7, 3, GLOW[1]); put(px, 8, 3, GLOW[1])
-    # crisp facet seams (darker cyan) radiating from the table
-    for k in range(0, 5):
-        put(px, cx, 5 + k, shade(GLOW[2], -0.22))     # central seam
-    put(px, 6, 6, shade(GLOW[2], -0.22)); put(px, 5, 7, shade(GLOW[2], -0.22))
-    put(px, 9, 6, shade(GLOW[3], -0.15)); put(px, 10, 7, shade(GLOW[3], -0.15))
-    # a 1px white sparkle highlight
-    put(px, 6, 5, GLOW[0])
-    quantize_to_palette(img)
-    return img
+            put(bpx, x, y, c)
+    for x in range(6, 10):                              # bright top table
+        put(bpx, x, 4, GLOW[0] if x < 8 else GLOW[1])
+    put(bpx, 7, 3, GLOW[1]); put(bpx, 8, 3, GLOW[1])
+    for k in range(0, 5):                               # central facet seam
+        put(bpx, cx, 5 + k, shade(GLOW[2], -0.22))
+    put(bpx, 6, 6, shade(GLOW[2], -0.22)); put(bpx, 5, 7, shade(GLOW[2], -0.22))
+    put(bpx, 9, 6, shade(GLOW[3], -0.15)); put(bpx, 10, 7, shade(GLOW[3], -0.15))
+
+    # A sparkle that travels down a facet, plus ambient flecks that twinkle.
+    sparkle_path = [(6, 5), (7, 7), (9, 6), (6, 9), (10, 9), (7, 11)]
+    flecks = [(5, 6), (10, 7), (6, 10), (9, 10), (8, 8)]
+    frames = []
+    for f in range(4):
+        img = base.copy(); px = acc(img)
+        sx, sy = sparkle_path[(f * 2) % len(sparkle_path)]
+        put(px, sx, sy, GLOW[0])                        # white-hot travelling glint
+        for i, (x, y) in enumerate(flecks):
+            put(px, x, y, GLOW[0] if (i + f) % 4 == 0 else GLOW[1])
+        quantize_to_palette(img)
+        frames.append(img)
+    return frames
 
 
 def _upgrade_chip(accent, glyph):
@@ -411,7 +423,8 @@ def main():
     written.append(save_item(blank_blueprint_disc(), "blank_blueprint_disc"))
     written.append(save_item(blueprint_disc(), "blueprint_disc"))
     written.append(save_item(scanner(), "scanner"))
-    written.append(save_item(extrudium_crystal(), "extrudium_crystal"))
+    written.append(save_animated_item(extrudium_crystal_frames(), "extrudium_crystal",
+                                       frametime=14, interpolate=True))
     written.append(save_item(speed_upgrade(), "speed_upgrade"))
     written.append(save_item(efficiency_upgrade(), "efficiency_upgrade"))
     written.append(save_item(rf_efficiency_upgrade(), "rf_efficiency_upgrade"))

@@ -8,6 +8,7 @@ tight flat ramps; 1px bevels + fake AO; cyan emissive glow used sparingly.
 
 Usage:  from tex_common import *
 """
+import json
 import os
 
 from PIL import Image, ImageDraw
@@ -121,6 +122,41 @@ def save_block(img, name):
 def save_item(img, name):
     path = os.path.join(ITEM_DIR, name + ".png")
     img.save(path)
+    return path
+
+
+# ---------------------------------------------------------------------------
+# Animated textures. Minecraft animates a square sheet of N stacked frames
+# (a vertical strip, each frame `size`×`size`) driven by a sibling `.png.mcmeta`.
+# We build the strip + the meta so the asset is a drop-in for cube_all /
+# item/generated — no model change needed.
+# ---------------------------------------------------------------------------
+def _frame_strip(frames):
+    """Stack same-size square frames top-to-bottom into one tall sheet."""
+    w = frames[0].size[0]
+    strip = Image.new("RGBA", (w, w * len(frames)), (0, 0, 0, 0))
+    for i, f in enumerate(frames):
+        strip.paste(f, (0, i * w), f)
+    return strip
+
+
+def _write_mcmeta(png_path, frametime, interpolate):
+    meta = {"animation": {"frametime": frametime, "interpolate": interpolate}}
+    with open(png_path + ".mcmeta", "w") as fh:
+        json.dump(meta, fh, indent=2)
+
+
+def save_animated_block(frames, name, frametime=14, interpolate=True):
+    path = os.path.join(BLOCK_DIR, name + ".png")
+    _frame_strip(frames).save(path)
+    _write_mcmeta(path, frametime, interpolate)
+    return path
+
+
+def save_animated_item(frames, name, frametime=14, interpolate=True):
+    path = os.path.join(ITEM_DIR, name + ".png")
+    _frame_strip(frames).save(path)
+    _write_mcmeta(path, frametime, interpolate)
     return path
 
 

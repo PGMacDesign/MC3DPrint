@@ -19,10 +19,13 @@ Four monotonic signals stack with tier:
   4. hotend/core   — small dim glow (T1) -> large bright core (T8)
 plus more vents, a second/third frame bevel, dual rails and a body polish step.
 """
+import random
+
 from PIL import Image
 
 from tex_common import (BODY, FRAME, GLOW, TIER, ACCENT_TEAL, ramp3, shade,
-                        new, quantize_to_palette, save_block)
+                        new, quantize_to_palette, save_block,
+                        save_animated_block)
 
 H = 32  # hero resolution
 
@@ -599,28 +602,53 @@ def creative_energy_source():
     return img
 
 
-def extrudium_ore():
-    img = new(S); px = s_acc(img)
-    # stone base (use frame greys as "stone")
-    stone = [(0x88, 0x88, 0x90), (0x70, 0x70, 0x78), (0x58, 0x58, 0x60),
-             (0x44, 0x44, 0x4C)]
-    rect(px, 0, 0, S, S, stone[2])
-    # mottled stone texture (deliberate, not random) via a fixed pattern
-    pattern = [(2, 1), (5, 2), (9, 1), (13, 3), (1, 5), (7, 5), (11, 6),
-               (14, 8), (3, 9), (6, 11), (10, 10), (13, 12), (2, 13), (8, 14)]
-    for i, (x, y) in enumerate(pattern):
-        put(px, x, y, stone[1] if i % 2 else stone[3])
-    hline(px, 0, 0, S, stone[0]); vline(px, 0, 0, S, stone[0])
-    hline(px, 0, S - 1, S, stone[3]); vline(px, S - 1, 0, S, stone[3])
-    # cyan crystal clusters (extrudium = cyan-glow ore)
-    clusters = [(5, 5), (10, 8), (7, 11)]
-    for (cx, cy) in clusters:
-        put(px, cx, cy, GLOW[0])
-        put(px, cx - 1, cy, GLOW[2]); put(px, cx + 1, cy, GLOW[2])
-        put(px, cx, cy - 1, GLOW[2]); put(px, cx, cy + 1, GLOW[3])
-        put(px, cx + 1, cy + 1, GLOW[3])
-    quantize_to_palette(img, extra=stone)
-    return img
+def extrudium_ore_frames():
+    """Concept "Stardust": dark stone packed with tiny cyan star-flecks that
+    twinkle out of phase, over a faint cyan wash — like trapped starlight. The
+    base stone + wash are baked once (deterministic seed) so the rock reads
+    identically every frame; only the flecks cycle white→halo→body→dim, giving
+    a lively shimmer without the texture "swimming". Returns 4 frames; the
+    sibling .mcmeta interpolates between them for a smooth glint.
+
+    Block also emits light (ModBlocks.EXTRUDIUM_ORE.lightLevel), so the cyan
+    pixels read as genuinely glowing in a dark cave."""
+    DEEP = (0x12, 0x56, 0x96)  # dimmest fleck (cooled starlight)
+    # Dark End-stone-ish base: a fixed mottle so the rock is identical per frame.
+    rnd = random.Random(3)
+    stone_pal = [(0x36, 0x38, 0x40), (0x2C, 0x2E, 0x36), (0x24, 0x26, 0x2D),
+                 (0x1C, 0x1E, 0x24)]
+    # faint ambient cyan wash so the unlit rock still hints at the ore
+    washed_pal = [(c[0] + 4, c[1] + 12, c[2] + 20) for c in stone_pal]
+    base = new(S); bpx = s_acc(base)
+    for y in range(S):
+        for x in range(S):
+            put(bpx, x, y, washed_pal[rnd.randrange(len(washed_pal))])
+
+    # ~22 star-flecks scattered across the face (fixed positions).
+    srnd = random.Random(7)
+    stars = []
+    seen = set()
+    while len(stars) < 22:
+        p = (srnd.randrange(S), srnd.randrange(S))
+        if p not in seen:
+            seen.add(p); stars.append(p)
+
+    frames = []
+    for f in range(4):
+        img = base.copy(); px = s_acc(img)
+        for i, (x, y) in enumerate(stars):
+            phase = (i * 5 + f * 7) % 12   # each star marches through the cycle
+            if phase < 2:
+                put(px, x, y, GLOW[0])     # white-hot twinkle peak
+            elif phase < 5:
+                put(px, x, y, GLOW[1])     # halo
+            elif phase < 8:
+                put(px, x, y, GLOW[2])     # body
+            else:
+                put(px, x, y, DEEP)        # dim ember
+        quantize_to_palette(img, extra=washed_pal + [DEEP])
+        frames.append(img)
+    return frames
 
 
 # ---------------------------------------------------------------------------
@@ -701,7 +729,8 @@ def main():
     written.append(save_block(clock_generator(), "clock_generator"))
     written.append(save_block(redstone_clock(), "redstone_clock"))
     written.append(save_block(creative_energy_source(), "creative_energy_source"))
-    written.append(save_block(extrudium_ore(), "extrudium_ore"))
+    written.append(save_animated_block(extrudium_ore_frames(), "extrudium_ore",
+                                        frametime=14, interpolate=True))
     # formed-multiblock casing top faces
     written.append(save_block(casing_bed_top(), "casing_bed_top"))
     written.append(save_block(casing_rail_top(), "casing_rail_top"))
