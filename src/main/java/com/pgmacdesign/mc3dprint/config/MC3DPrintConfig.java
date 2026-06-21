@@ -63,6 +63,7 @@ public final class MC3DPrintConfig {
     public static final ForgeConfigSpec.IntValue RESIN_QM_FOOD_BUDGET;
     public static final ForgeConfigSpec.IntValue RESIN_QM_TORCH_BUDGET;
     public static final ForgeConfigSpec.ConfigValue<List<? extends String>> FU_VALUES;
+    public static final ForgeConfigSpec.BooleanValue BLUEPRINT_REPOSITORY_SHARED;
 
     private static final int[] DEFAULT_ITEM_RF_PER_TICK = {40, 60, 80, 100, 120, 150, 200, 250};
 
@@ -209,6 +210,19 @@ public final class MC3DPrintConfig {
                 .comment("Filament Unit values: '<item_or_#tag>=<fu>@<min_tier>'. Symmetric: wind yield == print cost (before efficiency).")
                 .defineListAllowEmpty("fuValues", FuValueRegistry.defaultEntries(),
                         o -> o instanceof String s && s.contains("=") && s.contains("@"));
+        builder.pop();
+
+        builder.comment("Server Blueprint Repository: the library block that stores deposited",
+                        "blueprints so they can be re-burned onto blank discs.").push("repository");
+        BLUEPRINT_REPOSITORY_SHARED = builder
+                .comment("Who shares a repository's catalogued blueprints.",
+                        "TRUE  (default) - one SHARED world-level library: every player's deposits pool",
+                        "        together and any repository block views the same catalogue; breaking or",
+                        "        recrafting a block never loses it (stored as world data).",
+                        "FALSE - PERSONAL per-player libraries: each player sees only their own deposits",
+                        "        on any block (tied to the player, so nothing is lost on break/recraft).",
+                        "Any value that isn't a valid boolean falls back to TRUE.")
+                .define("blueprintRepositoryIsShared", true);
         builder.pop();
 
         builder.comment("Resin: consumed-per-print blueprint modifiers. All effects apply only",

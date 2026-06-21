@@ -46,6 +46,10 @@ public final class ModBlocks {
     public static final RegistryObject<Block> MC3DCABLE = BLOCKS.register("mc3dcable",
             () -> new com.pgmacdesign.mc3dprint.machine.cable.MC3DCableBlock(cableProperties()));
 
+    /** Library terminal: browse deposited blueprints, re-burn them onto blank discs. */
+    public static final RegistryObject<Block> BLUEPRINT_REPOSITORY = BLOCKS.register("blueprint_repository",
+            () -> new com.pgmacdesign.mc3dprint.machine.repository.BlueprintRepositoryBlock(machineProperties()));
+
     /** Single-block printers, index 0 = Tier 1. T5-T8 are multiblock controllers (phase b). */
     public static final List<RegistryObject<Block>> PRINTERS = buildPrinters();
 

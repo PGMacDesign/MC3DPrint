@@ -103,7 +103,11 @@ The keystone — everything else consumes this. Pure logic, testable without a r
 - [ ] Signature/creator blueprints + outreach *(human task — see LAUNCH.md)*
 - [x] Advancement tree — full 8-node spec tree (root → First Extrusion / Architect → Fabricator / Matter Matters / Found in the Wild → Printite → T7 Online → Draconic, hidden) with custom criteria triggers (2026-06-11)
 - [x] Remote Terminal block (sneak-click printer to pair, opens its GUI from anywhere; multiple terminals per printer)
-- [ ] Server Blueprint Repository block + GUI tab — *partial: world file store + /mc3dprint import/export + curated auto-install cover the server-owner workflow; dedicated block/GUI deferred to the GUI pass*
+- [x] Server Blueprint Repository block + GUI ("Library Browser" R-A) — browse deposited
+  blueprints, preview metadata, **STL to GCODE** burn onto a blank disc. Starts empty; manual
+  deposit consumes the written disc into the library (re-burn unlimited copies). Config
+  `blueprintRepositoryIsShared` (default true) = shared world-level library; false = personal
+  per-player. Official/scan flag preserved on re-burn (resin gate holds).
 - [ ] Balancing pass over all config values — *needs human playtesting (see LAUNCH.md)*
 - [ ] CurseForge + Modrinth pages — *store copy drafted in LAUNCH.md; publishing is a human step*
 

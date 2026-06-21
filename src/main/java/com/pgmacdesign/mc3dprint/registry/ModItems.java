@@ -65,6 +65,9 @@ public final class ModItems {
     public static final RegistryObject<Item> MC3DCABLE = ITEMS.register("mc3dcable",
             () -> new BlockItem(ModBlocks.MC3DCABLE.get(), new Item.Properties()));
 
+    public static final RegistryObject<Item> BLUEPRINT_REPOSITORY = ITEMS.register("blueprint_repository",
+            () -> new BlockItem(ModBlocks.BLUEPRINT_REPOSITORY.get(), new Item.Properties()));
+
     public static final RegistryObject<Item> CLOCK_GENERATOR = ITEMS.register("clock_generator",
             () -> new BlockItem(ModBlocks.CLOCK_GENERATOR.get(), new Item.Properties()));
 

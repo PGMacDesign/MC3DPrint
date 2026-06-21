@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/orientable",
+  "textures": {
+    "top": "mc3dprint:block/blueprint_repository_top",
+    "front": "mc3dprint:block/blueprint_repository_front",
+    "side": "mc3dprint:block/blueprint_repository_side"
+  }
+}

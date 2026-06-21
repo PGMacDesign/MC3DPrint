@@ -1,0 +1,32 @@
+{
+  "name": "Blueprint Repository",
+  "category": "mc3dprint:machines",
+  "icon": "mc3dprint:blueprint_repository",
+  "sortnum": 3,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "The $(item)Blueprint Repository$() is your blueprint library. It starts $(l)empty$() — you fill it by depositing the discs you find and scan, then re-burn any catalogued build onto a fresh disc whenever you need a copy.$(br2)Right-click it to open the browser: catalogued builds on the left, details on the right."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Depositing Discs",
+      "text": "Drop a $(l)written$() Blueprint Disc into the input slot and press $(l)Deposit Disc$(). The build is catalogued into the library and the disc is consumed.$(br2)Nothing is lost — once catalogued, a build stays forever and you can re-burn as many copies as you like."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "STL to GCODE",
+      "text": "Select a build in the list, drop a $(item)Blank Blueprint Disc$() into the input slot, and press $(l)STL to GCODE$() to burn a fresh written disc.$(br2)Burned copies keep the original's $(l)official$() or $(l)player-scan$() status, so the Resin anti-dupe rule still holds."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Shared or Personal",
+      "text": "By default a repository is a $(l)shared, world-level$() library: everyone's deposits pool together, every repository block sees the same catalogue, and breaking a block never loses it.$(br2)Server admins can flip $(l)blueprintRepositoryIsShared$() to $(l)false$() in the config for $(l)personal$() per-player libraries instead."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "mc3dprint:blueprint_repository",
+      "text": "The Blueprint Repository. One per base is plenty — it's the home for every build you collect."
+    }
+  ]
+}

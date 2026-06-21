@@ -88,8 +88,8 @@ v0.4.0.
   pending (M4).
 - **Matter Calculator GUI** — template FU cost + filament gauges exist; full blueprint
   calculator (RF + ETA) pending (M5).
-- **Server Blueprint Repository block + GUI** — world file store + import/export + curated
-  auto-install cover the owner workflow; a dedicated block/GUI is deferred (M9).
+- ~~**Server Blueprint Repository block + GUI**~~ — **shipped** (Library Browser R-A): browse
+  deposited blueprints, **STL to GCODE** burn onto blank discs; shared/personal via config.
 - **Rack & Cable deferred ToDos** — see memory `rack-and-cable`.
 - **Resin follow-ups** — flavor-biased T3 resin pick (GLM TODO), modded treasure-loot
   entries, AE2-deep converter integration.

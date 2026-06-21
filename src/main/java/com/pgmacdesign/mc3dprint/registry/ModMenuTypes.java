@@ -31,5 +31,9 @@ public final class ModMenuTypes {
             MENU_TYPES.register("redstone_clock",
                     () -> IForgeMenuType.create(RedstoneClockMenu::new));
 
+    public static final RegistryObject<MenuType<com.pgmacdesign.mc3dprint.machine.repository.BlueprintRepositoryMenu>> BLUEPRINT_REPOSITORY =
+            MENU_TYPES.register("blueprint_repository",
+                    () -> IForgeMenuType.create(com.pgmacdesign.mc3dprint.machine.repository.BlueprintRepositoryMenu::new));
+
     private ModMenuTypes() {}
 }

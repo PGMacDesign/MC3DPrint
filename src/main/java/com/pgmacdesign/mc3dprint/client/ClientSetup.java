@@ -21,6 +21,7 @@ public final class ClientSetup {
             MenuScreens.register(ModMenuTypes.FILAMENT_WINDER.get(), WinderScreen::new);
             MenuScreens.register(ModMenuTypes.SIMPLE_GENERATOR.get(), SimpleGeneratorScreen::new);
             MenuScreens.register(ModMenuTypes.REDSTONE_CLOCK.get(), RedstoneClockScreen::new);
+            MenuScreens.register(ModMenuTypes.BLUEPRINT_REPOSITORY.get(), BlueprintRepositoryScreen::new);
         });
     }
 

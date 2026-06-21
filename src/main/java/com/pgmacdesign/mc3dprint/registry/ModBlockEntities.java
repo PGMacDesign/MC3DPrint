@@ -60,6 +60,11 @@ public final class ModBlockEntities {
                     BlockEntityType.Builder.of(com.pgmacdesign.mc3dprint.machine.cable.MC3DCableBlockEntity::new,
                             ModBlocks.MC3DCABLE.get()).build(null));
 
+    public static final RegistryObject<BlockEntityType<com.pgmacdesign.mc3dprint.machine.repository.BlueprintRepositoryBlockEntity>> BLUEPRINT_REPOSITORY =
+            BLOCK_ENTITIES.register("blueprint_repository", () ->
+                    BlockEntityType.Builder.of(com.pgmacdesign.mc3dprint.machine.repository.BlueprintRepositoryBlockEntity::new,
+                            ModBlocks.BLUEPRINT_REPOSITORY.get()).build(null));
+
     public static final RegistryObject<BlockEntityType<WinderBlockEntity>> FILAMENT_WINDER =
             BLOCK_ENTITIES.register("filament_winder", () ->
                     BlockEntityType.Builder.of(WinderBlockEntity::new,

@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=north": { "model": "mc3dprint:block/blueprint_repository" },
+    "facing=east":  { "model": "mc3dprint:block/blueprint_repository", "y": 90 },
+    "facing=south": { "model": "mc3dprint:block/blueprint_repository", "y": 180 },
+    "facing=west":  { "model": "mc3dprint:block/blueprint_repository", "y": 270 }
+  }
+}

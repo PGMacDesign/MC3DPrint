@@ -1,0 +1,14 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "III",
+    "BCB",
+    "III"
+  ],
+  "key": {
+    "I": { "item": "minecraft:iron_ingot" },
+    "B": { "item": "minecraft:book" },
+    "C": { "item": "minecraft:chest" }
+  },
+  "result": { "item": "mc3dprint:blueprint_repository", "count": 1 }
+}
