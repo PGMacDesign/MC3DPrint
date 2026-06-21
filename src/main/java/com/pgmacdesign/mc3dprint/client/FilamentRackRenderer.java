@@ -24,6 +24,10 @@ import net.minecraftforge.items.ItemStackHandler;
 public class FilamentRackRenderer implements BlockEntityRenderer<FilamentRackBlockEntity> {
     private static final int COLUMNS = 4;
     private static final float SPOOL_SCALE = 0.18F;
+    // Bay centers on the 32px Concept-A front face (px {4,12,20,28} → face/32 − 0.5).
+    // Must stay in lockstep with RACK_COLS/RACK_ROWS in tools/gen_storage_cable_textures.py.
+    private static final float[] COLUMN_X = {-0.375F, -0.125F, 0.125F, 0.375F};
+    private static final float ROW_Y = 0.21875F; // px {9,23} → ±this
 
     private final ItemRenderer itemRenderer;
 
@@ -51,9 +55,9 @@ public class FilamentRackRenderer implements BlockEntityRenderer<FilamentRackBlo
             }
             int col = i % COLUMNS;
             int row = i / COLUMNS;
-            // Match the painted cubby grid: centers at ±0.375/±0.125 across, ±0.22 up.
-            float x = -0.375F + col * 0.25F;
-            float y = (row == 0) ? 0.22F : -0.22F; // top / bottom row
+            // Sit each spool in its painted bay (Concept A grid).
+            float x = COLUMN_X[col];
+            float y = (row == 0) ? ROW_Y : -ROW_Y; // top / bottom row
 
             pose.pushPose();
             pose.translate(0.5, 0.5, 0.5);

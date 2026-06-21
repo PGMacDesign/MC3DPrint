@@ -19,49 +19,75 @@ def rect(d, x0, y0, x1, y1, c):
     d.rectangle([x0, y0, x1, y1], fill=(c[0], c[1], c[2], 255))
 
 
+def _disc(d, cx, cy, r, c):
+    d.ellipse([cx - r, cy - r, cx + r, cy + r], fill=(c[0], c[1], c[2], 255))
+
+
+def _ring(d, cx, cy, r, c, w=1):
+    d.ellipse([cx - r, cy - r, cx + r, cy + r], outline=(c[0], c[1], c[2], 255), width=w)
+
+
+# The rack faces are 32×32 (double the old 16) so the round Concept-A "spool bays"
+# read crisply. Slot grid below MUST stay in lockstep with FilamentRackRenderer's
+# spool positions (the spools render as 3D items proud of this backing).
+RACK_S = 32
+RACK_COLS = [4, 12, 20, 28]   # evenly spaced → renderer offsets {-0.375, -0.125, +0.125, +0.375}
+RACK_ROWS = [9, 23]           # face px → renderer offsets {+0.21875 (top), -0.21875 (bottom)}
+RACK_BAY_R = 4                # discrete bays: diameter 8 == column spacing (no overlap)
+
+
 def rack_front():
-    img = new(16)
+    """Concept A — Spool Bays. Each slot is a recessed circular bay with a brushed
+    bezel rim and a small cyan status LED; the tier-colored spool renders on top."""
+    S = RACK_S
+    img = new(S)
     d = ImageDraw.Draw(img)
-    rect(d, 0, 0, 15, 15, BODY[2])          # light machined body
-    # Clean shelf panel — two horizontal ledges the spools sit on. No filled slots:
-    # the spools are circular coils and rendered proud on top, so the old vertical
-    # slits (HDD-bay look) are gone. Just a light rack with a lit lip + thin shadow.
-    for sy in (7, 14):
-        rect(d, 1, sy, 14, sy, BODY[1])         # lit shelf lip
-        rect(d, 1, sy + 1, 14, sy + 1, BODY[3]) # thin under-shadow
-    # light bevel on ALL four edges — the right edge matches the left (no dark side)
-    rect(d, 0, 0, 15, 0, BODY[1])           # top
-    rect(d, 0, 0, 0, 15, BODY[1])           # left
-    rect(d, 15, 0, 15, 15, BODY[1])         # right
-    rect(d, 0, 15, 15, 15, BODY[1])         # bottom
+    rect(d, 0, 0, S - 1, S - 1, BODY[2])            # light machined body
+    for ry in (16, 31):                             # mid divider + base rail
+        rect(d, 1, ry - 1, S - 2, ry, FRAME[1])
+        rect(d, 1, ry - 1, S - 2, ry - 1, BODY[1])  # lit lip
+    r = RACK_BAY_R
+    for cy in RACK_ROWS:
+        for cx in RACK_COLS:
+            _disc(d, cx, cy, r, FRAME[2])           # bay opening
+            _disc(d, cx, cy, r - 1, FRAME[3])       # recess depth
+            _ring(d, cx, cy, r, BODY[1], w=1)       # brushed bezel rim
+            led = min(cx + r, S - 1)
+            rect(d, led, cy + r + 1, led, cy + r + 1, GLOW[2])      # cyan status LED
+            rect(d, led - 1, cy + r + 1, led - 1, cy + r + 1, GLOW[3])
+    rect(d, 0, 0, S - 1, 0, BODY[1])                # light bevel — all edges light
+    rect(d, 0, 0, 0, S - 1, BODY[1])
+    rect(d, S - 1, 0, S - 1, S - 1, BODY[1])
+    rect(d, 0, S - 1, S - 1, S - 1, BODY[1])
     return quantize_to_palette(img)
 
 
 def rack_side():
-    img = new(16)
+    S = RACK_S
+    img = new(S)
     d = ImageDraw.Draw(img)
-    rect(d, 0, 0, 15, 15, BODY[2])          # light body, matches the front
-    rect(d, 0, 0, 15, 0, BODY[1])           # top highlight
-    rect(d, 0, 0, 0, 15, BODY[1])           # left highlight
-    rect(d, 2, 0, 2, 15, BODY[3])           # front upright (subtle, not black)
-    rect(d, 13, 0, 13, 15, BODY[3])         # back upright
-    rect(d, 0, 7, 15, 8, BODY[3])           # mid shelf board
-    rect(d, 15, 0, 15, 15, BODY[3])         # right edge (light-grey shade)
-    rect(d, 0, 15, 15, 15, BODY[3])         # bottom edge
+    rect(d, 0, 0, S - 1, S - 1, BODY[2])            # light body, matches the front
+    rect(d, 0, 0, S - 1, 0, BODY[1])                # top highlight
+    rect(d, 0, 0, 0, S - 1, BODY[1])                # left highlight
+    rect(d, 4, 0, 5, S - 1, BODY[3])                # front upright (subtle, not black)
+    rect(d, 26, 0, 27, S - 1, BODY[3])              # back upright
+    rect(d, 0, 15, S - 1, 16, BODY[3])              # mid shelf board
+    rect(d, S - 1, 0, S - 1, S - 1, BODY[3])        # right edge (light-grey shade)
+    rect(d, 0, S - 1, S - 1, S - 1, BODY[3])        # bottom edge
     return quantize_to_palette(img)
 
 
 def rack_top():
-    img = new(16)
+    S = RACK_S
+    img = new(S)
     d = ImageDraw.Draw(img)
-    rect(d, 0, 0, 15, 15, BODY[2])
-    rect(d, 0, 0, 15, 0, BODY[1])
-    rect(d, 0, 0, 0, 15, BODY[1])
-    rect(d, 0, 0, 15, 15, None) if False else None
-    for i in range(1, 15, 4):
-        rect(d, i, 1, i, 14, BODY[3])       # plank seams
-    rect(d, 0, 15, 15, 15, FRAME[1])
-    rect(d, 15, 0, 15, 15, FRAME[1])
+    rect(d, 0, 0, S - 1, S - 1, BODY[2])
+    rect(d, 0, 0, S - 1, 0, BODY[1])
+    rect(d, 0, 0, 0, S - 1, BODY[1])
+    for i in range(3, S - 1, 8):                    # plank seams
+        rect(d, i, 2, i, S - 3, BODY[3])
+    rect(d, 0, S - 1, S - 1, S - 1, FRAME[1])
+    rect(d, S - 1, 0, S - 1, S - 1, FRAME[1])
     return quantize_to_palette(img)
 
 
