@@ -9,11 +9,13 @@ import com.pgmacdesign.mc3dprint.machine.PrinterBlockEntity;
 import com.pgmacdesign.mc3dprint.registry.ModBlocks;
 import com.pgmacdesign.mc3dprint.registry.ModItems;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestAssertException;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import net.minecraftforge.gametest.GameTestHolder;
 import net.minecraftforge.gametest.PrefixGameTestTemplate;
@@ -113,6 +115,28 @@ public class StructurePrintGameTests {
         helper.succeedWhen(() -> {
             helper.assertBlockPresent(Blocks.STONE, new BlockPos(2, 3, 0));
             helper.assertBlockPresent(Blocks.GLASS, new BlockPos(3, 3, 1));
+        });
+    }
+
+    @GameTest(template = "empty5", timeoutTicks = 300)
+    public static void rotationRotatesPlacementAndFacing(GameTestHelper helper) {
+        BlockPos printerPos = new BlockPos(2, 1, 2);
+        PrinterBlockEntity printer = poweredPrinter(helper, printerPos);
+        printer.cycleRotation(); // NONE -> CLOCKWISE_90
+        Blueprint blueprint = Blueprint.builder("gametest-rotate", 2, 1, 2)
+                .set(0, 0, 0, BlueprintBlockState.parse("minecraft:oak_stairs[facing=north]"))
+                .set(1, 0, 1, BlueprintBlockState.parse("minecraft:stone"))
+                .build();
+        printer.inventory().setStackInSlot(PrinterBlockEntity.SLOT_TEMPLATE, discFor(helper, blueprint));
+
+        // CW90 about the 2x2 footprint (origin 1,2,1): local(0,0,0)->oriented(1,0,0)->world(2,2,1);
+        // local(1,0,1)->oriented(0,0,1)->world(1,2,2). The north-facing stair rotates to face EAST.
+        helper.succeedWhen(() -> {
+            helper.assertBlockPresent(Blocks.STONE, new BlockPos(1, 2, 2));
+            helper.assertBlockState(new BlockPos(2, 2, 1),
+                    s -> s.getBlock() == Blocks.OAK_STAIRS
+                            && s.getValue(BlockStateProperties.HORIZONTAL_FACING) == Direction.EAST,
+                    () -> "rotated north stair should face EAST at (2,2,1)");
         });
     }
 

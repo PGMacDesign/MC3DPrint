@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Generates the dark tech-console GUI sheets for MC3DPrint:
-  - assets/mc3dprint/textures/gui/printer.png  (176x200 panel in a 256x256 sheet)
+  - assets/mc3dprint/textures/gui/printer.png  (230x216 panel in a 256x256 sheet)
   - assets/mc3dprint/textures/gui/machine.png  (176x166 panel — the Filament Winder)
 
 The sheet only paints the STATIC chrome (panel, bevels, accent line, recessed
@@ -168,8 +168,9 @@ MAX_UPGRADE_SLOTS = 8
 def build_printer():
     img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     px = img.load()
-    # widened from 176 to host the upgrade-slot column (PrinterScreen.imageWidth)
-    pw, ph = 230, 200
+    # widened from 176 to host the upgrade-slot column (PrinterScreen.imageWidth);
+    # heightened from 200 to host the dedicated Rotate row below the XYZ offsets
+    pw, ph = 230, 216
     panel(px, pw, ph)
     machine_band(px)
     slot(px, 53, 35)    # template (PrinterMenu.TEMPLATE_SLOT_X/Y)
@@ -180,12 +181,12 @@ def build_printer():
         row_idx = i // UPGRADE_COLS
         slot(px, UPGRADE_SLOT_X + col * UPGRADE_COL_STEP,
              UPGRADE_SLOT_Y + row_idx * UPGRADE_ROW_STEP)
-    # player inventory: 3x9 grid + hotbar (PrinterMenu slot Y = 116/134/152 + 174)
+    # player inventory: 3x9 grid + hotbar (PrinterMenu slot Y = 132/150/168 + 190)
     for row in range(3):
         for col in range(9):
-            slot(px, 8 + col * 18, 116 + row * 18)
+            slot(px, 8 + col * 18, 132 + row * 18)
     for col in range(9):
-        slot(px, 8 + col * 18, 174)
+        slot(px, 8 + col * 18, 190)
     status_leds(px, pw)
     return img
 

@@ -37,9 +37,10 @@ public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
     private static final int ARROW_WIDTH = 22;
     private static final int ARROW_HEIGHT = 15;
 
-    // Control strip (Start / Auto / build offsets) between machine and inventory
+    // Control strip (Start / Auto / build offsets / rotate) between machine and inventory
     private static final int CONTROLS_Y = 70;
     private static final int OFFSETS_Y = 87;
+    private static final int ROTATE_Y = 101;   // dedicated rotate row, just below the XYZ row
 
     // Dark tech-console code colors (see VISUAL-REVAMP-BRIEF "GUI — dark tech-console").
     // The panel is now charcoal, so the old dark-grey label colors were flipped to
@@ -55,12 +56,14 @@ public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
     private Button startButton;
     private Button autoButton;
     private Button previewButton;
+    private Button rotateButton;
 
     public PrinterScreen(PrinterMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
         // Widened from 176 to fit the upgrade-slot column + "Upgrades" header.
+        // Heightened from 200 to host the dedicated Rotate row below the XYZ offsets.
         this.imageWidth = 230;
-        this.imageHeight = 200;
+        this.imageHeight = 216;
         this.inventoryLabelY = this.imageHeight - 94;
     }
 
@@ -89,6 +92,16 @@ public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
             addRenderableWidget(Button.builder(Component.literal("+"), b -> sendButtonClick(minusId + 1))
                     .bounds(leftPos + x + 36, topPos + OFFSETS_Y, 12, 12).build());
         }
+
+        // dedicated Rotate row below the XYZ offsets: one tap = clockwise 90°
+        rotateButton = addRenderableWidget(Button.builder(
+                        rotateLabel(),
+                        b -> sendButtonClick(PrinterMenu.BUTTON_ROTATE))
+                .bounds(leftPos + 10, topPos + ROTATE_Y, 100, 14).build());
+    }
+
+    private Component rotateLabel() {
+        return Component.translatable("gui.mc3dprint.rotate", menu.rotationDegrees());
     }
 
     private void sendButtonClick(int id) {
@@ -112,6 +125,7 @@ public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
         super.containerTick();
         autoButton.setMessage(autoLabel());
         previewButton.setMessage(previewLabel());
+        rotateButton.setMessage(rotateLabel());
         startButton.active = !menu.autoStart();
     }
 

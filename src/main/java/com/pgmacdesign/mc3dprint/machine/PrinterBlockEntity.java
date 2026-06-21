@@ -41,6 +41,8 @@ import net.minecraft.world.level.block.AbstractFurnaceBlock;
 import net.minecraft.world.level.block.BarrelBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.ChestBlock;
+import net.minecraft.world.level.block.Mirror;
+import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.entity.AbstractFurnaceBlockEntity;
 import net.minecraft.world.level.block.entity.BarrelBlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -101,7 +103,8 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
     public static final int DATA_OFFSET_Y = 12;
     public static final int DATA_OFFSET_Z = 13;
     public static final int DATA_PREVIEW = 14;
-    public static final int DATA_COUNT = 15;
+    public static final int DATA_ROTATION = 15;
+    public static final int DATA_COUNT = 16;
 
     /** Build offsets are clamped to [-MAX_OFFSET, MAX_OFFSET] on each axis. */
     public static final int MAX_OFFSET = 32;
@@ -233,6 +236,8 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
     private int offsetX;
     private int offsetY;
     private int offsetZ;
+    // Build rotation about Y (90° steps); mirror is always NONE. Persists like the offsets.
+    private Rotation rotation = Rotation.NONE;
     private boolean collapsing;
     @Nullable
     private BlockPos lastPlacedPos; // synced; drives the print head + beam render
@@ -1178,7 +1183,7 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             notPrintableReason = "this tier cannot print structures (zero print footprint)";
             return;
         }
-        PrintOrientation orientation = PrintOrientation.NONE;
+        PrintOrientation orientation = currentOrientation();
         BlockPos size = orientation.transformedSize(blueprint.sizeX(), blueprint.sizeY(), blueprint.sizeZ());
         if (size.getX() > tier.maxFootprint() || size.getZ() > tier.maxFootprint()) {
             state = State.AREA_TOO_SMALL;
@@ -1696,12 +1701,13 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
                 }
                 if (previewBlueprint != null
                         && previewBlueprint.blockCount() <= MC3DPrintConfig.PREVIEW_MAX_BLOCKS.get()) {
-                    BlockPos size = new BlockPos(previewBlueprint.sizeX(), previewBlueprint.sizeY(),
-                            previewBlueprint.sizeZ());
+                    BlockPos size = currentOrientation().transformedSize(previewBlueprint.sizeX(),
+                            previewBlueprint.sizeY(), previewBlueprint.sizeZ());
                     BlockPos origin = worldPosition.offset(
                             -(size.getX() / 2) + offsetX, 1 + offsetY, -(size.getZ() / 2) + offsetZ);
                     tag.put("Preview", com.pgmacdesign.mc3dprint.blueprint.BlueprintSerializer.write(previewBlueprint));
                     tag.put("PreviewOrigin", net.minecraft.nbt.NbtUtils.writeBlockPos(origin));
+                    tag.putInt("PreviewRotation", rotation.ordinal());
                 }
             }
         }
@@ -1738,11 +1744,18 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             Blueprint blueprint = com.pgmacdesign.mc3dprint.blueprint.BlueprintSerializer
                     .read(tag.getCompound("Preview"));
             BlockPos origin = net.minecraft.nbt.NbtUtils.readBlockPos(tag.getCompound("PreviewOrigin"));
+            // Apply the same orientation the server will print at, so the ghost matches:
+            // transform each local position AND rotate the block state (stairs/doors/…).
+            Rotation rot = Rotation.values()[tag.getInt("PreviewRotation") % Rotation.values().length];
+            PrintOrientation o = new PrintOrientation(rot, Mirror.NONE);
+            int sx = blueprint.sizeX(), sy = blueprint.sizeY(), sz = blueprint.sizeZ();
             clientPreviewOrigin = origin;
-            clientPreviewSize = new BlockPos(blueprint.sizeX(), blueprint.sizeY(), blueprint.sizeZ());
+            clientPreviewSize = o.transformedSize(sx, sy, sz);
             blueprint.forEachBlock((local, paletteIndex) ->
                     blueprint.palette().get(paletteIndex).resolve().ifPresent(resolvedState ->
-                            clientPreview.add(new PreviewBlock(origin.offset(local), resolvedState))));
+                            clientPreview.add(new PreviewBlock(
+                                    origin.offset(o.transform(local, sx, sy, sz)),
+                                    resolvedState.mirror(o.mirror()).rotate(o.rotation())))));
         }
 
         clientSpools.clear();
@@ -1876,7 +1889,7 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             return;
         }
         Blueprint blueprint = loaded.get();
-        PrintOrientation orientation = PrintOrientation.NONE;
+        PrintOrientation orientation = currentOrientation();
         BlockPos size = orientation.transformedSize(blueprint.sizeX(), blueprint.sizeY(), blueprint.sizeZ());
         BlockPos origin = worldPosition.offset(
                 -(size.getX() / 2) + offsetX, 1 + offsetY, -(size.getZ() / 2) + offsetZ);
@@ -1903,6 +1916,25 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         recheckObstruction(); // surface obstruction the moment the build area moves
         if (previewEnabled) {
             syncToClients(); // the ghost follows the offsets live
+        }
+    }
+
+    /** Current print orientation: the persisted Y-rotation, no mirror. */
+    private PrintOrientation currentOrientation() {
+        return new PrintOrientation(rotation, Mirror.NONE);
+    }
+
+    /**
+     * Cycles the build rotation clockwise 90° (0→90→180→270→0). Rotation persists
+     * across disc swaps like the offsets, and the ghost + obstruction follow live.
+     * Only the rotation changes — the X/Y/Z offsets are never touched.
+     */
+    public void cycleRotation() {
+        rotation = rotation.getRotated(Rotation.CLOCKWISE_90);
+        setChanged();
+        recheckObstruction(); // a rotated footprint may newly clear/obstruct
+        if (previewEnabled) {
+            syncToClients(); // the ghost re-renders at the new rotation
         }
     }
 
@@ -1975,6 +2007,7 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             case DATA_OFFSET_Y -> offsetY;
             case DATA_OFFSET_Z -> offsetZ;
             case DATA_PREVIEW -> previewEnabled ? 1 : 0;
+            case DATA_ROTATION -> rotation.ordinal();
             default -> 0;
         };
     }
@@ -2074,6 +2107,7 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         tag.putInt("OffsetX", offsetX);
         tag.putInt("OffsetY", offsetY);
         tag.putInt("OffsetZ", offsetZ);
+        tag.putInt("Rotation", rotation.ordinal());
         if (owner != null) {
             tag.putUUID("Owner", owner);
         }
@@ -2107,6 +2141,7 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         offsetX = Mth.clamp(tag.getInt("OffsetX"), -MAX_OFFSET, MAX_OFFSET);
         offsetY = Mth.clamp(tag.getInt("OffsetY"), -MAX_OFFSET, MAX_OFFSET);
         offsetZ = Mth.clamp(tag.getInt("OffsetZ"), -MAX_OFFSET, MAX_OFFSET);
+        rotation = Rotation.values()[tag.getInt("Rotation") % Rotation.values().length];
         owner = tag.hasUUID("Owner") ? tag.getUUID("Owner") : null;
         previewEnabled = tag.getBoolean("PreviewEnabled");
     }

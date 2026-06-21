@@ -41,11 +41,11 @@ public class PrinterMenu extends AbstractContainerMenu {
     // Spool slots: a 2-column grid on the bottom-right so the docked filament
     // spools can be pulled out / put in from the GUI (previously only Shift+Right
     // Click on the block worked). Only the slots this tier has are added (T1=1 …
-    // T4-T8=4); the two rows line up with the bottom two inventory rows (y=152 main,
-    // y=174 hotbar → ROW_STEP 22). PrinterScreen draws a well under each LIVE slot
+    // T4-T8=4); the two rows line up with the bottom two inventory rows (y=168 main,
+    // y=190 hotbar → ROW_STEP 22). PrinterScreen draws a well under each LIVE slot
     // (so lower tiers show fewer wells, not empty ones).
     public static final int SPOOL_SLOT_X = 178;
-    public static final int SPOOL_SLOT_Y = 152;
+    public static final int SPOOL_SLOT_Y = 168;
     public static final int SPOOL_COL_STEP = 18;
     public static final int SPOOL_ROW_STEP = 22;
     public static final int SPOOL_COLS = 2;
@@ -187,14 +187,14 @@ public class PrinterMenu extends AbstractContainerMenu {
         });
 
         // player inventory sits below the control strip (Start/Auto/Ghost +
-        // build-offset rows) that lives between the machine and the inventory
+        // build-offset row + the rotate row) that lives between the machine and the inventory
         for (int row = 0; row < 3; row++) {
             for (int col = 0; col < 9; col++) {
-                addSlot(new Slot(playerInventory, col + row * 9 + 9, 8 + col * 18, 116 + row * 18));
+                addSlot(new Slot(playerInventory, col + row * 9 + 9, 8 + col * 18, 132 + row * 18));
             }
         }
         for (int col = 0; col < 9; col++) {
-            addSlot(new Slot(playerInventory, col, 8 + col * 18, 174));
+            addSlot(new Slot(playerInventory, col, 8 + col * 18, 190));
         }
 
         addDataSlots(data);
@@ -295,14 +295,20 @@ public class PrinterMenu extends AbstractContainerMenu {
         return SplitContainerData.combine(data, PrinterBlockEntity.DATA_OFFSET_X + axis);
     }
 
-    // GUI button ids: 0 start, 1 auto toggle, 2..7 = X-/X+/Y-/Y+/Z-/Z+, 8 preview
+    // GUI button ids: 0 start, 1 auto toggle, 2..7 = X-/X+/Y-/Y+/Z-/Z+, 8 preview, 9 rotate
     public static final int BUTTON_START = 0;
     public static final int BUTTON_AUTO = 1;
     public static final int BUTTON_OFFSET_BASE = 2;
     public static final int BUTTON_PREVIEW = 8;
+    public static final int BUTTON_ROTATE = 9;
 
     public boolean preview() {
         return SplitContainerData.combine(data, PrinterBlockEntity.DATA_PREVIEW) != 0;
+    }
+
+    /** Current build rotation in degrees clockwise (0/90/180/270) — drives the button label. */
+    public int rotationDegrees() {
+        return SplitContainerData.combine(data, PrinterBlockEntity.DATA_ROTATION) * 90;
     }
 
     @Override
@@ -320,6 +326,10 @@ public class PrinterMenu extends AbstractContainerMenu {
         }
         if (id == BUTTON_PREVIEW) {
             printer.togglePreview(player);
+            return true;
+        }
+        if (id == BUTTON_ROTATE) {
+            printer.cycleRotation();
             return true;
         }
         int offsetId = id - BUTTON_OFFSET_BASE;
