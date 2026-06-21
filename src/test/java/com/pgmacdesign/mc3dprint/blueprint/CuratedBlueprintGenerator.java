@@ -335,6 +335,8 @@ class CuratedBlueprintGenerator {
         builds.put("grand_cathedral", grandCathedral());
         // Imported player scan — Tristan's Castle (gift build; powder snow priced via the bucket)
         builds.put("tristans_castle", tristansCastle());
+        // Imported player scan — Tristan's Pig House
+        builds.put("tristans_pig_house", tristansPigHouse());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -8593,6 +8595,37 @@ class CuratedBlueprintGenerator {
         for (Map.Entry<net.minecraft.core.BlockPos, CompoundTag> e : scan.blockEntities().entrySet()) {
             CompoundTag tag = e.getValue().copy();
             tag.remove("Items"); // never ship captured container contents (none expected here)
+            net.minecraft.core.BlockPos p = e.getKey();
+            b.blockEntity(p.getX(), p.getY(), p.getZ(), tag);
+        }
+        return b.build();
+    }
+
+    /**
+     * Tristan's Pig House — hand-built and scanned in-world by PGMacDesign. 24×16×16. Loaded
+     * from {@code src/test/resources/scanned/tristans_pig_house.blueprint}. Every block state
+     * carries over verbatim EXCEPT {@code minecraft:scaffolding}, which is stripped: it's the
+     * temporary platform Patrick placed to scan into the far corners, never part of the build
+     * (see the {@code mc3dp-import-scan} skill). Captured container contents (the smokers) are
+     * dropped. At 24 wide the build needs a <b>Tier 7+ fabricator</b> (footprint cap).
+     */
+    private static Blueprint tristansPigHouse() {
+        Blueprint scan = loadScannedBlueprint("tristans_pig_house");
+        Blueprint.Builder b = Blueprint.builder("Tristan's Pig House", scan.sizeX(), scan.sizeY(), scan.sizeZ());
+        for (int y = 0; y < scan.sizeY(); y++) {
+            for (int z = 0; z < scan.sizeZ(); z++) {
+                for (int x = 0; x < scan.sizeX(); x++) {
+                    BlueprintBlockState st = scan.get(x, y, z);
+                    // Scaffolding is corner-scan apparatus — omit it (cell falls through to NO_BLOCK).
+                    if (st != null && !st.blockId().equals("minecraft:scaffolding")) {
+                        b.set(x, y, z, st);
+                    }
+                }
+            }
+        }
+        for (Map.Entry<net.minecraft.core.BlockPos, CompoundTag> e : scan.blockEntities().entrySet()) {
+            CompoundTag tag = e.getValue().copy();
+            tag.remove("Items"); // drop captured smoker contents; keep functional NBT
             net.minecraft.core.BlockPos p = e.getKey();
             b.blockEntity(p.getX(), p.getY(), p.getZ(), tag);
         }

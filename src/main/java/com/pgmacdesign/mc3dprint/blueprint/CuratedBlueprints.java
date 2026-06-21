@@ -176,7 +176,22 @@ public final class CuratedBlueprints {
             // Showpiece — Grand Cathedral (twin towers + vaulted nave; the Library's companion)
             "grand_cathedral",
             // Imported player scan — Tristan's Castle (gift build; powder snow priced via the bucket)
-            "tristans_castle");
+            "tristans_castle",
+            // Imported player scan — Tristan's Pig House
+            "tristans_pig_house");
+
+    /**
+     * Blueprints explicitly kept OUT of world loot. <b>Opt-out by design:</b> every
+     * curated blueprint is loot-available throughout the world, and every new one we
+     * add is too — automatically — unless its name is listed here. Add a name only
+     * when the decision is "this specific build should not be findable in the world."
+     */
+    public static final java.util.Set<String> LOOT_EXCLUDED = java.util.Set.of();
+
+    /** The world-loot pool: every curated blueprint minus {@link #LOOT_EXCLUDED}. */
+    public static List<String> lootBlueprints() {
+        return CURATED_NAMES.stream().filter(name -> !LOOT_EXCLUDED.contains(name)).toList();
+    }
 
     /**
      * Load a bundled curated blueprint straight from the mod's resources (no world

@@ -25,6 +25,12 @@ import java.util.function.Supplier;
  * "Blueprints can be found in the wild" — adds a written Blueprint Disc for a
  * random curated blueprint to matched loot tables. Targets and chances live in
  * data JSONs so pack makers control placement.
+ *
+ * <p><b>Opt-out pool:</b> when the {@code blueprints} list in the JSON is empty,
+ * the modifier draws from {@link CuratedBlueprints#lootBlueprints()} — every
+ * curated blueprint minus the explicit {@link CuratedBlueprints#LOOT_EXCLUDED}
+ * set. That makes every build (and every future build) loot-available with no
+ * per-build wiring. A non-empty list still works as an explicit override.
  */
 public class AddBlueprintDiscModifier extends LootModifier {
     public static final Supplier<Codec<AddBlueprintDiscModifier>> CODEC = Suppliers.memoize(() ->
@@ -46,10 +52,13 @@ public class AddBlueprintDiscModifier extends LootModifier {
 
     @Override
     protected ObjectArrayList<ItemStack> doApply(ObjectArrayList<ItemStack> generatedLoot, LootContext context) {
-        if (blueprintNames.isEmpty() || context.getRandom().nextFloat() >= chance) {
+        // Empty list = the opt-out pool (all curated minus LOOT_EXCLUDED); a non-empty
+        // list is an explicit override.
+        List<String> pool = blueprintNames.isEmpty() ? CuratedBlueprints.lootBlueprints() : blueprintNames;
+        if (pool.isEmpty() || context.getRandom().nextFloat() >= chance) {
             return generatedLoot;
         }
-        String name = blueprintNames.get(context.getRandom().nextInt(blueprintNames.size()));
+        String name = pool.get(context.getRandom().nextInt(pool.size()));
         UUID id = CuratedBlueprints.uuidFor(MC3DPrint.MOD_ID, name);
 
         BlueprintFileStore store = BlueprintFileStore.forServer(context.getLevel().getServer());

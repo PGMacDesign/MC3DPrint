@@ -1,8 +1,7 @@
 {
   "replace": false,
   "entries": [
-    "mc3dprint:village_blueprints",
-    "mc3dprint:exploration_blueprints",
+    "mc3dprint:world_blueprints",
     "mc3dprint:found_resins"
   ]
 }

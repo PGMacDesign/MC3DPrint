@@ -351,6 +351,10 @@ public final class FuValueRegistry {
                 // bamboo: same treatment again — VALUED so the printer auto-plants the first
                 // bamboo shoot into the bamboo farm (was unvalued/skipped); winder-blacklisted.
                 "minecraft:bamboo=2@1",
+                // twisting_vines: nether vine, renewable via bonemeal, has an item but no recipe →
+                // unvalued leaf. Valued at the floor (like kelp/cactus) so scanned builds using it
+                // print; winder-blacklisted so the renewable supply can't launder back to FU.
+                "minecraft:twisting_vines=2@1",
                 "minecraft:soul_soil=1@1", "minecraft:clay_ball=1@1", "minecraft:netherrack=1@1",
                 "minecraft:deepslate=1@1", "minecraft:cobbled_deepslate=1@1", "minecraft:tuff=1@1",
                 "minecraft:dripstone_block=1@1", "minecraft:pointed_dripstone=1@1", "minecraft:mud=1@1",
@@ -424,6 +428,9 @@ public final class FuValueRegistry {
                 // ===== T4 — renewable-valuable =====
                 "minecraft:emerald=50@4", "minecraft:magma_cream=30@4",
                 "minecraft:blaze_rod=40@4", "minecraft:ghast_tear=50@4", "minecraft:totem_of_undying=200@4",
+                // creeper_head: charged-creeper drop — renewable but fiddly, no recipe. Valued so
+                // scanned builds with mob-head decor print; winder-blacklisted (renewable supply).
+                "minecraft:creeper_head=40@4",
                 "minecraft:prismarine_shard=8@4", "minecraft:prismarine_crystals=12@4",
                 // chorus is abundance-capped at T4 (a T6 chorus spool could print netherite)
                 "minecraft:chorus_fruit=8@4", "minecraft:popped_chorus_fruit=10@4",
@@ -444,6 +451,11 @@ public final class FuValueRegistry {
                 "minecraft:netherite_ingot=500@6", "minecraft:netherite_scrap=125@6",
                 "minecraft:ancient_debris=125@6", "minecraft:trident=150@6", "minecraft:nautilus_shell=80@6",
                 "minecraft:elytra=2000@6", "minecraft:enchanted_golden_apple=1500@6",
+                // dragon_head: post-dragon End-ship trophy, renewable via End-city exploration.
+                // Tiered T6 (kept off T7 so it prints on a T6 setup); the winder blacklist neutralizes
+                // the infinite-supply laundering risk (can't wind it to FU), so the tier is a pure
+                // print-cost/gate knob here, not an abundance lever.
+                "minecraft:dragon_head=250@6",
 
                 // ===== T7 — boss / heavy-grind (wither_skeleton_skull stays UNPRINTABLE on purpose) =====
                 "minecraft:nether_star=1500@7",
