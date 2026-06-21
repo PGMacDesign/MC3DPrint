@@ -82,6 +82,8 @@
   "gui.mc3dprint.repository.burn": "STL to GCODE",
   "gui.mc3dprint.repository.empty": "Library empty — deposit a disc",
   "gui.mc3dprint.repository.select_hint": "Select a blueprint",
+  "gui.mc3dprint.repository.search": "Search…",
+  "gui.mc3dprint.repository.collected": "Collected %s/%s",
   "gui.mc3dprint.repository.size": "Size",
   "gui.mc3dprint.repository.blocks": "Blocks",
   "gui.mc3dprint.repository.tier": "Tier",
