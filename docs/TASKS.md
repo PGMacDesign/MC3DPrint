@@ -109,6 +109,35 @@ The keystone — everything else consumes this. Pure logic, testable without a r
 
 ---
 
+## v0.5.0 → v0.7.0 — Post-launch-prep features (Jun 19–21)
+
+Shipped after v0.4.0; mod is now **v0.7.0**, **94 GameTests**, **134 curated builds**.
+
+- [x] **Filament Rack** (8-slot spool storage + FU reservoir) + **MC3D Cable** (dual-carry
+  RF+FU, deliberately weak 2k FE/t). Cables feed any casing of a formed multiblock, not
+  just the controller.
+- [x] **Web Blueprint Viewer** — static GitHub Pages site (`web/`) + PR-preview bot;
+  client-side Three.js + MapColor datagen, deterministic (non-AI). Live.
+- [x] **Loot rule:** every curated blueprint is world loot by default (opt-out via
+  `LOOT_EXCLUDED`); new builds auto-included. One `world_blueprints` GLM replaced the
+  village/exploration tables.
+- [x] **Decorative entity print support** — armor stands (+armor), item frames, paintings,
+  regular minecarts, boats scan + print with full orientation; contents/armor reproduce
+  only on official blueprints (anti-dupe). Format gained an optional `Entities` key.
+- [x] **`mc3dp-import-scan` skill** + imported **Tristan's Pig House** (24×16×16, T7).
+- [x] **Multiblock corners simplified** — T5/T6/T7 form from plain casing; only T8 keeps
+  Awakened Draconium corners.
+- [x] **Extrudium "Stardust" retexture** — animated ore + crystal; ore lightLevel 4→6
+  (closes the rename's retexture deferral).
+- [x] **Printer/fabricator Rotate 90° control** — GUI button (clockwise, footprint-center
+  pivot, offsets untouched, persists, live ghost). Reuses `PrintOrientation`.
+- [x] **Blueprint format collapsed to a single version 1** — no v1/v2 variant; entities by
+  key presence; version-tolerant reader. Rule: never bump the format pre-release.
+- [x] **GUI/visual polish** — Ghost Mode defaults ON; flat-ended cable icon; rack "Spool
+  Bays" 32px face with lit/centered spools; printer panel heightened for the rotate row.
+
+---
+
 ## Post-M9: Testing & QoL (Jun 2026)
 
 - [x] Creative Energy Source — infinite RF to neighbors + extract-only cap; creative menu only, no recipe, drops nothing

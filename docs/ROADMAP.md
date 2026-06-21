@@ -1,21 +1,6 @@
 # MC3DPrint — Roadmap & Outstanding Items
 
-_Last updated: 2026-06-18 · **v0.4.0** · 84 GameTests passing · deployed to Prism._
-
-**Recently shipped (2026-06-13):** FU efficiency rework (break-even at max Efficiency
-modules, 4/type cap); curated blueprint set rebuilt (23 builds + dump/validate tool) +
-3 `mc3dp-*` pipeline skills; netherite→T6; winder blacklist; T5 multiblock corners =
-diamond; print-bug fixes (itemless blocks print, captured-state placement, obstruction
-on disc-load); **comprehensive vanilla FU tier rebalance** (food printing, abundance
-caps, naturally-spawned blocks, utility overrides, unprintables, draconium T8 — see
-`docs/rebalance/`); **AE2 + Thermal modded FU compat** (soft-dep, invisible when absent);
-**released v0.3.0** (jar at `6b1155d`, vanilla only).
-
-**Recently shipped (2026-06-18):** the full **Resin** print-modifier system (workstream #5 —
-6 effects, T3 loot, Patchouli guide) and the project-wide **printite → Extrudium** rename (#6);
-version is now **0.4.0** (AE2/Thermal compat + Resin). Next up: **UI cleanup** (printer/winder
-GUI polish) and in-game tuning of the new Resin numbers + a Resin-slot render nudge. Rebalance
-and Resin amounts are all tunable in config.
+_Last updated: 2026-06-21 · **v0.7.0** · 94 GameTests passing · 134 curated builds · deployed to Prism._
 
 MC3DPrint is a Forge **1.20.1** tech mod: "WorldEdit for survival." Scan a build
 with the Structure Scanner → save it to a Blueprint Disc → print it anywhere with
@@ -25,103 +10,117 @@ single printer blocks; T5–T8 are multiblock fabricators (an N×N Printer Casin
 
 ---
 
-## Active workstreams (next up: 2 tier rebalance, 4 UI cleanup — #3 blueprints ✅ done; #1 long-term)
+## Shipped history
 
-### 2. Tier rebalance (item → tier mapping, across the board)
-- **Now:** `fu/FuValueRegistry.java` — explicit entries + recipe-derivation + strict
-  mode (`unknownBlocksPrintable`, default false). Recent: diamond→T5, emerald T4,
-  nether star→T7. Search/JEI tags: `data/mc3dprint/tags/items/filament/tier_N.json`.
-- **Goal:** a coherent, principled T1–T8 mapping for materials across the board;
-  audit where each item lands and whether derivation gives sane results.
+**Through v0.4.0 (Jun 13–18):** FU efficiency rework (break-even at max Efficiency,
+4/type cap); curated blueprint set rebuilt + expanded to ~132 builds via the gated
+generator + 3 `mc3dp-*` pipeline skills; comprehensive vanilla FU tier rebalance
+(`docs/rebalance/`); **AE2 + Thermal + Draconic** modded FU compat (soft-dep, invisible
+when absent); the full **Resin** print-modifier system (6 effects, T3 loot, Patchouli
+category); project-wide **printite → Extrudium** rename; released v0.3.0 (vanilla) then
+v0.4.0.
+
+**Shipped v0.5.0 → v0.7.0 (Jun 19–21):**
+- **Filament Rack + MC3D Cable** — Rack = 8-slot spool storage + FU reservoir; Cable =
+  dual-carry RF+FU, deliberately weak (2k FE/t — don't buff). Cables plug into **any
+  casing** of a formed multiblock, not just the controller. See memory `rack-and-cable`.
+- **Web Blueprint Viewer** — static GitHub Pages site (`web/`) + PR-preview bot;
+  client-side Three.js + MapColor datagen, fully deterministic (non-AI). Live.
+- **Loot rule change** — **every curated blueprint is world loot by default** (opt-out
+  only via `CuratedBlueprints.LOOT_EXCLUDED`); new builds are auto-included. One
+  `world_blueprints` GLM replaced the old village/exploration tables. STANDING RULE.
+- **Decorative entity print support** — armor stands (+armor), item frames, paintings,
+  regular minecarts, boats now scan + print, with full orientation. Item-frame contents
+  / armor reproduce **only on official blueprints** (anti-dupe gate); player scans print
+  the empty entity.
+- **Tristan's Pig House** — imported curated build (24×16×16, T7) via the new
+  `mc3dp-import-scan` skill.
+- **Multiblock corners simplified** — T5/T6/T7 now form from **plain casing**; only T8
+  keeps the premium corner (4× Awakened Draconium). See memory `multiblock-corner-blocks`.
+- **Extrudium "Stardust" retexture** — animated ore + crystal (closes the long-open #6
+  retexture deferral); ore `lightLevel` 4→6.
+- **Printer/fabricator Rotate control** — a **Rotate 90°** button on a dedicated row below
+  the XYZ offsets: clockwise per tap, footprint-center pivot (offsets untouched), persists
+  across disc swaps, live ghost preview. Reuses `PrintOrientation` (block-state + entity
+  rotation were already implemented at placement).
+- **Blueprint format collapsed to a single version 1** — no v1/v2 variant; optional
+  entities carried by key presence; reader is version-tolerant. See memory
+  `blueprint-pipeline`. **Rule: never bump the format version pre-release.**
+- **GUI/visual polish** — Ghost Mode now **defaults ON** for new printers; cable icon =
+  flat-ended wire; filament rack "Spool Bays" face at 32px with lit, centered tier-colored
+  spools; printer panel heightened 200→216 for the rotate row.
+
+---
+
+## Active workstreams (next up)
+
+### 4. Overall UI cleanup / improvements — _in progress_
+- **Done so far:** dark tech-console printer GUI (`tools/gen_printer_gui.py` →
+  `gui/printer.png`), widened to 230 + heightened to 216; tier-colored spinning spool
+  reels; the Rotate row + Spool Bays rack face; Ghost default-on.
+- **Still the laggard:** the **Filament Winder GUI** is less polished than the printer.
+  General polish remains — alignment/consistency, tooltips, status readouts.
+- **Lockstep rule:** coordinates in `gen_printer_gui.py` MUST stay in sync with
+  `PrinterMenu`/`PrinterScreen` (and likewise for the winder).
+
+### 2. Tier rebalance (item → tier mapping) — _long-term_
+- **Now:** `fu/FuValueRegistry.java` — explicit entries + recipe-derivation + strict mode
+  (`unknownBlocksPrintable`, default false). Search/JEI tags:
+  `data/mc3dprint/tags/items/filament/tier_N.json`.
+- **Goal:** a coherent, principled T1–T8 mapping across the board; audit where each item
+  lands and whether derivation is sane.
 - **Ripples to watch:** gametests assert specific tiers (TierGating, FuTierEconomy,
-  RecipeDerivation); the filament tier tags; the new **disc tier** label; the winder
-  **exact-tier** rule; printability gating; the blueprint disc tier readout.
+  RecipeDerivation); the filament tier tags; the disc tier label; the winder exact-tier
+  rule; printability gating.
 
-### 3. Rework the sample (curated) blueprint discs — ✅ DONE (2026-06-13)
-- **Shipped:** the 23-build set was rebuilt from scratch (`test/.../CuratedBlueprintGenerator.java`,
-  14 new parametric helpers), spanning footprint T3–T7 and material T1–T5/T7. Systemic
-  defects fixed (inverted doors, open gables, floating lanterns/battlements, sail-less
-  windmill, sealed well, un-walkable bridge). Full audit + specs in `docs/blueprint-specs.md`.
-- **Tooling added:** `CuratedBlueprints.install` now refreshes curated content on change;
-  `BlueprintDumpTest` (`-DdumpBlueprints=true`) renders ASCII layer maps; the three
-  `mc3dp-*` skills under `.claude/skills/` are the find→create→validate pipeline.
-- **Regenerate:** `./gradlew test --tests '*CuratedBlueprintGenerator*' -DgenBlueprints=true --rerun-tasks`.
-- **Left for in-game review:** print the new set in Prism and eyeball; prettify raw disc
-  display names if still desired.
-
-### 4. Overall UI cleanup / improvements
-- **Now:** dark tech-console GUI (`tools/gen_printer_gui.py` → `gui/printer.png` +
-  `machine.png`), widened to 230 for the upgrade-slot column; `client/PrinterScreen.java`
-  draws bars/labels/status/offsets; spool reels tier-colored + spinning
-  (`client/PrinterRenderer.java`). Winder GUI is less polished than the printer.
-- **Goal:** general polish — alignment, consistency, the winder screen, tooltips,
-  status readouts. Coordinates in `gen_printer_gui.py` MUST stay in lockstep with
-  `PrinterMenu`/`PrinterScreen`.
-
-### 5. Catalysts / "Resin" system — ✅ DONE (2026-06-18)
-- **Shipped:** the consumed-per-print **Resin** slot on printer/fabricator. 6 effects
-  (Verdant, XP Yield, Treasure, Overdrive, Quartermaster, Ore Salting) over 3 tiers = 11
-  resin items + a Resin Base. Works ONLY on official/found blueprints; T1–T2 craftable, T3
-  loot-only (~10% in end-game chests via `AddCatalystModifier` GLM). New `resin` config
-  section; 3 treasure loot tables; Patchouli "Resins" category.
-- **Built across 6 phases** (84 GameTests green; jar `0.4.0` deployed). Economy multiply-gated
-  (official-blueprint + consumed + T3-found/gem-craft + caps + winder-blacklist). Full spec +
-  decisions: `docs/catalysts-design.md`.
-- **Deferred follow-ups:** flavor-biased T3 resin pick (TODO in the GLM), treasure modded-loot
-  entries (mods extend via GLM), in-game number tuning + slot-render nudge.
-
-### 6. Rename `printite` → `Extrudium` (project-wide) — ✅ DONE (2026-06-18)
-- **Shipped:** coordinated id rename across all of `src` + `tools` — registry consts
-  (`EXTRUDIUM_ORE`/`EXTRUDIUM_CRYSTAL`), ids (`extrudium_ore`/`extrudium_crystal`), worldgen,
-  loot, recipes, tags, advancements, lang, models/blockstates/textures, generators. Zero
-  `printite` left in code/resources; compileJava + 84 GameTests green; built + deployed `0.4.0`.
-- **Note:** a registry-id rename is a breaking change — existing worlds drop old `printite`
-  entries on load (fine pre-launch). The **retexture** half (memory `printite-revamp`) is still
-  open: Extrudium reuses the old art for now.
+### In-game tuning passes (need eyes-on Prism)
+- **Resin numbers** + the resin-slot render — tune the new effect amounts in config.
+- **Balancing pass** over all config values (FU costs, RF, speeds) — needs playtesting.
+- **Config no-wipe goal** — pre-launch QoL: retune economy/config without deleting the
+  toml + reloading (the `fuValues` list doesn't merge). Low priority. Memory
+  `config-no-wipe-goal`.
 
 ---
 
 ## Long-term / someday (not next up)
 
-### Guide / documentation system rework
-- **Status:** **deprioritized** — the Patchouli guidebook looks great in-game, so this
-  is a long-term goal only, revisited if/when we want to support higher MC versions.
-- **Now:** Patchouli (soft/optional dependency) renders the "Fabricator's Handbook"
-  — book.json + categories (Basics/Machines/Multiblocks/FAQ) + 11 entries + 6
-  generated diagram images. Auto-given on first printer craft (`GuidebookAutoGive`,
-  `integration/patchouli/`). Needs Patchouli **installed** in the instance to show.
-- **If revisited:** go native (own in-mod book GUI, no dep) or a doc library with
-  broader MC-version support. Content is already Patchouli JSON + PNGs; a native
-  reader could consume a similar schema. Keep TOC + search + FAQ + image pages.
+- **Print queue UX** — sequential jobs + persistence done; reorder UI + cancel-with-refund
+  pending (M4).
+- **Matter Calculator GUI** — template FU cost + filament gauges exist; full blueprint
+  calculator (RF + ETA) pending (M5).
+- **Server Blueprint Repository block + GUI** — world file store + import/export + curated
+  auto-install cover the owner workflow; a dedicated block/GUI is deferred (M9).
+- **Rack & Cable deferred ToDos** — see memory `rack-and-cable`.
+- **Resin follow-ups** — flavor-biased T3 resin pick (GLM TODO), modded treasure-loot
+  entries, AE2-deep converter integration.
+- **Guide/doc system** — Patchouli looks great in-game; going native (no dep) is a
+  long-term-only idea, revisited only if supporting higher MC versions.
 
 ---
 
-## Outstanding / needs in-game review (Patrick to eyeball in Prism)
-- **Install Patchouli** in the Prism 1.20.1 instance to actually see the guidebook.
-- Verify in-world: T1 **white** docked reel; **obstruction shows before Start** (on
-  offset change + GUI open); **upgrade-slot count** on a high-tier fabricator (should
-  be 5–8, already scales via `MachineTier.upgradeSlots()=number`); per-tier spool
-  colors + spin; the formed-multiblock "one big printer" look + raised gantry.
-- Curated disc display names are raw builder strings — fold into workstream 3.
-- Emerald is T4 (diamond is T5) — decide in workstream 2 whether to pair them.
-- "Duplicate Simple Generator" report was never reproduced in source (likely the
-  MC3DP tab + vanilla Search/JEI list showing the same item) — revisit only with a
-  screenshot showing two in the *same* MC3DP tab.
+## Launch / human-only steps (see LAUNCH.md)
+- **Install Patchouli** in the Prism instance to see the guidebook in-game.
+- Live modded-compat testing (Mekanism/Thermal/EnderIO/Flux) — needs a real modpack
+  dev instance; not coverable headless.
+- Signature/creator blueprints + outreach.
+- CurseForge + Modrinth pages (store copy drafted in LAUNCH.md).
+- Patrick's full favorite-mod list for further compat evaluation.
 
 ---
 
 ## Dev workflow & key references
-- **Build:** `./gradlew build` · **Tests:** `./gradlew runGameTestServer` (60 GameTests
-  + JUnit). Texture-only changes don't need tests but do need a build to repackage.
-- **Deploy:** copy `build/libs/mc3dprint-0.2.0.jar` over the jar in the Prism mods
-  folder `~/Library/Application Support/PrismLauncher/instances/1.20.1/minecraft/mods/`
-  (replace the old one — never leave two mc3dprint jars).
-- **Git:** commit → push every change (no Claude/Anthropic attribution in messages).
+- **Build:** `./gradlew build` · **Tests:** `./gradlew runGameTestServer` (94 GameTests +
+  JUnit). Texture-only changes skip tests but still need a build to repackage.
+- **Deploy:** copy `build/libs/mc3dprint-0.7.0.jar` over the jar in the Prism mods folder
+  `~/Library/Application Support/PrismLauncher/instances/1.20.1/minecraft/mods/` (replace
+  the old one — never leave two mc3dprint jars).
+- **Git:** commit → push every change, direct to `main` (no Claude/Anthropic attribution).
 - **Generators (Python/PIL, reproducible):** `tools/gen_block_textures.py`,
   `gen_item_textures.py`, `gen_formed_textures.py` (run AFTER block textures),
-  `gen_printer_gui.py`, `gen_logo.py`, `gen_guide_images.py`.
-- **Config gotcha:** the `fuValues` list config does NOT merge new defaults into an
-  existing toml — delete `run/config/mc3dprint-common.toml` (dev) + the Prism
-  `config/mc3dprint-common.toml` to pick up economy changes.
-- **Standing rules (memory):** copy fresh jar to Prism after every build; update the
-  in-game guide whenever a player-facing feature changes.
+  `gen_printer_gui.py`, `gen_storage_cable_textures.py`, `gen_logo.py`, `gen_guide_images.py`.
+- **Config gotcha:** the `fuValues` list does NOT merge new defaults into an existing toml —
+  delete `run/config/mc3dprint-common.toml` (dev) + the Prism `config/mc3dprint-common.toml`
+  to pick up economy changes.
+- **Standing rules (memory):** copy the fresh jar to Prism after every build; update the
+  in-game Patchouli guide whenever a player-facing feature changes; never introduce a
+  blueprint format v2.
