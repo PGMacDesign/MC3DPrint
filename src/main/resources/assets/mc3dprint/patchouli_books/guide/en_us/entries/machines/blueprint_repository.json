@@ -15,6 +15,11 @@
     },
     {
       "type": "patchouli:text",
+      "title": "Duplicates Recycle",
+      "text": "Deposit a disc the library $(l)already has$() and it won't be wasted — the disc is wiped and handed back as a $(item)Blank Blueprint Disc$() you can reuse.$(br2)$(l)Locked$() discs are protected: a duplicate locked disc is left untouched instead of being recycled."
+    },
+    {
+      "type": "patchouli:text",
       "title": "STL to GCODE",
       "text": "Select a build in the list, drop a $(item)Blank Blueprint Disc$() into the input slot, and press $(l)STL to GCODE$() to burn a fresh written disc.$(br2)Burned copies keep the original's $(l)official$() or $(l)player-scan$() status, so the Resin anti-dupe rule still holds."
     },

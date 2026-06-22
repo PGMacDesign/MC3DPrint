@@ -95,12 +95,25 @@ public class BlueprintRepositoryBlockEntity extends BlockEntity implements MenuP
             feedback(player, "deposit_missing"); // disc from another world; can't be re-burned here
             return;
         }
-        boolean added = RepositoryIndex.add(player, entryFromDisc(in, id.get(), tag));
-        in.shrink(1);
-        inventory.setStackInSlot(SLOT_IN, in);
-        level.playSound(null, getBlockPos(), SoundEvents.ITEM_FRAME_ADD_ITEM, SoundSource.BLOCKS, 0.7F, 1.3F);
-        feedback(player, added ? "deposit_ok" : "deposit_dupe");
-        sendListing(player);
+        if (RepositoryIndex.add(player, entryFromDisc(in, id.get(), tag))) {
+            in.shrink(1); // consumed into the library
+            inventory.setStackInSlot(SLOT_IN, in);
+            level.playSound(null, getBlockPos(), SoundEvents.ITEM_FRAME_ADD_ITEM, SoundSource.BLOCKS, 0.7F, 1.3F);
+            feedback(player, "deposit_ok");
+            sendListing(player);
+            return;
+        }
+        // Already catalogued: recycle the duplicate written disc back into a Blank
+        // Blueprint Disc instead of wasting it — the library already has this build,
+        // so erasing the disc and handing back a reusable blank is the friendly move.
+        // A locked disc is protected from erasure, so leave it untouched.
+        if (BlueprintDiscItem.isLocked(in)) {
+            feedback(player, "deposit_dupe_locked");
+            return;
+        }
+        inventory.setStackInSlot(SLOT_IN, new ItemStack(ModItems.BLANK_BLUEPRINT_DISC.get()));
+        level.playSound(null, getBlockPos(), SoundEvents.GRINDSTONE_USE, SoundSource.BLOCKS, 0.5F, 1.4F);
+        feedback(player, "deposit_dupe_blanked");
     }
 
     /** Burn the selected catalogued blueprint onto the blank disc in the input slot. */
