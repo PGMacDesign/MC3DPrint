@@ -18,14 +18,24 @@ REPO="PGMacDesign/MC3DPrint"
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 
-while IFS= read -r subject; do
+# Parse "type(scope): message" with plain parameter expansion — no [[ =~ ]] /
+# BASH_REMATCH, which mis-parses some subjects under macOS's bash 3.2.
+# `tformat:` (not `format:`) terminates every line with a newline; combined with the
+# `|| [ -n "$subject" ]` guard, this also processes a final newline-less line, so the
+# oldest commit in the range is never silently dropped.
+while IFS= read -r subject || [ -n "$subject" ]; do
   [ -z "$subject" ] && continue
-  if [[ "$subject" =~ ^([a-z]+)(\([^\)]*\))?!?:[[:space:]](.*)$ ]]; then
-    type="${BASH_REMATCH[1]}"
-    scope="${BASH_REMATCH[2]//[()]/}"
-    msg="${BASH_REMATCH[3]}"
-  else
+  if [ "${subject%%: *}" = "$subject" ]; then
+    # no "type: " prefix at all
     type="other"; scope=""; msg="$subject"
+  else
+    header="${subject%%: *}"      # text before the first ": "
+    msg="${subject#*: }"          # text after the first ": "
+    header="${header%!}"          # drop a trailing "!" (breaking-change marker)
+    case "$header" in
+      *\(*\)) type="${header%%\(*}"; scope="${header#*\(}"; scope="${scope%\)}" ;;
+      *)      type="$header"; scope="" ;;
+    esac
   fi
   case "$type" in
     feat|fix|perf|refactor|docs|test|build|ci|chore) ;;
@@ -36,7 +46,7 @@ while IFS= read -r subject; do
   else
     printf -- '- %s\n' "$msg" >> "$tmp/$type"
   fi
-done < <(git log --no-merges --pretty=format:'%s' "${FROM}..HEAD")
+done < <(git log --no-merges --pretty=tformat:'%s' "${FROM}..HEAD")
 
 emit() {  # $1 = type bucket, $2 = section heading
   if [ -s "$tmp/$1" ]; then
