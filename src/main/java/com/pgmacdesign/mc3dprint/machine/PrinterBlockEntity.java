@@ -1320,6 +1320,14 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             }
         }
 
+        // Mark official builds as printed in the Blueprint Repository library, so the
+        // GUI can show a printed marker + filter. Official-only (scans aren't tracked).
+        UUID printedId = BlueprintDiscItem.getBlueprintId(disc).orElse(null);
+        if (printedId != null && BlueprintDiscItem.isOfficial(disc)) {
+            com.pgmacdesign.mc3dprint.blueprint.repository.RepositoryIndex.markPrinted(
+                    serverLevel.getServer(), player, printedId);
+        }
+
         releaseJobResources(serverLevel);
         inventory.setStackInSlot(SLOT_OUTPUT, disc.copy());
         inventory.setStackInSlot(SLOT_TEMPLATE, ItemStack.EMPTY);

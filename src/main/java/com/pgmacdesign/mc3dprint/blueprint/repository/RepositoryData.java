@@ -2,13 +2,16 @@ package com.pgmacdesign.mc3dprint.blueprint.repository;
 
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.saveddata.SavedData;
 
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -22,6 +25,8 @@ public class RepositoryData extends SavedData {
 
     // Keyed by blueprint UUID so a build is catalogued at most once (re-deposit is a no-op).
     private final Map<UUID, RepoEntry> entries = new LinkedHashMap<>();
+    // Blueprint UUIDs that have been printed at least once (official builds only).
+    private final Set<UUID> printed = new LinkedHashSet<>();
 
     public static RepositoryData get(MinecraftServer server) {
         return server.overworld().getDataStorage().computeIfAbsent(
@@ -34,6 +39,9 @@ public class RepositoryData extends SavedData {
             RepoEntry entry = RepoEntry.fromNbt((CompoundTag) element);
             data.entries.put(entry.id(), entry);
         }
+        for (Tag element : tag.getList("Printed", Tag.TAG_STRING)) {
+            data.printed.add(UUID.fromString(element.getAsString()));
+        }
         return data;
     }
 
@@ -44,7 +52,25 @@ public class RepositoryData extends SavedData {
             list.add(entry.toNbt());
         }
         tag.put("Entries", list);
+        ListTag printedList = new ListTag();
+        for (UUID id : printed) {
+            printedList.add(StringTag.valueOf(id.toString()));
+        }
+        tag.put("Printed", printedList);
         return tag;
+    }
+
+    /** Flags a blueprint as printed; returns true if it wasn't already. */
+    public boolean markPrinted(UUID id) {
+        boolean isNew = printed.add(id);
+        if (isNew) {
+            setDirty();
+        }
+        return isNew;
+    }
+
+    public Set<UUID> printed() {
+        return Set.copyOf(printed);
     }
 
     /** Adds (or refreshes) an entry; returns true if it was newly catalogued. */

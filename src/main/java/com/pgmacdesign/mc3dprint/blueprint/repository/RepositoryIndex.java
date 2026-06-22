@@ -3,13 +3,18 @@ package com.pgmacdesign.mc3dprint.blueprint.repository;
 import com.pgmacdesign.mc3dprint.config.MC3DPrintConfig;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -22,6 +27,7 @@ import java.util.UUID;
  */
 public final class RepositoryIndex {
     private static final String PERSONAL_TAG = "mc3dprint:RepoEntries";
+    private static final String PERSONAL_PRINTED_TAG = "mc3dprint:RepoPrinted";
 
     private RepositoryIndex() {}
 
@@ -65,6 +71,43 @@ public final class RepositoryIndex {
         list.add(entry.toNbt());
         persisted.put(PERSONAL_TAG, list);
         return true;
+    }
+
+    /**
+     * Records that an (official) blueprint has been printed. Shared mode writes the
+     * world store and never needs a player; personal mode needs the owner online —
+     * an offline owner there simply doesn't get the mark (a deliberately niche gap).
+     */
+    public static void markPrinted(MinecraftServer server, @Nullable ServerPlayer owner, UUID id) {
+        if (shared()) {
+            RepositoryData.get(server).markPrinted(id);
+            return;
+        }
+        if (owner == null) {
+            return;
+        }
+        CompoundTag persisted = persisted(owner);
+        ListTag list = persisted.getList(PERSONAL_PRINTED_TAG, Tag.TAG_STRING);
+        String idString = id.toString();
+        for (Tag element : list) {
+            if (element.getAsString().equals(idString)) {
+                return;
+            }
+        }
+        list.add(StringTag.valueOf(idString));
+        persisted.put(PERSONAL_PRINTED_TAG, list);
+    }
+
+    /** The set of blueprint UUIDs the viewer has printed (world set, or their own). */
+    public static Set<UUID> printedIds(ServerPlayer viewer) {
+        if (shared()) {
+            return RepositoryData.get(viewer.server).printed();
+        }
+        Set<UUID> out = new HashSet<>();
+        for (Tag element : persisted(viewer).getList(PERSONAL_PRINTED_TAG, Tag.TAG_STRING)) {
+            out.add(UUID.fromString(element.getAsString()));
+        }
+        return out;
     }
 
     private static List<RepoEntry> personalEntries(ServerPlayer player) {

@@ -6,7 +6,9 @@ import com.pgmacdesign.mc3dprint.blueprint.CuratedBlueprints;
 import com.pgmacdesign.mc3dprint.blueprint.repository.RepoEntry;
 import com.pgmacdesign.mc3dprint.machine.repository.BlueprintRepositoryMenu;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -36,10 +38,16 @@ public class BlueprintRepositoryScreen extends AbstractContainerScreen<Blueprint
     private static final int ACCENT = 0xFF3FE0C0;
     private static final int OFFICIAL = 0xFFBFE9DC;
     private static final int SCANNED = 0xFFD8C08A;
+    private static final int PRINTED = 0xFF7BE0A0;
     private static final int ROW_SEL = 0x66174C3C;
     private static final int ROW_HOVER = 0x33FFFFFF;
 
+    // Print-status filter: 0 = all, 1 = printed only, 2 = unprinted only.
+    private static final int FILTER_ALL = 0, FILTER_PRINTED = 1, FILTER_UNPRINTED = 2;
+
     private EditBox search;
+    private Button filterButton;
+    private int printFilter = FILTER_ALL;
     private int scroll;
 
     public BlueprintRepositoryScreen(BlueprintRepositoryMenu menu, Inventory playerInventory, Component title) {
@@ -53,13 +61,23 @@ public class BlueprintRepositoryScreen extends AbstractContainerScreen<Blueprint
     @Override
     protected void init() {
         super.init();
-        search = new EditBox(font, leftPos + 10, topPos + 20, 110, 12,
+        search = new EditBox(font, leftPos + 10, topPos + 19, 58, 14,
                 Component.translatable("gui.mc3dprint.repository.search"));
         search.setMaxLength(48);
         search.setBordered(true);
         search.setHint(Component.translatable("gui.mc3dprint.repository.search"));
         search.setResponder(s -> scroll = 0);
         addRenderableWidget(search);
+
+        filterButton = Button.builder(filterLabel(), b -> {
+                    printFilter = (printFilter + 1) % 3;
+                    scroll = 0;
+                    b.setMessage(filterLabel());
+                })
+                .bounds(leftPos + 72, topPos + 19, 52, 14)
+                .tooltip(Tooltip.create(Component.translatable("gui.mc3dprint.repository.filter_tip")))
+                .build();
+        addRenderableWidget(filterButton);
 
         addRenderableWidget(net.minecraft.client.gui.components.Button.builder(
                         Component.translatable("gui.mc3dprint.repository.deposit"),
@@ -77,18 +95,40 @@ public class BlueprintRepositoryScreen extends AbstractContainerScreen<Blueprint
         }
     }
 
-    /** Absolute indices into menu.entries() that match the current search query. */
+    private Component filterLabel() {
+        String key = switch (printFilter) {
+            case FILTER_PRINTED -> "gui.mc3dprint.repository.filter_printed";
+            case FILTER_UNPRINTED -> "gui.mc3dprint.repository.filter_unprinted";
+            default -> "gui.mc3dprint.repository.filter_all";
+        };
+        return Component.translatable(key);
+    }
+
+    /** Absolute indices into menu.entries() that pass the search query + print filter. */
     private List<Integer> visibleIndices() {
         List<RepoEntry> entries = menu.entries();
         String q = search == null ? "" : search.getValue().toLowerCase().trim();
         List<Integer> out = new ArrayList<>();
         for (int i = 0; i < entries.size(); i++) {
             RepoEntry e = entries.get(i);
-            if (q.isEmpty() || e.name().toLowerCase().contains(q) || ("t" + e.tier()).equals(q)) {
+            boolean matchesSearch = q.isEmpty() || e.name().toLowerCase().contains(q) || ("t" + e.tier()).equals(q);
+            if (matchesSearch && matchesFilter(e)) {
                 out.add(i);
             }
         }
         return out;
+    }
+
+    /** Printed/unprinted filtering applies only to official builds (scans aren't tracked). */
+    private boolean matchesFilter(RepoEntry e) {
+        if (printFilter == FILTER_ALL) {
+            return true;
+        }
+        if (!e.official()) {
+            return false;
+        }
+        boolean printed = menu.isPrinted(e.id());
+        return printFilter == FILTER_PRINTED ? printed : !printed;
     }
 
     @Override
@@ -127,11 +167,20 @@ public class BlueprintRepositoryScreen extends AbstractContainerScreen<Blueprint
                 graphics.fill(left, rowY, left + LIST_W, rowY + ROW_H, ROW_HOVER);
             }
             graphics.drawString(font, "T" + entry.tier(), left + 2, rowY + 3, tierColor(entry.tier()), false);
-            String name = font.plainSubstrByWidth(displayName(entry), LIST_W - 38);
+            String name = font.plainSubstrByWidth(displayName(entry), LIST_W - 44);
             graphics.drawString(font, name, left + 20, rowY + 3, LABEL, false);
+            // printed marker (green dot) left of the official/scan dot, official builds only
+            if (entry.official() && menu.isPrinted(entry.id())) {
+                graphics.fill(left + LIST_W - 13, rowY + 4, left + LIST_W - 9, rowY + 8, PRINTED);
+            }
             graphics.fill(left + LIST_W - 6, rowY + 4, left + LIST_W - 2, rowY + 8,
                     entry.official() ? OFFICIAL : SCANNED);
         }
+
+        // library-wide printed progress footer (official builds only)
+        Component progress = Component.translatable("gui.mc3dprint.repository.printed_count",
+                menu.printedCount(), CuratedBlueprints.CURATED_NAMES.size());
+        graphics.drawString(font, progress, left + 2, topPos + 116, PRINTED, false);
     }
 
     private void renderDetail(GuiGraphics graphics) {
@@ -145,15 +194,22 @@ public class BlueprintRepositoryScreen extends AbstractContainerScreen<Blueprint
         graphics.drawWordWrap(font, Component.literal(displayName(entry)),
                 leftPos + PREVIEW_X + 4, topPos + PREVIEW_Y + 4, PREVIEW_W - 8, ACCENT);
 
-        int y = topPos + 58;
+        int y = topPos + 56;
         line(graphics, x, y, "gui.mc3dprint.repository.size",
                 entry.sizeX() + "x" + entry.sizeY() + "x" + entry.sizeZ(), LABEL);
-        line(graphics, x, y += 13, "gui.mc3dprint.repository.blocks", Integer.toString(entry.blockCount()), LABEL);
-        line(graphics, x, y += 13, "gui.mc3dprint.repository.tier", "T" + entry.tier(), tierColor(entry.tier()));
-        line(graphics, x, y += 13, "gui.mc3dprint.repository.cost", entry.cost() + " FU", LABEL);
+        line(graphics, x, y += 12, "gui.mc3dprint.repository.blocks", Integer.toString(entry.blockCount()), LABEL);
+        line(graphics, x, y += 12, "gui.mc3dprint.repository.tier", "T" + entry.tier(), tierColor(entry.tier()));
+        line(graphics, x, y += 12, "gui.mc3dprint.repository.cost", entry.cost() + " FU", LABEL);
         graphics.drawString(font, Component.translatable(entry.official()
                         ? "gui.mc3dprint.repository.official" : "gui.mc3dprint.repository.scanned"),
-                x + 4, y + 13, entry.official() ? OFFICIAL : SCANNED, false);
+                x + 4, y += 12, entry.official() ? OFFICIAL : SCANNED, false);
+        // print status (official builds are the only ones tracked)
+        if (entry.official()) {
+            boolean printed = menu.isPrinted(entry.id());
+            graphics.drawString(font, Component.translatable(printed
+                            ? "gui.mc3dprint.repository.printed_yes" : "gui.mc3dprint.repository.printed_no"),
+                    x + 4, y + 12, printed ? PRINTED : LABEL_DIM, false);
+        }
     }
 
     private void line(GuiGraphics graphics, int x, int y, String key, String value, int valueColor) {
@@ -173,10 +229,13 @@ public class BlueprintRepositoryScreen extends AbstractContainerScreen<Blueprint
             return;
         }
         RepoEntry entry = menu.entries().get(visible.get(scroll + row));
+        String status = entry.official()
+                ? (menu.isPrinted(entry.id()) ? " · printed" : "")
+                : " · scan";
         graphics.renderTooltip(font, List.of(
                 Component.literal(displayName(entry)).getVisualOrderText(),
-                Component.literal("T" + entry.tier() + " · " + entry.cost() + " FU"
-                        + (entry.official() ? "" : " · scan")).getVisualOrderText()), mouseX, mouseY);
+                Component.literal("T" + entry.tier() + " · " + entry.cost() + " FU" + status).getVisualOrderText()),
+                mouseX, mouseY);
     }
 
     @Override

@@ -18,6 +18,7 @@ import net.minecraftforge.items.SlotItemHandler;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 public class BlueprintRepositoryMenu extends AbstractContainerMenu {
@@ -38,6 +39,7 @@ public class BlueprintRepositoryMenu extends AbstractContainerMenu {
 
     // Client mirror of the catalogue (filled by RepositoryListingPacket) + selection.
     private List<RepoEntry> entries = new ArrayList<>();
+    private Set<UUID> printed = Set.of();
     private int selectedIndex = -1;
     // Server-side selection, resolved to a concrete blueprint id.
     @Nullable
@@ -85,11 +87,20 @@ public class BlueprintRepositoryMenu extends AbstractContainerMenu {
         return entries;
     }
 
-    public void setEntries(List<RepoEntry> entries) {
+    public void setEntries(List<RepoEntry> entries, Set<UUID> printed) {
         this.entries = entries;
+        this.printed = printed;
         if (selectedIndex >= entries.size()) {
             selectedIndex = -1;
         }
+    }
+
+    public boolean isPrinted(UUID id) {
+        return printed.contains(id);
+    }
+
+    public int printedCount() {
+        return printed.size();
     }
 
     public int selectedIndex() {

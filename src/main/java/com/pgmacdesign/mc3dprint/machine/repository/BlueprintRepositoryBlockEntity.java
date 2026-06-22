@@ -71,7 +71,8 @@ public class BlueprintRepositoryBlockEntity extends BlockEntity implements MenuP
     }
 
     public void sendListing(ServerPlayer player) {
-        MC3DPrintNetwork.sendTo(player, new RepositoryListingPacket(listingFor(player)));
+        MC3DPrintNetwork.sendTo(player, new RepositoryListingPacket(
+                listingFor(player), new java.util.ArrayList<>(RepositoryIndex.printedIds(player))));
     }
 
     /** Catalogue the written disc in the input slot, consuming it. */

@@ -54,4 +54,17 @@ class RepositoryDataTest {
         assertTrue(restored.contains(sample("a_house").id()));
         assertTrue(restored.contains(sample("b_tower").id()));
     }
+
+    @Test
+    void markPrintedDeduplicatesAndSurvivesRoundTrip() {
+        RepositoryData data = new RepositoryData();
+        UUID id = sample("windmill").id();
+        assertTrue(data.markPrinted(id), "first mark is new");
+        assertFalse(data.markPrinted(id), "re-printing the same build is a no-op");
+        assertTrue(data.printed().contains(id));
+
+        RepositoryData restored = RepositoryData.load(data.save(new CompoundTag()));
+        assertEquals(1, restored.printed().size());
+        assertTrue(restored.printed().contains(id));
+    }
 }
