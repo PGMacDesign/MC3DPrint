@@ -1,0 +1,17 @@
+name = "mc3dprint-submit"
+main = "src/index.js"
+compatibility_date = "2025-06-01"
+
+# Served at https://mc3dprint-submit.<your-subdomain>.workers.dev — the /submit
+# page POSTs here. No custom domain needed (mc3dprint.dev DNS isn't on Cloudflare).
+workers_dev = true
+
+[vars]
+# Comma-separated origins allowed to call the endpoint (localhost is always allowed for dev).
+ALLOWED_ORIGIN = "https://mc3dprint.dev"
+GITHUB_REPO = "PGMacDesign/MC3DPrint"
+SUBMISSION_DIR = "community-submissions"
+
+# Secrets (NOT stored here — set with `wrangler secret put`):
+#   GITHUB_TOKEN     — fine-grained PAT: Contents + Pull requests = Read/Write on PGMacDesign/MC3DPrint
+#   TURNSTILE_SECRET — optional; if set, the page must send a Turnstile captcha token

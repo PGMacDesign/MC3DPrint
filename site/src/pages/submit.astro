@@ -60,6 +60,7 @@ import Base from "../layouts/Base.astro";
             <span>I made this build (or have the right to share it) and I'm okay with it being included in MC3DPrint under the project's MIT license.</span>
           </label>
 
+          <div id="turnstile"></div>
           <button id="send" class="btn btn-primary" type="submit">Submit for review</button>
           <p id="msg" class="msg" hidden></p>
         </form>
@@ -85,8 +86,21 @@ import Base from "../layouts/Base.astro";
   import { loadColorTable, isUnknown } from "/viewer/js/colors.js";
   import { Viewer } from "/viewer/js/viewer.js";
 
-  // Set this once the Cloudflare Worker is deployed (e.g. https://submit.mc3dprint.dev).
+  // Set this once the Cloudflare Worker is deployed (its *.workers.dev URL).
   const SUBMIT_ENDPOINT = "";
+  // Optional Cloudflare Turnstile site key. When set, a captcha is shown and its
+  // token is sent with the submission (the Worker must also have TURNSTILE_SECRET).
+  const TURNSTILE_SITEKEY = "";
+  let turnstileToken = "";
+
+  if (TURNSTILE_SITEKEY) {
+    window.onTurnstile = (t) => { turnstileToken = t; };
+    const s = document.createElement("script");
+    s.src = "https://challenges.cloudflare.com/turnstile/v0/api.js";
+    s.async = true; s.defer = true;
+    document.head.appendChild(s);
+    s.onload = () => window.turnstile?.render("#turnstile", { sitekey: TURNSTILE_SITEKEY, callback: window.onTurnstile });
+  }
 
   const MAX_COMPRESSED = 8 * 1024 * 1024;
   const TIER_FOOTPRINT = [[3, 3], [4, 5], [5, 9], [6, 15], [7, 33], [8, 51]];
@@ -160,12 +174,20 @@ import Base from "../layouts/Base.astro";
     btn.disabled = true;
     msg.hidden = true;
     try {
+      if (TURNSTILE_SITEKEY && !turnstileToken) {
+        msg.hidden = false; msg.className = "msg err"; msg.textContent = "Please complete the captcha first.";
+        return;
+      }
+      // Chunk the base64 encode so a large file doesn't blow the call stack.
+      let bin = "";
+      for (let i = 0; i < fileBytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, fileBytes.subarray(i, i + 0x8000));
       const body = {
         name: $("bname").value.trim(),
         author: $("author").value.trim(),
         description: $("desc").value.trim(),
         detected: { sx: detected.sx, sy: detected.sy, sz: detected.sz, blocks: detected.blockCount, tier: tierFor(detected.sx, detected.sz) },
-        file: btoa(String.fromCharCode(...fileBytes)),
+        turnstileToken,
+        file: btoa(bin),
       };
       const res = await fetch(SUBMIT_ENDPOINT, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
       if (!res.ok) throw new Error(`server returned ${res.status}`);
