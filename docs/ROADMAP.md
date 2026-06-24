@@ -1,6 +1,6 @@
 # MC3DPrint — Roadmap & Outstanding Items
 
-_Last updated: 2026-06-21 · **v0.7.0** · 94 GameTests passing · 134 curated builds · deployed to Prism._
+_Last updated: 2026-06-24 · **v0.9.0 ("Beta 4")** · 94 GameTests passing · 134 curated builds · deployed to Prism · website live at [mc3dprint.dev](https://mc3dprint.dev)._
 
 MC3DPrint is a Forge **1.20.1** tech mod: "WorldEdit for survival." Scan a build
 with the Structure Scanner → save it to a Blueprint Disc → print it anywhere with
@@ -50,18 +50,41 @@ v0.4.0.
   flat-ended wire; filament rack "Spool Bays" face at 32px with lit, centered tier-colored
   spools; printer panel heightened 200→216 for the rotate row.
 
+**Shipped v0.8.0 → v0.9.0 / "Beta 4" (Jun 22–24):**
+- **Uniform spool capacity** — every filament spool now holds a flat **100,000 FU**
+  regardless of tier (tier still gates winding/printing, not how much it holds). The old
+  per-tier capacity table is gone.
+- **Filament Winder GUI polish** — the "Throughput Panel": a rotating spool-end reel
+  (idle-dimmed), a status line, and Material/Spool/Rate info cards. Closes the long-standing
+  "winder is the laggard" UI gap.
+- **Blueprint Repository — full feature set** (Library Browser): browse deposited discs with
+  search/filter, **STL to GCODE** re-burn onto blanks, shared-vs-personal via the
+  `blueprintRepositoryIsShared` config; **printed-status tracking** (marks/filters/counts the
+  official builds you've printed, packet-synced); **duplicate-deposit recycle** (re-depositing a
+  catalogued disc hands back a Blank Disc). The mod's first `SimpleChannel`. Memory
+  `blueprint-repository`.
+- **The website → full site at [mc3dprint.dev](https://mc3dprint.dev)** (custom apex domain,
+  GitHub Pages). The `web/` viewer-only Pages site was rebuilt as an **Astro** site (`site/`):
+  landing, guide, gallery, about; the 3D viewer moved intact to `/viewer`. New **"Submit a Build"**
+  flow — drag a `.blueprint`, see a live 3D preview, and a **Cloudflare Worker** (`worker/`) opens a
+  reviewable PR with **no GitHub account needed** — Turnstile-gated + rate-limited; `main` protected
+  by a ruleset + fork-PR approval. Memory `github-blueprint-renderer`.
+- **Releases** — cut **v0.8.0** and **v0.9.0 ("Beta 4")** via the new project `mc3dp-release`
+  skill (auto-grouped notes from conventional commits; CI builds + attaches the jar).
+
 ---
 
 ## Active workstreams (next up)
 
-### 4. Overall UI cleanup / improvements — _in progress_
-- **Done so far:** dark tech-console printer GUI (`tools/gen_printer_gui.py` →
-  `gui/printer.png`), widened to 230 + heightened to 216; tier-colored spinning spool
-  reels; the Rotate row + Spool Bays rack face; Ghost default-on.
-- **Still the laggard:** the **Filament Winder GUI** is less polished than the printer.
-  General polish remains — alignment/consistency, tooltips, status readouts.
-- **Lockstep rule:** coordinates in `gen_printer_gui.py` MUST stay in sync with
-  `PrinterMenu`/`PrinterScreen` (and likewise for the winder).
+### 4. Overall UI cleanup / improvements — _largely done_
+- **Done:** dark tech-console printer GUI (`tools/gen_printer_gui.py` → `gui/printer.png`),
+  widened to 230 + heightened to 216; tier-colored spinning spool reels; the Rotate row +
+  Spool Bays rack face; Ghost default-on; the **Filament Winder "Throughput Panel"** (rotating
+  reel + status line + info cards); the Blueprint Repository browser GUI.
+- **Remaining:** minor cross-screen consistency polish; flesh out the **website Guide pages**
+  (currently stubbed — pull content/screenshots from the Patchouli guide + `docs/`).
+- **Lockstep rule:** coordinates in the `tools/gen_*_gui.py` generators MUST stay in sync with
+  the matching `*Menu`/`*Screen`.
 
 ### 2. Tier rebalance (item → tier mapping) — _long-term_
 - **Now:** `fu/FuValueRegistry.java` — explicit entries + recipe-derivation + strict mode
@@ -111,7 +134,7 @@ v0.4.0.
 ## Dev workflow & key references
 - **Build:** `./gradlew build` · **Tests:** `./gradlew runGameTestServer` (94 GameTests +
   JUnit). Texture-only changes skip tests but still need a build to repackage.
-- **Deploy:** copy `build/libs/mc3dprint-0.7.0.jar` over the jar in the Prism mods folder
+- **Deploy:** copy `build/libs/mc3dprint-0.9.0.jar` over the jar in the Prism mods folder
   `~/Library/Application Support/PrismLauncher/instances/1.20.1/minecraft/mods/` (replace
   the old one — never leave two mc3dprint jars).
 - **Git:** commit → push every change, direct to `main` (no Claude/Anthropic attribution).
