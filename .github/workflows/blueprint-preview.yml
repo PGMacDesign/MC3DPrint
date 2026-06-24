@@ -42,7 +42,7 @@ jobs:
           REPO_NAME: ${{ github.event.repository.name }}
         run: |
           set -euo pipefail
-          PAGES_BASE="https://${OWNER,,}.github.io/${REPO_NAME}"   # custom domain: override here
+          PAGES_BASE="https://mc3dprint.dev"   # custom apex domain (was ${OWNER,,}.github.io/${REPO_NAME})
           {
             echo "<!-- blueprint-preview -->"
             echo "### 🧱 Blueprint preview"

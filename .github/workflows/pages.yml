@@ -46,7 +46,7 @@ jobs:
             _site/manifest.json \
             blueprints/
           touch _site/.nojekyll          # serve underscore paths verbatim, skip Jekyll
-          # For a custom domain later: echo blueprints.example.com > _site/CNAME
+          echo mc3dprint.dev > _site/CNAME   # custom apex domain; keeps Pages bound to it every deploy
 
       - uses: actions/upload-pages-artifact@v3
         with:
