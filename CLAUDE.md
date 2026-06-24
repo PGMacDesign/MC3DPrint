@@ -29,15 +29,31 @@ Two rules that bite if skipped:
 |---|---|
 | `MC3DPrint.java` | Mod entry; registries + event-listener wiring (incl. compat hooks) |
 | `fu/` | **FU economy core** — `FuValueRegistry` (values + tiers), `RecipeFuValuator`, `FuEvents` |
-| `machine/` | Printer block entity, menu, upgrades, **Resin slot + `machine/resin/` effects**; `machine/multiblock/` fabricator |
-| `blueprint/` | `.blueprint` GZIP-NBT I/O, `CuratedBlueprints` install |
+| `machine/` | Printer block entity, menu, upgrades, **Resin slot + `machine/resin/`**; `machine/multiblock/` fabricator; `machine/repository/` Blueprint Repository; Filament Rack + MC3D Cable |
+| `blueprint/` | `.blueprint` GZIP-NBT I/O, `CuratedBlueprints` install, `blueprint/repository/` saved-data |
 | `scanner/` | Structure Scanner (capture builds) |
-| `integration/` | Soft-dep hooks: `ae2`, `thermal`, `tinkers`, `draconic`, `jei`, `patchouli` |
+| `integration/` | Soft-dep hooks: `ae2`, `botania`, `create`, `draconic`, `enderio`, `immersiveengineering`, `mekanism`, `thermal`, `tinkers` + `jei`, `patchouli` |
+| `network/` | The mod's `SimpleChannel` (repository GUI listing sync) |
 | `registry/`, `item/`, `client/`, `command/`, `config/`, `loot/`, `advancement/` | as named |
 
 Textures/GUIs are generated, reproducibly, by `tools/*.py` (PIL). `gen_printer_gui.py`
 coords MUST stay in lockstep with `client/PrinterScreen` + `machine/PrinterMenu`. Run
 `gen_block_textures.py` before `gen_formed_textures.py`.
+
+## Website (`site/` + `worker/`)
+
+Live at **mc3dprint.dev** (GitHub Pages, custom apex domain; DNS at Squarespace).
+- `site/` — **Astro** site (landing, guide, gallery, submit, about) + the 3D **Blueprint
+  Viewer** at `/viewer` (vanilla Three.js, served verbatim from `site/public/viewer/`).
+  Build: `cd site && npm install --cache ./.npm-cache && npm run build` (global ~/.npm cache
+  hits EACCES under sandbox → use `--cache`). Deploy is automatic on push to main
+  (`.github/workflows/pages.yml` builds Astro + injects curated blueprints/manifest into
+  `/viewer`). Block colors: `BlockColorDumpGameTest` → `site/public/viewer/data/block_colors.json`.
+- `worker/` — **Cloudflare Worker** (`mc3dprint-submit.workers.dev`) behind the **Submit a
+  Build** page: validates an uploaded `.blueprint` + opens a reviewable PR — no GitHub account
+  needed. Deploy: `cd worker && npx wrangler deploy`. Secrets (`GITHUB_TOKEN`, `TURNSTILE_SECRET`)
+  live in the **CF dashboard, NOT the repo**. Rate-limited + Turnstile-gated. Full detail:
+  memory `github-blueprint-renderer`.
 
 ## FU economy invariants (don't break these)
 
@@ -74,13 +90,16 @@ exact values: `docs/rebalance/{ae2,thermal,tconstruct}.md`.
 - **Blueprints:** `CuratedBlueprintGenerator` (gated JUnit) is the source of truth —
   regen with `./gradlew test --tests '*CuratedBlueprintGenerator*' -DgenBlueprints=true
   --rerun-tasks`; validate/dump ASCII layers with `*BlueprintDumpTest* -DdumpBlueprints=true`.
-- **Git:** commit → push every change, direct to `main` (solo repo). **Never** add
+- **Git:** commit → push every change, direct to `main` (solo repo; a ruleset requires PRs
+  for non-admins but admin/Patrick bypasses, so direct push still works). **Never** add
   `Co-Authored-By: Claude` or "Generated with Claude Code" to commits/PRs.
 
 ## Where deeper context lives
 
 `docs/ROADMAP.md` (state + next-up), `docs/catalysts-design.md` (Resin/Catalyst spec +
 decisions), `docs/rebalance/` (FU rebalance plan + per-mod research), `docs/blueprint-specs.md`,
-`docs/popular-mods-1.20.1.md` (FU-synergy shortlist), and the project memory (`active-roadmap`,
-`fu-economy`, `resin-system`, `upgrade-system`, `blueprint-pipeline`, `modded-fu-compat`,
-`winder-blacklist`, `multiblock-corner-blocks`).
+`docs/popular-mods-1.20.1.md` (FU-synergy shortlist), and the project memory — index in
+`MEMORY.md`; key entries: `active-roadmap`, `fu-economy`, `resin-system`, `upgrade-system`,
+`blueprint-pipeline`, `modded-fu-compat`, `winder-blacklist`, `multiblock-corner-blocks`,
+`github-blueprint-renderer` (the website + submission Worker), `blueprint-repository`,
+`rack-and-cable`.
