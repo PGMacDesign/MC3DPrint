@@ -12,6 +12,14 @@ ALLOWED_ORIGIN = "https://mc3dprint.dev"
 GITHUB_REPO = "PGMacDesign/MC3DPrint"
 SUBMISSION_DIR = "community-submissions"
 
+# Per-IP flood limit (native binding). simple.period only supports 10 or 60s, so this
+# is the burst guard — 5 submissions / minute / IP. A captcha-solving farm still can't
+# fan out faster than this. (A longer daily cap would need a KV/DO counter; not yet.)
+[[ratelimits]]
+name = "SUBMIT_RL"
+namespace_id = "1001"
+simple = { limit = 5, period = 60 }
+
 # Secrets (NOT stored here — set with `wrangler secret put`):
 #   GITHUB_TOKEN     — fine-grained PAT: Contents + Pull requests = Read/Write on PGMacDesign/MC3DPrint
 #   TURNSTILE_SECRET — optional; if set, the page must send a Turnstile captcha token

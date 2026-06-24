@@ -22,6 +22,13 @@ export default {
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
     if (request.method !== "POST") return json({ error: "POST only" }, 405, cors);
 
+    // Per-IP flood guard — shed bursts cheaply before any parsing or GitHub work.
+    if (env.SUBMIT_RL) {
+      const ip = request.headers.get("CF-Connecting-IP") || "anon";
+      const { success } = await env.SUBMIT_RL.limit({ key: ip });
+      if (!success) return json({ error: "You're submitting too fast — wait a minute and try again." }, 429, cors);
+    }
+
     let body;
     try {
       body = await request.json();
@@ -110,11 +117,11 @@ async function openPullRequest(env, { name, author, description, detected, bytes
     ``,
     `| | |`,
     `|---|---|`,
-    `| **Build** | ${escapePipe(name)} |`,
-    `| **Submitted by** | ${escapePipe(author)} |`,
+    `| **Build** | ${escapePipe(mentionSafe(name))} |`,
+    `| **Submitted by** | ${escapePipe(mentionSafe(author))} |`,
     `| **Detected** | ${dims} |`,
     ``,
-    description ? `**Submitter's notes:**\n\n> ${description.replace(/\n/g, "\n> ")}` : `_No description provided._`,
+    description ? `**Submitter's notes:**\n\n> ${mentionSafe(description).replace(/\n/g, "\n> ")}` : `_No description provided._`,
     ``,
     `---`,
     `The blueprint preview bot will render the file below. Promoting it to an official build still needs the usual integration work; this PR just gets the file in for review.`,
@@ -196,6 +203,13 @@ function slugify(name) {
 
 function escapePipe(s) {
   return s.replace(/\|/g, "\\|").replace(/\n/g, " ");
+}
+
+// Neutralize @mentions and #issue-refs in submitter text so the bot can't be used
+// to notify/ping people. A zero-width space after the sigil keeps it readable but
+// stops GitHub from linking it.
+function mentionSafe(s) {
+  return s.replace(/([@#])(?=\w)/g, "$1\u200b");
 }
 
 function base64ToBytes(b64) {
