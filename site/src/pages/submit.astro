@@ -90,7 +90,7 @@ import Base from "../layouts/Base.astro";
   const SUBMIT_ENDPOINT = "https://mc3dprint-submit.patrick-4bc.workers.dev";
   // Optional Cloudflare Turnstile site key. When set, a captcha is shown and its
   // token is sent with the submission (the Worker must also have TURNSTILE_SECRET).
-  const TURNSTILE_SITEKEY = "";
+  const TURNSTILE_SITEKEY = "0x4AAAAAADqJ3sdOSZLbfoLm";
   let turnstileToken = "";
 
   if (TURNSTILE_SITEKEY) {
@@ -99,7 +99,7 @@ import Base from "../layouts/Base.astro";
     s.src = "https://challenges.cloudflare.com/turnstile/v0/api.js";
     s.async = true; s.defer = true;
     document.head.appendChild(s);
-    s.onload = () => window.turnstile?.render("#turnstile", { sitekey: TURNSTILE_SITEKEY, callback: window.onTurnstile });
+    s.onload = () => window.turnstile?.render("#turnstile", { sitekey: TURNSTILE_SITEKEY, theme: "auto", callback: window.onTurnstile });
   }
 
   const MAX_COMPRESSED = 8 * 1024 * 1024;
@@ -196,6 +196,8 @@ import Base from "../layouts/Base.astro";
       msg.className = "msg ok";
       msg.innerHTML = out.url ? `Thanks! Your build was submitted — <a href="${out.url}" target="_blank" rel="noopener">track it here</a>.` : "Thanks! Your build was submitted for review.";
       $("form").reset();
+      window.turnstile?.reset();
+      turnstileToken = "";
     } catch (err) {
       msg.hidden = false;
       msg.className = "msg err";
@@ -236,6 +238,7 @@ import Base from "../layouts/Base.astro";
   .form input:focus, .form textarea:focus { outline: none; border-color: var(--filament); }
   .check { grid-template-columns: auto 1fr; align-items: start; gap: 0.6rem; font-weight: 400; color: var(--ink-soft); font-size: 0.9rem; }
   .check input { margin-top: 0.2rem; }
+  #turnstile:empty { display: none; }
   #send { justify-self: start; }
 
   .msg { padding: 0.7rem 0.9rem; border-radius: var(--radius-sm); font-size: 0.92rem; margin: 0; }
