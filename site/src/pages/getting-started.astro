@@ -1,0 +1,68 @@
+---
+import Base from "../layouts/Base.astro";
+
+const steps = [
+  { t: "Install Forge 1.20.1", d: "MC3DPrint runs on Minecraft Java 1.20.1 with Minecraft Forge 47.4.10 or newer. Install the Forge profile from files.minecraftforge.net and launch it once to create the profile." },
+  { t: "Drop in the jar", d: "Download the latest mc3dprint-<version>.jar from the Releases page and place it in your instance's mods/ folder. Replace any older copy — never keep two." },
+  { t: "Launch & verify", d: "Start the game. Open the Mods list and confirm MC3DPrint appears. If you have Patchouli installed (optional), you'll also get the in-game guide book." },
+  { t: "Your first build", d: "Craft a Structure Scanner and a Printer. Scan something small, wind some filament, and print it. The Guide walks through each step in detail." },
+];
+---
+<Base title="Get Started — MC3DPrint" description="Install MC3DPrint for Minecraft 1.20.1 Forge and print your first build.">
+  <section class="section">
+    <div class="wrap narrow">
+      <span class="eyebrow">Get started</span>
+      <h1>Up and printing in four steps.</h1>
+      <p class="lede">MC3DPrint is a standard Forge mod — if you've installed a mod before, this will feel familiar. If you haven't, follow along; it's about five minutes.</p>
+
+      <ol class="steps">
+        {steps.map((s, i) => (
+          <li class="card step">
+            <span class="step-num">{i + 1}</span>
+            <div>
+              <h3>{s.t}</h3>
+              <p>{s.d}</p>
+            </div>
+          </li>
+        ))}
+      </ol>
+
+      <div id="download" class="card download">
+        <h2>Download</h2>
+        <p>Grab the latest release jar. It's free and always will be.</p>
+        <div class="dl-btns">
+          <a class="btn btn-primary" href="https://github.com/PGMacDesign/MC3DPrint/releases/latest">Latest release (GitHub)</a>
+          <a class="btn btn-ghost" href="https://github.com/PGMacDesign/MC3DPrint/releases">All releases</a>
+        </div>
+        <p class="muted small">Modrinth &amp; CurseForge listings coming soon.</p>
+      </div>
+
+      <div class="req">
+        <h3>Requirements</h3>
+        <ul>
+          <li><strong>Minecraft</strong> Java Edition 1.20.1</li>
+          <li><strong>Forge</strong> 47.4.10+</li>
+          <li><strong>Optional:</strong> Patchouli (in-game guide), JEI (recipe lookup)</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .narrow { max-width: 780px; }
+  .steps { list-style: none; padding: 0; margin: 2rem 0; display: grid; gap: 1rem; }
+  .step { display: flex; gap: 1.1rem; align-items: flex-start; }
+  .step-num {
+    flex: none; width: 36px; height: 36px; border-radius: 8px;
+    display: grid; place-items: center; font-weight: 700;
+    background: var(--filament); color: #1a1205;
+  }
+  .step h3 { margin: 0 0 0.3rem; }
+  .step p { margin: 0; }
+  .download { margin: 2.5rem 0; background: linear-gradient(120deg, rgba(244,162,60,0.10), rgba(54,211,194,0.06)); }
+  .dl-btns { display: flex; gap: 0.7rem; flex-wrap: wrap; margin: 1rem 0 0.6rem; }
+  .req { margin-top: 2rem; }
+  .req ul { color: var(--ink-soft); }
+  .small { font-size: 0.85rem; }
+</style>

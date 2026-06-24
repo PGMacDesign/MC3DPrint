@@ -42,7 +42,7 @@ jobs:
           REPO_NAME: ${{ github.event.repository.name }}
         run: |
           set -euo pipefail
-          PAGES_BASE="https://mc3dprint.dev"   # custom apex domain (was ${OWNER,,}.github.io/${REPO_NAME})
+          PAGES_BASE="https://mc3dprint.dev/viewer"   # 3D viewer lives under /viewer on the custom domain
           {
             echo "<!-- blueprint-preview -->"
             echo "### 🧱 Blueprint preview"
@@ -59,7 +59,7 @@ jobs:
             name=$(basename "$path" .blueprint)
             raw="https://raw.githubusercontent.com/${HEAD_REPO}/${HEAD_SHA}/${path}"
             if curl -fsSL --max-filesize 6000000 "$raw" -o bp.blueprint 2>/dev/null; then
-              stats=$(python3 web/tools/blueprint_stats.py bp.blueprint)
+              stats=$(python3 site/scripts/blueprint_stats.py bp.blueprint)
             else
               stats="(couldn't fetch file)"
             fi

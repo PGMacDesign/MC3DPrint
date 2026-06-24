@@ -1,13 +1,17 @@
-name: Deploy Blueprint Viewer
+name: Deploy Site
 
-# Publishes the static viewer in web/ to GitHub Pages. Runs ONLY on push to main
-# (i.e. after a merge), never on a PR, so a fork PR can never trigger a deploy or
-# touch the live site.
+# Builds the Astro site in site/ and publishes it to GitHub Pages. The 3D
+# Blueprint Viewer lives at /viewer (static, served verbatim from site/public);
+# the curated blueprints + gallery manifest are injected at deploy time so the
+# repo never stores generated copies.
+#
+# Runs ONLY on push to main (i.e. after a merge), never on a PR, so a fork PR can
+# never trigger a deploy or touch the live site.
 on:
   push:
     branches: [main]
     paths:
-      - 'web/**'
+      - 'site/**'
       - 'src/main/resources/data/mc3dprint/blueprints/**'
       - '.github/workflows/pages.yml'
   workflow_dispatch:
@@ -35,21 +39,24 @@ jobs:
           node-version: '20'
       - uses: actions/configure-pages@v5
 
-      - name: Assemble site
+      - name: Install & build the Astro site
+        working-directory: site
         run: |
-          mkdir -p _site/blueprints
-          cp -r web/. _site/
-          rm -rf _site/tools            # build scripts aren't part of the published site
-          cp src/main/resources/data/mc3dprint/blueprints/*.blueprint _site/blueprints/
-          node web/tools/gen_manifest.mjs \
+          npm ci || npm install
+          npm run build
+          # dist/ now has all pages + /viewer (js/css/data/index.html) + CNAME + .nojekyll
+
+      - name: Inject curated blueprints + gallery manifest into /viewer
+        run: |
+          mkdir -p site/dist/viewer/blueprints
+          cp src/main/resources/data/mc3dprint/blueprints/*.blueprint site/dist/viewer/blueprints/
+          node site/scripts/gen_manifest.mjs \
             src/main/resources/data/mc3dprint/blueprints \
-            _site/manifest.json \
+            site/dist/viewer/manifest.json \
             blueprints/
-          touch _site/.nojekyll          # serve underscore paths verbatim, skip Jekyll
-          echo mc3dprint.dev > _site/CNAME   # custom apex domain; keeps Pages bound to it every deploy
 
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: _site
+          path: site/dist
       - id: deployment
         uses: actions/deploy-pages@v4

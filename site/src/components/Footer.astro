@@ -1,0 +1,47 @@
+---
+const year = new Date().getFullYear();
+---
+<footer class="foot">
+  <div class="wrap foot-inner">
+    <div>
+      <a class="brand" href="/">
+        <span class="brand-mark" aria-hidden="true"></span> MC3DPrint
+      </a>
+      <p class="muted small">WorldEdit for survival — scan a build, print it anywhere.<br/>Free &amp; open source, MIT licensed.</p>
+    </div>
+    <nav class="foot-cols">
+      <div>
+        <h4>Learn</h4>
+        <a href="/getting-started">Get Started</a>
+        <a href="/guide">Guide</a>
+        <a href="/gallery">Blueprint Gallery</a>
+      </div>
+      <div>
+        <h4>Contribute</h4>
+        <a href="/submit">Submit a Build</a>
+        <a href="https://github.com/PGMacDesign/MC3DPrint">Source (GitHub)</a>
+        <a href="https://github.com/PGMacDesign/MC3DPrint/releases">Releases</a>
+      </div>
+    </nav>
+  </div>
+  <div class="wrap foot-base">
+    <span class="muted small">© {year} PGMacDesign · MC3DPrint for Minecraft 1.20.1 (Forge)</span>
+  </div>
+</footer>
+
+<style>
+  .foot { border-top: 1px solid var(--line); margin-top: 4rem; background: var(--bg-soft); }
+  .foot-inner {
+    display: flex; justify-content: space-between; gap: 2.5rem; flex-wrap: wrap;
+    padding-block: 2.5rem 1.5rem;
+  }
+  .brand { display: inline-flex; align-items: center; gap: 0.5rem; color: var(--ink); font-weight: 700; }
+  .brand:hover { text-decoration: none; }
+  .brand-mark { width: 18px; height: 18px; border-radius: 4px; background: linear-gradient(135deg, var(--filament), var(--teal)); }
+  .small { font-size: 0.85rem; }
+  .foot-cols { display: flex; gap: 3rem; flex-wrap: wrap; }
+  .foot-cols h4 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-faint); margin: 0 0 0.7rem; }
+  .foot-cols a { display: block; color: var(--ink-soft); font-size: 0.92rem; padding: 0.2rem 0; }
+  .foot-cols a:hover { color: var(--filament-hi); text-decoration: none; }
+  .foot-base { padding-block: 1.2rem; border-top: 1px solid var(--line-soft); }
+</style>

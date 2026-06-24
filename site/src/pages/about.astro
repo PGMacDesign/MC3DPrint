@@ -1,0 +1,49 @@
+---
+import Base from "../layouts/Base.astro";
+---
+<Base title="About — MC3DPrint" description="MC3DPrint is a free, open-source Minecraft mod made for the community by PGMacDesign.">
+  <section class="section">
+    <div class="wrap narrow">
+      <span class="eyebrow">About</span>
+      <h1>Made for the community. Free, forever.</h1>
+      <p class="lede">
+        MC3DPrint is a passion project — a tech mod that brings the power of
+        WorldEdit into survival Minecraft, the honest way. No paywalls, no premium
+        tiers, no catch. It's open source under the MIT license.
+      </p>
+
+      <div class="grid two">
+        <div class="card">
+          <h3>Open source</h3>
+          <p>Every line lives on GitHub. Fork it, learn from it, file an issue, or open a pull request. Contributions are welcome.</p>
+          <a class="btn btn-ghost" href="https://github.com/PGMacDesign/MC3DPrint">View on GitHub</a>
+        </div>
+        <div class="card">
+          <h3>Add your build</h3>
+          <p>The easiest way to contribute is to share a build. You don't need to know Git or code — just drag in a file.</p>
+          <a class="btn btn-ghost" href="/submit">Submit a build</a>
+        </div>
+      </div>
+
+      <hr />
+
+      <h2>The gist</h2>
+      <ul class="facts">
+        <li><strong>Game:</strong> Minecraft Java 1.20.1 (Forge)</li>
+        <li><strong>License:</strong> MIT — free to use, modify, and share</li>
+        <li><strong>Author:</strong> PGMacDesign</li>
+        <li><strong>Cost:</strong> $0, and that's not changing</li>
+      </ul>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .narrow { max-width: 780px; }
+  .two { grid-template-columns: 1fr 1fr; margin-top: 2rem; }
+  .two .card { display: grid; gap: 0.6rem; align-content: start; }
+  .two .card .btn { justify-self: start; margin-top: 0.3rem; }
+  .facts { list-style: none; padding: 0; color: var(--ink-soft); display: grid; gap: 0.5rem; }
+  .facts strong { color: var(--ink); }
+  @media (max-width: 680px) { .two { grid-template-columns: 1fr; } }
+</style>

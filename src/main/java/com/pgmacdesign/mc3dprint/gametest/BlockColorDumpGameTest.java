@@ -19,7 +19,7 @@ import java.nio.file.Path;
 import java.util.TreeMap;
 
 /**
- * Dumps every block's MapColor to {@code web/data/block_colors.json} — the
+ * Dumps every block's MapColor to {@code site/public/viewer/data/block_colors.json} — the
  * deterministic RGB source the web Blueprint Viewer tints voxels with. MapColor
  * is the palette Minecraft paints in-game maps with: license-clean (RGB facts,
  * not Mojang art) and the closest "true" flat color per block.
@@ -73,7 +73,8 @@ public class BlockColorDumpGameTest {
         // runGameTestServer's working dir is <repo>/run, so hop up to the repo root.
         Path cwd = Path.of("").toAbsolutePath();
         Path root = "run".equals(cwd.getFileName().toString()) ? cwd.getParent() : cwd;
-        Path out = root.resolve("web").resolve("data").resolve("block_colors.json");
+        Path out = root.resolve("site").resolve("public").resolve("viewer")
+                       .resolve("data").resolve("block_colors.json");
 
         StringBuilder sb = new StringBuilder("{\n");
         int i = 0, n = table.size();

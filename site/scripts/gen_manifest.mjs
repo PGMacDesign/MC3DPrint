@@ -1,7 +1,7 @@
 // Builds the gallery manifest by decoding every curated .blueprint with the SAME
 // parser the viewer uses, so size/tier never drift between them.
 //
-//   node web/build/gen_manifest.mjs <blueprintDir> <outFile> <urlBase>
+//   node site/scripts/gen_manifest.mjs <blueprintDir> <outFile> <urlBase>
 //
 // Defaults target a local repo-root static server. The Pages workflow overrides
 // the args to point at the copied blueprints/ dir on the published site.
@@ -10,14 +10,14 @@ import { readFileSync, readdirSync, writeFileSync, mkdirSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { parseNbt } from '../js/nbt.js';
-import { decodeBlueprint } from '../js/blueprint.js';
+import { parseNbt } from '../public/viewer/js/nbt.js';
+import { decodeBlueprint } from '../public/viewer/js/blueprint.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(here, '..', '..');
 
 const dir = process.argv[2] || join(repoRoot, 'src/main/resources/data/mc3dprint/blueprints');
-const out = process.argv[3] || join(repoRoot, 'web/manifest.json');
+const out = process.argv[3] || join(repoRoot, 'site/public/viewer/manifest.json');
 const base = process.argv[4] || '/src/main/resources/data/mc3dprint/blueprints/';
 
 // Smallest machine tier that can print a footprint (X/Z) of `edge`. Mirrors

@@ -1,0 +1,17 @@
+# build output
+dist/
+.astro/
+
+# deps
+node_modules/
+
+# generated viewer data (copied/generated at deploy time by the Pages workflow)
+public/viewer/manifest.json
+public/viewer/blueprints/
+
+# misc
+.DS_Store
+*.log
+
+# local npm cache
+.npm-cache/
