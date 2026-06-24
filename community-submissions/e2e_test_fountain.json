@@ -1,0 +1,14 @@
+{
+  "name": "E2E Test Fountain",
+  "author": "@e2e-test-bot",
+  "description": "Automated end-to-end test of the submission Worker. Safe to close.",
+  "detected": {
+    "sx": 5,
+    "sy": 5,
+    "sz": 5,
+    "blocks": 40,
+    "tier": 3
+  },
+  "submittedVia": "mc3dprint.dev",
+  "submittedAt": "2026-06-24T06:38:57.591Z"
+}
