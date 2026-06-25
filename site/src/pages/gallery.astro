@@ -33,17 +33,24 @@ import Base from "../layouts/Base.astro";
     empty.hidden = list.length > 0;
     count.textContent = `${list.length} build${list.length === 1 ? "" : "s"}`;
     for (const b of list) {
-      const src = new URL(base + b.file, location.origin + "/viewer/").pathname;
+      const id = b.file.replace(/\.blueprint$/, "");
+      const tc = tierColor(b.tier);
       const a = document.createElement("a");
       a.className = "card build";
-      a.href = `/viewer/?src=${encodeURIComponent(src)}`;
+      a.href = `/builds/${id}/`;
       a.innerHTML = `
-        <div class="build-top">
-          <span class="tier" style="color:${tierColor(b.tier)}">T${b.tier}</span>
-          <span class="dims">${b.sx}×${b.sy}×${b.sz}</span>
+        <div class="shot" style="--tc:${tc}">
+          <img src="/builds/${id}.png" alt="" loading="lazy" onerror="this.remove()" />
+          <span class="glyph" aria-hidden="true">▦</span>
         </div>
-        <h3>${b.name}</h3>
-        <p class="muted">${b.blocks.toLocaleString()} blocks</p>`;
+        <div class="build-body">
+          <div class="build-top">
+            <span class="tier" style="color:${tc}">T${b.tier}</span>
+            <span class="dims">${b.sx}×${b.sy}×${b.sz}</span>
+          </div>
+          <h3>${b.name}</h3>
+          <p class="muted">${b.blocks.toLocaleString()} blocks</p>
+        </div>`;
       grid.appendChild(a);
     }
   }
@@ -70,12 +77,20 @@ import Base from "../layouts/Base.astro";
   }
   #q:focus { outline: none; border-color: var(--filament); }
   .card-grid { grid-template-columns: repeat(4, 1fr); }
-  .build { transition: transform 0.1s ease, border-color 0.15s ease; }
+  .build { padding: 0; overflow: hidden; transition: transform 0.1s ease, border-color 0.15s ease; }
   .build:hover { transform: translateY(-3px); border-color: var(--filament); text-decoration: none; }
+  .shot {
+    position: relative; aspect-ratio: 4 / 3; overflow: hidden;
+    display: grid; place-items: center;
+    background: linear-gradient(160deg, color-mix(in srgb, var(--tc) 22%, var(--panel)), var(--bg-soft));
+  }
+  .shot img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; }
+  .shot .glyph { font-size: 1.9rem; color: color-mix(in srgb, var(--tc) 70%, var(--ink-faint)); opacity: 0.5; }
+  .build-body { padding: 0.85rem 1rem 1rem; }
   .build-top { display: flex; justify-content: space-between; align-items: center; font-family: var(--mono); font-size: 0.78rem; }
   .tier { font-weight: 700; }
   .dims { color: var(--ink-faint); }
-  .build h3 { margin: 0.6rem 0 0.2rem; font-size: 1.05rem; }
+  .build h3 { margin: 0.5rem 0 0.2rem; font-size: 1.05rem; }
   .build p { margin: 0; font-size: 0.85rem; }
   @media (max-width: 980px) { .card-grid { grid-template-columns: repeat(2, 1fr); } }
   @media (max-width: 520px) { .card-grid { grid-template-columns: 1fr; } }

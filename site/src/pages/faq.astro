@@ -1,0 +1,104 @@
+---
+import Base from "../layouts/Base.astro";
+
+const faqs = [
+  {
+    q: "Why won't it print? (Not Printable)",
+    a: `<p>A <strong>Not Printable</strong> status means the machine can't print what you gave it, for one of two reasons:</p>
+        <ul>
+          <li>The block's material tier is above the machine's tier — e.g. netherite on a Tier 3 printer.</li>
+          <li>The block has no Filament Unit value and you're in <strong>strict mode</strong> (the default) — un-priced blocks can't be printed.</li>
+        </ul>
+        <p>Use a higher-tier machine, or set <code>unknownBlocksPrintable=true</code> in the config to price unknown blocks.</p>`,
+  },
+  {
+    q: "My structure has a few blocks that won't print",
+    a: `<p>For a <strong>structure</strong> print, the machine doesn't refuse the whole job over a few bad blocks — it skips any block it can't print (too high a tier, or un-priced) and builds everything else.</p>
+        <p>Only an <strong>item</strong> print, or a structure where <em>nothing</em> is printable, shows Not Printable outright.</p>`,
+  },
+  {
+    q: "How do I move or rotate where it prints?",
+    a: `<p>Use the <strong>X / Y / Z offset</strong> steppers in the printer GUI. They shift the build area relative to its default position (centered directly above the printer). Each axis is capped at ±32 blocks — enough to place a build beside or above the machine without printing into the printer itself.</p>
+        <p>The <strong>Rotate</strong> button spins the whole print 90° clockwise per tap (0 → 90 → 180 → 270). Everything turns with it — a north-facing door comes out facing east. Rotation pivots around the build's center, so your offsets are never touched, and the ghost preview updates live so you can line it up before you print.</p>`,
+  },
+  {
+    q: "Auto vs Manual — why did it print immediately?",
+    a: `<p><strong>Auto defaults OFF.</strong> With Auto off, loading a disc only arms the printer (<em>Ready</em>) — press <strong>Start</strong> (or pulse redstone) to begin. A manual Start prints one item, or runs one structure job.</p>
+        <p>Flip <strong>Auto ON</strong> and the printer starts the moment a printable disc or item lands, and keeps going. If a print began on its own, Auto is on.</p>`,
+  },
+  {
+    q: "How do I get blueprints?",
+    a: `<p>Two ways:</p>
+        <ul>
+          <li><strong>Scan your own builds</strong> with the Structure Scanner — right-click two opposite corners, then scan with a Blank Blueprint Disc in your off-hand.</li>
+          <li><strong>Find curated discs</strong> in village and exploration loot — print what you find, no scanning required.</li>
+        </ul>
+        <p>Server operators can also import <code>.schem</code> / <code>.nbt</code> files with <code>/mc3dprint import</code>. In Creative, a config toggle (<code>allowAllDiscsInCreative</code>) lists every curated disc the mod ships.</p>`,
+  },
+  {
+    q: "How do upgrades work?",
+    a: `<p>Each printer has upgrade slots that grow with its tier (Tier 3 has 3, topping out at 8 slots). Drop modules into those slots in the GUI, or Shift+Right Click them onto the machine.</p>
+        <p>Speed, Efficiency, RF Efficiency, and Buffer modules stack — Speed, RF, and Buffer multiplicatively (two Speed modules give 0.8 × 0.8 = 64% print time), Efficiency linearly (four modules reach exact 1:1 break-even). You can install at most 4 of any one type. See <a href="/guide/upgrades/">Upgrade modules</a> for the full breakdown.</p>`,
+  },
+  {
+    q: "It stalled but doesn't say Not Printable",
+    a: `<p>Check the status line — every pause is recoverable, and the job resumes where it left off once you fix the cause:</p>
+        <ul>
+          <li><strong>No Power</strong> — feed it more RF.</li>
+          <li><strong>No Filament</strong> — dock a fuller or higher-tier spool.</li>
+          <li><strong>Output Full</strong> — clear the bottom output slot.</li>
+          <li><strong>Obstructed</strong> — clear the build area. The printer never overwrites existing blocks; it only fills empty space.</li>
+        </ul>`,
+  },
+];
+---
+<Base
+  title="FAQ — MC3DPrint"
+  description="Answers to the common MC3DPrint questions: why a build won't print, moving and rotating the print area, auto vs manual, getting blueprints, upgrades, and recovering a stalled print."
+>
+  <section class="section">
+    <div class="wrap narrow">
+      <span class="eyebrow">FAQ</span>
+      <h1>The questions every operator asks.</h1>
+      <p class="lede">Short answers to the things that trip people up. For the full mechanics, see the <a href="/guide">guide</a>.</p>
+
+      <div class="faqs">
+        {faqs.map((f, i) => (
+          <details class="faq" open={i === 0}>
+            <summary>{f.q}</summary>
+            <div class="faq-body" set:html={f.a} />
+          </details>
+        ))}
+      </div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .narrow { max-width: 760px; }
+  .faqs { margin-top: 1.8rem; display: grid; gap: 0.7rem; }
+  .faq {
+    background: linear-gradient(180deg, var(--panel), var(--bg-soft));
+    border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 0 1.2rem;
+  }
+  .faq summary {
+    cursor: pointer; list-style: none; padding: 1.1rem 0;
+    font-weight: 650; font-size: 1.05rem; color: var(--ink);
+    display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  }
+  .faq summary::-webkit-details-marker { display: none; }
+  .faq summary::after {
+    content: "+"; color: var(--filament); font-size: 1.4rem; font-weight: 400;
+    line-height: 1; transition: transform 0.15s ease;
+  }
+  .faq[open] summary::after { transform: rotate(45deg); }
+  .faq-body { padding: 0 0 1.1rem; }
+  .faq-body :global(p) { color: var(--ink-soft); margin: 0 0 0.8rem; }
+  .faq-body :global(ul) { color: var(--ink-soft); margin: 0 0 0.8rem; padding-left: 1.2rem; }
+  .faq-body :global(li) { margin: 0.3rem 0; }
+  .faq-body :global(li::marker) { color: var(--filament); }
+  .faq-body :global(strong) { color: var(--ink); }
+  .faq-body :global(a) { color: var(--cyan-hi); }
+  .faq-body :global(*:last-child) { margin-bottom: 0; }
+</style>

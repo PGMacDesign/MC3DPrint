@@ -1,0 +1,27 @@
+---
+title: "Fabricators (T5–T8)"
+category: "Multiblocks"
+order: 1
+summary: "Tiers 5–8 are multiblock Fabricators that print bigger, faster and cheaper than any single-block printer."
+---
+
+Once a single-block printer stops cutting it, you graduate to Fabricators. These are multiblock machines built from a square base of `Printer Casing` with a controller block in the center, and they print bigger, faster, and cheaper than any printer in the [tier ladder](/guide/printer-tiers/).
+
+## Sizes & base blocks
+
+- **T5** — 3×3 base, 4 casing + 4 Diamond Block corners
+- **T6** — 5×5 base, 24 casing
+- **T7** — 7×7 base, 48 casing
+- **T8** — 9×9 base, 76 casing + 4 Awakened Draconium corners
+
+`Printer Casing` is the building block of every base — one craft yields four. The T5 Fabricator controller itself is built around a Tier 4 printer and an Extrudium Crystal.
+
+## Forming the machine
+
+Lay the base flat, place the controller in the center cell, and `Right Click` the controller to form it. The casing lights up to confirm. See [the build walkthrough](/guide/build-walkthrough/) for exact per-tier layouts.
+
+> Break a formed controller and the whole machine collapses back into a single item — re-place it and it re-forms fully intact. You can relocate a Fabricator without rebuilding it.
+
+## The T8 endgame
+
+The Tier 8 Fabricator is the top of the line and requires **Draconic Evolution** installed. Its four base corners must be Awakened Draconium blocks instead of casing — without Draconic Evolution, it simply refuses to form.

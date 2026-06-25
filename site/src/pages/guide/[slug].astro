@@ -1,0 +1,71 @@
+---
+import Base from "../../layouts/Base.astro";
+import { getCollection, render } from "astro:content";
+
+export async function getStaticPaths() {
+  const entries = await getCollection("guide");
+  return entries.map((entry) => {
+    const sibs = entries
+      .filter((e) => e.data.category === entry.data.category)
+      .sort((a, b) => a.data.order - b.data.order);
+    const i = sibs.findIndex((e) => e.id === entry.id);
+    return {
+      params: { slug: entry.id },
+      props: { entry, prev: sibs[i - 1] ?? null, next: sibs[i + 1] ?? null },
+    };
+  });
+}
+
+const { entry, prev, next } = Astro.props;
+const { Content } = await render(entry);
+---
+<Base
+  title={`${entry.data.title} — MC3DPrint Guide`}
+  description={entry.data.summary}
+>
+  <section class="section">
+    <div class="wrap narrow">
+      <p class="crumb"><a href="/guide">Guide</a> <span class="sep">/</span> {entry.data.category}</p>
+      <span class="eyebrow">{entry.data.category}</span>
+      <h1>{entry.data.title}</h1>
+
+      <article class="prose"><Content /></article>
+
+      <nav class="pn">
+        {prev ? <a class="pn-link" href={`/guide/${prev.id}/`}><span>← Previous</span>{prev.data.title}</a> : <span></span>}
+        {next ? <a class="pn-link next" href={`/guide/${next.id}/`}><span>Next →</span>{next.data.title}</a> : <span></span>}
+      </nav>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .narrow { max-width: 760px; }
+  .crumb { font-size: 0.85rem; color: var(--ink-faint); margin: 0 0 0.4rem; }
+  .crumb a { color: var(--ink-soft); }
+  .crumb .sep { margin: 0 0.4rem; }
+
+  .prose { margin-top: 1.4rem; }
+  .prose :global(h2) { margin: 2rem 0 0.7rem; font-size: 1.4rem; }
+  .prose :global(h3) { margin: 1.6rem 0 0.5rem; font-size: 1.1rem; }
+  .prose :global(p) { color: var(--ink-soft); margin: 0 0 1rem; }
+  .prose :global(ul), .prose :global(ol) { color: var(--ink-soft); margin: 0 0 1.1rem; padding-left: 1.3rem; }
+  .prose :global(li) { margin: 0.3rem 0; }
+  .prose :global(li::marker) { color: var(--filament); }
+  .prose :global(strong) { color: var(--ink); }
+  .prose :global(a) { color: var(--cyan-hi); }
+  .prose :global(hr) { margin: 2rem 0; }
+  .prose :global(blockquote) {
+    margin: 1.2rem 0; padding: 0.6rem 1rem;
+    border-left: 3px solid var(--filament);
+    background: color-mix(in srgb, var(--filament) 7%, var(--panel));
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  }
+  .prose :global(blockquote p) { margin: 0; color: var(--ink); }
+
+  .pn { display: flex; justify-content: space-between; gap: 1rem; margin-top: 3rem; padding-top: 1.4rem; border-top: 1px solid var(--line); }
+  .pn-link { display: flex; flex-direction: column; gap: 0.2rem; color: var(--ink); font-weight: 600; max-width: 48%; }
+  .pn-link span { font-size: 0.78rem; color: var(--ink-faint); font-weight: 500; }
+  .pn-link.next { text-align: right; margin-left: auto; }
+  .pn-link:hover { color: var(--filament-hi); text-decoration: none; }
+</style>
