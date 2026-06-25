@@ -7,7 +7,7 @@
     {
       "type": "patchouli:text",
       "title": "Getting Blueprints",
-      "text": "Two ways:$(br)$(li)$(l)Scan$() your own builds with the $(item)Structure Scanner$() (right-click two corners, scan with a $(item)Blank Blueprint Disc$() in your off-hand)$(li)$(l)Find$() curated written $(item)Blueprint Discs$() in $(l)village and exploration loot$()$(br2)Server operators can also import $(l).schem$() / $(l).nbt$() files with $(o)/mc3dprint import$()."
+      "text": "Two ways:$(br)$(li)$(l)Scan$() your own builds with the $(item)Structure Scanner$() (right-click two corners, scan with a $(item)Blank Blueprint Disc$() anywhere in your inventory)$(li)$(l)Find$() curated written $(item)Blueprint Discs$() in $(l)village and exploration loot$()$(br2)Server operators can also import $(l).schem$() / $(l).nbt$() files with $(o)/mc3dprint import$()."
     },
     {
       "type": "patchouli:text",

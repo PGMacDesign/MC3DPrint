@@ -13,7 +13,7 @@ Tiers 1 through 4 are single-block printers — your bread-and-butter machines f
 - **Tier 3** unlocks structure printing with a 3×3 footprint.
 - **Tier 4** grows that to 5×5.
 
-Higher tiers also print faster, cost less FU per block, and accept more [upgrade modules](/guide/upgrades/) — slots equal the tier number. They unlock higher material tiers too: a Tier 3 machine can't print a Tier 6 (netherite) block, so match your printer to what you're building.
+Higher tiers also print faster, cost less FU per block, and accept more [upgrade modules](/guide/upgrades/) — one slot per tier, so a Tier 4 has four. They unlock higher material tiers too: a Tier 3 machine can't print a Tier 6 (netherite) block, so match your printer to what you're building.
 
 > Losing power only pauses a job — progress is never lost, and the print resumes the moment power returns.
 

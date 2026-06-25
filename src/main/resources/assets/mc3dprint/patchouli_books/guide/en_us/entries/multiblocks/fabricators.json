@@ -11,7 +11,7 @@
     {
       "type": "patchouli:crafting",
       "recipe": "mc3dprint:printer_casing",
-      "text": "$(item)Printer Casing$() — the building block of every Fabricator base. One craft yields $(l)four$(); a T5 needs 4 (plus 4 Diamond Block corners), a T8 needs 76 (plus 4 Awakened Draconium corners)."
+      "text": "$(item)Printer Casing$() — the building block of every Fabricator base. One craft yields $(l)four$(); a T5 needs 8, a T8 needs 76 (plus 4 Awakened Draconium corners)."
     },
     {
       "type": "patchouli:crafting",

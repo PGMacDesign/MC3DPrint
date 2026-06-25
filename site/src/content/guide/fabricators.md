@@ -9,7 +9,7 @@ Once a single-block printer stops cutting it, you graduate to Fabricators. These
 
 ## Sizes & base blocks
 
-- **T5** — 3×3 base, 4 casing + 4 Diamond Block corners
+- **T5** — 3×3 base, 8 casing
 - **T6** — 5×5 base, 24 casing
 - **T7** — 7×7 base, 48 casing
 - **T8** — 9×9 base, 76 casing + 4 Awakened Draconium corners

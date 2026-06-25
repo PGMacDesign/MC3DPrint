@@ -6,7 +6,7 @@
   "pages": [
     {
       "type": "patchouli:text",
-      "text": "The $(item)Structure Scanner$() captures any build as a reusable blueprint.$(br2)$(li)Right-click the $(l)first corner$() block$(li)Right-click the $(l)opposite corner$() block$(li)Hold a $(item)Blank Blueprint Disc$() in your $(l)off-hand$(), then right-click the air to scan$(br2)The result is a written $(item)Blueprint Disc$() — portable, tradeable, and printable on any machine of the right tier."
+      "text": "The $(item)Structure Scanner$() captures any build as a reusable blueprint.$(br2)$(li)Right-click the $(l)first corner$() block$(li)Right-click the $(l)opposite corner$() block$(li)Keep a $(item)Blank Blueprint Disc$() $(l)anywhere in your inventory$(), then right-click the air to scan$(br2)The result is a written $(item)Blueprint Disc$() — portable, tradeable, and printable on any machine of the right tier."
     },
     {
       "type": "patchouli:crafting",

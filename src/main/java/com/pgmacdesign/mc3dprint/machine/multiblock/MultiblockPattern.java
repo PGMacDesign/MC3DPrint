@@ -19,9 +19,9 @@ import java.util.List;
  * of Printer Casing blocks (T5 3×3 ... T8 9×9), all on the controller's Y level.
  *
  * Some tiers require premium blocks at the four base corners instead of plain
- * casing (see {@link #cornerBlock}): T5 needs Diamond Blocks; T8 needs Awakened
- * Draconium and refuses to form outright without Draconic Evolution loaded.
- * T6/T7 corners are plain casing for now.
+ * casing (see {@link #cornerBlock}): only T8 needs Awakened Draconium (and
+ * refuses to form outright without Draconic Evolution loaded). T5/T6/T7 corners
+ * are plain casing — no premium corner required.
  */
 public final class MultiblockPattern {
     public static final String DRACONIC_MOD_ID = "draconicevolution";

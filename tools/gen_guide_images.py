@@ -167,8 +167,8 @@ def bevel_cell(draw, x, y, s, fill, hi, lo):
 # ---------------------------------------------------------------------------
 # Multiblock layout diagrams (top-down)
 # ---------------------------------------------------------------------------
-# Corner-block styling per tier. T5 corners are Diamond Blocks (cyan), T6/T7
-# corners are ordinary Printer Casing, T8 corners are Awakened Draconium.
+# Corner-block styling per tier. Only T8 corners are special (Awakened
+# Draconium, magenta); T5/T6/T7 corners are ordinary Printer Casing.
 DIAMOND      = (0x4A, 0xC7, 0xCE, 255)  # diamond/cyan corner face
 DIAMOND_HI   = (0x7C, 0xE6, 0xEC, 255)
 DIAMOND_LO   = (0x2C, 0x86, 0x8C, 255)
@@ -180,10 +180,8 @@ DRACONIUM_LO = (0x70, 0x20, 0x50, 255)
 def _corner_style(tier):
     """(fill, hi, lo, caption) for a tier's four base corners.
 
-    T5 → Diamond Block, T8 → Awakened Draconium, T6/T7 → plain Printer Casing.
+    T8 → Awakened Draconium; T5/T6/T7 → plain Printer Casing (no premium corner).
     """
-    if tier == 5:
-        return DIAMOND, DIAMOND_HI, DIAMOND_LO, "corners = Diamond Block"
     if tier == 8:
         return (DRACONIUM, DRACONIUM_HI, DRACONIUM_LO,
                 "corners = Awakened Draconium")
@@ -260,8 +258,8 @@ def gen_layout(tier, edge):
     # --- footer captions: how to form. Font-fit the count line so even
     # "80 casing + 1 controller" fits fully on the canvas.
     base_cells = edge * edge - 1        # all base cells except the controller
-    if tier == 5 or tier == 8:
-        # four corners are special blocks, the rest are Printer Casing
+    if tier == 8:
+        # four corners are Awakened Draconium, the rest are Printer Casing
         casing = base_cells - 4
         count_txt = f"{casing} casing + 4 corners + 1 controller"
     else:
