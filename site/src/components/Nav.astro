@@ -23,7 +23,12 @@ const path = Astro.url.pathname.replace(/\/$/, "") || "/";
 
     <nav class="nav-links">
       {links.map((l) => (
-        <a href={l.href} class={path === l.href.replace(/\/$/, "") ? "active" : ""}>{l.label}</a>
+        <a
+          href={l.href}
+          class={path === l.href.replace(/\/$/, "") ? "active" : ""}
+          target={l.href.startsWith("/viewer") ? "_blank" : undefined}
+          rel={l.href.startsWith("/viewer") ? "noopener noreferrer" : undefined}
+        >{l.label}</a>
       ))}
       <a class="btn btn-primary nav-cta" href="/getting-started#download">Download</a>
     </nav>

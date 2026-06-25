@@ -106,7 +106,7 @@ const steps = [
             <h3>Preview any build in 3D</h3>
             <p class="muted">Spin, zoom, and inspect every curated blueprint right in your
               browser — no install required.</p>
-            <a class="btn btn-primary" href="/viewer/">Open the 3D viewer</a>
+            <a class="btn btn-primary" href="/viewer/" target="_blank" rel="noopener noreferrer">Open the 3D viewer ↗</a>
           </div>
         </div>
       </figure>
@@ -186,6 +186,8 @@ const steps = [
           const a = document.createElement("a");
           a.className = "card fb-card";
           a.href = `/viewer/?src=${encodeURIComponent(src)}`;
+          a.target = "_blank";
+          a.rel = "noopener noreferrer";
           a.innerHTML = `
             <div class="fb-shot" style="--tc:${tc}">
               <img src="/builds/${id}.png" alt="" loading="lazy" onerror="this.remove()" />
