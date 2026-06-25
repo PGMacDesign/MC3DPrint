@@ -1,8 +1,10 @@
 /* ============================================================================
    MC3DPrint — design system
-   Dark, "molten filament" theme: deep charcoal canvas, amber/filament accent,
-   a cool teal secondary for the "tech" half. Blocky 2px radii nod at Minecraft
-   without going full pixel-art.
+   Dark, machined-console theme matching the in-game identity: deep charcoal
+   canvas, molten-amber primary accent (the filament), a cyan "magic glow"
+   secondary (links/tech), machined-grey hardware surfaces, and a per-tier
+   accent ramp (T1→T8) as a recurring motif. Blocky small radii nod at
+   Minecraft without going full pixel-art.
    ============================================================================ */
 
 :root {
@@ -20,10 +22,19 @@
   --ink-faint: #717789;
 
   /* accents */
-  --filament:    #f4a23c;   /* molten amber — primary */
+  --filament:    #f4a23c;   /* molten amber — primary (the filament) */
   --filament-hi: #ffc06a;
-  --teal:        #36d3c2;   /* tech secondary */
-  --teal-hi:     #6cf0e2;
+  --cyan:        #5cc8ff;   /* the mod's "magic glow" — secondary */
+  --cyan-hi:     #bfe9ff;
+  /* legacy aliases (older pages still reference --teal*); resolve to cyan */
+  --teal:        var(--cyan);
+  --teal-hi:     var(--cyan-hi);
+
+  /* machined grey — "hardware" surfaces echoing the in-game GUIs */
+  --steel:      #dce1e6;
+  --steel-2:    #bcc4cc;
+  --steel-3:    #9aa3ad;
+  --steel-4:    #6e767f;
 
   /* tier ramp (mirrors the in-game GUI tier colors) */
   --t1: #b6bcc8; --t2: #6fd07a; --t3: #5bb6ff;
@@ -55,10 +66,10 @@ body {
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-  /* subtle filament glow up top */
+  /* warm filament glow up top, cool cyan glow opposite it */
   background-image:
     radial-gradient(900px 480px at 78% -8%, rgba(244, 162, 60, 0.10), transparent 60%),
-    radial-gradient(700px 420px at 8% -6%, rgba(54, 211, 194, 0.07), transparent 55%);
+    radial-gradient(700px 420px at 8% -6%, rgba(92, 200, 255, 0.08), transparent 55%);
   background-repeat: no-repeat;
 }
 
@@ -67,7 +78,7 @@ h1 { font-size: clamp(2.2rem, 5.5vw, 3.6rem); }
 h2 { font-size: clamp(1.6rem, 3.5vw, 2.3rem); }
 h3 { font-size: 1.25rem; }
 
-a { color: var(--teal-hi); text-decoration: none; }
+a { color: var(--cyan-hi); text-decoration: none; }
 a:hover { text-decoration: underline; }
 
 p { color: var(--ink-soft); }
@@ -146,13 +157,28 @@ kbd {
   border: 1px solid currentColor;
 }
 
+/* ---- tier ramp motif (T1→T8 progression) ---- */
+.tier-ramp { display: flex; gap: 4px; }
+.tier-ramp span {
+  flex: 1; height: 4px; border-radius: 999px;
+  background: var(--tc, var(--steel-3));
+}
+.tier-ramp span:nth-child(1) { --tc: var(--t1); }
+.tier-ramp span:nth-child(2) { --tc: var(--t2); }
+.tier-ramp span:nth-child(3) { --tc: var(--t3); }
+.tier-ramp span:nth-child(4) { --tc: var(--t4); }
+.tier-ramp span:nth-child(5) { --tc: var(--t5); }
+.tier-ramp span:nth-child(6) { --tc: var(--t6); }
+.tier-ramp span:nth-child(7) { --tc: var(--t7); }
+.tier-ramp span:nth-child(8) { --tc: var(--t8); }
+
 /* ---- utilities ---- */
 .grid { display: grid; gap: 1.1rem; }
 .muted { color: var(--ink-faint); }
 .center { text-align: center; }
 hr { border: none; border-top: 1px solid var(--line); margin-block: 2.5rem; }
 
-:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; border-radius: 4px; }
+:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; border-radius: 4px; }
 
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; scroll-behavior: auto; }
