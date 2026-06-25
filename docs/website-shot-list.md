@@ -9,6 +9,12 @@ blocks the build (every slot has a generated fallback) — but real shots make i
   picks them up automatically on the next build (no code change to add a photo).
 - **Per-build photos** are named by **build id**: `site/public/builds/<id>.png`. The id is the
   blueprint filename without `.blueprint` (listed below). Match it exactly.
+- **✅ Wired today** (consumed by the live site the moment you drop the file in):
+  - `site/public/media/scan-to-print.gif` → the homepage **"See it in action"** frame.
+  - `site/public/builds/<id>.png` → gallery cards, build-detail page heroes, and the homepage
+    featured-builds strip.
+  - Everything else below is **capture-ahead** — great to have, and it slots into the guide /
+    feature sections as those image spots get added. No rush on those.
 - **Framing tips:** consistent angle (a clean 3/4 / isometric-ish view works best for the gallery),
   good light, minimal clutter behind the build. PNG. A roughly square-ish crop reads best on cards.
 - **GIFs:** `-framerate 0.5`–`1.0` (≈1–2s/frame) for smooth playback; capture the *whole* flow
@@ -18,14 +24,14 @@ blocks the build (every slot has a generated fallback) — but real shots make i
 
 ## Priority 1 — Hero & gameplay  → `site/public/media/`
 
-The single highest-impact asset is the hero loop. Get this and the homepage transforms.
+The single highest-impact asset is the "See it in action" loop. Get this and the homepage transforms.
 
-- [ ] **`hero-scan-print.gif`** — the money shot: scan a build → load the disc → print it
-  reconstructing block-by-block. The core loop in one autoplaying clip.
-- [ ] **`hero-still.png`** — one striking gameplay still (a mid-print or a finished impressive build) as the GIF's poster/fallback.
-- [ ] **`action-scan.png`** — using the Structure Scanner on a build.
-- [ ] **`action-printing.png`** — a printer/fabricator mid-print (layers materializing).
-- [ ] **`action-fabricator.png`** — a formed multiblock fabricator printing something large.
+- [ ] **✅ `scan-to-print.gif`** — the money shot, **wired now**: scan a build → load the disc →
+  print it reconstructing block-by-block. The core loop in one autoplaying clip. Drops straight
+  into the homepage "See it in action" frame (16:9 reads best).
+- [ ] **`action-scan.png`** — using the Structure Scanner on a build. _(capture-ahead)_
+- [ ] **`action-printing.png`** — a printer/fabricator mid-print (layers materializing). _(capture-ahead)_
+- [ ] **`action-fabricator.png`** — a formed multiblock fabricator printing something large. _(capture-ahead)_
 
 ## Priority 2 — GUI shots  → `site/public/gui/`
 
