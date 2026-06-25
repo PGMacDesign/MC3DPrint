@@ -1,5 +1,12 @@
 # MC3DPrint
 
+[![CurseForge downloads](https://img.shields.io/curseforge/dt/1587177?logo=curseforge&label=CurseForge&color=f16436)](https://www.curseforge.com/minecraft/mc-mods/mc3dprint)
+[![CurseForge version](https://img.shields.io/curseforge/v/1587177?logo=curseforge&label=latest&color=f16436)](https://www.curseforge.com/minecraft/mc-mods/mc3dprint/files)
+[![Minecraft](https://img.shields.io/badge/Minecraft-1.20.1-62B47A)](https://www.minecraft.net)
+[![Forge](https://img.shields.io/badge/Forge-47.4.10%2B-1D2731)](https://files.minecraftforge.net)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue)](LICENSE)
+[![Website](https://img.shields.io/badge/website-mc3dprint.dev-5cc8ff)](https://mc3dprint.dev)
+
 **WorldEdit for survival.** A Minecraft Forge **1.20.1** tech mod that scans any
 structure you build and prints it back anywhere — no creative mode, no commands.
 Prints are paid for in **Filament Units (FU)** and **Redstone Flux (RF)**, so you
