@@ -48,3 +48,21 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh release upload "${{ github.event.release.tag_name }}" build/libs/mc3dprint-*.jar --clobber
+
+      # Also upload the same jar to CurseForge. Guarded on the secret so releases keep
+      # working (and the GitHub asset still attaches) until the CURSEFORGE_TOKEN is set.
+      # Prereleases publish as "Beta" on CurseForge; the changelog is the release body.
+      - name: Publish jar to CurseForge
+        if: ${{ secrets.CURSEFORGE_TOKEN != '' }}
+        uses: Kir-Antipov/mc-publish@v3.3
+        with:
+          curseforge-id: 1587177
+          curseforge-token: ${{ secrets.CURSEFORGE_TOKEN }}
+          files: build/libs/mc3dprint-*.jar
+          name: ${{ github.event.release.name }}
+          version: ${{ steps.ver.outputs.version }}
+          version-type: ${{ github.event.release.prerelease && 'beta' || 'release' }}
+          changelog: ${{ github.event.release.body }}
+          game-versions: 1.20.1
+          loaders: forge
+          java: 17
