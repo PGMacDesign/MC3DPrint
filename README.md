@@ -47,8 +47,10 @@ right-click), ending at the Draconic-powered Tier 8.
 MC3DPrint is a standard Forge mod:
 
 1. Install **Minecraft 1.20.1** with **Forge 47.4.10+**.
-2. Download the latest `mc3dprint-<version>.jar` from the
-   [**Releases**](https://github.com/PGMacDesign/MC3DPrint/releases/latest) page.
+2. Download the latest `mc3dprint-<version>.jar` from
+   [**CurseForge**](https://www.curseforge.com/minecraft/mc-mods/mc3dprint) or the
+   [**GitHub Releases**](https://github.com/PGMacDesign/MC3DPrint/releases/latest) page
+   (same jar on both).
 3. Drop it into your instance's `mods/` folder (replace any older copy — don't keep two).
 
 **Optional:** [Patchouli](https://www.curseforge.com/minecraft/mc-mods/patchouli)
