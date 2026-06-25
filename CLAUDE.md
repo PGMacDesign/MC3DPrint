@@ -85,8 +85,11 @@ exact values: `docs/rebalance/{ae2,thermal,tconstruct}.md`.
 
 ## Conventions
 
-- **Update the in-game Patchouli guide** (`src/main/resources/.../patchouli_books/guide/`)
-  whenever a player-facing feature changes. Patchouli is a soft/optional dep.
+- **Two doc surfaces — keep both in sync with code.** A player-facing change means
+  updating BOTH the in-game Patchouli guide (`src/main/resources/.../patchouli_books/guide/`,
+  a soft/optional dep) AND the website guide (`site/src/content/guide/*.md` + `site/src/pages/faq.astro`).
+  They mirror each other and silently drift from the code — verify claims against the
+  Java before writing (e.g. the T5-corner / scanner-off-hand drift fixed 2026-06-25).
 - **Blueprints:** `CuratedBlueprintGenerator` (gated JUnit) is the source of truth —
   regen with `./gradlew test --tests '*CuratedBlueprintGenerator*' -DgenBlueprints=true
   --rerun-tasks`; validate/dump ASCII layers with `*BlueprintDumpTest* -DdumpBlueprints=true`.
