@@ -16,7 +16,7 @@ jobs:
     # Surface the secret as a job env var so the CurseForge step can guard on it —
     # the `secrets` context is NOT available in step `if:` conditions, but `env` is.
     env:
-      CF_TOKEN: ${{ secrets.CURSEFORGE_TOKEN }}
+      CF_TOKEN: ${{ secrets.CURSEFORGE_API_KEY }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -58,10 +58,11 @@ jobs:
       # Prereleases publish as "Beta" on CurseForge; the changelog is the release body.
       - name: Publish jar to CurseForge
         if: ${{ env.CF_TOKEN != '' }}
+        continue-on-error: true
         uses: Kir-Antipov/mc-publish@v3.3
         with:
           curseforge-id: 1587177
-          curseforge-token: ${{ secrets.CURSEFORGE_TOKEN }}
+          curseforge-token: ${{ secrets.CURSEFORGE_API_KEY }}
           files: build/libs/mc3dprint-*.jar
           name: ${{ github.event.release.name }}
           version: ${{ steps.ver.outputs.version }}
