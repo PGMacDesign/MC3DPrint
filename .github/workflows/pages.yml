@@ -39,21 +39,27 @@ jobs:
           node-version: '20'
       - uses: actions/configure-pages@v5
 
+      # Generate the gallery manifest BEFORE the build — the static /builds/<id>
+      # detail pages read it at build time. Astro copies public/ into dist/, so
+      # the published /viewer/manifest.json comes from here too.
+      - name: Generate gallery manifest
+        run: |
+          node site/scripts/gen_manifest.mjs \
+            src/main/resources/data/mc3dprint/blueprints \
+            site/public/viewer/manifest.json \
+            blueprints/
+
       - name: Install & build the Astro site
         working-directory: site
         run: |
           npm ci || npm install
           npm run build
-          # dist/ now has all pages + /viewer (js/css/data/index.html) + CNAME + .nojekyll
+          # dist/ now has all pages + /viewer (js/css/data/index.html/manifest) + CNAME + .nojekyll
 
-      - name: Inject curated blueprints + gallery manifest into /viewer
+      - name: Inject curated blueprints into /viewer
         run: |
           mkdir -p site/dist/viewer/blueprints
           cp src/main/resources/data/mc3dprint/blueprints/*.blueprint site/dist/viewer/blueprints/
-          node site/scripts/gen_manifest.mjs \
-            src/main/resources/data/mc3dprint/blueprints \
-            site/dist/viewer/manifest.json \
-            blueprints/
 
       - uses: actions/upload-pages-artifact@v3
         with:

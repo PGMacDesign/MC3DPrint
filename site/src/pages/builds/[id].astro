@@ -1,8 +1,15 @@
 ---
 import Base from "../../layouts/Base.astro";
-import manifest from "../../../public/viewer/manifest.json";
+import { readFileSync, existsSync } from "node:fs";
 
+// The gallery manifest is generated (not committed) and lives in publicDir, so
+// it can't be a Vite `import`. Read it from disk at build time — the Pages
+// workflow regenerates it into public/viewer before `astro build` runs. Missing
+// manifest (a bare checkout) just yields no detail pages rather than failing.
 export function getStaticPaths() {
+  const manifestPath = "public/viewer/manifest.json";
+  if (!existsSync(manifestPath)) return [];
+  const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
   const base = manifest.base || "blueprints/";
   return manifest.builds.map((b) => {
     const id = b.file.replace(/\.blueprint$/, "");
