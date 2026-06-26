@@ -5,7 +5,11 @@ import com.pgmacdesign.mc3dprint.registry.ModBlockEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionHand;
+import com.pgmacdesign.mc3dprint.compat.InteractionCompat;
+import net.minecraft.world.InteractionResult;
+//? if <1.21.5 {
 import net.minecraft.world.ItemInteractionResult;
+//?}
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
@@ -54,13 +58,18 @@ public class FilamentConverterBlock extends BaseEntityBlock {
     }
 
     @Override
+    //? if >=1.21.5 {
+    /*protected InteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos,
+                                              Player player, InteractionHand hand, BlockHitResult hit) {
+    *///?} else {
     protected ItemInteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos,
                                               Player player, InteractionHand hand, BlockHitResult hit) {
+    //?}
         if (!(level.getBlockEntity(pos) instanceof FilamentConverterBlockEntity converter)) {
-            return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+            return InteractionCompat.ITEM_PASS;
         }
         if (level.isClientSide) {
-            return ItemInteractionResult.SUCCESS;
+            return InteractionCompat.ITEM_SUCCESS;
         }
         ItemStack held = player.getItemInHand(hand);
         if (player.isSecondaryUseActive() && held.isEmpty()) {
@@ -77,6 +86,6 @@ public class FilamentConverterBlock extends BaseEntityBlock {
             player.displayClientMessage(Component.translatable("message.mc3dprint.converter_status",
                     filterName), true);
         }
-        return ItemInteractionResult.CONSUME;
+        return InteractionCompat.ITEM_CONSUME;
     }
 }
