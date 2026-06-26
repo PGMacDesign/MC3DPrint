@@ -50,10 +50,7 @@ import net.minecraft.world.level.block.entity.BrewingStandBlockEntity;
 import net.minecraft.world.level.block.entity.ChestBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
-import net.minecraftforge.common.capabilities.Capability;
 import net.minecraft.world.Container;
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
-import net.neoforged.neoforge.common.util.LazyOptional;
 import net.neoforged.neoforge.common.world.ForgeChunkManager;
 import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.ItemStackHandler;
@@ -156,18 +153,18 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
     // multiplicative upgrade factors per module (design: never additive);
     // config-exposed for pack makers per the design doc
 
-    private final LazyOptional<MachineEnergyStorage> energyCap = LazyOptional.of(this::energyStorage);
-    private final LazyOptional<IItemHandler> inputCap =
-            LazyOptional.of(() -> new RangedWrapper(inventory, SLOT_TEMPLATE, SLOT_TEMPLATE + 1));
-    private final LazyOptional<IItemHandler> outputCap =
-            LazyOptional.of(() -> new RangedWrapper(inventory, SLOT_OUTPUT, SLOT_OUTPUT + 1) {
+    // Item-handler views, exposed per-face by getItemHandler (registered centrally in
+    // ModCapabilities). The "all" view is the inventory itself.
+    private final IItemHandler inputHandler =
+            new RangedWrapper(inventory, SLOT_TEMPLATE, SLOT_TEMPLATE + 1);
+    private final IItemHandler outputHandler =
+            new RangedWrapper(inventory, SLOT_OUTPUT, SLOT_OUTPUT + 1) {
                 @Override
                 @Nonnull
                 public ItemStack insertItem(int slot, @Nonnull ItemStack stack, boolean simulate) {
                     return stack; // extract-only face
                 }
-            });
-    private final LazyOptional<IItemHandler> allCap = LazyOptional.of(() -> inventory);
+            };
 
     // Item Mode
     private int itemProgress;
@@ -295,10 +292,6 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
 
     public MachineTier tier() {
         return tier;
-    }
-
-    private MachineEnergyStorage energyStorage() {
-        return energy;
     }
 
     public static void serverTick(Level level, BlockPos pos, BlockState blockState, PrinterBlockEntity printer) {
@@ -622,12 +615,11 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
 
     private void collectAdjacentFilamentSources(BlockPos center, Set<IFilamentSource> out) {
         for (Direction dir : Direction.values()) {
-            BlockEntity neighbor = level.getBlockEntity(center.relative(dir));
-            if (neighbor == null) {
-                continue;
+            IFilamentSource src = level.getCapability(
+                    ModCapabilities.FILAMENT_SOURCE, center.relative(dir), dir.getOpposite());
+            if (src != null) {
+                src.collectSources(out);
             }
-            neighbor.getCapability(ModCapabilities.FILAMENT_SOURCE, dir.getOpposite())
-                    .ifPresent(src -> src.collectSources(out));
         }
     }
 
@@ -2049,39 +2041,30 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         return new PrinterMenu(windowId, playerInventory, this);
     }
 
-    // --- Capabilities ---
+    // --- Capabilities (exposed raw; registered centrally in ModCapabilities) ---
 
-    @Override
-    @Nonnull
-    public <T> LazyOptional<T> getCapability(@Nonnull Capability<T> cap, @Nullable Direction side) {
-        if (cap == ForgeCapabilities.ENERGY) {
-            return energyCap.cast();
-        }
-        if (cap == ForgeCapabilities.ITEM_HANDLER) {
-            if (side == null) {
-                return allCap.cast();
-            }
-            // Per the I/O design: top inserts, bottom extracts, and the four
-            // sides are reserved exclusively for docked filament spools — no
-            // general item I/O (they render the spinning spools instead).
-            if (side == Direction.UP) {
-                return inputCap.cast();
-            }
-            if (side == Direction.DOWN) {
-                return outputCap.cast();
-            }
-            return LazyOptional.empty();
-        }
-        return super.getCapability(cap, side);
+    public MachineEnergyStorage getEnergyStorage() {
+        return energy;
     }
 
-    @Override
-    public void invalidateCaps() {
-        super.invalidateCaps();
-        energyCap.invalidate();
-        inputCap.invalidate();
-        outputCap.invalidate();
-        allCap.invalidate();
+    /**
+     * Per-face item handler. Per the I/O design: top inserts (input slot), bottom
+     * extracts (output slot), {@code null} side is the combined inventory, and the
+     * four horizontal sides are reserved exclusively for docked filament spools —
+     * no general item I/O (they render the spinning spools instead).
+     */
+    @Nullable
+    public IItemHandler getItemHandler(@Nullable Direction side) {
+        if (side == null) {
+            return inventory;
+        }
+        if (side == Direction.UP) {
+            return inputHandler;
+        }
+        if (side == Direction.DOWN) {
+            return outputHandler;
+        }
+        return null;
     }
 
     // --- Persistence ---

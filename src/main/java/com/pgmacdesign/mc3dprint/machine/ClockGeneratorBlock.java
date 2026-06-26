@@ -20,7 +20,7 @@ import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
+import net.neoforged.neoforge.items.IItemHandler;
 import net.minecraftforge.network.NetworkHooks;
 
 import javax.annotation.Nullable;
@@ -56,14 +56,15 @@ public class ClockGeneratorBlock extends BaseEntityBlock {
     @Override
     public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean isMoving) {
         if (!state.is(newState.getBlock()) && level.getBlockEntity(pos) instanceof ClockGeneratorBlockEntity generator) {
-            generator.getCapability(ForgeCapabilities.ITEM_HANDLER).ifPresent(handler -> {
+            IItemHandler handler = generator.getItemHandler(null);
+            if (handler != null) {
                 for (int i = 0; i < handler.getSlots(); i++) {
                     ItemStack stack = handler.getStackInSlot(i);
                     if (!stack.isEmpty()) {
                         Containers.dropItemStack(level, pos.getX(), pos.getY(), pos.getZ(), stack);
                     }
                 }
-            });
+            }
         }
         super.onRemove(state, level, pos, newState, isMoving);
     }

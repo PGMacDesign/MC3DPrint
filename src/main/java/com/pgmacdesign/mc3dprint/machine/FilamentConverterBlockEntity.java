@@ -14,12 +14,10 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
-import net.neoforged.neoforge.common.util.LazyOptional;
+import net.neoforged.neoforge.capabilities.Capabilities;
+import net.neoforged.neoforge.energy.IEnergyStorage;
 import net.neoforged.neoforge.items.IItemHandler;
 
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.Optional;
 
@@ -43,7 +41,6 @@ public class FilamentConverterBlockEntity extends BlockEntity {
             MC3DPrintConfig.WINDER_ENERGY_BUFFER.get(),
             MC3DPrintConfig.WINDER_MAX_ENERGY_RECEIVE.get(),
             this::setChanged);
-    private final LazyOptional<MachineEnergyStorage> energyCap = LazyOptional.of(() -> energy);
 
     private ItemStack filter = ItemStack.EMPTY;
     private int cooldown;
@@ -134,8 +131,8 @@ public class FilamentConverterBlockEntity extends BlockEntity {
                     || neighbor instanceof FilamentConverterBlockEntity) {
                 continue; // never raid printers (their faces expose outputs)
             }
-            IItemHandler handler = neighbor.getCapability(ForgeCapabilities.ITEM_HANDLER,
-                    direction.getOpposite()).orElse(null);
+            IItemHandler handler = level.getCapability(Capabilities.ItemHandler.BLOCK,
+                    pos.relative(direction), direction.getOpposite());
             if (handler == null) {
                 continue;
             }
@@ -151,19 +148,10 @@ public class FilamentConverterBlockEntity extends BlockEntity {
         return false;
     }
 
-    @Override
-    @Nonnull
-    public <T> LazyOptional<T> getCapability(@Nonnull Capability<T> cap, @Nullable Direction side) {
-        if (cap == ForgeCapabilities.ENERGY) {
-            return energyCap.cast();
-        }
-        return super.getCapability(cap, side);
-    }
+    // --- Capabilities (exposed raw; registered centrally in ModCapabilities) ---
 
-    @Override
-    public void invalidateCaps() {
-        super.invalidateCaps();
-        energyCap.invalidate();
+    public IEnergyStorage getEnergyStorage() {
+        return energy;
     }
 
     @Override

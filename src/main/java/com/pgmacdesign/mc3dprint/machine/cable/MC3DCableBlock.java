@@ -20,7 +20,7 @@ import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
+import net.neoforged.neoforge.capabilities.Capabilities;
 
 import javax.annotation.Nullable;
 import java.util.EnumMap;
@@ -124,13 +124,14 @@ public class MC3DCableBlock extends BaseEntityBlock {
         if (neighbor.getBlock() instanceof MC3DCableBlock) {
             return true;
         }
-        BlockEntity be = getter.getBlockEntity(neighborPos);
-        if (be == null) {
+        // Capability queries are level-scoped in NeoForge; updateShape/placement always
+        // pass a real Level here, but guard for the BlockGetter contract regardless.
+        if (!(getter instanceof Level level)) {
             return false;
         }
         Direction face = dirToNeighbor.getOpposite();
-        return be.getCapability(ForgeCapabilities.ENERGY, face).isPresent()
-                || be.getCapability(ModCapabilities.FILAMENT_SOURCE, face).isPresent();
+        return level.getCapability(Capabilities.EnergyStorage.BLOCK, neighborPos, face) != null
+                || level.getCapability(ModCapabilities.FILAMENT_SOURCE, neighborPos, face) != null;
     }
 
     @Override

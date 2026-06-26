@@ -5,9 +5,7 @@ import com.pgmacdesign.mc3dprint.fu.FuConversion;
 import com.pgmacdesign.mc3dprint.fu.IFilamentSource;
 import com.pgmacdesign.mc3dprint.fu.SpoolItem;
 import com.pgmacdesign.mc3dprint.registry.ModBlockEntities;
-import com.pgmacdesign.mc3dprint.registry.ModCapabilities;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.Connection;
 import net.minecraft.network.protocol.Packet;
@@ -16,8 +14,6 @@ import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.common.capabilities.Capability;
-import net.neoforged.neoforge.common.util.LazyOptional;
 import net.neoforged.neoforge.items.ItemStackHandler;
 
 import javax.annotation.Nonnull;
@@ -52,8 +48,6 @@ public class FilamentRackBlockEntity extends BlockEntity implements IFilamentSou
             sync();
         }
     };
-
-    private final LazyOptional<IFilamentSource> filamentCap = LazyOptional.of(() -> this);
 
     public FilamentRackBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.FILAMENT_RACK.get(), pos, state);
@@ -113,21 +107,10 @@ public class FilamentRackBlockEntity extends BlockEntity implements IFilamentSou
         return FilamentDrain.availableTier(spools, tier, FuConversion.ratio());
     }
 
-    // --- Capability ---
+    // --- Capability (exposed raw; registered centrally in ModCapabilities) ---
 
-    @Override
-    @Nonnull
-    public <T> LazyOptional<T> getCapability(@Nonnull Capability<T> cap, @Nullable Direction side) {
-        if (cap == ModCapabilities.FILAMENT_SOURCE) {
-            return filamentCap.cast();
-        }
-        return super.getCapability(cap, side);
-    }
-
-    @Override
-    public void invalidateCaps() {
-        super.invalidateCaps();
-        filamentCap.invalidate();
+    public IFilamentSource getFilamentSource() {
+        return this;
     }
 
     // --- Persistence + client sync (the renderer needs the live spool stacks) ---

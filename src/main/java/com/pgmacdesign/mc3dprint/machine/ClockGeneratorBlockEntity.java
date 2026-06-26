@@ -16,10 +16,9 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.common.ForgeHooks;
-import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
-import net.neoforged.neoforge.common.util.LazyOptional;
+import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.energy.IEnergyStorage;
+import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.ItemStackHandler;
 
 import javax.annotation.Nonnull;
@@ -62,7 +61,6 @@ public class ClockGeneratorBlockEntity extends BlockEntity implements MenuProvid
             setChanged();
         }
     };
-    private final LazyOptional<ItemStackHandler> fuelCap = LazyOptional.of(() -> fuel);
 
     private final IEnergyStorage energy = new IEnergyStorage() {
         @Override
@@ -100,7 +98,6 @@ public class ClockGeneratorBlockEntity extends BlockEntity implements MenuProvid
             return false;
         }
     };
-    private final LazyOptional<IEnergyStorage> energyCap = LazyOptional.of(() -> energy);
 
     public ClockGeneratorBlockEntity(BlockPos pos, BlockState blockState) {
         super(CLOCK_GENERATOR.get(), pos, blockState);
@@ -215,12 +212,8 @@ public class ClockGeneratorBlockEntity extends BlockEntity implements MenuProvid
             if (stored <= 0) {
                 break;
             }
-            BlockEntity neighbor = level.getBlockEntity(pos.relative(direction));
-            if (neighbor == null) {
-                continue;
-            }
-            IEnergyStorage handler = neighbor.getCapability(ForgeCapabilities.ENERGY,
-                    direction.getOpposite()).orElse(null);
+            IEnergyStorage handler = level.getCapability(Capabilities.EnergyStorage.BLOCK,
+                    pos.relative(direction), direction.getOpposite());
             if (handler != null && handler.canReceive()) {
                 stored -= handler.receiveEnergy(stored, false);
             }
@@ -231,23 +224,15 @@ public class ClockGeneratorBlockEntity extends BlockEntity implements MenuProvid
         }
     }
 
-    @Override
-    @Nonnull
-    public <T> LazyOptional<T> getCapability(@Nonnull Capability<T> cap, @Nullable Direction side) {
-        if (cap == ForgeCapabilities.ENERGY) {
-            return energyCap.cast();
-        }
-        if (cap == ForgeCapabilities.ITEM_HANDLER) {
-            return fuelCap.cast();
-        }
-        return super.getCapability(cap, side);
+    // --- Capabilities (exposed raw; registered centrally in ModCapabilities) ---
+
+    public IEnergyStorage getEnergyStorage() {
+        return energy;
     }
 
-    @Override
-    public void invalidateCaps() {
-        super.invalidateCaps();
-        energyCap.invalidate();
-        fuelCap.invalidate();
+    /** Fuel handler on every face (right-click / hopper feed). */
+    public IItemHandler getItemHandler(@Nullable Direction side) {
+        return fuel;
     }
 
     @Override

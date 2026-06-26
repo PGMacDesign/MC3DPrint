@@ -6,13 +6,8 @@ import net.minecraft.core.Direction;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
-import net.neoforged.neoforge.common.util.LazyOptional;
+import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.energy.IEnergyStorage;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 /**
  * Creative-only infinite RF source: every tick it offers unlimited energy to
@@ -52,7 +47,6 @@ public class CreativeEnergyBlockEntity extends BlockEntity {
             return false;
         }
     };
-    private final LazyOptional<IEnergyStorage> energyCap = LazyOptional.of(() -> energy);
 
     public CreativeEnergyBlockEntity(BlockPos pos, BlockState blockState) {
         super(ModBlockEntities.CREATIVE_ENERGY_SOURCE.get(), pos, blockState);
@@ -60,26 +54,17 @@ public class CreativeEnergyBlockEntity extends BlockEntity {
 
     public static void serverTick(Level level, BlockPos pos, BlockState state, CreativeEnergyBlockEntity source) {
         for (Direction direction : Direction.values()) {
-            BlockEntity neighbor = level.getBlockEntity(pos.relative(direction));
-            if (neighbor != null) {
-                neighbor.getCapability(ForgeCapabilities.ENERGY, direction.getOpposite())
-                        .ifPresent(handler -> handler.receiveEnergy(Integer.MAX_VALUE, false));
+            IEnergyStorage handler = level.getCapability(Capabilities.EnergyStorage.BLOCK,
+                    pos.relative(direction), direction.getOpposite());
+            if (handler != null) {
+                handler.receiveEnergy(Integer.MAX_VALUE, false);
             }
         }
     }
 
-    @Override
-    @Nonnull
-    public <T> LazyOptional<T> getCapability(@Nonnull Capability<T> cap, @Nullable Direction side) {
-        if (cap == ForgeCapabilities.ENERGY) {
-            return energyCap.cast();
-        }
-        return super.getCapability(cap, side);
-    }
+    // --- Capabilities (exposed raw; registered centrally in ModCapabilities) ---
 
-    @Override
-    public void invalidateCaps() {
-        super.invalidateCaps();
-        energyCap.invalidate();
+    public IEnergyStorage getEnergyStorage() {
+        return energy;
     }
 }

@@ -10,14 +10,10 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
-import net.neoforged.neoforge.common.util.LazyOptional;
+import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.energy.EnergyStorage;
 import net.neoforged.neoforge.energy.IEnergyStorage;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -58,8 +54,6 @@ public class MC3DCableBlockEntity extends BlockEntity implements IFilamentSource
     private static final int RECOMPUTE_INTERVAL = 100; // ticks between membership refloods (~5s)
 
     private final CableEnergyStorage energy;
-    private final LazyOptional<IEnergyStorage> energyCap;
-    private final LazyOptional<IFilamentSource> filamentCap = LazyOptional.of(() -> this);
 
     // Cached network membership (positions only) — recomputed on the throttle.
     private Map<BlockPos, Direction> sourceFaces;   // reachable Filament-Unit sources (racks)
@@ -70,7 +64,6 @@ public class MC3DCableBlockEntity extends BlockEntity implements IFilamentSource
         super(ModBlockEntities.MC3DCABLE.get(), pos, state);
         int rate = MC3DPrintConfig.cableTransferRate();
         this.energy = new CableEnergyStorage(rate);
-        this.energyCap = LazyOptional.of(() -> energy);
     }
 
     public static void serverTick(Level level, BlockPos pos, BlockState state, MC3DCableBlockEntity cable) {
@@ -91,14 +84,13 @@ public class MC3DCableBlockEntity extends BlockEntity implements IFilamentSource
         for (NeighborRef ref : collectNeighbors(level, worldPosition)) {
             BlockPos pos = ref.be().getBlockPos();
             Direction face = ref.side();
-            if (ref.be().getCapability(ModCapabilities.FILAMENT_SOURCE, face).isPresent()) {
+            if (level.getCapability(ModCapabilities.FILAMENT_SOURCE, pos, face) != null) {
                 sources.put(pos, face);
             }
-            ref.be().getCapability(ForgeCapabilities.ENERGY, face).ifPresent(e -> {
-                if (e.canReceive()) {
-                    acceptors.put(pos, face);
-                }
-            });
+            IEnergyStorage e = level.getCapability(Capabilities.EnergyStorage.BLOCK, pos, face);
+            if (e != null && e.canReceive()) {
+                acceptors.put(pos, face);
+            }
         }
         this.sourceFaces = sources;
         this.energyFaces = acceptors;
@@ -108,12 +100,14 @@ public class MC3DCableBlockEntity extends BlockEntity implements IFilamentSource
     private void transferEnergy(Level level, BlockPos pos) {
         int rate = MC3DPrintConfig.cableTransferRate();
         // 1) Pull from adjacent, non-cable, extractable sources (always live — responsiveness).
+        // TODO(PGM-13 / decision 5.2): optimize to BlockCapabilityCache
         for (Direction dir : Direction.values()) {
-            BlockEntity be = level.getBlockEntity(pos.relative(dir));
+            BlockPos neighbourPos = pos.relative(dir);
+            BlockEntity be = level.getBlockEntity(neighbourPos);
             if (be == null || be instanceof MC3DCableBlockEntity) {
                 continue;
             }
-            IEnergyStorage src = be.getCapability(ForgeCapabilities.ENERGY, dir.getOpposite()).orElse(null);
+            IEnergyStorage src = level.getCapability(Capabilities.EnergyStorage.BLOCK, neighbourPos, dir.getOpposite());
             if (src == null || !src.canExtract()) {
                 continue;
             }
@@ -139,7 +133,7 @@ public class MC3DCableBlockEntity extends BlockEntity implements IFilamentSource
             if (be == null || be.isRemoved()) {
                 continue;
             }
-            IEnergyStorage acc = be.getCapability(ForgeCapabilities.ENERGY, entry.getValue()).orElse(null);
+            IEnergyStorage acc = level.getCapability(Capabilities.EnergyStorage.BLOCK, entry.getKey(), entry.getValue());
             if (acc == null || !acc.canReceive()) {
                 continue;
             }
@@ -163,7 +157,10 @@ public class MC3DCableBlockEntity extends BlockEntity implements IFilamentSource
             if (be == null || be.isRemoved()) {
                 continue;
             }
-            be.getCapability(ModCapabilities.FILAMENT_SOURCE, entry.getValue()).ifPresent(out::add);
+            IFilamentSource src = level.getCapability(ModCapabilities.FILAMENT_SOURCE, entry.getKey(), entry.getValue());
+            if (src != null) {
+                out.add(src);
+            }
         }
     }
 
@@ -234,25 +231,14 @@ public class MC3DCableBlockEntity extends BlockEntity implements IFilamentSource
         return new ArrayList<>(neighbors.values());
     }
 
-    // --- Capabilities ---
+    // --- Capabilities (exposed raw; registered centrally in ModCapabilities) ---
 
-    @Override
-    @Nonnull
-    public <T> LazyOptional<T> getCapability(@Nonnull Capability<T> cap, @Nullable Direction side) {
-        if (cap == ForgeCapabilities.ENERGY) {
-            return energyCap.cast();
-        }
-        if (cap == ModCapabilities.FILAMENT_SOURCE) {
-            return filamentCap.cast();
-        }
-        return super.getCapability(cap, side);
+    public IEnergyStorage getEnergyStorage() {
+        return energy;
     }
 
-    @Override
-    public void invalidateCaps() {
-        super.invalidateCaps();
-        energyCap.invalidate();
-        filamentCap.invalidate();
+    public IFilamentSource getFilamentSource() {
+        return this;
     }
 
     @Override

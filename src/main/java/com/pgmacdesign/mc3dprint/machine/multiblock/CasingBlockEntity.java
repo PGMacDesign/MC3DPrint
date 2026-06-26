@@ -1,16 +1,14 @@
 package com.pgmacdesign.mc3dprint.machine.multiblock;
 
 import com.pgmacdesign.mc3dprint.machine.MachineTier;
+import com.pgmacdesign.mc3dprint.machine.PrinterBlockEntity;
 import com.pgmacdesign.mc3dprint.registry.ModBlockEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
-import net.neoforged.neoforge.common.util.LazyOptional;
+import net.neoforged.neoforge.energy.IEnergyStorage;
 
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 /**
@@ -69,15 +67,17 @@ public class CasingBlockEntity extends BlockEntity {
         return state.getBlock() instanceof ControllerBlock && state.getValue(ControllerBlock.FORMED);
     }
 
-    @Override
-    @Nonnull
-    public <T> LazyOptional<T> getCapability(@Nonnull Capability<T> cap, @Nullable Direction side) {
-        if (cap == ForgeCapabilities.ENERGY) {
-            BlockEntity controller = controller();
-            if (controller != null) {
-                return controller.getCapability(cap, side); // cap is ENERGY here — forwards typed
-            }
-        }
-        return super.getCapability(cap, side);
+    // --- Capabilities (exposed raw; registered centrally in ModCapabilities) ---
+
+    /**
+     * Re-exposes the formed controller's energy storage so a cable plugged into any
+     * casing feeds the buried controller. {@code null} when this casing isn't part
+     * of a formed multiblock.
+     */
+    @Nullable
+    public IEnergyStorage getEnergyStorage(@Nullable Direction side) {
+        return controller() instanceof PrinterBlockEntity controller
+                ? controller.getEnergyStorage()
+                : null;
     }
 }

@@ -20,9 +20,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
-import net.neoforged.neoforge.common.util.LazyOptional;
+import net.neoforged.neoforge.energy.IEnergyStorage;
 import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.ItemStackHandler;
 import net.neoforged.neoforge.items.wrapper.RangedWrapper;
@@ -83,10 +81,8 @@ public class WinderBlockEntity extends BlockEntity implements MenuProvider {
             MC3DPrintConfig.WINDER_MAX_ENERGY_RECEIVE.get(),
             this::setChanged);
 
-    private final LazyOptional<MachineEnergyStorage> energyCap = LazyOptional.of(() -> energy);
-    private final LazyOptional<IItemHandler> inputCap =
-            LazyOptional.of(() -> new RangedWrapper(inventory, SLOT_INPUT, SLOT_INPUT + 1));
-    private final LazyOptional<IItemHandler> allCap = LazyOptional.of(() -> inventory);
+    private final IItemHandler inputHandler =
+            new RangedWrapper(inventory, SLOT_INPUT, SLOT_INPUT + 1);
 
     private int progress;
     /** Player who placed the winder — accumulates Matter Matters progress. */
@@ -219,24 +215,15 @@ public class WinderBlockEntity extends BlockEntity implements MenuProvider {
         return new WinderMenu(windowId, playerInventory, this);
     }
 
-    @Override
-    @Nonnull
-    public <T> LazyOptional<T> getCapability(@Nonnull Capability<T> cap, @Nullable Direction side) {
-        if (cap == ForgeCapabilities.ENERGY) {
-            return energyCap.cast();
-        }
-        if (cap == ForgeCapabilities.ITEM_HANDLER) {
-            return side == null ? allCap.cast() : inputCap.cast();
-        }
-        return super.getCapability(cap, side);
+    // --- Capabilities (exposed raw; registered centrally in ModCapabilities) ---
+
+    public IEnergyStorage getEnergyStorage() {
+        return energy;
     }
 
-    @Override
-    public void invalidateCaps() {
-        super.invalidateCaps();
-        energyCap.invalidate();
-        inputCap.invalidate();
-        allCap.invalidate();
+    /** {@code null} side is the full inventory; any face exposes only the input slot. */
+    public IItemHandler getItemHandler(@Nullable Direction side) {
+        return side == null ? inventory : inputHandler;
     }
 
     public void setOwner(@Nullable java.util.UUID owner) {
