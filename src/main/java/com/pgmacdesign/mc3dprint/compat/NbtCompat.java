@@ -9,6 +9,7 @@ import net.minecraft.core.UUIDUtil;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtUtils;
+import net.minecraft.nbt.Tag;
 
 /**
  * Version seam for the CompoundTag read API. In 1.21.5+ the primitive/compound/list
@@ -123,12 +124,49 @@ public final class NbtCompat {
         return tag.contains(key);
     }
 
+    /** String value of a tag (e.g. a StringTag list element). 1.21.5 made {@code Tag.getAsString()}
+     *  → {@code asString()} returning {@code Optional<String>}. */
+    public static String tagAsString(Tag tag) {
+        //? if >=1.21.5 {
+        /*return tag.asString().orElse("");
+        *///?} else {
+        return tag.getAsString();
+        //?}
+    }
+
     /** ListTag element access. 1.21.5 made {@code getCompound(int)} return {@code Optional}. */
     public static CompoundTag listGetCompound(ListTag list, int index) {
         //? if >=1.21.5 {
         /*return list.getCompoundOrEmpty(index);
         *///?} else {
         return list.getCompound(index);
+        //?}
+    }
+
+    /** ListTag int element. 1.21.5 made {@code getInt(int)} return {@code Optional}. */
+    public static int listGetInt(ListTag list, int index) {
+        //? if >=1.21.5 {
+        /*return list.getIntOr(index, 0);
+        *///?} else {
+        return list.getInt(index);
+        //?}
+    }
+
+    /** ListTag double element. 1.21.5 made {@code getDouble(int)} return {@code Optional}. */
+    public static double listGetDouble(ListTag list, int index) {
+        //? if >=1.21.5 {
+        /*return list.getDoubleOr(index, 0d);
+        *///?} else {
+        return list.getDouble(index);
+        //?}
+    }
+
+    /** ListTag nested-list element. 1.21.5 made {@code getList(int)} return {@code Optional}. */
+    public static ListTag listGetList(ListTag list, int index) {
+        //? if >=1.21.5 {
+        /*return list.getListOrEmpty(index);
+        *///?} else {
+        return list.getList(index);
         //?}
     }
 

@@ -73,12 +73,12 @@ public final class PrintJob {
 
     public CompoundTag save() {
         CompoundTag tag = new CompoundTag();
-        tag.putUUID("Blueprint", blueprintId);
+        NbtCompat.putUUID(tag, "Blueprint", blueprintId);
         tag.putString("Name", blueprintName);
-        tag.put("Origin", NbtUtils.writeBlockPos(origin));
+        NbtCompat.putBlockPos(tag, "Origin", origin);
         tag.putByte("Rotation", (byte) orientation.rotation().ordinal());
         tag.putByte("Mirror", (byte) orientation.mirror().ordinal());
-        tag.put("JobSize", NbtUtils.writeBlockPos(size));
+        NbtCompat.putBlockPos(tag, "JobSize", size);
         tag.putInt("Total", totalBlocks);
         tag.putInt("Placed", placed);
         return tag;
@@ -86,13 +86,13 @@ public final class PrintJob {
 
     public static PrintJob load(CompoundTag tag) {
         PrintJob job = new PrintJob(
-                tag.getUUID("Blueprint"),
+                NbtCompat.getUUID(tag, "Blueprint").orElseThrow(),
                 NbtCompat.getString(tag, "Name"),
-                NbtUtils.readBlockPos(tag, "Origin").orElse(BlockPos.ZERO),
+                NbtCompat.getBlockPos(tag, "Origin").orElse(BlockPos.ZERO),
                 new PrintOrientation(
                         Rotation.values()[Math.floorMod(NbtCompat.getByte(tag, "Rotation"), Rotation.values().length)],
                         Mirror.values()[Math.floorMod(NbtCompat.getByte(tag, "Mirror"), Mirror.values().length)]),
-                NbtUtils.readBlockPos(tag, "JobSize").orElse(BlockPos.ZERO),
+                NbtCompat.getBlockPos(tag, "JobSize").orElse(BlockPos.ZERO),
                 NbtCompat.getInt(tag, "Total"));
         job.placed = NbtCompat.getInt(tag, "Placed");
         return job;

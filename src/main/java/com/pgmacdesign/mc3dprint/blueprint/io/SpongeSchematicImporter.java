@@ -44,7 +44,7 @@ public final class SpongeSchematicImporter {
         int length = NbtCompat.getShort(tag, "Length") & 0xFFFF;
         Map<Integer, BlueprintBlockState> palette = readPalette(NbtCompat.getCompound(tag, "Palette"));
         return buildVolume(name, width, height, length, palette,
-                tag.getByteArray("BlockData"),
+                NbtCompat.getByteArray(tag, "BlockData"),
                 NbtCompat.getList(tag, "BlockEntities", Tag.TAG_COMPOUND).copy(), false);
     }
 
@@ -55,13 +55,13 @@ public final class SpongeSchematicImporter {
         CompoundTag blocks = NbtCompat.getCompound(tag, "Blocks");
         Map<Integer, BlueprintBlockState> palette = readPalette(NbtCompat.getCompound(blocks, "Palette"));
         return buildVolume(name, width, height, length, palette,
-                blocks.getByteArray("Data"),
+                NbtCompat.getByteArray(blocks, "Data"),
                 NbtCompat.getList(blocks, "BlockEntities", Tag.TAG_COMPOUND).copy(), true);
     }
 
     private static Map<Integer, BlueprintBlockState> readPalette(CompoundTag paletteTag) {
         Map<Integer, BlueprintBlockState> palette = new HashMap<>();
-        for (String stateString : paletteTag.getAllKeys()) {
+        for (String stateString : NbtCompat.keySet(paletteTag)) {
             palette.put(NbtCompat.getInt(paletteTag, stateString), BlueprintBlockState.parse(stateString));
         }
         if (palette.isEmpty()) {

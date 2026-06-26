@@ -18,7 +18,7 @@ public record RepoEntry(UUID id, String name, int sizeX, int sizeY, int sizeZ,
 
     public CompoundTag toNbt() {
         CompoundTag tag = new CompoundTag();
-        tag.putUUID("Id", id);
+        NbtCompat.putUUID(tag, "Id", id);
         tag.putString("Name", name);
         tag.putIntArray("Size", new int[]{sizeX, sizeY, sizeZ});
         tag.putInt("Count", blockCount);
@@ -33,7 +33,7 @@ public record RepoEntry(UUID id, String name, int sizeX, int sizeY, int sizeZ,
         int sx = size.length == 3 ? size[0] : 0;
         int sy = size.length == 3 ? size[1] : 0;
         int sz = size.length == 3 ? size[2] : 0;
-        return new RepoEntry(tag.getUUID("Id"), NbtCompat.getString(tag, "Name"), sx, sy, sz,
+        return new RepoEntry(NbtCompat.getUUID(tag, "Id").orElseThrow(), NbtCompat.getString(tag, "Name"), sx, sy, sz,
                 NbtCompat.getInt(tag, "Count"), NbtCompat.getInt(tag, "Tier"), NbtCompat.getInt(tag, "Cost"), NbtCompat.getBoolean(tag, "Official"));
     }
 

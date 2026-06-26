@@ -107,7 +107,7 @@ public final class BlueprintSerializer {
 
         List<BlueprintBlockState> palette = new ArrayList<>();
         for (Tag tag : NbtCompat.getList(root, KEY_PALETTE, Tag.TAG_STRING)) {
-            palette.add(BlueprintBlockState.parse(tag.getAsString()));
+            palette.add(BlueprintBlockState.parse(NbtCompat.tagAsString(tag)));
         }
 
         int[] blocks = NbtCompat.getIntArray(root, KEY_BLOCKS).clone();
@@ -137,7 +137,7 @@ public final class BlueprintSerializer {
             if (pos.size() != 3) {
                 throw new BlueprintFormatException("Entity Pos must be [x, y, z]");
             }
-            entities.add(new BlueprintEntity(pos.getDouble(0), pos.getDouble(1), pos.getDouble(2),
+            entities.add(new BlueprintEntity(NbtCompat.listGetDouble(pos, 0), NbtCompat.listGetDouble(pos, 1), NbtCompat.listGetDouble(pos, 2),
                     NbtCompat.getCompound(et, KEY_BE_DATA).copy()));
         }
 

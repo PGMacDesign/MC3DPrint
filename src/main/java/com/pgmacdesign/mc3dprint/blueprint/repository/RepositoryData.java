@@ -44,7 +44,7 @@ public class RepositoryData extends SavedData {
             data.entries.put(entry.id(), entry);
         }
         for (Tag element : NbtCompat.getList(tag, "Printed", Tag.TAG_STRING)) {
-            data.printed.add(UUID.fromString(element.getAsString()));
+            data.printed.add(UUID.fromString(NbtCompat.tagAsString(element)));
         }
         return data;
     }

@@ -3,6 +3,7 @@ package com.pgmacdesign.mc3dprint.machine;
 import com.mojang.serialization.MapCodec;
 import com.pgmacdesign.mc3dprint.compat.BeData;
 import com.pgmacdesign.mc3dprint.compat.InteractionCompat;
+import com.pgmacdesign.mc3dprint.compat.NbtCompat;
 import com.pgmacdesign.mc3dprint.registry.ModBlockEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
@@ -99,7 +100,7 @@ public class RemoteTerminalBlock extends BaseEntityBlock {
                     BlockPos pos = context.getClickedPos();
                     // Pairing rides BLOCK_ENTITY_DATA so it restores into the terminal BE on place.
                     CompoundTag beTag = new CompoundTag();
-                    beTag.put("Target", NbtUtils.writeBlockPos(pos));
+                    NbtCompat.putBlockPos(beTag, "Target", pos);
                     BlockItem.setBlockEntityData(context.getItemInHand(),
                             ModBlockEntities.REMOTE_TERMINAL.get(), beTag);
                     player.displayClientMessage(Component.translatable("message.mc3dprint.terminal_paired",
@@ -115,7 +116,7 @@ public class RemoteTerminalBlock extends BaseEntityBlock {
             CustomData beData = stack.get(DataComponents.BLOCK_ENTITY_DATA);
             Optional<BlockPos> target = beData == null
                     ? Optional.empty()
-                    : NbtUtils.readBlockPos(beData.copyTag(), "Target");
+                    : NbtCompat.getBlockPos(beData.copyTag(), "Target");
             if (target.isPresent()) {
                 BlockPos t = target.get();
                 tooltip.add(Component.translatable("tooltip.mc3dprint.terminal_paired",

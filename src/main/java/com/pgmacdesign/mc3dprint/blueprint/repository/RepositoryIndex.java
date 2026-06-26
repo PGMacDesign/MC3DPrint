@@ -66,7 +66,7 @@ public final class RepositoryIndex {
         CompoundTag persisted = persisted(player);
         ListTag list = NbtCompat.getList(persisted, PERSONAL_TAG, Tag.TAG_COMPOUND);
         for (Tag element : list) {
-            if (((CompoundTag) element).getUUID("Id").equals(entry.id())) {
+            if (NbtCompat.getUUID((CompoundTag) element, "Id").orElseThrow().equals(entry.id())) {
                 return false; // already catalogued
             }
         }
@@ -92,7 +92,7 @@ public final class RepositoryIndex {
         ListTag list = NbtCompat.getList(persisted, PERSONAL_PRINTED_TAG, Tag.TAG_STRING);
         String idString = id.toString();
         for (Tag element : list) {
-            if (element.getAsString().equals(idString)) {
+            if (NbtCompat.tagAsString(element).equals(idString)) {
                 return;
             }
         }
@@ -107,7 +107,7 @@ public final class RepositoryIndex {
         }
         Set<UUID> out = new HashSet<>();
         for (Tag element : NbtCompat.getList(persisted(viewer), PERSONAL_PRINTED_TAG, Tag.TAG_STRING)) {
-            out.add(UUID.fromString(element.getAsString()));
+            out.add(UUID.fromString(NbtCompat.tagAsString(element)));
         }
         return out;
     }

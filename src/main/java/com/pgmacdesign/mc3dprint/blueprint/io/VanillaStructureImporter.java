@@ -30,9 +30,9 @@ public final class VanillaStructureImporter {
         if (sizeTag.size() != 3) {
             throw new BlueprintFormatException("Structure size must be [x, y, z]");
         }
-        int sizeX = sizeTag.getInt(0);
-        int sizeY = sizeTag.getInt(1);
-        int sizeZ = sizeTag.getInt(2);
+        int sizeX = NbtCompat.listGetInt(sizeTag, 0);
+        int sizeY = NbtCompat.listGetInt(sizeTag, 1);
+        int sizeZ = NbtCompat.listGetInt(sizeTag, 2);
 
         ListTag paletteTag;
         if (NbtCompat.contains(root, "palette")) {
@@ -42,7 +42,7 @@ public final class VanillaStructureImporter {
             if (palettes.isEmpty()) {
                 throw new BlueprintFormatException("Structure has empty palettes list");
             }
-            paletteTag = palettes.getList(0);
+            paletteTag = NbtCompat.listGetList(palettes, 0);
         } else {
             throw new BlueprintFormatException("Structure has no palette");
         }
@@ -59,9 +59,9 @@ public final class VanillaStructureImporter {
             if (posTag.size() != 3) {
                 throw new BlueprintFormatException("Structure block pos must be [x, y, z]");
             }
-            int x = posTag.getInt(0);
-            int y = posTag.getInt(1);
-            int z = posTag.getInt(2);
+            int x = NbtCompat.listGetInt(posTag, 0);
+            int y = NbtCompat.listGetInt(posTag, 1);
+            int z = NbtCompat.listGetInt(posTag, 2);
             int stateIndex = NbtCompat.getInt(blockTag, "state");
             if (stateIndex < 0 || stateIndex >= palette.size()) {
                 throw new BlueprintFormatException("Structure block state index " + stateIndex
@@ -83,7 +83,7 @@ public final class VanillaStructureImporter {
         Map<String, String> properties = new TreeMap<>();
         if (NbtCompat.contains(entry, "Properties")) {
             CompoundTag props = NbtCompat.getCompound(entry, "Properties");
-            for (String key : props.getAllKeys()) {
+            for (String key : NbtCompat.keySet(props)) {
                 properties.put(key, NbtCompat.getString(props, key));
             }
         }
