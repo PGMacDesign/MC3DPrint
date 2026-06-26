@@ -168,10 +168,12 @@ Gates: **[AGENT]** headless / **[HUMAN]** in-world.
   **enumerate** what diverged; seam exactly those surfaces (per §4/§5), fill both branches. Iterate until both
   nodes compile. **[AGENT] Gate:** `compileJava` green on **both** active nodes.
 
-> #### ▶ Phase 2.2 — core seam pass IN PROGRESS (2026-06-26)
+> #### ▶ Phase 2.2 — core seam pass COMPLETE ✅ (2026-06-26)
 > Second node = **1.21.8** (latest stable 1.21.x; crosses BOTH the 1.21.2 *and* 1.21.5 rewrite waves — the
-> hardest possible target, chosen deliberately for max forward-compat). `:1.21.1` base stays at **0 errors at
-> every commit** (regression floor intact). `:1.21.8` core errors: **736 → 86** so far (88% cleared). All on `stage2/multi-version`.
+> hardest possible target, chosen deliberately for max forward-compat). `:1.21.1` base stayed at **0 errors at
+> every commit** (regression floor intact). `:1.21.8` core errors: **736 → 0**; main AND test source sets compile
+> on both nodes, and **ONE tree now builds both jars** (`:1.21.8:assemble` + `:1.21.1:assemble` →
+> `versions/<node>/build/libs/mc3dprint-0.10.0.jar`, 667K / 749K). All on `stage2/multi-version`.
 >
 > **Seam shims built** (`src/main/java/com/pgmacdesign/mc3dprint/compat/`):
 > - **`NbtCompat`** — CompoundTag read API (1.21.5 Optional getters) + `getUUID/putUUID/hasUUID`,
@@ -201,20 +203,37 @@ Gates: **[AGENT]** headless / **[HUMAN]** in-world.
 > `model.data` move, ghost-block `RenderType.translucent()`→`translucentMovingBlock()` + `renderSingleBlock`
 > tail `(ModelData,RenderType)`→`(BlockAndTintGetter,BlockPos)`. **[HUMAN] verify the print-preview ghost visually.**
 >
-> **Seams REMAINING (~86 errors) — the scattered long tail, ranked:**
-> 1. **Recipe API (~20)** — `RecipeManager`→`RecipeMap` (`RecipesUpdatedEvent`→`RecipesReceivedEvent` +
->    `getRecipeManager`→`getRecipeMap`), `getAllRecipesFor`, `getResultItem(RegistryAccess)`, `getIngredients`/
->    `getItems` (MinecraftRecipeIndex, FuValueRegistry, FuClientBinding, BlueprintAnvilHandler `setCost`).
->    **Correctness-sensitive — this binds the FU economy; do it carefully, not mechanically.**
-> 2. **SavedData / item-component (~30)** — `SavedData.save(Provider,CompoundTag)` moved to `ValueOutput`
->    (structurally like `BeData` — a `SavedDataCompat`), `ItemStack.parseOptional(Provider,CompoundTag)` (item NBT),
->    `loadWithComponents`/`loadEntityRecursive` (Printer structure-print + entity spawn), `CompoundTag`→`TagValueOutput`
->    (RemoteTerminal item-data). RepositoryData/Index, PrinterBlockEntity, ScanOperation, BlueprintEntity.
-> 3. **Misc one-offs (~36)** — `getBurnTime` now needs a level-derived `FuelValues` (3, ClockGenerator — ripples
->    into static `isFuel` + SimpleGeneratorMenu callers), redstone `Orientation` in `neighborChanged` (PrinterBlock),
->    `RenderLevelStageEvent.Stage`/`renderLineBox(AABB)` (ScannerSelectionRenderer world render), `EntityType.BOAT`,
->    `entity.moveTo`, loot `getParamOrNull(ContextKey)`, `SharedConstants.getDataVersion`, `getCraftingRemainingItem`,
->    plus ~10 scattered 2-error files (UpgradeItem/SpoolItem/ResinItem/ScannerItem/etc.) each a distinct small API rename.
+> ✅ **recipe API DONE** — `RecipeCompat` (ingredients via `placementInfo().ingredients()`, items via
+> `Ingredient.items()`); `bind()` carries a version-neutral `Collection<RecipeHolder<?>>` and `MinecraftRecipeIndex`
+> filters by `Recipe.getType()` (replacing the moved `getAllRecipesFor`); result via uniform `assemble(EMPTY_INPUT)`
+> (= removed `getResultItem`, both nodes); `RecipesUpdatedEvent`→`RecipesReceivedEvent`/`getRecipeMap`. The
+> correctness-sensitive FU valuator (`RecipeFuValuator`) was left untouched. **[PORT]** 1.21.5+ stops syncing recipes
+> to clients by default (server must opt in via `OnDatapackSyncEvent#sendRecipes`) → remote-client FU tooltips degrade;
+> single-player unaffected (integrated server's own bind holds the full set). Flagged in `FuClientBinding`.
+> ✅ **SavedData DONE** — `RepositoryData`: `SavedData.Factory`+`save(CompoundTag)` → `SavedDataType` + a
+> `CompoundTag.CODEC.xmap` codec; imperative load/save bodies unchanged, on-disk shape byte-identical.
+> ✅ **item / BE data DONE** — `saveWithId`/`entity.save`/`saveWithoutMetadata`/`setBlockEntityData` →
+> `TagValueOutput.createWithContext`+`buildResult` (ScanOperation, RemoteTerminal, Controller); `loadWithComponents`
+> via `BeData.loadInto` (TagValueInput); `ItemStack.parseOptional`→`NbtCompat.parseItemStack` (ItemStack.CODEC).
+> ✅ **entity-spawn DONE** — `loadEntityRecursive` +`EntitySpawnReason.LOAD`, `moveTo`→`snapTo`,
+> `EntityType.BOAT`→`instanceof Boat` (Printer structure-print).
+> ✅ **fuel DONE** — `FuelCompat` (`getBurnTime(RecipeType,FuelValues)`; static `isFuel` rebuilds the table via
+> `DataMapHooks.populateFuelValues(boundRegistries)`); `getCraftingRemainingItem`→`getCraftingRemainder`.
+> ✅ **tooltips DONE** — `TooltipCompat.sink` (appendHoverText `List<Component>`→`Consumer<Component>` via a
+> write-only forwarding List — bodies verbatim incl. early returns) across 7 Item sites. **[PORT]** the 3 BLOCK-level
+> tooltips (RedstoneClock/ClockGenerator/CreativeEnergy) are DROPPED on 1.21.8 — `Block.appendHoverText` was removed
+> entirely in 1.21.5; restore via a `TooltipBlockItem` (BlockItem subclass) + ModItems registration. Flagged in-code.
+> ✅ **block signatures DONE** — `updateShape` param reorder (MC3DCable), `neighborChanged` `BlockPos`→`Orientation`
+> (PrinterBlock, Controller — fromPos was unused). ✅ **render tail DONE** — `RenderLevelStageEvent.Stage`→nested
+> `AfterTranslucentBlocks` event, `renderLineBox`→`ShapeRenderer` (ScannerSelectionRenderer). ✅ **misc renames DONE** —
+> `AnvilUpdateEvent.setCost`→`setXpCost`, `LootContext.getParamOrNull`→`getOptionalParameter`,
+> `WorldVersion.getDataVersion().getVersion()`→`dataVersion().version()`. ✅ **JUnit tests DONE** — getList/getIntArray
+> routed through NbtCompat.
+>
+> **[HUMAN] in-world verification deferred** (per "test later"): structure-print of BEs (signs/chests) + decorative
+> entities (armor stands/item frames/boats) across all 4 rotations + mirror; blueprint-repository persistence across
+> restart; clock-generator fuel-slot validity; print-preview ghost. Risks documented in the shim javadocs.
+> **NEXT:** `chiseledBuild` (all jars at once) + per-node gametest parity (`:1.21.8:runGameTestServer`), then [HUMAN] soak.
 >
 > **Established conventions for the remaining fan-out:**
 > - Files edited while **active node = `1.21.1`** → plain code is 1.21.1, the 1.21.5+ variant goes in
@@ -226,7 +245,8 @@ Gates: **[AGENT]** headless / **[HUMAN]** in-world.
 >   runs the single integration compile + fixes residuals. Partition by file to avoid write conflicts.
 > - Commit cadence: reset active to `1.21.1` (= vcsVersion) before every commit so the tree is in canonical form.
 >
-> **Compat shims (`…/compat/`):** `NbtCompat`, `BeData`, `InteractionCompat`, `RegistryCompat`, `RenderCompat`.
+> **Compat shims (`…/compat/`):** `NbtCompat`, `BeData`, `InteractionCompat`, `RegistryCompat`, `RenderCompat`,
+> `RecipeCompat`, `FuelCompat`, `TooltipCompat`.
 > **Commits (branch `stage2/multi-version`):** `77cee40` NBT call-sites · `b88adc1` BeData facade · `189fd00`
 > all-BE persistence · `863b76a` InteractionCompat · `8ac6b2c` block/item interaction · `18d1989`
 > FilamentConverterBlock · `499f7d6` raw-NBT sweep · `b7bdba9` registry+event-bus · `a6e925e` RenderCompat+WinderScreen ·
