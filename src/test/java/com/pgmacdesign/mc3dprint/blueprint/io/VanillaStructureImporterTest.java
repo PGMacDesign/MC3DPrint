@@ -87,7 +87,8 @@ class VanillaStructureImporterTest {
         Blueprint bp = VanillaStructureImporter.importStructure("test", sampleStructure());
         assertEquals(1, bp.blockEntities().size());
         assertTrue(bp.blockEntities().values().stream()
-                .anyMatch(t -> "minecraft:chest".equals(t.getString("id"))));
+                .anyMatch(t -> "minecraft:chest".equals(
+                        com.pgmacdesign.mc3dprint.compat.NbtCompat.getString(t, "id"))));
     }
 
     @Test

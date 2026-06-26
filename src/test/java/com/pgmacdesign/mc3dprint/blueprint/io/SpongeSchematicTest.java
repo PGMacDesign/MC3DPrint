@@ -90,8 +90,8 @@ class SpongeSchematicTest {
     void importsV2BlockEntityWithNormalizedId() {
         Blueprint bp = SpongeSchematicImporter.importSchematic("test", sampleV2());
         CompoundTag be = bp.blockEntities().values().iterator().next();
-        assertEquals("minecraft:chest", be.getString("id"));
-        assertEquals(7, be.getInt("CustomField"));
+        assertEquals("minecraft:chest", com.pgmacdesign.mc3dprint.compat.NbtCompat.getString(be, "id"));
+        assertEquals(7, com.pgmacdesign.mc3dprint.compat.NbtCompat.getInt(be, "CustomField"));
     }
 
     @Test
@@ -100,8 +100,8 @@ class SpongeSchematicTest {
         assertEquals("minecraft:stone", bp.get(0, 0, 0).blockId());
         assertNull(bp.get(1, 0, 0));
         CompoundTag be = bp.blockEntities().values().iterator().next();
-        assertEquals("minecraft:barrel", be.getString("id"));
-        assertEquals(9, be.getInt("CustomField"));
+        assertEquals("minecraft:barrel", com.pgmacdesign.mc3dprint.compat.NbtCompat.getString(be, "id"));
+        assertEquals(9, com.pgmacdesign.mc3dprint.compat.NbtCompat.getInt(be, "CustomField"));
     }
 
     @Test
@@ -142,6 +142,7 @@ class SpongeSchematicTest {
         Blueprint reimported = SpongeSchematicImporter.importSchematic("BE Trip",
                 SpongeSchematicExporter.exportV2(original, 3465));
         assertEquals(1, reimported.blockEntities().size());
-        assertEquals("minecraft:chest", reimported.blockEntities().values().iterator().next().getString("id"));
+        assertEquals("minecraft:chest", com.pgmacdesign.mc3dprint.compat.NbtCompat.getString(
+                reimported.blockEntities().values().iterator().next(), "id"));
     }
 }
