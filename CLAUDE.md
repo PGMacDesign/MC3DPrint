@@ -106,3 +106,8 @@ decisions), `docs/rebalance/` (FU rebalance plan + per-mod research), `docs/blue
 `blueprint-pipeline`, `modded-fu-compat`, `winder-blacklist`, `multiblock-corner-blocks`,
 `github-blueprint-renderer` (the website + submission Worker), `blueprint-repository`,
 `rack-and-cable`.
+
+The **NeoForge 1.21.1 port** (the version-support blitz) is planned in
+`docs/port/neoforge-1.21.1-port.md` (two-pass adversarially reviewed; Stage 1 = single-target port,
+Stage 2 = Stonecutter multi-version, deferred) and tracked in the Linear project "MC3DPrint Version
+Support Blitz" (tickets PGM-5…25). Memory: `neoforge-port-blitz`.
