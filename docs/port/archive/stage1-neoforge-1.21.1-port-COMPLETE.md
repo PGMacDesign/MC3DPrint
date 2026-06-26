@@ -1,6 +1,15 @@
+> ⚠️ **ARCHIVED — DO NOT PLAN AGAINST THIS DOC.** This is the historical record of
+> **Stage 1** (single-target NeoForge 1.21.1 port of one tree), which is **COMPLETE** on
+> `main` (jar builds, 93/94 gametests; Linear PGM-5…25). It is kept only as the Stage-1
+> reference. **All forward work — the Stonecutter multi-version / abstraction-layer build —
+> lives in the single source of truth `docs/port/stage2-stonecutter-multiversion.md`.** Do
+> not conflate the two.
+
+---
+
 # MC3DPrint — NeoForge 1.21.1 Port Design
 
-**Status:** Design / not started · **Author:** PGMacDesign (drafted for agent handoff)
+**Status:** ✅ Stage 1 COMPLETE (archived) · **Author:** PGMacDesign (drafted for agent handoff)
 **Revision:** v3 — hardened across **two** adversarial red-team/blue-team passes (41 verified findings
 total; pass 2 confirmed the v2 reframe holds and added the remaining surface/ordering fixes). See the
 Appendix changelog.

@@ -107,7 +107,9 @@ decisions), `docs/rebalance/` (FU rebalance plan + per-mod research), `docs/blue
 `github-blueprint-renderer` (the website + submission Worker), `blueprint-repository`,
 `rack-and-cable`.
 
-The **NeoForge 1.21.1 port** (the version-support blitz) is planned in
-`docs/port/neoforge-1.21.1-port.md` (two-pass adversarially reviewed; Stage 1 = single-target port,
-Stage 2 = Stonecutter multi-version, deferred) and tracked in the Linear project "MC3DPrint Version
-Support Blitz" (tickets PGM-5…25). Memory: `neoforge-port-blitz`.
+The **multi-version build** is the active effort. The single source of truth is
+`docs/port/stage2-stonecutter-multiversion.md` — Stonecutter + a seam/abstraction layer so one tree
+builds a jar per `(MC version, loader)` node (Phase 2 = reunify 1.20.1-Forge + 1.21.1-NeoForge; Phase 3
+= cheap forward-compat to future versions, never breaking 1.20.1). Stage 1 (the completed single-target
+NeoForge 1.21.1 port, Linear PGM-5…25) is archived at `docs/port/archive/stage1-neoforge-1.21.1-port-COMPLETE.md`.
+Memory: `neoforge-port-blitz`.
