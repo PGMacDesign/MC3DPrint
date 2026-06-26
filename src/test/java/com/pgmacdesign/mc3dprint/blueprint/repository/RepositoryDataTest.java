@@ -1,6 +1,7 @@
 package com.pgmacdesign.mc3dprint.blueprint.repository;
 
 import io.netty.buffer.Unpooled;
+import net.minecraft.core.RegistryAccess;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
 import org.junit.jupiter.api.Test;
@@ -47,8 +48,8 @@ class RepositoryDataTest {
         data.add(sample("a_house"));
         data.add(sample("b_tower"));
 
-        CompoundTag tag = data.save(new CompoundTag());
-        RepositoryData restored = RepositoryData.load(tag);
+        CompoundTag tag = data.save(new CompoundTag(), RegistryAccess.EMPTY);
+        RepositoryData restored = RepositoryData.load(tag, RegistryAccess.EMPTY);
 
         assertEquals(2, restored.entries().size());
         assertTrue(restored.contains(sample("a_house").id()));
@@ -63,7 +64,7 @@ class RepositoryDataTest {
         assertFalse(data.markPrinted(id), "re-printing the same build is a no-op");
         assertTrue(data.printed().contains(id));
 
-        RepositoryData restored = RepositoryData.load(data.save(new CompoundTag()));
+        RepositoryData restored = RepositoryData.load(data.save(new CompoundTag(), RegistryAccess.EMPTY), RegistryAccess.EMPTY);
         assertEquals(1, restored.printed().size());
         assertTrue(restored.printed().contains(id));
     }

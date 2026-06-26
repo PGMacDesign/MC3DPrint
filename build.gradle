@@ -21,6 +21,10 @@ println "Java: ${System.getProperty 'java.version'}, JVM: ${System.getProperty '
 neoForge {
     version = neo_version
 
+    // ModDevGradle wires the modding deps into `main` only; the JUnit suite in
+    // src/test needs Minecraft/NeoForge on its compile + runtime classpath too.
+    addModdingDependenciesTo sourceSets.test
+
     // NB: the namespace property is `neoforge.enabledGameTestNamespaces` (was `forge.…`).
     // It must be set on client, server AND gameTestServer — if it's unset, ZERO gametests
     // register and `runGameTestServer` exits 0 having run nothing (a false green).
