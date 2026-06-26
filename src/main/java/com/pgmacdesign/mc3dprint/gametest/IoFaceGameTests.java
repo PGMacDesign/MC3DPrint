@@ -8,9 +8,8 @@ import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestAssertException;
 import net.minecraft.gametest.framework.GameTestHelper;
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
-import net.minecraftforge.gametest.GameTestHolder;
-import net.minecraftforge.gametest.PrefixGameTestTemplate;
+import net.neoforged.neoforge.gametest.GameTestHolder;
+import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
 /**
  * I/O design (hard spec): top = input, bottom = output, and the four sides
@@ -29,21 +28,21 @@ public class IoFaceGameTests {
         }
 
         for (Direction side : new Direction[]{Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST}) {
-            if (printer.getCapability(ForgeCapabilities.ITEM_HANDLER, side).isPresent()) {
+            if (printer.getItemHandler(side) != null) {
                 helper.fail("Side " + side + " exposes an item handler — sides are spool-only by spec");
                 return;
             }
         }
-        if (!printer.getCapability(ForgeCapabilities.ITEM_HANDLER, Direction.UP).isPresent()) {
+        if (printer.getItemHandler(Direction.UP) == null) {
             helper.fail("Top face must accept input");
             return;
         }
-        if (!printer.getCapability(ForgeCapabilities.ITEM_HANDLER, Direction.DOWN).isPresent()) {
+        if (printer.getItemHandler(Direction.DOWN) == null) {
             helper.fail("Bottom face must expose output");
             return;
         }
         // energy stays available on all faces — the spool rule is item I/O only
-        if (!printer.getCapability(ForgeCapabilities.ENERGY, Direction.NORTH).isPresent()) {
+        if (printer.getEnergyStorage() == null) {
             helper.fail("Energy must remain available on side faces");
             return;
         }

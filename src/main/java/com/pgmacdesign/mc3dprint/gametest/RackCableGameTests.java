@@ -19,9 +19,8 @@ import net.minecraft.gametest.framework.GameTestAssertException;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Blocks;
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
-import net.minecraftforge.gametest.GameTestHolder;
-import net.minecraftforge.gametest.PrefixGameTestTemplate;
+import net.neoforged.neoforge.gametest.GameTestHolder;
+import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
 import java.util.UUID;
 
@@ -137,7 +136,7 @@ public class RackCableGameTests {
         if (!(helper.getBlockEntity(printerPos) instanceof PrinterBlockEntity printer)) {
             throw new GameTestAssertException("Printer block entity missing");
         }
-        helper.succeedWhen(() -> printer.getCapability(ForgeCapabilities.ENERGY).ifPresent(energy -> {
+        helper.succeedWhen(() -> java.util.Optional.ofNullable(printer.getEnergyStorage()).ifPresent(energy -> {
             if (energy.getEnergyStored() <= 0) {
                 throw new GameTestAssertException("Cable did not relay RF to the printer");
             }
@@ -153,7 +152,7 @@ public class RackCableGameTests {
         if (!(helper.getBlockEntity(printerPos) instanceof PrinterBlockEntity printer)) {
             throw new GameTestAssertException("Printer block entity missing");
         }
-        printer.getCapability(ForgeCapabilities.ENERGY).ifPresent(energy -> {
+        java.util.Optional.ofNullable(printer.getEnergyStorage()).ifPresent(energy -> {
             for (int i = 0; i < 60; i++) {
                 energy.receiveEnergy(1_000, false);
             }
@@ -199,7 +198,7 @@ public class RackCableGameTests {
         if (!(helper.getBlockEntity(printerPos) instanceof PrinterBlockEntity printer)) {
             throw new GameTestAssertException("Printer block entity missing");
         }
-        printer.getCapability(ForgeCapabilities.ENERGY).ifPresent(energy -> {
+        java.util.Optional.ofNullable(printer.getEnergyStorage()).ifPresent(energy -> {
             for (int i = 0; i < 60; i++) {
                 energy.receiveEnergy(1_000, false);
             }

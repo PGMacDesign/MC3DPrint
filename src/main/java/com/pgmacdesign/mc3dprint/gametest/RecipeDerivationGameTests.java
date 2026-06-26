@@ -12,15 +12,15 @@ import com.pgmacdesign.mc3dprint.machine.PrinterBlockEntity;
 import com.pgmacdesign.mc3dprint.registry.ModBlocks;
 import com.pgmacdesign.mc3dprint.registry.ModItems;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestAssertException;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
-import net.minecraftforge.gametest.GameTestHolder;
-import net.minecraftforge.gametest.PrefixGameTestTemplate;
+import net.neoforged.neoforge.gametest.GameTestHolder;
+import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -124,7 +124,7 @@ public class RecipeDerivationGameTests {
         if (!(helper.getBlockEntity(pos) instanceof PrinterBlockEntity printer)) {
             throw new GameTestAssertException("Printer block entity missing");
         }
-        printer.getCapability(ForgeCapabilities.ENERGY).ifPresent(energy -> {
+        java.util.Optional.ofNullable(printer.getEnergyStorage()).ifPresent(energy -> {
             for (int i = 0; i < 60; i++) {
                 energy.receiveEnergy(1_000, false);
             }
@@ -176,7 +176,7 @@ public class RecipeDerivationGameTests {
         // a vanilla item with no FU value; the API gives it one, consulted at the
         // documented precedence (API > derived). Use a stable id unlikely to be
         // priced by the default economy or any recipe path.
-        ResourceLocation id = net.minecraftforge.registries.ForgeRegistries.ITEMS.getKey(Items.FEATHER);
+        ResourceLocation id = BuiltInRegistries.ITEM.getKey(Items.FEATHER);
         if (FuValueRegistry.valueOf(new ItemStack(Items.FEATHER)).isPresent()) {
             helper.fail("precondition: feather should start unvalued");
             return;

@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    {
+      "item": "mc3dprint:resin_base"
+    },
+    {
+      "item": "minecraft:bone_meal"
+    },
+    {
+      "item": "minecraft:bone_meal"
+    },
+    {
+      "tag": "mc3dprint:resin_gem"
+    }
+  ],
+  "result": {
+    "count": 1,
+    "id": "mc3dprint:resin_verdant_t2"
+  }
+}

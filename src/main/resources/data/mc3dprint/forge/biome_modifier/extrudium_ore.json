@@ -1,6 +1,0 @@
-{
-  "type": "forge:add_features",
-  "biomes": "#minecraft:is_end",
-  "features": "mc3dprint:extrudium_ore",
-  "step": "underground_ores"
-}

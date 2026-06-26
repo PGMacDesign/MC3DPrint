@@ -11,9 +11,9 @@ import net.minecraft.world.Container;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.entity.ChestBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.gametest.GameTestHolder;
-import net.minecraftforge.gametest.PrefixGameTestTemplate;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.neoforged.neoforge.gametest.GameTestHolder;
+import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
+import net.minecraft.core.registries.BuiltInRegistries;
 
 import java.util.Optional;
 
@@ -165,7 +165,7 @@ public class FarmCollectionGameTests {
 
         placeBlueprint(helper, blueprint);
 
-        Item product = ForgeRegistries.ITEMS.getValue(
+        Item product = BuiltInRegistries.ITEM.get(
                 net.minecraft.resources.ResourceLocation.parse(farm.productId()));
         if (product == null) {
             helper.fail("[" + farm.blueprint() + "] unknown product item " + farm.productId());

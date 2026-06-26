@@ -12,9 +12,8 @@ import net.minecraft.gametest.framework.GameTestAssertException;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
-import net.minecraftforge.gametest.GameTestHolder;
-import net.minecraftforge.gametest.PrefixGameTestTemplate;
+import net.neoforged.neoforge.gametest.GameTestHolder;
+import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
 @GameTestHolder(MC3DPrint.MOD_ID)
 @PrefixGameTestTemplate(false)
@@ -29,7 +28,7 @@ public class CreativePowerGameTests {
             throw new GameTestAssertException("Printer block entity missing");
         }
 
-        helper.succeedWhen(() -> printer.getCapability(ForgeCapabilities.ENERGY).ifPresent(energy -> {
+        helper.succeedWhen(() -> java.util.Optional.ofNullable(printer.getEnergyStorage()).ifPresent(energy -> {
             if (energy.getEnergyStored() < energy.getMaxEnergyStored()) {
                 throw new GameTestAssertException("Printer buffer not filled by creative source: "
                         + energy.getEnergyStored() + "/" + energy.getMaxEnergyStored());
@@ -53,7 +52,7 @@ public class CreativePowerGameTests {
         }
 
         // 40 ticks at the default 10 RF/t should land ~400 RF in the printer
-        helper.runAfterDelay(40, () -> printer.getCapability(ForgeCapabilities.ENERGY).ifPresent(energy -> {
+        helper.runAfterDelay(40, () -> java.util.Optional.ofNullable(printer.getEnergyStorage()).ifPresent(energy -> {
             if (energy.getEnergyStored() < 200) {
                 helper.fail("Clock generator delivered too little RF: " + energy.getEnergyStored());
             } else {
@@ -71,7 +70,7 @@ public class CreativePowerGameTests {
             throw new GameTestAssertException("Printer block entity missing");
         }
 
-        helper.runAfterDelay(60, () -> printer.getCapability(ForgeCapabilities.ENERGY).ifPresent(energy -> {
+        helper.runAfterDelay(60, () -> java.util.Optional.ofNullable(printer.getEnergyStorage()).ifPresent(energy -> {
             if (energy.getEnergyStored() > 0) {
                 helper.fail("Generator produced RF without fuel: " + energy.getEnergyStored());
             } else {
@@ -116,7 +115,7 @@ public class CreativePowerGameTests {
         if (!(helper.getBlockEntity(printerPos) instanceof PrinterBlockEntity printer)) {
             throw new GameTestAssertException("Printer block entity missing");
         }
-        printer.getCapability(ForgeCapabilities.ENERGY).ifPresent(energy -> {
+        java.util.Optional.ofNullable(printer.getEnergyStorage()).ifPresent(energy -> {
             while (energy.receiveEnergy(Integer.MAX_VALUE, true) > 0) {
                 energy.receiveEnergy(Integer.MAX_VALUE, false);
             }

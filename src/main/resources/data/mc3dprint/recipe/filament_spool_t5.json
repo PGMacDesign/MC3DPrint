@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "PPP",
+    "PSP",
+    "PPP"
+  ],
+  "key": {
+    "P": {
+      "item": "mc3dprint:extrudium_crystal"
+    },
+    "S": {
+      "item": "mc3dprint:filament_spool_t4"
+    }
+  },
+  "result": {
+    "count": 1,
+    "id": "mc3dprint:filament_spool_t5"
+  }
+}

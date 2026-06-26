@@ -46,6 +46,13 @@ import java.util.Map;
  * read {@link PrinterBlockEntity#lastPlacedPos()}, already synced for the head.
  */
 public class PrinterRenderer implements BlockEntityRenderer<PrinterBlockEntity> {
+    // 1.21.1 moved getRenderBoundingBox off BlockEntity onto the renderer; forward to the
+    // BE's cull-box logic so the tall gantry/preview doesn't cull when looked at directly.
+    @Override
+    public net.minecraft.world.phys.AABB getRenderBoundingBox(PrinterBlockEntity blockEntity) {
+        return blockEntity.getRenderBoundingBox();
+    }
+
     // Dark-metal texture for frame/rails/head, reused from the block set.
     private static final ResourceLocation METAL =
             ResourceLocation.fromNamespaceAndPath(MC3DPrint.MOD_ID, "textures/block/printer_casing.png");

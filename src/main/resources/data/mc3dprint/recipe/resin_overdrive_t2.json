@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    {
+      "item": "mc3dprint:resin_base"
+    },
+    {
+      "item": "minecraft:redstone_block"
+    },
+    {
+      "tag": "mc3dprint:resin_gem"
+    }
+  ],
+  "result": {
+    "count": 1,
+    "id": "mc3dprint:resin_overdrive_t2"
+  }
+}

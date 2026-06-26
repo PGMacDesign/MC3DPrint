@@ -12,9 +12,8 @@ import net.minecraft.gametest.framework.GameTestAssertException;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
-import net.minecraftforge.gametest.GameTestHolder;
-import net.minecraftforge.gametest.PrefixGameTestTemplate;
+import net.neoforged.neoforge.gametest.GameTestHolder;
+import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
 /**
  * Tiered FU economics (default ratio 4): 1 tier-N FU = 4 tier-(N-1) FU. At
@@ -77,7 +76,7 @@ public class FuTierEconomyGameTests {
     public static void printingDrainsAtTheExchangeRate(GameTestHelper helper) {
         BlockPos pos = new BlockPos(2, 1, 2);
         PrinterBlockEntity printer = placePrinter(helper, pos, 0); // T1
-        printer.getCapability(ForgeCapabilities.ENERGY).ifPresent(energy -> {
+        java.util.Optional.ofNullable(printer.getEnergyStorage()).ifPresent(energy -> {
             for (int i = 0; i < 60; i++) {
                 energy.receiveEnergy(1_000, false);
             }
@@ -106,7 +105,7 @@ public class FuTierEconomyGameTests {
         if (!(helper.getBlockEntity(pos) instanceof WinderBlockEntity winder)) {
             throw new GameTestAssertException("Winder block entity missing");
         }
-        winder.getCapability(ForgeCapabilities.ENERGY).ifPresent(energy -> {
+        java.util.Optional.ofNullable(winder.getEnergyStorage()).ifPresent(energy -> {
             for (int i = 0; i < 60; i++) {
                 energy.receiveEnergy(1_000, false);
             }

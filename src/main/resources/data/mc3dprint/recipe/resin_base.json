@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    {
+      "item": "mc3dprint:extrudium_crystal"
+    },
+    {
+      "tag": "c:slimeballs"
+    }
+  ],
+  "result": {
+    "count": 2,
+    "id": "mc3dprint:resin_base"
+  }
+}

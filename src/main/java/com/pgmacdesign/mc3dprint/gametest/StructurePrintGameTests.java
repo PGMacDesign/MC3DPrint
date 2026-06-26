@@ -16,9 +16,8 @@ import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
-import net.minecraftforge.gametest.GameTestHolder;
-import net.minecraftforge.gametest.PrefixGameTestTemplate;
+import net.neoforged.neoforge.gametest.GameTestHolder;
+import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
 import java.util.UUID;
 
@@ -48,7 +47,7 @@ public class StructurePrintGameTests {
         if (!(helper.getBlockEntity(localPos) instanceof PrinterBlockEntity printer)) {
             throw new GameTestAssertException("Printer block entity missing");
         }
-        printer.getCapability(ForgeCapabilities.ENERGY).ifPresent(energy -> {
+        java.util.Optional.ofNullable(printer.getEnergyStorage()).ifPresent(energy -> {
             for (int i = 0; i < 60; i++) {
                 energy.receiveEnergy(1_000, false);
             }
@@ -192,14 +191,14 @@ public class StructurePrintGameTests {
 
         // New printers default preview ON; normalize to OFF so this test exercises
         // the off→on→off toggle transitions regardless of the placement default.
-        if (printer.getUpdateTag().getBoolean("PreviewOn")) {
+        if (printer.getUpdateTag(helper.getLevel().registryAccess()).getBoolean("PreviewOn")) {
             printer.togglePreview(null);
         }
 
         // no disc: the toggle now flips on regardless (nothing to ghost-render),
         // but no Preview payload is emitted until a disc is loaded.
         printer.togglePreview(null);
-        var noDiscTag = printer.getUpdateTag();
+        var noDiscTag = printer.getUpdateTag(helper.getLevel().registryAccess());
         if (!noDiscTag.getBoolean("PreviewOn")) {
             helper.fail("Preview toggle should enable even without a disc");
             return;
@@ -209,14 +208,14 @@ public class StructurePrintGameTests {
             return;
         }
         printer.togglePreview(null); // toggle back off before the disc scenario
-        if (printer.getUpdateTag().getBoolean("PreviewOn")) {
+        if (printer.getUpdateTag(helper.getLevel().registryAccess()).getBoolean("PreviewOn")) {
             helper.fail("Preview toggle did not turn back off");
             return;
         }
 
         printer.inventory().setStackInSlot(PrinterBlockEntity.SLOT_TEMPLATE, discFor(helper, smallBlueprint()));
         printer.togglePreview(null);
-        var tag = printer.getUpdateTag();
+        var tag = printer.getUpdateTag(helper.getLevel().registryAccess());
         if (!tag.getBoolean("PreviewOn")) {
             helper.fail("Preview did not enable with a valid disc");
             return;
@@ -226,7 +225,7 @@ public class StructurePrintGameTests {
             return;
         }
         printer.togglePreview(null);
-        if (printer.getUpdateTag().contains("Preview")) {
+        if (printer.getUpdateTag(helper.getLevel().registryAccess()).contains("Preview")) {
             helper.fail("Preview payload still present after disabling");
             return;
         }
@@ -374,7 +373,7 @@ public class StructurePrintGameTests {
                 .set(1, 0, 1, BlueprintBlockState.parse("minecraft:diamond_block"))
                 .build();
         ItemStack disc = discFor(helper, blueprint);
-        int tier = disc.getOrCreateTag().getInt(BlueprintDiscItem.TAG_TIER);
+        int tier = BlueprintDiscItem.getTier(disc);
         if (tier != 5) {
             helper.fail("expected disc tier 5 (diamond block among stone), got " + tier);
             return;

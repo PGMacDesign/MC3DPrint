@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "PNP",
+    "PSP",
+    "PNP"
+  ],
+  "key": {
+    "P": {
+      "item": "mc3dprint:extrudium_crystal"
+    },
+    "N": {
+      "item": "minecraft:netherite_ingot"
+    },
+    "S": {
+      "item": "mc3dprint:filament_spool_t5"
+    }
+  },
+  "result": {
+    "count": 1,
+    "id": "mc3dprint:filament_spool_t6"
+  }
+}

@@ -12,9 +12,9 @@ import net.minecraft.tags.BlockTags;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.IronBarsBlock;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.gametest.GameTestHolder;
-import net.minecraftforge.gametest.PrefixGameTestTemplate;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.neoforged.neoforge.gametest.GameTestHolder;
+import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
+import net.minecraft.core.registries.BuiltInRegistries;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -103,7 +103,7 @@ public class CuratedBlueprintRenderIntegrityGameTests {
                                         || connects(level, blueprint, x, y, z + 1, Direction.NORTH); // south neighbour faces north
 
                         if (!anyConnection) {
-                            String blockId = String.valueOf(ForgeRegistries.BLOCKS.getKey(paneState.getBlock()));
+                            String blockId = String.valueOf(BuiltInRegistries.BLOCK.getKey(paneState.getBlock()));
                             failures.add("[" + blueprintName + "] block=" + blockId
                                     + " at (" + x + "," + y + "," + z + ")"
                                     + " — glass pane / iron bars has no horizontal connection"

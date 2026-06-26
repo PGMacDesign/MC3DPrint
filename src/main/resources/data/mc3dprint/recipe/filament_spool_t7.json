@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "PNP",
+    "NSN",
+    "PNP"
+  ],
+  "key": {
+    "P": {
+      "item": "mc3dprint:extrudium_crystal"
+    },
+    "N": {
+      "item": "minecraft:nether_star"
+    },
+    "S": {
+      "item": "mc3dprint:filament_spool_t6"
+    }
+  },
+  "result": {
+    "count": 1,
+    "id": "mc3dprint:filament_spool_t7"
+  }
+}

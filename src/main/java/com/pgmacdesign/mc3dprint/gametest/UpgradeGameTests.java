@@ -11,9 +11,8 @@ import net.minecraft.gametest.framework.GameTestAssertException;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
-import net.minecraftforge.gametest.GameTestHolder;
-import net.minecraftforge.gametest.PrefixGameTestTemplate;
+import net.neoforged.neoforge.gametest.GameTestHolder;
+import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
 @GameTestHolder(MC3DPrint.MOD_ID)
 @PrefixGameTestTemplate(false)
@@ -25,7 +24,7 @@ public class UpgradeGameTests {
         if (!(helper.getBlockEntity(pos) instanceof PrinterBlockEntity printer)) {
             throw new GameTestAssertException("Printer block entity missing");
         }
-        printer.getCapability(ForgeCapabilities.ENERGY).ifPresent(energy -> {
+        java.util.Optional.ofNullable(printer.getEnergyStorage()).ifPresent(energy -> {
             for (int i = 0; i < 60; i++) {
                 energy.receiveEnergy(8_000, false);
             }
@@ -116,13 +115,13 @@ public class UpgradeGameTests {
     @GameTest(template = "empty5", timeoutTicks = 100)
     public static void bufferUpgradeGrowsCapacity(GameTestHelper helper) {
         PrinterBlockEntity printer = poweredT4(helper);
-        int baseCapacity = printer.getCapability(ForgeCapabilities.ENERGY)
+        int baseCapacity = java.util.Optional.ofNullable(printer.getEnergyStorage())
                 .map(e -> e.getMaxEnergyStored()).orElse(0);
 
         printer.installUpgrade(new ItemStack(ModItems.BUFFER_UPGRADE.get()));
         printer.installUpgrade(new ItemStack(ModItems.BUFFER_UPGRADE.get()));
 
-        int upgraded = printer.getCapability(ForgeCapabilities.ENERGY)
+        int upgraded = java.util.Optional.ofNullable(printer.getEnergyStorage())
                 .map(e -> e.getMaxEnergyStored()).orElse(0);
         long expected = Math.round(baseCapacity * 1.5 * 1.5);
         if (upgraded != expected) {

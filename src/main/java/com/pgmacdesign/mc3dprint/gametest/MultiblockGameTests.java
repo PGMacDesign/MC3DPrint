@@ -18,9 +18,8 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
-import net.minecraftforge.gametest.GameTestHolder;
-import net.minecraftforge.gametest.PrefixGameTestTemplate;
+import net.neoforged.neoforge.gametest.GameTestHolder;
+import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
 @GameTestHolder(MC3DPrint.MOD_ID)
 @PrefixGameTestTemplate(false)
@@ -48,7 +47,7 @@ public class MultiblockGameTests {
         if (!(helper.getBlockEntity(CONTROLLER_POS) instanceof PrinterBlockEntity printer)) {
             throw new GameTestAssertException("Controller block entity missing");
         }
-        printer.getCapability(ForgeCapabilities.ENERGY).ifPresent(energy -> {
+        java.util.Optional.ofNullable(printer.getEnergyStorage()).ifPresent(energy -> {
             for (int i = 0; i < 60; i++) {
                 energy.receiveEnergy(16_000, false);
             }
@@ -127,7 +126,7 @@ public class MultiblockGameTests {
         buildT5(helper);
 
         // Form via the real right-click path so component activation is exercised.
-        helper.useBlock(CONTROLLER_POS, helper.makeMockSurvivalPlayer());
+        helper.useBlock(CONTROLLER_POS, helper.makeMockPlayer(net.minecraft.world.level.GameType.SURVIVAL));
 
         helper.runAfterDelay(5, () -> {
             BlockState controller = helper.getLevel().getBlockState(helper.absolutePos(CONTROLLER_POS));
@@ -183,7 +182,7 @@ public class MultiblockGameTests {
         // all Printer Casing (no premium corner) + right-click → forms
         placeT5Base(helper, ModBlocks.PRINTER_CASING.get());
         helper.setBlock(CONTROLLER_POS, ModBlocks.CONTROLLERS.get(0).get());
-        helper.useBlock(CONTROLLER_POS, helper.makeMockSurvivalPlayer());
+        helper.useBlock(CONTROLLER_POS, helper.makeMockPlayer(net.minecraft.world.level.GameType.SURVIVAL));
 
         helper.runAfterDelay(5, () -> {
             BlockState controller = helper.getLevel().getBlockState(helper.absolutePos(CONTROLLER_POS));

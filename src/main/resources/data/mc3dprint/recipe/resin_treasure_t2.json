@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    {
+      "item": "mc3dprint:resin_base"
+    },
+    {
+      "item": "minecraft:gold_ingot"
+    },
+    {
+      "item": "minecraft:gold_ingot"
+    },
+    {
+      "tag": "mc3dprint:resin_gem"
+    }
+  ],
+  "result": {
+    "count": 1,
+    "id": "mc3dprint:resin_treasure_t2"
+  }
+}

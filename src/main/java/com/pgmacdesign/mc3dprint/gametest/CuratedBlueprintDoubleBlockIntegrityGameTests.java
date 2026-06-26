@@ -9,9 +9,9 @@ import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
-import net.minecraftforge.gametest.GameTestHolder;
-import net.minecraftforge.gametest.PrefixGameTestTemplate;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.neoforged.neoforge.gametest.GameTestHolder;
+import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
+import net.minecraft.core.registries.BuiltInRegistries;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -88,7 +88,7 @@ public class CuratedBlueprintDoubleBlockIntegrityGameTests {
                         DoubleBlockHalf wantHalf =
                                 (half == DoubleBlockHalf.LOWER) ? DoubleBlockHalf.UPPER : DoubleBlockHalf.LOWER;
 
-                        String blockId = String.valueOf(ForgeRegistries.BLOCKS.getKey(state.getBlock()));
+                        String blockId = String.valueOf(BuiltInRegistries.BLOCK.getKey(state.getBlock()));
                         BlockState partner = resolveAt(blueprint, x, partnerY, z);
 
                         boolean ok = partner != null
@@ -139,7 +139,7 @@ public class CuratedBlueprintDoubleBlockIntegrityGameTests {
         BlueprintBlockState cell = blueprint.get(x, y, z);
         if (cell == null || cell.isAir()) return "<air/empty>";
         return cell.resolve()
-                .map(s -> String.valueOf(ForgeRegistries.BLOCKS.getKey(s.getBlock())))
+                .map(s -> String.valueOf(BuiltInRegistries.BLOCK.getKey(s.getBlock())))
                 .orElse("<unresolvable:" + cell.serialize() + ">");
     }
 }

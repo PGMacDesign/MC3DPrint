@@ -11,9 +11,9 @@ import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.gametest.GameTestHolder;
-import net.minecraftforge.gametest.PrefixGameTestTemplate;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.neoforged.neoforge.gametest.GameTestHolder;
+import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
+import net.minecraft.core.registries.BuiltInRegistries;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -148,7 +148,7 @@ public class CuratedBlueprintPrintabilityGameTests {
                 boolean hasFuValue = resolved.getBlock().asItem() != Items.AIR
                         && FuValueRegistry.valueOf(new ItemStack(resolved.getBlock().asItem())).isPresent();
                 boolean isStructural = PrinterBlockEntity.isStructuralMatterForTest(resolved);
-                String blockId = String.valueOf(ForgeRegistries.BLOCKS.getKey(resolved.getBlock()));
+                String blockId = String.valueOf(BuiltInRegistries.BLOCK.getKey(resolved.getBlock()));
                 boolean knownGap = KNOWN_UNVALUED_BLOCKS.contains(blockId);
 
                 paletteUnprintable[i] = !hasFuValue && !isStructural && !knownGap;

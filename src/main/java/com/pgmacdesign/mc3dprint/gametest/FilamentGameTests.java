@@ -12,9 +12,8 @@ import net.minecraft.gametest.framework.GameTestAssertException;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
-import net.minecraftforge.gametest.GameTestHolder;
-import net.minecraftforge.gametest.PrefixGameTestTemplate;
+import net.neoforged.neoforge.gametest.GameTestHolder;
+import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
 @GameTestHolder(MC3DPrint.MOD_ID)
 @PrefixGameTestTemplate(false)
@@ -27,7 +26,7 @@ public class FilamentGameTests {
         if (!(helper.getBlockEntity(pos) instanceof WinderBlockEntity winder)) {
             throw new GameTestAssertException("Winder block entity missing");
         }
-        winder.getCapability(ForgeCapabilities.ENERGY).ifPresent(energy -> {
+        java.util.Optional.ofNullable(winder.getEnergyStorage()).ifPresent(energy -> {
             for (int i = 0; i < 20; i++) {
                 energy.receiveEnergy(1_000, false);
             }
@@ -54,7 +53,7 @@ public class FilamentGameTests {
         if (!(helper.getBlockEntity(pos) instanceof WinderBlockEntity winder)) {
             throw new GameTestAssertException("Winder block entity missing");
         }
-        winder.getCapability(ForgeCapabilities.ENERGY).ifPresent(energy -> {
+        java.util.Optional.ofNullable(winder.getEnergyStorage()).ifPresent(energy -> {
             for (int i = 0; i < 20; i++) {
                 energy.receiveEnergy(1_000, false);
             }
@@ -118,7 +117,7 @@ public class FilamentGameTests {
         if (!(helper.getBlockEntity(pos) instanceof WinderBlockEntity winder)) {
             throw new GameTestAssertException("Winder block entity missing");
         }
-        winder.getCapability(ForgeCapabilities.ENERGY).ifPresent(energy -> {
+        java.util.Optional.ofNullable(winder.getEnergyStorage()).ifPresent(energy -> {
             for (int i = 0; i < 20; i++) {
                 energy.receiveEnergy(1_000, false);
             }
@@ -165,7 +164,7 @@ public class FilamentGameTests {
         if (!(helper.getBlockEntity(pos) instanceof PrinterBlockEntity printer)) {
             throw new GameTestAssertException("Printer block entity missing");
         }
-        printer.getCapability(ForgeCapabilities.ENERGY).ifPresent(energy -> {
+        java.util.Optional.ofNullable(printer.getEnergyStorage()).ifPresent(energy -> {
             for (int i = 0; i < 60; i++) {
                 energy.receiveEnergy(1_000, false);
             }
@@ -192,7 +191,7 @@ public class FilamentGameTests {
         if (!(helper.getBlockEntity(pos) instanceof PrinterBlockEntity printer)) {
             throw new GameTestAssertException("Printer block entity missing");
         }
-        printer.getCapability(ForgeCapabilities.ENERGY).ifPresent(energy ->
+        java.util.Optional.ofNullable(printer.getEnergyStorage()).ifPresent(energy ->
                 energy.receiveEnergy(1_000, false));
         PrinterGameTests.attachLoadedSpool(printer);
         // rotten flesh has no FU value and no recipe to derive one — not printable
@@ -214,7 +213,7 @@ public class FilamentGameTests {
         if (!(helper.getBlockEntity(pos) instanceof PrinterBlockEntity printer)) {
             throw new GameTestAssertException("Printer block entity missing");
         }
-        printer.getCapability(ForgeCapabilities.ENERGY).ifPresent(energy -> {
+        java.util.Optional.ofNullable(printer.getEnergyStorage()).ifPresent(energy -> {
             for (int i = 0; i < 60; i++) {
                 energy.receiveEnergy(1_000, false);
             }

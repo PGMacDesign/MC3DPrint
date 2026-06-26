@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "PNP",
+    "NFN",
+    "PNP"
+  ],
+  "key": {
+    "P": {
+      "item": "mc3dprint:extrudium_crystal"
+    },
+    "N": {
+      "item": "minecraft:nether_star"
+    },
+    "F": {
+      "item": "mc3dprint:tier6_fabricator"
+    }
+  },
+  "result": {
+    "count": 1,
+    "id": "mc3dprint:tier7_fabricator"
+  }
+}
