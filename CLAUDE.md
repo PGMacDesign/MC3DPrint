@@ -1,18 +1,30 @@
 # MC3DPrint — Project Instructions
 
-Forge **1.20.1** tech mod: "WorldEdit for survival." Scan a build → save to a Blueprint
+**NeoForge 1.21.1** tech mod: "WorldEdit for survival." Scan a build → save to a Blueprint
 Disc → print it anywhere with a tiered printer/fabricator, powered by RF + tiered **Filament
 Units (FU)**. T1–T4 = single printer blocks; T5–T8 = N×N multiblock fabricators.
 
-- **Stack:** Java 17, Forge 47.4.10, official Mojang mappings. mod id `mc3dprint`, MIT, solo (PGMacDesign).
+- **Stack:** Java 21, NeoForge 21.1.x, official Mojang mappings. mod id `mc3dprint`, MIT, solo (PGMacDesign).
+  `main` is the NeoForge 1.21.1 line; the **multi-version** branch (Stonecutter) builds 1.21.1 + 1.21.8 NeoForge
+  from one tree; **1.20.1 Forge** (Java 17, Forge 47.4.10) lives on the `legacy/1.20.1` backport branch. See the
+  multi-version note at the bottom of this file.
 - **Public repo** (`PGMacDesign/MC3DPrint`): no secrets/PII, original content only. `.env` is gitignored.
 
 ## Build · Test · Deploy
 
+On the **multi-version (Stonecutter) branch**, tasks are node-scoped and need a **Java 21 launcher
+JVM** (`JAVA_HOME=~/.gradle/jdks/eclipse_adoptium-21-*/jdk-21*/Contents/Home`). Edit at active node
+`1.21.1` (plain code = 1.21.1; the 1.21.5+ variant lives in `//? if >=1.21.5 {/*…*///?} else {…//?}`
+guards); after writing new guards run `"Set active project to <node>"` to re-toggle before compiling;
+reset active → `1.21.1` before every commit. `:NODE:test` green ≠ runtime-correct — also
+`runGameTestServer` to catch registration/NBT bugs the compiler can't.
+
 ```bash
-./gradlew build                 # full build + tests → build/libs/mc3dprint-<ver>.jar
-./gradlew compileJava -q        # fast compile check
-./gradlew runGameTestServer -q  # GameTests (gametest/) + JUnit (test/.../fu, blueprint)
+./gradlew :1.21.8:compileJava -q        # fast compile check (or :1.21.1)
+./gradlew :1.21.8:test                  # JUnit (test/.../fu, blueprint, compat)
+./gradlew :1.21.8:assemble -x test      # build jar → versions/1.21.8/build/libs/mc3dprint-<ver>.jar
+./gradlew :1.21.8:runGameTestServer     # in-world GameTests (gametest/)
+# Single-target main/legacy branches use the un-scoped form: ./gradlew build
 ```
 
 Two rules that bite if skipped:

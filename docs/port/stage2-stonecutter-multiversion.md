@@ -233,7 +233,25 @@ Gates: **[AGENT]** headless / **[HUMAN]** in-world.
 > **[HUMAN] in-world verification deferred** (per "test later"): structure-print of BEs (signs/chests) + decorative
 > entities (armor stands/item frames/boats) across all 4 rotations + mirror; blueprint-repository persistence across
 > restart; clock-generator fuel-slot validity; print-preview ghost. Risks documented in the shim javadocs.
-> **NEXT:** `chiseledBuild` (all jars at once) + per-node gametest parity (`:1.21.8:runGameTestServer`), then [HUMAN] soak.
+>
+> #### ▶ Phase 2.3 — runtime verification (2026-06-26): mod LOADS on 1.21.8 ✅
+> `runGameTestServer` caught two runtime bugs that compile-green hid (commit `0668396`):
+> 1. **Registration crash (was fatal).** 1.21.2 made the registry id MANDATORY on every `Block`/`Item` `Properties` —
+>    `Properties.effectiveDrops` throws *"Block id not set"* at construction, cascading into an unbound-holder NPE in
+>    `ModItems`. Fix: `ModBlocks`/`ModItems` use `DeferredRegister.createBlocks/createItems` +
+>    `registerBlock`/`registerItem(name, factory, props)`, which stamp the id via `props.setId(key)` before the
+>    factory runs. The helper is a no-op on 1.21.1, so the call sites are **unguarded and correct on both nodes**.
+> 2. **JUnit raw-NBT assertions.** `SpongeSchematicTest`/`VanillaStructureImporterTest` asserted against
+>    `be.getString("id")`, which returns `Optional` on 1.21.5 — compiles via `assertEquals(Object,Object)`, fails at
+>    runtime (`"Optional[minecraft:chest]"`). Routed through `NbtCompat`. **Lesson: `compileTestJava` green ≠ tests
+>    pass; run `:NODE:test`.** Added `TooltipCompatTest`. Both nodes: compileJava + compileTestJava + test all green.
+>
+> **OPEN [PORT] — 1.21.8 gametest discovery:** only **1 / 94** holders run (94 on 1.21.1) despite
+> `enabledGameTestNamespaces=mc3dprint` being set on the `gameTestServer` run. Cause: the 1.21.5 GameTest framework
+> rewrite (data-driven `minecraft:test_instance` / `test_environment` registries) — the `@GameTestHolder` /
+> `@GameTest(template="empty5")` annotation bridge needs migration for 1.21.5+. Separate harness seam; the mod itself
+> is verified loading. **This is the next investigation before the [HUMAN] soak.**
+> **NEXT:** migrate the gametest harness for 1.21.5+ discovery → per-node gametest parity, then `chiseledBuild` + [HUMAN] soak.
 >
 > **Established conventions for the remaining fan-out:**
 > - Files edited while **active node = `1.21.1`** → plain code is 1.21.1, the 1.21.5+ variant goes in
