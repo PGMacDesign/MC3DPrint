@@ -171,7 +171,7 @@ Gates: **[AGENT]** headless / **[HUMAN]** in-world.
 > #### ▶ Phase 2.2 — core seam pass IN PROGRESS (2026-06-26)
 > Second node = **1.21.8** (latest stable 1.21.x; crosses BOTH the 1.21.2 *and* 1.21.5 rewrite waves — the
 > hardest possible target, chosen deliberately for max forward-compat). `:1.21.1` base stays at **0 errors at
-> every commit** (regression floor intact). `:1.21.8` core errors: **736 → 210** so far (71% cleared). All on `stage2/multi-version`.
+> every commit** (regression floor intact). `:1.21.8` core errors: **736 → 86** so far (88% cleared). All on `stage2/multi-version`.
 >
 > **Seam shims built** (`src/main/java/com/pgmacdesign/mc3dprint/compat/`):
 > - **`NbtCompat`** — CompoundTag read API (1.21.5 Optional getters) + `getUUID/putUUID/hasUUID`,
@@ -194,22 +194,27 @@ Gates: **[AGENT]** headless / **[HUMAN]** in-world.
 > `getAsString`→`tagAsString`, and ListTag `getInt/getDouble/getList(int)` (also Optional on 1.21.5) routed through
 > NbtCompat across PrintJob, RepositoryIndex/Data, RepoEntry, BlueprintSerializer, Vanilla/SpongeImporter, RemoteTerminal.
 >
-> **Seams REMAINING (~210 errors), ranked:**
-> 1. **Render / client (~70)** — `GuiGraphics.blit(ResourceLocation,…)` new signature (14), `renderTooltip`/
->    `renderComponentTooltip` (14), `BlockEntityRenderer.render(…,Vec3)` added param (Printer/FilamentRack renderers),
->    `PoseStack`→`Matrix3x2fStack` for 2D (`pushPose`/`popPose`/`translucent`/`setColor`/`renderLineBox`),
->    `neoforge.client.model.data` package move. *Needs a `RenderCompat` seam + research (1.21.2 + 1.21.5 render waves).*
-> 2. **Registry / event bus (~50)** — `Builder` (22), `Bus`/`bus()` (24), `RecipesUpdatedEvent` move. *DeferredRegister/
->    `@EventBusSubscriber(bus=…)` API; in `ModBlockEntities`, `ModCapabilities`, `MinecraftRecipeIndex`, registration.*
-> 3. **Item-component / SavedData (~30)** — `CompoundTag`→`TagValueOutput`, `RegistryAccess`→`ValueOutput`,
->    `parseOptional(Provider,CompoundTag)`, `loadWithComponents`/`loadEntityRecursive`, `SavedData.save(Provider,CompoundTag)`
->    "does not override" (RemoteTerminal item-data, RepositoryData/Index SavedData, Printer structure-printing).
->    *SavedData also moved to ValueInput/Output in 1.21.5 — a `SavedDataCompat`-style seam, structurally like `BeData`.*
-> 4. **Registry-holder Optionals (~15)** — `registry.get()`/`getHolder` now `Optional<Holder.Reference<…>>`
->    (`Optional<Reference<Item>>`/`<Block>` cannot convert). Inline `.orElseThrow()`/`.map(...)` or a small helper.
-> 5. **Misc (~45)** — `ServerPlayer.server` now private (use `.getServer()`, 8), `IItemStackExtension.getBurnTime`
->    signature (6, ClockGenerator fuel), redstone `Orientation` vs `BlockPos` in `neighborChanged` (PrinterBlock),
->    recipe API (`getResultItem`/`getIngredients`/`getAllRecipesFor`), `Boat`/`Stage` enums, JEI render.
+> ✅ **registry + event-bus DONE** — `RegistryCompat.blockEntityType` (Builder.of→ctor), `@EventBusSubscriber`
+> `bus=` dropped (6 sites), `RegistryCompat.item/block` (get→getValue), `ServerPlayer.server`→`getServer`.
+> ✅ **render DONE** — `RenderCompat` (blit/blitColored/tooltip*), `pose()`→`Matrix3x2fStack` per-site guards,
+> `BlockEntityRenderer.render(…,Vec3)`, `renderLineBox`→`ShapeRenderer`, `shouldRenderOffScreen()` arg drop,
+> `model.data` move, ghost-block `RenderType.translucent()`→`translucentMovingBlock()` + `renderSingleBlock`
+> tail `(ModelData,RenderType)`→`(BlockAndTintGetter,BlockPos)`. **[HUMAN] verify the print-preview ghost visually.**
+>
+> **Seams REMAINING (~86 errors) — the scattered long tail, ranked:**
+> 1. **Recipe API (~20)** — `RecipeManager`→`RecipeMap` (`RecipesUpdatedEvent`→`RecipesReceivedEvent` +
+>    `getRecipeManager`→`getRecipeMap`), `getAllRecipesFor`, `getResultItem(RegistryAccess)`, `getIngredients`/
+>    `getItems` (MinecraftRecipeIndex, FuValueRegistry, FuClientBinding, BlueprintAnvilHandler `setCost`).
+>    **Correctness-sensitive — this binds the FU economy; do it carefully, not mechanically.**
+> 2. **SavedData / item-component (~30)** — `SavedData.save(Provider,CompoundTag)` moved to `ValueOutput`
+>    (structurally like `BeData` — a `SavedDataCompat`), `ItemStack.parseOptional(Provider,CompoundTag)` (item NBT),
+>    `loadWithComponents`/`loadEntityRecursive` (Printer structure-print + entity spawn), `CompoundTag`→`TagValueOutput`
+>    (RemoteTerminal item-data). RepositoryData/Index, PrinterBlockEntity, ScanOperation, BlueprintEntity.
+> 3. **Misc one-offs (~36)** — `getBurnTime` now needs a level-derived `FuelValues` (3, ClockGenerator — ripples
+>    into static `isFuel` + SimpleGeneratorMenu callers), redstone `Orientation` in `neighborChanged` (PrinterBlock),
+>    `RenderLevelStageEvent.Stage`/`renderLineBox(AABB)` (ScannerSelectionRenderer world render), `EntityType.BOAT`,
+>    `entity.moveTo`, loot `getParamOrNull(ContextKey)`, `SharedConstants.getDataVersion`, `getCraftingRemainingItem`,
+>    plus ~10 scattered 2-error files (UpgradeItem/SpoolItem/ResinItem/ScannerItem/etc.) each a distinct small API rename.
 >
 > **Established conventions for the remaining fan-out:**
 > - Files edited while **active node = `1.21.1`** → plain code is 1.21.1, the 1.21.5+ variant goes in
@@ -221,9 +226,11 @@ Gates: **[AGENT]** headless / **[HUMAN]** in-world.
 >   runs the single integration compile + fixes residuals. Partition by file to avoid write conflicts.
 > - Commit cadence: reset active to `1.21.1` (= vcsVersion) before every commit so the tree is in canonical form.
 >
-> **Commits so far (branch `stage2/multi-version`):** `77cee40` NBT call-sites · `b88adc1` BeData facade ·
-> `189fd00` all-BE persistence · `863b76a` InteractionCompat · `8ac6b2c` block/item interaction · `18d1989`
-> FilamentConverterBlock · `499f7d6` raw-NBT sweep + ListTag/tagAsString helpers.
+> **Compat shims (`…/compat/`):** `NbtCompat`, `BeData`, `InteractionCompat`, `RegistryCompat`, `RenderCompat`.
+> **Commits (branch `stage2/multi-version`):** `77cee40` NBT call-sites · `b88adc1` BeData facade · `189fd00`
+> all-BE persistence · `863b76a` InteractionCompat · `8ac6b2c` block/item interaction · `18d1989`
+> FilamentConverterBlock · `499f7d6` raw-NBT sweep · `b7bdba9` registry+event-bus · `a6e925e` RenderCompat+WinderScreen ·
+> `b855313` all screens+renderers · `f8fe024` registry-lookup+ServerPlayer.
 - **2.3 — Data per node.** Reconcile any data-shape differences between the two NeoForge versions (e.g. the
   1.21.2 ingredient form). **[AGENT] Gate:** each node's datapack loads with **zero** parse errors.
 - **2.4 — Gametest parity on both nodes.** **[AGENT] Gate:** each node prints its baseline count and passes
