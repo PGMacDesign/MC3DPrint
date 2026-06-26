@@ -1,10 +1,12 @@
 # MC3DPrint — NeoForge 1.21.1 Port Design
 
 **Status:** Design / not started · **Author:** PGMacDesign (drafted for agent handoff)
-**Revision:** v2 — hardened after an adversarial red-team/blue-team review (21 verified findings folded in;
-see the Appendix changelog).
-**Target:** NeoForge **1.21.1** (Java 21). The existing Forge **1.20.1** (Java 17) build **freezes on a
-`legacy/1.20.1` branch** and keeps shipping as-is.
+**Revision:** v3 — hardened across **two** adversarial red-team/blue-team passes (41 verified findings
+total; pass 2 confirmed the v2 reframe holds and added the remaining surface/ordering fixes). See the
+Appendix changelog.
+**Target:** NeoForge **1.21.1** (Java 21). The existing Forge **1.20.1** (Java 17) build moves to
+**maintenance mode on a `legacy/1.20.1` branch** (bugfixes + data-only streams — new curated blueprints,
+FU-compat hooks — but no new architecture) and keeps shipping. See §5.5 for the divergence cost.
 **Scope of THIS doc:** **Stage 1 — a single-target NeoForge 1.21.1 port** of one source tree, with each
 version-divergent surface pulled behind an internal seam. **Stage 2** (multi-version reunification of
 1.20.1 + 1.21.1 from one tree via Stonecutter) is sketched in §1.4 and deferred to its own doc — the
@@ -20,13 +22,14 @@ seams built here are what make it cheap.
 
 1. **Mods are version-locked, not forward-compatible.** A 1.21.1 jar will not run on 1.21.2+. "Support
    newer versions" = one deliberate port to a chosen target. The community-stable targets are **1.20.1**
-   (legacy LTS) and **1.21.1** (modern LTS). We target 1.21.1; 1.20.1 stays alive, frozen.
+   (legacy LTS) and **1.21.1** (modern LTS). We target 1.21.1; 1.20.1 stays in maintenance mode (§5.5).
 2. **A single source tree cannot compile against two Minecraft versions at once.** `ItemStack.getTag()`
    exists in 1.20.1 and is *deleted* in 1.21.1; `saveAdditional`, `RecipeHolder`, `ResourceLocation`'s
    constructor, the advancement/criteria API, and more all changed. So a "shared `common` module across
    1.20.1 and 1.21.1" is **impossible** — it would reference vanilla symbols that don't exist in one of
    the two. **This is why Stage 1 is single-target** (one tree → 1.21.1), and multi-version waits for
-   Stonecutter (Stage 2, §1.4), which strips the non-matching branch *before* `javac`.
+   Stonecutter (Stage 2, §1.4), which strips the non-matching *inline comment-guarded* branch within a
+   single file *before* `javac`.
 3. **Forge is effectively displaced on 1.21+**; the modern ecosystem is **NeoForge**. Forward = NeoForge.
 4. **The hard work is structural API *deletions*, not renames:** the **1.20.5 data-components rewrite**
    (item NBT deleted), the **Forge→NeoForge capability model inversion**, the **1.20.2 networking
@@ -49,11 +52,14 @@ seams built here are what make it cheap.
   that *also* makes Stage 2 cheap.
 - **Stage 2 (deferred, §1.4):** reunify 1.20.1 + 1.21.1 into one tree with **Stonecutter** (version axis)
   so both jars build from shared source. The seams from Stage 1 become the toggle points; today's 1.20.1
-  code (preserved on `legacy/1.20.1`) becomes the `//? if <1.20.5` branch of each seam.
+  code (preserved on `legacy/1.20.1`) is the **source content a human transcribes inline** into each seam's
+  `//? if <1.20.5` guard — Stonecutter reads one shared tree, it does **not** pull source from the git
+  branch.
 
-**The 1.20.1 build during Stage 1:** frozen on `legacy/1.20.1`. It keeps shipping unchanged and is the
-**behavioral regression oracle** — Stage 1's NeoForge build must reproduce its behavior (verified by
-porting the ~94 gametests + 134-build curated set to run on 1.21.1, see §6).
+**The 1.20.1 build during Stage 1:** maintenance mode on `legacy/1.20.1` (bugfix + data-only). It keeps
+shipping and is the **behavioral regression oracle** — Stage 1's NeoForge build must reproduce its
+behavior (verified by porting the ~116 `@GameTest` methods across 21 holders + the 134-build curated set
+to run on 1.21.1, see §6).
 
 ### 1.2 The seam philosophy
 Each divergent surface is pulled behind a small **core interface**; the rest of the mod calls only that
@@ -63,10 +69,12 @@ NeoForge one). The seam still earns its place: it localizes the version-specific
 
 > A runtime `BUILD_VERSION` enum the code switches on is impossible — a deleted symbol fails `javac`
 > regardless of any runtime branch (§0.2/§0.4). Seams + (later) conditional compilation are the only
-> symbol-safe options.
+> symbol-safe options. ("Strips the non-matching branch before `javac`" means Stonecutter strips one
+> inline comment-guarded branch *within a file*, not selecting between git branches.)
 
 ### 1.3 The full surface map (seams + companion migrations)
-The original draft claimed "six seams = the whole port." The review found that undercounts. The real map:
+The v1 draft claimed "six seams = the whole port." Both review passes found that undercounts. The real map
+— **rows 1–6 are the seams; row 7 + C1–C9 are non-seam surfaces** (mechanical migrations, not interfaces):
 
 | # | Surface | Hides / changes | Severity | Section |
 |---|---|---|---|---|
@@ -76,27 +84,33 @@ The original draft claimed "six seams = the whole port." The review found that u
 | 4 | **Registration + mod-entry/event-bus** | `RegistryObject`↔`DeferredHolder`; `IForgeMenuType`↔`IMenuTypeExtension`; `@Mod` ctor; `@EventBusSubscriber` | Medium | §3.4 |
 | 5 | **BE persistence** | `saveAdditional(tag)` ↔ `(tag, HolderLookup.Provider)` | Medium-High (all 11 BEs) | §3.5 |
 | 6 | **Client/render** | `MenuScreens.register` ↔ `RegisterMenuScreensEvent`; vertex emission | Medium (1.21.5 risk) | §3.6 |
-| 7 | **Storage handles** | `net.minecraftforge.{energy,items}.*` ↔ `net.neoforged.neoforge.{energy,items}.*` | Low (package swap, single-target) | §3.5/§3.7 |
+| 7† | **Storage handles** | `net.minecraftforge.{energy,items}.*` ↔ `net.neoforged.neoforge.{energy,items}.*` | Low (package swap, single-target) | §3.2 |
 | C1 | **`BlockEntityTag` item convention** | ↔ `DataComponents.BLOCK_ENTITY_DATA` | Medium | §3.7 |
 | C2 | **Advancement criteria** | pre-1.20.2 trigger API ↔ `Codec`/`SimpleInstance`/`TRIGGER_TYPE` | Medium (true rewrite) | §3.7 |
-| C3 | **Config spec** | `ForgeConfigSpec` ↔ `ModConfigSpec` | Medium (rename) | §3.7 |
-| C4 | **Recipe-derivation adapter** | `getAllRecipesFor` ↔ `RecipeHolder`/`RecipeInput` | Medium | §3.7 |
+| C3 | **Config spec** | `ForgeConfigSpec` ↔ `ModConfigSpec` | Medium (**compile-blocking**) | §3.7 |
+| C4 | **Recipe-derivation adapter** | `getAllRecipesFor` ↔ `RecipeHolder`/`RecipeInput` | Medium (**compile-blocking**) | §3.7 |
 | C5 | **Patchouli book stamp** | `getOrCreateTag().putString("patchouli:book")` ↔ Patchouli component API | Low (soft-dep) | §3.7 |
 | C6 | **JEI plugin body** | `ForgeRegistries`+`fml` imports + JEI 15→19 API | Medium | §3.7 |
-| C7 | **FU public API + IMC ingress** | Forge lifecycle/event packages ↔ NeoForge | Medium (public contract) | §3.7 |
+| C7 | **FU public API + IMC ingress** | Forge lifecycle/event packages ↔ NeoForge | Medium (**compile-blocking** body) | §3.7 |
+| C8 | **`appendHoverText` signature** | `Level`/`BlockGetter` ↔ `Item.TooltipContext` (11 `@Override` sites) | Medium (**compile-wall**) | §3.7 |
+| C9 | **Anvil custom-name mutators** | `setHoverName`/`resetHoverName`/`hasCustomHoverName` ↔ `DataComponents.CUSTOM_NAME` | Low (**compile-blocking**, 1 file) | §3.7 |
 
-**Single-target simplification (vs the v1 draft):** because Stage 1 has one compile target, surface 7
+† Row 7 is a non-seam mechanical surface (folded into §3.2), not an interface — kept numbered for the
+cost map. **Single-target simplification (vs v1):** because Stage 1 has one compile target, surface 7
 collapses to a **package import swap** (`net.minecraftforge.energy/items.*` → `net.neoforged.neoforge.*`);
 the API surface is drop-in-compatible (same ctors, same overridable methods — verified). No mod-owned
-`EnergyTank`/`ItemSlots` abstraction is needed *for Stage 1*. (Stage 2 is where, *if* you share these
-across loaders, you either Stonecutter-guard the import or introduce the wrapper — decide then, §1.4.)
+`EnergyTank`/`ItemSlots` abstraction is needed *for Stage 1*. (Stage 2 cross-loader sharing is where you'd
+either Stonecutter-guard the import or introduce the wrapper — decide then, §1.4.)
 
 ### 1.4 Stage 2 sketch (deferred — its own doc)
 Once Stage 1 ships, reunify with **Stonecutter** (preprocessor, version axis) on the single NeoForge
 project, declaring `1.20.1` and `1.21.1` versions. Each seam's body gets a `//? if <1.20.5 { …old… }
-//?} else { …new… }` guard; the `legacy/1.20.1` code supplies the old branch. If you also want to keep
-the **Forge** loader for 1.20.1 (vs NeoForge-1.20.1), add the loader axis then (MultiLoader-Template or
-Stonecutter loader constants) — and that is when surface 7 may need a mod-owned wrapper or a guarded
+//?} else { …new… }` guard; the old branch is **hand-filled by transcribing the frozen `legacy/1.20.1`
+seam bodies inline** — Stonecutter is a single-file comment preprocessor and does **not** reference a
+separate git branch. The seams make this cheap by **scope** (~6 seam files + the §3.7 companion sites
+diverge, not all ~125), not by automation; the re-co-location is manual, file by file. If you also want to
+keep the **Forge** loader for 1.20.1 (vs NeoForge-1.20.1), add the loader axis then (MultiLoader-Template
+or Stonecutter loader constants) — and that is when surface 7 may need a mod-owned wrapper or a guarded
 import. **Do not stand up Stonecutter or any multi-loader split during Stage 1** — it adds a matrix you
 can't yet test and buys nothing until a second target exists.
 
@@ -106,7 +120,7 @@ can't yet test and buys nothing until a second target exists.
 
 **No multi-project split.** Stage 1 is the **existing single Gradle project, converted in place on a
 `port/neoforge-1.21.1` branch**, from ForgeGradle 6 / Forge 47.4.10 / Java 17 → **ModDevGradle / NeoForge
-21.1.x / Java 21**. `legacy/1.20.1` holds the frozen Forge build.
+21.1.x / Java 21**. `legacy/1.20.1` holds the maintenance-mode Forge build.
 
 ### 2.1 `build.gradle` (key changes)
 ```groovy
@@ -176,11 +190,12 @@ authors="PGMacDesign"
 
 ## 3. The seams (interface + NeoForge impl)
 
-> For each seam, the existing 1.20.1 code (on `legacy/1.20.1`) is the future `//? if <1.20.5` branch for
-> Stage 2 — so the Forge-side bodies are documented for that future, but **Stage 1 only ships the NeoForge
-> impl**. Keep the existing static helper methods (`BlueprintDiscItem.getBlueprintId`, `SpoolItem.getFu`,
-> …) as the public API and re-point their *bodies* at the seam, so the ~18 `PrinterBlockEntity` call sites
-> and the repository/loot/import/test sites need **zero edits**.
+> For each seam, the existing 1.20.1 code (on `legacy/1.20.1`) is the **source content** a human will later
+> transcribe into the future `//? if <1.20.5` inline guard for Stage 2 — so the Forge-side bodies are
+> documented for that future, but **Stage 1 only ships the NeoForge impl** (do not build two impls now).
+> Keep the existing static helper methods (`BlueprintDiscItem.getBlueprintId`, `SpoolItem.getFu`, …) as the
+> public API and re-point their *bodies* at the seam, so the ~18 `PrinterBlockEntity` call sites and the
+> repository/loot/import/test sites need **zero edits**.
 
 ### 3.1 Seam 1 — ItemData (item NBT → data components)
 
@@ -197,21 +212,24 @@ authors="PGMacDesign"
 disc/spool/scanner data):** `BlueprintDiscItem.java:76,88,97-104,117,127-147,377,391,408-427`;
 `SpoolItem.java:56,61`; `ScannerItem.java:59-64,84-86,168-172` + the client read at
 `ScannerSelectionRenderer.java:45-49`. Two raw outliers to also fix: `StructurePrintGameTests.java:377`,
-`BlueprintRepositoryBlockEntity.java:89,155-160`.
+`BlueprintRepositoryBlockEntity.java:89,155-160`. (Note `BlueprintDiscItem:408-427` is its **tooltip body**
+— it needs **both** the NBT-read edits here **and** the C8 `appendHoverText` signature change.)
 
 **Core interface** (`core/data/ItemData.java`): `readBlueprint→Optional<BlueprintRef>`, `writeBlueprint`
 (false if locked), `clearBlueprint`, `isLocked`/`setLocked`, `readFu`/`writeFu`, `readScannerSelection`/
 `writeScannerCorner`/`clearScannerSelection`. (Full interface body as in v1; unchanged.)
 
-**NeoForge impl** — one `DeferredRegister.createDataComponents("mc3dprint")`, the disc's 9 fields wrapped
-in **one** `BlueprintData` component (atomic), plus `LOCKED` (Boolean), `FU` (Integer), `SCAN`. The
-`Codec` is a straight `RecordCodecBuilder` (10 `fieldOf`s, `resinTargetMask` as `optionalFieldOf(-1)` to
-preserve the legacy "unknown → assume beneficial" default).
+**NeoForge impl** — one `DeferredRegister.createDataComponents(Registries.DATA_COMPONENT_TYPE, "mc3dprint")`
+(the **two-arg** form; the single-arg overload is *removed in 1.21.2* — avoid it now since this line is a
+Stage-2 toggle seam), the disc's 9 fields wrapped in **one** `BlueprintData` component (atomic), plus
+`LOCKED` (Boolean), `FU` (Integer), `SCAN`. The `Codec` is a straight `RecordCodecBuilder` (10 `fieldOf`s,
+`resinTargetMask` as `optionalFieldOf(-1)` to preserve the legacy "unknown → assume beneficial" default).
 
 **The StreamCodec — hand-write it, do NOT use `composite`.** `BlueprintData` has **10** fields. Vanilla
 `StreamCodec.composite` tops out at **6** codec/getter pairs and `NeoForgeStreamCodecs.composite` at **7**
 (fixed overload counts on the 1.21.1 target — *not* a mappings thing). Ten fields exceed both, so write
-it by hand over `RegistryFriendlyByteBuf` (mirrors the legacy `CompoundTag` fields 1:1):
+it by hand over `RegistryFriendlyByteBuf` (the `StreamCodec` interface has exactly two abstract methods —
+`decode(B)` / `encode(B,V)` — so the diamond-anonymous form below is legal on Java 21):
 ```java
 public static final StreamCodec<RegistryFriendlyByteBuf, BlueprintData> STREAM_CODEC =
     new StreamCodec<>() {
@@ -253,7 +271,8 @@ object + an accessor.
   (fuel); **queried cross-BE** by `FilamentConverterBlockEntity:137-138` (raids neighbor inventories —
   core converter function) and `ClockGeneratorBlock:59` (drops fuel on break). Built-in
   `Capabilities.ItemHandler.BLOCK`. **Omitting this ships a silently-broken converter + dead hopper I/O
-  faces** — and the v1 Phase-3b gate couldn't catch it.
+  faces** — and the v1 Phase-3b gate couldn't catch it (now exercised headlessly by ConverterGameTests +
+  IoFaceGameTests once their bodies are ported, §4).
 
 **Core interfaces** (`caps/`):
 ```java
@@ -278,10 +297,11 @@ through `itemHandlerAt`.
 
 **Storage handles (surface 7):** `MachineEnergyStorage`/`CableEnergyStorage` `extends EnergyStorage` and
 the `ItemStackHandler` fields just swap package `net.minecraftforge.{energy,items}.*` →
-`net.neoforged.neoforge.{energy,items}.*` (same ctors/fields/overridable methods — verified). `IEnergyStorage`/
-`ItemStackHandler`/`SlotItemHandler`/`RangedWrapper` are API-compatible drop-ins on 1.21.1. **Single-target
-⇒ import swap only, no abstraction.** (Stage 2 cross-loader sharing is where a wrapper or guarded import
-would be decided — §1.4.)
+`net.neoforged.neoforge.{energy,items}.*` (same ctors/fields/overridable methods — verified, incl. the
+protected-field reach-ins and the `RangedWrapper`/`SlotItemHandler` subclasses). `IEnergyStorage`/
+`ItemStackHandler`/`SlotItemHandler`/`RangedWrapper`/`IItemHandlerModifiable` are API-compatible drop-ins on
+1.21.1. **Single-target ⇒ import swap only, no abstraction.** (Stage 2 cross-loader sharing is where a
+wrapper or guarded import would be decided — §1.4.)
 
 **Hardest single thing — the cable's per-tick neighbor push** (`MC3DCableBlockEntity.transferEnergy`,
 :108-151). Today it re-does `getBlockEntity(pos).getCapability(ENERGY,face)` each tick over a throttled
@@ -321,13 +341,13 @@ a **fixed overload count, not mappings-dependent**; the v1 "in some mappings" wo
 `ForgeRegistries.X` → `BuiltInRegistries.X` / the typed `DeferredRegister.createBlocks/createItems`. **5
 `IForgeMenuType.create` → `IMenuTypeExtension.create`** (same `MenuSupplier` shape). Loot:
 `IGlobalLootModifier` codec → `MapCodec` in 1.21 (verify the two codecs in `loot/`). Single-target ⇒
-**all registration is just the NeoForge-native rename in place** (no Architectury, no `RegistrySupplier` —
-the v1 §5.1 "where does registration live" fork is moot with one tree).
+**all registration is just the NeoForge-native rename in place** (no Architectury, no `RegistrySupplier`).
 
 **§3.4.1 Mod-entry & event-bus wiring** (no other seam owns these — all per the single NeoForge entry):
 - 6 `@Mod.EventBusSubscriber` → top-level `@EventBusSubscriber`, `Bus.FORGE` → `Bus.GAME` (`Bus.MOD`
   unchanged): `BlueprintAnvilHandler:16`, `ModCapabilities:18`, `FuClientBinding:17`, `FilamentTooltip:23`,
-  `ClientSetup:13`, `ScannerSelectionRenderer:30`.
+  `ClientSetup:13`, `ScannerSelectionRenderer:30`. (`BlueprintAnvilHandler`'s **body** also needs the
+  custom-name component migration — see §3.7 **C9**.)
 - `@Mod` ctor `MC3DPrint(FMLJavaModLoadingContext)` → NeoForge-injected `IEventBus modBus` / `ModContainer`
   / `Dist`.
 - 6 `MinecraftForge.EVENT_BUS.addListener` calls (`MC3DPrint.java:56-71`) → `NeoForge.EVENT_BUS`.
@@ -339,23 +359,30 @@ the v1 §5.1 "where does registration live" fork is moot with one tree).
 
 ### 3.5 Seam 5 — BE persistence shim
 
-**Every BlockEntity serializes ItemStacks** via `ItemStackHandler.serializeNBT()` (Printer 4 handlers
-`:2092-2095`, Rack `:138`, Repository `:64`). 1.21.1 requires a `HolderLookup.Provider` on those calls
-(item NBT embeds component refs); scalars (`putInt/putUUID/putString`) don't.
+**Every BlockEntity serializes ItemStacks** via `ItemStackHandler.serializeNBT()`. On 1.21.1 the **no-arg
+`serializeNBT()` / `deserializeNBT(tag)` overloads no longer exist** (`INBTSerializable` declares only the
+`(HolderLookup.Provider)` forms), so **every** site below is a compile error, not an optional thread-through
+— none can be deferred. Full inventory:
+- `PrinterBlockEntity` save `:2092-2095` + load (4 handlers).
+- `FilamentRackBlockEntity` save `:138`/load **and** `getUpdateTag`/`handleUpdateTag` (the client-sync path
+  also hits the removed overload).
+- `BlueprintRepositoryBlockEntity` `:182`/`:188` (the `inventory()` accessor at `:64` is NOT a serialize site).
+- `WinderBlockEntity` `:269`/`:280`; `ClockGeneratorBlockEntity` `:259`/`:269`.
 
-Extract each BE body into `writeState(tag, provider)` / `readState(tag, provider)` helpers. NeoForge
-override signatures: `saveAdditional(CompoundTag, HolderLookup.Provider)` and **`loadAdditional(CompoundTag,
-HolderLookup.Provider)`** (note `loadAdditional`, *not* `load`). Thread the provider into
-`getUpdateTag(Provider)` / `handleUpdateTag(tag, Provider)` and forward `onDataPacket`'s provider.
+Scalars (`putInt/putUUID/putString`) don't need the provider. Extract each BE body into
+`writeState(tag, provider)` / `readState(tag, provider)` helpers. NeoForge override signatures:
+`saveAdditional(CompoundTag, HolderLookup.Provider)` and **`loadAdditional(CompoundTag, HolderLookup.Provider)`**
+(note `loadAdditional`, *not* `load`). Thread the provider into `getUpdateTag(Provider)` /
+`handleUpdateTag(tag, Provider)` and forward `onDataPacket`'s provider.
 
-> **StackIo seam note (corrected):** in Stage 1 (single target) the handlers are NeoForge `ItemStackHandler`
-> directly — `h.serializeNBT(provider)` / `h.deserializeNBT(provider, tag)` — so **no `StackIo` indirection
-> is needed yet**. (The `StackIo` interface only matters in Stage 2, to bridge 1.20.1's no-arg
-> `serializeNBT()` vs 1.21.1's `(Provider)` form; if introduced then, its signature must operate on the
-> mod-owned wrapper or on `Tag`/`Provider`, **never** take a loader-specific `ItemStackHandler` param.)
+> **StackIo seam note:** in Stage 1 (single target) the handlers are NeoForge `ItemStackHandler` directly —
+> `h.serializeNBT(provider)` / `h.deserializeNBT(provider, tag)` — so **no `StackIo` indirection is needed
+> yet**. (The `StackIo` interface only matters in Stage 2, to bridge 1.20.1's no-arg `serializeNBT()` vs
+> 1.21.1's `(Provider)` form; if introduced then, its signature must operate on the mod-owned wrapper or on
+> `Tag`/`Provider`, **never** take a loader-specific `ItemStackHandler` param.)
 
 **Audit item:** `PrintJob`/`activeJob.save()` (`PrinterBlockEntity.java:2108`) + `previewBlueprint` may
-carry block/item refs inside the payload — if so they also need the `Provider` (§5). `RepoEntry.toNbt/fromNbt`
+carry block/item refs inside the payload — if so they also need the `Provider` (§5.1). `RepoEntry.toNbt/fromNbt`
 is pure scalars — no provider.
 
 ### 3.6 Seam 6 — Client/render
@@ -363,8 +390,8 @@ is pure scalars — no provider.
 `ClientSetup.java`: 5 `MenuScreens.register` (in `FMLClientSetupEvent`) → **`RegisterMenuScreensEvent`**
 (dedicated event, no `enqueueWork`); 2 `registerBlockEntityRenderer` (in `EntityRenderersEvent`, NeoForge
 package). All 5 Screens are `GuiGraphics`-era and **portable** (only `graphics.blit(...)` arg order shifts —
-minor). Forge-package import swaps: `ItemStackHandler` (`FilamentRackRenderer:16`), `ModelData`
-(`PrinterRenderer:506`), `RenderLevelStageEvent` (`ScannerSelectionRenderer`).
+minor; verify each of the 5). Forge-package import swaps: `ItemStackHandler` (`FilamentRackRenderer:16`),
+`ModelData` (`PrinterRenderer:506`), `RenderLevelStageEvent` (`ScannerSelectionRenderer`).
 
 **1.21.5 forward-proofing:** the render-pipeline rewrite (a future target, not 1.21.1) will reshape
 `VertexConsumer` (`endVertex()` removed). Isolate raw vertex emission behind a `RenderBridge` so the
@@ -373,8 +400,9 @@ route through it. On 1.21.1 the bridge is the current builder chain lifted verba
 
 ### 3.7 Companion migrations (each needs a §6 gate)
 
-These are real, compile-blocking, and were **absent from the v1 six-seam table**. Each is small and
-mechanical but must be enumerated so an agent doesn't skip it.
+Real, mostly compile-blocking, **absent from the v1 six-seam table**. Small and mechanical, but must be
+enumerated so an agent doesn't skip them. **Ordering:** C3/C4/C7 are compile-blocking and consumed by early
+Phase-3 gates — they land **first** (§6), not in the 3h tail.
 
 - **C1 — `"BlockEntityTag"` convention (deleted 1.20.5+).** `ControllerBlock:74-75` (collapse a formed
   fabricator into an item carrying BE state) + `FabricatorBlockItem:32`; `RemoteTerminalBlock:86,99`
@@ -387,38 +415,57 @@ mechanical but must be enumerated so an agent doesn't skip it.
   player`); register via `DeferredRegister.create(Registries.TRIGGER_TYPE, MOD_ID)`. The **6 `.trigger(player)`
   call sites are unchanged** (`PrinterBlockEntity:988,1317,1319`; `WinderBlockEntity:262`; `ScannerItem:159`;
   `AddBlueprintDiscModifier:75`). **Folder rename:** `data/mc3dprint/advancements/` → `advancement/`
-  (singular, 10 JSON files) — same 1.21 depluralization family as `recipes`/`loot_tables`.
-- **C3 — Config spec.** `MC3DPrintConfig.java` (~58 `ForgeConfigSpec.{Int,Double,Boolean,Config}Value`
-  fields) → `ModConfigSpec` (`net.neoforged.neoforge.common`); every value type/builder method is
-  same-shape (`defineInRange`/`define`/`comment`/`push`/`pop`/`build`). Registration + reload listener
-  already live in the `@Mod` entry: `context.registerConfig` → `ModContainer#registerConfig`;
+  (10 JSON files) — part of the full §4 depluralization set.
+- **C3 — Config spec (compile-blocking).** `MC3DPrintConfig.java:5,15` import/type the deleted
+  `net.minecraftforge.common.ForgeConfigSpec` (~58 `…{Int,Double,Boolean,Config}Value` fields), and
+  `PrinterBlockEntity:~291` reads `MC3DPrintConfig` in its energy-storage ctor — so the module **won't
+  compile** until this ports. → `ModConfigSpec` (`net.neoforged.neoforge.common`); every value type/builder
+  method is same-shape (`defineInRange`/`define`/`comment`/`push`/`pop`/`build`). Registration + reload
+  listener live in the `@Mod` entry: `context.registerConfig` → `ModContainer#registerConfig`;
   `ModConfig`/`ModConfigEvent` → `net.neoforged.fml.config.*`. Mechanical rename, **not** a data migration.
-- **C4 — Recipe-derivation adapter.** `fu/MinecraftRecipeIndex.java` (the live `RecipeManager` →
-  `RecipeFuValuator.RecipeGraph` adapter): `getAllRecipesFor` now yields `List<RecipeHolder<T>>` (unwrap
-  `holder.value()`); the `<C extends Container, T extends Recipe<C>>` bound must drop `Container` (`Recipe`
-  is now `Recipe<? extends RecipeInput>`); `getResultItem(registryAccess)` → `getResultItem(HolderLookup.Provider)`.
-  ~145-line surface, fails loud at first compile.
+- **C4 — Recipe-derivation adapter (compile-blocking).** `fu/MinecraftRecipeIndex.java` (the live
+  `RecipeManager` → `RecipeFuValuator.RecipeGraph` adapter): `getAllRecipesFor` now yields
+  `List<RecipeHolder<T>>` (unwrap `holder.value()`); the `<C extends Container, T extends Recipe<C>>` bound
+  must drop `Container` (`Recipe` is now `Recipe<? extends RecipeInput>`); `getResultItem(registryAccess)` →
+  `getResultItem(HolderLookup.Provider)`. ~145 lines, fails loud at first compile. **Also:** the mod's own
+  recipe JSON silently won't load until `data/mc3dprint/recipes/` → `recipe/` (§4) — the one *silent* leg,
+  so the printability gametest depends on the folder rename landing too.
 - **C5 — Patchouli book stamp (soft-dep).** **Two** raw writes (v1 missed the second):
   `GuidebookAutoGive.java:50` and `ModCreativeTabs.java:137` both do
   `book.getOrCreateTag().putString("patchouli:book", "mc3dprint:guide")`. → Patchouli 1.21 API
   `stack.set(PatchouliDataComponents.BOOK, rl)` or `ItemModBook.forBook(...)` — **not** a generic
-  `CustomData` — behind the existing `ModList.isLoaded("patchouli")` guard (no gradle dep, so guard via the
-  compat shim). **Don't over-correct:** `getPersistentData()` reads (`GuidebookAutoGive`,
-  `WinderBlockEntity:256`, `RepositoryIndex:123`) **survive** 1.20.5 — only `ItemStack.getTag/setTag` were
-  deleted.
+  `CustomData` — behind the existing `ModList.isLoaded("patchouli")` guard. **Don't over-correct:**
+  `getPersistentData()` reads (`GuidebookAutoGive`, `WinderBlockEntity:256`, `RepositoryIndex:123`)
+  **survive** 1.20.5 — only `ItemStack.getTag/setTag` were deleted.
 - **C6 — JEI plugin body (not just a coordinate bump).** `MC3DPrintJeiPlugin.java` uses
-  `net.minecraftforge.fml.ModList` + `ForgeRegistries.ITEMS.forEach` (won't compile on 1.21.1 at all) plus
-  JEI **15.x → 19.x** API churn (`IRecipeRegistration.addRecipes`, `IIngredientManager.removeIngredientsAtRuntime`/
+  `net.minecraftforge.fml.ModList` + `ForgeRegistries.ITEMS.forEach` (won't compile on 1.21.1) plus JEI
+  **15.x → 19.x** API churn (`IRecipeRegistration.addRecipes`, `IIngredientManager.removeIngredientsAtRuntime`/
   `VanillaTypes`, the `IRecipeCategory` contract in `PrintRecipeCategory.java`). Fixes: `ForgeRegistries.ITEMS`
   → `BuiltInRegistries.ITEM`; `net.minecraftforge.fml.ModList` → `net.neoforged.fml.ModList`; + a JEI
   15→19 audit. (`PLUGIN_ID`/`ResourceLocation.tryParse` is fine — don't touch.)
-- **C7 — FU public API + IMC ingress.** `api/MC3DPrintAPI`, `api/FuRegistration` import only
-  `net.minecraft.*` — they port clean. But `fu/FuEvents` (`onInterModProcess(InterModProcessEvent)` +
-  `onServerStarted` + `onDatapackSync`) uses Forge-package events that move
-  (`net.minecraftforge.fml.*`→`net.neoforged.fml.*`; `net.minecraftforge.event.*`→`net.neoforged.neoforge.event[.server].*`).
-  The **public javadoc** telling third parties to send IMC from `FMLCommonSetupEvent`/`InterModEnqueueEvent`
-  is a **contract deliverable** — update it to name the NeoForge packages so no-hard-dep compat mods keep
-  compiling against the 1.21.1 jar.
+- **C7 — FU public API + IMC ingress (compile-blocking body).** `api/MC3DPrintAPI`, `api/FuRegistration`
+  import only `net.minecraft.*` — they port clean. But `fu/FuEvents` (`onInterModProcess(InterModProcessEvent)`
+  + `onServerStarted` + `onDatapackSync`) uses Forge-package events that move
+  (`net.minecraftforge.fml.*`→`net.neoforged.fml.*`; `net.minecraftforge.event.*`→`net.neoforged.neoforge.event[.server].*`)
+  and won't compile until swapped. The **public javadoc** telling third parties to send IMC from
+  `FMLCommonSetupEvent`/`InterModEnqueueEvent` is a **contract deliverable** — update it to name the NeoForge
+  packages so no-hard-dep compat mods keep compiling against the 1.21.1 jar.
+- **C8 — `appendHoverText` signature (the largest unflagged compile-wall: 11 `@Override` sites).** 1.20.5
+  changed the 2nd param. **Item-side (8): `Level level` → `Item.TooltipContext context`** — `ResinItem`,
+  `BlueprintDiscItem`, `UpgradeItem`, `FabricatorBlockItem`, `CreativeSpoolItem`, `SpoolItem`, `ScannerItem`,
+  `RemoteTerminalBlock`. **Block-side (3): `BlockGetter` → `Item.TooltipContext`** — `RedstoneClockBlock`,
+  `ClockGeneratorBlock`, `CreativeEnergyBlock`. Most bodies only read the `ItemStack`, so the param is
+  usually unused — but **`BlueprintDiscItem`'s body (`:408-427`) needs BOTH the signature change AND the
+  §3.1 NBT-read edits.** Without this, an agent editing file-by-file meets all 11 as a wall of red at first
+  build.
+- **C9 — Anvil custom-name mutators (compile-blocking, 1 file).** `BlueprintAnvilHandler` body:
+  `:29 left.hasCustomHoverName()` → `left.has(DataComponents.CUSTOM_NAME)`; `:36 output.resetHoverName()` →
+  `output.remove(DataComponents.CUSTOM_NAME)`; `:38 output.setHoverName(Component.literal(desired))` →
+  `output.set(DataComponents.CUSTOM_NAME, Component.literal(desired))` (add
+  `import net.minecraft.core.component.DataComponents`). **Do NOT** add a `setCost→setLevelCost` rename —
+  `AnvilUpdateEvent.setCost`/`setMaterialCost` survive on NeoForge 1.21.x. **Don't over-correct:**
+  `getHoverName()` **reads** survive (`FilamentConverterBlock:64,68`, `WinderScreen:181`) — leave them.
+  Only the `setHoverName`/`resetHoverName`/`hasCustomHoverName` mutator trio is deleted.
 
 > **Correct the v1 §2 label:** "integration/ — ResourceLocation strings, already loader-agnostic" is true
 > only for the FU-compat hooks (`ae2`, `thermal`, …). It does **not** cover `integration/jei` (C6) or
@@ -431,10 +478,17 @@ mechanical but must be enumerated so an agent doesn't skip it.
 - **Java 21** mandatory; update CI + Prism instance.
 - **JEI** per-version + per-loader coordinates (15.x-forge → 19.x-neoforge).
 - **Gametests:** the 21 holders use Forge `@GameTestHolder`/`RegisterGameTestsEvent` → NeoForge
-  equivalents. Set `neoforge.enabledGameTestNamespaces` (§2.1). **Gate must assert test count > 0** (a
-  green exit running 0 tests is a false pass). This suite is the regression oracle — first-class.
-- **`ResourceLocation` constructor sweep** (`fromNamespaceAndPath`) + the `tags/recipes/advancements` →
-  `tag/recipe/advancement` data-folder depluralization (hits loot/recipes/advancements JSON).
+  equivalents. Set `neoforge.enabledGameTestNamespaces` (§2.1). Beyond the holder-annotation swap,
+  **~13 of the 21 holders' test bodies call the deleted Forge cap API** (`getCapability(ForgeCapabilities.…)`
+  `.ifPresent`, `ForgeRegistries.*`) and must be rewritten to the §3.2 `CapAccess` seam
+  (`level.getCapability(cap, pos, side)`) — assign to the 3b cap owner; gate on `:compileTestJava` **before**
+  the Phase-4 parity gate (parity can't run until the bodies compile). This suite is the regression oracle —
+  first-class.
+- **Data-folder depluralization (1.21) — the COMPLETE set for this mod:** `tags/items→tags/item`,
+  `recipes→recipe`, `advancements→advancement`, `loot_tables→loot_table`, **`structures→structure`**.
+  `structures/empty5.nbt` is the **gametest scene template** every `@GameTest(template="empty5")` loads — if
+  it stays plural, **all 21 holders error at startup** (all-red, not silent-green). See the Phase-4 prereq.
+  Plus the **`ResourceLocation` constructor sweep** (`fromNamespaceAndPath`).
 - **`Block.use` → `useWithoutItem`/`useItemOn`** across 1.20.6 — audit every machine block's interaction
   override during Phase 3.
 - **No mixins / ATs / datagen** — keep it that way.
@@ -450,43 +504,58 @@ mechanical but must be enumerated so an agent doesn't skip it.
   scope here.
 - **5.4 — Keep Forge-1.20.1 vs NeoForge-1.20.1 for the legacy line:** decide at Stage 2; affects whether
   surface 7 needs a wrapper. Not a Stage 1 concern.
+- **5.5 — `legacy/1.20.1` divergence cost (the price of "keeps shipping"):** during the Stage-1 window the
+  legacy branch is **maintenance-mode** (bugfixes + data-only: new curated blueprints, FU-compat hooks),
+  **not** code-frozen. Bounded cost: (a) **regression-oracle drift** — any *behavior* change landed on
+  legacy must be re-applied to the NeoForge tree to keep parity honest; (b) **Stage-2 merge surface** — any
+  *seam-file* change on legacy folds into the future `//? if <1.20.5` guard. Both are bounded because it's a
+  solo repo, blueprints are loader-agnostic data, and compat hooks are `ResourceLocation` strings; the
+  genuinely-diverging surface is just the ~6 seam files. **Mitigation:** hold legacy to bugfix-only during
+  an active port window.
 
 ---
 
 ## 6. Execution plan (Stage 1, for an agent team + a human verifier)
 
 Gates are tagged **[AGENT]** (closable by `runGameTestServer`/`build`) or **[HUMAN]** (interactive 1.21.1
-client — Patrick). **Do not advance a phase until its gate is green.** Line 8's "executable by a team of
+client — Patrick). **Do not advance a phase until its gate is green.** Line 13's "executable by a team of
 agents" holds *with a human verifier for the in-world gates*.
 
-**Phase 0 — Branch & baseline.** Cut `port/neoforge-1.21.1` (and confirm `legacy/1.20.1` holds the frozen
-Forge build). Record the 1.20.1 green state: `./gradlew build` + `runGameTestServer -q`. **[AGENT] Gate:**
-baseline recorded; legacy branch builds.
+**Phase 0 — Branch & baseline.** Cut `port/neoforge-1.21.1` (and confirm `legacy/1.20.1` holds the
+maintenance-mode Forge build). Record the 1.20.1 green state: `./gradlew build` + `runGameTestServer -q`,
+and **capture the runner's PRINTED test count** (the reported number, not a `grep` of `@GameTest`) and pin
+it here as `BASELINE_GAMETEST_COUNT=N`. **[AGENT] Gate:** baseline + `N` pinned; legacy branch builds.
 
 **Phase 1 — Toolchain conversion.** Swap ForgeGradle→ModDevGradle, Java 17→21, `mods.toml`→
 `neoforge.mods.toml`, JEI coords, the `@Mod` ctor + event-bus wiring (§3.4.1). Mod loads as an empty-ish
 shell. **[AGENT] Gate:** `:build` compiles; the mod loads in a 1.21.1 client to the title screen with no
 errors. (No "same jar" claim — the build target changed.)
 
-**Phase 2 — Seam interfaces.** Land all six seam interfaces (`ItemData`, `CapAccess`/`CapabilityRegistrar`
+**Phase 2 — Seam interfaces.** Land the six seam interfaces (`ItemData`, `CapAccess`/`CapabilityRegistrar`
 incl. item-handler, `Net`, registration helpers, persistence helpers, `ClientBootstrap`/`RenderBridge`)
-and the `core` package. Re-point the existing static helpers at the seams. **[AGENT] Gate:** compiles
-against the interfaces (impls may be stubs).
+and the `core` package. Re-point the existing static helpers at the seams. **[AGENT] Gate:** the seam
+**interface** files compile. (NB: the full module will NOT compile until Phase 3·0 below clears the
+compile-blocking companions that still carry deleted Forge imports — that's expected here.)
 
-**Phase 3 — NeoForge impls.** Seam impls + companion migrations. **Ordering within Phase 3 (not fully
-flat):** land **3d (registration/BE types)** and **3a (data components)** *first* — 3b's in-world gate
-needs registered `BlockEntityType`s (NeoForge `registerBlockEntity` needs the resolved type) and 3e's
-round-trip needs 3a's component shape. **File-ownership:** seams **3b (caps) and 3e (persistence) co-edit
-the same 6 BEs** (Printer, MC3DCable, FilamentRack, Winder, ClockGenerator, FilamentConverter) — either
-sequence 3e after 3b on those files, or give both seams' shared-BE work to one agent and parallelize only
-the disjoint seams. (3f render edits are isolated in `client/` — no collision.)
+**Phase 3 — NeoForge impls.** Seam impls + companion migrations.
+- **Phase 3·0 — compile-blockers FIRST.** Land **C3 (config)**, **C4 (recipe adapter)**, **C7 (FuEvents/api
+  event-package swaps)** and the §3.4.1 mod-entry wiring **before any [AGENT] build/gametest gate** — the
+  module cannot compile while any of these keeps a deleted Forge import. **[AGENT] Gate:** `:compileJava`
+  green.
+- **Ordering for the rest:** land **3d (registration/BE types)** and **3a (data components)** *next* — 3b's
+  in-world gate needs registered `BlockEntityType`s (NeoForge `registerBlockEntity` needs the resolved type)
+  and 3e's round-trip needs 3a's component shape. **File-ownership:** seams **3b (caps) and 3e (persistence)
+  co-edit the same 6 BEs** (Printer, MC3DCable, FilamentRack, Winder, ClockGenerator, FilamentConverter) —
+  either sequence 3e after 3b on those files, or give both seams' shared-BE work to one agent and
+  parallelize only the disjoint seams. (3f render edits are isolated in `client/` — no collision.)
 - **3a ItemData** → `ModDataComponents` + impl. **[AGENT] Gate:** disc/spool/scanner round-trip in a
   gametest; tooltips read back.
 - **3b Capabilities** (energy + FU + **item-handler**) → `NeoCaps`, delete 8 `getCapability` overrides,
   `BlockCapabilityCache` cable path. **[AGENT] partial gate:** a gametest asserts cap registration +
-  energy/FU transfer math + item-handler presence. **[HUMAN] gate:** in 1.21.1 — RF flows cable→printer;
-  FU drains rack→printer; multiblock casing forwards; a hopper inserts into the printer UP face & extracts
-  from DOWN; the converter pulls a filtered item from an adjacent chest; clock fuel drops on break.
+  energy/FU/item-handler transfer (ConverterGameTests + IoFaceGameTests cover the item path headlessly once
+  ported). **[HUMAN] gate:** in 1.21.1 — RF flows cable→printer; FU drains rack→printer; multiblock casing
+  forwards; a hopper inserts into the printer UP face & extracts from DOWN; the converter pulls a filtered
+  item from an adjacent chest; clock fuel drops on break.
 - **3c Net** → payload + impl. **[AGENT] Gate:** repository listing syncs S2C (gametest or logged).
 - **3d Registration** + §3.4.1 wiring + loot codecs. **[AGENT] Gate:** all blocks/items/BEs/menus/tabs
   register; creative tab populated.
@@ -495,13 +564,17 @@ the disjoint seams. (3f render edits are isolated in `client/` — no collision.
 - **3f Client/render** → `ClientBootstrap` + `RenderBridge` + 3 import swaps. **[HUMAN] Gate:** 5 screens
   open; printer hologram + rack item render; scanner box draws.
 - **3g `BlockEntityTag`** (C1). **[HUMAN] Gate:** fabricator collapse/place + terminal pairing round-trip.
-- **3h Companion surfaces** C2–C7 (advancements, config, recipe adapter, Patchouli, JEI, IMC). **[AGENT]
-  Gates:** a custom advancement grants in a gametest; `mc3dprint-common.toml` generates + `FuValueRegistry`
-  reload fires; FU derivation still values blocks (printability gametest green); JEI plugin compiles + the
-  recipe category renders **[HUMAN]**; a stub IMC send is picked up.
+- **3h Remaining companions — fan out (independent, parallelize):** **C2** advancements
+  (**[AGENT]** a custom advancement grants in a gametest), **C5** Patchouli book stamp (**[HUMAN]** book
+  opens its guide), **C6** JEI (**[AGENT]** plugin compiles; **[HUMAN]** recipe category renders),
+  **C8** `appendHoverText` 11 sites + **C9** anvil mutators (**[AGENT]** `:compileJava` green; **[HUMAN]**
+  tooltips/anvil-rename behave). (C3/C4/C7 are NOT here — they were 3·0.)
 
-**Phase 4 — Gametest parity.** Port all 21 holders. **[AGENT] Gate:** `runGameTestServer` green **AND
-printed test count > 0 AND == the 1.20.1 count** (a 0-tests green exit is a FAILED gate).
+**Phase 4 — Gametest parity.** Port all 21 holders. **PREREQ (do first):** (1) rename
+`data/mc3dprint/structures/` → `structure/` — else all 21 `@GameTest(template="empty5")` holders fail
+template resolution (all-red, not silent-green); (2) the ~13 cap-using holder bodies compile
+(`:compileTestJava` green, §4). **[AGENT] Gate:** `runGameTestServer` green **AND printed count > 0 AND ==
+`BASELINE_GAMETEST_COUNT`** (a 0-tests green exit is a FAILED gate).
 
 **Phase 5 — In-game soak. [HUMAN]** Full survival playthrough on 1.21.1: scan→wind→print all tiers,
 multiblock form, resins, repository, rack+cable network, JEI + Patchouli soft-deps load. **Gate:** an
@@ -513,28 +586,41 @@ CurseForge game-versions **only** for versions actually built+tested (1.20.1 and
 ---
 
 ## 7. Definition of done
-- `:build` green on NeoForge 1.21.1; `runGameTestServer` green with **count > 0 == 1.20.1's**.
+- `:build` green on NeoForge 1.21.1; `runGameTestServer` green with **count > 0 == `BASELINE_GAMETEST_COUNT`**.
 - A full survival scan→print works in 1.21.1 (multiblock, resins, repository, rack+cable, RF+FU+item I/O).
-- All §3.7 companion surfaces migrated (advancements grant, config loads, recipes derive, JEI renders).
+- All §3.7 companion surfaces migrated (advancements grant, config loads, recipes derive, JEI renders,
+  tooltips/anvil-rename work).
 - Zero mixins/ATs/datagen introduced. No `Co-Authored-By: Claude` / "Generated with Claude Code".
 - Doc surfaces (Patchouli + website guide) unaffected — verify, don't assume.
 
 ---
 
-## Appendix — adversarial-review changelog (v1 → v2)
-A red-team/blue-team pass (5 lenses, every finding independently verified) produced 21 confirmed issues.
-The structural ones reshaped the plan:
+## Appendix — adversarial-review changelog
+**Two** red-team/blue-team passes (5 lenses each, every finding independently verified; 41 confirmed total).
+
+**Pass 1 (v1 → v2) — structural reshape:**
 - **Dropped the premature `common`/`forge`/`neoforge` split.** A single `common` can't compile against two
   Minecraft versions (`getTag` exists in 1.20.1, deleted in 1.21.1) **or** hold loader-subclassed types
   (`EnergyStorage`, the `ItemStackHandler` family) — and the v1 build files were plain-MultiLoader
-  mislabeled "Architectury." Replaced with **single-target Stage 1 + deferred Stonecutter Stage 2**, which
-  dissolves both blockers (one compile target ⇒ storage handles are an import swap; no toolchain split).
-- **Added the ITEM_HANDLER capability dimension** to Seam 2 (3 exposers + 2 cross-BE queriers; v1 would
-  have shipped a silently-broken converter and dead hopper faces).
-- **Fixed the `BlueprintData` StreamCodec** (10 fields exceed `composite`'s 6/7-pair cap → hand-written
-  encode/decode) and the "some mappings" misattribution.
-- **Enumerated 7 companion surfaces** the v1 six-seam table missed (BlockEntityTag, advancement criteria,
-  config spec, recipe adapter, Patchouli book writes, JEI plugin body, IMC/api) — each now has a gate.
-- **Execution honesty:** behavior-based oracle (not "same jar"); 3d→3b and 3a→3e gate ordering; 3b/3e
-  shared-BE file-ownership; AGENT vs HUMAN gate tagging; `neoforge.enabledGameTestNamespaces` + a
-  test-count-> 0 assertion to prevent a silent false-green.
+  mislabeled "Architectury." Replaced with **single-target Stage 1 + deferred Stonecutter Stage 2**.
+- **Added the ITEM_HANDLER capability dimension** to Seam 2; **fixed the `BlueprintData` StreamCodec**
+  (10 fields exceed the composite cap → hand-written); **enumerated 7 companion surfaces** (C1–C7).
+
+**Pass 2 (v2 → v3) — reframe validated, remaining surfaces/ordering fixed:**
+- **Verdict: the two-stage reframe holds** — no new structural holes; storage handles correctly collapse to
+  an import swap on one target; the hand-written stream codec is correct; the gametest-namespace migration
+  is right.
+- **Added C8** (`appendHoverText` — 11 `@Override` compile-wall sites) and **C9** (anvil custom-name
+  mutators), the two largest unflagged compile failures.
+- **Reordered Phase 3:** C3/C4/C7 are compile-blocking → moved to **Phase 3·0** (before any build gate);
+  fanned the 3h tail into independent per-surface items.
+- **Added the `structures→structure` rename** (gates all 21 gametests) as a named Phase-4 prereq, and the
+  complete data-folder depluralization set in §4.
+- **Scoped the gametest-body cap rewrite** (~13 holders call deleted Forge cap API) and gated it on
+  `:compileTestJava` before parity.
+- **Pinned `BASELINE_GAMETEST_COUNT`** in Phase 0 (so the "== 1.20.1 count" gate has an oracle); corrected
+  the stale "~94" to ~116 `@GameTest` methods across 21 holders.
+- **Mechanical corrections:** `createDataComponents` two-arg form (single-arg removed in 1.21.2); broadened
+  the §3.5 serialize-site inventory (Winder/ClockGenerator/FilamentRack update-tag; Repository `:182` not
+  `:64`); clarified the Stonecutter git-branch-vs-inline-comment distinction + the manual re-co-location
+  step; resolved "frozen" vs "keeps shipping" into **maintenance mode** + the §5.5 divergence-cost decision.
