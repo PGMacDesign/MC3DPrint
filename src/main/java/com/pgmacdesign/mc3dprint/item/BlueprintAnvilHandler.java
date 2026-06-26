@@ -14,7 +14,11 @@ import net.neoforged.fml.common.EventBusSubscriber;
  * cached metadata are preserved — only the display name changes. Typing a blank
  * name reverts the disc to its default name.
  */
+//? if >=1.21.5 {
+/*@EventBusSubscriber(modid = MC3DPrint.MOD_ID)
+*///?} else {
 @EventBusSubscriber(modid = MC3DPrint.MOD_ID, bus = EventBusSubscriber.Bus.GAME)
+//?}
 public final class BlueprintAnvilHandler {
     private BlueprintAnvilHandler() {}
 

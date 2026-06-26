@@ -9,7 +9,11 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 
+//? if >=1.21.5 {
+/*@EventBusSubscriber(modid = MC3DPrint.MOD_ID, value = Dist.CLIENT)
+*///?} else {
 @EventBusSubscriber(modid = MC3DPrint.MOD_ID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
+//?}
 public final class ClientSetup {
     private ClientSetup() {}
 

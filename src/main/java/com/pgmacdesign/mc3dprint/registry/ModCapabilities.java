@@ -20,7 +20,11 @@ import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
  * than each BE overriding {@code getCapability}. The BEs expose plain accessor
  * methods returning the raw capability object, wired up here per block-entity type.
  */
+//? if >=1.21.5 {
+/*@EventBusSubscriber(modid = MC3DPrint.MOD_ID)
+*///?} else {
 @EventBusSubscriber(modid = MC3DPrint.MOD_ID, bus = EventBusSubscriber.Bus.MOD)
+//?}
 public final class ModCapabilities {
     public static final BlockCapability<IFilamentSource, Direction> FILAMENT_SOURCE =
             BlockCapability.createSided(

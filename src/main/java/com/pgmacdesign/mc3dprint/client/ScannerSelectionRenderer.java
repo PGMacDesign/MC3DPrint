@@ -25,7 +25,11 @@ import net.neoforged.fml.common.EventBusSubscriber;
  * scanner is held, corner A renders as a blue box, corner B as a cyan box, and
  * once both are set the full selection volume is outlined.
  */
+//? if >=1.21.5 {
+/*@EventBusSubscriber(modid = MC3DPrint.MOD_ID, value = Dist.CLIENT)
+*///?} else {
 @EventBusSubscriber(modid = MC3DPrint.MOD_ID, bus = EventBusSubscriber.Bus.GAME, value = Dist.CLIENT)
+//?}
 public final class ScannerSelectionRenderer {
     private ScannerSelectionRenderer() {}
 

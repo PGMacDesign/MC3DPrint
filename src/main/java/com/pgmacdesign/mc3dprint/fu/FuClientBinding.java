@@ -14,7 +14,11 @@ import net.neoforged.fml.common.EventBusSubscriber;
  * single-player and on a client connected to a remote server. Dist-guarded so
  * this never loads on a dedicated server.
  */
+//? if >=1.21.5 {
+/*@EventBusSubscriber(modid = MC3DPrint.MOD_ID, value = Dist.CLIENT)
+*///?} else {
 @EventBusSubscriber(modid = MC3DPrint.MOD_ID, bus = EventBusSubscriber.Bus.GAME, value = Dist.CLIENT)
+//?}
 public final class FuClientBinding {
     private FuClientBinding() {}
 
