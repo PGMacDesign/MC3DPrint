@@ -63,14 +63,25 @@ public class CasingBlock extends Block implements EntityBlock {
         return new CasingBlockEntity(pos, state);
     }
 
+    // Re-flagging a casing's ACTIVE value is the SAME block class, so
+    // state.is(newState.getBlock()) is true there and this branch is skipped —
+    // it only fires when the casing is genuinely being removed/replaced.
+    // 1.21.5 replaced onRemove(state,level,pos,newState,isMoving) with
+    // affectNeighborsAfterRemoval(state,serverLevel,pos,movedByPiston), called
+    // only on real removal (server-side), so both guards collapse away there.
+    //? if >=1.21.5 {
+    /*@Override
+    protected void affectNeighborsAfterRemoval(BlockState state, net.minecraft.server.level.ServerLevel level, BlockPos pos, boolean movedByPiston) {
+        ControllerBlock.unformContaining(level, pos);
+        super.affectNeighborsAfterRemoval(state, level, pos, movedByPiston);
+    }
+    *///?} else {
     @Override
     public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean isMoving) {
-        // Re-flagging a casing's ACTIVE value is the SAME block class, so
-        // state.is(newState.getBlock()) is true there and this branch is skipped —
-        // it only fires when the casing is genuinely being removed/replaced.
         if (!level.isClientSide && !state.is(newState.getBlock())) {
             ControllerBlock.unformContaining(level, pos);
         }
         super.onRemove(state, level, pos, newState, isMoving);
     }
+    //?}
 }

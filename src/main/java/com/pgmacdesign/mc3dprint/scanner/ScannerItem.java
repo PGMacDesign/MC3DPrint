@@ -2,6 +2,7 @@ package com.pgmacdesign.mc3dprint.scanner;
 
 import com.pgmacdesign.mc3dprint.blueprint.Blueprint;
 import com.pgmacdesign.mc3dprint.blueprint.BlueprintFileStore;
+import com.pgmacdesign.mc3dprint.compat.InteractionCompat;
 import com.pgmacdesign.mc3dprint.config.MC3DPrintConfig;
 import com.pgmacdesign.mc3dprint.item.BlueprintDiscItem;
 import com.pgmacdesign.mc3dprint.machine.MachineTier;
@@ -16,7 +17,9 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+//? if <1.21.5 {
 import net.minecraft.world.InteractionResultHolder;
+//?}
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -74,28 +77,36 @@ public class ScannerItem extends Item {
     }
 
     @Override
+    //? if >=1.21.5 {
+    /*public InteractionResult use(Level level, Player player, InteractionHand hand) {
+    *///?} else {
     public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
+    //?}
         ItemStack stack = player.getItemInHand(hand);
         if (level.isClientSide) {
-            return InteractionResultHolder.sidedSuccess(stack, true);
+            return InteractionCompat.holderSuccess(stack);
         }
 
         if (player.isSecondaryUseActive()) {
             stack.remove(ModDataComponents.SCAN.get());
             player.displayClientMessage(Component.translatable("message.mc3dprint.corners_cleared"), true);
-            return InteractionResultHolder.consume(stack);
+            return InteractionCompat.holderConsume(stack);
         }
 
         return scan(level, player, stack);
     }
 
+    //? if >=1.21.5 {
+    /*private InteractionResult scan(Level level, Player player, ItemStack stack) {
+    *///?} else {
     private InteractionResultHolder<ItemStack> scan(Level level, Player player, ItemStack stack) {
+    //?}
         ScanData data = scanData(stack);
         Optional<BlockPos> cornerA = data.cornerA();
         Optional<BlockPos> cornerB = data.cornerB();
         if (cornerA.isEmpty() || cornerB.isEmpty()) {
             player.displayClientMessage(Component.translatable("message.mc3dprint.scan_no_corners"), true);
-            return InteractionResultHolder.fail(stack);
+            return InteractionCompat.holderFail(stack);
         }
 
         // Flat scan cap per axis (default 33), independent of machine tier and of whether
@@ -119,7 +130,7 @@ public class ScannerItem extends Item {
         if (dx > maxEdge || dy > maxEdge || dz > maxEdge) {
             player.displayClientMessage(Component.translatable("message.mc3dprint.scan_too_large",
                     dx, dy, dz, maxEdge), true);
-            return InteractionResultHolder.fail(stack);
+            return InteractionCompat.holderFail(stack);
         }
 
         // A blank blueprint disc ANYWHERE in the inventory works — no need to hold it in
@@ -134,7 +145,7 @@ public class ScannerItem extends Item {
         }
         if (blankSlot < 0) {
             player.displayClientMessage(Component.translatable("message.mc3dprint.scan_need_blank_disc"), true);
-            return InteractionResultHolder.fail(stack);
+            return InteractionCompat.holderFail(stack);
         }
 
         BlockPos min = new BlockPos(Math.min(a.getX(), b.getX()), Math.min(a.getY(), b.getY()), Math.min(a.getZ(), b.getZ()));
@@ -160,7 +171,7 @@ public class ScannerItem extends Item {
         player.displayClientMessage(Component.translatable("message.mc3dprint.scan_complete",
                 blueprint.blockCount()), true);
         level.playSound(null, player.blockPosition(), SoundEvents.PLAYER_LEVELUP, SoundSource.PLAYERS, 0.5F, 1.5F);
-        return InteractionResultHolder.consume(stack);
+        return InteractionCompat.holderConsume(stack);
     }
 
     private static ScanData scanData(ItemStack stack) {

@@ -55,11 +55,13 @@ public final class InteractionCompat {
     //      a bare InteractionResult. Static type tracks the version's use() return type. ----
     //? if >=1.21.5 {
     /*public static InteractionResult holderSuccess(ItemStack stack) { return InteractionResult.SUCCESS; }
+    public static InteractionResult holderSuccess(ItemStack stack, boolean isClientSide) { return InteractionResult.SUCCESS; }
     public static InteractionResult holderConsume(ItemStack stack) { return InteractionResult.CONSUME; }
     public static InteractionResult holderFail(ItemStack stack) { return InteractionResult.FAIL; }
     public static InteractionResult holderPass(ItemStack stack) { return InteractionResult.PASS; }
     *///?} else {
     public static InteractionResultHolder<ItemStack> holderSuccess(ItemStack stack) { return InteractionResultHolder.sidedSuccess(stack, true); }
+    public static InteractionResultHolder<ItemStack> holderSuccess(ItemStack stack, boolean isClientSide) { return InteractionResultHolder.sidedSuccess(stack, isClientSide); }
     public static InteractionResultHolder<ItemStack> holderConsume(ItemStack stack) { return InteractionResultHolder.consume(stack); }
     public static InteractionResultHolder<ItemStack> holderFail(ItemStack stack) { return InteractionResultHolder.fail(stack); }
     public static InteractionResultHolder<ItemStack> holderPass(ItemStack stack) { return InteractionResultHolder.pass(stack); }

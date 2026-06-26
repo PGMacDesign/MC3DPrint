@@ -2,6 +2,7 @@ package com.pgmacdesign.mc3dprint.machine;
 
 import com.mojang.serialization.MapCodec;
 import com.pgmacdesign.mc3dprint.compat.BeData;
+import com.pgmacdesign.mc3dprint.compat.InteractionCompat;
 import com.pgmacdesign.mc3dprint.registry.ModBlockEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
@@ -104,7 +105,7 @@ public class RemoteTerminalBlock extends BaseEntityBlock {
                     player.displayClientMessage(Component.translatable("message.mc3dprint.terminal_paired",
                             pos.getX(), pos.getY(), pos.getZ()), true);
                 }
-                return InteractionResult.sidedSuccess(level.isClientSide);
+                return InteractionCompat.sidedSuccess(level.isClientSide);
             }
             return super.useOn(context);
         }

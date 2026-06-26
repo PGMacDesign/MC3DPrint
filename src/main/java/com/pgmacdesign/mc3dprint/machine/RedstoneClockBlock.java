@@ -1,6 +1,7 @@
 package com.pgmacdesign.mc3dprint.machine;
 
 import com.mojang.serialization.MapCodec;
+import com.pgmacdesign.mc3dprint.compat.InteractionCompat;
 import com.pgmacdesign.mc3dprint.registry.ModBlockEntities;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
@@ -64,7 +65,7 @@ public class RedstoneClockBlock extends BaseEntityBlock {
         if (!level.isClientSide && level.getBlockEntity(pos) instanceof RedstoneClockBlockEntity clock) {
             ((ServerPlayer) player).openMenu(clock, pos);
         }
-        return InteractionResult.sidedSuccess(level.isClientSide);
+        return InteractionCompat.sidedSuccess(level.isClientSide);
     }
 
     // --- Redstone signal: weak power 15 on all sides while pulsing, else 0 ---

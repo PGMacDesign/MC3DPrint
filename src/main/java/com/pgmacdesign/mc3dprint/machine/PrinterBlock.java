@@ -19,6 +19,7 @@ import net.neoforged.neoforge.items.ItemStackHandler;
 
 import javax.annotation.Nullable;
 
+import com.pgmacdesign.mc3dprint.compat.InteractionCompat;
 import com.pgmacdesign.mc3dprint.registry.ModBlockEntities;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Containers;
@@ -85,14 +86,43 @@ public class PrinterBlock extends BaseEntityBlock {
                     }
                 }
             }
-            return InteractionResult.sidedSuccess(level.isClientSide);
+            return InteractionCompat.sidedSuccess(level.isClientSide);
         }
         if (!level.isClientSide) {
             ((ServerPlayer) player).openMenu(printer, pos);
         }
-        return InteractionResult.sidedSuccess(level.isClientSide);
+        return InteractionCompat.sidedSuccess(level.isClientSide);
     }
 
+    // 1.21.5 replaced onRemove(state,level,pos,newState,isMoving) with
+    // affectNeighborsAfterRemoval(state,serverLevel,pos,movedByPiston), called only on real removal.
+    //? if >=1.21.5 {
+    /*@Override
+    protected void affectNeighborsAfterRemoval(BlockState state, net.minecraft.server.level.ServerLevel level, BlockPos pos, boolean movedByPiston) {
+        if (level.getBlockEntity(pos) instanceof PrinterBlockEntity printer && !printer.isCollapsing()) {
+            printer.cancelActiveJob();
+            ItemStackHandler inventory = printer.inventory();
+            for (int slot = 0; slot < inventory.getSlots(); slot++) {
+                Containers.dropItemStack(level, pos.getX(), pos.getY(), pos.getZ(), inventory.getStackInSlot(slot));
+            }
+            ItemStackHandler spools = printer.spoolInventory();
+            for (int slot = 0; slot < spools.getSlots(); slot++) {
+                ItemStack spool = spools.getStackInSlot(slot);
+                // creative spools never persist in the world — they vanish on break
+                if (spool.getItem() instanceof com.pgmacdesign.mc3dprint.fu.SpoolItem spoolItem
+                        && spoolItem.creative()) {
+                    continue;
+                }
+                Containers.dropItemStack(level, pos.getX(), pos.getY(), pos.getZ(), spool);
+            }
+            ItemStackHandler upgrades = printer.upgradeInventory();
+            for (int slot = 0; slot < upgrades.getSlots(); slot++) {
+                Containers.dropItemStack(level, pos.getX(), pos.getY(), pos.getZ(), upgrades.getStackInSlot(slot));
+            }
+        }
+        super.affectNeighborsAfterRemoval(state, level, pos, movedByPiston);
+    }
+    *///?} else {
     @Override
     public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean isMoving) {
         if (!state.is(newState.getBlock()) && level.getBlockEntity(pos) instanceof PrinterBlockEntity printer
@@ -119,6 +149,7 @@ public class PrinterBlock extends BaseEntityBlock {
         }
         super.onRemove(state, level, pos, newState, isMoving);
     }
+    //?}
 
     @Override
     public void neighborChanged(BlockState state, Level level, BlockPos pos, Block neighborBlock,

@@ -1,5 +1,6 @@
 package com.pgmacdesign.mc3dprint.machine.multiblock;
 
+import com.pgmacdesign.mc3dprint.compat.InteractionCompat;
 import com.pgmacdesign.mc3dprint.machine.MachineTier;
 import com.pgmacdesign.mc3dprint.machine.PrinterBlock;
 import com.pgmacdesign.mc3dprint.machine.PrinterBlockEntity;
@@ -63,7 +64,7 @@ public class ControllerBlock extends PrinterBlock {
                 level.playSound(null, pos, SoundEvents.BEACON_ACTIVATE, SoundSource.BLOCKS, 0.6F, 1.2F);
             }
         }
-        return InteractionResult.sidedSuccess(level.isClientSide);
+        return InteractionCompat.sidedSuccess(level.isClientSide);
     }
 
     @Override

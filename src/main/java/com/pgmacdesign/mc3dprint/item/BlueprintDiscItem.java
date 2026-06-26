@@ -1,5 +1,6 @@
 package com.pgmacdesign.mc3dprint.item;
 
+import com.pgmacdesign.mc3dprint.compat.InteractionCompat;
 import com.pgmacdesign.mc3dprint.compat.NbtCompat;
 
 import com.pgmacdesign.mc3dprint.blueprint.Blueprint;
@@ -17,7 +18,10 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+//? if <1.21.5 {
 import net.minecraft.world.InteractionResultHolder;
+//?}
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -392,10 +396,14 @@ public class BlueprintDiscItem extends Item {
     // --- Interaction ---
 
     @Override
+    //? if >=1.21.5 {
+    /*public InteractionResult use(Level level, Player player, InteractionHand hand) {
+    *///?} else {
     public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
+    //?}
         ItemStack stack = player.getItemInHand(hand);
         if (!player.isSecondaryUseActive() || !hasBlueprint(stack)) {
-            return InteractionResultHolder.pass(stack);
+            return InteractionCompat.holderPass(stack);
         }
         if (!level.isClientSide) {
             boolean nowLocked = !isLocked(stack);
@@ -411,7 +419,7 @@ public class BlueprintDiscItem extends Item {
                     nowLocked ? SoundEvents.IRON_DOOR_CLOSE : SoundEvents.IRON_DOOR_OPEN,
                     SoundSource.PLAYERS, 0.4F, 1.6F);
         }
-        return InteractionResultHolder.sidedSuccess(stack, level.isClientSide);
+        return InteractionCompat.holderSuccess(stack, level.isClientSide);
     }
 
     @Override

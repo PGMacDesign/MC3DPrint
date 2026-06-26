@@ -1,6 +1,7 @@
 package com.pgmacdesign.mc3dprint.machine.repository;
 
 import com.mojang.serialization.MapCodec;
+import com.pgmacdesign.mc3dprint.compat.InteractionCompat;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerPlayer;
@@ -18,7 +19,7 @@ import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
-import net.minecraft.world.level.block.state.properties.DirectionProperty;
+import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.phys.BlockHitResult;
 
 import javax.annotation.Nullable;
@@ -27,7 +28,7 @@ import javax.annotation.Nullable;
 public class BlueprintRepositoryBlock extends BaseEntityBlock {
     public static final MapCodec<BlueprintRepositoryBlock> CODEC = simpleCodec(BlueprintRepositoryBlock::new);
 
-    public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
+    public static final EnumProperty<Direction> FACING = HorizontalDirectionalBlock.FACING;
 
     public BlueprintRepositoryBlock(Properties properties) {
         super(properties);
@@ -72,9 +73,23 @@ public class BlueprintRepositoryBlock extends BaseEntityBlock {
             // listing arrives after the menu exists client-side.
             repository.sendListing(serverPlayer);
         }
-        return InteractionResult.sidedSuccess(level.isClientSide);
+        return InteractionCompat.sidedSuccess(level.isClientSide);
     }
 
+    // 1.21.5 replaced onRemove(state,level,pos,newState,isMoving) with
+    // affectNeighborsAfterRemoval(state,serverLevel,pos,movedByPiston), called only on real removal.
+    //? if >=1.21.5 {
+    /*@Override
+    protected void affectNeighborsAfterRemoval(BlockState state, net.minecraft.server.level.ServerLevel level, BlockPos pos, boolean movedByPiston) {
+        if (level.getBlockEntity(pos) instanceof BlueprintRepositoryBlockEntity repository) {
+            var inv = repository.inventory();
+            for (int slot = 0; slot < inv.getSlots(); slot++) {
+                Containers.dropItemStack(level, pos.getX(), pos.getY(), pos.getZ(), inv.getStackInSlot(slot));
+            }
+        }
+        super.affectNeighborsAfterRemoval(state, level, pos, movedByPiston);
+    }
+    *///?} else {
     @Override
     public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean isMoving) {
         if (!state.is(newState.getBlock())
@@ -86,6 +101,7 @@ public class BlueprintRepositoryBlock extends BaseEntityBlock {
         }
         super.onRemove(state, level, pos, newState, isMoving);
     }
+    //?}
 
     @Override
     public BlockState rotate(BlockState state, Rotation rotation) {

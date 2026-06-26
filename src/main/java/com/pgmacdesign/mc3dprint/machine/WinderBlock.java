@@ -1,6 +1,7 @@
 package com.pgmacdesign.mc3dprint.machine;
 
 import com.mojang.serialization.MapCodec;
+import com.pgmacdesign.mc3dprint.compat.InteractionCompat;
 import com.pgmacdesign.mc3dprint.registry.ModBlockEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
@@ -59,9 +60,29 @@ public class WinderBlock extends BaseEntityBlock {
         if (!level.isClientSide && level.getBlockEntity(pos) instanceof WinderBlockEntity winder) {
             ((ServerPlayer) player).openMenu(winder, pos);
         }
-        return InteractionResult.sidedSuccess(level.isClientSide);
+        return InteractionCompat.sidedSuccess(level.isClientSide);
     }
 
+    // 1.21.5 replaced onRemove(state,level,pos,newState,isMoving) with
+    // affectNeighborsAfterRemoval(state,serverLevel,pos,movedByPiston), called only on real removal.
+    //? if >=1.21.5 {
+    /*@Override
+    protected void affectNeighborsAfterRemoval(BlockState state, net.minecraft.server.level.ServerLevel level, BlockPos pos, boolean movedByPiston) {
+        if (level.getBlockEntity(pos) instanceof WinderBlockEntity winder) {
+            ItemStackHandler inventory = winder.inventory();
+            for (int slot = 0; slot < inventory.getSlots(); slot++) {
+                ItemStack stack = inventory.getStackInSlot(slot);
+                // creative spools never persist in the world — they vanish on break
+                if (stack.getItem() instanceof com.pgmacdesign.mc3dprint.fu.SpoolItem spoolItem
+                        && spoolItem.creative()) {
+                    continue;
+                }
+                Containers.dropItemStack(level, pos.getX(), pos.getY(), pos.getZ(), stack);
+            }
+        }
+        super.affectNeighborsAfterRemoval(state, level, pos, movedByPiston);
+    }
+    *///?} else {
     @Override
     public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean isMoving) {
         if (!state.is(newState.getBlock()) && level.getBlockEntity(pos) instanceof WinderBlockEntity winder) {
@@ -78,6 +99,7 @@ public class WinderBlock extends BaseEntityBlock {
         }
         super.onRemove(state, level, pos, newState, isMoving);
     }
+    //?}
 
     @Override
     public void setPlacedBy(Level level, BlockPos pos, BlockState state,
