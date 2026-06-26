@@ -1,10 +1,10 @@
 package com.pgmacdesign.mc3dprint.machine.repository;
 
+import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Containers;
-import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.context.BlockPlaceContext;
@@ -20,17 +20,23 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.phys.BlockHitResult;
-import net.minecraftforge.network.NetworkHooks;
 
 import javax.annotation.Nullable;
 
 /** The Server Blueprint Repository block: a passive library terminal (no ticking). */
 public class BlueprintRepositoryBlock extends BaseEntityBlock {
+    public static final MapCodec<BlueprintRepositoryBlock> CODEC = simpleCodec(BlueprintRepositoryBlock::new);
+
     public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
 
     public BlueprintRepositoryBlock(Properties properties) {
         super(properties);
         registerDefaultState(stateDefinition.any().setValue(FACING, Direction.NORTH));
+    }
+
+    @Override
+    protected MapCodec<? extends BaseEntityBlock> codec() {
+        return CODEC;
     }
 
     @Override
@@ -56,12 +62,12 @@ public class BlueprintRepositoryBlock extends BaseEntityBlock {
     }
 
     @Override
-    public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player,
-                                 InteractionHand hand, BlockHitResult hit) {
+    protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player,
+                                               BlockHitResult hit) {
         if (!level.isClientSide
                 && level.getBlockEntity(pos) instanceof BlueprintRepositoryBlockEntity repository
                 && player instanceof ServerPlayer serverPlayer) {
-            NetworkHooks.openScreen(serverPlayer, repository, pos);
+            serverPlayer.openMenu(repository, pos);
             // The open-screen packet is sent first on the same connection, so this
             // listing arrives after the menu exists client-side.
             repository.sendListing(serverPlayer);

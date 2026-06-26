@@ -1,10 +1,11 @@
 package com.pgmacdesign.mc3dprint.machine;
 
+import com.mojang.serialization.MapCodec;
 import com.pgmacdesign.mc3dprint.registry.ModBlockEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResult;
+import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
@@ -20,8 +21,15 @@ import javax.annotation.Nullable;
 
 public class FilamentConverterBlock extends BaseEntityBlock {
 
+    public static final MapCodec<FilamentConverterBlock> CODEC = simpleCodec(FilamentConverterBlock::new);
+
     public FilamentConverterBlock(Properties properties) {
         super(properties);
+    }
+
+    @Override
+    protected MapCodec<? extends BaseEntityBlock> codec() {
+        return CODEC;
     }
 
     @Override
@@ -46,13 +54,13 @@ public class FilamentConverterBlock extends BaseEntityBlock {
     }
 
     @Override
-    public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player,
-                                 InteractionHand hand, BlockHitResult hit) {
+    protected ItemInteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos,
+                                              Player player, InteractionHand hand, BlockHitResult hit) {
         if (!(level.getBlockEntity(pos) instanceof FilamentConverterBlockEntity converter)) {
-            return InteractionResult.PASS;
+            return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
         }
         if (level.isClientSide) {
-            return InteractionResult.SUCCESS;
+            return ItemInteractionResult.SUCCESS;
         }
         ItemStack held = player.getItemInHand(hand);
         if (player.isSecondaryUseActive() && held.isEmpty()) {
@@ -69,6 +77,6 @@ public class FilamentConverterBlock extends BaseEntityBlock {
             player.displayClientMessage(Component.translatable("message.mc3dprint.converter_status",
                     filterName), true);
         }
-        return InteractionResult.CONSUME;
+        return ItemInteractionResult.CONSUME;
     }
 }

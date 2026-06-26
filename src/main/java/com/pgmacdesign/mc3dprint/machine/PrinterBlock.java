@@ -1,7 +1,8 @@
 package com.pgmacdesign.mc3dprint.machine;
 
+import com.mojang.serialization.MapCodec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.BlockPos;
-import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -15,7 +16,6 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.neoforged.neoforge.items.ItemStackHandler;
-import net.minecraftforge.network.NetworkHooks;
 
 import javax.annotation.Nullable;
 
@@ -24,11 +24,22 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Containers;
 
 public class PrinterBlock extends BaseEntityBlock {
+
+    public static final MapCodec<PrinterBlock> CODEC = RecordCodecBuilder.mapCodec(inst -> inst.group(
+            MachineTier.CODEC.fieldOf("tier").forGetter(PrinterBlock::tier),
+            propertiesCodec()
+    ).apply(inst, PrinterBlock::new));
+
     private final MachineTier tier;
 
     public PrinterBlock(MachineTier tier, Properties properties) {
         super(properties);
         this.tier = tier;
+    }
+
+    @Override
+    protected MapCodec<? extends BaseEntityBlock> codec() {
+        return CODEC;
     }
 
     public MachineTier tier() {
@@ -56,8 +67,8 @@ public class PrinterBlock extends BaseEntityBlock {
     }
 
     @Override
-    public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player,
-                                 InteractionHand hand, BlockHitResult hit) {
+    protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player,
+                                               BlockHitResult hit) {
         if (!(level.getBlockEntity(pos) instanceof PrinterBlockEntity printer)) {
             return InteractionResult.PASS;
         }
@@ -77,7 +88,7 @@ public class PrinterBlock extends BaseEntityBlock {
             return InteractionResult.sidedSuccess(level.isClientSide);
         }
         if (!level.isClientSide) {
-            NetworkHooks.openScreen((ServerPlayer) player, printer, pos);
+            ((ServerPlayer) player).openMenu(printer, pos);
         }
         return InteractionResult.sidedSuccess(level.isClientSide);
     }

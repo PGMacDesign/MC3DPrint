@@ -52,7 +52,6 @@ import net.minecraft.world.level.block.entity.ChestBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.Container;
-import net.neoforged.neoforge.common.world.ForgeChunkManager;
 import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.ItemStackHandler;
 import net.neoforged.neoforge.items.wrapper.RangedWrapper;
@@ -812,7 +811,8 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
                     && qmStorageRemaining > 0 && placedBe instanceof Container storage) {
                 int bread = (int) Math.ceil((double) qmFoodRemaining / qmStorageRemaining);
                 int torches = (int) Math.ceil((double) qmTorchRemaining / qmStorageRemaining);
-                ResinEffects.quartermasterStorage(storage, bread, torches, !qmToolsGiven);
+                ResinEffects.quartermasterStorage(storage, bread, torches, !qmToolsGiven,
+                        serverLevel.registryAccess());
                 qmFoodRemaining = Math.max(0, qmFoodRemaining - bread);
                 qmTorchRemaining = Math.max(0, qmTorchRemaining - torches);
                 qmStorageRemaining--;
@@ -952,7 +952,7 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         if (output.isEmpty()) {
             return true;
         }
-        return ItemStack.isSameItemSameTags(output, template) && output.getCount() < output.getMaxStackSize();
+        return ItemStack.isSameItemSameComponents(output, template) && output.getCount() < output.getMaxStackSize();
     }
 
     public void setOwner(@Nullable UUID owner) {
@@ -1543,7 +1543,9 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         int maxChunkZ = box.maxZ() >> 4;
         for (int cx = minChunkX; cx <= maxChunkX; cx++) {
             for (int cz = minChunkZ; cz <= maxChunkZ; cz++) {
-                ForgeChunkManager.forceChunk(serverLevel, MC3DPrint.MOD_ID, worldPosition, cx, cz, add, false);
+                // NeoForge dropped Forge's ticket-owner force API; vanilla setChunkForced
+                // keeps the print zone loaded for the same job duration.
+                serverLevel.setChunkForced(cx, cz, add);
             }
         }
     }
@@ -1786,7 +1788,9 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         }
     }
 
-    @Override
+    // TODO(PGM-17): NeoForge moved getRenderBoundingBox to BlockEntityRenderer<T>; the
+    // PrinterRenderer (client/) must override getRenderBoundingBox(PrinterBlockEntity) to
+    // return this. Kept as a plain accessor so the cull-box logic is preserved here.
     public net.minecraft.world.phys.AABB getRenderBoundingBox() {
         // The renderer draws well outside the machine's own block: a build-volume gantry
         // during a job, a ghost preview, and — for a formed multiblock — a raised frame
@@ -1799,11 +1803,15 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         if (activeJob != null) {
             BlockPos size = activeJob.size();
             // +1 on Y: the gantry/head ride just above the volume's top (gantryY = maxY+0.25)
-            box = box.minmax(new net.minecraft.world.phys.AABB(activeJob.origin(),
-                    activeJob.origin().offset(size.getX(), size.getY() + 1, size.getZ())));
+            box = box.minmax(new net.minecraft.world.phys.AABB(
+                    net.minecraft.world.phys.Vec3.atLowerCornerOf(activeJob.origin()),
+                    net.minecraft.world.phys.Vec3.atLowerCornerOf(
+                            activeJob.origin().offset(size.getX(), size.getY() + 1, size.getZ()))));
         } else if (clientPreviewOrigin != null && clientPreviewSize != null) {
-            box = box.minmax(new net.minecraft.world.phys.AABB(clientPreviewOrigin,
-                    clientPreviewOrigin.offset(clientPreviewSize)));
+            box = box.minmax(new net.minecraft.world.phys.AABB(
+                    net.minecraft.world.phys.Vec3.atLowerCornerOf(clientPreviewOrigin),
+                    net.minecraft.world.phys.Vec3.atLowerCornerOf(
+                            clientPreviewOrigin.offset(clientPreviewSize))));
         }
         var blockState = getBlockState();
         if (blockState.hasProperty(com.pgmacdesign.mc3dprint.machine.multiblock.ControllerBlock.FORMED)

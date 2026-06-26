@@ -1,5 +1,6 @@
 package com.pgmacdesign.mc3dprint.machine.cable;
 
+import com.mojang.serialization.MapCodec;
 import com.pgmacdesign.mc3dprint.registry.ModBlockEntities;
 import com.pgmacdesign.mc3dprint.registry.ModCapabilities;
 import net.minecraft.core.BlockPos;
@@ -34,6 +35,8 @@ import java.util.Map;
  * other mod's FE machines. All transport lives in {@link MC3DCableBlockEntity}.
  */
 public class MC3DCableBlock extends BaseEntityBlock {
+    public static final MapCodec<MC3DCableBlock> CODEC = simpleCodec(MC3DCableBlock::new);
+
     public static final BooleanProperty NORTH = BooleanProperty.create("north");
     public static final BooleanProperty SOUTH = BooleanProperty.create("south");
     public static final BooleanProperty EAST = BooleanProperty.create("east");
@@ -65,6 +68,11 @@ public class MC3DCableBlock extends BaseEntityBlock {
     }
 
     private final VoxelShape[] shapeByMask = new VoxelShape[64];
+
+    @Override
+    protected MapCodec<? extends BaseEntityBlock> codec() {
+        return CODEC;
+    }
 
     public MC3DCableBlock(Properties properties) {
         super(properties);

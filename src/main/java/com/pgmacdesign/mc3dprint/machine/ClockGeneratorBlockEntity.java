@@ -16,7 +16,6 @@ import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.common.ForgeHooks;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.energy.IEnergyStorage;
 import net.neoforged.neoforge.items.IItemHandler;
@@ -113,7 +112,7 @@ public class ClockGeneratorBlockEntity extends BlockEntity implements MenuProvid
     }
 
     public static boolean isFuel(ItemStack stack) {
-        return ForgeHooks.getBurnTime(stack, RecipeType.SMELTING) > 0;
+        return stack.getBurnTime(RecipeType.SMELTING) > 0;
     }
 
     public static int capacity() {
@@ -177,7 +176,7 @@ public class ClockGeneratorBlockEntity extends BlockEntity implements MenuProvid
             return 0; // slot occupied by a different fuel or full
         }
         held.shrink(1);
-        return ForgeHooks.getBurnTime(one, RecipeType.SMELTING) * burnMultiplier();
+        return one.getBurnTime(RecipeType.SMELTING) * burnMultiplier();
     }
 
     public static void serverTick(Level level, BlockPos pos, BlockState state, ClockGeneratorBlockEntity generator) {
@@ -191,7 +190,7 @@ public class ClockGeneratorBlockEntity extends BlockEntity implements MenuProvid
         if (burnRemaining <= 0 && stored < capacity()) {
             ItemStack next = fuel.extractItem(0, 1, false);
             if (!next.isEmpty()) {
-                burnRemaining = ForgeHooks.getBurnTime(next, RecipeType.SMELTING) * burnMultiplier();
+                burnRemaining = next.getBurnTime(RecipeType.SMELTING) * burnMultiplier();
                 burnTotal = burnRemaining; // remember the full burn for the GUI flame fill
                 // burnable containers (lava bucket) leave their empty container behind
                 ItemStack remainder = next.getCraftingRemainingItem();

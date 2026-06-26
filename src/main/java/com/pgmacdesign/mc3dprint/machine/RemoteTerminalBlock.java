@@ -1,17 +1,21 @@
 package com.pgmacdesign.mc3dprint.machine;
 
+import com.mojang.serialization.MapCodec;
 import com.pgmacdesign.mc3dprint.registry.ModBlockEntities;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtUtils;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BaseEntityBlock;
@@ -19,10 +23,10 @@ import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
-import net.minecraftforge.network.NetworkHooks;
 
 import javax.annotation.Nullable;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Remote Terminal: pairs to one printer (sneak-click the printer with the
@@ -32,8 +36,15 @@ import java.util.List;
  */
 public class RemoteTerminalBlock extends BaseEntityBlock {
 
+    public static final MapCodec<RemoteTerminalBlock> CODEC = simpleCodec(RemoteTerminalBlock::new);
+
     public RemoteTerminalBlock(Properties properties) {
         super(properties);
+    }
+
+    @Override
+    protected MapCodec<? extends BaseEntityBlock> codec() {
+        return CODEC;
     }
 
     @Override
@@ -48,8 +59,8 @@ public class RemoteTerminalBlock extends BaseEntityBlock {
     }
 
     @Override
-    public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player,
-                                 InteractionHand hand, BlockHitResult hit) {
+    protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player,
+                                               BlockHitResult hit) {
         if (level.isClientSide) {
             return InteractionResult.SUCCESS;
         }
@@ -66,7 +77,7 @@ public class RemoteTerminalBlock extends BaseEntityBlock {
                     target.getX(), target.getY(), target.getZ()), true);
             return InteractionResult.CONSUME;
         }
-        NetworkHooks.openScreen((ServerPlayer) player, printer, target);
+        ((ServerPlayer) player).openMenu(printer, target);
         return InteractionResult.CONSUME;
     }
 
@@ -83,9 +94,12 @@ public class RemoteTerminalBlock extends BaseEntityBlock {
             if (player != null && player.isSecondaryUseActive()
                     && level.getBlockEntity(context.getClickedPos()) instanceof PrinterBlockEntity) {
                 if (!level.isClientSide) {
-                    CompoundTag beTag = context.getItemInHand().getOrCreateTagElement("BlockEntityTag");
-                    beTag.put("Target", NbtUtils.writeBlockPos(context.getClickedPos()));
                     BlockPos pos = context.getClickedPos();
+                    // Pairing rides BLOCK_ENTITY_DATA so it restores into the terminal BE on place.
+                    CompoundTag beTag = new CompoundTag();
+                    beTag.put("Target", NbtUtils.writeBlockPos(pos));
+                    BlockItem.setBlockEntityData(context.getItemInHand(),
+                            ModBlockEntities.REMOTE_TERMINAL.get(), beTag);
                     player.displayClientMessage(Component.translatable("message.mc3dprint.terminal_paired",
                             pos.getX(), pos.getY(), pos.getZ()), true);
                 }
@@ -95,12 +109,15 @@ public class RemoteTerminalBlock extends BaseEntityBlock {
         }
 
         @Override
-        public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
-            CompoundTag beTag = stack.getTagElement("BlockEntityTag");
-            if (beTag != null && beTag.contains("Target")) {
-                BlockPos target = NbtUtils.readBlockPos(beTag.getCompound("Target"));
+        public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
+            CustomData beData = stack.get(DataComponents.BLOCK_ENTITY_DATA);
+            Optional<BlockPos> target = beData == null
+                    ? Optional.empty()
+                    : NbtUtils.readBlockPos(beData.copyTag(), "Target");
+            if (target.isPresent()) {
+                BlockPos t = target.get();
                 tooltip.add(Component.translatable("tooltip.mc3dprint.terminal_paired",
-                                target.getX(), target.getY(), target.getZ())
+                                t.getX(), t.getY(), t.getZ())
                         .withStyle(net.minecraft.ChatFormatting.AQUA));
             } else {
                 tooltip.add(Component.translatable("tooltip.mc3dprint.terminal_help")
@@ -123,17 +140,17 @@ public class RemoteTerminalBlock extends BaseEntityBlock {
         }
 
         @Override
-        protected void saveAdditional(CompoundTag tag) {
-            super.saveAdditional(tag);
+        protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
+            super.saveAdditional(tag, registries);
             if (target != null) {
                 tag.put("Target", NbtUtils.writeBlockPos(target));
             }
         }
 
         @Override
-        public void load(CompoundTag tag) {
-            super.load(tag);
-            target = tag.contains("Target") ? NbtUtils.readBlockPos(tag.getCompound("Target")) : null;
+        protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
+            super.loadAdditional(tag, registries);
+            target = NbtUtils.readBlockPos(tag, "Target").orElse(null);
         }
     }
 }

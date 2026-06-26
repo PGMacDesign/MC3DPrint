@@ -1,17 +1,17 @@
 package com.pgmacdesign.mc3dprint.machine;
 
+import com.mojang.serialization.MapCodec;
 import com.pgmacdesign.mc3dprint.registry.ModBlockEntities;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Containers;
-import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
-import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BaseEntityBlock;
 import net.minecraft.world.level.block.RenderShape;
@@ -21,14 +21,20 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.neoforged.neoforge.items.IItemHandler;
-import net.minecraftforge.network.NetworkHooks;
 
 import javax.annotation.Nullable;
 
 public class ClockGeneratorBlock extends BaseEntityBlock {
 
+    public static final MapCodec<ClockGeneratorBlock> CODEC = simpleCodec(ClockGeneratorBlock::new);
+
     public ClockGeneratorBlock(Properties properties) {
         super(properties);
+    }
+
+    @Override
+    protected MapCodec<? extends BaseEntityBlock> codec() {
+        return CODEC;
     }
 
     @Override
@@ -37,7 +43,7 @@ public class ClockGeneratorBlock extends BaseEntityBlock {
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, @Nullable BlockGetter getter,
+    public void appendHoverText(ItemStack stack, Item.TooltipContext context,
                                 java.util.List<Component> tooltip, TooltipFlag flag) {
         tooltip.add(Component.translatable("tooltip.mc3dprint.clock_generator",
                 ClockGeneratorBlockEntity.ratePerTick(),
@@ -45,10 +51,10 @@ public class ClockGeneratorBlock extends BaseEntityBlock {
     }
 
     @Override
-    public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player,
-                                 InteractionHand hand, BlockHitResult hit) {
+    protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player,
+                                               BlockHitResult hit) {
         if (!level.isClientSide && level.getBlockEntity(pos) instanceof ClockGeneratorBlockEntity generator) {
-            NetworkHooks.openScreen((ServerPlayer) player, generator, pos);
+            ((ServerPlayer) player).openMenu(generator, pos);
         }
         return InteractionResult.sidedSuccess(level.isClientSide);
     }

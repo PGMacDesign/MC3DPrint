@@ -3,12 +3,12 @@ package com.pgmacdesign.mc3dprint.machine.multiblock;
 import com.pgmacdesign.mc3dprint.machine.MachineTier;
 import com.pgmacdesign.mc3dprint.registry.ModBlocks;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.neoforged.fml.ModList;
-import net.minecraftforge.registries.ForgeRegistries;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -74,7 +74,7 @@ public final class MultiblockPattern {
     public static Block cornerBlock(MachineTier tier) {
         return switch (tier) {
             case T8 -> AWAKENED_DRACONIUM != null
-                    ? ForgeRegistries.BLOCKS.getValue(AWAKENED_DRACONIUM) : null;
+                    ? BuiltInRegistries.BLOCK.getOptional(AWAKENED_DRACONIUM).orElse(null) : null;
             default -> null;
         };
     }

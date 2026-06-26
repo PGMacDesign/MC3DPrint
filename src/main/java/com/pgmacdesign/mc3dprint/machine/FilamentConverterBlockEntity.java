@@ -139,7 +139,7 @@ public class FilamentConverterBlockEntity extends BlockEntity {
             }
             for (int slot = 0; slot < handler.getSlots(); slot++) {
                 ItemStack inSlot = handler.getStackInSlot(slot);
-                if (!inSlot.isEmpty() && ItemStack.isSameItemSameTags(inSlot, filter)) {
+                if (!inSlot.isEmpty() && ItemStack.isSameItemSameComponents(inSlot, filter)) {
                     if (!handler.extractItem(slot, 1, false).isEmpty()) {
                         return true;
                     }

@@ -1,12 +1,13 @@
 package com.pgmacdesign.mc3dprint.machine;
 
+import com.mojang.serialization.MapCodec;
 import com.pgmacdesign.mc3dprint.registry.ModBlockEntities;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
-import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BaseEntityBlock;
 import net.minecraft.world.level.block.RenderShape;
@@ -19,8 +20,15 @@ import javax.annotation.Nullable;
 
 public class CreativeEnergyBlock extends BaseEntityBlock {
 
+    public static final MapCodec<CreativeEnergyBlock> CODEC = simpleCodec(CreativeEnergyBlock::new);
+
     public CreativeEnergyBlock(Properties properties) {
         super(properties);
+    }
+
+    @Override
+    protected MapCodec<? extends BaseEntityBlock> codec() {
+        return CODEC;
     }
 
     @Override
@@ -29,7 +37,7 @@ public class CreativeEnergyBlock extends BaseEntityBlock {
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, @Nullable BlockGetter getter,
+    public void appendHoverText(ItemStack stack, Item.TooltipContext context,
                                 java.util.List<Component> tooltip, TooltipFlag flag) {
         tooltip.add(Component.translatable("tooltip.mc3dprint.creative_energy")
                 .withStyle(ChatFormatting.LIGHT_PURPLE));

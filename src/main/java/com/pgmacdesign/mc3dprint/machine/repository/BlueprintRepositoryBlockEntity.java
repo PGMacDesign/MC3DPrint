@@ -87,8 +87,7 @@ public class BlueprintRepositoryBlockEntity extends BlockEntity implements MenuP
             return;
         }
         Optional<UUID> id = BlueprintDiscItem.getBlueprintId(in);
-        CompoundTag tag = in.getTag();
-        if (id.isEmpty() || tag == null) {
+        if (id.isEmpty()) {
             feedback(player, "deposit_empty_disc");
             return;
         }
@@ -96,7 +95,7 @@ public class BlueprintRepositoryBlockEntity extends BlockEntity implements MenuP
             feedback(player, "deposit_missing"); // disc from another world; can't be re-burned here
             return;
         }
-        if (RepositoryIndex.add(player, entryFromDisc(in, id.get(), tag))) {
+        if (RepositoryIndex.add(player, entryFromDisc(in, id.get()))) {
             in.shrink(1); // consumed into the library
             inventory.setStackInSlot(SLOT_IN, in);
             level.playSound(null, getBlockPos(), SoundEvents.ITEM_FRAME_ADD_ITEM, SoundSource.BLOCKS, 0.7F, 1.3F);
@@ -152,13 +151,13 @@ public class BlueprintRepositoryBlockEntity extends BlockEntity implements MenuP
         feedback(player, "burn_ok");
     }
 
-    private static RepoEntry entryFromDisc(ItemStack disc, UUID id, CompoundTag tag) {
-        int[] size = tag.getIntArray(BlueprintDiscItem.TAG_SIZE);
+    private static RepoEntry entryFromDisc(ItemStack disc, UUID id) {
+        int[] size = BlueprintDiscItem.getSize(disc);
         int sx = size.length == 3 ? size[0] : 0;
         int sy = size.length == 3 ? size[1] : 0;
         int sz = size.length == 3 ? size[2] : 0;
-        return new RepoEntry(id, tag.getString(BlueprintDiscItem.TAG_NAME), sx, sy, sz,
-                tag.getInt(BlueprintDiscItem.TAG_BLOCK_COUNT), BlueprintDiscItem.getTier(disc),
+        return new RepoEntry(id, BlueprintDiscItem.getBlueprintName(disc), sx, sy, sz,
+                BlueprintDiscItem.getBlockCount(disc), BlueprintDiscItem.getTier(disc),
                 BlueprintDiscItem.getPrintCost(disc), BlueprintDiscItem.isOfficial(disc));
     }
 

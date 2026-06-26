@@ -2,14 +2,18 @@ package com.pgmacdesign.mc3dprint.machine.resin;
 
 import com.pgmacdesign.mc3dprint.MC3DPrint;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.Container;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.item.alchemy.PotionUtils;
+import net.minecraft.world.item.alchemy.PotionContents;
 import net.minecraft.world.item.alchemy.Potions;
+import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.level.block.AbstractFurnaceBlock;
 import net.minecraft.world.level.block.BarrelBlock;
@@ -190,7 +194,8 @@ public final class ResinEffects {
 
     /** Roll the loot table and drop its items into the container's empty slots. */
     public static void fillTreasure(ServerLevel level, BlockPos pos, Container container, ResourceLocation tableId) {
-        LootTable lootTable = level.getServer().getLootData().getLootTable(tableId);
+        ResourceKey<LootTable> tableKey = ResourceKey.create(Registries.LOOT_TABLE, tableId);
+        LootTable lootTable = level.getServer().reloadableRegistries().getLootTable(tableKey);
         LootParams params = new LootParams.Builder(level)
                 .withParameter(LootContextParams.ORIGIN, Vec3.atCenterOf(pos))
                 .create(LootContextParamSets.CHEST);
@@ -216,7 +221,7 @@ public final class ResinEffects {
     /** Stock a printed brewing stand: blaze-powder fuel + three water bottles, ready to brew. */
     public static void quartermasterBrewing(BrewingStandBlockEntity stand) {
         insertSlot(stand, 4, new ItemStack(Items.BLAZE_POWDER, 8)); // fuel slot (a real stockpile)
-        ItemStack water = PotionUtils.setPotion(new ItemStack(Items.POTION), Potions.WATER);
+        ItemStack water = PotionContents.createItemStack(Items.POTION, Potions.WATER);
         for (int s = 0; s < 3; s++) {
             insertSlot(stand, s, water.copy());
         }
@@ -227,7 +232,8 @@ public final class ResinEffects {
      * container of the print also gets the one-time enchanted move-in tool kit (so 5 chests
      * don't hand out 5 sets of tools).
      */
-    public static void quartermasterStorage(Container container, int bread, int torches, boolean includeTools) {
+    public static void quartermasterStorage(Container container, int bread, int torches, boolean includeTools,
+                                            HolderLookup.Provider registries) {
         List<ItemStack> kit = new ArrayList<>();
         if (bread > 0) {
             kit.add(new ItemStack(Items.BREAD, Math.min(bread, 64)));
@@ -236,17 +242,18 @@ public final class ResinEffects {
             kit.add(new ItemStack(Blocks.TORCH, Math.min(torches, 64)));
         }
         if (includeTools) {
-            kit.add(enchantedTool(Items.IRON_PICKAXE));
-            kit.add(enchantedTool(Items.IRON_AXE));
-            kit.add(enchantedTool(Items.IRON_SHOVEL));
+            kit.add(enchantedTool(Items.IRON_PICKAXE, registries));
+            kit.add(enchantedTool(Items.IRON_AXE, registries));
+            kit.add(enchantedTool(Items.IRON_SHOVEL, registries));
         }
         insertIntoEmpty(container, kit);
     }
 
-    private static ItemStack enchantedTool(net.minecraft.world.item.Item tool) {
+    private static ItemStack enchantedTool(net.minecraft.world.item.Item tool, HolderLookup.Provider registries) {
         ItemStack stack = new ItemStack(tool);
-        stack.enchant(Enchantments.BLOCK_EFFICIENCY, 4);
-        stack.enchant(Enchantments.UNBREAKING, 3);
+        HolderLookup.RegistryLookup<Enchantment> enchantments = registries.lookupOrThrow(Registries.ENCHANTMENT);
+        stack.enchant(enchantments.getOrThrow(Enchantments.EFFICIENCY), 4);
+        stack.enchant(enchantments.getOrThrow(Enchantments.UNBREAKING), 3);
         return stack;
     }
 

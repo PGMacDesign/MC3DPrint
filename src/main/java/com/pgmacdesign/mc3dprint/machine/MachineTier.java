@@ -1,5 +1,8 @@
 package com.pgmacdesign.mc3dprint.machine;
 
+import com.mojang.serialization.Codec;
+import net.minecraft.util.StringRepresentable;
+
 /**
  * The 8 machine tiers. Numbers are the balancing-table placeholders; runtime
  * values come from config (one block per tier), these are the defaults.
@@ -7,7 +10,7 @@ package com.pgmacdesign.mc3dprint.machine;
  * T1-T4 are single craftable blocks; T5-T8 are multiblock structures.
  * {@code maxFootprint} 0 means items only (no structure printing).
  */
-public enum MachineTier {
+public enum MachineTier implements StringRepresentable {
     //  tier footprint spool  eff   rf/blk t/blk  itemTicks buffer       maxRecv
     T1(1,   0,        1,     0.50, 100,   40,    80,       50_000,      1_000),
     T2(2,   0,        2,     0.55, 90,    20,    60,       100_000,     2_000),
@@ -91,5 +94,12 @@ public enum MachineTier {
 
     public static MachineTier byNumber(int number) {
         return values()[Math.max(1, Math.min(8, number)) - 1];
+    }
+
+    public static final Codec<MachineTier> CODEC = StringRepresentable.fromEnum(MachineTier::values);
+
+    @Override
+    public String getSerializedName() {
+        return name();
     }
 }

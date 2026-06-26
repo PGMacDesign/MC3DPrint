@@ -3,11 +3,14 @@ package com.pgmacdesign.mc3dprint.machine.multiblock;
 import com.pgmacdesign.mc3dprint.registry.ModBlocks;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -29,7 +32,8 @@ public class FabricatorBlockItem extends BlockItem {
     }
 
     private static boolean isCollapsed(ItemStack stack) {
-        return stack.getTag() != null && stack.getTag().getBoolean(TAG_COLLAPSED);
+        CustomData data = stack.get(DataComponents.CUSTOM_DATA);
+        return data != null && data.copyTag().getBoolean(TAG_COLLAPSED);
     }
 
     @Override
@@ -69,7 +73,7 @@ public class FabricatorBlockItem extends BlockItem {
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
+    public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
         if (isCollapsed(stack)) {
             tooltip.add(Component.translatable("tooltip.mc3dprint.collapsed_fabricator")
                     .withStyle(ChatFormatting.AQUA));

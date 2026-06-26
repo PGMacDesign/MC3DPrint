@@ -3,15 +3,18 @@ package com.pgmacdesign.mc3dprint.machine.multiblock;
 import com.pgmacdesign.mc3dprint.machine.MachineTier;
 import com.pgmacdesign.mc3dprint.machine.PrinterBlock;
 import com.pgmacdesign.mc3dprint.machine.PrinterBlockEntity;
+import com.pgmacdesign.mc3dprint.registry.ModBlockEntities;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
@@ -43,10 +46,10 @@ public class ControllerBlock extends PrinterBlock {
     }
 
     @Override
-    public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player,
-                                 InteractionHand hand, BlockHitResult hit) {
+    protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player,
+                                               BlockHitResult hit) {
         if (state.getValue(FORMED)) {
-            return super.use(state, level, pos, player, hand, hit);
+            return super.useWithoutItem(state, level, pos, player, hit);
         }
         if (!level.isClientSide) {
             Component error = MultiblockPattern.validate(level, pos, tier());
@@ -64,15 +67,17 @@ public class ControllerBlock extends PrinterBlock {
     }
 
     @Override
-    public void playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player) {
+    public BlockState playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player) {
         if (!level.isClientSide && state.getValue(FORMED)
                 && level.getBlockEntity(pos) instanceof PrinterBlockEntity printer) {
             printer.cancelActiveJob();
             printer.markCollapsing();
 
             ItemStack collapsed = new ItemStack(this);
-            collapsed.getOrCreateTag().putBoolean(FabricatorBlockItem.TAG_COLLAPSED, true);
-            collapsed.getOrCreateTag().put("BlockEntityTag", printer.saveWithoutMetadata());
+            CustomData.update(DataComponents.CUSTOM_DATA, collapsed,
+                    tag -> tag.putBoolean(FabricatorBlockItem.TAG_COLLAPSED, true));
+            BlockItem.setBlockEntityData(collapsed, ModBlockEntities.PRINTER.get(),
+                    printer.saveWithoutMetadata(level.registryAccess()));
 
             Block cornerBlock = MultiblockPattern.cornerBlock(tier());
             for (BlockPos offset : MultiblockPattern.componentOffsets(tier())) {
@@ -98,7 +103,7 @@ public class ControllerBlock extends PrinterBlock {
                         pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, collapsed));
             }
         }
-        super.playerWillDestroy(level, pos, state, player);
+        return super.playerWillDestroy(level, pos, state, player);
     }
 
     private boolean isOwnComponent(Level level, BlockPos pos) {

@@ -1,14 +1,15 @@
 package com.pgmacdesign.mc3dprint.machine;
 
+import com.mojang.serialization.MapCodec;
 import com.pgmacdesign.mc3dprint.registry.ModBlockEntities;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.BlockGetter;
@@ -20,7 +21,6 @@ import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
-import net.minecraftforge.network.NetworkHooks;
 
 import javax.annotation.Nullable;
 
@@ -36,8 +36,15 @@ import javax.annotation.Nullable;
  */
 public class RedstoneClockBlock extends BaseEntityBlock {
 
+    public static final MapCodec<RedstoneClockBlock> CODEC = simpleCodec(RedstoneClockBlock::new);
+
     public RedstoneClockBlock(Properties properties) {
         super(properties);
+    }
+
+    @Override
+    protected MapCodec<? extends BaseEntityBlock> codec() {
+        return CODEC;
     }
 
     @Override
@@ -46,16 +53,16 @@ public class RedstoneClockBlock extends BaseEntityBlock {
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, @Nullable BlockGetter getter,
+    public void appendHoverText(ItemStack stack, Item.TooltipContext context,
                                 java.util.List<Component> tooltip, TooltipFlag flag) {
         tooltip.add(Component.translatable("tooltip.mc3dprint.redstone_clock").withStyle(ChatFormatting.GRAY));
     }
 
     @Override
-    public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player,
-                                 InteractionHand hand, BlockHitResult hit) {
+    protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player,
+                                               BlockHitResult hit) {
         if (!level.isClientSide && level.getBlockEntity(pos) instanceof RedstoneClockBlockEntity clock) {
-            NetworkHooks.openScreen((ServerPlayer) player, clock, pos);
+            ((ServerPlayer) player).openMenu(clock, pos);
         }
         return InteractionResult.sidedSuccess(level.isClientSide);
     }

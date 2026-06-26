@@ -1,5 +1,6 @@
 package com.pgmacdesign.mc3dprint.machine.rack;
 
+import com.mojang.serialization.MapCodec;
 import com.pgmacdesign.mc3dprint.fu.SpoolItem;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -7,7 +8,7 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.Containers;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResult;
+import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
@@ -33,11 +34,18 @@ import javax.annotation.Nullable;
  * Emits a comparator signal scaled to its fill, and drops everything on break.
  */
 public class FilamentRackBlock extends BaseEntityBlock {
+    public static final MapCodec<FilamentRackBlock> CODEC = simpleCodec(FilamentRackBlock::new);
+
     public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
 
     public FilamentRackBlock(Properties properties) {
         super(properties);
         registerDefaultState(stateDefinition.any().setValue(FACING, Direction.NORTH));
+    }
+
+    @Override
+    protected MapCodec<? extends BaseEntityBlock> codec() {
+        return CODEC;
     }
 
     @Override
@@ -63,33 +71,33 @@ public class FilamentRackBlock extends BaseEntityBlock {
     }
 
     @Override
-    public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player,
-                                 InteractionHand hand, BlockHitResult hit) {
+    protected ItemInteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos,
+                                              Player player, InteractionHand hand, BlockHitResult hit) {
         if (!(level.getBlockEntity(pos) instanceof FilamentRackBlockEntity rack)) {
-            return InteractionResult.PASS;
+            return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
         }
         if (level.isClientSide) {
-            return InteractionResult.SUCCESS;
+            return ItemInteractionResult.SUCCESS;
         }
         ItemStack held = player.getItemInHand(hand);
         if (held.getItem() instanceof SpoolItem) {
             if (rack.insertSpool(held)) {
                 level.playSound(null, pos, SoundEvents.ITEM_FRAME_ADD_ITEM, SoundSource.BLOCKS, 0.7F, 1.2F);
             }
-            return InteractionResult.CONSUME; // full racks just no-op (spool stays in hand)
+            return ItemInteractionResult.CONSUME; // full racks just no-op (spool stays in hand)
         }
         if (held.isEmpty()) {
             ItemStack popped = rack.removeSpool();
             if (popped.isEmpty()) {
-                return InteractionResult.PASS;
+                return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
             }
             if (!player.getInventory().add(popped)) {
                 player.drop(popped, false);
             }
             level.playSound(null, pos, SoundEvents.ITEM_FRAME_REMOVE_ITEM, SoundSource.BLOCKS, 0.7F, 1.0F);
-            return InteractionResult.CONSUME;
+            return ItemInteractionResult.CONSUME;
         }
-        return InteractionResult.PASS;
+        return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
     }
 
     @Override
