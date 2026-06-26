@@ -24,53 +24,38 @@ public class GhostVertexConsumer implements VertexConsumer {
     }
 
     @Override
-    public VertexConsumer vertex(double x, double y, double z) {
-        delegate.vertex(x, y, z);
+    public VertexConsumer addVertex(float x, float y, float z) {
+        delegate.addVertex(x, y, z);
         return this;
     }
 
     @Override
-    public VertexConsumer color(int red, int green, int blue, int ignoredAlpha) {
-        delegate.color((int) (red * tintRed), (int) (green * tintGreen), (int) (blue * tintBlue), alpha);
+    public VertexConsumer setColor(int red, int green, int blue, int ignoredAlpha) {
+        delegate.setColor((int) (red * tintRed), (int) (green * tintGreen), (int) (blue * tintBlue), alpha);
         return this;
     }
 
     @Override
-    public VertexConsumer uv(float u, float v) {
-        delegate.uv(u, v);
+    public VertexConsumer setUv(float u, float v) {
+        delegate.setUv(u, v);
         return this;
     }
 
     @Override
-    public VertexConsumer overlayCoords(int u, int v) {
-        delegate.overlayCoords(u, v);
+    public VertexConsumer setUv1(int u, int v) {
+        delegate.setUv1(u, v);
         return this;
     }
 
     @Override
-    public VertexConsumer uv2(int u, int v) {
-        delegate.uv2(u, v);
+    public VertexConsumer setUv2(int u, int v) {
+        delegate.setUv2(u, v);
         return this;
     }
 
     @Override
-    public VertexConsumer normal(float x, float y, float z) {
-        delegate.normal(x, y, z);
+    public VertexConsumer setNormal(float x, float y, float z) {
+        delegate.setNormal(x, y, z);
         return this;
-    }
-
-    @Override
-    public void endVertex() {
-        delegate.endVertex();
-    }
-
-    @Override
-    public void defaultColor(int red, int green, int blue, int ignoredAlpha) {
-        delegate.defaultColor((int) (red * tintRed), (int) (green * tintGreen), (int) (blue * tintBlue), alpha);
-    }
-
-    @Override
-    public void unsetDefaultColor() {
-        delegate.unsetDefaultColor();
     }
 }

@@ -18,14 +18,14 @@ import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.common.EventBusSubscriber;
 
 /**
  * WorldEdit-CUI-style selection preview for the Structure Scanner: while the
  * scanner is held, corner A renders as a blue box, corner B as a cyan box, and
  * once both are set the full selection volume is outlined.
  */
-@Mod.EventBusSubscriber(modid = MC3DPrint.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
+@EventBusSubscriber(modid = MC3DPrint.MOD_ID, bus = EventBusSubscriber.Bus.GAME, value = Dist.CLIENT)
 public final class ScannerSelectionRenderer {
     private ScannerSelectionRenderer() {}
 

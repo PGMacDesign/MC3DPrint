@@ -7,7 +7,7 @@ import net.minecraft.network.chat.TextColor;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.neoforge.event.entity.player.ItemTooltipEvent;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.common.EventBusSubscriber;
 
 /**
  * Ambient tier discovery: any item the Filament Winder can convert gets a
@@ -20,7 +20,7 @@ import net.neoforged.fml.common.Mod;
  * pack overrides automatically. On a server the client shows its own common
  * config's values.
  */
-@Mod.EventBusSubscriber(modid = MC3DPrint.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
+@EventBusSubscriber(modid = MC3DPrint.MOD_ID, bus = EventBusSubscriber.Bus.GAME, value = Dist.CLIENT)
 public final class FilamentTooltip {
 
     // rarity ramp, indexed by tier (1..8); [0] is a safe fallback

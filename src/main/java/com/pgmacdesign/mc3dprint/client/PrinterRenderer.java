@@ -354,45 +354,43 @@ public class PrinterRenderer implements BlockEntityRenderer<PrinterBlockEntity> 
                      double x0, double y0, double z0, double x1, double y1, double z1,
                      float r, float g, float b, float a, int light) {
         var pose = poseStack.last();
-        var mat = pose.pose();
-        var norm = pose.normal();
         float fx0 = (float) x0, fy0 = (float) y0, fz0 = (float) z0;
         float fx1 = (float) x1, fy1 = (float) y1, fz1 = (float) z1;
 
         // -Z face (north), normal (0,0,-1)
-        quad(c, mat, norm, r, g, b, a, light, 0, 0, -1,
+        quad(c, pose, r, g, b, a, light, 0, 0, -1,
                 fx1, fy0, fz0, fx0, fy0, fz0, fx0, fy1, fz0, fx1, fy1, fz0);
         // +Z face (south), normal (0,0,1)
-        quad(c, mat, norm, r, g, b, a, light, 0, 0, 1,
+        quad(c, pose, r, g, b, a, light, 0, 0, 1,
                 fx0, fy0, fz1, fx1, fy0, fz1, fx1, fy1, fz1, fx0, fy1, fz1);
         // -X face (west), normal (-1,0,0)
-        quad(c, mat, norm, r, g, b, a, light, -1, 0, 0,
+        quad(c, pose, r, g, b, a, light, -1, 0, 0,
                 fx0, fy0, fz0, fx0, fy0, fz1, fx0, fy1, fz1, fx0, fy1, fz0);
         // +X face (east), normal (1,0,0)
-        quad(c, mat, norm, r, g, b, a, light, 1, 0, 0,
+        quad(c, pose, r, g, b, a, light, 1, 0, 0,
                 fx1, fy0, fz1, fx1, fy0, fz0, fx1, fy1, fz0, fx1, fy1, fz1);
         // +Y face (up), normal (0,1,0)
-        quad(c, mat, norm, r, g, b, a, light, 0, 1, 0,
+        quad(c, pose, r, g, b, a, light, 0, 1, 0,
                 fx0, fy1, fz1, fx1, fy1, fz1, fx1, fy1, fz0, fx0, fy1, fz0);
         // -Y face (down), normal (0,-1,0)
-        quad(c, mat, norm, r, g, b, a, light, 0, -1, 0,
+        quad(c, pose, r, g, b, a, light, 0, -1, 0,
                 fx0, fy0, fz0, fx1, fy0, fz0, fx1, fy0, fz1, fx0, fy0, fz1);
     }
 
     /** One textured/lit quad (4 verts, UV 0..1 over the tile). */
-    private void quad(VertexConsumer c, org.joml.Matrix4f mat, org.joml.Matrix3f norm,
+    private void quad(VertexConsumer c, PoseStack.Pose pose,
                       float r, float g, float b, float a, int light,
                       float nx, float ny, float nz,
                       float x0, float y0, float z0, float x1, float y1, float z1,
                       float x2, float y2, float z2, float x3, float y3, float z3) {
-        c.vertex(mat, x0, y0, z0).color(r, g, b, a).uv(0, 0)
-                .overlayCoords(OverlayTexture.NO_OVERLAY).uv2(light).normal(norm, nx, ny, nz).endVertex();
-        c.vertex(mat, x1, y1, z1).color(r, g, b, a).uv(1, 0)
-                .overlayCoords(OverlayTexture.NO_OVERLAY).uv2(light).normal(norm, nx, ny, nz).endVertex();
-        c.vertex(mat, x2, y2, z2).color(r, g, b, a).uv(1, 1)
-                .overlayCoords(OverlayTexture.NO_OVERLAY).uv2(light).normal(norm, nx, ny, nz).endVertex();
-        c.vertex(mat, x3, y3, z3).color(r, g, b, a).uv(0, 1)
-                .overlayCoords(OverlayTexture.NO_OVERLAY).uv2(light).normal(norm, nx, ny, nz).endVertex();
+        c.addVertex(pose, x0, y0, z0).setColor(r, g, b, a).setUv(0, 0)
+                .setOverlay(OverlayTexture.NO_OVERLAY).setLight(light).setNormal(pose, nx, ny, nz);
+        c.addVertex(pose, x1, y1, z1).setColor(r, g, b, a).setUv(1, 0)
+                .setOverlay(OverlayTexture.NO_OVERLAY).setLight(light).setNormal(pose, nx, ny, nz);
+        c.addVertex(pose, x2, y2, z2).setColor(r, g, b, a).setUv(1, 1)
+                .setOverlay(OverlayTexture.NO_OVERLAY).setLight(light).setNormal(pose, nx, ny, nz);
+        c.addVertex(pose, x3, y3, z3).setColor(r, g, b, a).setUv(0, 1)
+                .setOverlay(OverlayTexture.NO_OVERLAY).setLight(light).setNormal(pose, nx, ny, nz);
     }
 
     // --- emissive glow primitives (NEW_ENTITY format, FULL_BRIGHT light) ---
@@ -403,19 +401,17 @@ public class PrinterRenderer implements BlockEntityRenderer<PrinterBlockEntity> 
                               double cx, double cy, double cz, double dx, double dy, double dz,
                               float r, float g, float b, float a) {
         var pose = poseStack.last();
-        var mat = pose.pose();
-        var norm = pose.normal();
         int fb = LightTexture.FULL_BRIGHT;
         // UV center of the 1x1 white texture: the eyes shader additively blends
         // (white texel * vertex color), so the cyan vertex color is the output.
-        c.vertex(mat, (float) ax, (float) ay, (float) az).color(r, g, b, a).uv(0.5F, 0.5F)
-                .overlayCoords(OverlayTexture.NO_OVERLAY).uv2(fb).normal(norm, 0, 0, 1).endVertex();
-        c.vertex(mat, (float) bx, (float) by, (float) bz).color(r, g, b, a).uv(0.5F, 0.5F)
-                .overlayCoords(OverlayTexture.NO_OVERLAY).uv2(fb).normal(norm, 0, 0, 1).endVertex();
-        c.vertex(mat, (float) cx, (float) cy, (float) cz).color(r, g, b, a).uv(0.5F, 0.5F)
-                .overlayCoords(OverlayTexture.NO_OVERLAY).uv2(fb).normal(norm, 0, 0, 1).endVertex();
-        c.vertex(mat, (float) dx, (float) dy, (float) dz).color(r, g, b, a).uv(0.5F, 0.5F)
-                .overlayCoords(OverlayTexture.NO_OVERLAY).uv2(fb).normal(norm, 0, 0, 1).endVertex();
+        c.addVertex(pose, (float) ax, (float) ay, (float) az).setColor(r, g, b, a).setUv(0.5F, 0.5F)
+                .setOverlay(OverlayTexture.NO_OVERLAY).setLight(fb).setNormal(pose, 0, 0, 1);
+        c.addVertex(pose, (float) bx, (float) by, (float) bz).setColor(r, g, b, a).setUv(0.5F, 0.5F)
+                .setOverlay(OverlayTexture.NO_OVERLAY).setLight(fb).setNormal(pose, 0, 0, 1);
+        c.addVertex(pose, (float) cx, (float) cy, (float) cz).setColor(r, g, b, a).setUv(0.5F, 0.5F)
+                .setOverlay(OverlayTexture.NO_OVERLAY).setLight(fb).setNormal(pose, 0, 0, 1);
+        c.addVertex(pose, (float) dx, (float) dy, (float) dz).setColor(r, g, b, a).setUv(0.5F, 0.5F)
+                .setOverlay(OverlayTexture.NO_OVERLAY).setLight(fb).setNormal(pose, 0, 0, 1);
     }
 
     /**
@@ -503,7 +499,7 @@ public class PrinterRenderer implements BlockEntityRenderer<PrinterBlockEntity> 
             dispatcher.renderSingleBlock(ghost.state(), poseStack, ghostBuffers,
                     LevelRenderer.getLightColor(level, pos),
                     net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY,
-                    net.minecraftforge.client.model.data.ModelData.EMPTY, null);
+                    net.neoforged.neoforge.client.model.data.ModelData.EMPTY, null);
             poseStack.popPose();
         }
     }
@@ -663,10 +659,10 @@ public class PrinterRenderer implements BlockEntityRenderer<PrinterBlockEntity> 
         dx /= length;
         dy /= length;
         dz /= length;
-        consumer.vertex(pose.pose(), (float) x1, (float) y1, (float) z1)
-                .color(r, g, b, 0.9F).normal(pose.normal(), dx, dy, dz).endVertex();
-        consumer.vertex(pose.pose(), (float) x2, (float) y2, (float) z2)
-                .color(r, g, b, 0.9F).normal(pose.normal(), dx, dy, dz).endVertex();
+        consumer.addVertex(pose, (float) x1, (float) y1, (float) z1)
+                .setColor(r, g, b, 0.9F).setNormal(pose, dx, dy, dz);
+        consumer.addVertex(pose, (float) x2, (float) y2, (float) z2)
+                .setColor(r, g, b, 0.9F).setNormal(pose, dx, dy, dz);
     }
 
     @Override

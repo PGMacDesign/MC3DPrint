@@ -133,7 +133,7 @@ public class BlueprintRepositoryScreen extends AbstractContainerScreen<Blueprint
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        renderBackground(graphics);
+        renderBackground(graphics, mouseX, mouseY, partialTick);
         super.render(graphics, mouseX, mouseY, partialTick);
         renderTooltip(graphics, mouseX, mouseY);
         renderRowTooltip(graphics, mouseX, mouseY);
@@ -267,13 +267,13 @@ public class BlueprintRepositoryScreen extends AbstractContainerScreen<Blueprint
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
         int size = visibleIndices().size();
         if (size > ROWS) {
-            scroll = Math.max(0, Math.min(size - ROWS, scroll - (int) Math.signum(delta)));
+            scroll = Math.max(0, Math.min(size - ROWS, scroll - (int) Math.signum(scrollY)));
             return true;
         }
-        return super.mouseScrolled(mouseX, mouseY, delta);
+        return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
     }
 
     @Override
