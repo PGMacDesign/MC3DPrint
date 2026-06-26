@@ -1,271 +1,217 @@
 # MC3DPrint — Multi-Version Architecture (Stonecutter) · Phases 2–3
 
-**Status:** Phase 2 in progress (branch `stage2/multi-version`) · **Author:** PGMacDesign + agent
-**Supersedes:** the Stage-1 port doc (now `docs/port/archive/stage1-neoforge-1.21.1-port-COMPLETE.md`).
-**This is the single source of truth** for every remaining step: it takes the project from
-"a separate 1.20.1 build and a separate 1.21.1 build" to **one source tree that builds a working
-jar for any supported Minecraft version from a single config change**, and stays cheap to extend to
-future versions — without ever breaking 1.20.1.
+**Status:** Phase 2 in progress (branch `stage2/multi-version`) · **NeoForge-only, single (version) axis.**
+**Supersedes:** the Stage-1 port doc (`docs/port/archive/stage1-neoforge-1.21.1-port-COMPLETE.md`).
+**This is the single source of truth** for all forward work.
 
-> **The whole goal in one sentence:** drive every version-divergent piece of the mod behind a thin
-> **abstraction/seam layer**, and let **Stonecutter** (a compile-time preprocessor) select the correct
-> branch per target — so `./gradlew chiseledBuild` emits one jar per `(Minecraft version, loader)` node,
-> each correct for its target, and adding a new Minecraft version is a small, localized, mechanical task.
+## Decision (LOCKED): drop Forge, NeoForge-only, 1.20.1 is a separate backport branch
+The unified Stonecutter tree is **NeoForge, floored at 1.21.1**, and extends *forward* (1.21.x, 1.22, …).
+**1.20.1 is NOT in the tree.** It lives as a standalone `legacy/1.20.1` **Forge** branch, maintained by
+**manual backports** when desired (data files copy over cheaply; Java changes are hand-ported). Rationale
+(researched mid-2026): AE2, Draconic Evolution, and Ender IO are all on **NeoForge 1.21.1** now; **Tinkers'
+Construct** is the lone 1.20.1 holdout, and when it ports it will be **NeoForge** — so the Forge/loader axis
+was a *temporary* cost, not worth baking into the architecture. (If 1.20.1 ever needs to rejoin the unified
+tree, that's a loader-axis project — see the archived doc; we are deliberately not doing it.)
 
-> This doc is meant to be **executable by an agent team with a human verifier** for the in-world gates.
-> Where it cites a specific Stonecutter / ModDevGradle API, **pin it against the current upstream docs at
-> setup time** — the exact DSL evolves; the architecture here does not.
+> **The goal in one sentence:** keep the version-divergent pieces behind a thin **seam/abstraction layer** and
+> let **Stonecutter** (compile-time preprocessor) select the branch per target, so adding a **future Minecraft
+> version** is a small, localized, mechanical task — while the ~125 version-agnostic files stay untouched.
 
----
-
-## 0. Load-bearing facts (the constraints that force this design — read first)
-
-These are the immovable truths the whole plan is shaped around. They are why "an abstraction layer + a
-runtime config flag" is **not** sufficient on its own.
-
-1. **Mods are version-locked. Each `(MC version, loader)` ships its own jar.** "Support many versions" =
-   build many jars from one source, not one jar that runs everywhere.
-2. **A single source tree cannot `javac` against two Minecraft versions at once.** `ItemStack.getTag()`
-   exists in 1.20.1 and is *deleted* in 1.21.1; `saveAdditional`, `RecipeHolder`, the criteria API, etc.
-   all changed shape. An interface compiles against both, but its **two implementations cannot coexist in
-   one tree compiled once** — the 1.20.1 body references symbols absent on the 1.21.1 classpath and vice
-   versa. **No runtime `if` can fix a missing symbol — it fails at compile.** Therefore the version switch
-   must happen **before `javac`**: conditional compilation (**Stonecutter** strips the non-matching
-   comment-guarded branch), or per-version source sets. The seam layer **shrinks** the divergent surface;
-   Stonecutter is what makes one tree emit two correct jars.
-3. **1.20.1 has no NeoForge.** NeoForge forked from Forge at **1.20.2**; there is no NeoForge build for
-   1.20.1. So **1.20.1 = Forge**, **1.21.1 (and every future target) = NeoForge**. That gives us **two
-   axes**, not one: a **version axis** *and* a **loader axis**. The loader axis is the expensive half — it
-   bundles the capability-model inversion, registration, networking, and event-bus differences. (See §8.1
-   for the one lever that would remove it.)
-4. **We are on official Mojang mappings (mojmap) on both Forge and NeoForge.** The port is **API-shape
-   changes only, zero identifier renaming** — a large, permanent saving that also helps future versions.
-5. **Stage 1 is done but went native-direct.** The current `main` is a working single-target **NeoForge
-   1.21.1** build, but it calls NeoForge APIs **directly** (no seam interfaces — see archived doc / Linear
-   PGM-7). The divergent code is at least *localized* (caps in `ModCapabilities` + BE accessors, net in
-   `MC3DPrintNetwork`, item data in `ModDataComponents`), which is the right cut-point — but the formal
-   abstraction layer must now be **retrofitted**.
-6. **The frozen `legacy/1.20.1` branch is the content source for every 1.20.1 branch.** It is the original
-   Forge 1.20.1 code, untouched by the port, still building green. Its seam-body code is what a human/agent
-   transcribes **inline** into each `//? if FORGE_1_20` guard. Stonecutter reads one shared tree; it does
-   **not** pull source from a git branch — the re-co-location is manual, file by file (but bounded to the
-   seam surface).
+> Where this doc cites a Stonecutter / ModDevGradle API, **pin it against current upstream docs at setup** —
+> the DSL evolves; the architecture here does not.
 
 ---
 
-## 1. The phase model (what "going forward" means)
+## 0. Load-bearing facts (read first)
+
+1. **Version-locked.** Each Minecraft version builds its own jar; "support many versions" = many jars from one source.
+2. **One tree can't `javac` against two Minecraft versions at once** (`getTag()` exists in 1.20.1, deleted in
+   1.21.1; future versions delete/reshape other symbols). No runtime `if` fixes a missing symbol. So the version
+   switch must happen **before `javac`** — **Stonecutter** strips the non-matching comment-guarded branch. The
+   seam layer *shrinks* the divergent surface; Stonecutter is the switch.
+3. **Single axis: version only.** Everything is **NeoForge** now. The loader axis is gone — the heavy
+   Forge↔NeoForge differences (capability-model inversion, registration, networking, event bus, config) are no
+   longer in the tree; the code already sits on the NeoForge side of all of them. This roughly **halves** the
+   complexity of the original two-axis plan.
+4. **mojmap on NeoForge** → API-shape changes only, zero identifier renaming across versions.
+5. **Today's `main` IS the base node.** It is a working single-target **NeoForge 1.21.1** build. It becomes the
+   `1.21.1` Stonecutter node and the source of truth other version nodes branch from.
+6. **The seam layer is forward-compat *insurance*, built *incrementally*.** Relative to the 1.21.1 base, almost
+   every historical divergence (item NBT→components, BE persistence, criteria, tooltips, recipe format, the
+   loader differences) is **already resolved** — the code is on the new side. A seam becomes *active* only when a
+   **future** version introduces a **new** divergence. So we **do not** build a big speculative abstraction layer
+   up front: we add a version node, let the **compiler enumerate** what diverged, and seam exactly that. The
+   abstraction layer **grows to fit reality**, which is the correct (and cheapest-correct) way to do it.
+7. **Stonecutter only earns its keep with ≥2 nodes.** With a single 1.21.1 node it is inert (nothing to switch
+   between). So the system becomes *real* the moment a second NeoForge version is targeted — that's the first
+   place seams and guards are actually exercised and tested.
+8. **1.20.1 backports are a separate manual workflow** on `legacy/1.20.1`, outside the unified system (§7.2).
+
+---
+
+## 1. The phase model
 
 | Phase | State | Scope | Definition of Done |
 |---|---|---|---|
-| **Phase 1** | ✅ DONE | Single-target **NeoForge 1.21.1** port of one tree (archived doc, PGM-5…25). | `main` builds a 1.21.1 jar; 93/94 gametests (iron-farm = in-world). |
-| **Phase 2** | ▶ CURRENT | Stand up **Stonecutter** + the **seam/abstraction layer**, and **reunify the two versions we already have** — `1.20.1-forge` + `1.21.1-neoforge` — into one tree. A config change selects the target. | **Both** nodes compile; **both** run their gametests at the version baseline (94 each); `chiseledBuild` emits both jars; no regression to either line. |
-| **Phase 3** | ⬜ NEXT | **Forward-compatibility framework + runbook**: make adding *any* future Minecraft version a small, localized, documented task. Prove it by adding the next live version (e.g. the current 1.21.x). | Adding a new version node is mechanical (declare node → fill only the seam branches that churned → build → gametest); a written runbook exists; the proof-of-concept third version builds + passes. |
+| **Phase 1** | ✅ DONE | Single-target **NeoForge 1.21.1** port (archived doc, Linear PGM-5…25). | `main` builds a 1.21.1 jar; 93/94 gametests. |
+| **Phase 2** | ▶ CURRENT | Make the NeoForge tree **multi-version-capable** and prove it: stand up Stonecutter, pick the **first second NeoForge target**, build the seam layer for whatever diverges between 1.21.1 and that target, emit both jars. | Stonecutter runs; `1.21.1` node reproduces today's build (regression floor); the second node compiles + gametests; `chiseledBuild` emits both jars. |
+| **Phase 3** | ⬜ ONGOING | The **forward-compat engine**: a runbook to add *any* subsequent version cheaply (seam layer accretes per version), a CI matrix over all nodes, and the **separate 1.20.1 backport runbook**. | Adding a version is documented + mechanical (proven on ≥1 more node); CI builds+gametests every node; `legacy/1.20.1` stays buildable with a written backport process. |
 
-Phases 2 and 3 are the body of this doc (§6 and §7). Everything before them (§2–§5) is the shared
-architecture both phases rely on.
+**The honest dependency (§0.7):** Phase 2's *first* decision is **which second NeoForge version to target**
+(the next one you actually want — e.g. a current 1.21.x). Until one is picked, the tree is single-target 1.21.1
+and Stonecutter buys nothing. Two ways to run Phase 2:
+- **(Recommended) Pick the second target now** → Stonecutter + seams are immediately real and tested.
+- **(Scaffold-and-wait)** stand up Stonecutter single-node + conventions now, defer the real seam work to the
+  first new version. Lower immediate value (the old Stage-1 doc warned against single-node Stonecutter for
+  exactly this reason), but valid if you don't want to commit a second target yet.
 
 ---
 
-## 2. The target matrix (the "minor config change")
+## 2. Target matrix (the "minor config change")
 
-The build is parameterized over **version × loader**. Each cell is a **Stonecutter node** that produces one jar.
+NeoForge only. Each cell is a **Stonecutter node** → one jar; the config change is `stonecutter.active "<node>"`
+(dev) / `./gradlew chiseledBuild` (emit all).
 
-| Node id | Minecraft | Loader | Build plugin | Source of the divergent bodies |
+| Node id | Minecraft | Loader | Build plugin | Source of divergent bodies |
 |---|---|---|---|---|
-| `1.20.1-forge` | 1.20.1 | **Forge** 47.x | ForgeGradle *or* ModDevGradle `legacyForge` (§3.3) | frozen `legacy/1.20.1` (transcribed inline) |
-| `1.21.1-neoforge` | 1.21.1 | **NeoForge** 21.1.x | ModDevGradle `neoForge` | current `main` (native-direct code) |
-| *future* `1.21.x-neoforge` | 1.21.x | NeoForge 21.x | ModDevGradle `neoForge` | added in Phase 3, branch from nearest node |
+| `1.21.1` | 1.21.1 | NeoForge 21.1.x | ModDevGradle | **= today's `main`** (the base) |
+| `<second>` *(pick — Phase 2.0)* | e.g. a current 1.21.x | NeoForge 21.x | ModDevGradle | branch the churned seams from `1.21.1` |
+| *future…* | 1.22, … | NeoForge | ModDevGradle | branch from nearest node |
 
-The "minor config change" the project goal describes is: **`stonecutter.active "<node>"`** (for dev) and
-**`./gradlew chiseledBuild`** (to emit all nodes). It is a *build-time* selection that emits the right jar
-per target — not a runtime flag, and not one jar for all versions (§0.2).
+`legacy/1.20.1` (Forge) is **out of this matrix** — separate branch, manual backports (§7.2).
 
 ---
 
-## 3. How Stonecutter makes the switch
+## 3. How Stonecutter makes the switch (version axis only)
 
-### 3.1 The model
-Stonecutter is a Gradle plugin + a **comment preprocessor**. Version-divergent code lives inline, guarded by
-special comments; for the active node, Stonecutter **comments out the non-matching branch before `javac`**,
-so deleted/absent symbols never reach the compiler:
+Version-divergent code lives inline, guarded by comments; for the active node Stonecutter comments out the
+non-matching branch **before `javac`**, so absent symbols never reach the compiler:
 
 ```java
 // stable code that compiles on every node …
-//? if >=1.20.5 {
-disc.set(ModDataComponents.BLUEPRINT.get(), data);          // 1.21.1 (data components)
+//? if >=1.21.2 {
+/* future API form */
 //?} else {
-/*disc.getOrCreateTag().put("Blueprint", data.toNbt());*/    // 1.20.1 (item NBT) — from legacy/1.20.1
+currentApiForm();        // 1.21.1 base
 //?}
 ```
 
-The active branch is real source; the inactive branch is a comment (so its symbols are never resolved).
-
-### 3.2 Version + loader constants
-Nodes are declared in `settings.gradle` / the `stonecutter` block with ids that encode **both** axes
-(e.g. `1.20.1-forge`, `1.21.1-neoforge`). Guards check the Minecraft version (`>=1.20.5`, `<1.21`, …) **and**
-a loader constant (`FORGE` / `NEOFORGE`) where the divergence is loader-driven rather than version-driven
-(caps, registration, networking, event bus). Most guards key off the **version**; a smaller set key off the
-**loader**. Keep the constant vocabulary tiny and centralized.
-
-### 3.3 One build system for two loaders (preferred) vs two (fallback)
-- **Preferred:** drive **both** loaders from **ModDevGradle** — MDG 2.x exposes a `neoForge { … }` *and* a
-  legacy-Forge path; one plugin, per-node configuration selected by the Stonecutter node. This keeps a single
-  Gradle model. **Verify MDG's current legacy-Forge support covers Forge 47.x/1.20.1 at setup;** if it does,
-  this is the clean path (it also subsumes the Stage-1 ForgeGradle→MDG work already done on `main`).
-- **Fallback:** if MDG can't drive Forge 1.20.1 cleanly, Stonecutter supports **per-node build logic** — the
-  `1.20.1-forge` node uses **ForgeGradle 6**, the NeoForge nodes use **ModDevGradle**. Messier (two plugins,
-  conditional `build.gradle`) but fully supported. Decide at §6.0 against the real plugin versions.
-
-> **Do not hand-wave this.** The build-system choice is the riskiest setup decision; resolve it concretely in
-> Phase 2.0 with a spike that gets an empty-ish shell of **both** nodes building before any seam work.
+- **One axis, one constant vocabulary:** guards key off the **Minecraft version** only (`>=1.21.2`, `<1.22`, …).
+  No loader constant (everything is NeoForge). Keep the vocabulary tiny and centralized.
+- **One build system:** **ModDevGradle** drives every node (all NeoForge) — the old "ModDevGradle vs ForgeGradle"
+  question is **moot** now. Per-node MDG config (NeoForge version) is selected by the active Stonecutter node.
+- **Pin** the exact Stonecutter + MDG versions/DSL at 2.1 against current upstream docs.
 
 ---
 
-## 4. The abstraction / seam layer — where forward-compatibility actually comes from
+## 4. The seam layer — a forward-compat risk register, not an upfront build
 
-A seam is a thin **core interface** that the rest of the mod calls; the version/loader-divergent code lives
-in **one place per seam**, behind the interface, guarded by Stonecutter. The payoff is **scope**: a new
-Minecraft version (or a loader difference) touches only these ~handful of files, never the ~125 others.
+Relative to the 1.21.1 base, the seam map is now a **forward-looking churn-risk register**: what is *likely* to
+break in a *future* NeoForge/MC version, ranked, so we know where the abstraction will accrue. **We seam reactively**
+(§0.6): add a node → compiler flags the divergence → seam exactly that.
 
-The surface map is inherited from the Stage-1 analysis (still accurate — the API divergences are the same
-facts). For each seam, note **what drives its divergence** — this tells you whether a *new version* will
-likely disturb it (version-driven) or whether it's mostly a one-time *loader* cost.
+| Surface | Future-version churn risk | Why |
+|---|---|---|
+| **Client / render** (`VertexConsumer`, render pipeline, screen/registration events) | **High** | The 1.21.2+/1.21.5 render-pipeline rewrites reshape `VertexConsumer` (already bitten once in Stage 1). The most likely first real seam. |
+| **ItemData / data components** (codecs, component types) | **Medium** | Component codecs and the `createDataComponents` overloads shift across 1.21.x (e.g. single-arg removed in 1.21.2). |
+| **BE persistence** (`saveAdditional`/load Provider, NbtIo) | **Medium** | Save/IO signatures occasionally re-touched between versions. |
+| **Recipe / advancement / loot codecs** | **Medium** | The ingredient *string vs object* form changed in **1.21.2** (Stage 1 confirmed 1.21.1 still uses objects) — a guaranteed seam the moment we target ≥1.21.2. |
+| **Registration, networking, capabilities, config** | **Low** | NeoForge-stable across 1.21.x; likely only churns at major boundaries (1.22). |
+| **Data files** (folder names, JSON shapes, namespaces) | **Medium** | Per-version data shape (e.g. the 1.21.2 ingredient form) — handled per-node (§6.4). |
+| Companions C1/C2/C7/C8/C9 | **Low** | One-time-resolved at 1.20.5/1.20.2; stable on 1.21.x. |
 
-| # | Seam | What it hides | Divergence driver | Notes |
-|---|---|---|---|---|
-| 1 | **ItemData** | item NBT ↔ data components | **version** (1.20.5) | The big version churn point; future versions may touch component codecs. |
-| 2 | **Capabilities** (energy + FU + item-handler) | Forge caps/`LazyOptional` ↔ NeoForge `BlockCapability` | **loader** (mostly) | Heaviest loader cost; stable across NeoForge versions once paid. |
-| 3 | **Net** | `SimpleChannel` ↔ `CustomPacketPayload` | **both** (1.20.2 rework + loader) | |
-| 4 | **Registration + mod entry/event bus** | `RegistryObject`↔`DeferredHolder`; `@Mod` ctor; bus enum | **loader** (mostly) | |
-| 5 | **BE persistence** | `saveAdditional(tag)` ↔ `(tag, HolderLookup.Provider)` | **version** (1.20.5) | Future versions occasionally re-touch save signatures. |
-| 6 | **Client / render** | `MenuScreens.register`↔event; `VertexConsumer` shape | **version** (and 1.21.5 looms) | Highest future-churn risk (render pipeline rewrites). |
-| 7 | **Storage handles** | `net.minecraftforge.{energy,items}` ↔ `net.neoforged.neoforge.*` | **loader** | Import-swap only per node; a mod-owned wrapper if the APIs ever diverge. |
-| C1 | `BlockEntityTag` ↔ `DataComponents.BLOCK_ENTITY_DATA` | item BE-data convention | **version** (1.20.5) | |
-| C2 | Advancement criteria (`Codec`/`SimpleInstance`/`TRIGGER_TYPE`) | **version** (1.20.2) | |
-| C3 | Config (`ForgeConfigSpec` ↔ `ModConfigSpec`) | **loader** | |
-| C4 | Recipe-derivation (`getAllRecipesFor`/`RecipeHolder`/`RecipeInput`) | **version** (1.21) | |
-| C5 | Patchouli book stamp | **soft-dep + version** | still interim (raw CustomData) — see §8.3 |
-| C6 | JEI plugin (15.x ↔ 19.x) | **both** | |
-| C7 | FU public API + IMC ingress | **loader** | public contract — keep stable |
-| C8 | `appendHoverText(Level)` ↔ `(Item.TooltipContext)` | **version** (1.20.5) | |
-| C9 | Anvil custom-name mutators ↔ `DataComponents.CUSTOM_NAME` | **version** (1.20.5) | |
-| § | **Data files** (folder names, recipe/loot/criteria JSON, forge→neoforge namespaces) | **version** | Stonecutter can template data too, or generate per-node — see §6.4 |
+**Rule:** the smallest seam that contains the divergence (a guarded import/line beats an interface where the
+difference is trivial). Don't abstract what hasn't diverged.
 
-**Design rule:** a seam earns its place by localizing divergence. Where a difference is a one-line import
-swap (seam 7) a full interface is overkill — a guarded import is enough. Where it's a true rewrite (caps,
-net, item data) the interface pays for itself. **Bias toward the smallest seam that contains the divergence.**
+> Note: several of these (ingredient form, component overloads, render API) are **known** to change at
+> **1.21.2+**. So if the second target is ≥1.21.2, expect those exact seams first — a useful, predictable
+> shakedown of the system.
 
 ---
 
-## 5. Mapping the code we already have into branches
+## 5. Code → branch mapping
 
-We are not writing two implementations from scratch — both already exist, on two git branches:
-
-- **`1.21.1-neoforge` branch content = today's `main`.** The native-direct NeoForge code becomes the
-  `>=1.20.5 / NEOFORGE` body of each seam.
-- **`1.20.1-forge` branch content = today's `legacy/1.20.1`.** Its Forge bodies are **transcribed inline**
-  into the `<1.20.5 / FORGE` guards. (Stonecutter reads one tree; this is a manual, file-by-file
-  re-co-location, but bounded to the seam surface — not all 125 files.)
-
-The retrofit per seam: (a) define the core interface / guarded call site, (b) move today's NeoForge body into
-the `NEOFORGE` branch, (c) transcribe the matching `legacy/1.20.1` body into the `FORGE` branch, (d) verify
-**both** nodes compile, (e) verify **both** nodes' gametests.
+- **`1.21.1` node = today's `main`.** It is the base; its bodies are the default branch of every seam.
+- **A new version node** branches the *churned* seam bodies from the nearest existing node and fills what the
+  compiler flags; everything non-divergent is shared automatically.
+- **No Forge bodies in the tree.** `legacy/1.20.1` is separate (§7.2).
 
 ---
 
-## 6. Phase 2 execution plan (the work we're doing now)
+## 6. Phase 2 execution plan
 
-Gates are **[AGENT]** (closable headlessly) or **[HUMAN]** (in-world). Do not advance until green.
+Gates: **[AGENT]** headless / **[HUMAN]** in-world.
 
-- **2.0 — Stonecutter + build-system scaffold.** Add Stonecutter; declare nodes `1.20.1-forge` and
-  `1.21.1-neoforge`; resolve the build-system question (§3.3) with a spike. Pin Stonecutter + MDG versions.
-  **[AGENT] Gate:** an *empty-ish shell* of **both** nodes configures and reaches `compileJava` start (even if
-  source still fails) — i.e. the dual-node Gradle model works.
-- **2.1 — Establish the two oracles.** Confirm the `1.21.1-neoforge` node reproduces today's `main` (94
-  gametests, 93 pass) and the `1.20.1-forge` node reproduces `legacy/1.20.1` (94 gametests, all pass), each as
-  a *single-node* build before guards are introduced. **[AGENT] Gate:** both baselines reproduced.
-- **2.2 — Retrofit seams + guard the divergent surface.** For each seam in §4, in dependency order
-  (registration + item-data first, mirroring Stage 1): introduce the core interface / guarded site, place the
-  NeoForge body, transcribe the Forge body from `legacy/1.20.1`. Work seam-by-seam; after each, **both** nodes
-  must still compile. **[AGENT] Gate per seam:** `compileJava` green on **both** active nodes.
-- **2.3 — Data files per node (§6.4).** Handle the 1.21 vs 1.20.1 data-format split (folder names, recipe
-  ingredient/result shape, criteria JSON, forge↔neoforge namespaces). **[AGENT] Gate:** each node's datapack
-  loads with zero parse errors (the loot-modifier / recipe-format class of bug from Stage 1).
-- **2.4 — Gametest parity on both nodes.** `runGameTestServer` on each node. **[AGENT] Gate:** each prints its
-  baseline count (94) and passes (1.20.1 = 94/94; 1.21.1 = 93/94 until the iron-farm in-world item, PGM-23).
-- **2.5 — Emit both jars.** `./gradlew chiseledBuild` produces `mc3dprint-<ver>-<loader>-<modver>.jar` for both
-  nodes. **[HUMAN] Gate:** each jar loads in its target client; a survival scan→print works on both.
+- **2.0 — Pick the second NeoForge target.** Decide the next version to support (§1). *This gates the rest;*
+  without it, do scaffold-and-wait instead.
+- **2.1 — Stonecutter + MDG scaffold; lock the regression floor.** Convert the project to a Stonecutter project
+  with the `1.21.1` node; pin Stonecutter + MDG versions. **[AGENT] Gate:** the `1.21.1` node builds **identically
+  to today** (1 jar, 93/94 gametests) — proves Stonecutter added zero regression.
+- **2.2 — Add the second node; seam the divergences.** Declare the second node; run `compileJava` and let it
+  **enumerate** what diverged; seam exactly those surfaces (per §4/§5), fill both branches. Iterate until both
+  nodes compile. **[AGENT] Gate:** `compileJava` green on **both** active nodes.
+- **2.3 — Data per node.** Reconcile any data-shape differences between the two NeoForge versions (e.g. the
+  1.21.2 ingredient form). **[AGENT] Gate:** each node's datapack loads with **zero** parse errors.
+- **2.4 — Gametest parity on both nodes.** **[AGENT] Gate:** each node prints its baseline count and passes
+  (1.21.1 = 93/94 until the iron-farm in-world item; the second node at its own baseline).
+- **2.5 — Emit both jars.** `./gradlew chiseledBuild`. **[HUMAN] Gate:** each jar loads in its target client; a
+  survival scan→print works on both.
 
 ### 6.4 Data files across versions
-Data diverges by version (folder depluralization, recipe `item`→`id`, ingredient object vs string in 1.21.2+,
-criteria codecs, `forge:`→`neoforge:`/`c:` namespaces). Two options, decide at 2.3:
-- **(a) Per-node resource roots** (Stonecutter/MDG source-set selection): keep a `1.20.1` and a `1.21` data
-  tree, share what's identical. Simple, explicit, more duplication.
-- **(b) Generated data** (datagen) producing the right shape per node. Less duplication, more machinery; the
-  mod currently has **no** datagen (deliberately). Lean **(a)** unless duplication becomes painful.
+Within 1.21.x the data shape is mostly stable; the known break is the **1.21.2 recipe-ingredient form**
+(object→string) and similar. Prefer **per-node resource roots** (share what's identical, override what differs)
+over standing up datagen (the mod deliberately has none). Decide concretely at 2.3.
 
 ---
 
-## 7. Phase 3 — forward-compatibility framework + the "add a version" runbook
+## 7. Phase 3 — the forward-compat engine
 
-Phase 3 turns "we support two versions" into "we can support **any** future version cheaply, and 1.20.1 never
-breaks." It is mostly **process + proof**, built on the Phase-2 seam layer.
+### 7.1 The "add a version" runbook (`docs/port/RUNBOOK-add-a-version.md`)
+The exact, ordered steps to add a NeoForge node: declare the Stonecutter node + bump deps → run `compileJava`
+and let failures **enumerate** the churned seams → fill only those seam branches → reconcile data → gametest →
+`chiseledBuild`. With a worked example from the Phase-2 second node. **Churn-localization guarantee:** evidence
+the new version touched only seam files + data, never the ~125 core files — if it didn't, that's a missing seam.
 
-**Deliverables:**
-1. **The runbook** (`docs/port/RUNBOOK-add-a-version.md`): the exact, ordered steps to add a node —
-   declare the Stonecutter node + loader; bump deps; run `compileJava` and let the failures enumerate the
-   churned seams; fill only those seam branches; reconcile data files; gametest; ship. With a worked example.
-2. **A churn-localization guarantee:** evidence (from the proof version) that a new version touched only seam
-   files + data, never the ~125 core files. If it didn't, that's a missing seam — add it.
-3. **Proof-of-concept third node:** add the next live Minecraft version (pick at Phase-3 start — e.g. the
-   current 1.21.x) end-to-end via the runbook. **[AGENT] Gate:** third node compiles + gametests; **[HUMAN]
-   Gate:** loads in-world.
-4. **Regression safety for 1.20.1:** the `1.20.1-forge` node stays in the chiseled build + gametest matrix
-   forever, so any change that would break it fails CI. (This is the structural guarantee that "we don't
-   break 1.20.1.")
-5. **CI matrix:** `chiseledBuild` + per-node `runGameTestServer` in CI (Java 21 already set; add Java 17 for
-   the Forge 1.20.1 node) so every push validates **all** nodes.
+### 7.2 The "backport to 1.20.1" runbook (separate, manual)
+`legacy/1.20.1` (Forge) is **not** a Stonecutter node. Backporting:
+- **Data / blueprints / FU-compat hooks:** copy the file onto `legacy/1.20.1` (loader-agnostic — cheap, near-free).
+- **Java changes:** hand-port to Forge-1.20.1 API terms on the branch (no shared-code mechanism exists across the
+  loader+version gap — that's why it's out of the unified tree).
+- Keep `legacy/1.20.1` **buildable** (it still compiles green on Java 17 / ForgeGradle) so backports can ship.
 
-**Forward-compat is cheap, not free (§0):** Stonecutter selects branches you write; each new version still
-needs a human to fill the churned seam branches. The win is that the work is *localized and enumerated by the
-compiler*, and 1.20.1 is *protected by the matrix*.
+### 7.3 CI matrix
+`chiseledBuild` + per-node `runGameTestServer` in CI for every NeoForge node (Java 21). Optionally a separate
+`legacy/1.20.1` Forge build+gametest job (Java 17) so backports don't rot.
 
 ---
 
 ## 8. Open decisions / levers
 
-- **8.1 — The loader-axis lever (biggest knob).** Keeping 1.20.1 forces **Forge** (no NeoForge for 1.20.1),
-  which is the entire loader axis (caps inversion, registration, net, event bus, config). **Default
-  (assumed): keep `1.20.1-forge`** — the project goal is explicitly "don't break 1.20.1." *If* that floor were
-  ever relaxed to **NeoForge-1.20.2**, the loader axis disappears and the design collapses to a pure
-  version-axis Stonecutter setup (markedly simpler). **← Confirm this default.**
-- **8.2 — Build system:** ModDevGradle-for-both vs ModDevGradle + ForgeGradle (§3.3). Resolve in 2.0.
-- **8.3 — Seam vs native-direct retrofit cost:** Stage 1 went native-direct; Phase 2 pays the seam retrofit
-  now. Worth it for the multi-version goal; quantify per-seam in 2.2.
-- **8.4 — Data strategy:** per-node roots vs datagen (§6.4).
-- **8.5 — Inherited Stage-1 TODOs that ride along:** iron-farm gametest (PGM-23, in-world), real Patchouli
-  1.21 component API (C5), JEI-19 `getBackground` deprecation (C6), and the `BlockCapabilityCache` cable
-  optimization (decision 5.2). Fold each into the seam where it lives.
+- **8.1 — RESOLVED:** Drop Forge; NeoForge-only; 1.20.1 = separate `legacy/1.20.1` backport branch.
+- **8.2 — Second NeoForge target (Phase 2.0):** which version (e.g. a current 1.21.x). The single open input.
+  If ≥1.21.2, expect the ingredient-form / component-overload / render seams first.
+- **8.3 — Scaffold-now vs wait-for-second-target (§1):** recommend pick-a-target so Stonecutter is real.
+- **8.4 — Inherited Stage-1 TODOs** (fold each into the seam where it lives): iron-farm gametest (PGM-23,
+  in-world), real Patchouli 1.21 component API (C5), JEI-19 `getBackground` deprecation (C6), the
+  `BlockCapabilityCache` cable optimization (decision 5.2).
 
 ---
 
-## 9. Definition of done (the whole project)
+## 9. Definition of done
 
-- One source tree on `stage2/multi-version` → `main`. `./gradlew chiseledBuild` emits a correct jar for every
-  node: **`1.20.1-forge`** and **`1.21.1-neoforge`** (plus the Phase-3 proof node).
-- Every divergent surface is behind a seam guarded by Stonecutter; the core ~125 files are version/loader-agnostic.
-- Each node passes its gametest baseline (1.20.1 = 94/94; 1.21.1 = 93/94 → 94/94 once the iron-farm in-world item is fixed).
-- Adding a new Minecraft version is a documented, localized, mechanical task (the §7 runbook), proven once.
-- 1.20.1 is protected by the build+gametest matrix and cannot silently break.
+- One **NeoForge** source tree on `stage2/multi-version` → `main`. `./gradlew chiseledBuild` emits a correct jar
+  for every node (`1.21.1` + each chosen newer version). Adding a node is documented + mechanical (§7.1), proven.
+- Version divergence is localized behind seams guarded by Stonecutter; the core ~125 files are version-agnostic.
+- Each node passes its gametest baseline (1.21.1 → 94/94 once the iron-farm in-world item is fixed).
+- `legacy/1.20.1` stays buildable with a written backport process (§7.2); it is explicitly *not* in the unified tree.
 - Zero mixins/ATs/datagen introduced beyond what's justified. No `Co-Authored-By: Claude` / "Generated with Claude Code".
-- Doc surfaces (Patchouli guide + website guide) verified against each node, not assumed.
+- Doc surfaces (Patchouli guide + website guide) verified against the shipped node(s), not assumed.
 
 ---
 
 ## Appendix — relationship to the Stage-1 doc
-Stage 1 (`docs/port/archive/stage1-neoforge-1.21.1-port-COMPLETE.md`) is the completed single-target port and
-the detailed reference for **every per-surface API change** (the §3.x seam bodies, the C1–C9 companions, the
-exact file:line inventory). This doc does **not** re-derive that detail — it reuses it as the content for the
-`>=1.20.5 / NEOFORGE` branches and adds the **multi-version architecture, the loader axis, the Stonecutter
-mechanism, and the forward-compat process** on top. When implementing a seam, read the archived doc's matching
-§ for the API specifics, then place it behind the guard per §4–§5 here.
+`docs/port/archive/stage1-neoforge-1.21.1-port-COMPLETE.md` is the completed single-target port and the detailed
+reference for every per-surface API change (the §3.x seam bodies, C1–C9 companions, exact file:line inventory).
+This doc reuses that as the content of the `1.21.1` base node and adds the **multi-version architecture, the
+Stonecutter mechanism, and the forward-compat process** on top. The archived doc's loader-axis material
+(Forge↔NeoForge) is **no longer in scope** — kept only as reference for the separate `legacy/1.20.1` line.
