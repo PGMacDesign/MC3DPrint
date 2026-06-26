@@ -36,12 +36,16 @@ public class CreativeEnergyBlock extends BaseEntityBlock {
         return RenderShape.MODEL;
     }
 
+    // 1.21.5 removed Block.appendHoverText (tooltips live on Item only). [PORT] Block-item
+    // hover text is dropped on 1.21.8 here; restore via a TooltipBlockItem if parity is wanted.
+    //? if <1.21.5 {
     @Override
     public void appendHoverText(ItemStack stack, Item.TooltipContext context,
                                 java.util.List<Component> tooltip, TooltipFlag flag) {
         tooltip.add(Component.translatable("tooltip.mc3dprint.creative_energy")
                 .withStyle(ChatFormatting.LIGHT_PURPLE));
     }
+    //?}
 
     @Nullable
     @Override

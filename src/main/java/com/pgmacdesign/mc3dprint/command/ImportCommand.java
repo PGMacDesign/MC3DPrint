@@ -72,7 +72,11 @@ public final class ImportCommand {
             return 0;
         }
 
+        //? if >=1.21.5 {
+        /*int dataVersion = net.minecraft.SharedConstants.getCurrentVersion().dataVersion().version();
+        *///?} else {
         int dataVersion = net.minecraft.SharedConstants.getCurrentVersion().getDataVersion().getVersion();
+        //?}
         CompoundTag schem = com.pgmacdesign.mc3dprint.blueprint.io.SpongeSchematicExporter
                 .exportV2(blueprint, dataVersion);
         Path dir = source.getServer().getWorldPath(LevelResource.ROOT).resolve("mc3dprint").resolve("export");

@@ -43,6 +43,9 @@ public class ClockGeneratorBlock extends BaseEntityBlock {
         return RenderShape.MODEL;
     }
 
+    // 1.21.5 removed Block.appendHoverText (tooltips live on Item only). [PORT] Block-item
+    // hover text is dropped on 1.21.8 here; restore via a TooltipBlockItem if parity is wanted.
+    //? if <1.21.5 {
     @Override
     public void appendHoverText(ItemStack stack, Item.TooltipContext context,
                                 java.util.List<Component> tooltip, TooltipFlag flag) {
@@ -50,6 +53,7 @@ public class ClockGeneratorBlock extends BaseEntityBlock {
                 ClockGeneratorBlockEntity.ratePerTick(),
                 ClockGeneratorBlockEntity.burnMultiplier()).withStyle(ChatFormatting.GRAY));
     }
+    //?}
 
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player,

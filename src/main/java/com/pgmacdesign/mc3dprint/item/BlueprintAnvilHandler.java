@@ -43,7 +43,11 @@ public final class BlueprintAnvilHandler {
             output.set(DataComponents.CUSTOM_NAME, Component.literal(desired));
         }
         event.setOutput(output);
+        //? if >=1.21.5 {
+        /*event.setXpCost(1);
+        *///?} else {
         event.setCost(1);       // minimal: a single XP level
+        //?}
         event.setMaterialCost(0);
     }
 }

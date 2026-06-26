@@ -10,6 +10,8 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtUtils;
 import net.minecraft.nbt.Tag;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.world.item.ItemStack;
 
 /**
  * Version seam for the CompoundTag read API. In 1.21.5+ the primitive/compound/list
@@ -231,5 +233,19 @@ public final class NbtCompat {
         *///?} else {
         return NbtUtils.readBlockPos(tag, key);
         //?}
+    }
+
+    /**
+     * Replaces the removed {@code ItemStack.parseOptional(Provider, CompoundTag)}.
+     * Empty/invalid tag → {@link ItemStack#EMPTY}. {@code ItemStack.CODEC} exists on every
+     * version, so this needs no Stonecutter guard.
+     */
+    public static ItemStack parseItemStack(HolderLookup.Provider provider, CompoundTag tag) {
+        if (tag.isEmpty()) {
+            return ItemStack.EMPTY;
+        }
+        return ItemStack.CODEC
+                .parse(provider.createSerializationContext(net.minecraft.nbt.NbtOps.INSTANCE), tag)
+                .result().orElse(ItemStack.EMPTY);
     }
 }

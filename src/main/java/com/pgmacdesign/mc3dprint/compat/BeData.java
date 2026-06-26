@@ -33,6 +33,25 @@ import net.minecraft.world.level.storage.ValueOutput;
 public final class BeData {
     private BeData() {}
 
+    /**
+     * Restore a placed BlockEntity from a captured {@link CompoundTag} (the structure-print
+     * path). 1.21.5 replaced {@code loadWithComponents(CompoundTag, Provider)} with
+     * {@code loadWithComponents(ValueInput)} — same input wrapped via {@code TagValueInput}.
+     */
+    public static void loadInto(net.minecraft.world.level.block.entity.BlockEntity be,
+                                CompoundTag tag, HolderLookup.Provider provider) {
+        //? if >=1.21.5 {
+        /*try (net.minecraft.util.ProblemReporter.ScopedCollector pr =
+                new net.minecraft.util.ProblemReporter.ScopedCollector(be.problemPath(),
+                        com.mojang.logging.LogUtils.getLogger())) {
+            be.loadWithComponents(
+                    net.minecraft.world.level.storage.TagValueInput.create(pr, provider, tag));
+        }
+        *///?} else {
+        be.loadWithComponents(tag, provider);
+        //?}
+    }
+
     /** Write side. Mirrors the subset of {@code ValueOutput} the mod's BlockEntities use. */
     public interface Writer {
         void putInt(String key, int value);

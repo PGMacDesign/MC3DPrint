@@ -10,6 +10,10 @@ import net.minecraft.nbt.Tag;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.datafix.DataFixTypes;
 import net.minecraft.world.level.saveddata.SavedData;
+//? if >=1.21.5 {
+/*import com.mojang.serialization.Codec;
+import net.minecraft.world.level.saveddata.SavedDataType;
+*///?}
 
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -27,14 +31,28 @@ import java.util.UUID;
 public class RepositoryData extends SavedData {
     private static final String NAME = "mc3dprint_repository";
 
+    // 1.21.5+ persists SavedData through a Codec instead of save()/load(). Keep the imperative
+    // CompoundTag logic and adapt it: CompoundTag.CODEC round-trips the raw tag, xmap bridges to
+    // load()/save(). No registries needed — nothing here serializes an ItemStack.
+    //? if >=1.21.5 {
+    /*private static final Codec<RepositoryData> CODEC = CompoundTag.CODEC.xmap(
+            tag -> load(tag, null),
+            data -> data.save(new CompoundTag(), null));
+    *///?}
+
     // Keyed by blueprint UUID so a build is catalogued at most once (re-deposit is a no-op).
     private final Map<UUID, RepoEntry> entries = new LinkedHashMap<>();
     // Blueprint UUIDs that have been printed at least once (official builds only).
     private final Set<UUID> printed = new LinkedHashSet<>();
 
     public static RepositoryData get(MinecraftServer server) {
+        //? if >=1.21.5 {
+        /*return server.overworld().getDataStorage().computeIfAbsent(
+                new SavedDataType<>(NAME, RepositoryData::new, CODEC, DataFixTypes.LEVEL));
+        *///?} else {
         return server.overworld().getDataStorage().computeIfAbsent(
                 new SavedData.Factory<>(RepositoryData::new, RepositoryData::load, DataFixTypes.LEVEL), NAME);
+        //?}
     }
 
     static RepositoryData load(CompoundTag tag, HolderLookup.Provider registries) {
@@ -49,7 +67,11 @@ public class RepositoryData extends SavedData {
         return data;
     }
 
+    // @Override only below 1.21.5 — the supertype no longer declares save(CompoundTag, Provider);
+    // on 1.21.5+ this is a plain helper invoked by CODEC's xmap.
+    //? if <1.21.5 {
     @Override
+    //?}
     public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
         ListTag list = new ListTag();
         for (RepoEntry entry : entries.values()) {

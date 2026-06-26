@@ -49,7 +49,15 @@ public final class ScanOperation {
 
             BlockEntity blockEntity = level.getBlockEntity(pos);
             if (blockEntity != null) {
+                //? if >=1.21.5 {
+                /*net.minecraft.world.level.storage.TagValueOutput beOut =
+                        net.minecraft.world.level.storage.TagValueOutput.createWithContext(
+                                net.minecraft.util.ProblemReporter.DISCARDING, level.registryAccess());
+                blockEntity.saveWithId(beOut);
+                CompoundTag data = beOut.buildResult();
+                *///?} else {
                 CompoundTag data = blockEntity.saveWithId(level.registryAccess());
+                //?}
                 builder.blockEntity(localX, localY, localZ, data);
             }
         }
@@ -60,10 +68,21 @@ public final class ScanOperation {
         AABB region = new AABB(min.getX(), min.getY(), min.getZ(),
                 max.getX() + 1, max.getY() + 1, max.getZ() + 1);
         for (Entity entity : level.getEntities((Entity) null, region, ScanOperation::isCapturable)) {
+            //? if >=1.21.5 {
+            /*net.minecraft.world.level.storage.TagValueOutput entityOut =
+                    net.minecraft.world.level.storage.TagValueOutput.createWithContext(
+                            net.minecraft.util.ProblemReporter.DISCARDING, level.registryAccess());
+            boolean saved = entity.save(entityOut);
+            CompoundTag nbt = entityOut.buildResult();
+            if (!saved) {
+                continue; // passenger / unsaveable
+            }
+            *///?} else {
             CompoundTag nbt = new CompoundTag();
             if (!entity.save(nbt)) {
                 continue; // passenger / unsaveable
             }
+            //?}
             nbt.remove("Pos");
             nbt.remove("UUID");
             nbt.remove("Motion");      // spawn at rest (carts/boats don't drift)
@@ -97,6 +116,10 @@ public final class ScanOperation {
                 || type == EntityType.GLOW_ITEM_FRAME
                 || type == EntityType.PAINTING
                 || type == EntityType.MINECART
+                //? if >=1.21.5 {
+                /*|| entity instanceof net.minecraft.world.entity.vehicle.Boat;
+                *///?} else {
                 || type == EntityType.BOAT;
+                //?}
     }
 }

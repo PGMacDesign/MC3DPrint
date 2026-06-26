@@ -34,10 +34,14 @@ public final class ScannerSelectionRenderer {
     private ScannerSelectionRenderer() {}
 
     @SubscribeEvent
+    //? if >=1.21.5 {
+    /*public static void onRenderLevelStage(RenderLevelStageEvent.AfterTranslucentBlocks event) {
+    *///?} else {
     public static void onRenderLevelStage(RenderLevelStageEvent event) {
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS) {
             return;
         }
+    //?}
         Minecraft minecraft = Minecraft.getInstance();
         Player player = minecraft.player;
         if (player == null) {
@@ -90,7 +94,11 @@ public final class ScannerSelectionRenderer {
 
     private static void renderBox(PoseStack poseStack, VertexConsumer consumer, AABB box,
                                   float red, float green, float blue, float alpha) {
+        //? if >=1.21.5 {
+        /*net.minecraft.client.renderer.ShapeRenderer.renderLineBox(poseStack, consumer, box, red, green, blue, alpha);
+        *///?} else {
         LevelRenderer.renderLineBox(poseStack, consumer, box, red, green, blue, alpha);
+        //?}
     }
 
     private static ItemStack heldScanner(Player player) {

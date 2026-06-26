@@ -120,8 +120,15 @@ public class MC3DCableBlock extends BaseEntityBlock {
     }
 
     @Override
+    //? if >=1.21.5 {
+    /*protected BlockState updateShape(BlockState state, net.minecraft.world.level.LevelReader level,
+                                     net.minecraft.world.level.ScheduledTickAccess scheduledTickAccess, BlockPos pos,
+                                     Direction direction, BlockPos neighborPos, BlockState neighborState,
+                                     net.minecraft.util.RandomSource random) {
+    *///?} else {
     public BlockState updateShape(BlockState state, Direction direction, BlockState neighborState,
                                   LevelAccessor level, BlockPos pos, BlockPos neighborPos) {
+    //?}
         return state.setValue(BY_DIRECTION.get(direction), canConnectTo(level, neighborPos, direction));
     }
 

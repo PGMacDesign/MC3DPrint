@@ -77,8 +77,16 @@ public class ControllerBlock extends PrinterBlock {
             ItemStack collapsed = new ItemStack(this);
             CustomData.update(DataComponents.CUSTOM_DATA, collapsed,
                     tag -> tag.putBoolean(FabricatorBlockItem.TAG_COLLAPSED, true));
+            //? if >=1.21.5 {
+            /*net.minecraft.world.level.storage.TagValueOutput printerOut =
+                    net.minecraft.world.level.storage.TagValueOutput.createWithContext(
+                            net.minecraft.util.ProblemReporter.DISCARDING, level.registryAccess());
+            printer.saveWithoutMetadata(printerOut);
+            BlockItem.setBlockEntityData(collapsed, ModBlockEntities.PRINTER.get(), printerOut);
+            *///?} else {
             BlockItem.setBlockEntityData(collapsed, ModBlockEntities.PRINTER.get(),
                     printer.saveWithoutMetadata(level.registryAccess()));
+            //?}
 
             Block cornerBlock = MultiblockPattern.cornerBlock(tier());
             for (BlockPos offset : MultiblockPattern.componentOffsets(tier())) {
@@ -251,9 +259,15 @@ public class ControllerBlock extends PrinterBlock {
     }
 
     @Override
+    //? if >=1.21.5 {
+    /*protected void neighborChanged(BlockState state, Level level, BlockPos pos, Block neighborBlock,
+                                   net.minecraft.world.level.redstone.Orientation orientation, boolean movedByPiston) {
+        super.neighborChanged(state, level, pos, neighborBlock, orientation, movedByPiston);
+    *///?} else {
     public void neighborChanged(BlockState state, Level level, BlockPos pos, Block neighborBlock,
                                 BlockPos neighborPos, boolean movedByPiston) {
         super.neighborChanged(state, level, pos, neighborBlock, neighborPos, movedByPiston);
+    //?}
         if (!level.isClientSide && level.getBlockEntity(pos) instanceof PrinterBlockEntity printer) {
             printer.onNeighborSignal(level.hasNeighborSignal(pos));
         }

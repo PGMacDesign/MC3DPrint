@@ -101,8 +101,17 @@ public class RemoteTerminalBlock extends BaseEntityBlock {
                     // Pairing rides BLOCK_ENTITY_DATA so it restores into the terminal BE on place.
                     CompoundTag beTag = new CompoundTag();
                     NbtCompat.putBlockPos(beTag, "Target", pos);
+                    //? if >=1.21.5 {
+                    /*net.minecraft.world.level.storage.TagValueOutput beOut =
+                            net.minecraft.world.level.storage.TagValueOutput.createWithContext(
+                                    net.minecraft.util.ProblemReporter.DISCARDING, level.registryAccess());
+                    beOut.store(beTag);
+                    BlockItem.setBlockEntityData(context.getItemInHand(),
+                            ModBlockEntities.REMOTE_TERMINAL.get(), beOut);
+                    *///?} else {
                     BlockItem.setBlockEntityData(context.getItemInHand(),
                             ModBlockEntities.REMOTE_TERMINAL.get(), beTag);
+                    //?}
                     player.displayClientMessage(Component.translatable("message.mc3dprint.terminal_paired",
                             pos.getX(), pos.getY(), pos.getZ()), true);
                 }
@@ -112,7 +121,14 @@ public class RemoteTerminalBlock extends BaseEntityBlock {
         }
 
         @Override
+        //? if >=1.21.5 {
+        /*public void appendHoverText(ItemStack stack, Item.TooltipContext context,
+                net.minecraft.world.item.component.TooltipDisplay display,
+                java.util.function.Consumer<Component> consumer, TooltipFlag flag) {
+            List<Component> tooltip = com.pgmacdesign.mc3dprint.compat.TooltipCompat.sink(consumer);
+        *///?} else {
         public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
+        //?}
             CustomData beData = stack.get(DataComponents.BLOCK_ENTITY_DATA);
             Optional<BlockPos> target = beData == null
                     ? Optional.empty()

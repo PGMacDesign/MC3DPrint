@@ -71,7 +71,14 @@ public class ResinItem extends Item {
     }
 
     @Override
+    //? if >=1.21.5 {
+    /*public void appendHoverText(ItemStack stack, Item.TooltipContext context,
+            net.minecraft.world.item.component.TooltipDisplay display,
+            java.util.function.Consumer<Component> consumer, TooltipFlag flag) {
+        List<Component> tooltip = com.pgmacdesign.mc3dprint.compat.TooltipCompat.sink(consumer);
+    *///?} else {
     public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
+    //?}
         String descKey = "tooltip.mc3dprint.resin." + effect.id();
         if (effect == Effect.VERDANT) {
             // The two Verdant rarities genuinely differ (see ResinEffects.matureState): Common

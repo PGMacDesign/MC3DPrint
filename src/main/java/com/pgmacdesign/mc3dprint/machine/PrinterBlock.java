@@ -152,9 +152,15 @@ public class PrinterBlock extends BaseEntityBlock {
     //?}
 
     @Override
+    //? if >=1.21.5 {
+    /*protected void neighborChanged(BlockState state, Level level, BlockPos pos, Block neighborBlock,
+                                   net.minecraft.world.level.redstone.Orientation orientation, boolean movedByPiston) {
+        super.neighborChanged(state, level, pos, neighborBlock, orientation, movedByPiston);
+    *///?} else {
     public void neighborChanged(BlockState state, Level level, BlockPos pos, Block neighborBlock,
                                 BlockPos neighborPos, boolean movedByPiston) {
         super.neighborChanged(state, level, pos, neighborBlock, neighborPos, movedByPiston);
+    //?}
         if (!level.isClientSide && level.getBlockEntity(pos) instanceof PrinterBlockEntity printer) {
             printer.onNeighborSignal(level.hasNeighborSignal(pos));
         }

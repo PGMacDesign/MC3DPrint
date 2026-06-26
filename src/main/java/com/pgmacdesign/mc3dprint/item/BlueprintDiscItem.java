@@ -337,14 +337,14 @@ public class BlueprintDiscItem extends Item {
         }
         for (String slot : new String[]{"ArmorItems", "HandItems"}) {
             for (Tag tag : NbtCompat.getList(nbt, slot, Tag.TAG_COMPOUND)) {
-                ItemStack stack = ItemStack.parseOptional(registries, (CompoundTag) tag);
+                ItemStack stack = NbtCompat.parseItemStack(registries, (CompoundTag) tag);
                 if (!stack.isEmpty()) {
                     items.add(stack);
                 }
             }
         }
         if (nbt.contains("Item")) { // item frame's framed item
-            ItemStack framed = ItemStack.parseOptional(registries, NbtCompat.getCompound(nbt, "Item"));
+            ItemStack framed = NbtCompat.parseItemStack(registries, NbtCompat.getCompound(nbt, "Item"));
             if (!framed.isEmpty()) {
                 items.add(framed);
             }
@@ -428,7 +428,14 @@ public class BlueprintDiscItem extends Item {
     }
 
     @Override
+    //? if >=1.21.5 {
+    /*public void appendHoverText(ItemStack stack, Item.TooltipContext context,
+            net.minecraft.world.item.component.TooltipDisplay display,
+            java.util.function.Consumer<Component> consumer, TooltipFlag flag) {
+        List<Component> tooltip = com.pgmacdesign.mc3dprint.compat.TooltipCompat.sink(consumer);
+    *///?} else {
     public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
+    //?}
         BlueprintData blueprint = stack.get(ModDataComponents.BLUEPRINT.get());
         if (blueprint == null) {
             tooltip.add(Component.translatable("tooltip.mc3dprint.disc_empty").withStyle(ChatFormatting.GRAY));

@@ -75,7 +75,14 @@ public class UpgradeItem extends Item {
     }
 
     @Override
+    //? if >=1.21.5 {
+    /*public void appendHoverText(ItemStack stack, Item.TooltipContext context,
+            net.minecraft.world.item.component.TooltipDisplay display,
+            java.util.function.Consumer<Component> consumer, TooltipFlag flag) {
+        List<Component> tooltip = com.pgmacdesign.mc3dprint.compat.TooltipCompat.sink(consumer);
+    *///?} else {
     public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
+    //?}
         int maxPerType = com.pgmacdesign.mc3dprint.config.MC3DPrintConfig.UPGRADE_MAX_PER_TYPE.get();
         net.minecraft.network.chat.MutableComponent effect = switch (type) {
             case SPEED -> Component.translatable("tooltip.mc3dprint.upgrade.speed",

@@ -1,6 +1,7 @@
 package com.pgmacdesign.mc3dprint.machine;
 
 import com.pgmacdesign.mc3dprint.compat.BeData;
+import com.pgmacdesign.mc3dprint.compat.FuelCompat;
 
 import com.pgmacdesign.mc3dprint.config.MC3DPrintConfig;
 import net.minecraft.core.BlockPos;
@@ -14,7 +15,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ContainerData;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -114,7 +114,7 @@ public class ClockGeneratorBlockEntity extends BlockEntity implements MenuProvid
     }
 
     public static boolean isFuel(ItemStack stack) {
-        return stack.getBurnTime(RecipeType.SMELTING) > 0;
+        return FuelCompat.burnTime(null, stack) > 0;
     }
 
     public static int capacity() {
@@ -178,7 +178,7 @@ public class ClockGeneratorBlockEntity extends BlockEntity implements MenuProvid
             return 0; // slot occupied by a different fuel or full
         }
         held.shrink(1);
-        return one.getBurnTime(RecipeType.SMELTING) * burnMultiplier();
+        return FuelCompat.burnTime(getLevel(), one) * burnMultiplier();
     }
 
     public static void serverTick(Level level, BlockPos pos, BlockState state, ClockGeneratorBlockEntity generator) {
@@ -192,10 +192,14 @@ public class ClockGeneratorBlockEntity extends BlockEntity implements MenuProvid
         if (burnRemaining <= 0 && stored < capacity()) {
             ItemStack next = fuel.extractItem(0, 1, false);
             if (!next.isEmpty()) {
-                burnRemaining = next.getBurnTime(RecipeType.SMELTING) * burnMultiplier();
+                burnRemaining = FuelCompat.burnTime(level, next) * burnMultiplier();
                 burnTotal = burnRemaining; // remember the full burn for the GUI flame fill
                 // burnable containers (lava bucket) leave their empty container behind
+                //? if >=1.21.5 {
+                /*ItemStack remainder = next.getCraftingRemainder();
+                *///?} else {
                 ItemStack remainder = next.getCraftingRemainingItem();
+                //?}
                 if (!remainder.isEmpty() && fuel.getStackInSlot(0).isEmpty()) {
                     fuel.setStackInSlot(0, remainder);
                 }

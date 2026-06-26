@@ -1121,7 +1121,7 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
                 BlockEntity placedBe = serverLevel.getBlockEntity(worldPos);
                 if (placedBe != null) {
                     if (beData != null) {
-                        placedBe.loadWithComponents(beData, serverLevel.registryAccess());
+                        BeData.loadInto(placedBe, beData, serverLevel.registryAccess());
                     }
                     if (containerResin) {
                         applyContainerResin(serverLevel, worldPos, placedBe);
@@ -1399,14 +1399,23 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             pos.add(net.minecraft.nbt.DoubleTag.valueOf(wz));
             nbt.put("Pos", pos);
             net.minecraft.world.entity.Entity entity =
+                    //? if >=1.21.5 {
+                    /*net.minecraft.world.entity.EntityType.loadEntityRecursive(
+                            nbt, level, net.minecraft.world.entity.EntitySpawnReason.LOAD, e -> e);
+                    *///?} else {
                     net.minecraft.world.entity.EntityType.loadEntityRecursive(nbt, level, e -> e);
+                    //?}
             if (entity == null) {
                 continue;
             }
             if (!hanging) { // armor stand / cart / boat yaw (hanging facing already set above)
                 float yaw = entity.rotate(o.rotation());
                 yaw += entity.mirror(o.mirror()) - entity.getYRot();
+                //? if >=1.21.5 {
+                /*entity.snapTo(wx, wy, wz, yaw, entity.getXRot());
+                *///?} else {
                 entity.moveTo(wx, wy, wz, yaw, entity.getXRot());
+                //?}
             }
             // Dedup: skip if a same-type entity already occupies this spot (reprint/repair).
             net.minecraft.world.phys.AABB box = entity.getBoundingBox().inflate(0.3);
@@ -1431,7 +1440,7 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         }
         HolderLookup.Provider registries = this.level.registryAccess();
         if (nbt.contains("Item")) { // item frame's framed item
-            ItemStack framed = ItemStack.parseOptional(registries, NbtCompat.getCompound(nbt, "Item"));
+            ItemStack framed = NbtCompat.parseItemStack(registries, NbtCompat.getCompound(nbt, "Item"));
             if (!framed.isEmpty() && !chargeIfAffordable(framed)) {
                 nbt.remove("Item");
             }
@@ -1442,7 +1451,7 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             }
             net.minecraft.nbt.ListTag list = NbtCompat.getList(nbt, slot, net.minecraft.nbt.Tag.TAG_COMPOUND);
             for (int i = 0; i < list.size(); i++) {
-                ItemStack stack = ItemStack.parseOptional(registries, list.getCompound(i));
+                ItemStack stack = NbtCompat.parseItemStack(registries, NbtCompat.listGetCompound(list, i));
                 if (!stack.isEmpty() && !chargeIfAffordable(stack)) {
                     list.set(i, new CompoundTag()); // unpaid → clear the slot
                 }
