@@ -25,7 +25,7 @@ public final class FuEvents {
      */
     public static void onServerStarted(ServerStartedEvent event) {
         MinecraftServer server = event.getServer();
-        FuValueRegistry.bind(server.getRecipeManager(), server.registryAccess());
+        FuValueRegistry.bind(server.getRecipeManager().getRecipes(), server.registryAccess());
     }
 
     /**
@@ -35,7 +35,7 @@ public final class FuEvents {
      */
     public static void onDatapackSync(OnDatapackSyncEvent event) {
         MinecraftServer server = event.getPlayerList().getServer();
-        FuValueRegistry.bind(server.getRecipeManager(), server.registryAccess());
+        FuValueRegistry.bind(server.getRecipeManager().getRecipes(), server.registryAccess());
     }
 
     /**

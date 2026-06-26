@@ -1,8 +1,8 @@
 package com.pgmacdesign.mc3dprint.fu;
 
 import com.mojang.logging.LogUtils;
+import com.pgmacdesign.mc3dprint.compat.RecipeCompat;
 import com.pgmacdesign.mc3dprint.config.MC3DPrintConfig;
-import net.minecraft.core.NonNullList;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -10,11 +10,11 @@ import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeInput;
-import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.item.crafting.RecipeType;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,22 +22,43 @@ import java.util.Optional;
 import java.util.function.Function;
 
 /**
- * Binds a live {@link RecipeManager} (plus a {@link RegistryAccess} for reading
+ * Binds a live recipe snapshot (plus a {@link RegistryAccess} for assembling
  * recipe outputs) to the pure {@link RecipeFuValuator.RecipeGraph}. Built lazily
  * the first time derivation runs after a {@link FuValueRegistry#bind bind}, and
  * thrown away whenever recipes reload.
  *
- * <p>Recipe types consulted are config-gated:
- * crafting (always), smelting ({@code deriveFromSmelting}), and stonecutting
- * ({@code deriveFromStonecutting}). Blasting/smoking/campfire are excluded by
- * design (they duplicate smelting and add nothing). {@link Recipe#isSpecial()
- * Special} recipes (map cloning, firework assembly, …) are skipped — they have
- * no fixed ingredient set to value.
+ * <p>The snapshot is a flat {@code Collection<RecipeHolder<?>>} (every loaded
+ * recipe), filtered here by {@link Recipe#getType() type} — the per-type lookup
+ * (formerly {@code RecipeManager.getAllRecipesFor}) moved behind {@code RecipeMap}
+ * in 1.21.5, so iterating-and-filtering is the version-neutral path. Recipe types
+ * consulted are config-gated: crafting (always), smelting
+ * ({@code deriveFromSmelting}), and stonecutting ({@code deriveFromStonecutting}).
+ * Blasting/smoking/campfire are excluded by design (they duplicate smelting and
+ * add nothing). {@link Recipe#isSpecial() Special} recipes (map cloning, firework
+ * assembly, …) are skipped — they have no fixed ingredient set to value.
  */
 public final class MinecraftRecipeIndex implements RecipeFuValuator.RecipeGraph<Item> {
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    private final RecipeManager recipeManager;
+    /**
+     * An empty input for {@link Recipe#assemble}. The crafting/smelting/stonecutting
+     * recipes we value all return {@code result.copy()} from {@code assemble} without
+     * reading the input, so a zero-size input safely recovers the output stack — the
+     * version-neutral replacement for the removed {@code Recipe.getResultItem}.
+     */
+    private static final RecipeInput EMPTY_INPUT = new RecipeInput() {
+        @Override
+        public ItemStack getItem(int index) {
+            return ItemStack.EMPTY;
+        }
+
+        @Override
+        public int size() {
+            return 0;
+        }
+    };
+
+    private final Collection<RecipeHolder<?>> recipes;
     private final RegistryAccess registryAccess;
     /** Supplies the explicit/base value for an item (config + API map). */
     private final Function<Item, Optional<FuValue>> baseLookup;
@@ -45,10 +66,10 @@ public final class MinecraftRecipeIndex implements RecipeFuValuator.RecipeGraph<
     /** Output item -> recipes producing it; built on first use. */
     private Map<Item, List<RecipeFuValuator.RecipeView<Item>>> index;
 
-    public MinecraftRecipeIndex(RecipeManager recipeManager,
+    public MinecraftRecipeIndex(Collection<RecipeHolder<?>> recipes,
                                 RegistryAccess registryAccess,
                                 Function<Item, Optional<FuValue>> baseLookup) {
-        this.recipeManager = recipeManager;
+        this.recipes = recipes;
         this.registryAccess = registryAccess;
         this.baseLookup = baseLookup;
     }
@@ -67,47 +88,55 @@ public final class MinecraftRecipeIndex implements RecipeFuValuator.RecipeGraph<
     }
 
     private void build() {
+        boolean smelting = MC3DPrintConfig.DERIVE_FROM_SMELTING.get();
+        boolean stonecutting = MC3DPrintConfig.DERIVE_FROM_STONECUTTING.get();
         Map<Item, List<RecipeFuValuator.RecipeView<Item>>> built = new HashMap<>();
-        addType(built, RecipeType.CRAFTING);
-        if (MC3DPrintConfig.DERIVE_FROM_SMELTING.get()) {
-            addType(built, RecipeType.SMELTING);
-        }
-        if (MC3DPrintConfig.DERIVE_FROM_STONECUTTING.get()) {
-            addType(built, RecipeType.STONECUTTING);
+        for (RecipeHolder<?> holder : recipes) {
+            Recipe<?> recipe = holder.value();
+            RecipeType<?> type = recipe.getType();
+            boolean wanted = type == RecipeType.CRAFTING
+                    || (smelting && type == RecipeType.SMELTING)
+                    || (stonecutting && type == RecipeType.STONECUTTING);
+            if (!wanted) {
+                continue;
+            }
+            add(built, recipe);
         }
         index = built;
         LOGGER.debug("Built recipe FU index: {} output items have recipes", built.size());
     }
 
-    private <I extends RecipeInput, T extends Recipe<I>> void addType(
-            Map<Item, List<RecipeFuValuator.RecipeView<Item>>> built, RecipeType<T> type) {
-        for (RecipeHolder<T> holder : recipeManager.getAllRecipesFor(type)) {
-            T recipe = holder.value();
-            if (recipe.isSpecial()) {
-                continue; // no fixed ingredient set to value
-            }
-            ItemStack result;
-            try {
-                result = recipe.getResultItem(registryAccess);
-            } catch (RuntimeException e) {
-                continue; // dynamic/odd recipe output — ignore
-            }
-            if (result.isEmpty()) {
-                continue;
-            }
-            Item outputItem = result.getItem();
-            RecipeFuValuator.RecipeView<Item> view = toView(recipe, result.getCount());
-            if (view != null) {
-                built.computeIfAbsent(outputItem, k -> new ArrayList<>()).add(view);
-            }
+    private void add(Map<Item, List<RecipeFuValuator.RecipeView<Item>>> built, Recipe<?> recipe) {
+        if (recipe.isSpecial()) {
+            return; // no fixed ingredient set to value
         }
+        ItemStack result;
+        try {
+            result = result(recipe);
+        } catch (RuntimeException e) {
+            return; // dynamic/odd recipe output — ignore
+        }
+        if (result.isEmpty()) {
+            return;
+        }
+        Item outputItem = result.getItem();
+        RecipeFuValuator.RecipeView<Item> view = toView(recipe, result.getCount());
+        if (view != null) {
+            built.computeIfAbsent(outputItem, k -> new ArrayList<>()).add(view);
+        }
+    }
+
+    /** The recipe's output stack, via {@code assemble} (see {@link #EMPTY_INPUT}). */
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private ItemStack result(Recipe<?> recipe) {
+        return ((Recipe) recipe).assemble(EMPTY_INPUT, registryAccess);
     }
 
     /** Snapshots a recipe's ingredient candidate keys; null if uninspectable. */
     private RecipeFuValuator.RecipeView<Item> toView(Recipe<?> recipe, int outputCount) {
-        NonNullList<Ingredient> ingredients;
+        List<Ingredient> ingredients;
         try {
-            ingredients = recipe.getIngredients();
+            ingredients = RecipeCompat.ingredients(recipe);
         } catch (RuntimeException e) {
             return null;
         }
@@ -116,15 +145,9 @@ public final class MinecraftRecipeIndex implements RecipeFuValuator.RecipeGraph<
             if (ingredient == null || ingredient.isEmpty()) {
                 continue; // empty slot
             }
-            // getItems() already expands tags to concrete stacks; the valuator
-            // picks the cheapest member.
-            ItemStack[] matches = ingredient.getItems();
-            List<Item> candidates = new ArrayList<>(matches.length);
-            for (ItemStack match : matches) {
-                if (!match.isEmpty()) {
-                    candidates.add(match.getItem());
-                }
-            }
+            // Tags are already expanded to concrete members; the valuator picks
+            // the cheapest candidate per slot.
+            List<Item> candidates = RecipeCompat.ingredientItems(ingredient);
             if (!candidates.isEmpty()) {
                 slots.add(candidates);
             }

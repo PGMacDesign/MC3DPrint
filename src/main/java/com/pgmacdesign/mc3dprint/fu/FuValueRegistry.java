@@ -10,11 +10,12 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.crafting.RecipeManager;
+import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.core.registries.BuiltInRegistries;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,7 +35,7 @@ import java.util.Optional;
  * {@code #minecraft:logs=3@1} (tag) — FU value @ minimum winder/printer tier.
  *
  * <p>Recipe derivation is wired in lazily: a server/client binds a live
- * {@link RecipeManager} via {@link #bind} (from datapack-sync / recipes-updated
+ * recipe snapshot via {@link #bind} (from datapack-sync / recipes-updated
  * events), and the first {@link #valueOf} that misses the explicit + API maps
  * walks the recipe graph (see {@link RecipeFuValuator}). Until a bind happens
  * derivation returns empty — fail safe, never a crash.
@@ -52,7 +53,7 @@ public final class FuValueRegistry {
     private static final List<TagEntry> apiTags = new ArrayList<>();
 
     // --- Recipe derivation (bound from datapack/recipe events) ---
-    private static RecipeManager boundRecipeManager;
+    private static Collection<RecipeHolder<?>> boundRecipes;
     private static RegistryAccess boundRegistryAccess;
     private static RecipeFuValuator<Item> valuator;
 
@@ -62,7 +63,7 @@ public final class FuValueRegistry {
 
     /**
      * The FU value of a stack, following the documented precedence. Recipe
-     * derivation only runs if a {@link RecipeManager} is bound; otherwise the
+     * derivation only runs if a recipe snapshot is bound; otherwise the
      * explicit + API maps are the whole answer.
      */
     public static Optional<FuValue> valueOf(ItemStack stack) {
@@ -137,12 +138,12 @@ public final class FuValueRegistry {
 
     /** Recipe-derived value (or empty if unbound / underivable). */
     private static synchronized Optional<FuValue> derive(Item item) {
-        if (boundRecipeManager == null || boundRegistryAccess == null) {
+        if (boundRecipes == null || boundRegistryAccess == null) {
             return Optional.empty(); // not bound yet — fail safe
         }
         if (valuator == null) {
             MinecraftRecipeIndex graph = new MinecraftRecipeIndex(
-                    boundRecipeManager, boundRegistryAccess,
+                    boundRecipes, boundRegistryAccess,
                     derivedItem -> baseValue(derivedItem, null));
             valuator = new RecipeFuValuator<>(graph);
         }
@@ -245,16 +246,19 @@ public final class FuValueRegistry {
     }
 
     /**
-     * Binds the live recipe data used for derivation. Called from
-     * {@code OnDatapackSyncEvent} (server) and {@code RecipesUpdatedEvent}
-     * (client). Re-binding drops the derived cache so the next derive rebuilds
-     * the index against the new recipes.
+     * Binds the live recipe snapshot used for derivation. Called from
+     * {@code OnDatapackSyncEvent} (server) and the client recipes-received event.
+     * A flat {@code Collection<RecipeHolder<?>>} (rather than a {@code RecipeManager})
+     * is the version-neutral carrier — 1.21.5 split per-type lookup behind
+     * {@code RecipeMap}, and the client event hands back a {@code RecipeMap}, not a
+     * manager. Re-binding drops the derived cache so the next derive rebuilds the
+     * index against the new recipes.
      */
-    public static synchronized void bind(RecipeManager recipeManager, RegistryAccess registryAccess) {
-        boundRecipeManager = recipeManager;
+    public static synchronized void bind(Collection<RecipeHolder<?>> recipes, RegistryAccess registryAccess) {
+        boundRecipes = recipes;
         boundRegistryAccess = registryAccess;
         valuator = null; // lazy rebuild on next derive
-        LOGGER.debug("Bound recipe manager for FU derivation");
+        LOGGER.debug("Bound {} recipes for FU derivation", recipes.size());
     }
 
     /**
