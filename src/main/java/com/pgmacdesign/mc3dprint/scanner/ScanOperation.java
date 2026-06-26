@@ -47,7 +47,7 @@ public final class ScanOperation {
 
             BlockEntity blockEntity = level.getBlockEntity(pos);
             if (blockEntity != null) {
-                CompoundTag data = blockEntity.saveWithId();
+                CompoundTag data = blockEntity.saveWithId(level.registryAccess());
                 builder.blockEntity(localX, localY, localZ, data);
             }
         }

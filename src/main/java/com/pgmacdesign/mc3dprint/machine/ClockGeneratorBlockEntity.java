@@ -2,6 +2,7 @@ package com.pgmacdesign.mc3dprint.machine;
 
 import com.pgmacdesign.mc3dprint.config.MC3DPrintConfig;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
@@ -236,22 +237,22 @@ public class ClockGeneratorBlockEntity extends BlockEntity implements MenuProvid
     }
 
     @Override
-    protected void saveAdditional(CompoundTag tag) {
-        super.saveAdditional(tag);
+    protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
+        super.saveAdditional(tag, registries);
         tag.putInt("Energy", stored);
         tag.putInt("BurnRemaining", burnRemaining);
         tag.putInt("BurnTotal", burnTotal);
-        tag.put("Fuel", fuel.serializeNBT());
+        tag.put("Fuel", fuel.serializeNBT(registries));
     }
 
     @Override
-    public void load(CompoundTag tag) {
-        super.load(tag);
+    protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
+        super.loadAdditional(tag, registries);
         stored = Math.max(0, tag.getInt("Energy"));
         burnRemaining = Math.max(0, tag.getInt("BurnRemaining"));
         burnTotal = Math.max(0, tag.getInt("BurnTotal"));
         if (tag.contains("Fuel")) {
-            fuel.deserializeNBT(tag.getCompound("Fuel"));
+            fuel.deserializeNBT(registries, tag.getCompound("Fuel"));
         }
     }
 }

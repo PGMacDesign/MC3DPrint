@@ -6,6 +6,7 @@ import com.pgmacdesign.mc3dprint.fu.IFilamentSource;
 import com.pgmacdesign.mc3dprint.fu.SpoolItem;
 import com.pgmacdesign.mc3dprint.registry.ModBlockEntities;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.Connection;
 import net.minecraft.network.protocol.Packet;
@@ -116,16 +117,16 @@ public class FilamentRackBlockEntity extends BlockEntity implements IFilamentSou
     // --- Persistence + client sync (the renderer needs the live spool stacks) ---
 
     @Override
-    protected void saveAdditional(CompoundTag tag) {
-        super.saveAdditional(tag);
-        tag.put("Spools", spools.serializeNBT());
+    protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
+        super.saveAdditional(tag, registries);
+        tag.put("Spools", spools.serializeNBT(registries));
     }
 
     @Override
-    public void load(CompoundTag tag) {
-        super.load(tag);
+    protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
+        super.loadAdditional(tag, registries);
         if (tag.contains("Spools")) {
-            spools.deserializeNBT(tag.getCompound("Spools"));
+            spools.deserializeNBT(registries, tag.getCompound("Spools"));
         }
     }
 
@@ -136,16 +137,16 @@ public class FilamentRackBlockEntity extends BlockEntity implements IFilamentSou
     }
 
     @Override
-    public CompoundTag getUpdateTag() {
+    public CompoundTag getUpdateTag(HolderLookup.Provider registries) {
         CompoundTag tag = new CompoundTag();
-        tag.put("Spools", spools.serializeNBT());
+        tag.put("Spools", spools.serializeNBT(registries));
         return tag;
     }
 
     @Override
-    public void handleUpdateTag(CompoundTag tag) {
+    public void handleUpdateTag(CompoundTag tag, HolderLookup.Provider registries) {
         if (tag.contains("Spools")) {
-            spools.deserializeNBT(tag.getCompound("Spools"));
+            spools.deserializeNBT(registries, tag.getCompound("Spools"));
         }
     }
 
@@ -156,9 +157,9 @@ public class FilamentRackBlockEntity extends BlockEntity implements IFilamentSou
     }
 
     @Override
-    public void onDataPacket(Connection net, ClientboundBlockEntityDataPacket pkt) {
+    public void onDataPacket(Connection net, ClientboundBlockEntityDataPacket pkt, HolderLookup.Provider registries) {
         if (pkt.getTag() != null) {
-            handleUpdateTag(pkt.getTag());
+            handleUpdateTag(pkt.getTag(), registries);
         }
     }
 }

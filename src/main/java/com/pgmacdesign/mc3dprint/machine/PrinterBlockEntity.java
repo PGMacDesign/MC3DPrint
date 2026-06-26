@@ -22,6 +22,7 @@ import com.pgmacdesign.mc3dprint.machine.upgrade.UpgradeItem;
 import com.pgmacdesign.mc3dprint.registry.ModBlockEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.util.Mth;
 import net.minecraft.nbt.ListTag;
@@ -1117,7 +1118,7 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
                 BlockEntity placedBe = serverLevel.getBlockEntity(worldPos);
                 if (placedBe != null) {
                     if (beData != null) {
-                        placedBe.load(beData);
+                        placedBe.loadWithComponents(beData, serverLevel.registryAccess());
                     }
                     if (containerResin) {
                         applyContainerResin(serverLevel, worldPos, placedBe);
@@ -1425,8 +1426,9 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             nbt.remove("Item");
             return;
         }
+        HolderLookup.Provider registries = this.level.registryAccess();
         if (nbt.contains("Item")) { // item frame's framed item
-            ItemStack framed = ItemStack.of(nbt.getCompound("Item"));
+            ItemStack framed = ItemStack.parseOptional(registries, nbt.getCompound("Item"));
             if (!framed.isEmpty() && !chargeIfAffordable(framed)) {
                 nbt.remove("Item");
             }
@@ -1437,7 +1439,7 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             }
             net.minecraft.nbt.ListTag list = nbt.getList(slot, net.minecraft.nbt.Tag.TAG_COMPOUND);
             for (int i = 0; i < list.size(); i++) {
-                ItemStack stack = ItemStack.of(list.getCompound(i));
+                ItemStack stack = ItemStack.parseOptional(registries, list.getCompound(i));
                 if (!stack.isEmpty() && !chargeIfAffordable(stack)) {
                     list.set(i, new CompoundTag()); // unpaid → clear the slot
                 }
@@ -1673,7 +1675,7 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
     }
 
     @Override
-    public CompoundTag getUpdateTag() {
+    public CompoundTag getUpdateTag(HolderLookup.Provider registries) {
         CompoundTag tag = new CompoundTag();
         if (activeJob != null) {
             tag.put("ActiveJob", activeJob.save());
@@ -1730,20 +1732,20 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
     }
 
     @Override
-    public void handleUpdateTag(CompoundTag tag) {
+    public void handleUpdateTag(CompoundTag tag, HolderLookup.Provider registries) {
         activeJob = tag.contains("ActiveJob", Tag.TAG_COMPOUND) ? PrintJob.load(tag.getCompound("ActiveJob")) : null;
-        lastPlacedPos = tag.contains("LastPlaced", Tag.TAG_COMPOUND)
-                ? net.minecraft.nbt.NbtUtils.readBlockPos(tag.getCompound("LastPlaced")) : null;
+        lastPlacedPos = net.minecraft.nbt.NbtUtils.readBlockPos(tag, "LastPlaced").orElse(null);
         state = State.byOrdinal(tag.getInt("State"));
 
         clientPreviewOn = tag.getBoolean("PreviewOn");
         clientPreview.clear();
         clientPreviewOrigin = null;
         clientPreviewSize = null;
-        if (tag.contains("Preview", Tag.TAG_COMPOUND) && tag.contains("PreviewOrigin", Tag.TAG_COMPOUND)) {
+        Optional<BlockPos> previewOriginOpt = net.minecraft.nbt.NbtUtils.readBlockPos(tag, "PreviewOrigin");
+        if (tag.contains("Preview", Tag.TAG_COMPOUND) && previewOriginOpt.isPresent()) {
             Blueprint blueprint = com.pgmacdesign.mc3dprint.blueprint.BlueprintSerializer
                     .read(tag.getCompound("Preview"));
-            BlockPos origin = net.minecraft.nbt.NbtUtils.readBlockPos(tag.getCompound("PreviewOrigin"));
+            BlockPos origin = previewOriginOpt.get();
             // Apply the same orientation the server will print at, so the ghost matches:
             // transform each local position AND rotate the block state (stairs/doors/…).
             Rotation rot = Rotation.values()[tag.getInt("PreviewRotation") % Rotation.values().length];
@@ -1772,14 +1774,15 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
     @Override
     public net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket getUpdatePacket() {
         return net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket.create(this,
-                be -> ((PrinterBlockEntity) be).getUpdateTag());
+                (be, registryAccess) -> ((PrinterBlockEntity) be).getUpdateTag(registryAccess));
     }
 
     @Override
     public void onDataPacket(net.minecraft.network.Connection connection,
-                             net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket packet) {
+                             net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket packet,
+                             HolderLookup.Provider registries) {
         if (packet.getTag() != null) {
-            handleUpdateTag(packet.getTag());
+            handleUpdateTag(packet.getTag(), registries);
         }
     }
 
@@ -2070,12 +2073,12 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
     // --- Persistence ---
 
     @Override
-    protected void saveAdditional(CompoundTag tag) {
-        super.saveAdditional(tag);
-        tag.put("Inventory", inventory.serializeNBT());
-        tag.put("Spools", spools.serializeNBT());
-        tag.put("Upgrades", upgrades.serializeNBT());
-        tag.put("Resins", resins.serializeNBT());
+    protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
+        super.saveAdditional(tag, registries);
+        tag.put("Inventory", inventory.serializeNBT(registries));
+        tag.put("Spools", spools.serializeNBT(registries));
+        tag.put("Upgrades", upgrades.serializeNBT(registries));
+        tag.put("Resins", resins.serializeNBT(registries));
         if (armedResinEffect != null) {
             tag.putString("ArmedResin", armedResinEffect.id());
             tag.putInt("ArmedResinTier", armedResinTier);
@@ -2106,12 +2109,12 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
     }
 
     @Override
-    public void load(CompoundTag tag) {
-        super.load(tag);
-        inventory.deserializeNBT(tag.getCompound("Inventory"));
-        spools.deserializeNBT(tag.getCompound("Spools"));
-        upgrades.deserializeNBT(tag.getCompound("Upgrades"));
-        resins.deserializeNBT(tag.getCompound("Resins"));
+    protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
+        super.loadAdditional(tag, registries);
+        inventory.deserializeNBT(registries, tag.getCompound("Inventory"));
+        spools.deserializeNBT(registries, tag.getCompound("Spools"));
+        upgrades.deserializeNBT(registries, tag.getCompound("Upgrades"));
+        resins.deserializeNBT(registries, tag.getCompound("Resins"));
         armedResinEffect = parseResinEffect(tag.getString("ArmedResin"));
         armedResinTier = tag.getInt("ArmedResinTier");
         resinConsumed = tag.getBoolean("ResinConsumed");

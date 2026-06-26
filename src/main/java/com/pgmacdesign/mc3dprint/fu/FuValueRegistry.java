@@ -256,6 +256,16 @@ public final class FuValueRegistry {
         LOGGER.debug("Bound recipe manager for FU derivation");
     }
 
+    /**
+     * The registry/holder lookup bound at server start (a {@link RegistryAccess}
+     * IS-A {@link net.minecraft.core.HolderLookup.Provider}), or {@code null} before
+     * bind. Used by static cost-estimation paths that must reconstruct an ItemStack
+     * from NBT (1.20.5+ requires a provider) without a Level in scope.
+     */
+    public static RegistryAccess boundRegistries() {
+        return boundRegistryAccess;
+    }
+
     /** Drops the parsed explicit cache AND the derived cache (config reload). */
     public static synchronized void invalidate() {
         itemValues = null;

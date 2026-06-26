@@ -86,11 +86,11 @@ public final class PrintJob {
         PrintJob job = new PrintJob(
                 tag.getUUID("Blueprint"),
                 tag.getString("Name"),
-                NbtUtils.readBlockPos(tag.getCompound("Origin")),
+                NbtUtils.readBlockPos(tag, "Origin").orElse(BlockPos.ZERO),
                 new PrintOrientation(
                         Rotation.values()[Math.floorMod(tag.getByte("Rotation"), Rotation.values().length)],
                         Mirror.values()[Math.floorMod(tag.getByte("Mirror"), Mirror.values().length)]),
-                NbtUtils.readBlockPos(tag.getCompound("JobSize")),
+                NbtUtils.readBlockPos(tag, "JobSize").orElse(BlockPos.ZERO),
                 tag.getInt("Total"));
         job.placed = tag.getInt("Placed");
         return job;

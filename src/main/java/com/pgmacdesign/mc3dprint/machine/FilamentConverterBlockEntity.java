@@ -8,6 +8,7 @@ import com.pgmacdesign.mc3dprint.fu.SpoolItem;
 import com.pgmacdesign.mc3dprint.registry.ModBlockEntities;
 import com.pgmacdesign.mc3dprint.registry.ModItemTags;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.ItemStack;
@@ -155,18 +156,19 @@ public class FilamentConverterBlockEntity extends BlockEntity {
     }
 
     @Override
-    protected void saveAdditional(CompoundTag tag) {
-        super.saveAdditional(tag);
+    protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
+        super.saveAdditional(tag, registries);
         tag.putInt("Energy", energy.getEnergyStored());
         if (!filter.isEmpty()) {
-            tag.put("Filter", filter.save(new CompoundTag()));
+            tag.put("Filter", filter.save(registries, new CompoundTag()));
         }
     }
 
     @Override
-    public void load(CompoundTag tag) {
-        super.load(tag);
+    protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
+        super.loadAdditional(tag, registries);
         energy.setStored(tag.getInt("Energy"));
-        filter = tag.contains("Filter") ? ItemStack.of(tag.getCompound("Filter")) : ItemStack.EMPTY;
+        filter = tag.contains("Filter")
+                ? ItemStack.parseOptional(registries, tag.getCompound("Filter")) : ItemStack.EMPTY;
     }
 }

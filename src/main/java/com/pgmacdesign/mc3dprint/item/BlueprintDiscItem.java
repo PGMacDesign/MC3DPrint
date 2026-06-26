@@ -279,8 +279,13 @@ public class BlueprintDiscItem extends Item {
             }
 
             // Decorative entities cost their contents (stand + armor; frame + framed item).
-            for (BlueprintEntity entity : blueprint.entities()) {
-                for (ItemStack content : entityContentItems(entity.nbt())) {
+            // Reconstructing those item stacks from raw NBT needs a registry provider
+            // (1.20.5+); use the one bound at server start. If unbound (early datagen),
+            // skip the entity contribution rather than fail the whole quote.
+            net.minecraft.core.HolderLookup.Provider registries = FuValueRegistry.boundRegistries();
+            for (BlueprintEntity entity : registries == null
+                    ? java.util.List.<BlueprintEntity>of() : blueprint.entities()) {
+                for (ItemStack content : entityContentItems(registries, entity.nbt())) {
                     Optional<FuValue> v = FuValueRegistry.valueOf(content);
                     if (v.isPresent()) {
                         totalBase += FuConversion.toBase(v.get().fu(), v.get().tier(), ratio) * content.getCount();
@@ -317,7 +322,8 @@ public class BlueprintDiscItem extends Item {
         return base == null ? ItemStack.EMPTY : new ItemStack(base);
     }
 
-    public static List<ItemStack> entityContentItems(CompoundTag nbt) {
+    public static List<ItemStack> entityContentItems(net.minecraft.core.HolderLookup.Provider registries,
+                                                      CompoundTag nbt) {
         List<ItemStack> items = new ArrayList<>();
         ItemStack base = entityBaseItem(nbt);
         if (!base.isEmpty()) {
@@ -325,14 +331,14 @@ public class BlueprintDiscItem extends Item {
         }
         for (String slot : new String[]{"ArmorItems", "HandItems"}) {
             for (Tag tag : nbt.getList(slot, Tag.TAG_COMPOUND)) {
-                ItemStack stack = ItemStack.of((CompoundTag) tag);
+                ItemStack stack = ItemStack.parseOptional(registries, (CompoundTag) tag);
                 if (!stack.isEmpty()) {
                     items.add(stack);
                 }
             }
         }
         if (nbt.contains("Item")) { // item frame's framed item
-            ItemStack framed = ItemStack.of(nbt.getCompound("Item"));
+            ItemStack framed = ItemStack.parseOptional(registries, nbt.getCompound("Item"));
             if (!framed.isEmpty()) {
                 items.add(framed);
             }

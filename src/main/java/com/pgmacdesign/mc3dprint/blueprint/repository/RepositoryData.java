@@ -1,10 +1,12 @@
 package com.pgmacdesign.mc3dprint.blueprint.repository;
 
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.util.datafix.DataFixTypes;
 import net.minecraft.world.level.saveddata.SavedData;
 
 import java.util.LinkedHashMap;
@@ -30,10 +32,10 @@ public class RepositoryData extends SavedData {
 
     public static RepositoryData get(MinecraftServer server) {
         return server.overworld().getDataStorage().computeIfAbsent(
-                RepositoryData::load, RepositoryData::new, NAME);
+                new SavedData.Factory<>(RepositoryData::new, RepositoryData::load, DataFixTypes.LEVEL), NAME);
     }
 
-    static RepositoryData load(CompoundTag tag) {
+    static RepositoryData load(CompoundTag tag, HolderLookup.Provider registries) {
         RepositoryData data = new RepositoryData();
         for (Tag element : tag.getList("Entries", Tag.TAG_COMPOUND)) {
             RepoEntry entry = RepoEntry.fromNbt((CompoundTag) element);
@@ -46,7 +48,7 @@ public class RepositoryData extends SavedData {
     }
 
     @Override
-    public CompoundTag save(CompoundTag tag) {
+    public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
         ListTag list = new ListTag();
         for (RepoEntry entry : entries.values()) {
             list.add(entry.toNbt());
