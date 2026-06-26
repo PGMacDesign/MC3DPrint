@@ -40,8 +40,13 @@ public class FilamentRackRenderer implements BlockEntityRenderer<FilamentRackBlo
     }
 
     @Override
+    //? if >=1.21.5 {
+    /*public void render(FilamentRackBlockEntity rack, float partialTick, PoseStack pose,
+                       MultiBufferSource buffers, int packedLight, int packedOverlay, net.minecraft.world.phys.Vec3 cameraPos) {
+    *///?} else {
     public void render(FilamentRackBlockEntity rack, float partialTick, PoseStack pose,
                        MultiBufferSource buffers, int packedLight, int packedOverlay) {
+    //?}
         Direction facing = rack.getBlockState().getValue(FilamentRackBlock.FACING);
         // The rack is a full opaque cube, so the light sampled at its OWN position is
         // the buried (=0) interior light — which rendered every spool pitch black.

@@ -2,6 +2,7 @@ package com.pgmacdesign.mc3dprint.client;
 
 import net.minecraft.ChatFormatting;
 import com.pgmacdesign.mc3dprint.MC3DPrint;
+import com.pgmacdesign.mc3dprint.compat.RenderCompat;
 import com.pgmacdesign.mc3dprint.blueprint.CuratedBlueprints;
 import com.pgmacdesign.mc3dprint.blueprint.repository.RepoEntry;
 import com.pgmacdesign.mc3dprint.machine.repository.BlueprintRepositoryMenu;
@@ -141,7 +142,7 @@ public class BlueprintRepositoryScreen extends AbstractContainerScreen<Blueprint
 
     @Override
     protected void renderBg(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
-        graphics.blit(TEXTURE, leftPos, topPos, 0, 0, imageWidth, imageHeight);
+        RenderCompat.blit(graphics, TEXTURE, leftPos, topPos, 0, 0, imageWidth, imageHeight);
         renderList(graphics, mouseX, mouseY);
         renderDetail(graphics);
     }
@@ -232,7 +233,7 @@ public class BlueprintRepositoryScreen extends AbstractContainerScreen<Blueprint
         String status = entry.official()
                 ? (menu.isPrinted(entry.id()) ? " · printed" : "")
                 : " · scan";
-        graphics.renderTooltip(font, List.of(
+        RenderCompat.tooltipLines(graphics, font, List.of(
                 Component.literal(displayName(entry)).getVisualOrderText(),
                 Component.literal("T" + entry.tier() + " · " + entry.cost() + " FU" + status).getVisualOrderText()),
                 mouseX, mouseY);

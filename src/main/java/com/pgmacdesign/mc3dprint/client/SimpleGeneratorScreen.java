@@ -1,6 +1,7 @@
 package com.pgmacdesign.mc3dprint.client;
 
 import com.pgmacdesign.mc3dprint.MC3DPrint;
+import com.pgmacdesign.mc3dprint.compat.RenderCompat;
 import com.pgmacdesign.mc3dprint.machine.SimpleGeneratorMenu;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -37,12 +38,12 @@ public class SimpleGeneratorScreen extends AbstractContainerScreen<SimpleGenerat
         renderTooltip(graphics, mouseX, mouseY);
 
         if (isHovering(ENERGY_X, ENERGY_Y, ENERGY_W, ENERGY_H, mouseX, mouseY)) {
-            graphics.renderTooltip(font,
+            RenderCompat.tooltip(graphics, font,
                     Component.translatable("tooltip.mc3dprint.energy", menu.energy(), menu.maxEnergy()),
                     mouseX, mouseY);
         }
         if (isHovering(FLAME_X, FLAME_Y, FLAME_W, FLAME_H, mouseX, mouseY)) {
-            graphics.renderTooltip(font,
+            RenderCompat.tooltip(graphics, font,
                     Component.translatable("tooltip.mc3dprint.generator_fuel_left",
                             menu.burnRemaining() / TICKS_PER_SECOND),
                     mouseX, mouseY);
@@ -53,7 +54,7 @@ public class SimpleGeneratorScreen extends AbstractContainerScreen<SimpleGenerat
     protected void renderBg(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
         int left = leftPos;
         int top = topPos;
-        graphics.blit(TEXTURE, left, top, 0, 0, imageWidth, imageHeight);
+        RenderCompat.blit(graphics, TEXTURE, left, top, 0, 0, imageWidth, imageHeight);
 
         // RF bar, filled bottom-up
         int energyPixels = (int) ((long) menu.energy() * ENERGY_H / menu.maxEnergy());

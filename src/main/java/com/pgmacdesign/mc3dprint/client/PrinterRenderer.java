@@ -148,8 +148,13 @@ public class PrinterRenderer implements BlockEntityRenderer<PrinterBlockEntity> 
     }
 
     @Override
+    //? if >=1.21.5 {
+    /*public void render(PrinterBlockEntity printer, float partialTick, PoseStack poseStack,
+                       MultiBufferSource bufferSource, int packedLight, int packedOverlay, net.minecraft.world.phys.Vec3 cameraPos) {
+    *///?} else {
     public void render(PrinterBlockEntity printer, float partialTick, PoseStack poseStack,
                        MultiBufferSource bufferSource, int packedLight, int packedOverlay) {
+    //?}
         renderSpools(printer, partialTick, poseStack, bufferSource);
         renderFormedStructure(printer, partialTick, poseStack, bufferSource, packedLight);
 
@@ -465,7 +470,12 @@ public class PrinterRenderer implements BlockEntityRenderer<PrinterBlockEntity> 
 
         // full-extent frame, drawn as lines so it stays cheap at distance
         VertexConsumer frameLines = bufferSource.getBuffer(RenderType.lines());
+        // 1.21.5 moved renderLineBox from LevelRenderer to ShapeRenderer (same signature).
+        //? if >=1.21.5 {
+        /*net.minecraft.client.renderer.ShapeRenderer.renderLineBox(poseStack, frameLines,
+        *///?} else {
         LevelRenderer.renderLineBox(poseStack, frameLines,
+        //?}
                 origin.getX() - machine.getX(), origin.getY() - machine.getY(), origin.getZ() - machine.getZ(),
                 origin.getX() - machine.getX() + size.getX(),
                 origin.getY() - machine.getY() + size.getY(),
@@ -498,6 +508,19 @@ public class PrinterRenderer implements BlockEntityRenderer<PrinterBlockEntity> 
             poseStack.scale(0.95F, 0.95F, 0.95F);
             poseStack.translate(-0.5, -0.5, -0.5);
 
+            // 1.21.5: RenderType.translucent() -> translucentMovingBlock() (in-world block translucent),
+            // and renderSingleBlock dropped the (ModelData, RenderType) tail for (BlockAndTintGetter, BlockPos).
+            //? if >=1.21.5 {
+            /*MultiBufferSource ghostBuffers = blocked
+                    ? type -> new GhostVertexConsumer(bufferSource.getBuffer(RenderType.translucentMovingBlock()),
+                            1.0F, 0.35F, 0.35F, 150)
+                    : type -> new GhostVertexConsumer(bufferSource.getBuffer(RenderType.translucentMovingBlock()),
+                            0.65F, 1.0F, 0.70F, 140);
+            dispatcher.renderSingleBlock(ghost.state(), poseStack, ghostBuffers,
+                    LevelRenderer.getLightColor(level, pos),
+                    net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY,
+                    level, pos);
+            *///?} else {
             MultiBufferSource ghostBuffers = blocked
                     ? type -> new GhostVertexConsumer(bufferSource.getBuffer(RenderType.translucent()),
                             1.0F, 0.35F, 0.35F, 150)
@@ -507,6 +530,7 @@ public class PrinterRenderer implements BlockEntityRenderer<PrinterBlockEntity> 
                     LevelRenderer.getLightColor(level, pos),
                     net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY,
                     net.neoforged.neoforge.client.model.data.ModelData.EMPTY, null);
+            //?}
             poseStack.popPose();
         }
     }
@@ -673,7 +697,11 @@ public class PrinterRenderer implements BlockEntityRenderer<PrinterBlockEntity> 
     }
 
     @Override
+    //? if >=1.21.5 {
+    /*public boolean shouldRenderOffScreen() {
+    *///?} else {
     public boolean shouldRenderOffScreen(PrinterBlockEntity printer) {
+    //?}
         return true; // the frame extends well beyond the machine block
     }
 

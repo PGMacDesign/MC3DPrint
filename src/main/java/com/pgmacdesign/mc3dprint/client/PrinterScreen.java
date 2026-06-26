@@ -1,6 +1,7 @@
 package com.pgmacdesign.mc3dprint.client;
 
 import com.pgmacdesign.mc3dprint.MC3DPrint;
+import com.pgmacdesign.mc3dprint.compat.RenderCompat;
 import com.pgmacdesign.mc3dprint.config.MC3DPrintConfig;
 import com.pgmacdesign.mc3dprint.item.BlueprintDiscItem;
 import com.pgmacdesign.mc3dprint.machine.PrinterBlockEntity;
@@ -136,7 +137,7 @@ public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
         renderTooltip(graphics, mouseX, mouseY);
 
         if (isHovering(ENERGY_X, ENERGY_Y, ENERGY_WIDTH, ENERGY_HEIGHT, mouseX, mouseY)) {
-            graphics.renderTooltip(font,
+            RenderCompat.tooltip(graphics, font,
                     Component.translatable("tooltip.mc3dprint.energy", menu.energy(), menu.maxEnergy()),
                     mouseX, mouseY);
         }
@@ -148,7 +149,7 @@ public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
             if (menu.spoolsUsed() == 0) {
                 lines.add(Component.translatable("tooltip.mc3dprint.fu_no_spools"));
             }
-            graphics.renderComponentTooltip(font, lines, mouseX, mouseY);
+            RenderCompat.tooltipComponents(graphics, font, lines, mouseX, mouseY);
         }
     }
 
@@ -213,7 +214,7 @@ public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
     protected void renderBg(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
         int left = leftPos;
         int top = topPos;
-        graphics.blit(TEXTURE, left, top, 0, 0, imageWidth, imageHeight);
+        RenderCompat.blit(graphics, TEXTURE, left, top, 0, 0, imageWidth, imageHeight);
 
         // Energy fill (red), bottom-up
         int energyPixels = (int) ((long) menu.energy() * ENERGY_HEIGHT / menu.maxEnergy());
@@ -251,11 +252,11 @@ public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
         for (int i = 0; i < menu.spoolSlots(); i++) {
             int sx = PrinterMenu.SPOOL_SLOT_X + (i % PrinterMenu.SPOOL_COLS) * PrinterMenu.SPOOL_COL_STEP;
             int sy = PrinterMenu.SPOOL_SLOT_Y + (i / PrinterMenu.SPOOL_COLS) * PrinterMenu.SPOOL_ROW_STEP;
-            graphics.blit(TEXTURE, left + sx - 1, top + sy - 1, wellU, wellV, 18, 18);
+            RenderCompat.blit(graphics, TEXTURE, left + sx - 1, top + sy - 1, wellU, wellV, 18, 18);
         }
 
         // Resin-slot well (same baked sprite) in the gap between upgrades and spools.
-        graphics.blit(TEXTURE, left + PrinterMenu.RESIN_SLOT_X - 1, top + PrinterMenu.RESIN_SLOT_Y - 1,
+        RenderCompat.blit(graphics, TEXTURE, left + PrinterMenu.RESIN_SLOT_X - 1, top + PrinterMenu.RESIN_SLOT_Y - 1,
                 wellU, wellV, 18, 18);
     }
 
@@ -303,12 +304,23 @@ public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
         float spoolScale = 0.85f;
         float spoolRightEdge = imageWidth - 8;   // right-aligned to the panel margin
         float spoolTopY = PrinterMenu.SPOOL_SLOT_Y - 16;   // just above the grid (≈ 2nd inv row)
-        graphics.pose().pushPose();
-        graphics.pose().scale(spoolScale, spoolScale, 1f);
+        //? if >=1.21.5 {
+        /*var pose = graphics.pose();
+        pose.pushMatrix();
+        pose.scale(spoolScale, spoolScale);
         graphics.drawString(font, spools,
                 Math.round(spoolRightEdge / spoolScale - font.width(spools)),
                 Math.round(spoolTopY / spoolScale), spoolsColor, false);
-        graphics.pose().popPose();
+        pose.popMatrix();
+        *///?} else {
+        var pose = graphics.pose();
+        pose.pushPose();
+        pose.scale(spoolScale, spoolScale, 1f);
+        graphics.drawString(font, spools,
+                Math.round(spoolRightEdge / spoolScale - font.width(spools)),
+                Math.round(spoolTopY / spoolScale), spoolsColor, false);
+        pose.popPose();
+        //?}
 
         // "Resin" label over the resin slot. Turns warm-red when a resin is slotted but
         // the loaded blueprint is player-made (resin won't apply — the Q9 gate).
