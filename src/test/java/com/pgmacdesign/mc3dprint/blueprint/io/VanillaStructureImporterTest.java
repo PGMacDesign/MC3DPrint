@@ -94,7 +94,7 @@ class VanillaStructureImporterTest {
     void usesFirstPaletteFromPalettesList() {
         CompoundTag root = sampleStructure();
         ListTag palettes = new ListTag();
-        palettes.add(root.getList("palette", 10));
+        palettes.add(com.pgmacdesign.mc3dprint.compat.NbtCompat.getList(root, "palette", 10));
         root.remove("palette");
         root.put("palettes", palettes);
         Blueprint bp = VanillaStructureImporter.importStructure("test", root);
@@ -112,7 +112,7 @@ class VanillaStructureImporterTest {
     @Test
     void rejectsOutOfRangeStateIndex() {
         CompoundTag root = sampleStructure();
-        root.getList("blocks", 10).add(block(0, 0, 0, 99));
+        com.pgmacdesign.mc3dprint.compat.NbtCompat.getList(root, "blocks", 10).add(block(0, 0, 0, 99));
         assertThrows(BlueprintFormatException.class,
                 () -> VanillaStructureImporter.importStructure("test", root));
     }

@@ -66,7 +66,7 @@ class BlueprintSerializerTest {
     @Test
     void rejectsOutOfRangePaletteIndex() {
         CompoundTag tag = BlueprintSerializer.write(sample());
-        int[] blocks = tag.getIntArray("Blocks");
+        int[] blocks = com.pgmacdesign.mc3dprint.compat.NbtCompat.getIntArray(tag, "Blocks");
         blocks[0] = 42;
         tag.putIntArray("Blocks", blocks);
         assertThrows(BlueprintFormatException.class, () -> BlueprintSerializer.read(tag));
