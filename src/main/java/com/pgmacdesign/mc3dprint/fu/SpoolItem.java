@@ -1,6 +1,7 @@
 package com.pgmacdesign.mc3dprint.fu;
 
 import com.pgmacdesign.mc3dprint.machine.PrinterBlockEntity;
+import com.pgmacdesign.mc3dprint.registry.ModDataComponents;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvents;
@@ -13,7 +14,6 @@ import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 
-import javax.annotation.Nullable;
 import java.util.List;
 
 /**
@@ -53,12 +53,12 @@ public class SpoolItem extends Item {
         if (stack.getItem() instanceof SpoolItem spool && spool.creative()) {
             return spool.capacity();
         }
-        return stack.getTag() != null ? stack.getTag().getInt(TAG_FU) : 0;
+        return stack.getOrDefault(ModDataComponents.FU.get(), 0);
     }
 
     public static void setFu(ItemStack stack, int fu) {
         if (stack.getItem() instanceof SpoolItem spool && !spool.creative()) {
-            stack.getOrCreateTag().putInt(TAG_FU, Mth.clamp(fu, 0, spool.capacity()));
+            stack.set(ModDataComponents.FU.get(), Mth.clamp(fu, 0, spool.capacity()));
         }
     }
 
@@ -127,7 +127,7 @@ public class SpoolItem extends Item {
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
+    public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
         tooltip.add(Component.translatable("tooltip.mc3dprint.spool_fu", getFu(stack), capacity())
                 .withStyle(ChatFormatting.AQUA));
         tooltip.add(Component.translatable("tooltip.mc3dprint.spool_tier", tier)

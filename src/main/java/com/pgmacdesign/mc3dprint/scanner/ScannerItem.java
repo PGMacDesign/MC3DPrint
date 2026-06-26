@@ -6,11 +6,10 @@ import com.pgmacdesign.mc3dprint.config.MC3DPrintConfig;
 import com.pgmacdesign.mc3dprint.item.BlueprintDiscItem;
 import com.pgmacdesign.mc3dprint.machine.MachineTier;
 import com.pgmacdesign.mc3dprint.machine.multiblock.MultiblockPattern;
+import com.pgmacdesign.mc3dprint.registry.ModDataComponents;
 import com.pgmacdesign.mc3dprint.registry.ModItems;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.NbtUtils;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
@@ -26,7 +25,6 @@ import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.neoforged.fml.ModList;
 
-import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -56,12 +54,14 @@ public class ScannerItem extends Item {
         }
         ItemStack stack = context.getItemInHand();
         Player player = context.getPlayer();
-        CompoundTag tag = stack.getOrCreateTag();
         BlockPos clicked = context.getClickedPos();
 
-        boolean settingB = tag.getBoolean(TAG_NEXT_IS_B);
-        tag.put(settingB ? TAG_CORNER_B : TAG_CORNER_A, NbtUtils.writeBlockPos(clicked));
-        tag.putBoolean(TAG_NEXT_IS_B, !settingB);
+        ScanData data = scanData(stack);
+        boolean settingB = data.nextIsB();
+        ScanData next = settingB
+                ? new ScanData(data.cornerA(), Optional.of(clicked), false)
+                : new ScanData(Optional.of(clicked), data.cornerB(), true);
+        stack.set(ModDataComponents.SCAN.get(), next);
 
         if (player != null) {
             player.displayClientMessage(Component.translatable(
@@ -81,9 +81,7 @@ public class ScannerItem extends Item {
         }
 
         if (player.isSecondaryUseActive()) {
-            stack.removeTagKey(TAG_CORNER_A);
-            stack.removeTagKey(TAG_CORNER_B);
-            stack.removeTagKey(TAG_NEXT_IS_B);
+            stack.remove(ModDataComponents.SCAN.get());
             player.displayClientMessage(Component.translatable("message.mc3dprint.corners_cleared"), true);
             return InteractionResultHolder.consume(stack);
         }
@@ -92,8 +90,9 @@ public class ScannerItem extends Item {
     }
 
     private InteractionResultHolder<ItemStack> scan(Level level, Player player, ItemStack stack) {
-        Optional<BlockPos> cornerA = readCorner(stack, TAG_CORNER_A);
-        Optional<BlockPos> cornerB = readCorner(stack, TAG_CORNER_B);
+        ScanData data = scanData(stack);
+        Optional<BlockPos> cornerA = data.cornerA();
+        Optional<BlockPos> cornerB = data.cornerB();
         if (cornerA.isEmpty() || cornerB.isEmpty()) {
             player.displayClientMessage(Component.translatable("message.mc3dprint.scan_no_corners"), true);
             return InteractionResultHolder.fail(stack);
@@ -164,20 +163,17 @@ public class ScannerItem extends Item {
         return InteractionResultHolder.consume(stack);
     }
 
-    private static Optional<BlockPos> readCorner(ItemStack stack, String key) {
-        CompoundTag tag = stack.getTag();
-        if (tag == null || !tag.contains(key, CompoundTag.TAG_COMPOUND)) {
-            return Optional.empty();
-        }
-        return Optional.of(NbtUtils.readBlockPos(tag.getCompound(key)));
+    private static ScanData scanData(ItemStack stack) {
+        return stack.getOrDefault(ModDataComponents.SCAN.get(), ScanData.EMPTY);
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
-        readCorner(stack, TAG_CORNER_A).ifPresent(pos -> tooltip.add(Component
+    public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
+        ScanData data = scanData(stack);
+        data.cornerA().ifPresent(pos -> tooltip.add(Component
                 .translatable("tooltip.mc3dprint.corner_a", pos.getX(), pos.getY(), pos.getZ())
                 .withStyle(ChatFormatting.AQUA)));
-        readCorner(stack, TAG_CORNER_B).ifPresent(pos -> tooltip.add(Component
+        data.cornerB().ifPresent(pos -> tooltip.add(Component
                 .translatable("tooltip.mc3dprint.corner_b", pos.getX(), pos.getY(), pos.getZ())
                 .withStyle(ChatFormatting.AQUA)));
         tooltip.add(Component.translatable("tooltip.mc3dprint.scanner_help").withStyle(ChatFormatting.GRAY));

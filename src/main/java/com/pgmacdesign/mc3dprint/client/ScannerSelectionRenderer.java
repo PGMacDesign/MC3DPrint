@@ -3,14 +3,14 @@ package com.pgmacdesign.mc3dprint.client;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.pgmacdesign.mc3dprint.MC3DPrint;
+import com.pgmacdesign.mc3dprint.registry.ModDataComponents;
+import com.pgmacdesign.mc3dprint.scanner.ScanData;
 import com.pgmacdesign.mc3dprint.scanner.ScannerItem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.core.BlockPos;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.NbtUtils;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.AABB;
@@ -19,8 +19,6 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.Mod;
-
-import javax.annotation.Nullable;
 
 /**
  * WorldEdit-CUI-style selection preview for the Structure Scanner: while the
@@ -42,12 +40,15 @@ public final class ScannerSelectionRenderer {
             return;
         }
         ItemStack scanner = heldScanner(player);
-        if (scanner.isEmpty() || scanner.getTag() == null) {
+        if (scanner.isEmpty()) {
             return;
         }
-        CompoundTag tag = scanner.getTag();
-        BlockPos cornerA = readCorner(tag, ScannerItem.TAG_CORNER_A);
-        BlockPos cornerB = readCorner(tag, ScannerItem.TAG_CORNER_B);
+        ScanData data = scanner.get(ModDataComponents.SCAN.get());
+        if (data == null) {
+            return;
+        }
+        BlockPos cornerA = data.cornerA().orElse(null);
+        BlockPos cornerB = data.cornerB().orElse(null);
         if (cornerA == null && cornerB == null) {
             return;
         }
@@ -96,13 +97,5 @@ public final class ScannerSelectionRenderer {
             return player.getOffhandItem();
         }
         return ItemStack.EMPTY;
-    }
-
-    @Nullable
-    private static BlockPos readCorner(CompoundTag tag, String key) {
-        if (!tag.contains(key, CompoundTag.TAG_COMPOUND)) {
-            return null;
-        }
-        return NbtUtils.readBlockPos(tag.getCompound(key));
     }
 }

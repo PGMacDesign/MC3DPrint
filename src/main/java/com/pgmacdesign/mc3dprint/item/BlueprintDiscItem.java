@@ -7,6 +7,7 @@ import com.pgmacdesign.mc3dprint.fu.FuConversion;
 import com.pgmacdesign.mc3dprint.fu.FuValue;
 import com.pgmacdesign.mc3dprint.fu.FuValueRegistry;
 import com.pgmacdesign.mc3dprint.machine.resin.ResinEffects;
+import com.pgmacdesign.mc3dprint.registry.ModDataComponents;
 import net.minecraft.ChatFormatting;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
@@ -24,7 +25,6 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 
-import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -72,79 +72,82 @@ public class BlueprintDiscItem extends Item {
 
     // --- NBT accessors ---
 
+    private static Optional<BlueprintData> data(ItemStack stack) {
+        return Optional.ofNullable(stack.get(ModDataComponents.BLUEPRINT.get()));
+    }
+
     public static Optional<UUID> getBlueprintId(ItemStack stack) {
-        CompoundTag tag = stack.getTag();
-        if (tag == null || !tag.hasUUID(TAG_BLUEPRINT_ID)) {
-            return Optional.empty();
-        }
-        return Optional.of(tag.getUUID(TAG_BLUEPRINT_ID));
+        return data(stack).map(BlueprintData::id);
     }
 
     public static boolean hasBlueprint(ItemStack stack) {
-        return getBlueprintId(stack).isPresent();
+        return stack.has(ModDataComponents.BLUEPRINT.get());
     }
 
     public static boolean isLocked(ItemStack stack) {
-        CompoundTag tag = stack.getTag();
-        return tag != null && tag.getBoolean(TAG_LOCKED);
+        return stack.getOrDefault(ModDataComponents.LOCKED.get(), Boolean.FALSE);
     }
 
     /** Writes the reference + cached metadata. Refuses if the disc is locked. */
     public static boolean writeBlueprint(ItemStack stack, UUID id, Blueprint blueprint) {
-        if (isLocked(stack)) {
-            return false;
-        }
-        CompoundTag tag = stack.getOrCreateTag();
-        tag.putUUID(TAG_BLUEPRINT_ID, id);
-        tag.putString(TAG_NAME, blueprint.name());
-        tag.putIntArray(TAG_SIZE, new int[]{blueprint.sizeX(), blueprint.sizeY(), blueprint.sizeZ()});
-        tag.putInt(TAG_BLOCK_COUNT, blueprint.blockCount());
-        tag.putInt(TAG_TIER, blueprintTier(blueprint));
-        tag.putInt(TAG_PRINT_COST, blueprintPrintCost(blueprint));
-        tag.putInt(TAG_RESIN_TARGETS, resinTargetMask(blueprint));
-        return true;
+        return writeBlueprint(stack, id, blueprint, false);
     }
 
     /**
      * As {@link #writeBlueprint(ItemStack, UUID, Blueprint)}, but also records whether
      * a player authored this disc. Scanner/import pass {@code true}; curated + loot
-     * paths use the 3-arg form (official, flag absent).
+     * paths use the 3-arg form (official, {@code playerCreated == false}).
      */
     public static boolean writeBlueprint(ItemStack stack, UUID id, Blueprint blueprint, boolean playerCreated) {
-        if (!writeBlueprint(stack, id, blueprint)) {
+        if (isLocked(stack)) {
             return false;
         }
-        stack.getOrCreateTag().putBoolean(TAG_PLAYER_CREATED, playerCreated);
+        stack.set(ModDataComponents.BLUEPRINT.get(), new BlueprintData(
+                id, blueprint.name(),
+                blueprint.sizeX(), blueprint.sizeY(), blueprint.sizeZ(),
+                blueprint.blockCount(), blueprintTier(blueprint), blueprintPrintCost(blueprint),
+                resinTargetMask(blueprint), playerCreated));
         return true;
     }
 
     /**
      * Whether this disc is an OFFICIAL/found blueprint (curated or loot) rather than
      * one a player scanned/imported. Resin only applies to official blueprints. An
-     * absent flag reads as official (so all pre-existing discs stay official).
+     * absent component reads as official (so all blank/pre-existing discs stay official).
      */
     public static boolean isOfficial(ItemStack stack) {
-        CompoundTag tag = stack.getTag();
-        return tag == null || !tag.getBoolean(TAG_PLAYER_CREATED);
+        return data(stack).map(d -> !d.playerCreated()).orElse(true);
     }
 
     /** The stored print cost (top-tier FU units), or 0 if absent. */
     public static int getPrintCost(ItemStack stack) {
-        CompoundTag tag = stack.getTag();
-        return tag == null ? 0 : tag.getInt(TAG_PRINT_COST);
+        return data(stack).map(BlueprintData::printCost).orElse(0);
     }
 
     /** The stored blueprint tier (the FU tier of the print cost), or 0 if absent. */
     public static int getTier(ItemStack stack) {
-        CompoundTag tag = stack.getTag();
-        return tag == null ? 0 : tag.getInt(TAG_TIER);
+        return data(stack).map(BlueprintData::tier).orElse(0);
     }
 
-    /** The stored resin-target bitmask, or -1 ("unknown") for a disc written before this
-     *  metadata existed — unknown is treated as "could benefit", so we never warn falsely. */
+    /** The cached display name, or "" if the disc is blank. */
+    public static String getBlueprintName(ItemStack stack) {
+        return data(stack).map(BlueprintData::name).orElse("");
+    }
+
+    /** The cached {sizeX, sizeY, sizeZ}, or an empty array if the disc is blank. */
+    public static int[] getSize(ItemStack stack) {
+        return data(stack).map(d -> new int[]{d.sizeX(), d.sizeY(), d.sizeZ()}).orElse(new int[0]);
+    }
+
+    /** The cached block count, or 0 if the disc is blank. */
+    public static int getBlockCount(ItemStack stack) {
+        return data(stack).map(BlueprintData::blockCount).orElse(0);
+    }
+
+    /** The stored resin-target bitmask, or -1 ("unknown") for a disc without this
+     *  metadata — unknown is treated as "could benefit", so we never warn falsely. */
     public static int getResinTargets(ItemStack stack) {
-        CompoundTag tag = stack.getTag();
-        return tag != null && tag.contains(TAG_RESIN_TARGETS) ? tag.getInt(TAG_RESIN_TARGETS) : -1;
+        return data(stack).map(BlueprintData::resinTargetMask).orElse(-1);
     }
 
     /**
@@ -374,7 +377,7 @@ public class BlueprintDiscItem extends Item {
         if (isLocked(stack)) {
             return false;
         }
-        stack.setTag(null);
+        stack.remove(ModDataComponents.BLUEPRINT.get());
         return true;
     }
 
@@ -388,7 +391,12 @@ public class BlueprintDiscItem extends Item {
         }
         if (!level.isClientSide) {
             boolean nowLocked = !isLocked(stack);
-            stack.getOrCreateTag().putBoolean(TAG_LOCKED, nowLocked);
+            if (nowLocked) {
+                stack.set(ModDataComponents.LOCKED.get(), Boolean.TRUE);
+            } else {
+                // Remove rather than store false so an unlocked disc is value-equal to a never-locked one.
+                stack.remove(ModDataComponents.LOCKED.get());
+            }
             player.displayClientMessage(Component.translatable(
                     nowLocked ? "message.mc3dprint.disc_locked" : "message.mc3dprint.disc_unlocked"), true);
             level.playSound(null, player.blockPosition(),
@@ -404,27 +412,24 @@ public class BlueprintDiscItem extends Item {
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
-        CompoundTag tag = stack.getTag();
-        if (tag == null || !tag.hasUUID(TAG_BLUEPRINT_ID)) {
+    public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
+        BlueprintData blueprint = stack.get(ModDataComponents.BLUEPRINT.get());
+        if (blueprint == null) {
             tooltip.add(Component.translatable("tooltip.mc3dprint.disc_empty").withStyle(ChatFormatting.GRAY));
             return;
         }
-        String name = tag.getString(TAG_NAME);
+        String name = blueprint.name();
         tooltip.add(Component.literal(name.isEmpty() ? "?" : name).withStyle(ChatFormatting.AQUA));
-        int[] size = tag.getIntArray(TAG_SIZE);
-        if (size.length == 3) {
-            tooltip.add(Component.translatable("tooltip.mc3dprint.disc_size", size[0], size[1], size[2], tag.getInt(TAG_BLOCK_COUNT))
-                    .withStyle(ChatFormatting.GRAY));
-        }
-        int tier = tag.getInt(TAG_TIER);
+        tooltip.add(Component.translatable("tooltip.mc3dprint.disc_size",
+                        blueprint.sizeX(), blueprint.sizeY(), blueprint.sizeZ(), blueprint.blockCount())
+                .withStyle(ChatFormatting.GRAY));
+        int tier = blueprint.tier();
         if (tier > 0) {
             tooltip.add(Component.translatable("tooltip.mc3dprint.disc_tier", tier).withStyle(tierFormat(tier)));
-            int printCost = tag.getInt(TAG_PRINT_COST);
-            tooltip.add(Component.translatable("tooltip.mc3dprint.disc_print_cost", printCost, tier)
+            tooltip.add(Component.translatable("tooltip.mc3dprint.disc_print_cost", blueprint.printCost(), tier)
                     .withStyle(ChatFormatting.LIGHT_PURPLE));
         }
-        if (tag.getBoolean(TAG_LOCKED)) {
+        if (isLocked(stack)) {
             tooltip.add(Component.translatable("tooltip.mc3dprint.disc_locked").withStyle(ChatFormatting.GOLD));
         }
     }

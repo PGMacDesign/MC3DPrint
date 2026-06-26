@@ -12,7 +12,6 @@ import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 
-import javax.annotation.Nullable;
 import java.util.List;
 
 /**
@@ -76,7 +75,7 @@ public class UpgradeItem extends Item {
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
+    public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
         int maxPerType = com.pgmacdesign.mc3dprint.config.MC3DPrintConfig.UPGRADE_MAX_PER_TYPE.get();
         net.minecraft.network.chat.MutableComponent effect = switch (type) {
             case SPEED -> Component.translatable("tooltip.mc3dprint.upgrade.speed",
