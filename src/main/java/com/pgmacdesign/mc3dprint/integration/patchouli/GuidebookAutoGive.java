@@ -9,8 +9,8 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.fml.ModList;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.fml.ModList;
 import net.minecraftforge.registries.ForgeRegistries;
 
 import java.util.Objects;

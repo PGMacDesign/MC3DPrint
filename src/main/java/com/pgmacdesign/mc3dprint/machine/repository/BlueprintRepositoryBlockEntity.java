@@ -40,8 +40,8 @@ public class BlueprintRepositoryBlockEntity extends BlockEntity implements MenuP
     public static final int SLOT_OUT = 1;  // freshly burned written disc
     public static final int SLOT_COUNT = 2;
 
-    private final net.minecraftforge.items.ItemStackHandler inventory =
-            new net.minecraftforge.items.ItemStackHandler(SLOT_COUNT) {
+    private final net.neoforged.neoforge.items.ItemStackHandler inventory =
+            new net.neoforged.neoforge.items.ItemStackHandler(SLOT_COUNT) {
                 @Override
                 protected void onContentsChanged(int slot) {
                     setChanged();
@@ -61,7 +61,7 @@ public class BlueprintRepositoryBlockEntity extends BlockEntity implements MenuP
         super(ModBlockEntities.BLUEPRINT_REPOSITORY.get(), pos, state);
     }
 
-    public net.minecraftforge.items.ItemStackHandler inventory() {
+    public net.neoforged.neoforge.items.ItemStackHandler inventory() {
         return inventory;
     }
 

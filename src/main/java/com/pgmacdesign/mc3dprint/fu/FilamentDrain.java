@@ -1,7 +1,7 @@
 package com.pgmacdesign.mc3dprint.fu;
 
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.items.IItemHandlerModifiable;
+import net.neoforged.neoforge.items.IItemHandlerModifiable;
 
 /**
  * Shared spool-draining primitive used by both the printer's internal spools

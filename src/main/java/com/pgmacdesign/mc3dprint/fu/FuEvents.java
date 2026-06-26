@@ -4,9 +4,9 @@ import com.mojang.logging.LogUtils;
 import com.pgmacdesign.mc3dprint.api.FuRegistration;
 import com.pgmacdesign.mc3dprint.api.MC3DPrintAPI;
 import net.minecraft.server.MinecraftServer;
-import net.minecraftforge.event.OnDatapackSyncEvent;
-import net.minecraftforge.event.server.ServerStartedEvent;
-import net.minecraftforge.fml.event.lifecycle.InterModProcessEvent;
+import net.neoforged.neoforge.event.OnDatapackSyncEvent;
+import net.neoforged.neoforge.event.server.ServerStartedEvent;
+import net.neoforged.fml.event.lifecycle.InterModProcessEvent;
 import org.slf4j.Logger;
 
 /**

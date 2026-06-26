@@ -1,6 +1,6 @@
 package com.pgmacdesign.mc3dprint.machine;
 
-import net.minecraftforge.energy.EnergyStorage;
+import net.neoforged.neoforge.energy.EnergyStorage;
 
 /**
  * RF buffer for machines: receive-only from the outside (cables push in,

@@ -3,9 +3,9 @@ package com.pgmacdesign.mc3dprint.item;
 import com.pgmacdesign.mc3dprint.MC3DPrint;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.event.AnvilUpdateEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.neoforge.event.AnvilUpdateEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.Mod;
 
 /**
  * Lets players rename a written Blueprint Disc on an anvil for a flat 1 XP level

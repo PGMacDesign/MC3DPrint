@@ -2,8 +2,8 @@ package com.pgmacdesign.mc3dprint.integration.immersiveengineering;
 
 import com.pgmacdesign.mc3dprint.fu.FuValueRegistry;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraftforge.fml.ModList;
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.neoforged.fml.ModList;
+import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 
 /**
  * Immersive Engineering ({@code immersiveengineering}) FU values. Registered ONLY when IE is

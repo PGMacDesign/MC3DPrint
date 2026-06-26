@@ -2,8 +2,8 @@ package com.pgmacdesign.mc3dprint.integration.ae2;
 
 import com.pgmacdesign.mc3dprint.fu.FuValueRegistry;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraftforge.fml.ModList;
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.neoforged.fml.ModList;
+import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 
 /**
  * Applied Energistics 2 FU values. Registered ONLY when AE2 is loaded; entries are

@@ -4,7 +4,7 @@ import com.mojang.serialization.Codec;
 import com.pgmacdesign.mc3dprint.MC3DPrint;
 import com.pgmacdesign.mc3dprint.loot.AddBlueprintDiscModifier;
 import com.pgmacdesign.mc3dprint.loot.AddCatalystModifier;
-import net.minecraftforge.common.loot.IGlobalLootModifier;
+import net.neoforged.neoforge.common.loot.IGlobalLootModifier;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;

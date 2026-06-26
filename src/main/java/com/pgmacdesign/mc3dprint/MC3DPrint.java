@@ -7,10 +7,10 @@ import com.pgmacdesign.mc3dprint.registry.ModBlocks;
 import com.pgmacdesign.mc3dprint.registry.ModCreativeTabs;
 import com.pgmacdesign.mc3dprint.registry.ModItems;
 import com.pgmacdesign.mc3dprint.registry.ModMenuTypes;
-import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.config.ModConfig;
-import net.minecraftforge.fml.event.config.ModConfigEvent;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.config.ModConfig;
+import net.neoforged.fml.event.config.ModConfigEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 
 @Mod(MC3DPrint.MOD_ID)
@@ -53,21 +53,21 @@ public class MC3DPrint {
         modEventBus.addListener(com.pgmacdesign.mc3dprint.integration.create.CreateCompat::onCommonSetup);
         modEventBus.addListener(com.pgmacdesign.mc3dprint.integration.immersiveengineering.ImmersiveEngineeringCompat::onCommonSetup);
         modEventBus.addListener(com.pgmacdesign.mc3dprint.integration.enderio.EnderIOCompat::onCommonSetup);
-        net.minecraftforge.common.MinecraftForge.EVENT_BUS.addListener(
+        net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(
                 com.pgmacdesign.mc3dprint.fu.FuEvents::onServerStarted);
-        net.minecraftforge.common.MinecraftForge.EVENT_BUS.addListener(
+        net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(
                 com.pgmacdesign.mc3dprint.fu.FuEvents::onDatapackSync);
 
-        net.minecraftforge.common.MinecraftForge.EVENT_BUS.addListener(
+        net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(
                 com.pgmacdesign.mc3dprint.command.ImportCommand::register);
-        net.minecraftforge.common.MinecraftForge.EVENT_BUS.addListener(
+        net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(
                 com.pgmacdesign.mc3dprint.blueprint.CuratedBlueprints::onServerStarted);
-        net.minecraftforge.common.MinecraftForge.EVENT_BUS.addListener(
+        net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(
                 com.pgmacdesign.mc3dprint.integration.patchouli.GuidebookAutoGive::onItemCrafted);
         // Breaking a premium multiblock corner (T5 diamond, T8 awakened draconium) must
         // unform the machine like breaking a casing does; those are foreign blocks with
         // no onRemove hook of ours, so catch their break here.
-        net.minecraftforge.common.MinecraftForge.EVENT_BUS.addListener(
+        net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(
                 com.pgmacdesign.mc3dprint.machine.multiblock.ControllerBlock::onBlockBreak);
     }
 }
