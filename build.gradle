@@ -141,4 +141,12 @@ publishing {
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8' // Use the UTF-8 charset for Java compilation
+    options.compilerArgs += ['-Xmaxerrs', '2000', '-Xmaxwarns', '2000']
+}
+
+// TEMPORARY (NeoForge port): the 21 gametest holders depend on every seam and are
+// ported last (PGM-23). Exclude them so the core can reach a green compile first.
+// REMOVE this block when PGM-23 lands.
+tasks.named('compileJava', JavaCompile) {
+    exclude '**/gametest/**'
 }

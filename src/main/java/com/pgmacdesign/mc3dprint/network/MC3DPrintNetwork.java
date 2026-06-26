@@ -1,33 +1,37 @@
 package com.pgmacdesign.mc3dprint.network;
 
-import com.pgmacdesign.mc3dprint.MC3DPrint;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.network.NetworkRegistry;
-import net.minecraftforge.network.PacketDistributor;
-import net.minecraftforge.network.simple.SimpleChannel;
+import net.neoforged.neoforge.network.PacketDistributor;
+import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 /**
- * The mod's single SimpleChannel. Currently carries one S2C message: the
+ * The mod's single payload channel. Currently carries one S2C message: the
  * Blueprint Repository listing (which can't ride a {@code ContainerData} since
  * it's variable-length text, and is per-player in personal mode).
  */
 public final class MC3DPrintNetwork {
     private static final String PROTOCOL = "1";
-    public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
-            ResourceLocation.fromNamespaceAndPath(MC3DPrint.MOD_ID, "main"),
-            () -> PROTOCOL, PROTOCOL::equals, PROTOCOL::equals);
 
     private MC3DPrintNetwork() {}
 
-    public static void register() {
-        int id = 0;
-        CHANNEL.registerMessage(id++, RepositoryListingPacket.class,
-                RepositoryListingPacket::encode, RepositoryListingPacket::decode,
-                RepositoryListingPacket::handle);
+    /** Mod-bus listener (wired in the {@code @Mod} constructor). */
+    public static void register(RegisterPayloadHandlersEvent event) {
+        event.registrar(PROTOCOL).playToClient(
+                RepositoryListingPacket.TYPE,
+                RepositoryListingPacket.STREAM_CODEC,
+                MC3DPrintNetwork::handleListing);
     }
 
-    public static void sendTo(ServerPlayer player, Object packet) {
-        CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), packet);
+    // Runs client-side only (playToClient), so ClientRepositoryHandler is loaded
+    // lazily on the client and never reaches a dedicated server's classpath.
+    private static void handleListing(RepositoryListingPacket payload, IPayloadContext context) {
+        context.enqueueWork(() -> com.pgmacdesign.mc3dprint.client.ClientRepositoryHandler.apply(
+                payload.entries(), payload.printed()));
+    }
+
+    public static void sendTo(ServerPlayer player, CustomPacketPayload packet) {
+        PacketDistributor.sendToPlayer(player, packet);
     }
 }

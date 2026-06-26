@@ -31,7 +31,7 @@ public class MC3DPrint {
 
         modContainer.registerConfig(ModConfig.Type.COMMON, MC3DPrintConfig.SPEC);
 
-        com.pgmacdesign.mc3dprint.network.MC3DPrintNetwork.register();
+        modEventBus.addListener(com.pgmacdesign.mc3dprint.network.MC3DPrintNetwork::register);
 
         modEventBus.addListener((ModConfigEvent.Reloading event) -> {
             if (event.getConfig().getSpec() == MC3DPrintConfig.SPEC) {
