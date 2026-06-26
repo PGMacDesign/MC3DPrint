@@ -1,6 +1,6 @@
 package com.pgmacdesign.mc3dprint.machine;
 
-import com.pgmacdesign.mc3dprint.compat.NbtCompat;
+import com.pgmacdesign.mc3dprint.compat.BeData;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
@@ -123,26 +123,46 @@ public class RedstoneClockBlockEntity extends BlockEntity implements MenuProvide
         return new RedstoneClockMenu(windowId, playerInventory, this);
     }
 
+    //? if >=1.21.5 {
+    /*@Override
+    protected void saveAdditional(net.minecraft.world.level.storage.ValueOutput out) {
+        super.saveAdditional(out);
+        writeData(BeData.writer(out));
+    }
+
+    @Override
+    protected void loadAdditional(net.minecraft.world.level.storage.ValueInput in) {
+        super.loadAdditional(in);
+        readData(BeData.reader(in));
+    }
+    *///?} else {
     @Override
     protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries);
-        tag.putInt("IntervalSeconds", intervalSeconds);
-        tag.putInt("Ticks", ticksRemaining);
-        tag.putInt("PulseLeft", pulseTicksLeft);
-        tag.putBoolean("Pulsing", pulsing);
+        writeData(BeData.writer(tag, registries));
     }
 
     @Override
     protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
-        if (tag.contains("IntervalSeconds")) {
-            intervalSeconds = clampSeconds(NbtCompat.getInt(tag, "IntervalSeconds"));
-        }
+        readData(BeData.reader(tag, registries));
+    }
+    //?}
+
+    private void writeData(BeData.Writer w) {
+        w.putInt("IntervalSeconds", intervalSeconds);
+        w.putInt("Ticks", ticksRemaining);
+        w.putInt("PulseLeft", pulseTicksLeft);
+        w.putBoolean("Pulsing", pulsing);
+    }
+
+    private void readData(BeData.Reader r) {
+        intervalSeconds = clampSeconds(r.getIntOr("IntervalSeconds", intervalSeconds));
         // A blueprint-baked tag carries only IntervalSeconds → start a fresh cycle.
-        ticksRemaining = tag.contains("Ticks")
-                ? Math.max(0, NbtCompat.getInt(tag, "Ticks"))
-                : intervalSeconds * TICKS_PER_SECOND;
-        pulseTicksLeft = Math.max(0, NbtCompat.getInt(tag, "PulseLeft"));
-        pulsing = NbtCompat.getBoolean(tag, "Pulsing");
+        ticksRemaining = r.getInt("Ticks")
+                .map(t -> Math.max(0, t))
+                .orElse(intervalSeconds * TICKS_PER_SECOND);
+        pulseTicksLeft = Math.max(0, r.getIntOr("PulseLeft", 0));
+        pulsing = r.getBooleanOr("Pulsing", false);
     }
 }
