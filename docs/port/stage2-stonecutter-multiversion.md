@@ -246,12 +246,16 @@ Gates: **[AGENT]** headless / **[HUMAN]** in-world.
 >    runtime (`"Optional[minecraft:chest]"`). Routed through `NbtCompat`. **Lesson: `compileTestJava` green ≠ tests
 >    pass; run `:NODE:test`.** Added `TooltipCompatTest`. Both nodes: compileJava + compileTestJava + test all green.
 >
-> **OPEN [PORT] — 1.21.8 gametest discovery:** only **1 / 94** holders run (94 on 1.21.1) despite
-> `enabledGameTestNamespaces=mc3dprint` being set on the `gameTestServer` run. Cause: the 1.21.5 GameTest framework
-> rewrite (data-driven `minecraft:test_instance` / `test_environment` registries) — the `@GameTestHolder` /
-> `@GameTest(template="empty5")` annotation bridge needs migration for 1.21.5+. Separate harness seam; the mod itself
-> is verified loading. **This is the next investigation before the [HUMAN] soak.**
-> **NEXT:** migrate the gametest harness for 1.21.5+ discovery → per-node gametest parity, then `chiseledBuild` + [HUMAN] soak.
+> **OPEN [PORT] — gametests deferred on forward nodes (the next real task):** the 1.21.8 `runGameTestServer` runs
+> only 1 test (a vanilla default) because the 21 holders are **deliberately excluded** from the forward-node compile —
+> `build.gradle:158`: `if (stonecutter.current.project != '1.21.1') { compileJava exclude '**/gametest/**' }` (the
+> `TEMP (Phase 2.2)` exclusion). Root cause: **NeoForge 21.8 removed `@GameTestHolder` + `@PrefixGameTestTemplate`**
+> (`net.neoforged.neoforge.gametest` now only has `GameTestHooks`/`BlockPosValueConverter`); the 1.21.5 rewrite made
+> GameTest **data-driven** — new vanilla `GameTestInstance` / `TestData` / `TestEnvironmentDefinition`. Migration:
+> re-express the holders' `@GameTestHolder` / `@GameTest(template="empty5")` against the data-driven API (a
+> `test_instance` entry + a code-registered test function, guarded `//? if >=1.21.5`), then **drop the build.gradle
+> exclusion**. Substantial but mostly mechanical; its own focused effort. The mod itself is verified loading on 1.21.8.
+> **NEXT:** gametest data-driven migration → drop the exclusion → per-node gametest parity, then `chiseledBuild` + [HUMAN] soak.
 >
 > **Established conventions for the remaining fan-out:**
 > - Files edited while **active node = `1.21.1`** → plain code is 1.21.1, the 1.21.5+ variant goes in
