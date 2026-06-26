@@ -1,8 +1,10 @@
 package com.pgmacdesign.mc3dprint.client;
 
-import com.mojang.blaze3d.vertex.PoseStack;
+//? if <1.21.5 {
 import com.mojang.math.Axis;
+//?}
 import com.pgmacdesign.mc3dprint.MC3DPrint;
+import com.pgmacdesign.mc3dprint.compat.RenderCompat;
 import com.pgmacdesign.mc3dprint.fu.SpoolItem;
 import com.pgmacdesign.mc3dprint.machine.WinderBlockEntity;
 import com.pgmacdesign.mc3dprint.machine.WinderMenu;
@@ -80,12 +82,12 @@ public class WinderScreen extends AbstractContainerScreen<WinderMenu> {
         renderTooltip(graphics, mouseX, mouseY);
 
         if (isHovering(ENERGY_X, ENERGY_Y, ENERGY_W, ENERGY_H, mouseX, mouseY)) {
-            graphics.renderTooltip(font,
+            RenderCompat.tooltip(graphics, font,
                     Component.translatable("tooltip.mc3dprint.energy", menu.energy(), menu.maxEnergy()),
                     mouseX, mouseY);
         }
         if (isHovering(FU_X, FU_Y, FU_W, FU_H, mouseX, mouseY)) {
-            graphics.renderTooltip(font,
+            RenderCompat.tooltip(graphics, font,
                     Component.translatable("tooltip.mc3dprint.fu", menu.spoolFu(), menu.spoolCapacity()),
                     mouseX, mouseY);
         }
@@ -95,7 +97,7 @@ public class WinderScreen extends AbstractContainerScreen<WinderMenu> {
     protected void renderBg(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
         int left = leftPos;
         int top = topPos;
-        graphics.blit(TEXTURE, left, top, 0, 0, imageWidth, imageHeight);
+        RenderCompat.blit(graphics, TEXTURE, left, top, 0, 0, imageWidth, imageHeight);
 
         int energyPixels = (int) ((long) menu.energy() * ENERGY_H / menu.maxEnergy());
         if (energyPixels > 0) {
@@ -117,16 +119,22 @@ public class WinderScreen extends AbstractContainerScreen<WinderMenu> {
     private void drawReel(GuiGraphics graphics, int left, int top, float partialTick) {
         boolean winding = isWinding();
         float angle = reelAngle + (winding ? partialTick * REEL_STEP : 0f);
-        PoseStack pose = graphics.pose();
+        int tint = winding ? 0xFFFFFFFF : 0xFF8C8C8C; // idle reel dimmed (~0.55 grey)
+        //? if >=1.21.5 {
+        /*var pose = graphics.pose();
+        pose.pushMatrix();
+        pose.translate((float) (left + REEL_CX), (float) (top + REEL_CY));
+        pose.rotate((float) Math.toRadians(angle));
+        RenderCompat.blitColored(graphics, TEXTURE, -REEL_SIZE / 2, -REEL_SIZE / 2, REEL_U, REEL_V, REEL_SIZE, REEL_SIZE, tint);
+        pose.popMatrix();
+        *///?} else {
+        var pose = graphics.pose();
         pose.pushPose();
         pose.translate(left + REEL_CX, top + REEL_CY, 0);
         pose.mulPose(Axis.ZP.rotationDegrees(angle));
-        if (!winding) {
-            graphics.setColor(0.55f, 0.55f, 0.55f, 1f);
-        }
-        graphics.blit(TEXTURE, -REEL_SIZE / 2, -REEL_SIZE / 2, REEL_U, REEL_V, REEL_SIZE, REEL_SIZE);
-        graphics.setColor(1f, 1f, 1f, 1f);
+        RenderCompat.blitColored(graphics, TEXTURE, -REEL_SIZE / 2, -REEL_SIZE / 2, REEL_U, REEL_V, REEL_SIZE, REEL_SIZE, tint);
         pose.popPose();
+        //?}
     }
 
     @Override
@@ -229,12 +237,21 @@ public class WinderScreen extends AbstractContainerScreen<WinderMenu> {
     }
 
     private void drawScaled(GuiGraphics graphics, String text, int x, int y, float scale, int color) {
-        PoseStack pose = graphics.pose();
+        //? if >=1.21.5 {
+        /*var pose = graphics.pose();
+        pose.pushMatrix();
+        pose.translate((float) x, (float) y);
+        pose.scale(scale, scale);
+        graphics.drawString(font, text, 0, 0, color, false);
+        pose.popMatrix();
+        *///?} else {
+        var pose = graphics.pose();
         pose.pushPose();
         pose.translate(x, y, 0);
         pose.scale(scale, scale, 1f);
         graphics.drawString(font, text, 0, 0, color, false);
         pose.popPose();
+        //?}
     }
 
     /** Compact FU formatter: 850, 12k, 1.2k, 3.4M. */
