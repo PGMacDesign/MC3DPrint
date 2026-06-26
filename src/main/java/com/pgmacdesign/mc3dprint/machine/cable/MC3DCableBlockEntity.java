@@ -1,6 +1,6 @@
 package com.pgmacdesign.mc3dprint.machine.cable;
 
-import com.pgmacdesign.mc3dprint.compat.NbtCompat;
+import com.pgmacdesign.mc3dprint.compat.BeData;
 
 import com.pgmacdesign.mc3dprint.config.MC3DPrintConfig;
 import com.pgmacdesign.mc3dprint.fu.IFilamentSource;
@@ -244,16 +244,38 @@ public class MC3DCableBlockEntity extends BlockEntity implements IFilamentSource
         return this;
     }
 
+    //? if >=1.21.5 {
+    /*@Override
+    protected void saveAdditional(net.minecraft.world.level.storage.ValueOutput out) {
+        super.saveAdditional(out);
+        writeData(BeData.writer(out));
+    }
+
+    @Override
+    protected void loadAdditional(net.minecraft.world.level.storage.ValueInput in) {
+        super.loadAdditional(in);
+        readData(BeData.reader(in));
+    }
+    *///?} else {
     @Override
     protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries);
-        tag.putInt("Energy", energy.getEnergyStored());
+        writeData(BeData.writer(tag, registries));
     }
 
     @Override
     protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
-        energy.setEnergy(NbtCompat.getInt(tag, "Energy"));
+        readData(BeData.reader(tag, registries));
+    }
+    //?}
+
+    private void writeData(BeData.Writer w) {
+        w.putInt("Energy", energy.getEnergyStored());
+    }
+
+    private void readData(BeData.Reader r) {
+        energy.setEnergy(r.getIntOr("Energy", 0));
     }
 
     /** Cable buffer: one tick's worth, freely receivable and extractable. */

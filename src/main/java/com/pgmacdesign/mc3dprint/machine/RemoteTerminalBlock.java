@@ -1,6 +1,7 @@
 package com.pgmacdesign.mc3dprint.machine;
 
 import com.mojang.serialization.MapCodec;
+import com.pgmacdesign.mc3dprint.compat.BeData;
 import com.pgmacdesign.mc3dprint.registry.ModBlockEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
@@ -139,18 +140,40 @@ public class RemoteTerminalBlock extends BaseEntityBlock {
             return target;
         }
 
+        //? if >=1.21.5 {
+        /*@Override
+        protected void saveAdditional(net.minecraft.world.level.storage.ValueOutput out) {
+            super.saveAdditional(out);
+            writeData(BeData.writer(out));
+        }
+
+        @Override
+        protected void loadAdditional(net.minecraft.world.level.storage.ValueInput in) {
+            super.loadAdditional(in);
+            readData(BeData.reader(in));
+        }
+        *///?} else {
         @Override
         protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
             super.saveAdditional(tag, registries);
-            if (target != null) {
-                tag.put("Target", NbtUtils.writeBlockPos(target));
-            }
+            writeData(BeData.writer(tag, registries));
         }
 
         @Override
         protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
             super.loadAdditional(tag, registries);
-            target = NbtUtils.readBlockPos(tag, "Target").orElse(null);
+            readData(BeData.reader(tag, registries));
+        }
+        //?}
+
+        private void writeData(BeData.Writer w) {
+            if (target != null) {
+                w.putBlockPos("Target", target);
+            }
+        }
+
+        private void readData(BeData.Reader r) {
+            target = r.getBlockPos("Target").orElse(null);
         }
     }
 }

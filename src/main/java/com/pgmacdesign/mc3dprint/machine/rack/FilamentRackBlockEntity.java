@@ -1,5 +1,6 @@
 package com.pgmacdesign.mc3dprint.machine.rack;
 
+import com.pgmacdesign.mc3dprint.compat.BeData;
 import com.pgmacdesign.mc3dprint.compat.NbtCompat;
 
 import com.pgmacdesign.mc3dprint.fu.FilamentDrain;
@@ -118,18 +119,40 @@ public class FilamentRackBlockEntity extends BlockEntity implements IFilamentSou
 
     // --- Persistence + client sync (the renderer needs the live spool stacks) ---
 
+    //? if >=1.21.5 {
+    /*@Override
+    protected void saveAdditional(net.minecraft.world.level.storage.ValueOutput out) {
+        super.saveAdditional(out);
+        writeData(BeData.writer(out));
+    }
+
+    @Override
+    protected void loadAdditional(net.minecraft.world.level.storage.ValueInput in) {
+        super.loadAdditional(in);
+        readData(BeData.reader(in));
+    }
+    *///?} else {
     @Override
     protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries);
-        tag.put("Spools", spools.serializeNBT(registries));
+        writeData(BeData.writer(tag, registries));
     }
 
     @Override
     protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
-        if (tag.contains("Spools")) {
-            spools.deserializeNBT(registries, NbtCompat.getCompound(tag, "Spools"));
-        }
+        readData(BeData.reader(tag, registries));
+    }
+    //?}
+
+    private void writeData(BeData.Writer w) {
+        w.putHandler("Spools", spools);
+    }
+
+    private void readData(BeData.Reader r) {
+        // putHandler/readHandler round-trips an empty handler cleanly when "Spools" is
+        // absent, so the old contains-guard is no longer needed (matches Winder/Clock BEs).
+        r.readHandler("Spools", spools);
     }
 
     private void sync() {
@@ -141,16 +164,32 @@ public class FilamentRackBlockEntity extends BlockEntity implements IFilamentSou
     @Override
     public CompoundTag getUpdateTag(HolderLookup.Provider registries) {
         CompoundTag tag = new CompoundTag();
+        //? if >=1.21.5 {
+        /*net.minecraft.world.level.storage.TagValueOutput out =
+                net.minecraft.world.level.storage.TagValueOutput.createWithContext(
+                        net.minecraft.util.ProblemReporter.DISCARDING, registries);
+        spools.serialize(out);
+        tag.put("Spools", out.buildResult());
+        *///?} else {
         tag.put("Spools", spools.serializeNBT(registries));
+        //?}
         return tag;
     }
 
+    // 1.21.5 changed the client-receive hooks: handleUpdateTag(CompoundTag,Provider) ->
+    // handleUpdateTag(ValueInput) and onDataPacket lost its packet arg (handed a ValueInput
+    // directly). Both delegate to the version-agnostic readData.
+    //? if >=1.21.5 {
+    /*@Override
+    public void handleUpdateTag(net.minecraft.world.level.storage.ValueInput in) {
+        readData(BeData.reader(in));
+    }
+    *///?} else {
     @Override
     public void handleUpdateTag(CompoundTag tag, HolderLookup.Provider registries) {
-        if (tag.contains("Spools")) {
-            spools.deserializeNBT(registries, NbtCompat.getCompound(tag, "Spools"));
-        }
+        readData(BeData.reader(tag, registries));
     }
+    //?}
 
     @Nullable
     @Override
@@ -158,10 +197,17 @@ public class FilamentRackBlockEntity extends BlockEntity implements IFilamentSou
         return ClientboundBlockEntityDataPacket.create(this);
     }
 
+    //? if >=1.21.5 {
+    /*@Override
+    public void onDataPacket(Connection net, net.minecraft.world.level.storage.ValueInput input) {
+        handleUpdateTag(input);
+    }
+    *///?} else {
     @Override
     public void onDataPacket(Connection net, ClientboundBlockEntityDataPacket pkt, HolderLookup.Provider registries) {
         if (pkt.getTag() != null) {
             handleUpdateTag(pkt.getTag(), registries);
         }
     }
+    //?}
 }

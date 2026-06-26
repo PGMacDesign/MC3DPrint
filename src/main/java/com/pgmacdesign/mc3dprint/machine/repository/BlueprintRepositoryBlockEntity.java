@@ -1,6 +1,6 @@
 package com.pgmacdesign.mc3dprint.machine.repository;
 
-import com.pgmacdesign.mc3dprint.compat.NbtCompat;
+import com.pgmacdesign.mc3dprint.compat.BeData;
 
 import com.pgmacdesign.mc3dprint.blueprint.Blueprint;
 import com.pgmacdesign.mc3dprint.blueprint.BlueprintFileStore;
@@ -178,15 +178,37 @@ public class BlueprintRepositoryBlockEntity extends BlockEntity implements MenuP
         return new BlueprintRepositoryMenu(windowId, playerInventory, this);
     }
 
+    //? if >=1.21.5 {
+    /*@Override
+    protected void saveAdditional(net.minecraft.world.level.storage.ValueOutput out) {
+        super.saveAdditional(out);
+        writeData(BeData.writer(out));
+    }
+
+    @Override
+    protected void loadAdditional(net.minecraft.world.level.storage.ValueInput in) {
+        super.loadAdditional(in);
+        readData(BeData.reader(in));
+    }
+    *///?} else {
     @Override
     protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries);
-        tag.put("Inventory", inventory.serializeNBT(registries));
+        writeData(BeData.writer(tag, registries));
     }
 
     @Override
     protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
-        inventory.deserializeNBT(registries, NbtCompat.getCompound(tag, "Inventory"));
+        readData(BeData.reader(tag, registries));
+    }
+    //?}
+
+    private void writeData(BeData.Writer w) {
+        w.putHandler("Inventory", inventory);
+    }
+
+    private void readData(BeData.Reader r) {
+        r.readHandler("Inventory", inventory);
     }
 }

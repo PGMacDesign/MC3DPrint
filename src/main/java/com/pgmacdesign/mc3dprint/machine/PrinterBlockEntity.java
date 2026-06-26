@@ -1,5 +1,6 @@
 package com.pgmacdesign.mc3dprint.machine;
 
+import com.pgmacdesign.mc3dprint.compat.BeData;
 import com.pgmacdesign.mc3dprint.compat.NbtCompat;
 
 import com.mojang.logging.LogUtils;
@@ -1685,7 +1686,7 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             tag.put("ActiveJob", activeJob.save());
         }
         if (lastPlacedPos != null) {
-            tag.put("LastPlaced", net.minecraft.nbt.NbtUtils.writeBlockPos(lastPlacedPos));
+            NbtCompat.putBlockPos(tag, "LastPlaced", lastPlacedPos);
         }
         tag.putInt("State", state.ordinal());
 
@@ -1712,7 +1713,7 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
                     BlockPos origin = worldPosition.offset(
                             -(size.getX() / 2) + offsetX, 1 + offsetY, -(size.getZ() / 2) + offsetZ);
                     tag.put("Preview", com.pgmacdesign.mc3dprint.blueprint.BlueprintSerializer.write(previewBlueprint));
-                    tag.put("PreviewOrigin", net.minecraft.nbt.NbtUtils.writeBlockPos(origin));
+                    NbtCompat.putBlockPos(tag, "PreviewOrigin", origin);
                     tag.putInt("PreviewRotation", rotation.ordinal());
                 }
             }
@@ -1732,20 +1733,36 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             spoolList.add(entry);
         }
         tag.put("Spools", spoolList);
-        return tag;
+        // Nest under one key so the client side can recover the whole payload as a CompoundTag:
+        // 1.21.5's handleUpdateTag receives a ValueInput (no backing-tag accessor), so we read
+        // "D" back via CompoundTag.CODEC and reuse the version-agnostic applyUpdateData body.
+        CompoundTag root = new CompoundTag();
+        root.put("D", tag);
+        return root;
     }
 
+    //? if >=1.21.5 {
+    /*@Override
+    public void handleUpdateTag(net.minecraft.world.level.storage.ValueInput in) {
+        in.read("D", CompoundTag.CODEC).ifPresent(this::applyUpdateData);
+    }
+    *///?} else {
     @Override
-    public void handleUpdateTag(CompoundTag tag, HolderLookup.Provider registries) {
+    public void handleUpdateTag(CompoundTag root, HolderLookup.Provider registries) {
+        applyUpdateData(NbtCompat.getCompound(root, "D"));
+    }
+    //?}
+
+    private void applyUpdateData(CompoundTag tag) {
         activeJob = NbtCompat.contains(tag, "ActiveJob") ? PrintJob.load(NbtCompat.getCompound(tag, "ActiveJob")) : null;
-        lastPlacedPos = net.minecraft.nbt.NbtUtils.readBlockPos(tag, "LastPlaced").orElse(null);
+        lastPlacedPos = NbtCompat.getBlockPos(tag, "LastPlaced").orElse(null);
         state = State.byOrdinal(NbtCompat.getInt(tag, "State"));
 
         clientPreviewOn = NbtCompat.getBoolean(tag, "PreviewOn");
         clientPreview.clear();
         clientPreviewOrigin = null;
         clientPreviewSize = null;
-        Optional<BlockPos> previewOriginOpt = net.minecraft.nbt.NbtUtils.readBlockPos(tag, "PreviewOrigin");
+        Optional<BlockPos> previewOriginOpt = NbtCompat.getBlockPos(tag, "PreviewOrigin");
         if (NbtCompat.contains(tag, "Preview") && previewOriginOpt.isPresent()) {
             Blueprint blueprint = com.pgmacdesign.mc3dprint.blueprint.BlueprintSerializer
                     .read(NbtCompat.getCompound(tag, "Preview"));
@@ -1767,7 +1784,7 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         clientSpools.clear();
         ListTag spoolList = NbtCompat.getList(tag, "Spools", Tag.TAG_COMPOUND);
         for (int i = 0; i < spoolList.size(); i++) {
-            CompoundTag entry = spoolList.getCompound(i);
+            CompoundTag entry = NbtCompat.listGetCompound(spoolList, i);
             clientSpools.add(entry.contains("Tier")
                     ? new SpoolRenderInfo(NbtCompat.getInt(entry, "Tier"), NbtCompat.getFloat(entry, "Fill"), NbtCompat.getBoolean(entry, "Creative"))
                     : null);
@@ -1781,6 +1798,13 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
                 (be, registryAccess) -> ((PrinterBlockEntity) be).getUpdateTag(registryAccess));
     }
 
+    //? if >=1.21.5 {
+    /*@Override
+    public void onDataPacket(net.minecraft.network.Connection connection,
+                             net.minecraft.world.level.storage.ValueInput input) {
+        handleUpdateTag(input);
+    }
+    *///?} else {
     @Override
     public void onDataPacket(net.minecraft.network.Connection connection,
                              net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket packet,
@@ -1789,6 +1813,7 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             handleUpdateTag(packet.getTag(), registries);
         }
     }
+    //?}
 
     // TODO(PGM-17): NeoForge moved getRenderBoundingBox to BlockEntityRenderer<T>; the
     // PrinterRenderer (client/) must override getRenderBoundingBox(PrinterBlockEntity) to
@@ -2082,71 +2107,92 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
 
     // --- Persistence ---
 
+    //? if >=1.21.5 {
+    /*@Override
+    protected void saveAdditional(net.minecraft.world.level.storage.ValueOutput out) {
+        super.saveAdditional(out);
+        writeData(BeData.writer(out));
+    }
+
+    @Override
+    protected void loadAdditional(net.minecraft.world.level.storage.ValueInput in) {
+        super.loadAdditional(in);
+        readData(BeData.reader(in));
+    }
+    *///?} else {
     @Override
     protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries);
-        tag.put("Inventory", inventory.serializeNBT(registries));
-        tag.put("Spools", spools.serializeNBT(registries));
-        tag.put("Upgrades", upgrades.serializeNBT(registries));
-        tag.put("Resins", resins.serializeNBT(registries));
-        if (armedResinEffect != null) {
-            tag.putString("ArmedResin", armedResinEffect.id());
-            tag.putInt("ArmedResinTier", armedResinTier);
-        }
-        tag.putBoolean("ResinConsumed", resinConsumed);
-        tag.putInt("SaltedThisJob", saltedThisJob);
-        tag.putInt("TreasureThisJob", treasureThisJob);
-        tag.putInt("BankedXp", bankedXp);
-        tag.putInt("Energy", energy.getEnergyStored());
-        tag.putInt("Progress", itemProgress);
-        tag.putInt("State", state.ordinal());
-        if (activeJob != null) {
-            tag.put("ActiveJob", activeJob.save());
-        }
-        ListTag historyTag = new ListTag();
-        history.forEach(historyTag::add);
-        tag.put("History", historyTag);
-        tag.putBoolean("AutoStart", autoStart);
-        tag.putBoolean("LastRedstone", lastRedstoneSignal);
-        tag.putInt("OffsetX", offsetX);
-        tag.putInt("OffsetY", offsetY);
-        tag.putInt("OffsetZ", offsetZ);
-        tag.putInt("Rotation", rotation.ordinal());
-        if (owner != null) {
-            tag.putUUID("Owner", owner);
-        }
-        tag.putBoolean("PreviewEnabled", previewEnabled);
+        writeData(BeData.writer(tag, registries));
     }
 
     @Override
     protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
-        inventory.deserializeNBT(registries, NbtCompat.getCompound(tag, "Inventory"));
-        spools.deserializeNBT(registries, NbtCompat.getCompound(tag, "Spools"));
-        upgrades.deserializeNBT(registries, NbtCompat.getCompound(tag, "Upgrades"));
-        resins.deserializeNBT(registries, NbtCompat.getCompound(tag, "Resins"));
-        armedResinEffect = parseResinEffect(NbtCompat.getString(tag, "ArmedResin"));
-        armedResinTier = NbtCompat.getInt(tag, "ArmedResinTier");
-        resinConsumed = NbtCompat.getBoolean(tag, "ResinConsumed");
-        saltedThisJob = NbtCompat.getInt(tag, "SaltedThisJob");
-        treasureThisJob = NbtCompat.getInt(tag, "TreasureThisJob");
-        bankedXp = NbtCompat.getInt(tag, "BankedXp");
-        refreshEnergyCapacity();
-        energy.setStored(NbtCompat.getInt(tag, "Energy"));
-        itemProgress = NbtCompat.getInt(tag, "Progress");
-        state = State.byOrdinal(NbtCompat.getInt(tag, "State"));
-        activeJob = NbtCompat.contains(tag, "ActiveJob") ? PrintJob.load(NbtCompat.getCompound(tag, "ActiveJob")) : null;
-        history.clear();
-        for (Tag t : NbtCompat.getList(tag, "History", Tag.TAG_COMPOUND)) {
-            history.add((CompoundTag) t);
+        readData(BeData.reader(tag, registries));
+    }
+    //?}
+
+    private void writeData(BeData.Writer w) {
+        w.putHandler("Inventory", inventory);
+        w.putHandler("Spools", spools);
+        w.putHandler("Upgrades", upgrades);
+        w.putHandler("Resins", resins);
+        if (armedResinEffect != null) {
+            w.putString("ArmedResin", armedResinEffect.id());
+            w.putInt("ArmedResinTier", armedResinTier);
         }
-        autoStart = NbtCompat.getBoolean(tag, "AutoStart");
-        lastRedstoneSignal = NbtCompat.getBoolean(tag, "LastRedstone");
-        offsetX = Mth.clamp(NbtCompat.getInt(tag, "OffsetX"), -MAX_OFFSET, MAX_OFFSET);
-        offsetY = Mth.clamp(NbtCompat.getInt(tag, "OffsetY"), -MAX_OFFSET, MAX_OFFSET);
-        offsetZ = Mth.clamp(NbtCompat.getInt(tag, "OffsetZ"), -MAX_OFFSET, MAX_OFFSET);
-        rotation = Rotation.values()[NbtCompat.getInt(tag, "Rotation") % Rotation.values().length];
-        owner = tag.hasUUID("Owner") ? tag.getUUID("Owner") : null;
-        previewEnabled = NbtCompat.getBoolean(tag, "PreviewEnabled");
+        w.putBoolean("ResinConsumed", resinConsumed);
+        w.putInt("SaltedThisJob", saltedThisJob);
+        w.putInt("TreasureThisJob", treasureThisJob);
+        w.putInt("BankedXp", bankedXp);
+        w.putInt("Energy", energy.getEnergyStored());
+        w.putInt("Progress", itemProgress);
+        w.putInt("State", state.ordinal());
+        if (activeJob != null) {
+            // PrintJob (un)serializes as a raw CompoundTag; route it through the codec
+            // store/read so the seam stays version-agnostic (same on-disk "ActiveJob" compound).
+            w.store("ActiveJob", CompoundTag.CODEC, activeJob.save());
+        }
+        // History is a List<CompoundTag>; a list codec preserves the legacy "History" ListTag shape.
+        w.store("History", CompoundTag.CODEC.listOf(), history);
+        w.putBoolean("AutoStart", autoStart);
+        w.putBoolean("LastRedstone", lastRedstoneSignal);
+        w.putInt("OffsetX", offsetX);
+        w.putInt("OffsetY", offsetY);
+        w.putInt("OffsetZ", offsetZ);
+        w.putInt("Rotation", rotation.ordinal());
+        if (owner != null) {
+            w.putUUID("Owner", owner);
+        }
+        w.putBoolean("PreviewEnabled", previewEnabled);
+    }
+
+    private void readData(BeData.Reader r) {
+        r.readHandler("Inventory", inventory);
+        r.readHandler("Spools", spools);
+        r.readHandler("Upgrades", upgrades);
+        r.readHandler("Resins", resins);
+        armedResinEffect = parseResinEffect(r.getStringOr("ArmedResin", ""));
+        armedResinTier = r.getIntOr("ArmedResinTier", 0);
+        resinConsumed = r.getBooleanOr("ResinConsumed", false);
+        saltedThisJob = r.getIntOr("SaltedThisJob", 0);
+        treasureThisJob = r.getIntOr("TreasureThisJob", 0);
+        bankedXp = r.getIntOr("BankedXp", 0);
+        refreshEnergyCapacity();
+        energy.setStored(r.getIntOr("Energy", 0));
+        itemProgress = r.getIntOr("Progress", 0);
+        state = State.byOrdinal(r.getIntOr("State", 0));
+        activeJob = r.read("ActiveJob", CompoundTag.CODEC).map(PrintJob::load).orElse(null);
+        history.clear();
+        r.read("History", CompoundTag.CODEC.listOf()).ifPresent(history::addAll);
+        autoStart = r.getBooleanOr("AutoStart", false);
+        lastRedstoneSignal = r.getBooleanOr("LastRedstone", false);
+        offsetX = Mth.clamp(r.getIntOr("OffsetX", 0), -MAX_OFFSET, MAX_OFFSET);
+        offsetY = Mth.clamp(r.getIntOr("OffsetY", 0), -MAX_OFFSET, MAX_OFFSET);
+        offsetZ = Mth.clamp(r.getIntOr("OffsetZ", 0), -MAX_OFFSET, MAX_OFFSET);
+        rotation = Rotation.values()[r.getIntOr("Rotation", 0) % Rotation.values().length];
+        owner = r.getUUID("Owner").orElse(null);
+        previewEnabled = r.getBooleanOr("PreviewEnabled", false);
     }
 }

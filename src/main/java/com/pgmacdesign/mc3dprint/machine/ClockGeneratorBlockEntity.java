@@ -1,6 +1,6 @@
 package com.pgmacdesign.mc3dprint.machine;
 
-import com.pgmacdesign.mc3dprint.compat.NbtCompat;
+import com.pgmacdesign.mc3dprint.compat.BeData;
 
 import com.pgmacdesign.mc3dprint.config.MC3DPrintConfig;
 import net.minecraft.core.BlockPos;
@@ -237,23 +237,43 @@ public class ClockGeneratorBlockEntity extends BlockEntity implements MenuProvid
         return fuel;
     }
 
+    //? if >=1.21.5 {
+    /*@Override
+    protected void saveAdditional(net.minecraft.world.level.storage.ValueOutput out) {
+        super.saveAdditional(out);
+        writeData(BeData.writer(out));
+    }
+
+    @Override
+    protected void loadAdditional(net.minecraft.world.level.storage.ValueInput in) {
+        super.loadAdditional(in);
+        readData(BeData.reader(in));
+    }
+    *///?} else {
     @Override
     protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries);
-        tag.putInt("Energy", stored);
-        tag.putInt("BurnRemaining", burnRemaining);
-        tag.putInt("BurnTotal", burnTotal);
-        tag.put("Fuel", fuel.serializeNBT(registries));
+        writeData(BeData.writer(tag, registries));
     }
 
     @Override
     protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
-        stored = Math.max(0, NbtCompat.getInt(tag, "Energy"));
-        burnRemaining = Math.max(0, NbtCompat.getInt(tag, "BurnRemaining"));
-        burnTotal = Math.max(0, NbtCompat.getInt(tag, "BurnTotal"));
-        if (tag.contains("Fuel")) {
-            fuel.deserializeNBT(registries, NbtCompat.getCompound(tag, "Fuel"));
-        }
+        readData(BeData.reader(tag, registries));
+    }
+    //?}
+
+    private void writeData(BeData.Writer w) {
+        w.putInt("Energy", stored);
+        w.putInt("BurnRemaining", burnRemaining);
+        w.putInt("BurnTotal", burnTotal);
+        w.putHandler("Fuel", fuel);
+    }
+
+    private void readData(BeData.Reader r) {
+        stored = Math.max(0, r.getIntOr("Energy", 0));
+        burnRemaining = Math.max(0, r.getIntOr("BurnRemaining", 0));
+        burnTotal = Math.max(0, r.getIntOr("BurnTotal", 0));
+        r.readHandler("Fuel", fuel);
     }
 }

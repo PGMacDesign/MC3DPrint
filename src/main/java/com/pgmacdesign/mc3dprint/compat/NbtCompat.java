@@ -1,7 +1,14 @@
 package com.pgmacdesign.mc3dprint.compat;
 
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.UUIDUtil;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.NbtUtils;
 
 /**
  * Version seam for the CompoundTag read API. In 1.21.5+ the primitive/compound/list
@@ -114,5 +121,77 @@ public final class NbtCompat {
     /** Key presence. 1.21.5+ dropped the tag-type overload; the 1-arg form exists on both. */
     public static boolean contains(CompoundTag tag, String key) {
         return tag.contains(key);
+    }
+
+    /** ListTag element access. 1.21.5 made {@code getCompound(int)} return {@code Optional}. */
+    public static CompoundTag listGetCompound(ListTag list, int index) {
+        //? if >=1.21.5 {
+        /*return list.getCompoundOrEmpty(index);
+        *///?} else {
+        return list.getCompound(index);
+        //?}
+    }
+
+    /** Key set. 1.21.5 renamed {@code getAllKeys()} → {@code keySet()}. */
+    public static Set<String> keySet(CompoundTag tag) {
+        //? if >=1.21.5 {
+        /*return tag.keySet();
+        *///?} else {
+        return tag.getAllKeys();
+        //?}
+    }
+
+    public static byte[] getByteArray(CompoundTag tag, String key) {
+        //? if >=1.21.5 {
+        /*return tag.getByteArray(key).orElse(new byte[0]);
+        *///?} else {
+        return tag.getByteArray(key);
+        //?}
+    }
+
+    // ---- UUID. 1.21.5 removed CompoundTag.putUUID/getUUID/hasUUID; UUIDs now round-trip
+    //      through UUIDUtil.CODEC via the generic store/read. ----
+
+    public static void putUUID(CompoundTag tag, String key, UUID value) {
+        //? if >=1.21.5 {
+        /*tag.store(key, UUIDUtil.CODEC, value);
+        *///?} else {
+        tag.putUUID(key, value);
+        //?}
+    }
+
+    public static boolean hasUUID(CompoundTag tag, String key) {
+        //? if >=1.21.5 {
+        /*return tag.read(key, UUIDUtil.CODEC).isPresent();
+        *///?} else {
+        return tag.hasUUID(key);
+        //?}
+    }
+
+    /** Reads a UUID; empty when absent. Replaces the old {@code hasUUID ? getUUID : null} idiom. */
+    public static Optional<UUID> getUUID(CompoundTag tag, String key) {
+        //? if >=1.21.5 {
+        /*return tag.read(key, UUIDUtil.CODEC);
+        *///?} else {
+        return tag.hasUUID(key) ? Optional.of(tag.getUUID(key)) : Optional.empty();
+        //?}
+    }
+
+    // ---- BlockPos. 1.21.5 dropped NbtUtils.writeBlockPos/readBlockPos in favor of BlockPos.CODEC. ----
+
+    public static void putBlockPos(CompoundTag tag, String key, BlockPos pos) {
+        //? if >=1.21.5 {
+        /*tag.store(key, BlockPos.CODEC, pos);
+        *///?} else {
+        tag.put(key, NbtUtils.writeBlockPos(pos));
+        //?}
+    }
+
+    public static Optional<BlockPos> getBlockPos(CompoundTag tag, String key) {
+        //? if >=1.21.5 {
+        /*return tag.read(key, BlockPos.CODEC);
+        *///?} else {
+        return NbtUtils.readBlockPos(tag, key);
+        //?}
     }
 }

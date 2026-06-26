@@ -1,6 +1,6 @@
 package com.pgmacdesign.mc3dprint.machine;
 
-import com.pgmacdesign.mc3dprint.compat.NbtCompat;
+import com.pgmacdesign.mc3dprint.compat.BeData;
 
 import com.pgmacdesign.mc3dprint.config.MC3DPrintConfig;
 import com.pgmacdesign.mc3dprint.fu.FuConversion;
@@ -157,20 +157,41 @@ public class FilamentConverterBlockEntity extends BlockEntity {
         return energy;
     }
 
+    //? if >=1.21.5 {
+    /*@Override
+    protected void saveAdditional(net.minecraft.world.level.storage.ValueOutput out) {
+        super.saveAdditional(out);
+        writeData(BeData.writer(out));
+    }
+
+    @Override
+    protected void loadAdditional(net.minecraft.world.level.storage.ValueInput in) {
+        super.loadAdditional(in);
+        readData(BeData.reader(in));
+    }
+    *///?} else {
     @Override
     protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries);
-        tag.putInt("Energy", energy.getEnergyStored());
-        if (!filter.isEmpty()) {
-            tag.put("Filter", filter.save(registries, new CompoundTag()));
-        }
+        writeData(BeData.writer(tag, registries));
     }
 
     @Override
     protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
-        energy.setStored(NbtCompat.getInt(tag, "Energy"));
-        filter = tag.contains("Filter")
-                ? ItemStack.parseOptional(registries, NbtCompat.getCompound(tag, "Filter")) : ItemStack.EMPTY;
+        readData(BeData.reader(tag, registries));
+    }
+    //?}
+
+    private void writeData(BeData.Writer w) {
+        w.putInt("Energy", energy.getEnergyStored());
+        if (!filter.isEmpty()) {
+            w.store("Filter", ItemStack.CODEC, filter);
+        }
+    }
+
+    private void readData(BeData.Reader r) {
+        energy.setStored(r.getIntOr("Energy", 0));
+        filter = r.read("Filter", ItemStack.CODEC).orElse(ItemStack.EMPTY);
     }
 }
