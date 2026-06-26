@@ -1,5 +1,7 @@
 package com.pgmacdesign.mc3dprint.registry;
 
+import com.pgmacdesign.mc3dprint.compat.RegistryCompat;
+
 import com.pgmacdesign.mc3dprint.MC3DPrint;
 import com.pgmacdesign.mc3dprint.blueprint.CuratedBlueprints;
 import com.pgmacdesign.mc3dprint.config.MC3DPrintConfig;
@@ -130,7 +132,7 @@ public final class ModCreativeTabs {
                         // The in-game guidebook — only when Patchouli is installed.
                         if (ModList.get().isLoaded("patchouli")) {
                             net.minecraft.world.item.Item guideBook =
-                                    net.minecraft.core.registries.BuiltInRegistries.ITEM.get(
+                                    RegistryCompat.item(
                                             net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("patchouli", "guide_book"));
                             if (guideBook != null) {
                                 ItemStack book = new ItemStack(guideBook);

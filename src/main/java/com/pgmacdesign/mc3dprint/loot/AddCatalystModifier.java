@@ -1,5 +1,7 @@
 package com.pgmacdesign.mc3dprint.loot;
 
+import com.pgmacdesign.mc3dprint.compat.RegistryCompat;
+
 import com.google.common.base.Suppliers;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
@@ -54,7 +56,7 @@ public class AddCatalystModifier extends LootModifier {
         }
         // Uniform pick for now (see class-level TODO about flavor-biasing per table).
         String id = resinIds.get(context.getRandom().nextInt(resinIds.size()));
-        Item item = BuiltInRegistries.ITEM.get(ResourceLocation.fromNamespaceAndPath(MC3DPrint.MOD_ID, id));
+        Item item = RegistryCompat.item(ResourceLocation.fromNamespaceAndPath(MC3DPrint.MOD_ID, id));
         if (item == null || item == Items.AIR) {
             return generatedLoot; // typo'd / removed id — skip silently rather than crash a chest
         }

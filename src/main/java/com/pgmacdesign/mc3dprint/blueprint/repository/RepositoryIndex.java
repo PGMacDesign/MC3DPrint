@@ -40,7 +40,7 @@ public final class RepositoryIndex {
     /** The viewer's catalogue, sorted by display name then id for a stable, index-addressable order. */
     public static List<RepoEntry> entries(ServerPlayer player) {
         List<RepoEntry> list = new ArrayList<>(shared()
-                ? RepositoryData.get(player.server).entries()
+                ? RepositoryData.get(player.getServer()).entries()
                 : personalEntries(player));
         list.sort(Comparator.comparing((RepoEntry e) -> e.name().toLowerCase()).thenComparing(e -> e.id().toString()));
         return list;
@@ -48,7 +48,7 @@ public final class RepositoryIndex {
 
     public static boolean contains(ServerPlayer player, UUID id) {
         if (shared()) {
-            return RepositoryData.get(player.server).contains(id);
+            return RepositoryData.get(player.getServer()).contains(id);
         }
         for (RepoEntry e : personalEntries(player)) {
             if (e.id().equals(id)) {
@@ -61,7 +61,7 @@ public final class RepositoryIndex {
     /** Catalogues an entry; returns true if newly added. */
     public static boolean add(ServerPlayer player, RepoEntry entry) {
         if (shared()) {
-            return RepositoryData.get(player.server).add(entry);
+            return RepositoryData.get(player.getServer()).add(entry);
         }
         CompoundTag persisted = persisted(player);
         ListTag list = NbtCompat.getList(persisted, PERSONAL_TAG, Tag.TAG_COMPOUND);
@@ -103,7 +103,7 @@ public final class RepositoryIndex {
     /** The set of blueprint UUIDs the viewer has printed (world set, or their own). */
     public static Set<UUID> printedIds(ServerPlayer viewer) {
         if (shared()) {
-            return RepositoryData.get(viewer.server).printed();
+            return RepositoryData.get(viewer.getServer()).printed();
         }
         Set<UUID> out = new HashSet<>();
         for (Tag element : NbtCompat.getList(persisted(viewer), PERSONAL_PRINTED_TAG, Tag.TAG_STRING)) {

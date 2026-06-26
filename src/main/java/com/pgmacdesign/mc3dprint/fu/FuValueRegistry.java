@@ -1,5 +1,7 @@
 package com.pgmacdesign.mc3dprint.fu;
 
+import com.pgmacdesign.mc3dprint.compat.RegistryCompat;
+
 import com.mojang.logging.LogUtils;
 import com.pgmacdesign.mc3dprint.config.MC3DPrintConfig;
 import net.minecraft.core.RegistryAccess;
@@ -239,7 +241,7 @@ public final class FuValueRegistry {
         if (id == null || !BuiltInRegistries.ITEM.containsKey(id)) {
             return null;
         }
-        return BuiltInRegistries.ITEM.get(id);
+        return RegistryCompat.item(id);
     }
 
     /**
@@ -335,7 +337,7 @@ public final class FuValueRegistry {
             if (itemId == null || !BuiltInRegistries.ITEM.containsKey(itemId)) {
                 throw new IllegalArgumentException("unknown item " + id);
             }
-            items.put(BuiltInRegistries.ITEM.get(itemId), value);
+            items.put(RegistryCompat.item(itemId), value);
         }
     }
 

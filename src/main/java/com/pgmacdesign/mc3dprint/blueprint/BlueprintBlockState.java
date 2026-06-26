@@ -1,5 +1,7 @@
 package com.pgmacdesign.mc3dprint.blueprint;
 
+import com.pgmacdesign.mc3dprint.compat.RegistryCompat;
+
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.Block;
@@ -112,7 +114,7 @@ public final class BlueprintBlockState {
         if (id == null || !BuiltInRegistries.BLOCK.containsKey(id)) {
             return Optional.empty();
         }
-        Block block = BuiltInRegistries.BLOCK.get(id);
+        Block block = RegistryCompat.block(id);
         if (block == null) {
             return Optional.empty();
         }
