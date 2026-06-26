@@ -1,5 +1,7 @@
 package com.pgmacdesign.mc3dprint.blueprint.io;
 
+import com.pgmacdesign.mc3dprint.compat.NbtCompat;
+
 import com.pgmacdesign.mc3dprint.blueprint.Blueprint;
 import com.pgmacdesign.mc3dprint.blueprint.BlueprintBlockState;
 import com.pgmacdesign.mc3dprint.blueprint.BlueprintFormatException;
@@ -24,10 +26,10 @@ public final class SpongeSchematicImporter {
 
     public static Blueprint importSchematic(String name, CompoundTag root) {
         // v3 wraps everything in a "Schematic" container tag
-        CompoundTag schematic = root.contains("Schematic", Tag.TAG_COMPOUND)
-                ? root.getCompound("Schematic")
+        CompoundTag schematic = NbtCompat.contains(root, "Schematic")
+                ? NbtCompat.getCompound(root, "Schematic")
                 : root;
-        int version = schematic.getInt("Version");
+        int version = NbtCompat.getInt(schematic, "Version");
         return switch (version) {
             case 2 -> importV2(name, schematic);
             case 3 -> importV3(name, schematic);
@@ -37,30 +39,30 @@ public final class SpongeSchematicImporter {
     }
 
     private static Blueprint importV2(String name, CompoundTag tag) {
-        int width = tag.getShort("Width") & 0xFFFF;
-        int height = tag.getShort("Height") & 0xFFFF;
-        int length = tag.getShort("Length") & 0xFFFF;
-        Map<Integer, BlueprintBlockState> palette = readPalette(tag.getCompound("Palette"));
+        int width = NbtCompat.getShort(tag, "Width") & 0xFFFF;
+        int height = NbtCompat.getShort(tag, "Height") & 0xFFFF;
+        int length = NbtCompat.getShort(tag, "Length") & 0xFFFF;
+        Map<Integer, BlueprintBlockState> palette = readPalette(NbtCompat.getCompound(tag, "Palette"));
         return buildVolume(name, width, height, length, palette,
                 tag.getByteArray("BlockData"),
-                tag.getList("BlockEntities", Tag.TAG_COMPOUND).copy(), false);
+                NbtCompat.getList(tag, "BlockEntities", Tag.TAG_COMPOUND).copy(), false);
     }
 
     private static Blueprint importV3(String name, CompoundTag tag) {
-        int width = tag.getShort("Width") & 0xFFFF;
-        int height = tag.getShort("Height") & 0xFFFF;
-        int length = tag.getShort("Length") & 0xFFFF;
-        CompoundTag blocks = tag.getCompound("Blocks");
-        Map<Integer, BlueprintBlockState> palette = readPalette(blocks.getCompound("Palette"));
+        int width = NbtCompat.getShort(tag, "Width") & 0xFFFF;
+        int height = NbtCompat.getShort(tag, "Height") & 0xFFFF;
+        int length = NbtCompat.getShort(tag, "Length") & 0xFFFF;
+        CompoundTag blocks = NbtCompat.getCompound(tag, "Blocks");
+        Map<Integer, BlueprintBlockState> palette = readPalette(NbtCompat.getCompound(blocks, "Palette"));
         return buildVolume(name, width, height, length, palette,
                 blocks.getByteArray("Data"),
-                blocks.getList("BlockEntities", Tag.TAG_COMPOUND).copy(), true);
+                NbtCompat.getList(blocks, "BlockEntities", Tag.TAG_COMPOUND).copy(), true);
     }
 
     private static Map<Integer, BlueprintBlockState> readPalette(CompoundTag paletteTag) {
         Map<Integer, BlueprintBlockState> palette = new HashMap<>();
         for (String stateString : paletteTag.getAllKeys()) {
-            palette.put(paletteTag.getInt(stateString), BlueprintBlockState.parse(stateString));
+            palette.put(NbtCompat.getInt(paletteTag, stateString), BlueprintBlockState.parse(stateString));
         }
         if (palette.isEmpty()) {
             throw new BlueprintFormatException("Sponge schematic has empty palette");
@@ -94,20 +96,20 @@ public final class SpongeSchematicImporter {
 
         for (Tag tag : blockEntities) {
             CompoundTag be = (CompoundTag) tag;
-            int[] pos = be.getIntArray("Pos");
+            int[] pos = NbtCompat.getIntArray(be, "Pos");
             if (pos.length != 3) {
                 throw new BlueprintFormatException("Sponge BlockEntity Pos must be [x, y, z]");
             }
             // v3 nests the entity NBT under "Data"; v2 inlines it next to Pos/Id
             CompoundTag data;
             if (v3BlockEntityData) {
-                data = be.getCompound("Data").copy();
-                data.putString("id", be.getString("Id"));
+                data = NbtCompat.getCompound(be, "Data").copy();
+                data.putString("id", NbtCompat.getString(be, "Id"));
             } else {
                 data = be.copy();
                 data.remove("Pos");
                 if (data.contains("Id")) {
-                    data.putString("id", data.getString("Id"));
+                    data.putString("id", NbtCompat.getString(data, "Id"));
                     data.remove("Id");
                 }
             }

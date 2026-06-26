@@ -1,5 +1,7 @@
 package com.pgmacdesign.mc3dprint.machine.multiblock;
 
+import com.pgmacdesign.mc3dprint.compat.NbtCompat;
+
 import com.pgmacdesign.mc3dprint.registry.ModBlocks;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
@@ -33,7 +35,7 @@ public class FabricatorBlockItem extends BlockItem {
 
     private static boolean isCollapsed(ItemStack stack) {
         CustomData data = stack.get(DataComponents.CUSTOM_DATA);
-        return data != null && data.copyTag().getBoolean(TAG_COLLAPSED);
+        return data != null && NbtCompat.getBoolean(data.copyTag(), TAG_COLLAPSED);
     }
 
     @Override

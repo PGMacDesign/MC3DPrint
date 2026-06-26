@@ -1,5 +1,7 @@
 package com.pgmacdesign.mc3dprint.blueprint;
 
+import com.pgmacdesign.mc3dprint.compat.NbtCompat;
+
 import net.minecraft.nbt.CompoundTag;
 
 /**
@@ -17,6 +19,6 @@ public record BlueprintEntity(double x, double y, double z, CompoundTag nbt) {
 
     /** The entity type id, e.g. {@code minecraft:armor_stand} (or empty if absent). */
     public String typeId() {
-        return nbt.getString("id");
+        return NbtCompat.getString(nbt, "id");
     }
 }

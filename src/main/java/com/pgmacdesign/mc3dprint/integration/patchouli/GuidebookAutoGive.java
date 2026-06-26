@@ -1,5 +1,7 @@
 package com.pgmacdesign.mc3dprint.integration.patchouli;
 
+import com.pgmacdesign.mc3dprint.compat.NbtCompat;
+
 import com.pgmacdesign.mc3dprint.MC3DPrint;
 import com.pgmacdesign.mc3dprint.machine.PrinterBlock;
 import net.minecraft.core.component.DataComponents;
@@ -39,8 +41,8 @@ public final class GuidebookAutoGive {
             return;
         }
         CompoundTag root = player.getPersistentData();
-        CompoundTag persisted = root.getCompound(Player.PERSISTED_NBT_TAG);
-        if (persisted.getBoolean(TAG_BOOK_GIVEN)) {
+        CompoundTag persisted = NbtCompat.getCompound(root, Player.PERSISTED_NBT_TAG);
+        if (NbtCompat.getBoolean(persisted, TAG_BOOK_GIVEN)) {
             return;
         }
         Item bookItem = BuiltInRegistries.ITEM.getOptional(Objects.requireNonNull(

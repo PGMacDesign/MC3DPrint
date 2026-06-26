@@ -1,5 +1,7 @@
 package com.pgmacdesign.mc3dprint.machine.cable;
 
+import com.pgmacdesign.mc3dprint.compat.NbtCompat;
+
 import com.pgmacdesign.mc3dprint.config.MC3DPrintConfig;
 import com.pgmacdesign.mc3dprint.fu.IFilamentSource;
 import com.pgmacdesign.mc3dprint.registry.ModBlockEntities;
@@ -251,7 +253,7 @@ public class MC3DCableBlockEntity extends BlockEntity implements IFilamentSource
     @Override
     protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
-        energy.setEnergy(tag.getInt("Energy"));
+        energy.setEnergy(NbtCompat.getInt(tag, "Energy"));
     }
 
     /** Cable buffer: one tick's worth, freely receivable and extractable. */

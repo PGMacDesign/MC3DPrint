@@ -1,5 +1,7 @@
 package com.pgmacdesign.mc3dprint.machine.rack;
 
+import com.pgmacdesign.mc3dprint.compat.NbtCompat;
+
 import com.pgmacdesign.mc3dprint.fu.FilamentDrain;
 import com.pgmacdesign.mc3dprint.fu.FuConversion;
 import com.pgmacdesign.mc3dprint.fu.IFilamentSource;
@@ -126,7 +128,7 @@ public class FilamentRackBlockEntity extends BlockEntity implements IFilamentSou
     protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
         if (tag.contains("Spools")) {
-            spools.deserializeNBT(registries, tag.getCompound("Spools"));
+            spools.deserializeNBT(registries, NbtCompat.getCompound(tag, "Spools"));
         }
     }
 
@@ -146,7 +148,7 @@ public class FilamentRackBlockEntity extends BlockEntity implements IFilamentSou
     @Override
     public void handleUpdateTag(CompoundTag tag, HolderLookup.Provider registries) {
         if (tag.contains("Spools")) {
-            spools.deserializeNBT(registries, tag.getCompound("Spools"));
+            spools.deserializeNBT(registries, NbtCompat.getCompound(tag, "Spools"));
         }
     }
 

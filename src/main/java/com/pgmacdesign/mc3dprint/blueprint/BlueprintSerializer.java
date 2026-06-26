@@ -1,5 +1,7 @@
 package com.pgmacdesign.mc3dprint.blueprint;
 
+import com.pgmacdesign.mc3dprint.compat.NbtCompat;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.DoubleTag;
@@ -92,23 +94,23 @@ public final class BlueprintSerializer {
     }
 
     public static Blueprint read(CompoundTag root) {
-        int version = root.getInt(KEY_VERSION);
+        int version = NbtCompat.getInt(root, KEY_VERSION);
         if (version < 1) {
             throw new BlueprintFormatException("Missing or invalid blueprint format version " + version);
         }
         // No per-version branching: optional keys (entities) are read by presence,
         // so any version ≥ 1 loads. New writes are always FORMAT_VERSION.
-        int[] size = root.getIntArray(KEY_SIZE);
+        int[] size = NbtCompat.getIntArray(root, KEY_SIZE);
         if (size.length != 3) {
             throw new BlueprintFormatException("Blueprint Size must be [x, y, z], got length " + size.length);
         }
 
         List<BlueprintBlockState> palette = new ArrayList<>();
-        for (Tag tag : root.getList(KEY_PALETTE, Tag.TAG_STRING)) {
+        for (Tag tag : NbtCompat.getList(root, KEY_PALETTE, Tag.TAG_STRING)) {
             palette.add(BlueprintBlockState.parse(tag.getAsString()));
         }
 
-        int[] blocks = root.getIntArray(KEY_BLOCKS).clone();
+        int[] blocks = NbtCompat.getIntArray(root, KEY_BLOCKS).clone();
         for (int paletteIndex : blocks) {
             if (paletteIndex != Blueprint.NO_BLOCK && (paletteIndex < 0 || paletteIndex >= palette.size())) {
                 throw new BlueprintFormatException("Block palette index " + paletteIndex
@@ -117,29 +119,29 @@ public final class BlueprintSerializer {
         }
 
         Map<BlockPos, CompoundTag> blockEntities = new HashMap<>();
-        for (Tag tag : root.getList(KEY_BLOCK_ENTITIES, Tag.TAG_COMPOUND)) {
+        for (Tag tag : NbtCompat.getList(root, KEY_BLOCK_ENTITIES, Tag.TAG_COMPOUND)) {
             CompoundTag be = (CompoundTag) tag;
-            int[] pos = be.getIntArray(KEY_BE_POS);
+            int[] pos = NbtCompat.getIntArray(be, KEY_BE_POS);
             if (pos.length != 3) {
                 throw new BlueprintFormatException("BlockEntity Pos must be [x, y, z]");
             }
-            blockEntities.put(new BlockPos(pos[0], pos[1], pos[2]), be.getCompound(KEY_BE_DATA).copy());
+            blockEntities.put(new BlockPos(pos[0], pos[1], pos[2]), NbtCompat.getCompound(be, KEY_BE_DATA).copy());
         }
 
         // Entities — optional; absent in older files (getList returns empty), so a
         // blueprint with no decorative entities just loads with an empty list.
         List<BlueprintEntity> entities = new ArrayList<>();
-        for (Tag tag : root.getList(KEY_ENTITIES, Tag.TAG_COMPOUND)) {
+        for (Tag tag : NbtCompat.getList(root, KEY_ENTITIES, Tag.TAG_COMPOUND)) {
             CompoundTag et = (CompoundTag) tag;
-            ListTag pos = et.getList(KEY_BE_POS, Tag.TAG_DOUBLE);
+            ListTag pos = NbtCompat.getList(et, KEY_BE_POS, Tag.TAG_DOUBLE);
             if (pos.size() != 3) {
                 throw new BlueprintFormatException("Entity Pos must be [x, y, z]");
             }
             entities.add(new BlueprintEntity(pos.getDouble(0), pos.getDouble(1), pos.getDouble(2),
-                    et.getCompound(KEY_BE_DATA).copy()));
+                    NbtCompat.getCompound(et, KEY_BE_DATA).copy()));
         }
 
-        return new Blueprint(root.getString(KEY_NAME), size[0], size[1], size[2],
+        return new Blueprint(NbtCompat.getString(root, KEY_NAME), size[0], size[1], size[2],
                 palette, blocks, blockEntities, entities);
     }
 }

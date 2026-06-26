@@ -1,5 +1,7 @@
 package com.pgmacdesign.mc3dprint.machine.repository;
 
+import com.pgmacdesign.mc3dprint.compat.NbtCompat;
+
 import com.pgmacdesign.mc3dprint.blueprint.Blueprint;
 import com.pgmacdesign.mc3dprint.blueprint.BlueprintFileStore;
 import com.pgmacdesign.mc3dprint.blueprint.repository.RepoEntry;
@@ -185,6 +187,6 @@ public class BlueprintRepositoryBlockEntity extends BlockEntity implements MenuP
     @Override
     protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
-        inventory.deserializeNBT(registries, tag.getCompound("Inventory"));
+        inventory.deserializeNBT(registries, NbtCompat.getCompound(tag, "Inventory"));
     }
 }

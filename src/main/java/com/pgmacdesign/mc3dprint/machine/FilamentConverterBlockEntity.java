@@ -1,5 +1,7 @@
 package com.pgmacdesign.mc3dprint.machine;
 
+import com.pgmacdesign.mc3dprint.compat.NbtCompat;
+
 import com.pgmacdesign.mc3dprint.config.MC3DPrintConfig;
 import com.pgmacdesign.mc3dprint.fu.FuConversion;
 import com.pgmacdesign.mc3dprint.fu.FuValue;
@@ -167,8 +169,8 @@ public class FilamentConverterBlockEntity extends BlockEntity {
     @Override
     protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
-        energy.setStored(tag.getInt("Energy"));
+        energy.setStored(NbtCompat.getInt(tag, "Energy"));
         filter = tag.contains("Filter")
-                ? ItemStack.parseOptional(registries, tag.getCompound("Filter")) : ItemStack.EMPTY;
+                ? ItemStack.parseOptional(registries, NbtCompat.getCompound(tag, "Filter")) : ItemStack.EMPTY;
     }
 }

@@ -1,5 +1,7 @@
 package com.pgmacdesign.mc3dprint.machine;
 
+import com.pgmacdesign.mc3dprint.compat.NbtCompat;
+
 import com.mojang.logging.LogUtils;
 import org.slf4j.Logger;
 import com.pgmacdesign.mc3dprint.MC3DPrint;
@@ -1374,14 +1376,14 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             double wz = origin.getZ() + t[2];
 
             if (hanging) { // re-anchor attach block (local → oriented → world) + rotate facing
-                BlockPos ot = o.transform(new BlockPos(nbt.getInt("TileX"), nbt.getInt("TileY"),
-                        nbt.getInt("TileZ")), sx, sy, sz);
+                BlockPos ot = o.transform(new BlockPos(NbtCompat.getInt(nbt, "TileX"), NbtCompat.getInt(nbt, "TileY"),
+                        NbtCompat.getInt(nbt, "TileZ")), sx, sy, sz);
                 nbt.putInt("TileX", origin.getX() + ot.getX());
                 nbt.putInt("TileY", origin.getY() + ot.getY());
                 nbt.putInt("TileZ", origin.getZ() + ot.getZ());
                 if (nbt.contains("Facing")) {
                     net.minecraft.core.Direction d =
-                            net.minecraft.core.Direction.from3DDataValue(nbt.getByte("Facing"));
+                            net.minecraft.core.Direction.from3DDataValue(NbtCompat.getByte(nbt, "Facing"));
                     d = o.rotation().rotate(o.mirror().mirror(d)); // mirror before rotation
                     nbt.putByte("Facing", (byte) d.get3DDataValue());
                 }
@@ -1428,7 +1430,7 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         }
         HolderLookup.Provider registries = this.level.registryAccess();
         if (nbt.contains("Item")) { // item frame's framed item
-            ItemStack framed = ItemStack.parseOptional(registries, nbt.getCompound("Item"));
+            ItemStack framed = ItemStack.parseOptional(registries, NbtCompat.getCompound(nbt, "Item"));
             if (!framed.isEmpty() && !chargeIfAffordable(framed)) {
                 nbt.remove("Item");
             }
@@ -1437,7 +1439,7 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             if (!nbt.contains(slot)) {
                 continue;
             }
-            net.minecraft.nbt.ListTag list = nbt.getList(slot, net.minecraft.nbt.Tag.TAG_COMPOUND);
+            net.minecraft.nbt.ListTag list = NbtCompat.getList(nbt, slot, net.minecraft.nbt.Tag.TAG_COMPOUND);
             for (int i = 0; i < list.size(); i++) {
                 ItemStack stack = ItemStack.parseOptional(registries, list.getCompound(i));
                 if (!stack.isEmpty() && !chargeIfAffordable(stack)) {
@@ -1735,22 +1737,22 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
 
     @Override
     public void handleUpdateTag(CompoundTag tag, HolderLookup.Provider registries) {
-        activeJob = tag.contains("ActiveJob", Tag.TAG_COMPOUND) ? PrintJob.load(tag.getCompound("ActiveJob")) : null;
+        activeJob = NbtCompat.contains(tag, "ActiveJob") ? PrintJob.load(NbtCompat.getCompound(tag, "ActiveJob")) : null;
         lastPlacedPos = net.minecraft.nbt.NbtUtils.readBlockPos(tag, "LastPlaced").orElse(null);
-        state = State.byOrdinal(tag.getInt("State"));
+        state = State.byOrdinal(NbtCompat.getInt(tag, "State"));
 
-        clientPreviewOn = tag.getBoolean("PreviewOn");
+        clientPreviewOn = NbtCompat.getBoolean(tag, "PreviewOn");
         clientPreview.clear();
         clientPreviewOrigin = null;
         clientPreviewSize = null;
         Optional<BlockPos> previewOriginOpt = net.minecraft.nbt.NbtUtils.readBlockPos(tag, "PreviewOrigin");
-        if (tag.contains("Preview", Tag.TAG_COMPOUND) && previewOriginOpt.isPresent()) {
+        if (NbtCompat.contains(tag, "Preview") && previewOriginOpt.isPresent()) {
             Blueprint blueprint = com.pgmacdesign.mc3dprint.blueprint.BlueprintSerializer
-                    .read(tag.getCompound("Preview"));
+                    .read(NbtCompat.getCompound(tag, "Preview"));
             BlockPos origin = previewOriginOpt.get();
             // Apply the same orientation the server will print at, so the ghost matches:
             // transform each local position AND rotate the block state (stairs/doors/…).
-            Rotation rot = Rotation.values()[tag.getInt("PreviewRotation") % Rotation.values().length];
+            Rotation rot = Rotation.values()[NbtCompat.getInt(tag, "PreviewRotation") % Rotation.values().length];
             PrintOrientation o = new PrintOrientation(rot, Mirror.NONE);
             int sx = blueprint.sizeX(), sy = blueprint.sizeY(), sz = blueprint.sizeZ();
             clientPreviewOrigin = origin;
@@ -1763,11 +1765,11 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         }
 
         clientSpools.clear();
-        ListTag spoolList = tag.getList("Spools", Tag.TAG_COMPOUND);
+        ListTag spoolList = NbtCompat.getList(tag, "Spools", Tag.TAG_COMPOUND);
         for (int i = 0; i < spoolList.size(); i++) {
             CompoundTag entry = spoolList.getCompound(i);
             clientSpools.add(entry.contains("Tier")
-                    ? new SpoolRenderInfo(entry.getInt("Tier"), entry.getFloat("Fill"), entry.getBoolean("Creative"))
+                    ? new SpoolRenderInfo(NbtCompat.getInt(entry, "Tier"), NbtCompat.getFloat(entry, "Fill"), NbtCompat.getBoolean(entry, "Creative"))
                     : null);
         }
     }
@@ -2119,32 +2121,32 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
     @Override
     protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
-        inventory.deserializeNBT(registries, tag.getCompound("Inventory"));
-        spools.deserializeNBT(registries, tag.getCompound("Spools"));
-        upgrades.deserializeNBT(registries, tag.getCompound("Upgrades"));
-        resins.deserializeNBT(registries, tag.getCompound("Resins"));
-        armedResinEffect = parseResinEffect(tag.getString("ArmedResin"));
-        armedResinTier = tag.getInt("ArmedResinTier");
-        resinConsumed = tag.getBoolean("ResinConsumed");
-        saltedThisJob = tag.getInt("SaltedThisJob");
-        treasureThisJob = tag.getInt("TreasureThisJob");
-        bankedXp = tag.getInt("BankedXp");
+        inventory.deserializeNBT(registries, NbtCompat.getCompound(tag, "Inventory"));
+        spools.deserializeNBT(registries, NbtCompat.getCompound(tag, "Spools"));
+        upgrades.deserializeNBT(registries, NbtCompat.getCompound(tag, "Upgrades"));
+        resins.deserializeNBT(registries, NbtCompat.getCompound(tag, "Resins"));
+        armedResinEffect = parseResinEffect(NbtCompat.getString(tag, "ArmedResin"));
+        armedResinTier = NbtCompat.getInt(tag, "ArmedResinTier");
+        resinConsumed = NbtCompat.getBoolean(tag, "ResinConsumed");
+        saltedThisJob = NbtCompat.getInt(tag, "SaltedThisJob");
+        treasureThisJob = NbtCompat.getInt(tag, "TreasureThisJob");
+        bankedXp = NbtCompat.getInt(tag, "BankedXp");
         refreshEnergyCapacity();
-        energy.setStored(tag.getInt("Energy"));
-        itemProgress = tag.getInt("Progress");
-        state = State.byOrdinal(tag.getInt("State"));
-        activeJob = tag.contains("ActiveJob", Tag.TAG_COMPOUND) ? PrintJob.load(tag.getCompound("ActiveJob")) : null;
+        energy.setStored(NbtCompat.getInt(tag, "Energy"));
+        itemProgress = NbtCompat.getInt(tag, "Progress");
+        state = State.byOrdinal(NbtCompat.getInt(tag, "State"));
+        activeJob = NbtCompat.contains(tag, "ActiveJob") ? PrintJob.load(NbtCompat.getCompound(tag, "ActiveJob")) : null;
         history.clear();
-        for (Tag t : tag.getList("History", Tag.TAG_COMPOUND)) {
+        for (Tag t : NbtCompat.getList(tag, "History", Tag.TAG_COMPOUND)) {
             history.add((CompoundTag) t);
         }
-        autoStart = tag.getBoolean("AutoStart");
-        lastRedstoneSignal = tag.getBoolean("LastRedstone");
-        offsetX = Mth.clamp(tag.getInt("OffsetX"), -MAX_OFFSET, MAX_OFFSET);
-        offsetY = Mth.clamp(tag.getInt("OffsetY"), -MAX_OFFSET, MAX_OFFSET);
-        offsetZ = Mth.clamp(tag.getInt("OffsetZ"), -MAX_OFFSET, MAX_OFFSET);
-        rotation = Rotation.values()[tag.getInt("Rotation") % Rotation.values().length];
+        autoStart = NbtCompat.getBoolean(tag, "AutoStart");
+        lastRedstoneSignal = NbtCompat.getBoolean(tag, "LastRedstone");
+        offsetX = Mth.clamp(NbtCompat.getInt(tag, "OffsetX"), -MAX_OFFSET, MAX_OFFSET);
+        offsetY = Mth.clamp(NbtCompat.getInt(tag, "OffsetY"), -MAX_OFFSET, MAX_OFFSET);
+        offsetZ = Mth.clamp(NbtCompat.getInt(tag, "OffsetZ"), -MAX_OFFSET, MAX_OFFSET);
+        rotation = Rotation.values()[NbtCompat.getInt(tag, "Rotation") % Rotation.values().length];
         owner = tag.hasUUID("Owner") ? tag.getUUID("Owner") : null;
-        previewEnabled = tag.getBoolean("PreviewEnabled");
+        previewEnabled = NbtCompat.getBoolean(tag, "PreviewEnabled");
     }
 }

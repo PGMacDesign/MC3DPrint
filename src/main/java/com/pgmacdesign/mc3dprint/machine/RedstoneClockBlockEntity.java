@@ -1,5 +1,7 @@
 package com.pgmacdesign.mc3dprint.machine;
 
+import com.pgmacdesign.mc3dprint.compat.NbtCompat;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
@@ -134,13 +136,13 @@ public class RedstoneClockBlockEntity extends BlockEntity implements MenuProvide
     protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
         if (tag.contains("IntervalSeconds")) {
-            intervalSeconds = clampSeconds(tag.getInt("IntervalSeconds"));
+            intervalSeconds = clampSeconds(NbtCompat.getInt(tag, "IntervalSeconds"));
         }
         // A blueprint-baked tag carries only IntervalSeconds → start a fresh cycle.
         ticksRemaining = tag.contains("Ticks")
-                ? Math.max(0, tag.getInt("Ticks"))
+                ? Math.max(0, NbtCompat.getInt(tag, "Ticks"))
                 : intervalSeconds * TICKS_PER_SECOND;
-        pulseTicksLeft = Math.max(0, tag.getInt("PulseLeft"));
-        pulsing = tag.getBoolean("Pulsing");
+        pulseTicksLeft = Math.max(0, NbtCompat.getInt(tag, "PulseLeft"));
+        pulsing = NbtCompat.getBoolean(tag, "Pulsing");
     }
 }

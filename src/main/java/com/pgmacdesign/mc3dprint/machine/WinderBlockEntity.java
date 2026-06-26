@@ -1,5 +1,7 @@
 package com.pgmacdesign.mc3dprint.machine;
 
+import com.pgmacdesign.mc3dprint.compat.NbtCompat;
+
 import com.pgmacdesign.mc3dprint.config.MC3DPrintConfig;
 import com.pgmacdesign.mc3dprint.fu.FuConversion;
 import com.pgmacdesign.mc3dprint.fu.FuValue;
@@ -242,8 +244,8 @@ public class WinderBlockEntity extends BlockEntity implements MenuProvider {
             return;
         }
         CompoundTag root = player.getPersistentData();
-        CompoundTag persisted = root.getCompound(net.minecraft.world.entity.player.Player.PERSISTED_NBT_TAG);
-        int total = persisted.getInt(com.pgmacdesign.mc3dprint.advancement.ModCriteria.TAG_FU_WOUND) + fu;
+        CompoundTag persisted = NbtCompat.getCompound(root, net.minecraft.world.entity.player.Player.PERSISTED_NBT_TAG);
+        int total = NbtCompat.getInt(persisted, com.pgmacdesign.mc3dprint.advancement.ModCriteria.TAG_FU_WOUND) + fu;
         persisted.putInt(com.pgmacdesign.mc3dprint.advancement.ModCriteria.TAG_FU_WOUND, total);
         root.put(net.minecraft.world.entity.player.Player.PERSISTED_NBT_TAG, persisted);
         if (total >= com.pgmacdesign.mc3dprint.advancement.ModCriteria.MATTER_MATTERS_FU) {
@@ -265,9 +267,9 @@ public class WinderBlockEntity extends BlockEntity implements MenuProvider {
     @Override
     protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
-        inventory.deserializeNBT(registries, tag.getCompound("Inventory"));
-        energy.setStored(tag.getInt("Energy"));
-        progress = tag.getInt("Progress");
+        inventory.deserializeNBT(registries, NbtCompat.getCompound(tag, "Inventory"));
+        energy.setStored(NbtCompat.getInt(tag, "Energy"));
+        progress = NbtCompat.getInt(tag, "Progress");
         owner = tag.hasUUID("Owner") ? tag.getUUID("Owner") : null;
     }
 }

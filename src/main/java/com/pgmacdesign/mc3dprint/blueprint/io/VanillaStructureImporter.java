@@ -1,5 +1,7 @@
 package com.pgmacdesign.mc3dprint.blueprint.io;
 
+import com.pgmacdesign.mc3dprint.compat.NbtCompat;
+
 import com.pgmacdesign.mc3dprint.blueprint.Blueprint;
 import com.pgmacdesign.mc3dprint.blueprint.BlueprintBlockState;
 import com.pgmacdesign.mc3dprint.blueprint.BlueprintFormatException;
@@ -24,7 +26,7 @@ public final class VanillaStructureImporter {
     private VanillaStructureImporter() {}
 
     public static Blueprint importStructure(String name, CompoundTag root) {
-        ListTag sizeTag = root.getList("size", Tag.TAG_INT);
+        ListTag sizeTag = NbtCompat.getList(root, "size", Tag.TAG_INT);
         if (sizeTag.size() != 3) {
             throw new BlueprintFormatException("Structure size must be [x, y, z]");
         }
@@ -33,10 +35,10 @@ public final class VanillaStructureImporter {
         int sizeZ = sizeTag.getInt(2);
 
         ListTag paletteTag;
-        if (root.contains("palette", Tag.TAG_LIST)) {
-            paletteTag = root.getList("palette", Tag.TAG_COMPOUND);
-        } else if (root.contains("palettes", Tag.TAG_LIST)) {
-            ListTag palettes = root.getList("palettes", Tag.TAG_LIST);
+        if (NbtCompat.contains(root, "palette")) {
+            paletteTag = NbtCompat.getList(root, "palette", Tag.TAG_COMPOUND);
+        } else if (NbtCompat.contains(root, "palettes")) {
+            ListTag palettes = NbtCompat.getList(root, "palettes", Tag.TAG_LIST);
             if (palettes.isEmpty()) {
                 throw new BlueprintFormatException("Structure has empty palettes list");
             }
@@ -51,38 +53,38 @@ public final class VanillaStructureImporter {
         }
 
         Blueprint.Builder builder = Blueprint.builder(name, sizeX, sizeY, sizeZ);
-        for (Tag tag : root.getList("blocks", Tag.TAG_COMPOUND)) {
+        for (Tag tag : NbtCompat.getList(root, "blocks", Tag.TAG_COMPOUND)) {
             CompoundTag blockTag = (CompoundTag) tag;
-            ListTag posTag = blockTag.getList("pos", Tag.TAG_INT);
+            ListTag posTag = NbtCompat.getList(blockTag, "pos", Tag.TAG_INT);
             if (posTag.size() != 3) {
                 throw new BlueprintFormatException("Structure block pos must be [x, y, z]");
             }
             int x = posTag.getInt(0);
             int y = posTag.getInt(1);
             int z = posTag.getInt(2);
-            int stateIndex = blockTag.getInt("state");
+            int stateIndex = NbtCompat.getInt(blockTag, "state");
             if (stateIndex < 0 || stateIndex >= palette.size()) {
                 throw new BlueprintFormatException("Structure block state index " + stateIndex
                         + " out of range for palette of size " + palette.size());
             }
             builder.set(x, y, z, palette.get(stateIndex));
-            if (blockTag.contains("nbt", Tag.TAG_COMPOUND) && !palette.get(stateIndex).isAir()) {
-                builder.blockEntity(x, y, z, blockTag.getCompound("nbt").copy());
+            if (NbtCompat.contains(blockTag, "nbt") && !palette.get(stateIndex).isAir()) {
+                builder.blockEntity(x, y, z, NbtCompat.getCompound(blockTag, "nbt").copy());
             }
         }
         return builder.build();
     }
 
     private static BlueprintBlockState readPaletteEntry(CompoundTag entry) {
-        String id = entry.getString("Name");
+        String id = NbtCompat.getString(entry, "Name");
         if (id.isEmpty()) {
             throw new BlueprintFormatException("Structure palette entry missing Name");
         }
         Map<String, String> properties = new TreeMap<>();
-        if (entry.contains("Properties", Tag.TAG_COMPOUND)) {
-            CompoundTag props = entry.getCompound("Properties");
+        if (NbtCompat.contains(entry, "Properties")) {
+            CompoundTag props = NbtCompat.getCompound(entry, "Properties");
             for (String key : props.getAllKeys()) {
-                properties.put(key, props.getString(key));
+                properties.put(key, NbtCompat.getString(props, key));
             }
         }
         return new BlueprintBlockState(id, properties);

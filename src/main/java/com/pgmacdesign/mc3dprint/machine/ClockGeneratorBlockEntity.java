@@ -1,5 +1,7 @@
 package com.pgmacdesign.mc3dprint.machine;
 
+import com.pgmacdesign.mc3dprint.compat.NbtCompat;
+
 import com.pgmacdesign.mc3dprint.config.MC3DPrintConfig;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
@@ -247,11 +249,11 @@ public class ClockGeneratorBlockEntity extends BlockEntity implements MenuProvid
     @Override
     protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
-        stored = Math.max(0, tag.getInt("Energy"));
-        burnRemaining = Math.max(0, tag.getInt("BurnRemaining"));
-        burnTotal = Math.max(0, tag.getInt("BurnTotal"));
+        stored = Math.max(0, NbtCompat.getInt(tag, "Energy"));
+        burnRemaining = Math.max(0, NbtCompat.getInt(tag, "BurnRemaining"));
+        burnTotal = Math.max(0, NbtCompat.getInt(tag, "BurnTotal"));
         if (tag.contains("Fuel")) {
-            fuel.deserializeNBT(registries, tag.getCompound("Fuel"));
+            fuel.deserializeNBT(registries, NbtCompat.getCompound(tag, "Fuel"));
         }
     }
 }

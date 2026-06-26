@@ -1,5 +1,7 @@
 package com.pgmacdesign.mc3dprint.blueprint.repository;
 
+import com.pgmacdesign.mc3dprint.compat.NbtCompat;
+
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -37,11 +39,11 @@ public class RepositoryData extends SavedData {
 
     static RepositoryData load(CompoundTag tag, HolderLookup.Provider registries) {
         RepositoryData data = new RepositoryData();
-        for (Tag element : tag.getList("Entries", Tag.TAG_COMPOUND)) {
+        for (Tag element : NbtCompat.getList(tag, "Entries", Tag.TAG_COMPOUND)) {
             RepoEntry entry = RepoEntry.fromNbt((CompoundTag) element);
             data.entries.put(entry.id(), entry);
         }
-        for (Tag element : tag.getList("Printed", Tag.TAG_STRING)) {
+        for (Tag element : NbtCompat.getList(tag, "Printed", Tag.TAG_STRING)) {
             data.printed.add(UUID.fromString(element.getAsString()));
         }
         return data;

@@ -1,5 +1,7 @@
 package com.pgmacdesign.mc3dprint.blueprint.repository;
 
+import com.pgmacdesign.mc3dprint.compat.NbtCompat;
+
 import com.pgmacdesign.mc3dprint.config.MC3DPrintConfig;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -62,7 +64,7 @@ public final class RepositoryIndex {
             return RepositoryData.get(player.server).add(entry);
         }
         CompoundTag persisted = persisted(player);
-        ListTag list = persisted.getList(PERSONAL_TAG, Tag.TAG_COMPOUND);
+        ListTag list = NbtCompat.getList(persisted, PERSONAL_TAG, Tag.TAG_COMPOUND);
         for (Tag element : list) {
             if (((CompoundTag) element).getUUID("Id").equals(entry.id())) {
                 return false; // already catalogued
@@ -87,7 +89,7 @@ public final class RepositoryIndex {
             return;
         }
         CompoundTag persisted = persisted(owner);
-        ListTag list = persisted.getList(PERSONAL_PRINTED_TAG, Tag.TAG_STRING);
+        ListTag list = NbtCompat.getList(persisted, PERSONAL_PRINTED_TAG, Tag.TAG_STRING);
         String idString = id.toString();
         for (Tag element : list) {
             if (element.getAsString().equals(idString)) {
@@ -104,7 +106,7 @@ public final class RepositoryIndex {
             return RepositoryData.get(viewer.server).printed();
         }
         Set<UUID> out = new HashSet<>();
-        for (Tag element : persisted(viewer).getList(PERSONAL_PRINTED_TAG, Tag.TAG_STRING)) {
+        for (Tag element : NbtCompat.getList(persisted(viewer), PERSONAL_PRINTED_TAG, Tag.TAG_STRING)) {
             out.add(UUID.fromString(element.getAsString()));
         }
         return out;
@@ -112,7 +114,7 @@ public final class RepositoryIndex {
 
     private static List<RepoEntry> personalEntries(ServerPlayer player) {
         List<RepoEntry> out = new ArrayList<>();
-        for (Tag element : persisted(player).getList(PERSONAL_TAG, Tag.TAG_COMPOUND)) {
+        for (Tag element : NbtCompat.getList(persisted(player), PERSONAL_TAG, Tag.TAG_COMPOUND)) {
             out.add(RepoEntry.fromNbt((CompoundTag) element));
         }
         return out;
@@ -121,7 +123,7 @@ public final class RepositoryIndex {
     /** The player's persisted-through-death sub-tag (shared with other mod features). */
     private static CompoundTag persisted(ServerPlayer player) {
         CompoundTag root = player.getPersistentData();
-        CompoundTag persisted = root.getCompound(Player.PERSISTED_NBT_TAG);
+        CompoundTag persisted = NbtCompat.getCompound(root, Player.PERSISTED_NBT_TAG);
         root.put(Player.PERSISTED_NBT_TAG, persisted); // ensure it's attached for writes
         return persisted;
     }

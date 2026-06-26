@@ -1,5 +1,7 @@
 package com.pgmacdesign.mc3dprint.blueprint.io;
 
+import com.pgmacdesign.mc3dprint.compat.NbtCompat;
+
 import com.pgmacdesign.mc3dprint.blueprint.Blueprint;
 import com.pgmacdesign.mc3dprint.blueprint.BlueprintBlockState;
 import net.minecraft.core.BlockPos;
@@ -47,7 +49,7 @@ public final class SpongeSchematicExporter {
         for (Map.Entry<BlockPos, CompoundTag> entry : blueprint.blockEntities().entrySet()) {
             CompoundTag be = entry.getValue().copy();
             if (be.contains("id")) {
-                be.putString("Id", be.getString("id"));
+                be.putString("Id", NbtCompat.getString(be, "id"));
                 be.remove("id");
             }
             BlockPos pos = entry.getKey();

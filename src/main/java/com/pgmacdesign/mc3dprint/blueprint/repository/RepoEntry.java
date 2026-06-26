@@ -1,5 +1,7 @@
 package com.pgmacdesign.mc3dprint.blueprint.repository;
 
+import com.pgmacdesign.mc3dprint.compat.NbtCompat;
+
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
 
@@ -27,12 +29,12 @@ public record RepoEntry(UUID id, String name, int sizeX, int sizeY, int sizeZ,
     }
 
     public static RepoEntry fromNbt(CompoundTag tag) {
-        int[] size = tag.getIntArray("Size");
+        int[] size = NbtCompat.getIntArray(tag, "Size");
         int sx = size.length == 3 ? size[0] : 0;
         int sy = size.length == 3 ? size[1] : 0;
         int sz = size.length == 3 ? size[2] : 0;
-        return new RepoEntry(tag.getUUID("Id"), tag.getString("Name"), sx, sy, sz,
-                tag.getInt("Count"), tag.getInt("Tier"), tag.getInt("Cost"), tag.getBoolean("Official"));
+        return new RepoEntry(tag.getUUID("Id"), NbtCompat.getString(tag, "Name"), sx, sy, sz,
+                NbtCompat.getInt(tag, "Count"), NbtCompat.getInt(tag, "Tier"), NbtCompat.getInt(tag, "Cost"), NbtCompat.getBoolean(tag, "Official"));
     }
 
     public void toBuf(FriendlyByteBuf buf) {

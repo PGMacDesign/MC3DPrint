@@ -1,5 +1,7 @@
 package com.pgmacdesign.mc3dprint.machine;
 
+import com.pgmacdesign.mc3dprint.compat.NbtCompat;
+
 import com.pgmacdesign.mc3dprint.blueprint.PrintOrientation;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
@@ -85,14 +87,14 @@ public final class PrintJob {
     public static PrintJob load(CompoundTag tag) {
         PrintJob job = new PrintJob(
                 tag.getUUID("Blueprint"),
-                tag.getString("Name"),
+                NbtCompat.getString(tag, "Name"),
                 NbtUtils.readBlockPos(tag, "Origin").orElse(BlockPos.ZERO),
                 new PrintOrientation(
-                        Rotation.values()[Math.floorMod(tag.getByte("Rotation"), Rotation.values().length)],
-                        Mirror.values()[Math.floorMod(tag.getByte("Mirror"), Mirror.values().length)]),
+                        Rotation.values()[Math.floorMod(NbtCompat.getByte(tag, "Rotation"), Rotation.values().length)],
+                        Mirror.values()[Math.floorMod(NbtCompat.getByte(tag, "Mirror"), Mirror.values().length)]),
                 NbtUtils.readBlockPos(tag, "JobSize").orElse(BlockPos.ZERO),
-                tag.getInt("Total"));
-        job.placed = tag.getInt("Placed");
+                NbtCompat.getInt(tag, "Total"));
+        job.placed = NbtCompat.getInt(tag, "Placed");
         return job;
     }
 }

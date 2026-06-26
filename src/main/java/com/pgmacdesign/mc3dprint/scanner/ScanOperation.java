@@ -1,5 +1,7 @@
 package com.pgmacdesign.mc3dprint.scanner;
 
+import com.pgmacdesign.mc3dprint.compat.NbtCompat;
+
 import com.pgmacdesign.mc3dprint.blueprint.Blueprint;
 import com.pgmacdesign.mc3dprint.blueprint.BlueprintBlockState;
 import net.minecraft.core.BlockPos;
@@ -70,9 +72,9 @@ public final class ScanOperation {
             // Hanging entities (frames/paintings) attach to an absolute block via TileX/Y/Z —
             // store it blueprint-local so the print can re-anchor it at any location.
             if (nbt.contains("TileX")) {
-                nbt.putInt("TileX", nbt.getInt("TileX") - min.getX());
-                nbt.putInt("TileY", nbt.getInt("TileY") - min.getY());
-                nbt.putInt("TileZ", nbt.getInt("TileZ") - min.getZ());
+                nbt.putInt("TileX", NbtCompat.getInt(nbt, "TileX") - min.getX());
+                nbt.putInt("TileY", NbtCompat.getInt(nbt, "TileY") - min.getY());
+                nbt.putInt("TileZ", NbtCompat.getInt(nbt, "TileZ") - min.getZ());
             }
             builder.entity(
                     entity.getX() - min.getX(),

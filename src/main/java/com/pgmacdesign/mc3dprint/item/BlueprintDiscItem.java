@@ -1,5 +1,7 @@
 package com.pgmacdesign.mc3dprint.item;
 
+import com.pgmacdesign.mc3dprint.compat.NbtCompat;
+
 import com.pgmacdesign.mc3dprint.blueprint.Blueprint;
 import com.pgmacdesign.mc3dprint.blueprint.BlueprintBlockState;
 import com.pgmacdesign.mc3dprint.blueprint.BlueprintEntity;
@@ -310,13 +312,13 @@ public class BlueprintDiscItem extends Item {
      */
     /** The entity's own item (the stand/frame/painting/minecart/boat), or EMPTY if unknown. */
     public static ItemStack entityBaseItem(CompoundTag nbt) {
-        Item base = switch (nbt.getString("id")) {
+        Item base = switch (NbtCompat.getString(nbt, "id")) {
             case "minecraft:armor_stand" -> Items.ARMOR_STAND;
             case "minecraft:item_frame" -> Items.ITEM_FRAME;
             case "minecraft:glow_item_frame" -> Items.GLOW_ITEM_FRAME;
             case "minecraft:painting" -> Items.PAINTING;
             case "minecraft:minecart" -> Items.MINECART;
-            case "minecraft:boat" -> boatItem(nbt.getString("Type"));
+            case "minecraft:boat" -> boatItem(NbtCompat.getString(nbt, "Type"));
             default -> null;
         };
         return base == null ? ItemStack.EMPTY : new ItemStack(base);
@@ -330,7 +332,7 @@ public class BlueprintDiscItem extends Item {
             items.add(base);
         }
         for (String slot : new String[]{"ArmorItems", "HandItems"}) {
-            for (Tag tag : nbt.getList(slot, Tag.TAG_COMPOUND)) {
+            for (Tag tag : NbtCompat.getList(nbt, slot, Tag.TAG_COMPOUND)) {
                 ItemStack stack = ItemStack.parseOptional(registries, (CompoundTag) tag);
                 if (!stack.isEmpty()) {
                     items.add(stack);
@@ -338,7 +340,7 @@ public class BlueprintDiscItem extends Item {
             }
         }
         if (nbt.contains("Item")) { // item frame's framed item
-            ItemStack framed = ItemStack.parseOptional(registries, nbt.getCompound("Item"));
+            ItemStack framed = ItemStack.parseOptional(registries, NbtCompat.getCompound(nbt, "Item"));
             if (!framed.isEmpty()) {
                 items.add(framed);
             }
