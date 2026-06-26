@@ -8,7 +8,7 @@ import net.minecraft.resources.ResourceLocation;
  * <p>Send it from your mod with:
  * <pre>{@code
  * InterModComms.sendTo("mc3dprint", MC3DPrintAPI.IMC_REGISTER_FU_VALUE,
- *         () -> new FuRegistration(new ResourceLocation("yourmod", "ruby"), 60, 4));
+ *         () -> new FuRegistration(ResourceLocation.fromNamespaceAndPath("yourmod", "ruby"), 60, 4));
  * }</pre>
  *
  * @param item the registry id of the item (e.g. {@code yourmod:ruby})

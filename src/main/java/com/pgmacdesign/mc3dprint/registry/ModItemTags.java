@@ -48,7 +48,7 @@ public final class ModItemTags {
      * Backed by {@code data/mc3dprint/tags/items/winder_blacklist.json}.
      */
     public static final TagKey<Item> WINDER_BLACKLIST =
-            TagKey.create(Registries.ITEM, new ResourceLocation(MC3DPrint.MOD_ID, "winder_blacklist"));
+            TagKey.create(Registries.ITEM, ResourceLocation.fromNamespaceAndPath(MC3DPrint.MOD_ID, "winder_blacklist"));
 
     private ModItemTags() {}
 }

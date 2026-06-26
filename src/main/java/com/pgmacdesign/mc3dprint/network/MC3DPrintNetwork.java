@@ -15,7 +15,7 @@ import net.minecraftforge.network.simple.SimpleChannel;
 public final class MC3DPrintNetwork {
     private static final String PROTOCOL = "1";
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
-            new ResourceLocation(MC3DPrint.MOD_ID, "main"),
+            ResourceLocation.fromNamespaceAndPath(MC3DPrint.MOD_ID, "main"),
             () -> PROTOCOL, PROTOCOL::equals, PROTOCOL::equals);
 
     private MC3DPrintNetwork() {}

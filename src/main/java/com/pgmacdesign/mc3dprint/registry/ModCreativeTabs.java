@@ -10,8 +10,8 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.fml.ModList;
-import net.minecraftforge.registries.DeferredRegister;
-import net.minecraftforge.registries.RegistryObject;
+import net.neoforged.neoforge.registries.DeferredRegister;
+import net.neoforged.neoforge.registries.DeferredHolder;
 
 public final class ModCreativeTabs {
     public static final String AE2_MOD_ID = "ae2";
@@ -54,7 +54,7 @@ public final class ModCreativeTabs {
     public static final DeferredRegister<CreativeModeTab> CREATIVE_MODE_TABS =
             DeferredRegister.create(Registries.CREATIVE_MODE_TAB, MC3DPrint.MOD_ID);
 
-    public static final RegistryObject<CreativeModeTab> MC3DPRINT_TAB = CREATIVE_MODE_TABS.register("main",
+    public static final DeferredHolder<CreativeModeTab, CreativeModeTab> MC3DPRINT_TAB = CREATIVE_MODE_TABS.register("main",
             () -> CreativeModeTab.builder()
                     .title(Component.translatable("itemGroup.mc3dprint"))
                     .icon(() -> new ItemStack(ModItems.TIER1_PRINTER.get()))
@@ -130,11 +130,17 @@ public final class ModCreativeTabs {
                         // The in-game guidebook — only when Patchouli is installed.
                         if (ModList.get().isLoaded("patchouli")) {
                             net.minecraft.world.item.Item guideBook =
-                                    net.minecraftforge.registries.ForgeRegistries.ITEMS.getValue(
-                                            new net.minecraft.resources.ResourceLocation("patchouli", "guide_book"));
+                                    net.minecraft.core.registries.BuiltInRegistries.ITEM.get(
+                                            net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("patchouli", "guide_book"));
                             if (guideBook != null) {
                                 ItemStack book = new ItemStack(guideBook);
-                                book.getOrCreateTag().putString("patchouli:book", "mc3dprint:guide");
+                                // TODO(PGM-21/C5): use the Patchouli 1.21 component API
+                                // (PatchouliDataComponents.BOOK) once we compile against it.
+                                // Interim: raw NBT via CustomData so this compiles soft-dep-free.
+                                net.minecraft.nbt.CompoundTag bookTag = new net.minecraft.nbt.CompoundTag();
+                                bookTag.putString("patchouli:book", "mc3dprint:guide");
+                                book.set(net.minecraft.core.component.DataComponents.CUSTOM_DATA,
+                                        net.minecraft.world.item.component.CustomData.of(bookTag));
                                 output.accept(book);
                             }
                         }

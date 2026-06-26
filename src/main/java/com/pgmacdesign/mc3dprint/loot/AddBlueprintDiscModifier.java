@@ -2,6 +2,7 @@ package com.pgmacdesign.mc3dprint.loot;
 
 import com.google.common.base.Suppliers;
 import com.mojang.serialization.Codec;
+import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import com.pgmacdesign.mc3dprint.MC3DPrint;
 import com.pgmacdesign.mc3dprint.blueprint.Blueprint;
@@ -33,8 +34,8 @@ import java.util.function.Supplier;
  * per-build wiring. A non-empty list still works as an explicit override.
  */
 public class AddBlueprintDiscModifier extends LootModifier {
-    public static final Supplier<Codec<AddBlueprintDiscModifier>> CODEC = Suppliers.memoize(() ->
-            RecordCodecBuilder.create(instance -> codecStart(instance)
+    public static final Supplier<MapCodec<AddBlueprintDiscModifier>> CODEC = Suppliers.memoize(() ->
+            RecordCodecBuilder.mapCodec(instance -> codecStart(instance)
                     .and(Codec.floatRange(0.0F, 1.0F).fieldOf("chance")
                             .forGetter(modifier -> modifier.chance))
                     .and(Codec.STRING.listOf().fieldOf("blueprints")
@@ -78,7 +79,7 @@ public class AddBlueprintDiscModifier extends LootModifier {
     }
 
     @Override
-    public Codec<? extends IGlobalLootModifier> codec() {
+    public MapCodec<? extends IGlobalLootModifier> codec() {
         return CODEC.get();
     }
 }

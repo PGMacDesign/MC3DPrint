@@ -11,15 +11,15 @@ import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.event.config.ModConfigEvent;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.neoforged.fml.ModContainer;
 
 @Mod(MC3DPrint.MOD_ID)
 public class MC3DPrint {
     public static final String MOD_ID = "mc3dprint";
 
-    public MC3DPrint(FMLJavaModLoadingContext context) {
-        IEventBus modEventBus = context.getModEventBus();
-
+    // NeoForge injects the mod event bus + container into the @Mod constructor
+    // (replacing Forge's FMLJavaModLoadingContext.get()).
+    public MC3DPrint(IEventBus modEventBus, ModContainer modContainer) {
         ModBlocks.BLOCKS.register(modEventBus);
         ModItems.ITEMS.register(modEventBus);
         ModBlockEntities.BLOCK_ENTITIES.register(modEventBus);
@@ -29,7 +29,7 @@ public class MC3DPrint {
 
         com.pgmacdesign.mc3dprint.advancement.ModCriteria.register();
 
-        context.registerConfig(ModConfig.Type.COMMON, MC3DPrintConfig.SPEC);
+        modContainer.registerConfig(ModConfig.Type.COMMON, MC3DPrintConfig.SPEC);
 
         com.pgmacdesign.mc3dprint.network.MC3DPrintNetwork.register();
 

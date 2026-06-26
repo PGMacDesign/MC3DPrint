@@ -2,7 +2,7 @@ package com.pgmacdesign.mc3dprint.config;
 
 import com.pgmacdesign.mc3dprint.fu.FuValueRegistry;
 import com.pgmacdesign.mc3dprint.machine.MachineTier;
-import net.minecraftforge.common.ForgeConfigSpec;
+import net.neoforged.neoforge.common.ModConfigSpec;
 
 import java.util.List;
 
@@ -12,63 +12,63 @@ import java.util.List;
  * than nerf post-release").
  */
 public final class MC3DPrintConfig {
-    public static final ForgeConfigSpec SPEC;
+    public static final ModConfigSpec SPEC;
 
     // Per-tier (index = tier - 1)
-    private static final ForgeConfigSpec.IntValue[] ENERGY_BUFFER = new ForgeConfigSpec.IntValue[8];
-    private static final ForgeConfigSpec.IntValue[] MAX_ENERGY_RECEIVE = new ForgeConfigSpec.IntValue[8];
-    private static final ForgeConfigSpec.IntValue[] ITEM_RF_PER_TICK = new ForgeConfigSpec.IntValue[8];
-    private static final ForgeConfigSpec.IntValue[] ITEM_PRINT_TICKS = new ForgeConfigSpec.IntValue[8];
-    private static final ForgeConfigSpec.IntValue[] RF_PER_BLOCK = new ForgeConfigSpec.IntValue[8];
-    private static final ForgeConfigSpec.IntValue[] TICKS_PER_BLOCK = new ForgeConfigSpec.IntValue[8];
-    private static final ForgeConfigSpec.DoubleValue[] EFFICIENCY = new ForgeConfigSpec.DoubleValue[8];
+    private static final ModConfigSpec.IntValue[] ENERGY_BUFFER = new ModConfigSpec.IntValue[8];
+    private static final ModConfigSpec.IntValue[] MAX_ENERGY_RECEIVE = new ModConfigSpec.IntValue[8];
+    private static final ModConfigSpec.IntValue[] ITEM_RF_PER_TICK = new ModConfigSpec.IntValue[8];
+    private static final ModConfigSpec.IntValue[] ITEM_PRINT_TICKS = new ModConfigSpec.IntValue[8];
+    private static final ModConfigSpec.IntValue[] RF_PER_BLOCK = new ModConfigSpec.IntValue[8];
+    private static final ModConfigSpec.IntValue[] TICKS_PER_BLOCK = new ModConfigSpec.IntValue[8];
+    private static final ModConfigSpec.DoubleValue[] EFFICIENCY = new ModConfigSpec.DoubleValue[8];
 
-    public static final ForgeConfigSpec.IntValue T1_SCANNER_MAX_EDGE;
-    public static final ForgeConfigSpec.BooleanValue UNLOCK_SCANNER_SIZE;
-    public static final ForgeConfigSpec.IntValue WINDER_RF_PER_ITEM;
-    public static final ForgeConfigSpec.IntValue WINDER_TICKS_PER_ITEM;
-    public static final ForgeConfigSpec.IntValue WINDER_ENERGY_BUFFER;
-    public static final ForgeConfigSpec.IntValue WINDER_MAX_ENERGY_RECEIVE;
-    public static final ForgeConfigSpec.IntValue CABLE_TRANSFER_RATE;
-    public static final ForgeConfigSpec.IntValue CLOCK_GENERATOR_RF_PER_TICK;
-    public static final ForgeConfigSpec.DoubleValue UPGRADE_SPEED_FACTOR;
-    public static final ForgeConfigSpec.DoubleValue UPGRADE_RF_FACTOR;
-    public static final ForgeConfigSpec.DoubleValue UPGRADE_BUFFER_FACTOR;
-    public static final ForgeConfigSpec.IntValue UPGRADE_MAX_PER_TYPE;
-    public static final ForgeConfigSpec.IntValue CLOCK_GENERATOR_BURN_MULTIPLIER;
-    public static final ForgeConfigSpec.IntValue PRINT_HISTORY_SIZE;
-    public static final ForgeConfigSpec.IntValue UNKNOWN_BLOCK_FU;
-    public static final ForgeConfigSpec.BooleanValue UNKNOWN_BLOCKS_PRINTABLE;
-    public static final ForgeConfigSpec.BooleanValue DERIVE_FROM_SMELTING;
-    public static final ForgeConfigSpec.BooleanValue DERIVE_FROM_STONECUTTING;
-    public static final ForgeConfigSpec.IntValue FILAMENT_CONVERSION_RATIO;
-    public static final ForgeConfigSpec.IntValue PREVIEW_MAX_BLOCKS;
-    public static final ForgeConfigSpec.IntValue PREVIEW_RENDER_DISTANCE;
-    public static final ForgeConfigSpec.BooleanValue ALLOW_ALL_DISCS_IN_CREATIVE;
-    public static final ForgeConfigSpec.DoubleValue RESIN_OVERDRIVE_T3_BELOW;
-    public static final ForgeConfigSpec.DoubleValue RESIN_TREASURE_CHANCE_T2;
-    public static final ForgeConfigSpec.DoubleValue RESIN_TREASURE_CHANCE_T3;
-    public static final ForgeConfigSpec.IntValue RESIN_TREASURE_CAP_T2;
-    public static final ForgeConfigSpec.IntValue RESIN_TREASURE_CAP_T3;
-    public static final ForgeConfigSpec.DoubleValue RESIN_TREASURE_T2_UNCOMMON;
-    public static final ForgeConfigSpec.DoubleValue RESIN_TREASURE_T3_RARE;
-    public static final ForgeConfigSpec.DoubleValue RESIN_ORE_SALT_CHANCE;
-    public static final ForgeConfigSpec.DoubleValue RESIN_ORE_SALT_GEM_SHARE;
-    public static final ForgeConfigSpec.IntValue RESIN_ORE_SALT_MAX;
-    public static final ForgeConfigSpec.IntValue RESIN_XP_CAP_T1;
-    public static final ForgeConfigSpec.IntValue RESIN_XP_CAP_T2;
-    public static final ForgeConfigSpec.IntValue RESIN_XP_CAP_T3;
-    public static final ForgeConfigSpec.IntValue RESIN_XP_REF;
-    public static final ForgeConfigSpec.IntValue RESIN_QM_COAL_BUDGET;
-    public static final ForgeConfigSpec.IntValue RESIN_QM_FOOD_BUDGET;
-    public static final ForgeConfigSpec.IntValue RESIN_QM_TORCH_BUDGET;
-    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> FU_VALUES;
-    public static final ForgeConfigSpec.BooleanValue BLUEPRINT_REPOSITORY_SHARED;
+    public static final ModConfigSpec.IntValue T1_SCANNER_MAX_EDGE;
+    public static final ModConfigSpec.BooleanValue UNLOCK_SCANNER_SIZE;
+    public static final ModConfigSpec.IntValue WINDER_RF_PER_ITEM;
+    public static final ModConfigSpec.IntValue WINDER_TICKS_PER_ITEM;
+    public static final ModConfigSpec.IntValue WINDER_ENERGY_BUFFER;
+    public static final ModConfigSpec.IntValue WINDER_MAX_ENERGY_RECEIVE;
+    public static final ModConfigSpec.IntValue CABLE_TRANSFER_RATE;
+    public static final ModConfigSpec.IntValue CLOCK_GENERATOR_RF_PER_TICK;
+    public static final ModConfigSpec.DoubleValue UPGRADE_SPEED_FACTOR;
+    public static final ModConfigSpec.DoubleValue UPGRADE_RF_FACTOR;
+    public static final ModConfigSpec.DoubleValue UPGRADE_BUFFER_FACTOR;
+    public static final ModConfigSpec.IntValue UPGRADE_MAX_PER_TYPE;
+    public static final ModConfigSpec.IntValue CLOCK_GENERATOR_BURN_MULTIPLIER;
+    public static final ModConfigSpec.IntValue PRINT_HISTORY_SIZE;
+    public static final ModConfigSpec.IntValue UNKNOWN_BLOCK_FU;
+    public static final ModConfigSpec.BooleanValue UNKNOWN_BLOCKS_PRINTABLE;
+    public static final ModConfigSpec.BooleanValue DERIVE_FROM_SMELTING;
+    public static final ModConfigSpec.BooleanValue DERIVE_FROM_STONECUTTING;
+    public static final ModConfigSpec.IntValue FILAMENT_CONVERSION_RATIO;
+    public static final ModConfigSpec.IntValue PREVIEW_MAX_BLOCKS;
+    public static final ModConfigSpec.IntValue PREVIEW_RENDER_DISTANCE;
+    public static final ModConfigSpec.BooleanValue ALLOW_ALL_DISCS_IN_CREATIVE;
+    public static final ModConfigSpec.DoubleValue RESIN_OVERDRIVE_T3_BELOW;
+    public static final ModConfigSpec.DoubleValue RESIN_TREASURE_CHANCE_T2;
+    public static final ModConfigSpec.DoubleValue RESIN_TREASURE_CHANCE_T3;
+    public static final ModConfigSpec.IntValue RESIN_TREASURE_CAP_T2;
+    public static final ModConfigSpec.IntValue RESIN_TREASURE_CAP_T3;
+    public static final ModConfigSpec.DoubleValue RESIN_TREASURE_T2_UNCOMMON;
+    public static final ModConfigSpec.DoubleValue RESIN_TREASURE_T3_RARE;
+    public static final ModConfigSpec.DoubleValue RESIN_ORE_SALT_CHANCE;
+    public static final ModConfigSpec.DoubleValue RESIN_ORE_SALT_GEM_SHARE;
+    public static final ModConfigSpec.IntValue RESIN_ORE_SALT_MAX;
+    public static final ModConfigSpec.IntValue RESIN_XP_CAP_T1;
+    public static final ModConfigSpec.IntValue RESIN_XP_CAP_T2;
+    public static final ModConfigSpec.IntValue RESIN_XP_CAP_T3;
+    public static final ModConfigSpec.IntValue RESIN_XP_REF;
+    public static final ModConfigSpec.IntValue RESIN_QM_COAL_BUDGET;
+    public static final ModConfigSpec.IntValue RESIN_QM_FOOD_BUDGET;
+    public static final ModConfigSpec.IntValue RESIN_QM_TORCH_BUDGET;
+    public static final ModConfigSpec.ConfigValue<List<? extends String>> FU_VALUES;
+    public static final ModConfigSpec.BooleanValue BLUEPRINT_REPOSITORY_SHARED;
 
     private static final int[] DEFAULT_ITEM_RF_PER_TICK = {40, 60, 80, 100, 120, 150, 200, 250};
 
     static {
-        ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
+        ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
 
         for (MachineTier tier : MachineTier.values()) {
             int i = tier.number() - 1;

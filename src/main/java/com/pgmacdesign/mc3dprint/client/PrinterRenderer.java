@@ -48,12 +48,12 @@ import java.util.Map;
 public class PrinterRenderer implements BlockEntityRenderer<PrinterBlockEntity> {
     // Dark-metal texture for frame/rails/head, reused from the block set.
     private static final ResourceLocation METAL =
-            new ResourceLocation(MC3DPrint.MOD_ID, "textures/block/printer_casing.png");
+            ResourceLocation.fromNamespaceAndPath(MC3DPrint.MOD_ID, "textures/block/printer_casing.png");
     // Vanilla 1x1 fully-white, fully-opaque texture. Feeding the additive
     // RenderType.eyes a white texel lets the vertex color (cyan) drive the glow
     // output cleanly — a dark/transparent casing texel would muddy or hide it.
     private static final ResourceLocation WHITE =
-            new ResourceLocation("minecraft", "textures/misc/white.png");
+            ResourceLocation.fromNamespaceAndPath("minecraft", "textures/misc/white.png");
 
     // Hero cyan glow (brief palette: #5CC8FF core, falling to #1E7FCF).
     private static final float GLOW_R = 0.36F, GLOW_G = 0.78F, GLOW_B = 1.00F;

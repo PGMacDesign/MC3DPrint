@@ -185,7 +185,7 @@ public final class ResinEffects {
     }
 
     private static ResourceLocation table(String rarity) {
-        return new ResourceLocation(MC3DPrint.MOD_ID, "resin/treasure_" + rarity);
+        return ResourceLocation.fromNamespaceAndPath(MC3DPrint.MOD_ID, "resin/treasure_" + rarity);
     }
 
     /** Roll the loot table and drop its items into the container's empty slots. */

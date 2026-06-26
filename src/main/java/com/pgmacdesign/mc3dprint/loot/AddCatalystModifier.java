@@ -2,6 +2,7 @@ package com.pgmacdesign.mc3dprint.loot;
 
 import com.google.common.base.Suppliers;
 import com.mojang.serialization.Codec;
+import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import com.pgmacdesign.mc3dprint.MC3DPrint;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
@@ -13,7 +14,7 @@ import net.minecraft.world.level.storage.loot.LootContext;
 import net.minecraft.world.level.storage.loot.predicates.LootItemCondition;
 import net.neoforged.neoforge.common.loot.IGlobalLootModifier;
 import net.neoforged.neoforge.common.loot.LootModifier;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraft.core.registries.BuiltInRegistries;
 
 import java.util.List;
 import java.util.function.Supplier;
@@ -29,8 +30,8 @@ import java.util.function.Supplier;
  * follow-up; uniform is the intentional v1 behavior.
  */
 public class AddCatalystModifier extends LootModifier {
-    public static final Supplier<Codec<AddCatalystModifier>> CODEC = Suppliers.memoize(() ->
-            RecordCodecBuilder.create(instance -> codecStart(instance)
+    public static final Supplier<MapCodec<AddCatalystModifier>> CODEC = Suppliers.memoize(() ->
+            RecordCodecBuilder.mapCodec(instance -> codecStart(instance)
                     .and(Codec.floatRange(0.0F, 1.0F).fieldOf("chance")
                             .forGetter(modifier -> modifier.chance))
                     .and(Codec.STRING.listOf().fieldOf("resins")
@@ -53,7 +54,7 @@ public class AddCatalystModifier extends LootModifier {
         }
         // Uniform pick for now (see class-level TODO about flavor-biasing per table).
         String id = resinIds.get(context.getRandom().nextInt(resinIds.size()));
-        Item item = ForgeRegistries.ITEMS.getValue(new ResourceLocation(MC3DPrint.MOD_ID, id));
+        Item item = BuiltInRegistries.ITEM.get(ResourceLocation.fromNamespaceAndPath(MC3DPrint.MOD_ID, id));
         if (item == null || item == Items.AIR) {
             return generatedLoot; // typo'd / removed id — skip silently rather than crash a chest
         }
@@ -62,7 +63,7 @@ public class AddCatalystModifier extends LootModifier {
     }
 
     @Override
-    public Codec<? extends IGlobalLootModifier> codec() {
+    public MapCodec<? extends IGlobalLootModifier> codec() {
         return CODEC.get();
     }
 }
