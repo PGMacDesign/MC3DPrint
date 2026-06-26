@@ -4,11 +4,12 @@ import com.mojang.logging.LogUtils;
 import com.pgmacdesign.mc3dprint.config.MC3DPrintConfig;
 import net.minecraft.core.NonNullList;
 import net.minecraft.core.RegistryAccess;
-import net.minecraft.world.Container;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.Recipe;
+import net.minecraft.world.item.crafting.RecipeHolder;
+import net.minecraft.world.item.crafting.RecipeInput;
 import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.item.crafting.RecipeType;
 import org.slf4j.Logger;
@@ -78,9 +79,10 @@ public final class MinecraftRecipeIndex implements RecipeFuValuator.RecipeGraph<
         LOGGER.debug("Built recipe FU index: {} output items have recipes", built.size());
     }
 
-    private <C extends Container, T extends Recipe<C>> void addType(
+    private <I extends RecipeInput, T extends Recipe<I>> void addType(
             Map<Item, List<RecipeFuValuator.RecipeView<Item>>> built, RecipeType<T> type) {
-        for (T recipe : recipeManager.getAllRecipesFor(type)) {
+        for (RecipeHolder<T> holder : recipeManager.getAllRecipesFor(type)) {
+            T recipe = holder.value();
             if (recipe.isSpecial()) {
                 continue; // no fixed ingredient set to value
             }

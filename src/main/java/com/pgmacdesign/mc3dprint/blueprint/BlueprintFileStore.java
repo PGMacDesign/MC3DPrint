@@ -1,6 +1,7 @@
 package com.pgmacdesign.mc3dprint.blueprint;
 
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtAccounter;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.storage.LevelResource;
@@ -58,7 +59,7 @@ public final class BlueprintFileStore {
     public void save(UUID id, Blueprint blueprint) {
         try {
             Files.createDirectories(directory);
-            NbtIo.writeCompressed(BlueprintSerializer.write(blueprint), pathFor(id).toFile());
+            NbtIo.writeCompressed(BlueprintSerializer.write(blueprint), pathFor(id));
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to write blueprint " + id, e);
         }
@@ -70,7 +71,7 @@ public final class BlueprintFileStore {
             return Optional.empty();
         }
         try {
-            CompoundTag tag = NbtIo.readCompressed(path.toFile());
+            CompoundTag tag = NbtIo.readCompressed(path, NbtAccounter.unlimitedHeap());
             return Optional.of(BlueprintSerializer.read(tag));
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to read blueprint " + id, e);

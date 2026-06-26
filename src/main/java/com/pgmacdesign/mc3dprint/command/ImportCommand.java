@@ -13,6 +13,7 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtAccounter;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
@@ -79,7 +80,7 @@ public final class ImportCommand {
         Path file = dir.resolve(safeName + ".schem");
         try {
             Files.createDirectories(dir);
-            NbtIo.writeCompressed(schem, file.toFile());
+            NbtIo.writeCompressed(schem, file);
         } catch (IOException e) {
             source.sendFailure(Component.translatable("command.mc3dprint.export_failed", e.getMessage()));
             return 0;
@@ -118,7 +119,7 @@ public final class ImportCommand {
 
         Blueprint blueprint;
         try {
-            CompoundTag tag = NbtIo.readCompressed(file.toFile());
+            CompoundTag tag = NbtIo.readCompressed(file, NbtAccounter.unlimitedHeap());
             String name = fileName.substring(0, fileName.lastIndexOf('.'));
             if (fileName.endsWith(".schem")) {
                 blueprint = SpongeSchematicImporter.importSchematic(name, tag);

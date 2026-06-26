@@ -1,11 +1,12 @@
 package com.pgmacdesign.mc3dprint.item;
 
 import com.pgmacdesign.mc3dprint.MC3DPrint;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.event.AnvilUpdateEvent;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.common.EventBusSubscriber;
 
 /**
  * Lets players rename a written Blueprint Disc on an anvil for a flat 1 XP level
@@ -13,7 +14,7 @@ import net.neoforged.fml.common.Mod;
  * cached metadata are preserved — only the display name changes. Typing a blank
  * name reverts the disc to its default name.
  */
-@Mod.EventBusSubscriber(modid = MC3DPrint.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(modid = MC3DPrint.MOD_ID, bus = EventBusSubscriber.Bus.GAME)
 public final class BlueprintAnvilHandler {
     private BlueprintAnvilHandler() {}
 
@@ -26,16 +27,16 @@ public final class BlueprintAnvilHandler {
             return;
         }
         String typed = event.getName();
-        String current = left.hasCustomHoverName() ? left.getHoverName().getString() : "";
+        String current = left.has(DataComponents.CUSTOM_NAME) ? left.getHoverName().getString() : "";
         String desired = typed == null ? "" : typed;
         if (desired.equals(current)) {
             return; // nothing typed / no change — leave the anvil's default behavior
         }
         ItemStack output = left.copy();
         if (desired.isEmpty()) {
-            output.resetHoverName();
+            output.remove(DataComponents.CUSTOM_NAME);
         } else {
-            output.setHoverName(Component.literal(desired));
+            output.set(DataComponents.CUSTOM_NAME, Component.literal(desired));
         }
         event.setOutput(output);
         event.setCost(1);       // minimal: a single XP level

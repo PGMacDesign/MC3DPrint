@@ -12,10 +12,10 @@ import mezz.jei.api.registration.IRecipeCatalystRegistration;
 import mezz.jei.api.registration.IRecipeCategoryRegistration;
 import mezz.jei.api.registration.IRecipeRegistration;
 import mezz.jei.api.runtime.IJeiRuntime;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.fml.ModList;
-import net.minecraftforge.registries.ForgeRegistries;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -44,7 +44,7 @@ public class MC3DPrintJeiPlugin implements IModPlugin {
     @Override
     public void registerRecipes(IRecipeRegistration registration) {
         List<PrintRecipeCategory.PrintEntry> entries = new ArrayList<>();
-        ForgeRegistries.ITEMS.forEach(item -> {
+        BuiltInRegistries.ITEM.forEach(item -> {
             ItemStack stack = new ItemStack(item);
             FuValueRegistry.valueOf(stack).ifPresent(value ->
                     entries.add(new PrintRecipeCategory.PrintEntry(stack, value.fu(), value.tier())));

@@ -28,7 +28,7 @@ public class MC3DPrint {
         ModCreativeTabs.CREATIVE_MODE_TABS.register(modEventBus);
         com.pgmacdesign.mc3dprint.registry.ModLootModifiers.LOOT_MODIFIERS.register(modEventBus);
 
-        com.pgmacdesign.mc3dprint.advancement.ModCriteria.register();
+        com.pgmacdesign.mc3dprint.advancement.ModCriteria.TRIGGERS.register(modEventBus);
 
         modContainer.registerConfig(ModConfig.Type.COMMON, MC3DPrintConfig.SPEC);
 

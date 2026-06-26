@@ -2,6 +2,8 @@ package com.pgmacdesign.mc3dprint.integration.patchouli;
 
 import com.pgmacdesign.mc3dprint.MC3DPrint;
 import com.pgmacdesign.mc3dprint.machine.PrinterBlock;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
@@ -9,9 +11,9 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.CustomData;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.fml.ModList;
-import net.minecraftforge.registries.ForgeRegistries;
 
 import java.util.Objects;
 
@@ -41,13 +43,16 @@ public final class GuidebookAutoGive {
         if (persisted.getBoolean(TAG_BOOK_GIVEN)) {
             return;
         }
-        Item bookItem = ForgeRegistries.ITEMS.getValue(Objects.requireNonNull(
-                ResourceLocation.tryParse(PATCHOULI_MOD_ID + ":guide_book")));
+        Item bookItem = BuiltInRegistries.ITEM.getOptional(Objects.requireNonNull(
+                ResourceLocation.tryParse(PATCHOULI_MOD_ID + ":guide_book"))).orElse(null);
         if (bookItem == null) {
             return;
         }
         ItemStack book = new ItemStack(bookItem);
-        book.getOrCreateTag().putString("patchouli:book", MC3DPrint.MOD_ID + ":guide");
+        // TODO(PGM-21/C5): real Patchouli 1.21 component API
+        CompoundTag bookTag = new CompoundTag();
+        bookTag.putString("patchouli:book", MC3DPrint.MOD_ID + ":guide");
+        book.set(DataComponents.CUSTOM_DATA, CustomData.of(bookTag));
         if (!player.getInventory().add(book)) {
             player.drop(book, false);
         }

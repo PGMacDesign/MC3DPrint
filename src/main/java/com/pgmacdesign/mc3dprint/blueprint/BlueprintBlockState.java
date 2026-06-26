@@ -1,10 +1,10 @@
 package com.pgmacdesign.mc3dprint.blueprint;
 
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.Property;
-import net.minecraftforge.registries.ForgeRegistries;
 
 import javax.annotation.Nullable;
 import java.util.Map;
@@ -42,7 +42,7 @@ public final class BlueprintBlockState {
 
     /** Captures a live BlockState into the registry-free form. Game-side only. */
     public static BlueprintBlockState fromBlockState(BlockState state) {
-        ResourceLocation key = ForgeRegistries.BLOCKS.getKey(state.getBlock());
+        ResourceLocation key = BuiltInRegistries.BLOCK.getKey(state.getBlock());
         if (key == null) {
             throw new IllegalArgumentException("Block has no registry key: " + state);
         }
@@ -109,10 +109,10 @@ public final class BlueprintBlockState {
      */
     public Optional<BlockState> resolve() {
         ResourceLocation id = ResourceLocation.tryParse(blockId);
-        if (id == null || !ForgeRegistries.BLOCKS.containsKey(id)) {
+        if (id == null || !BuiltInRegistries.BLOCK.containsKey(id)) {
             return Optional.empty();
         }
-        Block block = ForgeRegistries.BLOCKS.getValue(id);
+        Block block = BuiltInRegistries.BLOCK.get(id);
         if (block == null) {
             return Optional.empty();
         }

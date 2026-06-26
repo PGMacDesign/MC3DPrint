@@ -9,7 +9,7 @@ import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.RecipeManager;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraft.core.registries.BuiltInRegistries;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
@@ -110,7 +110,7 @@ public final class FuValueRegistry {
         }
         FuValue apiDirect = apiItems.get(item);
         if (apiDirect == null) {
-            ResourceLocation id = ForgeRegistries.ITEMS.getKey(item);
+            ResourceLocation id = BuiltInRegistries.ITEM.getKey(item);
             if (id != null) {
                 apiDirect = apiItemIds.get(id);
             }
@@ -130,8 +130,7 @@ public final class FuValueRegistry {
         if (stackOrNull != null) {
             return stackOrNull.is(tag);
         }
-        return ForgeRegistries.ITEMS.tags() != null
-                && ForgeRegistries.ITEMS.tags().getTag(tag).contains(item);
+        return item.builtInRegistryHolder().is(tag);
     }
 
     /** Recipe-derived value (or empty if unbound / underivable). */
@@ -237,10 +236,10 @@ public final class FuValueRegistry {
 
     private static Item lookupItem(String path) {
         ResourceLocation id = ResourceLocation.tryParse("minecraft:" + path);
-        if (id == null || !ForgeRegistries.ITEMS.containsKey(id)) {
+        if (id == null || !BuiltInRegistries.ITEM.containsKey(id)) {
             return null;
         }
-        return ForgeRegistries.ITEMS.getValue(id);
+        return BuiltInRegistries.ITEM.get(id);
     }
 
     /**
@@ -333,10 +332,10 @@ public final class FuValueRegistry {
             tags.add(new TagEntry(TagKey.create(Registries.ITEM, tagId), value));
         } else {
             ResourceLocation itemId = ResourceLocation.tryParse(id);
-            if (itemId == null || !ForgeRegistries.ITEMS.containsKey(itemId)) {
+            if (itemId == null || !BuiltInRegistries.ITEM.containsKey(itemId)) {
                 throw new IllegalArgumentException("unknown item " + id);
             }
-            items.put(ForgeRegistries.ITEMS.getValue(itemId), value);
+            items.put(BuiltInRegistries.ITEM.get(itemId), value);
         }
     }
 
