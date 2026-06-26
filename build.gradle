@@ -72,6 +72,10 @@ dependencies {
 
 tasks.named('test', Test).configure {
     useJUnitPlatform()
+    // Under Stonecutter each version is a subproject, so the test task's default
+    // working dir is versions/<node>/; the blueprint-audit tests read root-relative
+    // paths (src/main/resources/...). Pin the working dir to the real project root.
+    workingDir = rootProject.projectDir
     // Forward the opt-in flag for the curated-blueprint generator to the test JVM
     // (Gradle does not pass -D properties to the forked test JVM by default). A
     // normal build leaves it 'false', so the generator stays skipped.

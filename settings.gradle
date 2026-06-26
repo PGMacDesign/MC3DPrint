@@ -5,9 +5,27 @@ pluginManagement {
             name = 'NeoForged'
             url = 'https://maven.neoforged.net/releases'
         }
+        maven {
+            name = 'KikuGie'
+            url = 'https://maven.kikugie.dev/releases'
+        }
     }
 }
 
 plugins {
     id 'org.gradle.toolchains.foojay-resolver-convention' version '0.7.0'
+    id 'dev.kikugie.stonecutter' version '0.9.6'
+}
+
+stonecutter {
+    // Stonecutter defaults to Kotlin; this project is Groovy.
+    kotlinController = false
+    centralScript = 'build.gradle'
+
+    // The version axis (NeoForge only). 1.21.1 is the base node (= current main).
+    // A second target gets added here when chosen, e.g. versions '1.21.1', '1.21.x'.
+    create(rootProject) {
+        versions '1.21.1'
+        vcsVersion = '1.21.1'
+    }
 }
