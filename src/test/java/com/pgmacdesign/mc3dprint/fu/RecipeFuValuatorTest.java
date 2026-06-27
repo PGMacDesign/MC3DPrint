@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -189,6 +190,54 @@ class RecipeFuValuatorTest {
                 .base("ore", 12, 2)
                 .recipe("ingot", 1, slot("ore"), slot()); // second slot = free
         assertEquals(12, new RecipeFuValuator<>(g).valueOf("ingot").orElseThrow().fu());
+    }
+
+    @Test
+    void broadUnderivableGraphTerminatesFast() {
+        // Regression for the creative-tab / tooltip FREEZE: a broad recipe graph
+        // whose leaves are genuinely underivable. Each item has 3 slots, each a
+        // 3-candidate tag -> 9 child lookups per item; across 10 levels that's ~9^10
+        // re-walks of shared underivable subtrees UNLESS complete (proven dead-end)
+        // misses are memoized. Leaves sit shallower than MAX_DEPTH so their null is a
+        // real dead-end, not a depth cut. With the fix this resolves in microseconds;
+        // without it, it never finishes.
+        FakeGraph g = new FakeGraph();
+        String[] kinds = {"a", "b", "c"};
+        for (int i = 0; i < 10; i++) {
+            List<String> children = slot(kinds[0] + (i + 1), kinds[1] + (i + 1), kinds[2] + (i + 1));
+            for (String k : kinds) {
+                g.recipe(k + i, 1, children, children, children);
+            }
+        }
+        // a10/b10/c10 have no recipe and no base value -> complete dead-ends.
+        RecipeFuValuator<String> v = new RecipeFuValuator<>(g);
+        assertTimeoutPreemptively(java.time.Duration.ofSeconds(5),
+                () -> assertTrue(v.valueOf("a0").isEmpty(),
+                        "a broad underivable graph must resolve to empty, not hang"));
+    }
+
+    @Test
+    void broadGraphStillDerivesWhenLeavesValued() {
+        // Same broad shape, but the leaves carry a base value: caching complete misses
+        // must not corrupt real derivation. Each of the 10 recipe levels multiplies the
+        // cheapest child by its 3 slots: leaf=2 -> level9=6 -> ... -> level0 = 2*3^10.
+        FakeGraph g = new FakeGraph();
+        String[] kinds = {"a", "b", "c"};
+        for (int i = 0; i < 10; i++) {
+            List<String> children = slot(kinds[0] + (i + 1), kinds[1] + (i + 1), kinds[2] + (i + 1));
+            for (String k : kinds) {
+                g.recipe(k + i, 1, children, children, children);
+            }
+        }
+        for (String k : kinds) {
+            g.base(k + 10, 2, 4);
+        }
+        RecipeFuValuator<String> v = new RecipeFuValuator<>(g);
+        assertTimeoutPreemptively(java.time.Duration.ofSeconds(5), () -> {
+            FuValue value = v.valueOf("a0").orElseThrow();
+            assertEquals(2 * 59049, value.fu()); // 2 * 3^10
+            assertEquals(4, value.tier());
+        });
     }
 
     @Test
