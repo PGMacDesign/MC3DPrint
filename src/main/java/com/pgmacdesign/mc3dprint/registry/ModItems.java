@@ -71,14 +71,24 @@ public final class ModItems {
     public static final DeferredHolder<Item, Item> BLUEPRINT_REPOSITORY = ITEMS.registerItem("blueprint_repository",
             props -> new BlockItem(ModBlocks.BLUEPRINT_REPOSITORY.get(), props), new Item.Properties());
 
+    // These three carry a hover line via TooltipBlockItem (1.21.5 removed Block.appendHoverText —
+    // tooltips live on the item now; same mechanism on both nodes for visual parity).
     public static final DeferredHolder<Item, Item> CLOCK_GENERATOR = ITEMS.registerItem("clock_generator",
-            props -> new BlockItem(ModBlocks.CLOCK_GENERATOR.get(), props), new Item.Properties());
+            props -> new com.pgmacdesign.mc3dprint.compat.TooltipBlockItem(ModBlocks.CLOCK_GENERATOR.get(), props,
+                    () -> net.minecraft.network.chat.Component.translatable("tooltip.mc3dprint.clock_generator",
+                            com.pgmacdesign.mc3dprint.machine.ClockGeneratorBlockEntity.ratePerTick(),
+                            com.pgmacdesign.mc3dprint.machine.ClockGeneratorBlockEntity.burnMultiplier())
+                            .withStyle(net.minecraft.ChatFormatting.GRAY)), new Item.Properties());
 
     public static final DeferredHolder<Item, Item> REDSTONE_CLOCK = ITEMS.registerItem("redstone_clock",
-            props -> new BlockItem(ModBlocks.REDSTONE_CLOCK.get(), props), new Item.Properties());
+            props -> new com.pgmacdesign.mc3dprint.compat.TooltipBlockItem(ModBlocks.REDSTONE_CLOCK.get(), props,
+                    () -> net.minecraft.network.chat.Component.translatable("tooltip.mc3dprint.redstone_clock")
+                            .withStyle(net.minecraft.ChatFormatting.GRAY)), new Item.Properties());
 
     public static final DeferredHolder<Item, Item> CREATIVE_ENERGY_SOURCE = ITEMS.registerItem("creative_energy_source",
-            props -> new BlockItem(ModBlocks.CREATIVE_ENERGY_SOURCE.get(), props), new Item.Properties());
+            props -> new com.pgmacdesign.mc3dprint.compat.TooltipBlockItem(ModBlocks.CREATIVE_ENERGY_SOURCE.get(), props,
+                    () -> net.minecraft.network.chat.Component.translatable("tooltip.mc3dprint.creative_energy")
+                            .withStyle(net.minecraft.ChatFormatting.LIGHT_PURPLE)), new Item.Properties());
 
     public static final DeferredHolder<Item, Item> CREATIVE_SPOOL = ITEMS.registerItem("creative_filament_spool",
             com.pgmacdesign.mc3dprint.fu.CreativeSpoolItem::new, new Item.Properties());
