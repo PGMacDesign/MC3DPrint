@@ -253,8 +253,20 @@ public final class FuValueRegistry {
      * {@code RecipeMap}, and the client event hands back a {@code RecipeMap}, not a
      * manager. Re-binding drops the derived cache so the next derive rebuilds the
      * index against the new recipes.
+     *
+     * <p>An <b>empty</b> recipe set never replaces a good binding. 1.21.5+ stopped
+     * syncing recipe data to clients by default, so the client recipes-received event
+     * hands back an empty/partial {@code RecipeMap}. In single-player the client and
+     * server share this static registry, so that empty client bind would otherwise
+     * clobber the integrated server's full binding — wiping every recipe-DERIVED FU
+     * value (purpur, end-stone bricks, …) and making those blocks unprintable mid-build.
+     * Vanilla always loads recipes, so a truly-empty set is always the spurious one.
      */
     public static synchronized void bind(Collection<RecipeHolder<?>> recipes, RegistryAccess registryAccess) {
+        if (recipes.isEmpty() && boundRecipes != null && !boundRecipes.isEmpty()) {
+            LOGGER.debug("Ignoring empty recipe bind; keeping {} recipes for FU derivation", boundRecipes.size());
+            return;
+        }
         boundRecipes = recipes;
         boundRegistryAccess = registryAccess;
         valuator = null; // lazy rebuild on next derive

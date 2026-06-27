@@ -58,6 +58,31 @@ public class RecipeDerivationGameTests {
     }
 
     @GameTest(template = "empty5", timeoutTicks = 100)
+    public static void emptyRecipeBindDoesNotClobberDerivation(GameTestHelper helper) {
+        // 1.21.5+ sends clients an empty recipe map; in single-player the client bind
+        // shares this static registry and must NOT wipe the server's derived values.
+        // purpur_block is recipe-derived (popped_chorus_fruit) — present before.
+        if (FuValueRegistry.valueOf(new ItemStack(Items.PURPUR_BLOCK)).isEmpty()) {
+            helper.fail("purpur_block should be derived before the empty bind");
+            return;
+        }
+        var server = helper.getLevel().getServer();
+        var goodRecipes = server.getRecipeManager().getRecipes();
+        try {
+            // simulate the spurious empty client bind
+            FuValueRegistry.bind(java.util.List.of(), server.registryAccess());
+            if (FuValueRegistry.valueOf(new ItemStack(Items.PURPUR_BLOCK)).isEmpty()) {
+                helper.fail("empty bind wiped recipe-derived values — the clobber guard failed");
+                return;
+            }
+        } finally {
+            // restore the real binding for any later test
+            FuValueRegistry.bind(goodRecipes, server.registryAccess());
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty5", timeoutTicks = 100)
     public static void netheriteBlockDerivesTo4500T6(GameTestHelper helper) {
         expect(helper, "netherite_block", Items.NETHERITE_BLOCK, 4500, 6);
         helper.succeed();
