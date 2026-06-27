@@ -10,6 +10,7 @@ import com.pgmacdesign.mc3dprint.registry.ModBlocks;
 import com.pgmacdesign.mc3dprint.registry.ModItems;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestAssertException;
 import net.minecraft.gametest.framework.GameTestHelper;
@@ -183,6 +184,13 @@ public class StructurePrintGameTests {
         });
     }
 
+    // getUpdateTag nests its whole payload under one "D" key (so 1.21.5's
+    // handleUpdateTag(ValueInput) can recover it via CompoundTag.CODEC), so peek there.
+    private static CompoundTag previewState(GameTestHelper helper, PrinterBlockEntity printer) {
+        return com.pgmacdesign.mc3dprint.compat.NbtCompat.getCompound(
+                printer.getUpdateTag(helper.getLevel().registryAccess()), "D");
+    }
+
     @GameTest(template = "empty5", timeoutTicks = 100)
     public static void previewPayloadSyncsWhenToggled(GameTestHelper helper) {
         BlockPos printerPos = new BlockPos(2, 1, 2);
@@ -191,14 +199,14 @@ public class StructurePrintGameTests {
 
         // New printers default preview ON; normalize to OFF so this test exercises
         // the off→on→off toggle transitions regardless of the placement default.
-        if (printer.getUpdateTag(helper.getLevel().registryAccess()).getBoolean("PreviewOn")) {
+        if (previewState(helper, printer).getBoolean("PreviewOn")) {
             printer.togglePreview(null);
         }
 
         // no disc: the toggle now flips on regardless (nothing to ghost-render),
         // but no Preview payload is emitted until a disc is loaded.
         printer.togglePreview(null);
-        var noDiscTag = printer.getUpdateTag(helper.getLevel().registryAccess());
+        var noDiscTag = previewState(helper, printer);
         if (!noDiscTag.getBoolean("PreviewOn")) {
             helper.fail("Preview toggle should enable even without a disc");
             return;
@@ -208,14 +216,14 @@ public class StructurePrintGameTests {
             return;
         }
         printer.togglePreview(null); // toggle back off before the disc scenario
-        if (printer.getUpdateTag(helper.getLevel().registryAccess()).getBoolean("PreviewOn")) {
+        if (previewState(helper, printer).getBoolean("PreviewOn")) {
             helper.fail("Preview toggle did not turn back off");
             return;
         }
 
         printer.inventory().setStackInSlot(PrinterBlockEntity.SLOT_TEMPLATE, discFor(helper, smallBlueprint()));
         printer.togglePreview(null);
-        var tag = printer.getUpdateTag(helper.getLevel().registryAccess());
+        var tag = previewState(helper, printer);
         if (!tag.getBoolean("PreviewOn")) {
             helper.fail("Preview did not enable with a valid disc");
             return;
@@ -225,7 +233,7 @@ public class StructurePrintGameTests {
             return;
         }
         printer.togglePreview(null);
-        if (printer.getUpdateTag(helper.getLevel().registryAccess()).contains("Preview")) {
+        if (previewState(helper, printer).contains("Preview")) {
             helper.fail("Preview payload still present after disabling");
             return;
         }
