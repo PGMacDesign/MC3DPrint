@@ -1926,7 +1926,7 @@ class CuratedBlueprintGenerator {
         b.set(0, 2, 0, backrestTrapdoor);
         b.set(1, 2, 0, backrestTrapdoor);
         b.set(2, 2, 0, backrestTrapdoor);
-        b.set(1, 3, 0, bs("minecraft:oak_sign[rotation=8]")); // plaque, facing the path
+        b.set(1, 3, 0, bs("minecraft:oak_sign[rotation=0]")); // plaque, facing the path (z=1, +z)
 
         // ── LAMPPOST (east edge, x=4, z=1) ─────────────────────────────────
         // Chiseled-stone-brick base, a stone-brick-wall shaft (the wrought-iron pole),
@@ -4497,10 +4497,10 @@ class CuratedBlueprintGenerator {
         for (int z : new int[]{z0 + 1, z1 - 2}) {
             // west-side rack
             pillar(b, x0 + 1, z, 1, 2, rackPost);
-            b.set(x0 + 1, 3, z, bs("minecraft:dark_oak_sign[rotation=4]")); // plaque facing east into hall
+            b.set(x0 + 1, 3, z, bs("minecraft:dark_oak_sign[rotation=12]")); // plaque facing east (+x) into hall
             // east-side rack
             pillar(b, x1 - 1, z, 1, 2, rackPost);
-            b.set(x1 - 1, 3, z, bs("minecraft:dark_oak_sign[rotation=12]")); // plaque facing west into hall
+            b.set(x1 - 1, 3, z, bs("minecraft:dark_oak_sign[rotation=4]")); // plaque facing west (-x) into hall
         }
 
         // ── 7) HANGING LANTERNS (interior light) ───────────────────────────────
@@ -8130,7 +8130,7 @@ class CuratedBlueprintGenerator {
 
         // ── 9) EXPLANATORY SIGNS (signText — title + station instructions) ───
         // Title sign over the door (south outside face), at standing eye level.
-        signText(b, "minecraft:oak_sign[rotation=8]", cx, 4, z1,
+        signText(b, "minecraft:oak_sign[rotation=0]", cx, 4, z1,
                  "IRON FARM", "", "Enter the door", "for your iron");
         // Villager instructions on the spawn deck, facing the pods (south), placed on
         // a clear deck cell off the central water cross and clear of the pod fronts.
@@ -8803,7 +8803,7 @@ class CuratedBlueprintGenerator {
         }
 
         // ── 5) EXPLANATORY SIGN (standing, on the south rim by the chest) ────
-        signText(b, "minecraft:oak_sign[rotation=8]", ix1, 2, z1,
+        signText(b, "minecraft:oak_sign[rotation=0]", ix1, 2, z1,
                 "Auto-planted cactus", "grows + pops on", "the breakers ->",
                 "water -> chest.");
 
@@ -10862,7 +10862,7 @@ class CuratedBlueprintGenerator {
         // the mouth without burying the exposed lintel beam at z=3.
         b.set(1, 3, z1, HANGING_LANTERN);  // west eave lantern under the overhang
         b.set(3, 3, z1, HANGING_LANTERN);  // east eave lantern under the overhang
-        b.set(0, 1, 4, bs("minecraft:oak_sign[rotation=8]")); // "MINE" plaque on the west of the mouth
+        b.set(0, 1, 4, bs("minecraft:oak_sign[rotation=0]")); // "MINE" plaque on the west of the mouth, faces +z out
 
         return b.build();
     }
@@ -11346,11 +11346,12 @@ class CuratedBlueprintGenerator {
         // build farms by low-light SPREAD, NOT giant growth — the 3-tall interior is far
         // too short for a giant mushroom (which needs ~7 blocks of vertical clearance),
         // so the sign promises the mechanic that actually works here.
-        // Hung on the INNER face of the south wall at x=cx+1 (one cell inside at z=iz1,
-        // facing=south = mounted on the solid z1 wall behind it), so the wall stays a
-        // solid light-block and the sign reads to a player walking in. At y=2 (eye level
-        // over the y=0 floor).
-        signText(b, "minecraft:oak_wall_sign[facing=south]", cx + 1, 2, iz1,
+        // Hung on the INNER face of the south wall at x=cx+1 (one cell inside at z=iz1).
+        // facing=north → the sign FRONT faces -z into the room (toward a player walking in)
+        // and it attaches to the solid south wall block at z=iz1+1 behind it, so the wall
+        // stays a solid light-block and the sign is render-safe. At y=2 (eye level over the
+        // y=0 floor).
+        signText(b, "minecraft:oak_wall_sign[facing=north]", cx + 1, 2, iz1,
                 "Mushroom farm:", "dim + mycelium", "= they spread.", "Reap & replant.");
 
         // ── 9) REDSTONE WALL TORCHES at y=2 — clean ambient light, spread-safe ──
@@ -17488,16 +17489,19 @@ class CuratedBlueprintGenerator {
                 }
             }
         }
-        b.set(cabX0, railY, cabZ0 + 1, glass);                     // port window
-        b.set(cabX1, railY, cabZ0 + 1, glass);                     // starboard window
-        b.set(cx,    railY, cabZ0, glass);                         // stern (transom) window
+        // Windows sit in the UPPER wall row (y=7) so they're at standing eye level —
+        // at y=6 (the floor row) you can't see out of them.
+        b.set(cabX0, railY + 1, cabZ0 + 1, glass);                 // port window
+        b.set(cabX1, railY + 1, cabZ0 + 1, glass);                 // starboard window
+        b.set(cx,    railY + 1, cabZ0, glass);                     // stern (transom) window
         floor(b, railY + 2, cabX0, cabZ0, cabX1, cabZ1, slabTop);  // y=8 slab roof
         door2(b, cx, railY, cabZ1, "oak", "S");                    // walk-in door (faces +z, onto the deck)
 
-        // ── 8) SHIP'S WHEEL — a fence binnacle + open-trapdoor wheel just forward of the
-        //    cabin door, on the main deck centreline.
-        b.set(cx, railY, 5, fence);
-        b.set(cx, railY + 1, 5, wheelTrap);
+        // ── 8) SHIP'S WHEEL — a fence binnacle + open-trapdoor wheel on the deck
+        //    centreline. Set forward of the mizzen mast (z=7) rather than at z=5: the
+        //    z=5 cell is the cabin doorway's exit step, and a fence there walls the door in.
+        b.set(cx, railY, 7, fence);
+        b.set(cx, railY + 1, 7, wheelTrap);
 
         // ── 9) FORECASTLE — a short raised foredeck (planks at y=6 over z=15..16) with a
         //    cross rail, giving the bow a proper raised head.
