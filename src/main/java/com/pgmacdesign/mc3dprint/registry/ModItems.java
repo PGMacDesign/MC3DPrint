@@ -36,9 +36,18 @@ public final class ModItems {
         List<DeferredHolder<Item, Item>> items = new ArrayList<>(blocks.size());
         for (var block : blocks) {
             items.add(ITEMS.registerItem(block.getId().getPath(),
-                    props -> new BlockItem(block.get(), props), new Item.Properties()));
+                    props -> new BlockItem(block.get(), props), blockItemProps()));
         }
         return List.copyOf(items);
+    }
+
+    /**
+     * Block-prefixed {@code Item.Properties} for a BlockItem so its name resolves via the
+     * {@code block.<ns>.<id>} lang key on 1.21.2+ (a pass-through on 1.21.1). Use for every
+     * BlockItem; without it 1.21.2+ shows the raw {@code item.mc3dprint.<id>} key in-game.
+     */
+    private static Item.Properties blockItemProps() {
+        return com.pgmacdesign.mc3dprint.compat.RegistryCompat.blockItem(new Item.Properties());
     }
 
     public static final DeferredHolder<Item, Item> BLANK_BLUEPRINT_DISC = ITEMS.registerItem("blank_blueprint_disc",
@@ -53,23 +62,23 @@ public final class ModItems {
     public static final DeferredHolder<Item, Item> FILAMENT_WINDER = WINDERS.get(0);
 
     public static final DeferredHolder<Item, Item> PRINTER_CASING = ITEMS.registerItem("printer_casing",
-            props -> new BlockItem(ModBlocks.PRINTER_CASING.get(), props), new Item.Properties());
+            props -> new BlockItem(ModBlocks.PRINTER_CASING.get(), props), blockItemProps());
 
     public static final DeferredHolder<Item, Item> FILAMENT_CONVERTER = ITEMS.registerItem("filament_converter",
-            props -> new BlockItem(ModBlocks.FILAMENT_CONVERTER.get(), props), new Item.Properties());
+            props -> new BlockItem(ModBlocks.FILAMENT_CONVERTER.get(), props), blockItemProps());
 
     public static final DeferredHolder<Item, Item> REMOTE_TERMINAL = ITEMS.registerItem("remote_terminal",
             props -> new com.pgmacdesign.mc3dprint.machine.RemoteTerminalBlock.TerminalBlockItem(
-                    ModBlocks.REMOTE_TERMINAL.get(), props), new Item.Properties());
+                    ModBlocks.REMOTE_TERMINAL.get(), props), blockItemProps());
 
     public static final DeferredHolder<Item, Item> FILAMENT_RACK = ITEMS.registerItem("filament_rack",
-            props -> new BlockItem(ModBlocks.FILAMENT_RACK.get(), props), new Item.Properties());
+            props -> new BlockItem(ModBlocks.FILAMENT_RACK.get(), props), blockItemProps());
 
     public static final DeferredHolder<Item, Item> MC3DCABLE = ITEMS.registerItem("mc3dcable",
-            props -> new BlockItem(ModBlocks.MC3DCABLE.get(), props), new Item.Properties());
+            props -> new BlockItem(ModBlocks.MC3DCABLE.get(), props), blockItemProps());
 
     public static final DeferredHolder<Item, Item> BLUEPRINT_REPOSITORY = ITEMS.registerItem("blueprint_repository",
-            props -> new BlockItem(ModBlocks.BLUEPRINT_REPOSITORY.get(), props), new Item.Properties());
+            props -> new BlockItem(ModBlocks.BLUEPRINT_REPOSITORY.get(), props), blockItemProps());
 
     // These three carry a hover line via TooltipBlockItem (1.21.5 removed Block.appendHoverText —
     // tooltips live on the item now; same mechanism on both nodes for visual parity).
@@ -78,23 +87,23 @@ public final class ModItems {
                     () -> net.minecraft.network.chat.Component.translatable("tooltip.mc3dprint.clock_generator",
                             com.pgmacdesign.mc3dprint.machine.ClockGeneratorBlockEntity.ratePerTick(),
                             com.pgmacdesign.mc3dprint.machine.ClockGeneratorBlockEntity.burnMultiplier())
-                            .withStyle(net.minecraft.ChatFormatting.GRAY)), new Item.Properties());
+                            .withStyle(net.minecraft.ChatFormatting.GRAY)), blockItemProps());
 
     public static final DeferredHolder<Item, Item> REDSTONE_CLOCK = ITEMS.registerItem("redstone_clock",
             props -> new com.pgmacdesign.mc3dprint.compat.TooltipBlockItem(ModBlocks.REDSTONE_CLOCK.get(), props,
                     () -> net.minecraft.network.chat.Component.translatable("tooltip.mc3dprint.redstone_clock")
-                            .withStyle(net.minecraft.ChatFormatting.GRAY)), new Item.Properties());
+                            .withStyle(net.minecraft.ChatFormatting.GRAY)), blockItemProps());
 
     public static final DeferredHolder<Item, Item> CREATIVE_ENERGY_SOURCE = ITEMS.registerItem("creative_energy_source",
             props -> new com.pgmacdesign.mc3dprint.compat.TooltipBlockItem(ModBlocks.CREATIVE_ENERGY_SOURCE.get(), props,
                     () -> net.minecraft.network.chat.Component.translatable("tooltip.mc3dprint.creative_energy")
-                            .withStyle(net.minecraft.ChatFormatting.LIGHT_PURPLE)), new Item.Properties());
+                            .withStyle(net.minecraft.ChatFormatting.LIGHT_PURPLE)), blockItemProps());
 
     public static final DeferredHolder<Item, Item> CREATIVE_SPOOL = ITEMS.registerItem("creative_filament_spool",
             com.pgmacdesign.mc3dprint.fu.CreativeSpoolItem::new, new Item.Properties());
 
     public static final DeferredHolder<Item, Item> EXTRUDIUM_ORE = ITEMS.registerItem("extrudium_ore",
-            props -> new BlockItem(ModBlocks.EXTRUDIUM_ORE.get(), props), new Item.Properties());
+            props -> new BlockItem(ModBlocks.EXTRUDIUM_ORE.get(), props), blockItemProps());
 
     public static final DeferredHolder<Item, Item> EXTRUDIUM_CRYSTAL = ITEMS.registerItem("extrudium_crystal",
             Item::new, new Item.Properties());
@@ -135,7 +144,8 @@ public final class ModItems {
         List<DeferredHolder<Item, Item>> fabricators = new ArrayList<>(ModBlocks.CONTROLLERS.size());
         for (var controller : ModBlocks.CONTROLLERS) {
             fabricators.add(ITEMS.registerItem(controller.getId().getPath(),
-                    props -> new FabricatorBlockItem(controller.get(), props), new Item.Properties().stacksTo(1)));
+                    props -> new FabricatorBlockItem(controller.get(), props),
+                    com.pgmacdesign.mc3dprint.compat.RegistryCompat.blockItem(new Item.Properties().stacksTo(1))));
         }
         return List.copyOf(fabricators);
     }

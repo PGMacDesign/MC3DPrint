@@ -36,6 +36,21 @@ public final class RegistryCompat {
         //?}
     }
 
+    /**
+     * Tag a {@code BlockItem}'s {@code Item.Properties} so its name resolves via the
+     * {@code block.<ns>.<id>} lang key. 1.21.2 stopped having {@code BlockItem} auto-delegate
+     * its description id to the block; without {@code useBlockDescriptionPrefix()} the item
+     * falls back to {@code item.<ns>.<id>} and shows the raw key in-game. 1.21.1 still
+     * auto-delegates, so it's a pass-through there. Apply to EVERY BlockItem registration.
+     */
+    public static Item.Properties blockItem(Item.Properties props) {
+        //? if >=1.21.2 {
+        /*return props.useBlockDescriptionPrefix();
+        *///?} else {
+        return props;
+        //?}
+    }
+
     /** Build a {@code BlockEntityType} bound to {@code blocks}, version-agnostically. */
     public static <T extends BlockEntity> BlockEntityType<T> blockEntityType(
             BlockEntityType.BlockEntitySupplier<T> factory, Block... blocks) {
