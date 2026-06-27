@@ -316,6 +316,33 @@ public class StructurePrintGameTests {
         });
     }
 
+    @GameTest(template = "empty5", timeoutTicks = 80)
+    public static void oversizedFootprintNeedsHigherTier(GameTestHelper helper) {
+        // A 4x4 stone slab has a footprint of 4, larger than a T3's 3x3 print area
+        // but within a T4's 5x5. That's a tier problem, not "area too small" — the
+        // printer must report NEEDS_HIGHER_TIER pointing at T4, and place nothing.
+        PrinterBlockEntity printer = poweredPrinter(helper, new BlockPos(2, 1, 2));
+        Blueprint.Builder builder = Blueprint.builder("gametest-oversized", 4, 1, 4);
+        for (int x = 0; x < 4; x++) {
+            for (int z = 0; z < 4; z++) {
+                builder.set(x, 0, z, BlueprintBlockState.parse("minecraft:stone"));
+            }
+        }
+        printer.inventory().setStackInSlot(PrinterBlockEntity.SLOT_TEMPLATE, discFor(helper, builder.build()));
+
+        helper.runAfterDelay(40, () -> {
+            if (printer.state() != PrinterBlockEntity.State.NEEDS_HIGHER_TIER) {
+                helper.fail("T3 with a 4-wide footprint must report NEEDS_HIGHER_TIER, got " + printer.state());
+                return;
+            }
+            if (printer.activeJob() != null) {
+                helper.fail("Job must not start when the footprint exceeds the tier");
+                return;
+            }
+            helper.succeed();
+        });
+    }
+
     @GameTest(template = "empty5", timeoutTicks = 300)
     public static void skipsUnprintableBlocksAndBuildsRest(GameTestHelper helper) {
         // A MIXED structure: stone (T1, printable) + a netherite block (T6, above

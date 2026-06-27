@@ -277,6 +277,7 @@ public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
             case ZONE_CONFLICT -> Component.translatable("gui.mc3dprint.state.zone_conflict");
             case PAUSED_NO_FILAMENT -> Component.translatable("gui.mc3dprint.state.paused_no_filament");
             case NOT_PRINTABLE -> Component.translatable("gui.mc3dprint.state.not_printable");
+            case NEEDS_HIGHER_TIER -> Component.translatable("gui.mc3dprint.state.needs_higher_tier", menu.requiredTier());
             case AREA_TOO_SMALL -> Component.translatable("gui.mc3dprint.state.area_too_small");
         };
         // Status lights accent cyan when printing/ready, warm red for paused/error,
