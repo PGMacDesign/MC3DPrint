@@ -23,9 +23,16 @@ reset active → `1.21.1` before every commit. `:NODE:test` green ≠ runtime-co
 ./gradlew :1.21.8:compileJava -q        # fast compile check (or :1.21.1)
 ./gradlew :1.21.8:test                  # JUnit (test/.../fu, blueprint, compat)
 ./gradlew :1.21.8:assemble -x test      # build jar → versions/1.21.8/build/libs/mc3dprint-<ver>.jar
-./gradlew :1.21.8:runGameTestServer     # in-world GameTests (gametest/)
+./gradlew :1.21.8:runGameTestServer     # in-world GameTests (gametest/); 94/94 green on 1.21.1
 # Single-target main/legacy branches use the un-scoped form: ./gradlew build
 ```
+
+**Release builds — all versions at once:** `./scripts/build-all.sh [--version X.Y.Z]` produces every
+shippable jar into `dist/`: `mc3dprint-<ver>-neoforge-1.21.1.jar`, `-neoforge-1.21.8.jar` (this tree),
+and `-forge-1.20.1.jar` (built in a throwaway worktree off the `legacy/1.20.1` branch). NeoForge needs
+JDK 21, the legacy Forge build JDK 17 — both auto-detected (override `MC3DP_JDK21`/`MC3DP_JDK17`).
+`.github/workflows/release.yml` runs this on a published GitHub Release and attaches all jars. Extend the
+`NEOFORGE_NODES` array in the script to add a future version node.
 
 Two rules that bite if skipped:
 

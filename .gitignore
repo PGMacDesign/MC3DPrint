@@ -34,3 +34,7 @@ __pycache__/
 .env
 .env.*
 !.env.example
+
+# Release artifacts + throwaway build worktrees (scripts/build-all.sh)
+/dist/
+/.worktrees/

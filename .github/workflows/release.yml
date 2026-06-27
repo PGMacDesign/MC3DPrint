@@ -1,69 +1,80 @@
-name: Build & attach mod jar to release
+name: Build & attach all mod jars to release
 
-# Runs when you publish a GitHub Release. Builds the production (reobfuscated) jar —
-# the same one you'd drop into a modpack — and attaches it to that release.
+# Runs when you publish a GitHub Release. Builds every shippable jar via
+# scripts/build-all.sh (NeoForge 1.21.1 + 1.21.8 from this tree, Forge 1.20.1 from
+# the legacy/1.20.1 branch) and attaches them all to that release.
 on:
   release:
     types: [published]
 
-# Required so the workflow can upload the jar as a release asset.
+# Required so the workflow can upload jars as release assets.
 permissions:
   contents: write
 
 jobs:
   build-and-attach:
     runs-on: ubuntu-latest
-    # Surface the secret as a job env var so the CurseForge step can guard on it —
+    # Surface the secret as a job env var so the CurseForge steps can guard on it —
     # the `secrets` context is NOT available in step `if:` conditions, but `env` is.
     env:
       CF_TOKEN: ${{ secrets.CURSEFORGE_API_KEY }}
     steps:
-      - name: Checkout
+      - name: Checkout (full history — the Forge build needs the legacy/1.20.1 branch)
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      # Strip a leading "v" so tag v0.4.0 -> 0.4.0. This version is fed to Gradle so the
-      # jar (and the in-jar mod metadata) match the release tag without bumping
-      # gradle.properties first.
+      # Strip a leading "v" so tag v0.11.0 -> 0.11.0. Fed to Gradle so the jars (and
+      # their in-jar metadata) match the release tag without bumping gradle.properties.
       - name: Derive version from release tag
         id: ver
         run: echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
         env:
           TAG: ${{ github.event.release.tag_name }}
 
-      - name: Set up JDK 21 (NeoForge 1.21.1)
+      # Both JDKs in the same job: NeoForge nodes need a Java 21 launcher (Stonecutter),
+      # the legacy Forge build needs Java 17. setup-java exports JAVA_HOME_<major>_X64 for
+      # each, which build-all.sh auto-detects. (The last call also sets the default JAVA_HOME.)
+      - name: Set up JDK 17 (Forge 1.20.1)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+      - name: Set up JDK 21 (NeoForge 1.21.x)
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "21"
           cache: gradle
 
-      - name: Build mod jar
+      - name: Build all jars
         run: |
-          chmod +x ./gradlew
-          ./gradlew build -Pmod_version="${{ steps.ver.outputs.version }}" --no-daemon --stacktrace
+          chmod +x ./scripts/build-all.sh ./gradlew
+          ./scripts/build-all.sh --version "${{ steps.ver.outputs.version }}"
 
       - name: Show built artifacts
-        run: ls -la build/libs/
+        run: ls -la dist/
 
-      # Upload to the release that triggered this run. Only one mc3dprint-*.jar is produced
-      # (no sources/dev jar), so the glob is the single production jar. --clobber lets a
-      # re-run replace the asset instead of failing.
-      - name: Attach jar to the release
+      # Attach every jar to the release that triggered this run. --clobber lets a re-run
+      # replace assets instead of failing.
+      - name: Attach jars to the release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "${{ github.event.release.tag_name }}" build/libs/mc3dprint-*.jar --clobber
+        run: gh release upload "${{ github.event.release.tag_name }}" dist/*.jar --clobber
 
-      # Also upload the same jar to CurseForge. Guarded on the secret so releases keep
-      # working (and the GitHub asset still attaches) until the CURSEFORGE_TOKEN is set.
-      # Prereleases publish as "Beta" on CurseForge; the changelog is the release body.
-      - name: Publish jar to CurseForge
+      # CurseForge: publish only the soak-tested targets. 1.20.1 (Forge) and 1.21.1
+      # (NeoForge) ship; the 1.21.8 jar is attached to the GitHub release but NOT
+      # auto-published to CurseForge until it passes an in-world soak — add a step
+      # mirroring these (loaders: neoforge, game-versions: 1.21.8) when it's ready.
+      - name: Publish 1.20.1 (Forge) to CurseForge
         if: ${{ env.CF_TOKEN != '' }}
         continue-on-error: true
         uses: Kir-Antipov/mc-publish@v3.3
         with:
           curseforge-id: 1587177
           curseforge-token: ${{ secrets.CURSEFORGE_API_KEY }}
-          files: build/libs/mc3dprint-*.jar
+          files: dist/mc3dprint-*-forge-1.20.1.jar
           name: ${{ github.event.release.name }}
           version: ${{ steps.ver.outputs.version }}
           version-type: ${{ github.event.release.prerelease && 'beta' || 'release' }}
@@ -71,3 +82,19 @@ jobs:
           game-versions: 1.20.1
           loaders: forge
           java: 17
+
+      - name: Publish 1.21.1 (NeoForge) to CurseForge
+        if: ${{ env.CF_TOKEN != '' }}
+        continue-on-error: true
+        uses: Kir-Antipov/mc-publish@v3.3
+        with:
+          curseforge-id: 1587177
+          curseforge-token: ${{ secrets.CURSEFORGE_API_KEY }}
+          files: dist/mc3dprint-*-neoforge-1.21.1.jar
+          name: ${{ github.event.release.name }}
+          version: ${{ steps.ver.outputs.version }}
+          version-type: ${{ github.event.release.prerelease && 'beta' || 'release' }}
+          changelog: ${{ github.event.release.body }}
+          game-versions: 1.21.1
+          loaders: neoforge
+          java: 21
