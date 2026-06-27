@@ -233,6 +233,48 @@ public class StructurePrintGameTests {
         helper.succeed();
     }
 
+    @GameTest(template = "empty5", timeoutTicks = 100)
+    public static void previewMaskHidesUnprintableBlocks(GameTestHelper helper) {
+        // The ghost must show only what prints. A netherite block (T6) on a T3 is
+        // unprintable and gets skipped during the print, so its palette entry must be
+        // masked OUT of the preview payload; the stone (printable) stays in.
+        PrinterBlockEntity printer = poweredPrinter(helper, new BlockPos(2, 1, 2)); // T3
+        printer.setAutoStart(false); // preview is a pre-print feature
+        Blueprint blueprint = Blueprint.builder("gametest-preview-mask", 2, 1, 2)
+                .set(0, 0, 0, BlueprintBlockState.parse("minecraft:stone"))
+                .set(1, 0, 1, BlueprintBlockState.parse("minecraft:netherite_block"))
+                .build();
+        printer.inventory().setStackInSlot(PrinterBlockEntity.SLOT_TEMPLATE, discFor(helper, blueprint));
+        if (!printer.getUpdateTag().getBoolean("PreviewOn")) {
+            printer.togglePreview(null); // normalize preview ON regardless of placement default
+        }
+
+        var tag = printer.getUpdateTag();
+        if (!tag.contains("PreviewPrintable")) {
+            helper.fail("Preview printability mask missing from update tag");
+            return;
+        }
+        int[] mask = tag.getIntArray("PreviewPrintable");
+        Blueprint preview = com.pgmacdesign.mc3dprint.blueprint.BlueprintSerializer.read(tag.getCompound("Preview"));
+        var palette = preview.palette();
+        if (mask.length != palette.size()) {
+            helper.fail("Mask length " + mask.length + " != palette size " + palette.size());
+            return;
+        }
+        for (int i = 0; i < palette.size(); i++) {
+            String id = palette.get(i).blockId();
+            if (id.equals("minecraft:netherite_block") && mask[i] != 0) {
+                helper.fail("netherite_block must be masked OUT of the T3 preview");
+                return;
+            }
+            if (id.equals("minecraft:stone") && mask[i] != 1) {
+                helper.fail("stone must remain IN the T3 preview");
+                return;
+            }
+        }
+        helper.succeed();
+    }
+
     @GameTest(template = "empty5", timeoutTicks = 200)
     public static void refusesToStartWhenAreaObstructed(GameTestHelper helper) {
         BlockPos printerPos = new BlockPos(2, 1, 2);
