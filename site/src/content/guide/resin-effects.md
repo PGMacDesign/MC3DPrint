@@ -23,4 +23,4 @@ There are six resin effects. Slot one before you print and it reshapes the resul
 - **Treasure** — drops rare loot into printed chests, barrels and shulkers; the haul scales with the resin's rarity.
 - **Quartermaster** — stocks useful things instead: fuelled furnaces, a ready brewing stand, and a move-in kit with enchanted iron tools.
 
-The rarest effects are loot-only — see [finding rare resins](/guide/finding-resins/).
+**Rare**-tier resins are loot-only — see [finding rare resins](/guide/finding-resins/).
