@@ -160,6 +160,18 @@ class BlueprintPlantSupportAuditTest {
                             String floating = belowId == null ? " (below=AIR)" : "";
                             flagged.add(String.format("%-30s (%d,%d,%d) %s on %s%s",
                                     name, x, y, z, cell.blockId(), belowLabel, floating));
+                        } else if (FARMLAND.equals(belowId) && CROPS.contains(cell.blockId())
+                                && !"7".equals(below.properties().get("moisture"))) {
+                            // A crop's farmland must ship HYDRATED (moisture=7). The print is
+                            // bottom-up and multi-tick: the soil layer lands before the crop
+                            // above it, leaving the tile uncovered for a window during which a
+                            // single random tick reverts dry (moisture=0) farmland to dirt — and
+                            // the crop then placed on dirt silently pops (suppress-drops). 7
+                            // takes eight ticks to revert, far longer than the window, and once
+                            // the crop lands it keeps the tile farmland for good.
+                            flagged.add(String.format("%-30s (%d,%d,%d) %s on DRY farmland (%s) — must be moisture=7",
+                                    name, x, y, z, cell.blockId(),
+                                    below.properties().getOrDefault("moisture", "0")));
                         }
                     }
                 }

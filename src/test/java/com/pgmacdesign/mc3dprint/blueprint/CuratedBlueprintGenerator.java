@@ -8653,10 +8653,11 @@ class CuratedBlueprintGenerator {
 
     /**
      * Normalizes a raw scan into a shippable curated farm: re-titles it, plants any pumpkin/melon
-     * stems YOUNG (age 0) so the print is ungrown unless a Verdant resin matures it, and strips
-     * captured container contents (the scan's test items). All other block states and block-entity
-     * NBT — the redstone clock's baked interval, sign text, the staggered repeater delays — carry
-     * over verbatim, so the working mechanism reproduces exactly.
+     * stems YOUNG (age 0) so the print is ungrown unless a Verdant resin matures it, HYDRATES any
+     * captured farmland (moisture=7), and strips captured container contents (the scan's test
+     * items). All other block states and block-entity NBT — the redstone clock's baked interval,
+     * sign text, the staggered repeater delays — carry over verbatim, so the working mechanism
+     * reproduces exactly.
      */
     private static Blueprint normalizeScannedFarm(Blueprint scan, String title) {
         Blueprint.Builder b = Blueprint.builder(title, scan.sizeX(), scan.sizeY(), scan.sizeZ());
@@ -8665,7 +8666,7 @@ class CuratedBlueprintGenerator {
                 for (int x = 0; x < scan.sizeX(); x++) {
                     BlueprintBlockState st = scan.get(x, y, z);
                     if (st != null) {
-                        b.set(x, y, z, youngStem(st));
+                        b.set(x, y, z, normalizeFarmCell(st));
                     }
                 }
             }
@@ -8679,11 +8680,25 @@ class CuratedBlueprintGenerator {
         return b.build();
     }
 
-    /** A pumpkin/melon stem becomes a freshly-planted age-0 stem; every other state passes through. */
-    private static BlueprintBlockState youngStem(BlueprintBlockState state) {
+    /**
+     * Per-cell normalization for a scanned farm: pumpkin/melon stems become freshly-planted
+     * (age 0); farmland is hydrated (moisture 7); every other state passes through.
+     *
+     * <p>Hydration matters because the print is multi-tick and bottom-up: the entire soil
+     * layer is placed before the crops above it. A captured-dry farmland tile ({@code
+     * moisture=0}) is uncovered during that window, so a single random tick reverts it to
+     * dirt — and the stem then placed on dirt silently pops (suppress-drops). moisture=7
+     * needs eight ticks to revert, far longer than the window, and once the stem lands the
+     * crop keeps the tile farmland for good. (This scan's water sits a course BELOW the
+     * farmland, so it never re-hydrates it in-world — same gotcha the handcrafted farms note.)
+     */
+    private static BlueprintBlockState normalizeFarmCell(BlueprintBlockState state) {
         String id = state.blockId();
         if (id.equals("minecraft:pumpkin_stem") || id.equals("minecraft:melon_stem")) {
             return new BlueprintBlockState(id, Map.of("age", "0"));
+        }
+        if (id.equals("minecraft:farmland")) {
+            return new BlueprintBlockState(id, Map.of("moisture", "7"));
         }
         return state;
     }
