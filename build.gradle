@@ -116,6 +116,27 @@ tasks.named('processResources', ProcessResources).configure {
     filesMatching(['META-INF/neoforge.mods.toml', 'pack.mcmeta']) {
         expand replaceProperties + [project: project]
     }
+
+    // MC 1.21.2 changed the recipe-ingredient codec: the {"item":"x"} / {"tag":"x"} objects
+    // became a bare id "x" / "#tag". The source recipe JSONs stay in the 1.21.1 form (which
+    // 1.21.1 requires); for any forward node (>=1.21.2) rewrite them in the packaged output so
+    // the same single source ships valid recipes per node. Idempotent — already-bare ids don't
+    // match. Result objects ({"id":...}) and conditions are untouched (no "item"/"tag" key).
+    if (stonecutter.current.project != '1.21.1') {
+        doLast {
+            def recipeDir = new File(sourceSets.main.output.resourcesDir, 'data/mc3dprint/recipe')
+            if (recipeDir.exists()) {
+                recipeDir.eachFileRecurse { f ->
+                    if (!f.name.endsWith('.json')) return
+                    def text = f.text
+                    def out = text
+                            .replaceAll(/\{\s*"item"\s*:\s*"([^"]+)"\s*\}/, '"$1"')
+                            .replaceAll(/\{\s*"tag"\s*:\s*"([^"]+)"\s*\}/, '"#$1"')
+                    if (out != text) f.text = out
+                }
+            }
+        }
+    }
 }
 
 // Example for how to get properties into the manifest for reading at runtime.
