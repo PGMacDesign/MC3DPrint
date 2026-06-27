@@ -11,11 +11,14 @@ import com.pgmacdesign.mc3dprint.registry.ModItems;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.StringTag;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestAssertException;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.entity.SignBlockEntity;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
@@ -438,6 +441,70 @@ public class StructurePrintGameTests {
             ItemStack output = printer.inventory().getStackInSlot(PrinterBlockEntity.SLOT_OUTPUT);
             if (!(output.getItem() instanceof BlueprintDiscItem)) {
                 throw new GameTestAssertException("disc should eject after printing farmland + crops");
+            }
+        });
+    }
+
+    private static SignBlockEntity findSign(GameTestHelper helper) {
+        // helper.getBlockEntity throws on an empty cell, so scan via the level (returns null).
+        for (int x = 0; x <= 6; x++) {
+            for (int y = 0; y <= 6; y++) {
+                for (int z = 0; z <= 6; z++) {
+                    if (helper.getLevel().getBlockEntity(helper.absolutePos(new BlockPos(x, y, z)))
+                            instanceof SignBlockEntity sign) {
+                        return sign;
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    @GameTest(template = "empty5", timeoutTicks = 300)
+    public static void signTextRendersAsNativeNotJson(GameTestHelper helper) {
+        // Regression: curated blueprints bake sign lines as 1.20.1 JSON-component
+        // strings ({"text":"…"}). From MC 1.20.5 on the sign messages codec reads a
+        // bare string as LITERAL text, so the JSON rendered verbatim on the sign.
+        // BeData.loadInto must convert each line to the native component form so the
+        // placed sign shows "Hello" (and a truly blank line), not the raw JSON.
+        BlockPos printerPos = new BlockPos(2, 1, 2);
+        PrinterBlockEntity printer = poweredPrinter(helper, printerPos);
+
+        CompoundTag be = new CompoundTag();
+        be.putString("id", "minecraft:sign");
+        ListTag messages = new ListTag();
+        messages.add(StringTag.valueOf("{\"text\":\"Hello\"}"));
+        messages.add(StringTag.valueOf("{\"text\":\"\"}"));
+        messages.add(StringTag.valueOf("{\"text\":\"\"}"));
+        messages.add(StringTag.valueOf("{\"text\":\"\"}"));
+        CompoundTag front = new CompoundTag();
+        front.put("messages", messages);
+        front.putString("color", "black");
+        front.putByte("has_glowing_text", (byte) 0);
+        be.put("front_text", front);
+        be.putByte("is_waxed", (byte) 0);
+
+        // stone support under the standing sign — suppress-drops lets an unbacked
+        // sign pop silently, so give it a floor and locate the sign above it.
+        Blueprint blueprint = Blueprint.builder("gametest-sign", 1, 2, 1)
+                .set(0, 0, 0, BlueprintBlockState.parse("minecraft:stone"))
+                .set(0, 1, 0, BlueprintBlockState.parse("minecraft:oak_sign[rotation=8]"))
+                .blockEntity(0, 1, 0, be)
+                .build();
+        printer.inventory().setStackInSlot(PrinterBlockEntity.SLOT_TEMPLATE, discFor(helper, blueprint));
+
+        helper.succeedWhen(() -> {
+            SignBlockEntity sign = findSign(helper);
+            if (sign == null) {
+                throw new GameTestAssertException("no sign block entity placed");
+            }
+            String line0 = sign.getFrontText().getMessage(0, false).getString();
+            if (!line0.equals("Hello")) {
+                throw new GameTestAssertException("sign line 0 should render 'Hello', got '" + line0 + "'");
+            }
+            String line1 = sign.getFrontText().getMessage(1, false).getString();
+            if (!line1.isEmpty()) {
+                throw new GameTestAssertException("sign line 1 should be blank, got '" + line1 + "'");
             }
         });
     }

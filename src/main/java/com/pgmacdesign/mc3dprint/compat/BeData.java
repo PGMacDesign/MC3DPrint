@@ -9,7 +9,16 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.UUIDUtil;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.NbtUtils;
+import net.minecraft.nbt.StringTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.ComponentSerialization;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
+import com.mojang.serialization.JsonOps;
 import net.neoforged.neoforge.items.ItemStackHandler;
 //? if >=1.21.5 {
 /*import net.minecraft.world.level.storage.ValueInput;
@@ -40,6 +49,7 @@ public final class BeData {
      */
     public static void loadInto(net.minecraft.world.level.block.entity.BlockEntity be,
                                 CompoundTag tag, HolderLookup.Provider provider) {
+        normalizeSignText(tag);
         //? if >=1.21.5 {
         /*try (net.minecraft.util.ProblemReporter.ScopedCollector pr =
                 new net.minecraft.util.ProblemReporter.ScopedCollector(be.problemPath(),
@@ -50,6 +60,78 @@ public final class BeData {
         *///?} else {
         be.loadWithComponents(tag, provider);
         //?}
+    }
+
+    /**
+     * Curated blueprints bake sign text in the legacy component format — each line a JSON string
+     * like {@code {"text":"…"}} (see {@code CuratedBlueprintGenerator.signFace}). The
+     * {@code .blueprint} binaries are shared across all loaders. MC kept reading that JSON form
+     * for sign {@code messages} through 1.21.4, but in 1.21.5 the codec switched to reading a bare
+     * string as LITERAL text — so on 1.21.5+ the baked JSON renders verbatim on the placed sign.
+     * On those versions only, convert each message to the native component-NBT form before the
+     * BlockEntity loads. 1.21.1 (and the 1.20.1 legacy branch) still want the JSON, so this is a
+     * compile-time no-op there.
+     *
+     * <p>Idempotent and format-detecting: a native message (a raw literal like {@code Cactus farm},
+     * or a player-scanned 1.21.5+ sign) doesn't start with '{' / '[' and passes through untouched,
+     * so it is safe to run on every BlockEntity. Covers both {@code minecraft:sign} and
+     * {@code minecraft:hanging_sign} (both carry {@code front_text}/{@code back_text}).
+     */
+    private static void normalizeSignText(CompoundTag tag) {
+        //? if >=1.21.5 {
+        /*normalizeSignFace(tag, "front_text");
+        normalizeSignFace(tag, "back_text");
+        *///?}
+    }
+
+    private static void normalizeSignFace(CompoundTag tag, String faceKey) {
+        if (!NbtCompat.contains(tag, faceKey)) {
+            return;
+        }
+        CompoundTag face = NbtCompat.getCompound(tag, faceKey);
+        if (!NbtCompat.contains(face, "messages")) {
+            return;
+        }
+        ListTag messages = NbtCompat.getList(face, "messages", Tag.TAG_STRING);
+        ListTag converted = new ListTag();
+        boolean changed = false;
+        for (int i = 0; i < messages.size(); i++) {
+            Tag entry = messages.get(i);
+            Tag nativeForm = entry instanceof StringTag ? legacyComponentToNative(NbtCompat.tagAsString(entry)) : null;
+            if (nativeForm != null) {
+                converted.add(nativeForm);
+                changed = true;
+            } else {
+                converted.add(entry);
+            }
+        }
+        if (changed) {
+            face.put("messages", converted);
+            tag.put(faceKey, face);
+        }
+    }
+
+    /**
+     * A legacy sign message ({@code {"text":"…"}} JSON) re-encoded to the modern component-NBT
+     * form (a plain literal collapses to a raw {@code StringTag}; styled text to a compound).
+     * Returns {@code null} when {@code value} is already native (not object/array JSON) or fails
+     * to parse — caller keeps the original tag. Package-private for {@code BeDataSignTextTest}.
+     */
+    static Tag legacyComponentToNative(String value) {
+        String trimmed = value.trim();
+        if (trimmed.isEmpty() || (trimmed.charAt(0) != '{' && trimmed.charAt(0) != '[')) {
+            return null;
+        }
+        try {
+            JsonElement json = JsonParser.parseString(trimmed);
+            Component component = ComponentSerialization.CODEC.parse(JsonOps.INSTANCE, json).result().orElse(null);
+            if (component == null) {
+                return null;
+            }
+            return ComponentSerialization.CODEC.encodeStart(NbtOps.INSTANCE, component).result().orElse(null);
+        } catch (RuntimeException e) {
+            return null; // not a component — leave the original message untouched
+        }
     }
 
     /** Write side. Mirrors the subset of {@code ValueOutput} the mod's BlockEntities use. */
