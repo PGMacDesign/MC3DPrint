@@ -2,7 +2,7 @@
   "parent": "mc3dprint:architect",
   "display": {
     "icon": {
-      "item": "mc3dprint:tier3_printer"
+      "id": "mc3dprint:tier3_printer"
     },
     "title": {
       "translate": "advancement.mc3dprint.fabricator.title"

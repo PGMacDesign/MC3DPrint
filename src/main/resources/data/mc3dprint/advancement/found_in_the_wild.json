@@ -2,7 +2,7 @@
   "parent": "mc3dprint:root",
   "display": {
     "icon": {
-      "item": "mc3dprint:blueprint_disc"
+      "id": "mc3dprint:blueprint_disc"
     },
     "title": {
       "translate": "advancement.mc3dprint.found_in_the_wild.title"

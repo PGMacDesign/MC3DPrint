@@ -1,7 +1,7 @@
 {
   "parent": "mc3dprint:matter_matters",
   "display": {
-    "icon": { "item": "mc3dprint:extrudium_crystal" },
+    "icon": { "id": "mc3dprint:extrudium_crystal" },
     "title": { "translate": "advancement.mc3dprint.extrudium.title" },
     "description": { "translate": "advancement.mc3dprint.extrudium.desc" }
   },

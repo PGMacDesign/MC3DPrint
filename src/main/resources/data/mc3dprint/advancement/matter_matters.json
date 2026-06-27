@@ -2,7 +2,7 @@
   "parent": "mc3dprint:root",
   "display": {
     "icon": {
-      "item": "mc3dprint:filament_spool_t1"
+      "id": "mc3dprint:filament_spool_t1"
     },
     "title": {
       "translate": "advancement.mc3dprint.matter_matters.title"

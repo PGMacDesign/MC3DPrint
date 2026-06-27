@@ -1,6 +1,6 @@
 {
   "display": {
-    "icon": { "item": "mc3dprint:tier1_printer" },
+    "icon": { "id": "mc3dprint:tier1_printer" },
     "title": { "translate": "advancement.mc3dprint.root.title" },
     "description": { "translate": "advancement.mc3dprint.root.desc" },
     "background": "mc3dprint:textures/block/printer_casing.png",

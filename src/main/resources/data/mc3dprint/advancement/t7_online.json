@@ -2,7 +2,7 @@
   "parent": "mc3dprint:extrudium",
   "display": {
     "icon": {
-      "item": "mc3dprint:tier7_fabricator"
+      "id": "mc3dprint:tier7_fabricator"
     },
     "title": {
       "translate": "advancement.mc3dprint.t7_online.title"

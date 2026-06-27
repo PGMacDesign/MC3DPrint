@@ -2,7 +2,7 @@
   "parent": "mc3dprint:root",
   "display": {
     "icon": {
-      "item": "minecraft:stone"
+      "id": "minecraft:stone"
     },
     "title": {
       "translate": "advancement.mc3dprint.first_extrusion.title"

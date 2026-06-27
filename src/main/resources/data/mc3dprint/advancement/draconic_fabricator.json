@@ -2,7 +2,7 @@
   "parent": "mc3dprint:t7_online",
   "display": {
     "icon": {
-      "item": "mc3dprint:tier8_fabricator"
+      "id": "mc3dprint:tier8_fabricator"
     },
     "title": {
       "translate": "advancement.mc3dprint.draconic.title"
