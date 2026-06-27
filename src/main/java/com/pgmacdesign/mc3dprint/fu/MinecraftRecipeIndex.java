@@ -9,7 +9,6 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.RecipeHolder;
-import net.minecraft.world.item.crafting.RecipeInput;
 import net.minecraft.world.item.crafting.RecipeType;
 import org.slf4j.Logger;
 
@@ -39,24 +38,6 @@ import java.util.function.Function;
  */
 public final class MinecraftRecipeIndex implements RecipeFuValuator.RecipeGraph<Item> {
     private static final Logger LOGGER = LogUtils.getLogger();
-
-    /**
-     * An empty input for {@link Recipe#assemble}. The crafting/smelting/stonecutting
-     * recipes we value all return {@code result.copy()} from {@code assemble} without
-     * reading the input, so a zero-size input safely recovers the output stack — the
-     * version-neutral replacement for the removed {@code Recipe.getResultItem}.
-     */
-    private static final RecipeInput EMPTY_INPUT = new RecipeInput() {
-        @Override
-        public ItemStack getItem(int index) {
-            return ItemStack.EMPTY;
-        }
-
-        @Override
-        public int size() {
-            return 0;
-        }
-    };
 
     private final Collection<RecipeHolder<?>> recipes;
     private final RegistryAccess registryAccess;
@@ -126,10 +107,28 @@ public final class MinecraftRecipeIndex implements RecipeFuValuator.RecipeGraph<
         }
     }
 
-    /** The recipe's output stack, via {@code assemble} (see {@link #EMPTY_INPUT}). */
-    @SuppressWarnings({"unchecked", "rawtypes"})
+    /**
+     * The recipe's output stack. {@code getResultItem} on the base node; on 1.21.5+ (which removed
+     * it) the result is resolved from the recipe's display. Deliberately NOT {@code assemble} — its
+     * input is the concrete {@code CraftingInput}/{@code SingleRecipeInput}, so a generic
+     * {@code RecipeInput} throws {@code ClassCastException} and silently kills all derivation.
+     */
     private ItemStack result(Recipe<?> recipe) {
-        return ((Recipe) recipe).assemble(EMPTY_INPUT, registryAccess);
+        //? if >=1.21.5 {
+        /*net.minecraft.util.context.ContextMap ctx = new net.minecraft.util.context.ContextMap.Builder()
+                .withParameter(net.minecraft.world.item.crafting.display.SlotDisplayContext.REGISTRIES, registryAccess)
+                .create(net.minecraft.world.item.crafting.display.SlotDisplayContext.CONTEXT);
+        for (net.minecraft.world.item.crafting.display.RecipeDisplay display : recipe.display()) {
+            for (ItemStack stack : display.result().resolveForStacks(ctx)) {
+                if (!stack.isEmpty()) {
+                    return stack;
+                }
+            }
+        }
+        return ItemStack.EMPTY;
+        *///?} else {
+        return recipe.getResultItem(registryAccess);
+        //?}
     }
 
     /** Snapshots a recipe's ingredient candidate keys; null if uninspectable. */
