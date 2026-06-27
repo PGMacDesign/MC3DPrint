@@ -182,9 +182,11 @@ public class PrinterRenderer implements BlockEntityRenderer<PrinterBlockEntity> 
         // Gantry plane sits just above the print volume's top.
         double gantryY = maxY + 0.25;
 
-        // Grab each VertexConsumer exactly once per frame per RenderType.
+        // 1.21's MultiBufferSource.BufferSource backs texture-parameterized types
+        // (entitySolid/eyes) with ONE shared builder, so fetching a second type ENDS
+        // the first's batch. Grab + fully use `solid` before fetching `glow` (deferred
+        // to renderFilament below); holding both at once crashes with "Not building!".
         VertexConsumer solid = bufferSource.getBuffer(RenderType.entitySolid(METAL));
-        VertexConsumer glow = bufferSource.getBuffer(RenderType.eyes(WHITE));
 
         renderFrame(poseStack, solid, packedLight, minX, minY, minZ, maxX, maxY, maxZ, gantryY);
 
@@ -235,6 +237,9 @@ public class PrinterRenderer implements BlockEntityRenderer<PrinterBlockEntity> 
                 headX + HEAD, headY + HEAD, headZ + HEAD,
                 HEAD_R, HEAD_G, HEAD_B, 1.0F, packedLight);
 
+        // Fetch the glow buffer only now — all `solid` drawing above is done, so ending
+        // its batch (the shared builder switches type) is safe.
+        VertexConsumer glow = bufferSource.getBuffer(RenderType.eyes(WHITE));
         renderFilament(poseStack, glow, printer, hs, headX, headY, headZ, partialTick);
     }
 
