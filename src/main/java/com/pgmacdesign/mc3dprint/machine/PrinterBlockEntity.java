@@ -1729,6 +1729,16 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
                     tag.put("Preview", com.pgmacdesign.mc3dprint.blueprint.BlueprintSerializer.write(previewBlueprint));
                     NbtCompat.putBlockPos(tag, "PreviewOrigin", origin);
                     tag.putInt("PreviewRotation", rotation.ordinal());
+                    // Per-palette-entry printability mask (1 = this machine will print it). The
+                    // ghost must show only what actually prints — printability (FU value/tier,
+                    // strict mode) is authoritative on the server, so compute it here rather than
+                    // re-deriving it on a client whose FU registry may lag recipe derivation.
+                    List<BlueprintBlockState> palette = previewBlueprint.palette();
+                    int[] printable = new int[palette.size()];
+                    for (int i = 0; i < palette.size(); i++) {
+                        printable[i] = palette.get(i).resolve().map(this::canPrintBlock).orElse(false) ? 1 : 0;
+                    }
+                    tag.putIntArray("PreviewPrintable", printable);
                 }
             }
         }
@@ -1788,11 +1798,20 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             int sx = blueprint.sizeX(), sy = blueprint.sizeY(), sz = blueprint.sizeZ();
             clientPreviewOrigin = origin;
             clientPreviewSize = o.transformedSize(sx, sy, sz);
-            blueprint.forEachBlock((local, paletteIndex) ->
-                    blueprint.palette().get(paletteIndex).resolve().ifPresent(resolvedState ->
-                            clientPreview.add(new PreviewBlock(
-                                    origin.offset(o.transform(local, sx, sy, sz)),
-                                    resolvedState.mirror(o.mirror()).rotate(o.rotation())))));
+            // Server-computed printability mask: skip palette entries this machine won't
+            // print so the ghost never advertises a block (dragon egg, over-tier, …) that
+            // the print silently omits. Absent/mismatched mask → show everything (safe).
+            int[] printable = NbtCompat.getIntArray(tag, "PreviewPrintable");
+            boolean hasMask = printable.length == blueprint.palette().size();
+            blueprint.forEachBlock((local, paletteIndex) -> {
+                if (hasMask && printable[paletteIndex] == 0) {
+                    return;
+                }
+                blueprint.palette().get(paletteIndex).resolve().ifPresent(resolvedState ->
+                        clientPreview.add(new PreviewBlock(
+                                origin.offset(o.transform(local, sx, sy, sz)),
+                                resolvedState.mirror(o.mirror()).rotate(o.rotation()))));
+            });
         }
 
         clientSpools.clear();
