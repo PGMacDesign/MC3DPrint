@@ -37,6 +37,19 @@ public final class RegistryCompat {
     }
 
     /**
+     * Look up a registered {@code DataComponentType} by id (null if absent). Used to reach an
+     * optional mod's data component reflection-free (no compile dependency) — e.g. Patchouli's
+     * {@code patchouli:book}. 1.21.5 renamed {@code get}→{@code getValue}.
+     */
+    public static net.minecraft.core.component.DataComponentType<?> dataComponentType(ResourceLocation id) {
+        //? if >=1.21.5 {
+        /*return BuiltInRegistries.DATA_COMPONENT_TYPE.getValue(id);
+        *///?} else {
+        return BuiltInRegistries.DATA_COMPONENT_TYPE.get(id);
+        //?}
+    }
+
+    /**
      * Tag a {@code BlockItem}'s {@code Item.Properties} so its name resolves via the
      * {@code block.<ns>.<id>} lang key. 1.21.2 stopped having {@code BlockItem} auto-delegate
      * its description id to the block; without {@code useBlockDescriptionPrefix()} the item

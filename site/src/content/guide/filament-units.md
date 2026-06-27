@@ -11,7 +11,7 @@ A material's FU value is derived from its crafting and smelting recipe graph —
 
 ## Using the Winder
 
-Put a material in the input slot and an empty (or partial) spool in the spool slot. The Winder consumes the material and winds its FU onto the spool. One universal Winder handles every tier — the **spool's** tier, not the Winder, decides what it accepts. It's craftable from Tier 1 (string, sticks, and a smooth-stone base).
+Put a material in the input slot and an empty (or partial) spool in the spool slot. The Winder consumes the material and winds its FU onto the spool. One universal Winder handles every tier — the **spool's** tier, not the Winder, decides what it accepts. It's an early-game craft: an iron frame around string, a stick, and a smooth-stone base.
 
 ## Exact-tier winding
 

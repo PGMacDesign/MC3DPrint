@@ -11,9 +11,9 @@ A printer has dedicated faces for everything it needs. Get the I/O right and hop
 
 - **Top** — input: templates and discs go in here.
 - **Bottom** — output: finished prints and ejected discs come out here.
-- **Sides** — filament spools only.
+- **Sides** — spool docks, loaded by hand or from the GUI (not exposed to item automation).
 
-Hoppers work from Tier 1, and any pipe mod that respects inventory faces will route to the correct side.
+Hoppers work from Tier 1, and any pipe mod that respects inventory faces will route discs into the top and pull prints out of the bottom. Only those two faces accept automated item I/O — the side spool docks are filled manually.
 
 ## Power & filament
 

@@ -1,6 +1,5 @@
 package com.pgmacdesign.mc3dprint.registry;
 
-import com.pgmacdesign.mc3dprint.compat.RegistryCompat;
 
 import com.pgmacdesign.mc3dprint.MC3DPrint;
 import com.pgmacdesign.mc3dprint.blueprint.CuratedBlueprints;
@@ -129,22 +128,12 @@ public final class ModCreativeTabs {
                             }
                         }
 
-                        // The in-game guidebook — only when Patchouli is installed.
-                        if (ModList.get().isLoaded("patchouli")) {
-                            net.minecraft.world.item.Item guideBook =
-                                    RegistryCompat.item(
-                                            net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("patchouli", "guide_book"));
-                            if (guideBook != null) {
-                                ItemStack book = new ItemStack(guideBook);
-                                // TODO(PGM-21/C5): use the Patchouli 1.21 component API
-                                // (PatchouliDataComponents.BOOK) once we compile against it.
-                                // Interim: raw NBT via CustomData so this compiles soft-dep-free.
-                                net.minecraft.nbt.CompoundTag bookTag = new net.minecraft.nbt.CompoundTag();
-                                bookTag.putString("patchouli:book", "mc3dprint:guide");
-                                book.set(net.minecraft.core.component.DataComponents.CUSTOM_DATA,
-                                        net.minecraft.world.item.component.CustomData.of(bookTag));
-                                output.accept(book);
-                            }
+                        // The in-game guidebook — only when Patchouli is installed. The stack is
+                        // bound to our book via Patchouli's patchouli:book data component (see
+                        // PatchouliCompat); empty if Patchouli/the component isn't present.
+                        ItemStack guideBook = com.pgmacdesign.mc3dprint.integration.patchouli.PatchouliCompat.guideBookStack();
+                        if (!guideBook.isEmpty()) {
+                            output.accept(guideBook);
                         }
                     })
                     .build());

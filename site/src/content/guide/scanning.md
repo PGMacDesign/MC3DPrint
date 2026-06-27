@@ -19,7 +19,7 @@ The result is a written [Blueprint Disc](/guide/blueprints/) — portable, trade
 
 > The printer never overwrites existing blocks — it only fills empty space.
 
-If you print onto occupied positions, the printer silently skips them and builds the rest, leaving holes in your structure. Always clear the print area before starting, or you'll get a half-built result.
+If a position is already occupied, the printer **pauses** there — its status reads *Obstructed* — instead of overwriting or skipping it, then resumes automatically once you clear the block out of the way. Clear the print area before starting so the job runs straight through.
 
 ## Importing existing files
 
