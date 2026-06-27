@@ -251,11 +251,22 @@ Gates: **[AGENT]** headless / **[HUMAN]** in-world.
 > `build.gradle:158`: `if (stonecutter.current.project != '1.21.1') { compileJava exclude '**/gametest/**' }` (the
 > `TEMP (Phase 2.2)` exclusion). Root cause: **NeoForge 21.8 removed `@GameTestHolder` + `@PrefixGameTestTemplate`**
 > (`net.neoforged.neoforge.gametest` now only has `GameTestHooks`/`BlockPosValueConverter`); the 1.21.5 rewrite made
-> GameTest **data-driven** — new vanilla `GameTestInstance` / `TestData` / `TestEnvironmentDefinition`. Migration:
-> re-express the holders' `@GameTestHolder` / `@GameTest(template="empty5")` against the data-driven API (a
-> `test_instance` entry + a code-registered test function, guarded `//? if >=1.21.5`), then **drop the build.gradle
-> exclusion**. Substantial but mostly mechanical; its own focused effort. The mod itself is verified loading on 1.21.8.
-> **NEXT:** gametest data-driven migration → drop the exclusion → per-node gametest parity, then `chiseledBuild` + [HUMAN] soak.
+> GameTest **data-driven** — new vanilla `GameTestInstance` / `TestData` / `TestEnvironmentDefinition`.
+>
+> **Recipe (researched + de-risked):** per test method, register its `Consumer<GameTestHelper>` to
+> `Registries.TEST_FUNCTION` (`TestFunctionLoader.registerLoader`), then register a
+> `FunctionGameTestInstance(functionKey, TestData)` via the mod-bus `net.neoforged.neoforge.event.RegisterGameTestsEvent`
+> (`registerTest`/`registerEnvironment` — NeoForge kept a code path, no JSON). Annotations stay `//? if <1.21.5`; the
+> registration table is `//? if >=1.21.5`; then drop the exclusion.
+>
+> **Measured cost (2026-06-26): ~890 compile errors** when the exclusion is lifted — it is NOT just registration. The
+> test *bodies* churned hard: `GameTestAssertException` now takes `Component` not `String` (~400 errors),
+> `GameTestHelper.getBlockEntity` changed (~80), Optional getters, etc. And it's **all-or-nothing** (the glob is
+> `**/gametest/**`). This is the single biggest remaining piece — on par with a large slice of the 736-error core pass —
+> and it's regression *tooling* on a node now 5 releases behind latest (26.2). **Recommendation: defer it** (or do it
+> once against the eventual ship-target version). 1.21.8 is shippable without it — the 1.21.1 base node runs all 94
+> gametests as the regression oracle, and the [HUMAN] soak is the real functional gate.
+> **NEXT for a shippable 1.21.8:** only the [HUMAN] in-world soak. Strategically, the next *forward* target is likely 26.2, not 1.21.8.
 >
 > **Established conventions for the remaining fan-out:**
 > - Files edited while **active node = `1.21.1`** → plain code is 1.21.1, the 1.21.5+ variant goes in
