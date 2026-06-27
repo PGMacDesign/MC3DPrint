@@ -75,21 +75,20 @@ public final class FuValueRegistry {
         if (base.isPresent()) {
             return base;
         }
-        Optional<FuValue> derived = derive(item);
-        if (derived.isPresent()) {
-            return derived;
-        }
-        // FALLBACK: cosmetic colour/patina is free — a dyed/oxidized variant that
-        // can't be valued on its own resolves to its canonical sibling's (fu, tier)
-        // so e.g. red_wool == white_wool, oxidized_cut_copper == cut_copper. This is
-        // a last resort only: anything with its own explicit/API/derived value never
-        // reaches here, so no asserted tier value changes. Guarded so the canonical's
-        // own resolution can't loop back (canonicalOf(canonical) == canonical).
+        // Cosmetic colour/patina is free: a dyed/oxidized variant takes its canonical
+        // sibling's value (red_wool == white_wool, light_blue_shulker_box == shulker_box).
+        // This runs BEFORE recipe derivation — not just as a fallback — for two reasons:
+        // it enforces "recolour is free" (the variant never picks up a dye surcharge),
+        // and it sidesteps a pathological derivation. Every dyeable family (wool, glass,
+        // shulker boxes…) is a COMPLETE re-dye graph: any colour crafts from any other.
+        // Deriving a variant therefore walks factorially-many colour permutations — each
+        // cycle-pruned so never memoized — which hangs the game. Canonicalizing first
+        // collapses each family to its base. Idempotent: canonical(canonical) == canonical.
         Item canonical = canonicalCosmeticVariant(item);
         if (canonical != item) {
             return valueOf(canonical, null);
         }
-        return Optional.empty();
+        return derive(item);
     }
 
     /**

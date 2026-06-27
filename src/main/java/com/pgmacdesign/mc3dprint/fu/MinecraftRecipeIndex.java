@@ -57,7 +57,13 @@ public final class MinecraftRecipeIndex implements RecipeFuValuator.RecipeGraph<
         if (index == null) {
             build();
         }
-        return index.getOrDefault(output, List.of());
+        // Collapse cosmetic colour variants to their canonical sibling. Every dyeable
+        // family (wool, glass, shulker boxes…) is a COMPLETE re-dye graph (any colour
+        // from any other), so without this the valuator walks factorially-many colour
+        // permutations and hangs. Canonicalizing here (and the ingredient candidates in
+        // toView) collapses each family to one node, and the re-dye recipe's own-family
+        // ingredient becomes a self-reference the cycle guard prunes.
+        return index.getOrDefault(FuValueRegistry.canonicalCosmeticVariant(output), List.of());
     }
 
     @Override
@@ -93,7 +99,9 @@ public final class MinecraftRecipeIndex implements RecipeFuValuator.RecipeGraph<
             if (result.isEmpty()) {
                 continue;
             }
-            Item outputItem = result.getItem();
+            // Index under the canonical (colour-neutral) output so all of a dye family's
+            // recipes — including the re-dye recipes — collapse onto one node.
+            Item outputItem = FuValueRegistry.canonicalCosmeticVariant(result.getItem());
             RecipeFuValuator.RecipeView<Item> view = toView(recipe, result.getCount());
             if (view != null) {
                 built.computeIfAbsent(outputItem, k -> new ArrayList<>()).add(view);
@@ -114,17 +122,19 @@ public final class MinecraftRecipeIndex implements RecipeFuValuator.RecipeGraph<
             if (ingredient == null || ingredient.isEmpty()) {
                 continue; // empty slot
             }
-            // getItems() already expands tags to concrete stacks; the valuator
-            // picks the cheapest member.
+            // getItems() already expands tags to concrete stacks; the valuator picks
+            // the cheapest member. Canonicalize cosmetic colour variants and dedup so a
+            // "#wool" / "#shulker_boxes" slot collapses to a single canonical key —
+            // otherwise the complete re-dye graph blows up the walk.
             ItemStack[] matches = ingredient.getItems();
-            List<Item> candidates = new ArrayList<>(matches.length);
+            java.util.LinkedHashSet<Item> candidates = new java.util.LinkedHashSet<>();
             for (ItemStack match : matches) {
                 if (!match.isEmpty()) {
-                    candidates.add(match.getItem());
+                    candidates.add(FuValueRegistry.canonicalCosmeticVariant(match.getItem()));
                 }
             }
             if (!candidates.isEmpty()) {
-                slots.add(candidates);
+                slots.add(new ArrayList<>(candidates));
             }
         }
         final List<List<Item>> finalSlots = slots;

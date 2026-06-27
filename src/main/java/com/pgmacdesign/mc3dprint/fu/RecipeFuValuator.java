@@ -80,6 +80,18 @@ public final class RecipeFuValuator<K> {
      */
     private boolean lastComplete;
 
+    /**
+     * Safety net: max {@link #resolve} calls per top-level {@link #valueOf}. With the
+     * cosmetic-variant collapse + cycle/depth guards a real graph resolves in a few
+     * thousand; this only ever trips on a pathological (e.g. modded) recipe graph, where
+     * we abort that derivation and treat the item as unvalued rather than hang the game.
+     */
+    public static final long MAX_RESOLVES = 500_000L;
+    private long budget;
+    private boolean budgetExceeded;
+    /** Logged-once guard so a pathological graph warns rather than spams. */
+    public static volatile boolean BUDGET_TRIPPED = false;
+
     public RecipeFuValuator(RecipeGraph<K> graph) {
         this.graph = graph;
     }
@@ -89,10 +101,22 @@ public final class RecipeFuValuator<K> {
      * cheapest recipe-derived value, otherwise empty. Memoized.
      */
     public Optional<FuValue> valueOf(K item) {
-        return Optional.ofNullable(resolve(item, 0));
+        budget = 0;
+        budgetExceeded = false;
+        FuValue v = resolve(item, 0);
+        if (budgetExceeded) {
+            BUDGET_TRIPPED = true;
+            return Optional.empty(); // pathological graph — degrade to unvalued, never hang
+        }
+        return Optional.ofNullable(v);
     }
 
     private FuValue resolve(K item, int depth) {
+        if (budgetExceeded || ++budget > MAX_RESOLVES) {
+            budgetExceeded = true;
+            lastComplete = false; // provisional — never memoized
+            return null;
+        }
         if (resolved.containsKey(item)) {
             lastComplete = true; // only complete results are ever cached
             return cache.get(item);
