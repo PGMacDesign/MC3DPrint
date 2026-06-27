@@ -61,8 +61,10 @@ public class TierGatingGameTests {
                 helper.fail("T1 must not start structure jobs (no print area)");
                 return;
             }
-            if (t1.state() != PrinterBlockEntity.State.NOT_PRINTABLE) {
-                helper.fail("Expected NOT_PRINTABLE on T1 blueprint mode, got " + t1.state());
+            // T1/T2 have no print area, so any structure points the player at the
+            // smallest structure-capable tier (T3) via NEEDS_HIGHER_TIER.
+            if (t1.state() != PrinterBlockEntity.State.NEEDS_HIGHER_TIER) {
+                helper.fail("Expected NEEDS_HIGHER_TIER on T1 blueprint mode, got " + t1.state());
                 return;
             }
             helper.succeed();

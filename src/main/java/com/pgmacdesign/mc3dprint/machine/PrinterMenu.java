@@ -311,6 +311,11 @@ public class PrinterMenu extends AbstractContainerMenu {
         return SplitContainerData.combine(data, PrinterBlockEntity.DATA_ROTATION) * 90;
     }
 
+    /** Smallest printer tier that fits the loaded blueprint (drives the NEEDS_HIGHER_TIER label). */
+    public int requiredTier() {
+        return SplitContainerData.combine(data, PrinterBlockEntity.DATA_REQUIRED_TIER);
+    }
+
     @Override
     public boolean clickMenuButton(Player player, int id) {
         if (printer == null || printer.getLevel() == null || printer.getLevel().isClientSide) {

@@ -104,14 +104,18 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
     public static final int DATA_OFFSET_Z = 13;
     public static final int DATA_PREVIEW = 14;
     public static final int DATA_ROTATION = 15;
-    public static final int DATA_COUNT = 16;
+    // Smallest printer tier whose footprint fits the loaded blueprint, surfaced to
+    // the GUI so a NEEDS_HIGHER_TIER status can name the tier ("Requires a Tier N
+    // Printer"). 0 when no tier fits / not applicable.
+    public static final int DATA_REQUIRED_TIER = 16;
+    public static final int DATA_COUNT = 17;
 
     /** Build offsets are clamped to [-MAX_OFFSET, MAX_OFFSET] on each axis. */
     public static final int MAX_OFFSET = 32;
 
     public enum State {
         IDLE, PRINTING, PAUSED_NO_POWER, PAUSED_OUTPUT_FULL, PAUSED_OBSTRUCTED, ZONE_CONFLICT,
-        PAUSED_NO_FILAMENT, NOT_PRINTABLE, AREA_TOO_SMALL, READY;
+        PAUSED_NO_FILAMENT, NOT_PRINTABLE, AREA_TOO_SMALL, NEEDS_HIGHER_TIER, READY;
 
         public static State byOrdinal(int ordinal) {
             return ordinal >= 0 && ordinal < values().length ? values()[ordinal] : IDLE;
@@ -211,6 +215,9 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
     // Human-readable explanation for the most recent NOT_PRINTABLE; logged once
     // on the transition into that state so the player can see WHY in the log.
     private String notPrintableReason = "";
+    // Smallest tier that fits the loaded blueprint's footprint, set alongside
+    // NEEDS_HIGHER_TIER so the GUI can name it. 0 = none / not applicable.
+    private int requiredTier = 0;
     // Blocks skipped during the current structure job because this machine can't
     // print them (no FU value in strict mode, or a tier above the machine). Reset
     // when a job starts; each distinct type is logged once, summarized on finish.
@@ -1010,9 +1017,11 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
 
         if (activeJob == null) {
             if (!autoStart && !startRequested) {
-                // keep error states visible until the next trigger attempt
+                // keep error states visible until the next trigger attempt. From a
+                // clean IDLE, resolve the real status (READY / NEEDS_HIGHER_TIER /
+                // OBSTRUCTED) so we never advertise READY for an unprintable job.
                 if (state == State.IDLE) {
-                    state = State.READY;
+                    recheckObstruction();
                 }
                 return;
             }
@@ -1176,17 +1185,13 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         }
         Blueprint blueprint = loaded.get();
 
-        // tier gating: structure printing needs a print area, the footprint
-        // must fit, and every material must be within this machine's tier
-        if (tier.maxFootprint() == 0) {
-            state = State.NOT_PRINTABLE;
-            notPrintableReason = "this tier cannot print structures (zero print footprint)";
-            return;
-        }
+        // tier gating: the footprint must fit this machine's print area (and every
+        // material must be within tier, checked below). A too-large footprint is a
+        // tier problem, not an "area too small" — point the player at the printer
+        // tier that WOULD fit it (T1/T2 print no structures → smallest is T3).
         PrintOrientation orientation = currentOrientation();
         BlockPos size = orientation.transformedSize(blueprint.sizeX(), blueprint.sizeY(), blueprint.sizeZ());
-        if (size.getX() > tier.maxFootprint() || size.getZ() > tier.maxFootprint()) {
-            state = State.AREA_TOO_SMALL;
+        if (footprintTooLarge(size)) {
             return;
         }
         // Validate the palette: rather than refusing the whole job when one block
@@ -1885,7 +1890,7 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             return;
         }
         ItemStack disc = inventory.getStackInSlot(SLOT_TEMPLATE);
-        if (!isLoadedDisc(disc) || tier.maxFootprint() == 0) {
+        if (!isLoadedDisc(disc)) {
             return;
         }
         UUID blueprintId = BlueprintDiscItem.getBlueprintId(disc).orElse(null);
@@ -1899,10 +1904,25 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         Blueprint blueprint = loaded.get();
         PrintOrientation orientation = currentOrientation();
         BlockPos size = orientation.transformedSize(blueprint.sizeX(), blueprint.sizeY(), blueprint.sizeZ());
+        State previous = state;
+        // Surface a footprint/tier mismatch the moment a disc loads (or the build is
+        // rotated/offset) instead of waiting for Start — so the GUI never shows READY
+        // for a job that can't print here. T1/T2 (zero footprint) fall through here too.
+        if (footprintTooLarge(size)) {
+            if (state != previous) {
+                setChanged();
+                syncToClients();
+            }
+            return;
+        }
+        // Footprint fits now (e.g. rotated to a smaller profile) — clear any stale
+        // tier error before re-checking obstruction.
+        if (state == State.NEEDS_HIGHER_TIER || state == State.AREA_TOO_SMALL) {
+            state = State.IDLE;
+        }
         BlockPos origin = worldPosition.offset(
                 -(size.getX() / 2) + offsetX, 1 + offsetY, -(size.getZ() / 2) + offsetZ);
         boolean clear = isAreaClear(serverLevel, blueprint, orientation, origin);
-        State previous = state;
         if (!clear) {
             state = State.PAUSED_OBSTRUCTED;
         } else if (state == State.PAUSED_OBSTRUCTED || state == State.IDLE) {
@@ -1930,6 +1950,39 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
     /** Current print orientation: the persisted Y-rotation, no mirror. */
     private PrintOrientation currentOrientation() {
         return new PrintOrientation(rotation, Mirror.NONE);
+    }
+
+    /**
+     * If the (already orientation-transformed) {@code size}'s horizontal footprint
+     * exceeds this machine's print area, set the error state and return true:
+     * {@code NEEDS_HIGHER_TIER} (+ {@link #requiredTier}) when a larger printer
+     * would fit it, else {@code AREA_TOO_SMALL} when it's too big for even a Tier 8.
+     * Returns false (and leaves state untouched) when it fits.
+     */
+    private boolean footprintTooLarge(BlockPos size) {
+        int footprint = Math.max(size.getX(), size.getZ());
+        if (footprint <= tier.maxFootprint()) {
+            return false;
+        }
+        MachineTier fit = smallestTierFor(footprint);
+        if (fit != null) {
+            requiredTier = fit.number();
+            state = State.NEEDS_HIGHER_TIER;
+        } else {
+            requiredTier = 0;
+            state = State.AREA_TOO_SMALL;
+        }
+        return true;
+    }
+
+    /** Smallest tier whose print footprint fits {@code footprint}, or null if none (too big for T8). */
+    private static MachineTier smallestTierFor(int footprint) {
+        for (MachineTier candidate : MachineTier.values()) {
+            if (candidate.maxFootprint() >= footprint) {
+                return candidate;
+            }
+        }
+        return null;
     }
 
     /**
@@ -2016,6 +2069,7 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             case DATA_OFFSET_Z -> offsetZ;
             case DATA_PREVIEW -> previewEnabled ? 1 : 0;
             case DATA_ROTATION -> rotation.ordinal();
+            case DATA_REQUIRED_TIER -> requiredTier;
             default -> 0;
         };
     }
