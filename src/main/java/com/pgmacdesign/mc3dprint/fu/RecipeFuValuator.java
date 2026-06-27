@@ -68,6 +68,17 @@ public final class RecipeFuValuator<K> {
     private final Map<K, Boolean> resolved = new HashMap<>();
     /** Items currently on the resolution stack (cycle guard). */
     private final Deque<K> stack = new ArrayDeque<>();
+    /**
+     * Set by every {@link #resolve}/{@link #evaluate}/{@link #cheapestMatch} return:
+     * {@code false} if the result was pruned by the depth cap or the cycle guard
+     * anywhere in its subtree, so a {@code null} is provisional (a shallower path
+     * might still value it) rather than a proven dead-end. Only a COMPLETE miss is
+     * safe to memoize — caching incomplete misses would poison sibling paths, while
+     * NOT caching complete misses re-walks underivable subtrees combinatorially
+     * (the creative-tab / tooltip freeze). Single-threaded: read immediately after
+     * each call, before the next one overwrites it.
+     */
+    private boolean lastComplete;
 
     public RecipeFuValuator(RecipeGraph<K> graph) {
         this.graph = graph;
@@ -83,23 +94,30 @@ public final class RecipeFuValuator<K> {
 
     private FuValue resolve(K item, int depth) {
         if (resolved.containsKey(item)) {
+            lastComplete = true; // only complete results are ever cached
             return cache.get(item);
         }
         // Base (explicit) values win outright and never trigger a graph walk.
         Optional<FuValue> base = graph.baseValue(item);
         if (base.isPresent()) {
+            lastComplete = true;
             return memo(item, base.get());
         }
         if (depth >= MAX_DEPTH || stack.contains(item)) {
-            // Don't memoize a depth/cycle miss — a shallower path may still value it.
+            // Pruned: a shallower path may still value it, so this null is provisional.
+            lastComplete = false;
             return null;
         }
 
         stack.push(item);
         FuValue best = null;
+        boolean complete = true; // did every recipe resolve without a depth/cycle cut?
         try {
             for (RecipeView<K> recipe : graph.recipesFor(item)) {
                 FuValue candidate = evaluate(recipe, depth);
+                if (!lastComplete) {
+                    complete = false;
+                }
                 if (candidate != null && (best == null || candidate.fu() < best.fu())) {
                     best = candidate;
                 }
@@ -107,29 +125,38 @@ public final class RecipeFuValuator<K> {
         } finally {
             stack.pop();
         }
-        // Only memoize once the whole subtree resolved without being cut short
-        // by THIS item's own stack/depth pruning. Cheaper safe rule: memoize at
-        // top-level depth 0 always (full walk done); deeper, memoize only hits.
-        if (depth == 0 || best != null) {
+        lastComplete = complete;
+        // Memoize a hit always; memoize a MISS only when the walk was COMPLETE (a
+        // proven dead-end). Caching complete misses is what stops the combinatorial
+        // re-walk of underivable subtrees. depth==0 also memoizes (full budget, matches
+        // prior behavior). An incomplete deeper miss stays uncached so a shallower path
+        // can still value it.
+        if (best != null || complete || depth == 0) {
             return memo(item, best);
         }
-        return best;
+        return null;
     }
 
     private FuValue evaluate(RecipeView<K> recipe, int depth) {
         long sum = 0;
         int maxTier = 1;
+        boolean complete = true;
         for (List<K> slot : recipe.ingredientSlots()) {
             if (slot == null || slot.isEmpty()) {
                 continue; // free / empty slot (e.g. fuel)
             }
             FuValue cheapest = cheapestMatch(slot, depth);
+            if (!lastComplete) {
+                complete = false;
+            }
             if (cheapest == null) {
-                return null; // a required ingredient has no value -> recipe unusable
+                lastComplete = complete; // recipe unusable; complete iff the slot walk was
+                return null;
             }
             sum += cheapest.fu();
             maxTier = Math.max(maxTier, cheapest.tier());
         }
+        lastComplete = complete;
         if (sum == 0) {
             return null; // nothing valued contributed -> can't derive
         }
@@ -141,12 +168,17 @@ public final class RecipeFuValuator<K> {
     /** Cheapest valued candidate in a slot, or null if none can be valued. */
     private FuValue cheapestMatch(List<K> candidates, int depth) {
         FuValue cheapest = null;
+        boolean complete = true;
         for (K candidate : candidates) {
             FuValue v = resolve(candidate, depth + 1);
+            if (!lastComplete) {
+                complete = false;
+            }
             if (v != null && (cheapest == null || v.fu() < cheapest.fu())) {
                 cheapest = v;
             }
         }
+        lastComplete = complete;
         return cheapest;
     }
 
