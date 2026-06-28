@@ -464,6 +464,12 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
      * anti-exploit gate is preserved (you can't obtain the block by skipping it).
      */
     private boolean canPrintBlock(BlockState resolvedState) {
+        // Water flashes to steam in an ultrawarm dimension (the Nether), so a pure water block
+        // can't print there — skip it. Routing through canPrintBlock also hides it from the
+        // ghost preview (the printability mask reuses this method).
+        if (isWaterUnplaceableIn(resolvedState, level != null && level.dimensionType().ultraWarm())) {
+            return false;
+        }
         Optional<FuValue> value = blockFuValue(resolvedState);
         if (value.isPresent()) {
             return value.get().tier() <= tier.number();
@@ -507,6 +513,32 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         return block instanceof net.minecraft.world.level.block.BushBlock     // crops/stems/saplings/flowers/wart
                 || block instanceof net.minecraft.world.level.block.FarmBlock      // farmland
                 || block instanceof net.minecraft.world.level.block.DirtPathBlock; // grass/dirt path
+    }
+
+    /**
+     * Water can't exist in an ultrawarm dimension (the Nether) — it flashes to steam. A pure
+     * water block (source/flowing) printed there must be skipped, so a build's water bed/moat
+     * simply doesn't appear. Lava is unaffected (it's native to the Nether). The {@code ultraWarm}
+     * flag is passed in (not read here) so the rule is unit/gametest-testable without an actual
+     * ultrawarm world.
+     */
+    public static boolean isWaterUnplaceableIn(BlockState state, boolean ultraWarm) {
+        return ultraWarm
+                && state.getBlock() instanceof net.minecraft.world.level.block.LiquidBlock
+                && state.getFluidState().is(net.minecraft.tags.FluidTags.WATER);
+    }
+
+    /**
+     * The state to actually place: in an ultrawarm dimension a waterlogged solid loses its water
+     * (the block still prints, just dry) to honour the no-water-in-the-Nether rule. Pure water
+     * blocks are handled earlier by {@link #isWaterUnplaceableIn} (skipped, never reach here).
+     */
+    public static BlockState dewaterFor(BlockState state, boolean ultraWarm) {
+        var waterlogged = net.minecraft.world.level.block.state.properties.BlockStateProperties.WATERLOGGED;
+        if (ultraWarm && state.hasProperty(waterlogged) && state.getValue(waterlogged)) {
+            return state.setValue(waterlogged, false);
+        }
+        return state;
     }
 
     /**
@@ -1115,6 +1147,9 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
                     .mirror(activeJob.orientation().mirror())
                     .rotate(activeJob.orientation().rotation());
             placedState = applyPlacementResin(serverLevel, placedState); // Verdant / Ore Salting
+            // No water in an ultrawarm dimension: a waterlogged solid prints dry. (Pure water
+            // blocks are already skipped by canPrintBlock and never reach here.)
+            placedState = dewaterFor(placedState, serverLevel.dimensionType().ultraWarm());
             // Place the exact captured state WITHOUT updateShape, so two-block pieces
             // (beds, doors, tall plants) and support-dependent blocks (crops on farmland)
             // don't self-break before their partner/support lands, and the blueprint's

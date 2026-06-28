@@ -19,6 +19,7 @@ import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.SignBlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
@@ -507,6 +508,39 @@ public class StructurePrintGameTests {
                 throw new GameTestAssertException("sign line 1 should be blank, got '" + line1 + "'");
             }
         });
+    }
+
+    @GameTest(template = "empty5", timeoutTicks = 20)
+    public static void netherWaterRules(GameTestHelper helper) {
+        // Water can't print in an ultrawarm dimension (the Nether): pure water is skipped, lava
+        // is fine, and a waterlogged solid prints dry. The rule is flag-driven, so it's checkable
+        // here in the overworld without standing up a real Nether.
+        BlockState water = Blocks.WATER.defaultBlockState();
+        BlockState lava = Blocks.LAVA.defaultBlockState();
+        BlockState wetSlab = Blocks.OAK_SLAB.defaultBlockState()
+                .setValue(BlockStateProperties.WATERLOGGED, true);
+
+        if (!PrinterBlockEntity.isWaterUnplaceableIn(water, true)) {
+            helper.fail("water must be unplaceable in an ultrawarm dimension");
+            return;
+        }
+        if (PrinterBlockEntity.isWaterUnplaceableIn(water, false)) {
+            helper.fail("water must print normally outside ultrawarm dimensions");
+            return;
+        }
+        if (PrinterBlockEntity.isWaterUnplaceableIn(lava, true)) {
+            helper.fail("lava is native to the Nether and must still print");
+            return;
+        }
+        if (PrinterBlockEntity.dewaterFor(wetSlab, true).getValue(BlockStateProperties.WATERLOGGED)) {
+            helper.fail("a waterlogged solid must print dry in an ultrawarm dimension");
+            return;
+        }
+        if (!PrinterBlockEntity.dewaterFor(wetSlab, false).getValue(BlockStateProperties.WATERLOGGED)) {
+            helper.fail("waterlogging must be preserved outside ultrawarm dimensions");
+            return;
+        }
+        helper.succeed();
     }
 
     @GameTest(template = "empty5", timeoutTicks = 20)
