@@ -6,6 +6,7 @@ import com.pgmacdesign.mc3dprint.machine.MachineTier;
 import com.pgmacdesign.mc3dprint.machine.PrinterBlockEntity;
 import com.pgmacdesign.mc3dprint.machine.multiblock.CasingBlock;
 import com.pgmacdesign.mc3dprint.machine.multiblock.ControllerBlock;
+import com.pgmacdesign.mc3dprint.machine.multiblock.FabricatorBlockItem;
 import com.pgmacdesign.mc3dprint.machine.multiblock.MultiblockPattern;
 import com.pgmacdesign.mc3dprint.registry.ModBlocks;
 import com.pgmacdesign.mc3dprint.registry.ModItems;
@@ -209,6 +210,27 @@ public class MultiblockGameTests {
         if (MultiblockPattern.validate(helper.getLevel(), helper.absolutePos(CONTROLLER_POS), MachineTier.T8) == null) {
             helper.fail("T8 validated without Draconic Evolution");
             return;
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty5", timeoutTicks = 100)
+    public static void relocateRestoresComponents(GameTestHelper helper) {
+        // PGM-48: re-forming a collapsed multiblock must restore the SAME components it had.
+        // T5 has no premium corner, so every base cell (corners included) comes back as ACTIVE
+        // Printer Casing — this exercises FabricatorBlockItem.reformComponents end-to-end. (The
+        // T8 path restores Awakened Draconium corners instead of casing; that needs Draconic
+        // Evolution and is verified in-world, since the dev env can't register the block.)
+        BlockPos absController = helper.absolutePos(CONTROLLER_POS);
+        helper.setBlock(CONTROLLER_POS, ModBlocks.CONTROLLERS.get(0).get()); // T5 controller
+        FabricatorBlockItem.reformComponents(helper.getLevel(), absController, MachineTier.T5);
+
+        for (BlockPos offset : MultiblockPattern.componentOffsets(MachineTier.T5)) {
+            BlockState s = helper.getLevel().getBlockState(absController.offset(offset));
+            if (!(s.getBlock() instanceof CasingBlock) || !s.getValue(CasingBlock.ACTIVE)) {
+                helper.fail("relocate must restore ACTIVE casing at " + offset + ", got " + s);
+                return;
+            }
         }
         helper.succeed();
     }

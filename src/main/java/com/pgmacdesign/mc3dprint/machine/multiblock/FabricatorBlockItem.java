@@ -2,6 +2,7 @@ package com.pgmacdesign.mc3dprint.machine.multiblock;
 
 import com.pgmacdesign.mc3dprint.compat.NbtCompat;
 
+import com.pgmacdesign.mc3dprint.machine.MachineTier;
 import com.pgmacdesign.mc3dprint.registry.ModBlocks;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
@@ -61,17 +62,33 @@ public class FabricatorBlockItem extends BlockItem {
 
         InteractionResult result = super.place(context); // also restores BlockEntityTag
         if (result.consumesAction() && !level.isClientSide) {
-            BlockState activeCasing = ModBlocks.PRINTER_CASING.get().defaultBlockState()
-                    .setValue(CasingBlock.ACTIVE, true);
-            for (BlockPos offset : MultiblockPattern.componentOffsets(controller.tier())) {
-                level.setBlock(pos.offset(offset), activeCasing, Block.UPDATE_ALL);
-            }
+            reformComponents(level, pos, controller.tier());
             BlockState placed = level.getBlockState(pos);
             if (placed.getBlock() instanceof ControllerBlock) {
                 level.setBlock(pos, placed.setValue(ControllerBlock.FORMED, true), Block.UPDATE_ALL);
             }
         }
         return result;
+    }
+
+    /**
+     * Re-place every base component of a collapsed multiblock around {@code controllerPos}:
+     * the tier's premium corner (the T8 Awakened Draconium) at corner offsets, ACTIVE Printer
+     * Casing everywhere else. Restoring the corners as themselves — not as casing — is what makes
+     * relocate loss-free and refund-free (PGM-48): {@link ControllerBlock} no longer drops the
+     * corners on collapse, so they must come back here. {@code cornerBlock} is null for tiers with
+     * no premium corner, which re-form as all-casing exactly as before. Static + Level-only so the
+     * relocate round-trip is gametest-able without a {@code BlockPlaceContext}.
+     */
+    public static void reformComponents(Level level, BlockPos controllerPos, MachineTier tier) {
+        BlockState activeCasing = ModBlocks.PRINTER_CASING.get().defaultBlockState()
+                .setValue(CasingBlock.ACTIVE, true);
+        Block cornerBlock = MultiblockPattern.cornerBlock(tier);
+        for (BlockPos offset : MultiblockPattern.componentOffsets(tier)) {
+            boolean corner = cornerBlock != null && MultiblockPattern.isCorner(offset, tier);
+            level.setBlock(controllerPos.offset(offset),
+                    corner ? cornerBlock.defaultBlockState() : activeCasing, Block.UPDATE_ALL);
+        }
     }
 
     @Override

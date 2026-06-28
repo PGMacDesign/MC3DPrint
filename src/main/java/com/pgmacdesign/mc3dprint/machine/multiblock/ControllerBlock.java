@@ -88,23 +88,16 @@ public class ControllerBlock extends PrinterBlock {
                     printer.saveWithoutMetadata(level.registryAccess()));
             //?}
 
-            Block cornerBlock = MultiblockPattern.cornerBlock(tier());
             for (BlockPos offset : MultiblockPattern.componentOffsets(tier())) {
                 BlockPos componentPos = pos.offset(offset);
                 if (!isOwnComponent(level, componentPos)) {
                     continue;
                 }
-                // Premium CORNER blocks (the T8 Awakened Draconium) are valuable —
-                // drop them so the player recovers them instead of vanishing. Plain
-                // casings are consumed into the collapsed controller item as before.
-                boolean isPremiumCorner = cornerBlock != null
-                        && !player.getAbilities().instabuild // creative: no drops, same as the controller item
-                        && MultiblockPattern.isCorner(offset, tier())
-                        && level.getBlockState(componentPos).getBlock() == cornerBlock;
-                if (isPremiumCorner) {
-                    Block.popResource(level, componentPos,
-                            new ItemStack(level.getBlockState(componentPos).getBlock()));
-                }
+                // The WHOLE machine — casings AND the premium corners (T8 Awakened Draconium) —
+                // is consumed into the collapsed controller item and rebuilt on re-place by
+                // FabricatorBlockItem.reformComponents. We deliberately do NOT drop the corners
+                // here: dropping them while the re-form restored them for free was a refund
+                // exploit (PGM-48). Relocate is now loss-free and refund-free.
                 level.removeBlock(componentPos, false);
             }
             if (!player.getAbilities().instabuild) {
