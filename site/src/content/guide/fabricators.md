@@ -20,7 +20,7 @@ Once a single-block printer stops cutting it, you graduate to Fabricators. These
 
 Lay the base flat, place the controller in the center cell, and `Right Click` the controller to form it. The casing lights up to confirm. See [the build walkthrough](/guide/build-walkthrough/) for exact per-tier layouts.
 
-> Break a formed controller and the whole machine collapses back into a single item — re-place it and it re-forms fully intact. You can relocate a Fabricator without rebuilding it.
+> Break a formed controller and the whole machine collapses back into a single item — re-place it and it re-forms, ready to run. You can relocate a Fabricator without rebuilding it.
 
 ## The T8 endgame
 

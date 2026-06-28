@@ -94,7 +94,7 @@ public class ControllerBlock extends PrinterBlock {
                 if (!isOwnComponent(level, componentPos)) {
                     continue;
                 }
-                // Premium CORNER blocks (T5 diamond, T8 draconium) are valuable —
+                // Premium CORNER blocks (the T8 Awakened Draconium) are valuable —
                 // drop them so the player recovers them instead of vanishing. Plain
                 // casings are consumed into the collapsed controller item as before.
                 boolean isPremiumCorner = cornerBlock != null
@@ -155,7 +155,7 @@ public class ControllerBlock extends PrinterBlock {
      * Unforms any formed controller whose base footprint contains {@code brokenPos}
      * — i.e. {@code brokenPos} is one of its structural components. Shared by the
      * two removal paths: our own casings call this from {@link CasingBlock#onRemove},
-     * and the premium CORNER blocks (T5 diamond, T8 awakened draconium) — foreign
+     * and the premium CORNER blocks (the T8 Awakened Draconium) — foreign
      * blocks with no removal hook of ours — are caught by {@link #onBlockBreak}.
      * Scans the largest-tier footprint radius on the controller's Y plane, then
      * confirms {@code brokenPos} actually falls inside the found controller's own
@@ -188,10 +188,10 @@ public class ControllerBlock extends PrinterBlock {
 
     /**
      * Forge block-break hook for the premium corner blocks. A {@link CasingBlock}
-     * unforms its machine from its own {@code onRemove}, but the T5/T8 corners are
-     * vanilla/modded blocks we can't hook that way — so breaking an Awakened
-     * Draconium (or Diamond) corner would otherwise leave the machine formed. Catch
-     * that here. Our own casings/controllers are skipped (they self-handle: casings
+     * unforms its machine from its own {@code onRemove}, but the T8 corner is a
+     * modded block we can't hook that way — so breaking an Awakened Draconium corner
+     * would otherwise leave the machine formed. Catch that here. Our own
+     * casings/controllers are skipped (they self-handle: casings
      * via onRemove, the controller via {@code playerWillDestroy}).
      */
     public static void onBlockBreak(BlockEvent.BreakEvent event) {
@@ -209,9 +209,9 @@ public class ControllerBlock extends PrinterBlock {
      * Flips the ACTIVE flag on every Printer Casing in the controller's base so
      * the structure glows when formed and goes dark when unformed, and assigns
      * each casing the part its TOP face plays in the unified printer (rail, corner
-     * or bed) based on its offset. A tier's premium corner blocks (T5 diamond,
-     * T8 Awakened Draconium) are not casings and are left untouched, so they keep
-     * rendering as themselves at the corners.
+     * or bed) based on its offset. A tier's premium corner block (the T8 Awakened
+     * Draconium) is not a casing and is left untouched, so it keeps
+     * rendering as itself at the corners.
      */
     private static void setComponentsActive(Level level, BlockPos controllerPos, MachineTier tier,
                                             boolean active, @Nullable BlockPos excludePos) {

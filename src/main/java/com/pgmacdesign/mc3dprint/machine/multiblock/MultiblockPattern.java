@@ -92,7 +92,7 @@ public final class MultiblockPattern {
             Block found = level.getBlockState(pos).getBlock();
             if (corner != null && isCorner(offset, tier)) {
                 if (found != corner) {
-                    return cornerError(tier, pos);
+                    return cornerError(pos);
                 }
             } else if (found != ModBlocks.PRINTER_CASING.get()) {
                 return Component.translatable("message.mc3dprint.multiblock_needs_casing",
@@ -102,10 +102,9 @@ public final class MultiblockPattern {
         return null;
     }
 
-    private static Component cornerError(MachineTier tier, BlockPos pos) {
-        String key = tier == MachineTier.T5
-                ? "message.mc3dprint.multiblock_needs_diamond"
-                : "message.mc3dprint.multiblock_needs_awakened";
-        return Component.translatable(key, pos.getX(), pos.getY(), pos.getZ());
+    /** Only T8 has a premium corner today, so this is always the Awakened Draconium error. */
+    private static Component cornerError(BlockPos pos) {
+        return Component.translatable("message.mc3dprint.multiblock_needs_awakened",
+                pos.getX(), pos.getY(), pos.getZ());
     }
 }
