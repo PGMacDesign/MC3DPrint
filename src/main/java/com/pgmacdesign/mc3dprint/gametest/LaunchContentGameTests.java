@@ -20,7 +20,7 @@ public class LaunchContentGameTests {
         CuratedBlueprints.install(helper.getLevel().getServer());
         BlueprintFileStore store = BlueprintFileStore.forServer(helper.getLevel().getServer());
 
-        for (String name : new String[]{"starter_hut", "watchtower", "storage_shed"}) {
+        for (String name : new String[]{"watchtower", "fishing_hut", "garden_shed"}) {
             Optional<Blueprint> blueprint = store.load(CuratedBlueprints.uuidFor(MC3DPrint.MOD_ID, name));
             if (blueprint.isEmpty()) {
                 helper.fail("Curated blueprint not installed: " + name);
