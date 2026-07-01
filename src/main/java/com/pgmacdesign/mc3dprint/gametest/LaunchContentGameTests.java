@@ -5,15 +5,22 @@ import com.pgmacdesign.mc3dprint.blueprint.Blueprint;
 import com.pgmacdesign.mc3dprint.blueprint.BlueprintFileStore;
 import com.pgmacdesign.mc3dprint.blueprint.CuratedBlueprints;
 import com.pgmacdesign.mc3dprint.registry.ModBlocks;
+import com.pgmacdesign.mc3dprint.registry.ModItems;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.enchantment.Enchantments;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
+import java.util.List;
 import java.util.Optional;
 
 @GameTestHolder(MC3DPrint.MOD_ID)
@@ -62,6 +69,35 @@ public class LaunchContentGameTests {
         }
         if (new ItemStack(Items.STONE_PICKAXE).isCorrectToolForDrops(ore)) {
             helper.fail("a stone pickaxe must NOT mine extrudium_ore (iron-tier gate)");
+            return;
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty5", timeoutTicks = 20)
+    public static void extrudiumOreDropsCrystalNotOre(GameTestHelper helper) {
+        // Like diamond ore: a plain (no-silk) pickaxe drops the CRYSTAL (never the ore block),
+        // and Silk Touch drops the ore block. Regression guard: the silk-touch match_tool
+        // condition used the pre-1.20.5 enchantment-predicate schema, which 1.21 silently drops —
+        // leaving the ore branch unconditional so it always won, and the ore dropped as itself.
+        ServerLevel level = helper.getLevel();
+        BlockPos abs = helper.absolutePos(new BlockPos(1, 1, 1));
+        BlockState ore = ModBlocks.EXTRUDIUM_ORE.get().defaultBlockState();
+
+        List<ItemStack> plain = Block.getDrops(ore, level, abs, null, null, new ItemStack(Items.IRON_PICKAXE));
+        if (plain.stream().noneMatch(s -> s.is(ModItems.EXTRUDIUM_CRYSTAL.get()))
+                || plain.stream().anyMatch(s -> s.is(ModItems.EXTRUDIUM_ORE.get()))) {
+            helper.fail("iron pick (no silk) must drop the crystal, not the ore — got " + plain);
+            return;
+        }
+
+        ItemStack silkPick = new ItemStack(Items.IRON_PICKAXE);
+        silkPick.enchant(level.registryAccess().lookupOrThrow(Registries.ENCHANTMENT)
+                .getOrThrow(Enchantments.SILK_TOUCH), 1);
+        List<ItemStack> silk = Block.getDrops(ore, level, abs, null, null, silkPick);
+        if (silk.stream().noneMatch(s -> s.is(ModItems.EXTRUDIUM_ORE.get()))
+                || silk.stream().anyMatch(s -> s.is(ModItems.EXTRUDIUM_CRYSTAL.get()))) {
+            helper.fail("silk touch must drop the ore block, not the crystal — got " + silk);
             return;
         }
         helper.succeed();
