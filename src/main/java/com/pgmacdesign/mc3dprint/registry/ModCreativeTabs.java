@@ -110,13 +110,18 @@ public final class ModCreativeTabs {
                         boolean allDiscs = MC3DPrintConfig.ALLOW_ALL_DISCS_IN_CREATIVE.get();
                         java.util.function.Predicate<String> creativeVisible =
                                 name -> allDiscs || CREATIVE_LAUNCH_DISCS.contains(name);
-                        java.util.function.Consumer<String> emitDisc = name ->
-                                CuratedBlueprints.loadBundled(name).ifPresent(bp -> {
-                                    ItemStack disc = new ItemStack(ModItems.BLUEPRINT_DISC.get());
-                                    BlueprintDiscItem.writeBlueprint(disc,
-                                            CuratedBlueprints.uuidFor(MC3DPrint.MOD_ID, name), bp);
-                                    output.accept(disc);
-                                });
+                        java.util.function.Consumer<String> emitDisc = name -> {
+                            // Hide a build whose required mod(s) aren't installed (palette-derived).
+                            if (!CuratedBlueprints.modsAvailable(name)) {
+                                return;
+                            }
+                            CuratedBlueprints.loadBundled(name).ifPresent(bp -> {
+                                ItemStack disc = new ItemStack(ModItems.BLUEPRINT_DISC.get());
+                                BlueprintDiscItem.writeBlueprint(disc,
+                                        CuratedBlueprints.uuidFor(MC3DPrint.MOD_ID, name), bp);
+                                output.accept(disc);
+                            });
+                        };
                         for (String name : CuratedBlueprints.CURATED_NAMES) {
                             if (!FARM_BUILDS.contains(name) && creativeVisible.test(name)) {
                                 emitDisc.accept(name);
