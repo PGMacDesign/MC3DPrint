@@ -36,6 +36,11 @@ public final class FuEvents {
     public static void onDatapackSync(OnDatapackSyncEvent event) {
         MinecraftServer server = event.getPlayerList().getServer();
         FuValueRegistry.bind(server.getRecipeManager().getRecipes(), server.registryAccess());
+        // Warm the FU cache for curated-blueprint blocks off-thread now (recipes just bound), so
+        // the first creative-tab build doesn't derive them cold on the render thread — a ~10s
+        // first-inventory-open freeze with big modded recipe graphs (PGM-55). Re-fires on /reload
+        // (rebind clears the cache), matching the freeze's per-session return.
+        com.pgmacdesign.mc3dprint.blueprint.CuratedBlueprints.warmFuCacheAsync();
     }
 
     /**

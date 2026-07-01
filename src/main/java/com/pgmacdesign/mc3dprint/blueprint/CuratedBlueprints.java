@@ -2,10 +2,14 @@ package com.pgmacdesign.mc3dprint.blueprint;
 
 import com.mojang.logging.LogUtils;
 import com.pgmacdesign.mc3dprint.MC3DPrint;
+import com.pgmacdesign.mc3dprint.fu.FuValueRegistry;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.neoforged.neoforge.event.server.ServerStartedEvent;
 import org.slf4j.Logger;
 
@@ -17,6 +21,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.zip.GZIPInputStream;
 
 /**
@@ -210,6 +216,57 @@ public final class CuratedBlueprints {
             LOGGER.warn("Could not load bundled blueprint {}: {}", name, e.getMessage());
             return Optional.empty();
         }
+    }
+
+    private static final AtomicBoolean WARMING = new AtomicBoolean(false);
+
+    /**
+     * Warm the FU-value cache for every block in every curated blueprint, OFF the render thread.
+     * The creative tab stamps a disc per curated blueprint on build (tier + print cost, via
+     * {@code BlueprintDiscItem}), which derives an FU value for each block. Cold, against a large
+     * modded recipe graph, that first build froze the client ~10s the first time the inventory
+     * opened each session (PGM-55). Running it here — right after recipes bind at world-join — the
+     * values are memoized before the player opens the menu, so the build is instant.
+     *
+     * <p>Safe off-thread: {@link #loadBundled} reads classpath resources and FU derivation is
+     * synchronized. Idempotent (values are memoized); the {@link #WARMING} gate drops a duplicate
+     * warm if one is already running.
+     */
+    public static void warmFuCacheAsync() {
+        if (!WARMING.compareAndSet(false, true)) {
+            return;
+        }
+        CompletableFuture.runAsync(() -> {
+            try {
+                warmFuCache();
+            } catch (RuntimeException e) {
+                LOGGER.warn("FU cache warm failed: {}", e.getMessage());
+            } finally {
+                WARMING.set(false);
+            }
+        });
+    }
+
+    /** Synchronous body of {@link #warmFuCacheAsync}; returns the count of blueprints warmed. */
+    public static int warmFuCache() {
+        int warmed = 0;
+        for (String name : CURATED_NAMES) {
+            Optional<Blueprint> bp = loadBundled(name);
+            if (bp.isEmpty()) {
+                continue;
+            }
+            for (BlueprintBlockState paletteState : bp.get().palette()) {
+                paletteState.resolve().ifPresent(state -> {
+                    Item item = state.getBlock().asItem();
+                    if (item != Items.AIR) {
+                        FuValueRegistry.valueOf(new ItemStack(item));
+                    }
+                });
+            }
+            warmed++;
+        }
+        LOGGER.debug("Warmed FU cache across {} curated blueprints", warmed);
+        return warmed;
     }
 
     public static void onServerStarted(ServerStartedEvent event) {

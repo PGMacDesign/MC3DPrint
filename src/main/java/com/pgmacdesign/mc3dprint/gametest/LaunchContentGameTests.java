@@ -111,6 +111,20 @@ public class LaunchContentGameTests {
         helper.succeed();
     }
 
+    @GameTest(template = "empty5", timeoutTicks = 200)
+    public static void fuCacheWarmCoversAllCuratedBlueprints(GameTestHelper helper) {
+        // PGM-55: the FU cache is warmed off-thread at world-join so the first creative-tab build
+        // isn't a ~10s render-thread freeze. Verify the warm runs clean and covers EVERY curated
+        // blueprint — also a smoke test that all their blocks derive an FU value without hanging.
+        int warmed = CuratedBlueprints.warmFuCache();
+        if (warmed != CuratedBlueprints.CURATED_NAMES.size()) {
+            helper.fail("FU warm covered " + warmed + " of " + CuratedBlueprints.CURATED_NAMES.size()
+                    + " curated blueprints (a blueprint failed to load?)");
+            return;
+        }
+        helper.succeed();
+    }
+
     @GameTest(template = "empty5", timeoutTicks = 40)
     public static void treasureResinLootRollsAndEnchants(GameTestHelper helper) {
         // The Treasure resin's chest loot uses enchant_with_levels + enchant_randomly, whose
