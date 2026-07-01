@@ -11,6 +11,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraftforge.event.server.ServerStartedEvent;
+import net.minecraftforge.fml.ModList;
 import org.slf4j.Logger;
 
 import java.io.DataInputStream;
@@ -20,8 +21,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.zip.GZIPInputStream;
 
@@ -216,6 +219,32 @@ public final class CuratedBlueprints {
             LOGGER.warn("Could not load bundled blueprint {}: {}", name, e.getMessage());
             return Optional.empty();
         }
+    }
+
+    /** name -> required mod ids (palette-derived), computed once per curated blueprint. */
+    private static final Map<String, Set<String>> REQUIRED_MODS = new ConcurrentHashMap<>();
+
+    /**
+     * The mod ids a curated blueprint needs, from its palette/entities ({@link Blueprint#requiredMods}).
+     * Cached; empty for the all-vanilla builds (the current set). Empty (not present) if it fails to load.
+     */
+    public static Set<String> requiredMods(String name) {
+        return REQUIRED_MODS.computeIfAbsent(name,
+                n -> loadBundled(n).map(Blueprint::requiredMods).orElse(Set.of()));
+    }
+
+    /**
+     * Visibility gate for the creative tab + world loot: true iff every mod this curated blueprint
+     * needs is loaded. Vanilla-only builds are always available; a modded build (e.g. an AE2 setup)
+     * only surfaces once its mod(s) are installed.
+     */
+    public static boolean modsAvailable(String name) {
+        for (String mod : requiredMods(name)) {
+            if (!ModList.get().isLoaded(mod)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private static final AtomicBoolean WARMING = new AtomicBoolean(false);

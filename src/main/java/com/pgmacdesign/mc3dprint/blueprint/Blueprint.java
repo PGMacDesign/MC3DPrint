@@ -10,6 +10,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.function.ObjIntConsumer;
 
 /**
@@ -78,6 +80,37 @@ public final class Blueprint {
 
     public List<BlueprintEntity> entities() {
         return entities;
+    }
+
+    private static final Set<String> BUILTIN_NAMESPACES = Set.of("minecraft", "mc3dprint");
+
+    /**
+     * The mod ids this blueprint needs to build fully — every non-vanilla, non-{@code mc3dprint}
+     * namespace across its block palette and its entities. Derived purely from the id strings (no
+     * registry lookup), so it's correct even when a required mod is absent. Drives the blueprint's
+     * visibility gate (creative tab + world loot) via {@code ModList.isLoaded}: a build using e.g.
+     * {@code ae2:} blocks only shows once AE2 is installed. Sorted + deduped.
+     */
+    public Set<String> requiredMods() {
+        Set<String> mods = new TreeSet<>();
+        for (BlueprintBlockState state : palette) {
+            addNamespace(mods, state.blockId());
+        }
+        for (BlueprintEntity entity : entities) {
+            addNamespace(mods, entity.typeId());
+        }
+        return mods;
+    }
+
+    private static void addNamespace(Set<String> mods, String id) {
+        if (id == null || id.isEmpty()) {
+            return;
+        }
+        int colon = id.indexOf(':');
+        String namespace = colon > 0 ? id.substring(0, colon) : "minecraft"; // no ns = vanilla
+        if (!BUILTIN_NAMESPACES.contains(namespace)) {
+            mods.add(namespace);
+        }
     }
 
     int[] rawBlocks() {

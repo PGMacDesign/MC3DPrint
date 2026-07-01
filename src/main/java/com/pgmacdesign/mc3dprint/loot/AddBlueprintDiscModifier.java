@@ -55,6 +55,8 @@ public class AddBlueprintDiscModifier extends LootModifier {
         // Empty list = the opt-out pool (all curated minus LOOT_EXCLUDED); a non-empty
         // list is an explicit override.
         List<String> pool = blueprintNames.isEmpty() ? CuratedBlueprints.lootBlueprints() : blueprintNames;
+        // Never loot a build whose required mod(s) aren't installed (palette-derived gate).
+        pool = pool.stream().filter(CuratedBlueprints::modsAvailable).toList();
         if (pool.isEmpty() || context.getRandom().nextFloat() >= chance) {
             return generatedLoot;
         }

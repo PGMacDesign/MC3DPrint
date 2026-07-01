@@ -33,4 +33,25 @@ public class LaunchContentGameTests {
         }
         helper.succeed();
     }
+
+    @GameTest(template = "empty5", timeoutTicks = 200)
+    public static void curatedBlueprintRequiredModsGate(GameTestHelper helper) {
+        // PGM-57: a blueprint's required mods are derived from its palette/entity namespaces so a
+        // modded build (e.g. an AE2 setup) only surfaces in creative + world loot once that mod is
+        // loaded. Verify every curated build's requiredMods() computes without throwing, and that
+        // our shipped builds — all vanilla + mc3dprint — declare nothing and are available in dev.
+        for (String name : CuratedBlueprints.CURATED_NAMES) {
+            java.util.Set<String> mods = CuratedBlueprints.requiredMods(name);
+            if (!mods.isEmpty()) {
+                helper.fail("Curated build '" + name + "' unexpectedly requires mods " + mods
+                        + " — shipped builds must be vanilla/mc3dprint only");
+                return;
+            }
+            if (!CuratedBlueprints.modsAvailable(name)) {
+                helper.fail("Curated build '" + name + "' reports unavailable with no required mods");
+                return;
+            }
+        }
+        helper.succeed();
+    }
 }
