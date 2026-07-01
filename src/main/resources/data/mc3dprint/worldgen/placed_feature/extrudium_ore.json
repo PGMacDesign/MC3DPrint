@@ -1,7 +1,7 @@
 {
   "feature": "mc3dprint:extrudium_ore",
   "placement": [
-    { "type": "minecraft:rarity_filter", "chance": 9 },
+    { "type": "minecraft:count", "count": 3 },
     { "type": "minecraft:in_square" },
     {
       "type": "minecraft:height_range",
