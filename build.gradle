@@ -104,12 +104,16 @@ tasks.named('test', Test).configure {
 
 // Expand declared replace properties into the mod metadata + pack.mcmeta at process time.
 tasks.named('processResources', ProcessResources).configure {
+    // pack.mcmeta pack_format is the DATA pack format of the target MC version (1.21.1=48,
+    // 1.21.8=81). Per-node so each jar declares the right value instead of a stale hardcode.
+    def dataPackFormat = ['1.21.1': 48, '1.21.8': 81].getOrDefault(stonecutter.current.project, 48)
     var replaceProperties = [
             minecraft_version_range: minecraft_version_range,
             neo_version_range: neo_version_range,
             loader_version_range: loader_version_range,
             mod_id: mod_id, mod_name: mod_name, mod_license: mod_license, mod_version: mod_version,
             mod_authors: mod_authors, mod_description: mod_description,
+            pack_format: dataPackFormat,
     ]
     inputs.properties replaceProperties
 

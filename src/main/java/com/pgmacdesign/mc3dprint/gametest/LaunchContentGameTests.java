@@ -7,9 +7,12 @@ import com.pgmacdesign.mc3dprint.blueprint.CuratedBlueprints;
 import com.pgmacdesign.mc3dprint.registry.ModBlocks;
 import com.pgmacdesign.mc3dprint.registry.ModItems;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.item.ItemStack;
@@ -17,6 +20,11 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.loot.LootParams;
+import net.minecraft.world.level.storage.loot.LootTable;
+import net.minecraft.world.level.storage.loot.parameters.LootContextParamSets;
+import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
+import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
@@ -98,6 +106,39 @@ public class LaunchContentGameTests {
         if (silk.stream().noneMatch(s -> s.is(ModItems.EXTRUDIUM_ORE.get()))
                 || silk.stream().anyMatch(s -> s.is(ModItems.EXTRUDIUM_CRYSTAL.get()))) {
             helper.fail("silk touch must drop the ore block, not the crystal — got " + silk);
+            return;
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty5", timeoutTicks = 40)
+    public static void treasureResinLootRollsAndEnchants(GameTestHelper helper) {
+        // The Treasure resin's chest loot uses enchant_with_levels + enchant_randomly, whose
+        // schema changed in 1.20.5 (treasure/enchantments -> options). If those fields are stale,
+        // 1.21 silently drops them; here we roll the table and require an actually-enchanted item,
+        // proving the functions parse (options schema) and apply. Mirrors ResinEffects' roll.
+        ServerLevel level = helper.getLevel();
+        ResourceKey<LootTable> key = ResourceKey.create(Registries.LOOT_TABLE,
+                ResourceLocation.fromNamespaceAndPath(MC3DPrint.MOD_ID, "resin/treasure_rare"));
+        LootTable table = level.getServer().reloadableRegistries().getLootTable(key);
+        if (table == LootTable.EMPTY) {
+            helper.fail("treasure_rare loot table missing");
+            return;
+        }
+        LootParams params = new LootParams.Builder(level)
+                .withParameter(LootContextParams.ORIGIN, Vec3.atCenterOf(helper.absolutePos(new BlockPos(1, 1, 1))))
+                .create(LootContextParamSets.CHEST);
+        boolean sawEnchanted = false;
+        for (int i = 0; i < 60 && !sawEnchanted; i++) {
+            for (ItemStack s : table.getRandomItems(params)) {
+                if (!s.getEnchantments().isEmpty() || s.has(DataComponents.STORED_ENCHANTMENTS)) {
+                    sawEnchanted = true;
+                    break;
+                }
+            }
+        }
+        if (!sawEnchanted) {
+            helper.fail("treasure_rare produced no enchanted item over 60 rolls — enchant functions misparsed");
             return;
         }
         helper.succeed();
