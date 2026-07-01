@@ -128,13 +128,12 @@ public final class ModCreativeTabs {
                             }
                         }
 
-                        // The in-game guidebook — only when Patchouli is installed. The stack is
-                        // bound to our book via Patchouli's patchouli:book data component (see
-                        // PatchouliCompat); empty if Patchouli/the component isn't present.
-                        ItemStack guideBook = com.pgmacdesign.mc3dprint.integration.patchouli.PatchouliCompat.guideBookStack();
-                        if (!guideBook.isEmpty()) {
-                            output.accept(guideBook);
-                        }
+                        // NB: do NOT add the Patchouli guide book here. Patchouli itself adds it
+                        // to THIS tab via book.json "creative_tab": "mc3dprint:main". Adding it too
+                        // — now that PatchouliCompat binds it to the same patchouli:book component —
+                        // makes an identical duplicate stack, and Patchouli's tab handler throws
+                        // "already exists", crashing the creative/inventory screen (PGM-53). The
+                        // first-craft auto-give (GuidebookAutoGive) is our only book hand-out.
                     })
                     .build());
 
