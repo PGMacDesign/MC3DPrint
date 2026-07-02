@@ -29,9 +29,9 @@ simple = { limit = 5, period = 60 }
 # if this binding is absent (dev / not yet configured). Create it once, then paste
 # the printed id below and uncomment:
 #   cd worker && npx wrangler kv namespace create SCREENSHOT_KV
-# [[kv_namespaces]]
-# binding = "SCREENSHOT_KV"
-# id = "<paste-the-id-wrangler-prints>"
+[[kv_namespaces]]
+binding = "SCREENSHOT_KV"
+id = "ecb1bd35b9ae43efa3069654ef655a6b"
 
 # Secrets (NOT stored here — set with `wrangler secret put`):
 #   GITHUB_TOKEN     — fine-grained PAT: Contents + Pull requests = Read/Write on PGMacDesign/MC3DPrint
