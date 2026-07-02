@@ -49,6 +49,47 @@ to stop spam PRs:
 When `TURNSTILE_SECRET` is set, the Worker requires a valid captcha token; until
 then it runs without one (fine pre-launch — every PR is reviewed anyway).
 
+## Screenshot submissions (the "screenshot bounty")
+
+The same Worker also backs the **"Add a screenshot"** control on each `/builds/<id>/`
+page. A visitor pastes a **direct image URL** (never an upload) for an existing curated
+build; the Worker validates it, enforces the daily cap, and opens a PR that contains
+**only a small text sidecar** in `community-submissions/screenshots/` — no image bytes.
+
+Publishing an approved screenshot is a deliberate, human-gated step:
+
+1. Review the PR — open the image URL in the sidecar/PR body; confirm it's a real,
+   appropriate shot of that build.
+2. On the PR branch, run the ingest script (from repo root):
+   ```bash
+   node site/scripts/ingest-screenshots.mjs        # or --dry to preview
+   ```
+   It fetches each pending image, crops to 4:3 + downscales ≤2560px + re-encodes PNG
+   (stripping all EXIF/GPS), writes `site/public/builds/<id>/<n>.png` in submission
+   order, appends a credited entry to `site/public/builds/credits.json`, and deletes
+   the sidecar.
+3. Eyeball the downloaded image, commit, and merge — image + credit land together.
+
+The same reference-shot lifecycle applies to a `/submit` new-build PR: its `imageUrl`
+rides in the metadata and is only ingested if/when you promote the build.
+
+### KV (daily cap + blocklist)
+
+Both features degrade gracefully without KV, but for production create the namespace
+and uncomment the binding in `wrangler.toml`:
+
+```bash
+cd worker && npx wrangler kv namespace create SCREENSHOT_KV
+# paste the printed id into wrangler.toml, uncomment [[kv_namespaces]], redeploy
+```
+
+- **Daily cap:** 2 screenshots per build per IP per UTC day (counter keys auto-expire).
+- **Blocklist** (ban a bad actor/host without a redeploy):
+  ```bash
+  npx wrangler kv key put --binding SCREENSHOT_KV blocklist \
+    '{"hosts":["bad-host.example"],"ips":["1.2.3.4"]}'
+  ```
+
 ## Local dev
 
 ```bash

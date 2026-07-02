@@ -55,6 +55,9 @@ import Base from "../layouts/Base.astro";
           <label>Description <span class="muted">(optional)</span>
             <textarea id="desc" name="description" rows="3" maxlength="500" placeholder="What is it? Anything reviewers should know?"></textarea>
           </label>
+          <label>Screenshot URL <span class="muted">(optional — a direct image link, e.g. imgur)</span>
+            <input id="imageUrl" name="imageUrl" type="url" maxlength="1000" placeholder="https://i.imgur.com/abc123.png" />
+          </label>
           <label class="check">
             <input id="rights" type="checkbox" required />
             <span>I made this build (or have the right to share it) and I'm okay with it being included in MC3DPrint under the project's MIT license.</span>
@@ -182,9 +185,11 @@ import Base from "../layouts/Base.astro";
       let bin = "";
       for (let i = 0; i < fileBytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, fileBytes.subarray(i, i + 0x8000));
       const body = {
+        kind: "blueprint",
         name: $("bname").value.trim(),
         author: $("author").value.trim(),
         description: $("desc").value.trim(),
+        imageUrl: $("imageUrl").value.trim() || undefined,
         detected: { sx: detected.sx, sy: detected.sy, sz: detected.sz, blocks: detected.blockCount, tier: tierFor(detected.sx, detected.sz) },
         turnstileToken,
         file: btoa(bin),

@@ -11,14 +11,27 @@ workers_dev = true
 ALLOWED_ORIGIN = "https://mc3dprint.dev"
 GITHUB_REPO = "PGMacDesign/MC3DPrint"
 SUBMISSION_DIR = "community-submissions"
+# Where screenshot-submission sidecars land (text only; the ingest script localizes the image).
+SCREENSHOT_DIR = "community-submissions/screenshots"
+# Manifest used to validate a screenshot's buildId is a real curated build.
+SITE_MANIFEST_URL = "https://mc3dprint.dev/viewer/manifest.json"
 
 # Per-IP flood limit (native binding). simple.period only supports 10 or 60s, so this
 # is the burst guard — 5 submissions / minute / IP. A captcha-solving farm still can't
-# fan out faster than this. (A longer daily cap would need a KV/DO counter; not yet.)
+# fan out faster than this. (The longer daily cap below uses KV.)
 [[ratelimits]]
 name = "SUBMIT_RL"
 namespace_id = "1001"
 simple = { limit = 5, period = 60 }
+
+# KV: powers the per-(build, IP) daily screenshot cap (2/day) AND the blocklist
+# (key "blocklist" = {"hosts":[...],"ips":[...]}). BOTH features degrade gracefully
+# if this binding is absent (dev / not yet configured). Create it once, then paste
+# the printed id below and uncomment:
+#   cd worker && npx wrangler kv namespace create SCREENSHOT_KV
+# [[kv_namespaces]]
+# binding = "SCREENSHOT_KV"
+# id = "<paste-the-id-wrangler-prints>"
 
 # Secrets (NOT stored here — set with `wrangler secret put`):
 #   GITHUB_TOKEN     — fine-grained PAT: Contents + Pull requests = Read/Write on PGMacDesign/MC3DPrint

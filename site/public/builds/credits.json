@@ -1,0 +1,4 @@
+{
+  "_comment": "Per-build screenshot credits. The submission Worker opens a PR that drops a sidecar in community-submissions/screenshots/; site/scripts/ingest-screenshots.mjs fetches the image, writes builds/<id>/<n>.png, and appends a published entry here. The website renders only entries that have a `file`, in submission order (first-submitted first). Do not hand-edit image files in; run the ingest script so images are cropped, downscaled, and EXIF-stripped.",
+  "builds": {}
+}

@@ -11,16 +11,26 @@ export function getStaticPaths() {
   if (!existsSync(manifestPath)) return [];
   const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
   const base = manifest.base || "blueprints/";
+
+  // Community screenshot credits (committed). Published entries have a `file`.
+  let credits = {};
+  const creditsPath = "public/builds/credits.json";
+  if (existsSync(creditsPath)) {
+    try { credits = (JSON.parse(readFileSync(creditsPath, "utf8")).builds) || {}; } catch { credits = {}; }
+  }
+
   return manifest.builds.map((b) => {
     const id = b.file.replace(/\.blueprint$/, "");
-    return { params: { id }, props: { b, id, src: `/viewer/${base}${b.file}` } };
+    const shots = (credits[id] || []).filter((e) => e && e.file);
+    return { params: { id }, props: { b, id, src: `/viewer/${base}${b.file}`, shots } };
   });
 }
 
-const { b, id, src } = Astro.props;
+const { b, id, src, shots } = Astro.props;
 const viewerUrl = `/viewer/?src=${encodeURIComponent(src)}`;
 const tierVar = `var(--t${b.tier})`;
 const blocks = b.blocks.toLocaleString();
+const hero = shots[0] || null;
 ---
 <Base
   title={`${b.name} — MC3DPrint Blueprint`}
@@ -31,12 +41,27 @@ const blocks = b.blocks.toLocaleString();
       <p class="crumb"><a href="/gallery">Gallery</a> <span class="sep">/</span> {b.name}</p>
 
       <div class="detail">
-        <div class="shot" style={`--tc:${tierVar}`}>
-          <img src={`/builds/${id}.png`} alt={`The ${b.name} build`} onerror="this.remove()" />
-          <div class="shot-fallback">
-            <span class="glyph" aria-hidden="true">▦</span>
-            <p class="muted">Spin it in the interactive 3D viewer.</p>
+        <div class="gallery">
+          <div class="shot" style={`--tc:${tierVar}`}>
+            {hero ? (
+              <img src={`/builds/${id}/${hero.file}`} alt={`The ${b.name} build, screenshot by ${hero.author}`} />
+            ) : (
+              <div class="shot-fallback">
+                <span class="glyph" aria-hidden="true">▦</span>
+                <p class="muted">No screenshot yet — spin it in the 3D viewer, or add one below.</p>
+              </div>
+            )}
           </div>
+          {shots.length > 1 && (
+            <div class="thumbs">
+              {shots.map((s, i) => (
+                <button class:list={["thumb", { active: i === 0 }]} data-src={`/builds/${id}/${s.file}`} data-author={s.author} aria-label={`Screenshot by ${s.author}`}>
+                  <img src={`/builds/${id}/${s.file}`} alt="" loading="lazy" />
+                </button>
+              ))}
+            </div>
+          )}
+          {hero && <p class="credit muted" id="shot-credit">Screenshot by {hero.author}</p>}
         </div>
 
         <div class="meta">
@@ -57,9 +82,127 @@ const blocks = b.blocks.toLocaleString();
           </p>
         </div>
       </div>
+
+      <!-- Screenshot bounty: anyone can add a photo of this build (reviewed before it shows). -->
+      <details class="ss card" id="ss">
+        <summary>
+          <span class="ss-cam" aria-hidden="true">📷</span>
+          <span>{hero ? "Add another screenshot of this build" : "Add a screenshot of this build"}</span>
+          <span class="ss-hint muted">— get credited on the site</span>
+        </summary>
+        <div class="ss-body">
+          <p class="muted small">
+            Built this in-game and got a good shot? Paste a direct image link (imgur, catbox, etc.).
+            It goes to review first — appropriate, on-topic screenshots get published here in
+            submission order and credited to your handle. No GitHub account needed.
+          </p>
+          <form id="ss-form" class="form" data-build={id}>
+            <label>Direct image URL
+              <input id="ss-url" type="url" required maxlength="1000" placeholder="https://i.imgur.com/abc123.png" />
+            </label>
+            <div id="ss-preview" class="ss-preview" hidden><img id="ss-img" alt="Your screenshot preview" /></div>
+            <label>Your name or handle <span class="muted">(for credit)</span>
+              <input id="ss-author" type="text" required maxlength="40" placeholder="e.g. Steve, or @yourhandle" />
+            </label>
+            <label class="check">
+              <input id="ss-rights" type="checkbox" required />
+              <span>I took this screenshot (or have the right to share it) and I'm OK with it being used in MC3DPrint and on mc3dprint.dev under the project's MIT license.</span>
+            </label>
+            <div id="ss-turnstile"></div>
+            <button id="ss-send" class="btn btn-primary" type="submit">Submit screenshot for review</button>
+            <p id="ss-msg" class="msg" hidden></p>
+          </form>
+        </div>
+      </details>
     </div>
   </section>
 </Base>
+
+<script is:inline type="module">
+  // Same endpoint + Turnstile the /submit page uses.
+  const SUBMIT_ENDPOINT = "https://mc3dprint-submit.patrick-4bc.workers.dev";
+  const TURNSTILE_SITEKEY = "0x4AAAAAADqJ3sdOSZLbfoLm";
+  let turnstileToken = "";
+  const $ = (id) => document.getElementById(id);
+
+  // Thumb switcher for the hero image.
+  const heroImg = document.querySelector(".shot img");
+  const credit = $("shot-credit");
+  document.querySelectorAll(".thumb").forEach((t) => {
+    t.addEventListener("click", () => {
+      document.querySelectorAll(".thumb").forEach((x) => x.classList.remove("active"));
+      t.classList.add("active");
+      if (heroImg) heroImg.src = t.dataset.src;
+      if (credit) credit.textContent = `Screenshot by ${t.dataset.author}`;
+    });
+  });
+
+  // Lazy-load Turnstile the first time the submit panel is opened.
+  const ss = $("ss");
+  let turnstileLoaded = false;
+  function loadTurnstile() {
+    if (turnstileLoaded || !TURNSTILE_SITEKEY) return;
+    turnstileLoaded = true;
+    window.onSsTurnstile = (t) => { turnstileToken = t; };
+    const s = document.createElement("script");
+    s.src = "https://challenges.cloudflare.com/turnstile/v0/api.js";
+    s.async = true; s.defer = true;
+    s.onload = () => window.turnstile?.render("#ss-turnstile", { sitekey: TURNSTILE_SITEKEY, theme: "auto", callback: window.onSsTurnstile });
+    document.head.appendChild(s);
+  }
+  ss?.addEventListener("toggle", () => { if (ss.open) loadTurnstile(); });
+
+  // Live preview of the pasted URL.
+  const urlInput = $("ss-url");
+  const prev = $("ss-preview");
+  const prevImg = $("ss-img");
+  urlInput?.addEventListener("input", () => {
+    const v = urlInput.value.trim();
+    if (/^https:\/\/\S+/i.test(v)) {
+      prevImg.src = v; prev.hidden = false;
+      prevImg.onerror = () => { prev.hidden = true; };
+    } else {
+      prev.hidden = true;
+    }
+  });
+
+  $("ss-form")?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const msg = $("ss-msg");
+    const btn = $("ss-send");
+    msg.hidden = true;
+    if (TURNSTILE_SITEKEY && !turnstileToken) {
+      msg.hidden = false; msg.className = "msg err"; msg.textContent = "Please complete the captcha first.";
+      return;
+    }
+    btn.disabled = true;
+    try {
+      const body = {
+        kind: "screenshot",
+        buildId: $("ss-form").dataset.build,
+        imageUrl: urlInput.value.trim(),
+        author: $("ss-author").value.trim(),
+        turnstileToken,
+      };
+      const res = await fetch(SUBMIT_ENDPOINT, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+      const out = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(out.error || `server returned ${res.status}`);
+      msg.hidden = false;
+      msg.className = "msg ok";
+      msg.innerHTML = out.url ? `Thanks! Sent for review — <a href="${out.url}" target="_blank" rel="noopener">track it here</a>. It'll appear here once approved.` : "Thanks! Your screenshot was sent for review.";
+      $("ss-form").reset();
+      prev.hidden = true;
+      window.turnstile?.reset();
+      turnstileToken = "";
+    } catch (err) {
+      msg.hidden = false;
+      msg.className = "msg err";
+      msg.textContent = `Couldn't submit: ${err.message}`;
+    } finally {
+      btn.disabled = false;
+    }
+  });
+</script>
 
 <style>
   .crumb { font-size: 0.85rem; color: var(--ink-faint); margin: 0 0 1.2rem; }
@@ -68,6 +211,7 @@ const blocks = b.blocks.toLocaleString();
 
   .detail { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 2.4rem; align-items: start; }
 
+  .gallery { display: grid; gap: 0.7rem; }
   .shot {
     position: relative; aspect-ratio: 4 / 3; border-radius: var(--radius);
     border: 1px solid var(--line); overflow: hidden;
@@ -79,6 +223,15 @@ const blocks = b.blocks.toLocaleString();
   .shot-fallback .glyph { display: block; font-size: 3rem; color: color-mix(in srgb, var(--tc) 70%, var(--ink-faint)); opacity: 0.6; }
   .shot-fallback p { margin: 0.4rem 0 0; }
 
+  .thumbs { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+  .thumb {
+    width: 68px; aspect-ratio: 4 / 3; padding: 0; overflow: hidden; cursor: pointer;
+    border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel);
+  }
+  .thumb.active { border-color: var(--filament); }
+  .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .credit { margin: 0; font-size: 0.82rem; }
+
   .meta .chip { font-family: var(--mono); font-weight: 700; margin-bottom: 0.6rem; }
   .meta h1 { margin: 0.3rem 0 1.2rem; }
   .stats { display: grid; grid-template-columns: repeat(3, auto); gap: 1.4rem; margin: 0 0 1.6rem; justify-content: start; }
@@ -86,6 +239,31 @@ const blocks = b.blocks.toLocaleString();
   .stats dd { margin: 0; font-weight: 650; font-size: 1.05rem; }
   .acts { display: flex; gap: 0.7rem; flex-wrap: wrap; margin-bottom: 1.2rem; }
   .small { font-size: 0.85rem; }
+
+  .ss { margin-top: 2.4rem; padding: 0; overflow: hidden; }
+  .ss summary { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 1rem 1.2rem; font-weight: 600; list-style: none; }
+  .ss summary::-webkit-details-marker { display: none; }
+  .ss-cam { font-size: 1.1rem; }
+  .ss-hint { font-weight: 400; }
+  .ss[open] summary { border-bottom: 1px solid var(--line); }
+  .ss-body { padding: 1.2rem; display: grid; gap: 1rem; }
+  .ss-preview { border: 1px solid var(--line); border-radius: var(--radius-sm); overflow: hidden; max-width: 360px; aspect-ratio: 4 / 3; background: var(--panel); }
+  .ss-preview img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+  .form { display: grid; gap: 1rem; }
+  .form label { display: grid; gap: 0.35rem; font-weight: 500; font-size: 0.95rem; }
+  .form input[type="text"], .form input[type="url"] {
+    font: inherit; color: var(--ink); background: var(--panel);
+    border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 0.6rem 0.8rem;
+  }
+  .form input:focus { outline: none; border-color: var(--filament); }
+  .check { grid-template-columns: auto 1fr; align-items: start; gap: 0.6rem; font-weight: 400; color: var(--ink-soft); font-size: 0.9rem; }
+  .check input { margin-top: 0.2rem; }
+  #ss-turnstile:empty { display: none; }
+  #ss-send { justify-self: start; }
+  .msg { padding: 0.7rem 0.9rem; border-radius: var(--radius-sm); font-size: 0.92rem; margin: 0; }
+  .msg.ok { background: color-mix(in srgb, #6fd07a 12%, var(--panel)); border: 1px solid #6fd07a; }
+  .msg.err { background: color-mix(in srgb, #ff5d6c 12%, var(--panel)); border: 1px solid #ff5d6c; }
 
   @media (max-width: 820px) {
     .detail { grid-template-columns: 1fr; gap: 1.6rem; }

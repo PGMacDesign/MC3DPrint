@@ -27,6 +27,12 @@ import Base from "../layouts/Base.astro";
   const empty = document.getElementById("empty");
   let builds = [];
   let base = "/viewer/blueprints/";
+  let credits = {}; // buildId -> [{author, file}, ...] (published screenshots, in order)
+
+  function shotFor(id) {
+    const list = (credits[id] || []).filter((e) => e && e.file);
+    return list.length ? `/builds/${id}/${list[0].file}` : null;
+  }
 
   function render(list) {
     grid.innerHTML = "";
@@ -35,13 +41,15 @@ import Base from "../layouts/Base.astro";
     for (const b of list) {
       const id = b.file.replace(/\.blueprint$/, "");
       const tc = tierColor(b.tier);
+      const shot = shotFor(id);
       const a = document.createElement("a");
       a.className = "card build";
       a.href = `/builds/${id}/`;
       a.innerHTML = `
         <div class="shot" style="--tc:${tc}">
-          <img src="/builds/${id}.png" alt="" loading="lazy" onerror="this.remove()" />
+          ${shot ? `<img src="${shot}" alt="" loading="lazy" onerror="this.remove()" />` : ""}
           <span class="glyph" aria-hidden="true">▦</span>
+          ${shot ? "" : `<span class="wanted" title="Open this build to add a screenshot">📷 Screenshot wanted</span>`}
         </div>
         <div class="build-body">
           <div class="build-top">
@@ -60,9 +68,12 @@ import Base from "../layouts/Base.astro";
     render(term ? builds.filter((b) => b.name.toLowerCase().includes(term)) : builds);
   }
 
-  fetch("/viewer/manifest.json")
-    .then((r) => { if (!r.ok) throw new Error(); return r.json(); })
-    .then((m) => { builds = m.builds || []; base = m.base || base; render(builds); })
+  // Credits are optional — if the file isn't there yet, every card just shows "wanted".
+  Promise.all([
+    fetch("/viewer/manifest.json").then((r) => { if (!r.ok) throw new Error(); return r.json(); }),
+    fetch("/builds/credits.json").then((r) => (r.ok ? r.json() : { builds: {} })).catch(() => ({ builds: {} })),
+  ])
+    .then(([m, c]) => { builds = m.builds || []; base = m.base || base; credits = (c && c.builds) || {}; render(builds); })
     .catch(() => { count.textContent = "Gallery loads once the site is deployed."; });
 
   q.addEventListener("input", filter);
@@ -86,6 +97,14 @@ import Base from "../layouts/Base.astro";
   }
   .shot img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; }
   .shot .glyph { font-size: 1.9rem; color: color-mix(in srgb, var(--tc) 70%, var(--ink-faint)); opacity: 0.5; }
+  .wanted {
+    position: absolute; bottom: 0.5rem; left: 0.5rem; z-index: 2;
+    font-family: var(--mono); font-size: 0.68rem; font-weight: 600;
+    padding: 0.2rem 0.45rem; border-radius: var(--radius-sm);
+    background: color-mix(in srgb, var(--filament) 20%, var(--bg-soft));
+    border: 1px solid color-mix(in srgb, var(--filament) 45%, transparent);
+    color: var(--ink-soft);
+  }
   .build-body { padding: 0.85rem 1rem 1rem; }
   .build-top { display: flex; justify-content: space-between; align-items: center; font-family: var(--mono); font-size: 0.78rem; }
   .tier { font-weight: 700; }
