@@ -51,6 +51,9 @@ then it runs without one (fine pre-launch — every PR is reviewed anyway).
 
 ## Screenshot submissions (the "screenshot bounty")
 
+> Full design & reference: [`docs/screenshot-bounty.md`](../docs/screenshot-bounty.md).
+> This section is the ops summary.
+
 The same Worker also backs the **"Add a screenshot"** control on each `/builds/<id>/`
 page. A visitor pastes a **direct image URL** (never an upload) for an existing curated
 build; the Worker validates it, enforces the daily cap, and opens a PR that contains

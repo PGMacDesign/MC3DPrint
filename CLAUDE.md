@@ -9,6 +9,10 @@ Units (FU)**. T1–T4 = single printer blocks; T5–T8 = N×N multiblock fabrica
   from one tree; **1.20.1 Forge** (Java 17, Forge 47.4.10) lives on the `legacy/1.20.1` backport branch. See the
   multi-version note at the bottom of this file.
 - **Public repo** (`PGMacDesign/MC3DPrint`): no secrets/PII, original content only. `.env` is gitignored.
+  **Nothing that points at private systems or the owner goes in committed files** — no Linear links
+  or ticket ids (`PGM-…`), no personal info (emails), no internal infra ids beyond what a deploy file
+  genuinely needs. Keep tracker/issue references in Linear and in local `~/.claude` memory, not in the
+  repo. (Pre-existing bare `PGM-…` code comments are grandfathered — low-risk, don't add more.)
 
 ## Build · Test · Deploy
 
