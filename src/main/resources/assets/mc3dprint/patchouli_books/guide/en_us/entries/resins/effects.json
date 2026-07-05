@@ -6,7 +6,7 @@
   "pages": [
     {
       "type": "patchouli:text",
-      "text": "$(li)$(item)Verdant$() — plants print fully grown$(li)$(item)Experience$() — the print banks XP for you$(li)$(item)Treasure$() — printed chests may hold loot$(li)$(item)Overdrive$() — the print costs less filament$(li)$(item)Quartermaster$() — printed fixtures arrive stocked$(li)$(item)Ore Salting$() — printed stone hides ore veins"
+      "text": "$(li)$(item)Verdant$() — plants print fully grown$(li)$(item)Experience$() — the print banks XP for you$(li)$(item)Treasure$() — printed chests may hold loot$(li)$(item)Overdrive$() — the print costs less filament$(li)$(item)Quartermaster$() — printed fixtures arrive stocked$(li)$(item)Ore Salting$() — printed stone and its variants hide ore veins"
     },
     {
       "type": "patchouli:text",

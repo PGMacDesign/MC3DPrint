@@ -14,7 +14,7 @@ There are six resin effects. Slot one before you print and it reshapes the resul
 - **Treasure** — printed chests may hold loot.
 - **Overdrive** — the print costs less filament.
 - **Quartermaster** — printed fixtures arrive stocked.
-- **Ore Salting** — printed stone hides ore veins.
+- **Ore Salting** — printed stone and its variants hide ore veins.
 
 ## How they scale
 
