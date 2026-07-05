@@ -21,7 +21,7 @@
     {
       "type": "patchouli:text",
       "title": "Matter Calculator",
-      "text": "With a disc loaded, the GUI shows the full pre-print bill: $(l)total FU and time$() on the cost line, and the $(l)FU gauge tooltip$() breaks it down — FU needed per tier vs. what's on hand (docked + rack network), total RF, and ETA at your current upgrades.$(br2)If a tier can't be covered the line turns red and names the missing tier — fix the spools $(l)before$() committing filament. Numbers track Efficiency modules and a slotted Overdrive resin exactly.$(br2)While a job runs, $(l)Start$() becomes $(l)Cancel$(). Cancelling is always safe: placed blocks and spent FU stand, the disc stays loaded, and restarting $(l)repairs$() — already-placed blocks re-cover at zero cost."
+      "text": "With a disc loaded, the GUI shows the full pre-print bill: $(l)total FU and time$() on the cost line, and the $(l)FU gauge tooltip$() breaks it down — FU needed per tier vs. what's on hand (docked + rack network), total RF, and ETA at your current upgrades.$(br2)If a tier can't be covered the line turns red and names the missing tier — fix the spools $(l)before$() committing filament. Numbers track Efficiency modules and a slotted Overdrive resin exactly.$(br2)While a job runs, $(l)Start$() becomes $(l)Cancel$(). Cancelling is always safe: placed blocks and spent FU stand, the disc stays loaded, and restarting $(l)repairs$() — already-placed blocks re-cover at zero cost.$(br2)Hover the $(l)output slot$() for the machine's recent jobs."
     },
     {
       "type": "patchouli:spotlight",

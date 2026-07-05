@@ -135,6 +135,18 @@ public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
         return String.format("%.1fM", value / 1_000_000.0);
     }
 
+    /** Ticks elapsed -> "12s" / "5m" / "2h" (coarse — it's a history stamp, not a timer). */
+    private static String agoText(long ticks) {
+        long seconds = Math.max(0, ticks / 20);
+        if (seconds < 60) {
+            return seconds + "s";
+        }
+        if (seconds < 3600) {
+            return (seconds / 60) + "m";
+        }
+        return (seconds / 3600) + "h";
+    }
+
     /** Ticks -> "~42s" / "~3m10s". */
     private static String etaText(int ticks) {
         int seconds = Math.max(1, ticks / 20);
@@ -193,6 +205,27 @@ public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
             RenderCompat.tooltip(graphics, font,
                     Component.translatable("tooltip.mc3dprint.energy", menu.energy(), menu.maxEnergy()),
                     mouseX, mouseY);
+        }
+        // Print history: hover the (empty) output slot for the machine's recent jobs.
+        // With an item in the slot, the item tooltip wins; hidden when the client
+        // doesn't have the backing BE (e.g. a Remote Terminal in an unloaded chunk).
+        if (isHovering(PrinterMenu.OUTPUT_SLOT_X - 1, PrinterMenu.OUTPUT_SLOT_Y - 1, 18, 18, mouseX, mouseY)
+                && !menu.getSlot(1).hasItem() && menu.printerBlockEntity() != null) {
+            var lines = new java.util.ArrayList<Component>();
+            var entries = menu.printerBlockEntity().history();
+            if (entries.isEmpty()) {
+                lines.add(Component.translatable("tooltip.mc3dprint.history_empty"));
+            } else {
+                lines.add(Component.translatable("tooltip.mc3dprint.history_header"));
+                long now = minecraft != null && minecraft.level != null ? minecraft.level.getGameTime() : 0;
+                for (var entry : entries) {
+                    lines.add(Component.translatable("tooltip.mc3dprint.history_entry",
+                            com.pgmacdesign.mc3dprint.compat.NbtCompat.getString(entry, "Name"),
+                            com.pgmacdesign.mc3dprint.compat.NbtCompat.getInt(entry, "Blocks"),
+                            agoText(now - com.pgmacdesign.mc3dprint.compat.NbtCompat.getLong(entry, "Time"))));
+                }
+            }
+            RenderCompat.tooltipComponents(graphics, font, lines, mouseX, mouseY);
         }
         if (isHovering(FU_X, FU_Y, FU_WIDTH, FU_HEIGHT, mouseX, mouseY) && menu.blueprintFuTotal() > 0) {
             // Matter Calculator: full pre-print breakdown on the FU gauge

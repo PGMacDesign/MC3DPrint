@@ -11,6 +11,8 @@ A printer has dedicated faces for everything it needs. Get the I/O right and hop
 
 With a disc loaded, the GUI answers "can I afford this?" before you commit: the cost line shows total Filament Units and estimated time, and hovering the FU gauge breaks the job down — FU needed per tier vs. what's on hand (docked spools plus the rack network), total RF, and the ETA at your current upgrade loadout. If a tier can't be covered the readout turns red and names the missing tier. Predictions track Efficiency modules and a slotted Overdrive resin exactly — what it quotes is what the job consumes.
 
+Hovering the **output slot** shows the machine's recent jobs — what printed (or deconstructed), how many blocks, and how long ago.
+
 While a job runs, **Start becomes Cancel**. Cancelling is always safe: placed blocks and spent Filament Units stand (nothing is rolled back), the disc stays loaded, and restarting runs as a repair — blocks that already match re-cover at zero cost, so a cancelled-and-restarted print never costs more than printing it once. There's no separate refund step because the printer pays per block as it places, never up front.
 
 ## Faces & I/O

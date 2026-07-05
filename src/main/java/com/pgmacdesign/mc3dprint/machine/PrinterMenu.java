@@ -309,6 +309,16 @@ public class PrinterMenu extends AbstractContainerMenu {
         return SplitContainerData.combine(data, PrinterBlockEntity.DATA_JOB_ACTIVE) != 0;
     }
 
+    /**
+     * The backing block entity when available — always on the server; on the client
+     * whenever the machine's chunk is loaded (a Remote Terminal across dimensions may
+     * not have it, and history simply doesn't render there).
+     */
+    @Nullable
+    public PrinterBlockEntity printerBlockEntity() {
+        return printer;
+    }
+
     public boolean deconstructMode() {
         return SplitContainerData.combine(data, PrinterBlockEntity.DATA_DECON_MODE) != 0;
     }
