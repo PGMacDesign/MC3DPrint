@@ -333,6 +333,8 @@ class CuratedBlueprintGenerator {
         builds.put("bee_apiary", beeApiary());
         // Showpiece — Grand Cathedral (twin towers + vaulted nave; the Library's companion)
         builds.put("grand_cathedral", grandCathedral());
+        // Showpiece — Frozen Throne (ice palace; horned ice-wraith effigy guarding a chest vault)
+        builds.put("frozen_throne", frozenThrone());
         // Imported player scan — Tristan's Castle (gift build; powder snow priced via the bucket)
         builds.put("tristans_castle", tristansCastle());
         // Imported player scan — Tristan's Pig House
@@ -3077,6 +3079,167 @@ class CuratedBlueprintGenerator {
         b.set(7, 18, 11, DARK_OAK_FENCE);
         b.set(6, 19, 11, DARK_OAK_FENCE);
         b.set(6, 20, 11, LIGHTNING_ROD);
+        return b.build();
+    }
+
+    /**
+     * Frozen Throne — a majestic-but-ominous ice palace on a 17×17 footprint: four
+     * tall spired corner towers, packed-ice curtain walls with light-blue glass
+     * windows and crenellated ramparts, an open-air throne hall, and — looming at
+     * the centre on a stone dais — a hulking horned ICE WRAITH effigy with glowing
+     * red eyes that guards three reward chests on the vault dais behind it.
+     *
+     * <p><b>Design intent (Patrick, 2026-07-04):</b> "frozen palace, majestic like
+     * the movie Frozen, but still a bit ominous." Ice variants + stone only, and
+     * <b>nothing that can melt it</b>.
+     *
+     * <p><b>Melt-safe by construction.</b> packed_ice + blue_ice never melt at any
+     * light level; snow_block melts only at block-light &gt; 11. The only light
+     * sources used are SOUL LANTERNS (level 10 — the eerie blue "majestic" glow) and
+     * REDSTONE torches (level 7 — the "ominous" red accents + the wraith's eyes),
+     * both of which sit UNDER the 12-light melt threshold and neither of which can
+     * ignite anything. So even the snow is safe. No torch/lantern/sea_lantern/
+     * glowstone/end_rod/campfire/fire/lava anywhere in the build.
+     *
+     * <p>Every block is FU-valued or derives: packed_ice (5@2), blue_ice (derives
+     * from packed_ice), snow_block (1@1), stone bricks &amp; family (3@1),
+     * light_blue_stained_glass (cosmetic-variant normalised), soul_lantern /
+     * redstone_torch / chain / iron_bars (all derive through recipes), chests.
+     */
+    private static Blueprint frozenThrone() {
+        // ── palette (all melt-safe: see javadoc) ──────────────────────────────
+        BlueprintBlockState PI = bs("minecraft:packed_ice");   // wall bulk — never melts
+        BlueprintBlockState BI = bs("minecraft:blue_ice");     // accents / effigy / spire tips
+        BlueprintBlockState SB = bs("minecraft:snow_block");   // roofs / spire bodies (safe: no light > 10)
+        BlueprintBlockState glass = bs("minecraft:light_blue_stained_glass"); // full blocks → render-safe
+        BlueprintBlockState soulHang = bs("minecraft:soul_lantern[hanging=true,waterlogged=false]");
+        BlueprintBlockState soulStand = bs("minecraft:soul_lantern[hanging=false,waterlogged=false]");
+        BlueprintBlockState redWallN = bs("minecraft:redstone_wall_torch[facing=south,lit=true]");
+        BlueprintBlockState redStand = bs("minecraft:redstone_torch[lit=true]");
+
+        int x0 = 0, x1 = 16, z0 = 0, z1 = 16, cx = 8, cz = 8;
+        Blueprint.Builder b = Blueprint.builder("Frozen Throne", 17, 19, 17);
+
+        // ── 1) FLOOR (y=0) — the walkable ground course; door sill at y=1 so you
+        //     walk straight in from flat ground. Packed-ice field, a blue-ice cross
+        //     + diamond, and a stone-brick border ring. ────────────────────────
+        floor(b, 0, x0, z0, x1, z1, PI);
+        walls(b, x0, z0, x1, z1, 0, 0, STONE_BRICKS);           // stone border ring
+        for (int x = x0; x <= x1; x++) b.set(x, 0, cz, BI);     // E–W blue-ice lane
+        for (int z = z0; z <= z1; z++) b.set(cx, 0, z, BI);     // N–S blue-ice lane
+        circleRing(b, 0, cx, cz, 5, BI);                        // blue-ice diamond ring
+
+        // ── 2) CURTAIN WALLS (y=1..8, 8 tall) with blue-ice banding ───────────
+        walls(b, x0, z0, x1, z1, 1, 8, PI);
+        walls(b, x0, z0, x1, z1, 1, 1, BI);                     // base band
+        walls(b, x0, z0, x1, z1, 8, 8, BI);                     // top band
+        walls(b, x0, z0, x1, z1, 4, 4, SB);                     // snow string course
+        crenellate(b, 9, x0, z0, x1, z1, PI);                   // ramparts
+
+        // ── 3) TALL GLASS WINDOWS on the N / E / W curtains (full blocks, blue-ice
+        //     framed → render-safe). 3-wide, y=3..5. ─────────────────────────────
+        solid(b, 7, 3, z0, 9, 5, z0, glass);                    // north window glazing
+        b.set(6, 6, z0, BI); b.set(10, 6, z0, BI);              // north lintel returns
+        for (int y = 3; y <= 5; y++) { b.set(x0, y, 7, glass); b.set(x0, y, 9, glass); b.set(x0, y, 8, glass); } // west
+        for (int y = 3; y <= 5; y++) { b.set(x1, y, 7, glass); b.set(x1, y, 9, glass); b.set(x1, y, 8, glass); } // east
+        b.set(x0, 6, 8, BI); b.set(x1, 6, 8, BI);               // side lintels
+
+        // ── 4) GRAND GATEWAY (south, z=16): a 3-wide × 5-tall open arch with a
+        //     blue-ice frame and an iron-bars valance ABOVE head height (a portcullis
+        //     hint that leaves the passage fully open → interior stays reachable). ─
+        for (int x = 7; x <= 9; x++) for (int y = 1; y <= 5; y++) b.clear(x, y, z1);
+        pillar(b, 6, z1, 1, 6, BI); pillar(b, 10, z1, 1, 6, BI); // arch jambs
+        for (int x = 7; x <= 9; x++) b.set(x, 6, z1, BI);        // arch lintel
+        for (int x = 7; x <= 9; x++) b.set(x, 7, z1, IRON_BARS); // valance bars (between BI jamb tops)
+
+        // ── 5) FOUR SPIRED CORNER TOWERS (3×3, rise to y=12, spire to y=18) ────
+        int[][] towers = { {0, 0}, {14, 0}, {0, 14}, {14, 14} };
+        for (int[] t : towers) {
+            int tx0 = t[0], tz0 = t[1], tx1 = tx0 + 2, tz1 = tz0 + 2;
+            int tcx = tx0 + 1, tcz = tz0 + 1;
+            walls(b, tx0, tz0, tx1, tz1, 1, 12, PI);            // hollow shaft
+            // blue-ice quoins
+            pillar(b, tx0, tz0, 1, 12, BI); pillar(b, tx1, tz0, 1, 12, BI);
+            pillar(b, tx0, tz1, 1, 12, BI); pillar(b, tx1, tz1, 1, 12, BI);
+            crenellate(b, 13, tx0, tz0, tx1, tz1, PI);          // tower ramparts
+            solid(b, tx0, 14, tz0, tx1, 14, tz1, SB);           // spire roof caps shaft
+            b.set(tcx, 15, tcz, BI); b.set(tcx - 1, 15, tcz, SB); b.set(tcx + 1, 15, tcz, SB);
+            b.set(tcx, 15, tcz - 1, SB); b.set(tcx, 15, tcz + 1, SB);
+            b.set(tcx, 16, tcz, BI); b.set(tcx, 17, tcz, BI);   // spire point
+            b.set(tcx, 18, tcz, soulStand);                     // blue beacon on each tip
+        }
+        // 5b) open each tower shaft into the hall (2-tall inner-corner arch) so the
+        //     tower interiors are reachable — kills the sealed-pocket audit case.
+        b.clear(2, 1, 1);  b.clear(2, 2, 1);   // NW → hall
+        b.clear(14, 1, 1); b.clear(14, 2, 1);  // NE → hall
+        b.clear(2, 1, 15);  b.clear(2, 2, 15); // SW → hall
+        b.clear(14, 1, 15); b.clear(14, 2, 15);// SE → hall
+        // 5c) tower arrow-slit windows (single glass blocks on the two outer faces)
+        int[][] slits = { {1,0, 0,1}, {15,0, 16,1}, {1,16, 0,15}, {15,16, 16,15} };
+        for (int[] s : slits) {
+            b.set(s[0], 4, s[1], glass); b.set(s[0], 8, s[1], glass);
+            b.set(s[2], 4, s[3], glass); b.set(s[2], 8, s[3], glass);
+        }
+
+        // ── 6) THE VAULT (north end): a raised stone dais with three reward chests,
+        //     a blue-ice throne-back, and a soul-lantern hanging over it. ─────────
+        solid(b, 6, 1, 1, 10, 1, 2, STONE_BRICKS);              // vault dais
+        b.set(6, 1, 1, CHISELED_STONE_BRICKS); b.set(10, 1, 1, CHISELED_STONE_BRICKS);
+        solid(b, 6, 2, 1, 10, 6, 1, BI);                        // throne-back wall (against z=1)
+        b.set(8, 3, 1, CHISELED_STONE_BRICKS); b.set(8, 5, 1, CHISELED_STONE_BRICKS);
+        b.set(7, 2, 2, CHEST); b.set(8, 2, 2, CHEST); b.set(9, 2, 2, CHEST); // chests face south (toward hall)
+        pillar(b, 6, 1, 2, 5, BI); pillar(b, 10, 1, 2, 5, BI);  // flanking frost pillars
+        b.set(6, 6, 1, BI); b.set(10, 6, 1, BI);
+        // soul-lantern hung over the chests on a chain (support above → audit-safe)
+        b.set(8, 7, 2, BI); b.set(8, 6, 2, CHAIN); b.set(8, 5, 2, soulHang);
+
+        // ── 7) THE ICE WRAITH — a hulking horned effigy on a central stone plinth,
+        //     facing the gateway (south, +z), arms raised, red-glowing eyes. ─────
+        solid(b, 6, 1, 6, 10, 1, 10, STONE_BRICKS);             // plinth (top y=1)
+        walls(b, 6, 6, 10, 10, 1, 1, CHISELED_STONE_BRICKS);    // plinth edge trim
+        int wx = cx, wy = 2, wz = cz;                           // wraith base cell (feet at y=2)
+        // legs
+        b.set(wx - 1, wy, wz, PI);   b.set(wx - 1, wy + 1, wz, PI);
+        b.set(wx + 1, wy, wz, PI);   b.set(wx + 1, wy + 1, wz, PI);
+        b.set(wx, wy + 1, wz, BI);                              // pelvis
+        // torso
+        solid(b, wx - 1, wy + 2, wz, wx + 1, wy + 4, wz, PI);
+        b.set(wx, wy + 2, wz, BI); b.set(wx, wy + 3, wz, BI); b.set(wx, wy + 4, wz, BI); // frost core
+        b.set(wx - 2, wy + 3, wz, PI); b.set(wx + 2, wy + 3, wz, PI); // broad shoulders
+        // raised arms + claws (menacing)
+        b.set(wx - 2, wy + 4, wz, PI); b.set(wx - 3, wy + 5, wz, PI); b.set(wx - 3, wy + 6, wz, BI);
+        b.set(wx + 2, wy + 4, wz, PI); b.set(wx + 3, wy + 5, wz, PI); b.set(wx + 3, wy + 6, wz, BI);
+        // neck + 3-wide, 2-tall head
+        b.set(wx, wy + 5, wz, PI);
+        solid(b, wx - 1, wy + 6, wz, wx + 1, wy + 7, wz, BI);
+        // horns / crown spikes
+        b.set(wx - 1, wy + 8, wz, BI); b.set(wx - 2, wy + 9, wz, BI);
+        b.set(wx + 1, wy + 8, wz, BI); b.set(wx + 2, wy + 9, wz, BI);
+        b.set(wx, wy + 8, wz, BI); b.set(wx, wy + 9, wz, BI);
+        // glowing red eyes on the south (front) face, attaching back to the head
+        b.set(wx - 1, wy + 7, wz + 1, redWallN);
+        b.set(wx + 1, wy + 7, wz + 1, redWallN);
+
+        // ── 8) LIGHT & GRANDEUR — four blue frost-pillar lamps flanking the wraith,
+        //     red sconces for ominous underglow, and a crown of blue beacons. ────
+        int[][] lampPillars = { {4, 4}, {12, 4}, {4, 12}, {12, 12} };
+        for (int[] lp : lampPillars) {
+            pillar(b, lp[0], lp[1], 1, 5, BI);
+            b.set(lp[0], 6, lp[1], soulStand);                  // standing soul lantern on top
+        }
+        // red-glow wall sconces (level 7) low on the interior curtains
+        b.set(4, 4, 1, redWallN); b.set(12, 4, 1, redWallN);    // north wall interior
+        // side braziers flanking the wraith: a 2-tall blue-ice pedestal so the
+        // standing redstone torch has a block beneath it (a floating torch pops).
+        pillar(b, 5, wz, 1, 2, BI); b.set(5, 3, wz, redStand);
+        pillar(b, 11, wz, 1, 2, BI); b.set(11, 3, wz, redStand);
+        // blue beacons crowning the curtain midpoints (skip the gateway span)
+        b.set(8, 10, z0, BI);  b.set(8, 11, z0, soulStand);     // north
+        b.set(x0, 10, 8, BI);  b.set(x0, 11, 8, soulStand);     // west
+        b.set(x1, 10, 8, BI);  b.set(x1, 11, 8, soulStand);     // east
+        b.set(6, 10, z1, BI);  b.set(6, 11, z1, soulStand);     // south, flanking gate (W)
+        b.set(10, 10, z1, BI); b.set(10, 11, z1, soulStand);    // south, flanking gate (E)
+
         return b.build();
     }
 

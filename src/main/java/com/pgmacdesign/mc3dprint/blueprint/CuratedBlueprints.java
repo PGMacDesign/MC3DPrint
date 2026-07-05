@@ -184,6 +184,8 @@ public final class CuratedBlueprints {
             "bee_apiary",
             // Showpiece — Grand Cathedral (twin towers + vaulted nave; the Library's companion)
             "grand_cathedral",
+            // Showpiece — Frozen Throne (ice palace; ice-wraith effigy guarding a chest vault)
+            "frozen_throne",
             // Imported player scan — Tristan's Castle (gift build; powder snow priced via the bucket)
             "tristans_castle",
             // Imported player scan — Tristan's Pig House
