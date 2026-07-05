@@ -109,7 +109,14 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
     // Printer"). 0 when no tier fits / not applicable.
     public static final int DATA_REQUIRED_TIER = 16;
     public static final int DATA_DECON_MODE = 17;
-    public static final int DATA_COUNT = 18;
+    // Matter Calculator: pre-print readout for the loaded disc (0 when no disc/report).
+    public static final int DATA_BP_FU_TOTAL = 18;    // summed FU cost across tiers (display units)
+    public static final int DATA_BP_RF = 19;          // total RF the job will consume
+    public static final int DATA_BP_ETA = 20;         // total ticks at current speed
+    public static final int DATA_BP_SHORTFALL = 21;   // lowest tier whose filament coverage fails; 0 = covered
+    public static final int DATA_COST_TIER_BASE = 22; // +0..7 — per-tier FU cost (tier units)
+    public static final int DATA_AVAIL_TIER_BASE = 30;// +0..7 — exact-tier FU available, docked + network
+    public static final int DATA_COUNT = 38;
 
     /** Build offsets are clamped to [-MAX_OFFSET, MAX_OFFSET] on each axis. */
     public static final int MAX_OFFSET = 32;
@@ -2453,6 +2460,135 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         syncToClients();
     }
 
+    // --- Matter Calculator: cached pre-print cost report for the loaded disc ---
+    //
+    // Recomputed only when the disc / upgrade loadout / slotted resin changes (the
+    // stamp), so the per-tick menu poll never touches the blueprint file. Costs come
+    // from the SAME per-block primitives the print path spends through
+    // (blockFuCost/blockFuTier + the Overdrive floor), so predicted == consumed.
+
+    /** Per-tier FU cost (tier units), printable block count, and the stamp it was built for. */
+    private transient int[] reportPerTier;
+    private transient int reportBlocks;
+    private transient int reportStamp;
+
+    private void ensureCostReport() {
+        ItemStack template = inventory.getStackInSlot(SLOT_TEMPLATE);
+        UUID id = isLoadedDisc(template) ? BlueprintDiscItem.getBlueprintId(template).orElse(null) : null;
+        ItemStack resin = resins.getStackInSlot(0);
+        int stamp = java.util.Objects.hash(id,
+                upgradeCount(UpgradeItem.Type.EFFICIENCY),
+                upgradeCount(UpgradeItem.Type.SPEED),
+                upgradeCount(UpgradeItem.Type.RF_EFFICIENCY),
+                resin.getItem(), resin.isEmpty() ? 0 : 1,
+                id != null && BlueprintDiscItem.isOfficial(template));
+        if (stamp == reportStamp) {
+            return;
+        }
+        reportStamp = stamp;
+        reportPerTier = null;
+        reportBlocks = 0;
+        if (id == null || !(level instanceof ServerLevel serverLevel)) {
+            return;
+        }
+        Blueprint blueprint = BlueprintFileStore.forServer(serverLevel.getServer()).load(id).orElse(null);
+        if (blueprint == null) {
+            return;
+        }
+        boolean overdrive = !resin.isEmpty() && resin.getItem() instanceof ResinItem resinItem
+                && resinItem.effect() == ResinItem.Effect.OVERDRIVE
+                && BlueprintDiscItem.isOfficial(template);
+        int overdriveTier = overdrive && resin.getItem() instanceof ResinItem ri ? ri.tier() : 0;
+
+        // per-palette-index block counts, then one cost resolve per palette entry
+        int[] counts = new int[blueprint.palette().size()];
+        blueprint.forEachBlock((local, paletteIndex) -> counts[paletteIndex]++);
+
+        int[] perTier = new int[SpoolItem.CAPACITY_BY_TIER.length];
+        int blocks = 0;
+        for (int i = 0; i < counts.length; i++) {
+            if (counts[i] == 0) {
+                continue;
+            }
+            Optional<BlockState> resolved = blueprint.palette().get(i).resolve();
+            if (resolved.isEmpty() || !canPrintBlock(resolved.get())) {
+                continue; // skipped at print time — free, no RF, no tick
+            }
+            int fuCost = blockFuCost(resolved.get());
+            if (overdrive) {
+                int baseFu = blockFuValue(resolved.get()).map(FuValue::fu).orElse(0);
+                if (baseFu > 0) {
+                    fuCost = Math.min(fuCost, ResinEffects.overdriveFloor(baseFu, overdriveTier,
+                            MC3DPrintConfig.RESIN_OVERDRIVE_T3_BELOW.get()));
+                }
+            }
+            int costTier = blockFuTier(resolved.get());
+            perTier[costTier - 1] += fuCost * counts[i];
+            blocks += counts[i];
+        }
+        reportPerTier = perTier;
+        reportBlocks = blocks;
+    }
+
+    /** Per-tier FU cost of the loaded disc, or null when no report. Test/API surface. */
+    @Nullable
+    public int[] costReportPerTier() {
+        ensureCostReport();
+        return reportPerTier == null ? null : reportPerTier.clone();
+    }
+
+    /** Total RF the loaded disc's print will consume at the current upgrade loadout. */
+    public int costReportRf() {
+        ensureCostReport();
+        return reportPerTier == null ? 0
+                : FuConversion.clampToInt((long) reportBlocks * rfAdjusted(MC3DPrintConfig.rfPerBlock(tier)));
+    }
+
+    /** Total ticks the loaded disc's print will take at the current upgrade loadout. */
+    public int costReportEta() {
+        ensureCostReport();
+        return reportPerTier == null ? 0
+                : FuConversion.clampToInt((long) reportBlocks * speedAdjusted(MC3DPrintConfig.ticksPerBlock(tier)));
+    }
+
+    /** Exact-tier FU available to this printer (docked + network), in tier units. */
+    private int exactTierAvailable(int tierNumber) {
+        int ratio = FuConversion.ratio();
+        long base = FilamentDrain.availableTier(spools, tierNumber, ratio);
+        for (IFilamentSource src : reachableSources()) {
+            base += src.availableExactTier(tierNumber);
+        }
+        return FuConversion.clampToInt(FuConversion.fromBase(base, tierNumber, ratio));
+    }
+
+    /**
+     * Down-only feasibility: cost at tier T may be paid by filament of tier >= T, so
+     * coverage holds iff for every T the cumulative need at >= T fits the cumulative
+     * supply at >= T (base units). Returns the LOWEST failing tier, or 0 when covered.
+     */
+    private int shortfallTier() {
+        ensureCostReport();
+        if (reportPerTier == null) {
+            return 0;
+        }
+        int ratio = FuConversion.ratio();
+        long needBase = 0;
+        long availBase = 0;
+        int worst = 0;
+        for (int t = SpoolItem.CAPACITY_BY_TIER.length; t >= 1; t--) {
+            needBase += FuConversion.toBase(reportPerTier[t - 1], t, ratio);
+            long dockedAndNet = FilamentDrain.availableTier(spools, t, ratio);
+            for (IFilamentSource src : reachableSources()) {
+                dockedAndNet += src.availableExactTier(t);
+            }
+            availBase += dockedAndNet;
+            if (needBase > availBase) {
+                worst = t;
+            }
+        }
+        return worst;
+    }
+
     public ContainerData containerData() {
         return new SplitContainerData(DATA_COUNT, this::dataValue);
     }
@@ -2488,7 +2624,30 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             case DATA_ROTATION -> rotation.ordinal();
             case DATA_REQUIRED_TIER -> requiredTier;
             case DATA_DECON_MODE -> deconstructMode ? 1 : 0;
-            default -> 0;
+            case DATA_BP_FU_TOTAL -> {
+                ensureCostReport();
+                if (reportPerTier == null) {
+                    yield 0;
+                }
+                long total = 0;
+                for (int c : reportPerTier) {
+                    total += c;
+                }
+                yield FuConversion.clampToInt(total);
+            }
+            case DATA_BP_RF -> costReportRf();
+            case DATA_BP_ETA -> costReportEta();
+            case DATA_BP_SHORTFALL -> shortfallTier();
+            default -> {
+                if (index >= DATA_COST_TIER_BASE && index < DATA_COST_TIER_BASE + 8) {
+                    ensureCostReport();
+                    yield reportPerTier == null ? 0 : reportPerTier[index - DATA_COST_TIER_BASE];
+                }
+                if (index >= DATA_AVAIL_TIER_BASE && index < DATA_AVAIL_TIER_BASE + 8) {
+                    yield exactTierAvailable(index - DATA_AVAIL_TIER_BASE + 1);
+                }
+                yield 0;
+            }
         };
     }
 

@@ -121,6 +121,26 @@ public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
                 ? "gui.mc3dprint.mode_deconstruct" : "gui.mc3dprint.mode_print");
     }
 
+    /** 12_400 -> "12.4k"; keeps the one-line calculator readout narrow. */
+    private static String compact(int value) {
+        if (value < 10_000) {
+            return Integer.toString(value);
+        }
+        if (value < 1_000_000) {
+            return String.format("%.1fk", value / 1000.0);
+        }
+        return String.format("%.1fM", value / 1_000_000.0);
+    }
+
+    /** Ticks -> "~42s" / "~3m10s". */
+    private static String etaText(int ticks) {
+        int seconds = Math.max(1, ticks / 20);
+        if (seconds < 60) {
+            return seconds + "s";
+        }
+        return (seconds / 60) + "m" + (seconds % 60) + "s";
+    }
+
     private Component rotateLabel() {
         return Component.translatable("gui.mc3dprint.rotate", menu.rotationDegrees());
     }
@@ -167,6 +187,29 @@ public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
             RenderCompat.tooltip(graphics, font,
                     Component.translatable("tooltip.mc3dprint.energy", menu.energy(), menu.maxEnergy()),
                     mouseX, mouseY);
+        }
+        if (isHovering(FU_X, FU_Y, FU_WIDTH, FU_HEIGHT, mouseX, mouseY) && menu.blueprintFuTotal() > 0) {
+            // Matter Calculator: full pre-print breakdown on the FU gauge
+            var lines = new java.util.ArrayList<Component>();
+            lines.add(Component.translatable("tooltip.mc3dprint.calc_header",
+                    menu.blueprintFuTotal(), compact(menu.blueprintRf()), etaText(menu.blueprintEtaTicks())));
+            int shortfall = menu.shortfallTier();
+            for (int t = 1; t <= 8; t++) {
+                int need = menu.costForTier(t);
+                if (need > 0) {
+                    Component line = Component.translatable("tooltip.mc3dprint.calc_tier",
+                            t, need, menu.availForTier(t));
+                    lines.add(t == shortfall
+                            ? line.copy().withStyle(net.minecraft.ChatFormatting.RED) : line);
+                }
+            }
+            if (shortfall > 0) {
+                lines.add(Component.translatable("tooltip.mc3dprint.calc_shortfall", shortfall)
+                        .withStyle(net.minecraft.ChatFormatting.RED));
+            }
+            lines.add(Component.translatable("tooltip.mc3dprint.fu", menu.fu(), menu.fuCapacity()));
+            RenderCompat.tooltipComponents(graphics, font, lines, mouseX, mouseY);
+            return;
         }
         if (isHovering(FU_X, FU_Y, FU_WIDTH, FU_HEIGHT, mouseX, mouseY)) {
             java.util.List<Component> lines = new java.util.ArrayList<>();
@@ -333,6 +376,13 @@ public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
         int cost = menu.templateCost();
         if (cost > 0) {
             RenderCompat.drawString(graphics, font, Component.translatable("gui.mc3dprint.cost", cost), 36, 58, LABEL, false);
+        } else if (menu.blueprintFuTotal() > 0) {
+            // Matter Calculator: compact cost/ETA line for the loaded disc; warm-red when
+            // filament coverage fails (details live in the FU gauge tooltip).
+            Component calc = Component.translatable("gui.mc3dprint.bp_cost",
+                    compact(menu.blueprintFuTotal()), etaText(menu.blueprintEtaTicks()));
+            RenderCompat.drawString(graphics, font, calc, 36, 58,
+                    menu.shortfallTier() > 0 ? WARN : LABEL, false);
         }
         // "Spools X/Y" — smaller and moved DOWN to sit just above the spool-slot grid
         // (roughly in line with the 2nd inventory row), right-aligned over the grid. The

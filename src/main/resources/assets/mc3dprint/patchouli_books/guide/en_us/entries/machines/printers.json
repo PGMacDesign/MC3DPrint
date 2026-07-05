@@ -19,6 +19,11 @@
       "text": "Higher tiers print $(l)faster$(), cost $(l)less FU$() per block, and accept $(l)more upgrades$() (more slots at higher tiers, up to 8). They also unlock higher material tiers — a Tier 3 machine can't print a Tier 6 (netherite) block.$(br2)Tiers 5-8 are multiblock $(item)Fabricators$() — see the Multiblocks category."
     },
     {
+      "type": "patchouli:text",
+      "title": "Matter Calculator",
+      "text": "With a disc loaded, the GUI shows the full pre-print bill: $(l)total FU and time$() on the cost line, and the $(l)FU gauge tooltip$() breaks it down — FU needed per tier vs. what's on hand (docked + rack network), total RF, and ETA at your current upgrades.$(br2)If a tier can't be covered the line turns red and names the missing tier — fix the spools $(l)before$() committing filament. Numbers track Efficiency modules and a slotted Overdrive resin exactly."
+    },
+    {
       "type": "patchouli:spotlight",
       "item": "mc3dprint:remote_terminal",
       "title": "Remote Terminal",

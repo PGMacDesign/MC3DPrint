@@ -307,6 +307,33 @@ public class PrinterMenu extends AbstractContainerMenu {
         return SplitContainerData.combine(data, PrinterBlockEntity.DATA_DECON_MODE) != 0;
     }
 
+    // --- Matter Calculator readout (0s when no disc is loaded) ---
+
+    public int blueprintFuTotal() {
+        return SplitContainerData.combine(data, PrinterBlockEntity.DATA_BP_FU_TOTAL);
+    }
+
+    public int blueprintRf() {
+        return SplitContainerData.combine(data, PrinterBlockEntity.DATA_BP_RF);
+    }
+
+    public int blueprintEtaTicks() {
+        return SplitContainerData.combine(data, PrinterBlockEntity.DATA_BP_ETA);
+    }
+
+    /** Lowest tier whose down-only filament coverage fails, or 0 when affordable. */
+    public int shortfallTier() {
+        return SplitContainerData.combine(data, PrinterBlockEntity.DATA_BP_SHORTFALL);
+    }
+
+    public int costForTier(int tier) {
+        return SplitContainerData.combine(data, PrinterBlockEntity.DATA_COST_TIER_BASE + tier - 1);
+    }
+
+    public int availForTier(int tier) {
+        return SplitContainerData.combine(data, PrinterBlockEntity.DATA_AVAIL_TIER_BASE + tier - 1);
+    }
+
     public boolean preview() {
         return SplitContainerData.combine(data, PrinterBlockEntity.DATA_PREVIEW) != 0;
     }
