@@ -23,5 +23,16 @@
     "resin_overdrive_t3",
     "resin_quartermaster_t3",
     "resin_ore_salting_t3"
-  ]
+  ],
+  "flavors": [
+    { "table_contains": "ancient_city", "resins": ["resin_xp_t3"] },
+    { "table_contains": "stronghold_library", "resins": ["resin_xp_t3"] },
+    { "table_contains": "bastion_treasure", "resins": ["resin_treasure_t3"] },
+    { "table_contains": "buried_treasure", "resins": ["resin_treasure_t3"] },
+    { "table_contains": "end_city_treasure", "resins": ["resin_overdrive_t3"] },
+    { "table_contains": "woodland_mansion", "resins": ["resin_quartermaster_t3"] },
+    { "table_contains": "stronghold", "resins": ["resin_ore_salting_t3"] },
+    { "table_contains": "nether_bridge", "resins": ["resin_ore_salting_t3"] }
+  ],
+  "flavor_bias": 0.75
 }
