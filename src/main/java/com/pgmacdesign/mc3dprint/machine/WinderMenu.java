@@ -152,6 +152,6 @@ public class WinderMenu extends AbstractContainerMenu {
             return false;
         }
         return winder.getLevel().getBlockEntity(winder.getBlockPos()) == winder
-                && player.distanceToSqr(winder.getBlockPos().getCenter()) <= 64.0;
+                && player.distanceToSqr(net.minecraft.world.phys.Vec3.atCenterOf(winder.getBlockPos())) <= 64.0;
     }
 }

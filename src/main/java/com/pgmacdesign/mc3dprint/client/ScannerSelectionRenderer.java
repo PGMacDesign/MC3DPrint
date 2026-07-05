@@ -7,7 +7,9 @@ import com.pgmacdesign.mc3dprint.registry.ModDataComponents;
 import com.pgmacdesign.mc3dprint.scanner.ScanData;
 import com.pgmacdesign.mc3dprint.scanner.ScannerItem;
 import net.minecraft.client.Minecraft;
+//? if <26.2 {
 import net.minecraft.client.renderer.MultiBufferSource;
+//?}
 //? if >=1.21.11 {
 /*import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
@@ -65,6 +67,30 @@ public final class ScannerSelectionRenderer {
             return;
         }
 
+        //? if >=26.2 {
+        /*// 26.2 deleted the immediate MultiBufferSource/renderBuffers path entirely; the
+        // per-frame Gizmos API is now the sanctioned way to draw world-space overlay shapes
+        // (world coordinates, no camera transform needed). Colors match the legacy path.
+        if (cornerA != null) {
+            net.minecraft.gizmos.Gizmos.cuboid(new AABB(cornerA).inflate(0.004),
+                    net.minecraft.gizmos.GizmoStyle.stroke(0xFF3373FF));
+        }
+        if (cornerB != null) {
+            net.minecraft.gizmos.Gizmos.cuboid(new AABB(cornerB).inflate(0.004),
+                    net.minecraft.gizmos.GizmoStyle.stroke(0xFF4DD9FF));
+        }
+        if (cornerA != null && cornerB != null && !cornerA.equals(cornerB)) {
+            AABB bounds = new AABB(
+                    Math.min(cornerA.getX(), cornerB.getX()),
+                    Math.min(cornerA.getY(), cornerB.getY()),
+                    Math.min(cornerA.getZ(), cornerB.getZ()),
+                    Math.max(cornerA.getX(), cornerB.getX()) + 1,
+                    Math.max(cornerA.getY(), cornerB.getY()) + 1,
+                    Math.max(cornerA.getZ(), cornerB.getZ()) + 1).inflate(0.008);
+            net.minecraft.gizmos.Gizmos.cuboid(bounds,
+                    net.minecraft.gizmos.GizmoStyle.stroke(0xA68CBFFF));
+        }
+        *///?} else {
         PoseStack poseStack = event.getPoseStack();
         if (poseStack == null) {
             return; // @Nullable on 1.21.9+; never null on the stages we subscribe to pre-1.21.9
@@ -102,6 +128,7 @@ public final class ScannerSelectionRenderer {
 
         poseStack.popPose();
         buffers.endBatch(RenderType.lines());
+        //?}
     }
 
     private static void renderBox(PoseStack poseStack, VertexConsumer consumer, AABB box,

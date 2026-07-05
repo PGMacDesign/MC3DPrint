@@ -9,7 +9,9 @@ import com.pgmacdesign.mc3dprint.machine.multiblock.ControllerBlock;
 import com.pgmacdesign.mc3dprint.machine.multiblock.MultiblockPattern;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.LightTexture;
+//? if <26.2 {
 import net.minecraft.client.renderer.MultiBufferSource;
+//?}
 //? if >=1.21.11 {
 /*import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
@@ -292,7 +294,54 @@ public class PrinterRenderer implements BlockEntityRenderer<PrinterBlockEntity> 
         }
     }
     *///?}
-    //? if >=26.1 {
+    //? if >=26.2 {
+    /*// Same shape as the 26.1 branch below, but 26.2's submitMovingBlock grew an
+    // outlineColor parameter (0 = no outline).
+    private static void submitGhostBlock(SubmitNodeCollector collector, PoseStack poseStack,
+                                         PrinterBlockEntity.PreviewBlock ghost,
+                                         net.minecraft.world.level.Level level, boolean blocked) {
+        net.minecraft.client.renderer.block.MovingBlockRenderState mb =
+                new net.minecraft.client.renderer.block.MovingBlockRenderState();
+        mb.blockPos = ghost.pos();
+        mb.randomSeedPos = ghost.pos();
+        mb.blockState = ghost.state();
+        if (level instanceof net.minecraft.client.multiplayer.ClientLevel clientLevel) {
+            mb.biome = clientLevel.getBiome(ghost.pos());
+            mb.cardinalLighting = clientLevel.cardinalLighting();
+            mb.lightEngine = clientLevel.getLightEngine();
+        }
+        collector.submitMovingBlock(poseStack, mb, 0);
+
+        float gr = blocked ? 1.0F : 0.65F;
+        float gg = blocked ? 0.35F : 1.0F;
+        float gb = blocked ? 0.35F : 0.70F;
+        float ga = blocked ? 0.45F : 0.30F;
+        collector.submitCustomGeometry(poseStack,
+                net.minecraft.client.renderer.rendertype.RenderTypes.debugQuads(), (pose, vc) ->
+                        shellBox(pose, vc, -0.01F, -0.01F, -0.01F, 1.01F, 1.01F, 1.01F, gr, gg, gb, ga));
+    }
+
+    private static void shellBox(PoseStack.Pose pose, VertexConsumer vc,
+                                 float x0, float y0, float z0, float x1, float y1, float z1,
+                                 float r, float g, float b, float a) {
+        shellQuad(pose, vc, r, g, b, a, x0,y0,z0, x1,y0,z0, x1,y1,z0, x0,y1,z0);
+        shellQuad(pose, vc, r, g, b, a, x0,y0,z1, x1,y0,z1, x1,y1,z1, x0,y1,z1);
+        shellQuad(pose, vc, r, g, b, a, x0,y0,z0, x0,y0,z1, x0,y1,z1, x0,y1,z0);
+        shellQuad(pose, vc, r, g, b, a, x1,y0,z0, x1,y0,z1, x1,y1,z1, x1,y1,z0);
+        shellQuad(pose, vc, r, g, b, a, x0,y0,z0, x1,y0,z0, x1,y0,z1, x0,y0,z1);
+        shellQuad(pose, vc, r, g, b, a, x0,y1,z0, x1,y1,z0, x1,y1,z1, x0,y1,z1);
+    }
+
+    private static void shellQuad(PoseStack.Pose pose, VertexConsumer vc,
+                                  float r, float g, float b, float a,
+                                  float ax, float ay, float az, float bx, float by, float bz,
+                                  float cx, float cy, float cz, float dx, float dy, float dz) {
+        vc.addVertex(pose, ax, ay, az).setColor(r, g, b, a);
+        vc.addVertex(pose, bx, by, bz).setColor(r, g, b, a);
+        vc.addVertex(pose, cx, cy, cz).setColor(r, g, b, a);
+        vc.addVertex(pose, dx, dy, dz).setColor(r, g, b, a);
+    }
+    *///?} elif >=26.1 {
     /*// 26.1 removed the single-block dispatcher path (renderSingleBlock/BlockRenderDispatcher).
     // Render the real model via submitMovingBlock (correct light/biome from the client level)
     // and carry the validity color as a translucent shell box around it.

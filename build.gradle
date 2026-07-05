@@ -15,7 +15,6 @@ stonecutter {
     // uniquely (the canonical tree never legitimately contains the target token).
     replacements.string(current.parsed.matches('>=1.21.11')) {
         replace 'ResourceLocation', 'Identifier'
-        replace 'net.minecraft.advancements.critereon', 'net.minecraft.advancements.criterion'
         replace 'net.minecraft.world.entity.vehicle.Boat', 'net.minecraft.world.entity.vehicle.boat.Boat'
         // RenderType static factories moved to RenderTypes (the RenderType import itself is a
         // per-file guard — an import-path replacement would substring-collide with these).
@@ -31,10 +30,22 @@ stonecutter {
         replace 'GuiGraphics;', 'GuiGraphicsExtractor;'
         replace 'GuiGraphics ', 'GuiGraphicsExtractor '
         replace 'net.minecraft.client.renderer.state.CameraRenderState', 'net.minecraft.client.renderer.state.level.CameraRenderState'
-        replace 'LevelRenderer.getLightColor(', 'LevelRenderer.getLightCoords('
         replace 'import net.minecraft.client.renderer.LightTexture;', 'import net.minecraft.util.LightCoordsUtil;'
         replace 'LightTexture.FULL_BRIGHT', 'LightCoordsUtil.FULL_BRIGHT'
         replace 'FarmBlock', 'FarmlandBlock'
+    }
+    // MC 26.2: advancement criteria split into triggers/ + predicates/ subpackages,
+    // the EntityType spawn-egg-style constants moved to an EntityTypes holder, and the
+    // light sampler moved onto LightCoordsUtil.
+    // NOTE: version-RANGE conditions ('>=A <B' or composed booleans) do not reliably fire
+    // for replacement groups on this Stonecutter — anything that moves TWICE across nodes
+    // (criteria packages, the light sampler) is handled with in-file guard chains instead.
+    replacements.string(current.parsed.matches('>=26.2')) {
+        replace 'EntityType.ARMOR_STAND', 'net.minecraft.world.entity.EntityTypes.ARMOR_STAND'
+        replace 'EntityType.ITEM_FRAME', 'net.minecraft.world.entity.EntityTypes.ITEM_FRAME'
+        replace 'EntityType.GLOW_ITEM_FRAME', 'net.minecraft.world.entity.EntityTypes.GLOW_ITEM_FRAME'
+        replace 'EntityType.PAINTING', 'net.minecraft.world.entity.EntityTypes.PAINTING'
+        replace 'EntityType.MINECART', 'net.minecraft.world.entity.EntityTypes.MINECART'
     }
 }
 
@@ -142,7 +153,7 @@ tasks.named('processResources', ProcessResources).configure {
     // pack.mcmeta pack_format is the DATA pack format of the target MC version (1.21.1=48,
     // 1.21.8=81, 1.21.9=88). Per-node so each jar declares the right value instead of a stale
     // hardcode. Source of truth: version.json ("pack_version".data_major) inside the MC client jar.
-    def dataPackFormat = ['1.21.1': 48, '1.21.8': 81, '1.21.9': 88, '1.21.10': 88, '1.21.11': 94, '26.1': 101].getOrDefault(stonecutter.current.project, 48)
+    def dataPackFormat = ['1.21.1': 48, '1.21.8': 81, '1.21.9': 88, '1.21.10': 88, '1.21.11': 94, '26.1': 101, '26.2': 107].getOrDefault(stonecutter.current.project, 48)
     // 1.21.9's pack schema requires explicit min_format/max_format once the format is >81;
     // older versions reject the unknown keys' absence gracefully but we keep them off there.
     def packFormatExtra = dataPackFormat > 81

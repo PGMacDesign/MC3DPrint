@@ -1,7 +1,11 @@
 package com.pgmacdesign.mc3dprint.advancement;
 
 import com.pgmacdesign.mc3dprint.MC3DPrint;
+//? if >=26.2 {
+/*import net.minecraft.advancements.triggers.CriterionTrigger;
+*///?} else {
 import net.minecraft.advancements.CriterionTrigger;
+//?}
 import net.minecraft.core.registries.Registries;
 import net.neoforged.neoforge.registries.DeferredRegister;
 

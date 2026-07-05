@@ -84,7 +84,7 @@ public class FilamentRackRenderer implements BlockEntityRenderer<FilamentRackBlo
         // Sample the air block in front of the face instead, where the spools sit.
         Level level = rack.getLevel();
         state.frontLight = level != null
-                ? LevelRenderer.getLightColor(level, rack.getBlockPos().relative(state.facing))
+                ? sampleFrontLight(level, rack.getBlockPos().relative(state.facing))
                 : state.lightCoords;
         ItemStackHandler spools = rack.spools();
         for (int i = 0; i < spools.getSlots() && i < state.spools.length; i++) {
@@ -159,4 +159,21 @@ public class FilamentRackRenderer implements BlockEntityRenderer<FilamentRackBlo
         }
     }
     //?}
+
+    // The per-position light sampler moved twice: LevelRenderer.getLightColor ->
+    // LevelRenderer.getLightCoords (26.1) -> LightCoordsUtil.getLightCoords (26.2).
+    // Only referenced from the >=1.21.9 extract path, so there is no pre-1.21.9 branch.
+    //? if >=26.2 {
+    /*private static int sampleFrontLight(Level level, net.minecraft.core.BlockPos pos) {
+        return net.minecraft.util.LightCoordsUtil.getLightCoords(level, pos);
+    }
+    *///?} elif >=26.1 {
+    /*private static int sampleFrontLight(Level level, net.minecraft.core.BlockPos pos) {
+        return LevelRenderer.getLightCoords(level, pos);
+    }
+    *///?} elif >=1.21.9 {
+    /*private static int sampleFrontLight(Level level, net.minecraft.core.BlockPos pos) {
+        return LevelRenderer.getLightColor(level, pos);
+    }
+    *///?}
 }

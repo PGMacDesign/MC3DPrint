@@ -84,6 +84,6 @@ public class RedstoneClockMenu extends AbstractContainerMenu {
             return false;
         }
         return clock.getLevel().getBlockEntity(clock.getBlockPos()) == clock
-                && player.distanceToSqr(clock.getBlockPos().getCenter()) <= 64.0;
+                && player.distanceToSqr(net.minecraft.world.phys.Vec3.atCenterOf(clock.getBlockPos())) <= 64.0;
     }
 }

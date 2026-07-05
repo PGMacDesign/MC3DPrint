@@ -1,6 +1,5 @@
 package com.pgmacdesign.mc3dprint.client;
 
-import net.minecraft.ChatFormatting;
 import com.pgmacdesign.mc3dprint.MC3DPrint;
 import com.pgmacdesign.mc3dprint.compat.RenderCompat;
 import com.pgmacdesign.mc3dprint.blueprint.CuratedBlueprints;
@@ -365,19 +364,18 @@ public class BlueprintRepositoryScreen extends AbstractContainerScreen<Blueprint
         return entry.name() == null || entry.name().isEmpty() ? "?" : entry.name();
     }
 
-    /** Tier accent ramp matching the disc tooltip (BlueprintDiscItem.tierFormat). */
+    /** Tier accent ramp matching the disc tooltip (BlueprintDiscItem.tierFormat). Colors are
+     * the vanilla formatting-code ARGBs, inlined because 26.2 dropped ChatFormatting.getColor(). */
     private static int tierColor(int tier) {
-        ChatFormatting format = switch (tier) {
-            case 2 -> ChatFormatting.BLUE;
-            case 3 -> ChatFormatting.AQUA;
-            case 4 -> ChatFormatting.GREEN;
-            case 5 -> ChatFormatting.GOLD;
-            case 6 -> ChatFormatting.RED;
-            case 7 -> ChatFormatting.LIGHT_PURPLE;
-            case 8 -> ChatFormatting.DARK_PURPLE;
-            default -> ChatFormatting.GRAY;
+        return switch (tier) {
+            case 2 -> 0xFF5555FF; // BLUE
+            case 3 -> 0xFF55FFFF; // AQUA
+            case 4 -> 0xFF55FF55; // GREEN
+            case 5 -> 0xFFFFAA00; // GOLD
+            case 6 -> 0xFFFF5555; // RED
+            case 7 -> 0xFFFF55FF; // LIGHT_PURPLE
+            case 8 -> 0xFFAA00AA; // DARK_PURPLE
+            default -> 0xFFAAAAAA; // GRAY
         };
-        Integer color = format.getColor();
-        return color == null ? LABEL : 0xFF000000 | color;
     }
 }

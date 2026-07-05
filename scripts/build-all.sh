@@ -28,7 +28,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
 # --- the NeoForge nodes built from THIS tree. Add future versions here (e.g. "1.21.8 26.2"). ---
-NEOFORGE_NODES=("1.21.1" "1.21.8" "1.21.9" "1.21.10" "1.21.11" "26.1")
+NEOFORGE_NODES=("1.21.1" "1.21.8" "1.21.9" "1.21.10" "1.21.11" "26.1" "26.2")
 LEGACY_BRANCH="legacy/1.20.1"
 LEGACY_MC="1.20.1"
 CANONICAL_NODE="1.21.1"   # the vcsVersion; the tree is left on this on exit

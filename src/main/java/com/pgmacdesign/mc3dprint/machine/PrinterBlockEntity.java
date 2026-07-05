@@ -1450,7 +1450,11 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             pos.add(net.minecraft.nbt.DoubleTag.valueOf(wz));
             nbt.put("Pos", pos);
             net.minecraft.world.entity.Entity entity =
-                    //? if >=1.21.5 {
+                    //? if >=26.2 {
+                    /*net.minecraft.world.entity.EntityType.loadEntityRecursive(nbt, level,
+                            new net.minecraft.world.entity.EntitySpawnRequest(
+                                    net.minecraft.world.entity.EntitySpawnReason.LOAD, false), e -> e);
+                    *///?} elif >=1.21.5 {
                     /*net.minecraft.world.entity.EntityType.loadEntityRecursive(
                             nbt, level, net.minecraft.world.entity.EntitySpawnReason.LOAD, e -> e);
                     *///?} else {
