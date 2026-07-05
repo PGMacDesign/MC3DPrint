@@ -4,9 +4,10 @@
 Disc → print it anywhere with a tiered printer/fabricator, powered by RF + tiered **Filament
 Units (FU)**. T1–T4 = single printer blocks; T5–T8 = N×N multiblock fabricators.
 
-- **Stack:** Java 21, NeoForge 21.1.x, official Mojang mappings. mod id `mc3dprint`, MIT, solo (PGMacDesign).
-  `main` is the NeoForge 1.21.1 line; the **multi-version** branch (Stonecutter) builds 1.21.1 + 1.21.8 NeoForge
-  from one tree; **1.20.1 Forge** (Java 17, Forge 47.4.10) lives on the `legacy/1.20.1` backport branch. See the
+- **Stack:** Java 21 (26.x nodes: Java 25 toolchain), NeoForge, official Mojang mappings. mod id `mc3dprint`,
+  MIT, solo (PGMacDesign). `main` is the NeoForge 1.21.1 line; the **multi-version** branch (Stonecutter) builds
+  **seven NeoForge jars from one tree** (1.21.1 · 1.21.8 · 1.21.9 · 1.21.10 · 1.21.11 · 26.1 · 26.2);
+  **1.20.1 Forge** (Java 17, Forge 47.4.10) lives on the `legacy/1.20.1` backport branch. See the
   multi-version note at the bottom of this file.
 - **Public repo** (`PGMacDesign/MC3DPrint`): no secrets/PII, original content only. `.env` is gitignored.
   **Nothing that points at private systems or the owner goes in committed files** — no Linear links
@@ -27,16 +28,24 @@ reset active → `1.21.1` before every commit. `:NODE:test` green ≠ runtime-co
 ./gradlew :1.21.8:compileJava -q        # fast compile check (or :1.21.1)
 ./gradlew :1.21.8:test                  # JUnit (test/.../fu, blueprint, compat)
 ./gradlew :1.21.8:assemble -x test      # build jar → versions/1.21.8/build/libs/mc3dprint-<ver>.jar
-./gradlew :1.21.8:runGameTestServer     # in-world GameTests (gametest/); 94/94 green on 1.21.1
+./gradlew :1.21.1:runGameTestServer     # in-world GameTests (gametest/); 105/105 green on 1.21.1 (the oracle;
+                                        # forward nodes exclude gametest/ and boot-smoke only)
 # Single-target main/legacy branches use the un-scoped form: ./gradlew build
 ```
 
 **Release builds — all versions at once:** `./scripts/build-all.sh [--version X.Y.Z]` produces every
-shippable jar into `dist/`: `mc3dprint-<ver>-neoforge-1.21.1.jar`, `-neoforge-1.21.8.jar` (this tree),
-and `-forge-1.20.1.jar` (built in a throwaway worktree off the `legacy/1.20.1` branch). NeoForge needs
-JDK 21, the legacy Forge build JDK 17 — both auto-detected (override `MC3DP_JDK21`/`MC3DP_JDK17`).
-`.github/workflows/release.yml` runs this on a published GitHub Release and attaches all jars. Extend the
-`NEOFORGE_NODES` array in the script to add a future version node.
+shippable jar into `dist/`: one `mc3dprint-<ver>-neoforge-<node>.jar` per Stonecutter node (all seven)
+plus `-forge-1.20.1.jar` (built in a throwaway worktree off the `legacy/1.20.1` branch). Launcher needs
+JDK 21, the legacy Forge build JDK 17 — both auto-detected (override `MC3DP_JDK21`/`MC3DP_JDK17`); the
+26.x nodes compile on a Java 25 toolchain Gradle/foojay provisions itself.
+`.github/workflows/release.yml` runs this on every published GitHub Release and attaches ALL jars to it
+(CurseForge auto-publish stays limited to soak-tested targets). Extend the `NEOFORGE_NODES` array in the
+script to add a future version node.
+
+Multi-version guard lore that bites: replacement pairs (`build.gradle` stonecutter block) must be
+single-hop — an API that moves TWICE across versions needs `if/elif` guard chains (version-range
+replacement conditions don't fire); never hand-nest block-comment guards inside an already-commented
+region (hoist a class-level helper with a sibling chain); never start a guard block with bare `//` lines.
 
 Two rules that bite if skipped:
 
@@ -130,9 +139,8 @@ decisions), `docs/rebalance/` (FU rebalance plan + per-mod research), `docs/blue
 `github-blueprint-renderer` (the website + submission Worker), `blueprint-repository`,
 `rack-and-cable`.
 
-The **multi-version build** is the active effort. The single source of truth is
-`docs/port/stage2-stonecutter-multiversion.md` — Stonecutter + a seam/abstraction layer so one tree
-builds a jar per `(MC version, loader)` node (Phase 2 = reunify 1.20.1-Forge + 1.21.1-NeoForge; Phase 3
-= cheap forward-compat to future versions, never breaking 1.20.1). Stage 1 (the completed single-target
+The **multi-version build**'s forward ladder is COMPLETE (2026-07-05): seven NeoForge nodes green from
+one tree, per-node [HUMAN] in-world soaks are the remaining ship gates. The single source of truth is
+`docs/port/stage2-stonecutter-multiversion.md` (Phase-3 box at the top = per-node facts + guard lore). Stage 1 (the completed single-target
 NeoForge 1.21.1 port, Linear PGM-5…25) is archived at `docs/port/archive/stage1-neoforge-1.21.1-port-COMPLETE.md`.
 Memory: `neoforge-port-blitz`.

@@ -1,8 +1,9 @@
 name: Build & attach all mod jars to release
 
 # Runs when you publish a GitHub Release. Builds every shippable jar via
-# scripts/build-all.sh (NeoForge 1.21.1 + 1.21.8 from this tree, Forge 1.20.1 from
-# the legacy/1.20.1 branch) and attaches them all to that release.
+# scripts/build-all.sh (NeoForge 1.21.1/1.21.8/1.21.9/1.21.10/1.21.11/26.1/26.2 from
+# this tree's Stonecutter nodes, Forge 1.20.1 from the legacy/1.20.1 branch) and
+# attaches them all to that release.
 on:
   release:
     types: [published]
@@ -35,6 +36,8 @@ jobs:
       # Both JDKs in the same job: NeoForge nodes need a Java 21 launcher (Stonecutter),
       # the legacy Forge build needs Java 17. setup-java exports JAVA_HOME_<major>_X64 for
       # each, which build-all.sh auto-detects. (The last call also sets the default JAVA_HOME.)
+      # The 26.x nodes additionally COMPILE with a Java 25 toolchain — Gradle's foojay
+      # resolver (wired in settings.gradle) downloads that JDK on demand, so no setup here.
       - name: Set up JDK 17 (Forge 1.20.1)
         uses: actions/setup-java@v4
         with:
@@ -64,9 +67,10 @@ jobs:
         run: gh release upload "${{ github.event.release.tag_name }}" dist/*.jar --clobber
 
       # CurseForge: publish only the soak-tested targets. 1.20.1 (Forge) and 1.21.1
-      # (NeoForge) ship; the 1.21.8 jar is attached to the GitHub release but NOT
-      # auto-published to CurseForge until it passes an in-world soak — add a step
-      # mirroring these (loaders: neoforge, game-versions: 1.21.8) when it's ready.
+      # (NeoForge) ship; the forward jars (1.21.8 through 26.2) are attached to the
+      # GitHub release but NOT auto-published to CurseForge until each passes its
+      # in-world soak — promote one by adding a step mirroring these (loaders:
+      # neoforge, game-versions: <mc>, java: 21 or 25 for 26.x) when it's ready.
       - name: Publish 1.20.1 (Forge) to CurseForge
         if: ${{ env.CF_TOKEN != '' }}
         continue-on-error: true
