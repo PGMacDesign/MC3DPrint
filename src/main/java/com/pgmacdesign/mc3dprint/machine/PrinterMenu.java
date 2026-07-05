@@ -302,6 +302,12 @@ public class PrinterMenu extends AbstractContainerMenu {
     public static final int BUTTON_PREVIEW = 8;
     public static final int BUTTON_ROTATE = 9;
     public static final int BUTTON_MODE = 10;
+    public static final int BUTTON_CANCEL = 11;
+
+    /** True while a print or deconstruct job exists (drives the Start/Cancel swap). */
+    public boolean jobActive() {
+        return SplitContainerData.combine(data, PrinterBlockEntity.DATA_JOB_ACTIVE) != 0;
+    }
 
     public boolean deconstructMode() {
         return SplitContainerData.combine(data, PrinterBlockEntity.DATA_DECON_MODE) != 0;
@@ -371,6 +377,13 @@ public class PrinterMenu extends AbstractContainerMenu {
         }
         if (id == BUTTON_MODE) {
             printer.setDeconstructMode(!printer.deconstructMode());
+            return true;
+        }
+        if (id == BUTTON_CANCEL) {
+            // No rollback by design: placed/removed blocks and spent/credited FU stand.
+            // A cancelled print restarts cheap — repair mode fast-forwards matching
+            // blocks at zero cost, so a mis-click never wastes filament.
+            printer.cancelActiveJob();
             return true;
         }
         int offsetId = id - BUTTON_OFFSET_BASE;

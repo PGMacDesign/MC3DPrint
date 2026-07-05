@@ -116,7 +116,8 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
     public static final int DATA_BP_SHORTFALL = 21;   // lowest tier whose filament coverage fails; 0 = covered
     public static final int DATA_COST_TIER_BASE = 22; // +0..7 — per-tier FU cost (tier units)
     public static final int DATA_AVAIL_TIER_BASE = 30;// +0..7 — exact-tier FU available, docked + network
-    public static final int DATA_COUNT = 38;
+    public static final int DATA_JOB_ACTIVE = 38;      // 1 while a print OR deconstruct job exists
+    public static final int DATA_COUNT = 39;
 
     /** Build offsets are clamped to [-MAX_OFFSET, MAX_OFFSET] on each axis. */
     public static final int MAX_OFFSET = 32;
@@ -2638,6 +2639,7 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             case DATA_BP_RF -> costReportRf();
             case DATA_BP_ETA -> costReportEta();
             case DATA_BP_SHORTFALL -> shortfallTier();
+            case DATA_JOB_ACTIVE -> activeJob != null || deconstructJob != null ? 1 : 0;
             default -> {
                 if (index >= DATA_COST_TIER_BASE && index < DATA_COST_TIER_BASE + 8) {
                     ensureCostReport();

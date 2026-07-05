@@ -617,4 +617,63 @@ public class StructurePrintGameTests {
             helper.assertBlockPresent(Blocks.STONE, new BlockPos(2, 2, 2));
         });
     }
+
+    @GameTest(template = "empty5", timeoutTicks = 400)
+    public static void cancelMidPrintThenRepairRestartCostsNoExtra(GameTestHelper helper) {
+        // Cancel is no-rollback by design: placed blocks and spent FU stand, the disc
+        // stays loaded. Restarting repairs — matching blocks fast-forward at zero cost —
+        // so TOTAL spend across cancel + restart equals the single-run predicted cost.
+        Blueprint.Builder builder = Blueprint.builder("gametest-cancel", 3, 1, 3);
+        for (int x = 0; x < 3; x++) {
+            for (int z = 0; z < 3; z++) {
+                builder.set(x, 0, z, BlueprintBlockState.parse("minecraft:stone"));
+            }
+        }
+        Blueprint blueprint = builder.build();
+
+        BlockPos printerPos = new BlockPos(2, 1, 2);
+        PrinterBlockEntity printer = poweredPrinter(helper, printerPos);
+        printer.setAutoStart(false);
+        ItemStack spool = printer.spoolInventory().getStackInSlot(0);
+        com.pgmacdesign.mc3dprint.fu.SpoolItem.setFu(spool, 400);
+        printer.spoolInventory().setStackInSlot(0, spool);
+        printer.inventory().setStackInSlot(PrinterBlockEntity.SLOT_TEMPLATE, discFor(helper, blueprint));
+
+        int[] perTier = printer.costReportPerTier();
+        if (perTier == null) {
+            throw new GameTestAssertException("expected a cost report");
+        }
+        int predicted = 0;
+        for (int c : perTier) {
+            predicted += c;
+        }
+        final int predictedFu = predicted;
+
+        printer.requestStart();
+        helper.runAfterDelay(30, () -> {
+            printer.cancelActiveJob(); // mid-print for default speeds; harmlessly late otherwise
+            if (printer.activeJob() != null) {
+                helper.fail("cancel must drop the job");
+                return;
+            }
+            if (printer.inventory().getStackInSlot(PrinterBlockEntity.SLOT_TEMPLATE).isEmpty()) {
+                helper.fail("cancel must leave the disc in the template slot");
+                return;
+            }
+            printer.requestStart(); // repair restart: already-placed blocks re-cover free
+        });
+        helper.succeedWhen(() -> {
+            for (int x = 1; x <= 3; x++) {
+                for (int z = 1; z <= 3; z++) {
+                    helper.assertBlockPresent(Blocks.STONE, new BlockPos(x, 2, z));
+                }
+            }
+            int spent = 400 - com.pgmacdesign.mc3dprint.fu.SpoolItem.getFu(
+                    printer.spoolInventory().getStackInSlot(0));
+            if (spent != predictedFu) {
+                throw new GameTestAssertException("cancel+restart spent " + spent
+                        + " FU total, expected the single-run cost " + predictedFu);
+            }
+        });
+    }
 }

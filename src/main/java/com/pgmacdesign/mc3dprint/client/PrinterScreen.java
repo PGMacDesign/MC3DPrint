@@ -81,9 +81,12 @@ public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
     @Override
     protected void init() {
         super.init();
+        // One slot, two verbs: Start when idle, Cancel while a job runs (cancel is
+        // safe — no rollback, and a repair restart re-covers placed blocks for free).
         startButton = addRenderableWidget(Button.builder(
                         Component.translatable("gui.mc3dprint.start"),
-                        b -> sendButtonClick(PrinterMenu.BUTTON_START))
+                        b -> sendButtonClick(menu.jobActive()
+                                ? PrinterMenu.BUTTON_CANCEL : PrinterMenu.BUTTON_START))
                 .bounds(leftPos + 8, topPos + CONTROLS_Y, 40, 14).build());
         autoButton = addRenderableWidget(Button.builder(
                         autoLabel(),
@@ -168,7 +171,10 @@ public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
         previewButton.setMessage(previewLabel());
         rotateButton.setMessage(rotateLabel());
         modeButton.setMessage(modeLabel());
-        startButton.active = !menu.autoStart();
+        boolean jobActive = menu.jobActive();
+        startButton.setMessage(Component.translatable(jobActive
+                ? "gui.mc3dprint.cancel" : "gui.mc3dprint.start"));
+        startButton.active = jobActive || !menu.autoStart();
     }
 
     @Override
