@@ -61,7 +61,7 @@ public class PrinterBlock extends BaseEntityBlock {
     @Nullable
     @Override
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
-        if (level.isClientSide) {
+        if (level.isClientSide()) {
             return null;
         }
         return createTickerHelper(type, ModBlockEntities.PRINTER.get(), PrinterBlockEntity::serverTick);
@@ -75,7 +75,7 @@ public class PrinterBlock extends BaseEntityBlock {
         }
         // Sneak + empty hand: pop the last attached spool back off
         if (player.isSecondaryUseActive() && player.getMainHandItem().isEmpty() && player.getOffhandItem().isEmpty()) {
-            if (!level.isClientSide) {
+            if (!level.isClientSide()) {
                 if (printer.isActivelyPrinting()) {
                     player.displayClientMessage(net.minecraft.network.chat.Component.translatable(
                             "message.mc3dprint.spool_locked_printing"), true);
@@ -86,12 +86,12 @@ public class PrinterBlock extends BaseEntityBlock {
                     }
                 }
             }
-            return InteractionCompat.sidedSuccess(level.isClientSide);
+            return InteractionCompat.sidedSuccess(level.isClientSide());
         }
-        if (!level.isClientSide) {
+        if (!level.isClientSide()) {
             ((ServerPlayer) player).openMenu(printer, pos);
         }
-        return InteractionCompat.sidedSuccess(level.isClientSide);
+        return InteractionCompat.sidedSuccess(level.isClientSide());
     }
 
     // 1.21.5 replaced onRemove(state,level,pos,newState,isMoving) with
@@ -161,7 +161,7 @@ public class PrinterBlock extends BaseEntityBlock {
                                 BlockPos neighborPos, boolean movedByPiston) {
         super.neighborChanged(state, level, pos, neighborBlock, neighborPos, movedByPiston);
     //?}
-        if (!level.isClientSide && level.getBlockEntity(pos) instanceof PrinterBlockEntity printer) {
+        if (!level.isClientSide() && level.getBlockEntity(pos) instanceof PrinterBlockEntity printer) {
             printer.onNeighborSignal(level.hasNeighborSignal(pos));
         }
     }

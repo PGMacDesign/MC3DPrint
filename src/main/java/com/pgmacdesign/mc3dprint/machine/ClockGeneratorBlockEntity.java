@@ -2,6 +2,7 @@ package com.pgmacdesign.mc3dprint.machine;
 
 import com.pgmacdesign.mc3dprint.compat.BeData;
 import com.pgmacdesign.mc3dprint.compat.FuelCompat;
+import com.pgmacdesign.mc3dprint.compat.TransferCompat;
 
 import com.pgmacdesign.mc3dprint.config.MC3DPrintConfig;
 import net.minecraft.core.BlockPos;
@@ -18,7 +19,6 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.energy.IEnergyStorage;
 import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.ItemStackHandler;
@@ -64,7 +64,11 @@ public class ClockGeneratorBlockEntity extends BlockEntity implements MenuProvid
         }
     };
 
-    private final IEnergyStorage energy = new IEnergyStorage() {
+    /** Combining interface so the anonymous storage below can also expose RawEnergy
+     *  (the generator's buffer is stateful — the 1.21.9 bridge needs snapshot revert). */
+    private interface GeneratorEnergyStorage extends IEnergyStorage, TransferCompat.RawEnergy {}
+
+    private final IEnergyStorage energy = new GeneratorEnergyStorage() {
         @Override
         public int receiveEnergy(int maxReceive, boolean simulate) {
             return 0;
@@ -98,6 +102,16 @@ public class ClockGeneratorBlockEntity extends BlockEntity implements MenuProvid
         @Override
         public boolean canReceive() {
             return false;
+        }
+
+        @Override
+        public int rawEnergy() {
+            return stored;
+        }
+
+        @Override
+        public void rawEnergy(int value) {
+            stored = value;
         }
     };
 
@@ -218,7 +232,7 @@ public class ClockGeneratorBlockEntity extends BlockEntity implements MenuProvid
             if (stored <= 0) {
                 break;
             }
-            IEnergyStorage handler = level.getCapability(Capabilities.EnergyStorage.BLOCK,
+            IEnergyStorage handler = TransferCompat.findEnergy(level,
                     pos.relative(direction), direction.getOpposite());
             if (handler != null && handler.canReceive()) {
                 stored -= handler.receiveEnergy(stored, false);

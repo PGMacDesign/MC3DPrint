@@ -1,12 +1,13 @@
 package com.pgmacdesign.mc3dprint.machine;
 
+import com.pgmacdesign.mc3dprint.compat.TransferCompat;
 import net.neoforged.neoforge.energy.EnergyStorage;
 
 /**
  * RF buffer for machines: receive-only from the outside (cables push in,
  * nothing pulls out), drained internally by the machine itself.
  */
-public class MachineEnergyStorage extends EnergyStorage {
+public class MachineEnergyStorage extends EnergyStorage implements TransferCompat.RawEnergy {
     private final Runnable onChanged;
 
     public MachineEnergyStorage(int capacity, int maxReceive, Runnable onChanged) {
@@ -45,5 +46,15 @@ public class MachineEnergyStorage extends EnergyStorage {
     public void setCapacity(int newCapacity) {
         capacity = Math.max(1, newCapacity);
         energy = Math.min(energy, capacity);
+    }
+
+    @Override
+    public int rawEnergy() {
+        return this.energy;
+    }
+
+    @Override
+    public void rawEnergy(int value) {
+        this.energy = value;
     }
 }

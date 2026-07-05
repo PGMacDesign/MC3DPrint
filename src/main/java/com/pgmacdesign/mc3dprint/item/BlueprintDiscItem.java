@@ -405,7 +405,7 @@ public class BlueprintDiscItem extends Item {
         if (!player.isSecondaryUseActive() || !hasBlueprint(stack)) {
             return InteractionCompat.holderPass(stack);
         }
-        if (!level.isClientSide) {
+        if (!level.isClientSide()) {
             boolean nowLocked = !isLocked(stack);
             if (nowLocked) {
                 stack.set(ModDataComponents.LOCKED.get(), Boolean.TRUE);
@@ -419,7 +419,7 @@ public class BlueprintDiscItem extends Item {
                     nowLocked ? SoundEvents.IRON_DOOR_CLOSE : SoundEvents.IRON_DOOR_OPEN,
                     SoundSource.PLAYERS, 0.4F, 1.6F);
         }
-        return InteractionCompat.holderSuccess(stack, level.isClientSide);
+        return InteractionCompat.holderSuccess(stack, level.isClientSide());
     }
 
     @Override

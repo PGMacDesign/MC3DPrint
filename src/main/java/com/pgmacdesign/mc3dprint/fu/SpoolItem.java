@@ -98,7 +98,7 @@ public class SpoolItem extends Item {
         if (!(level.getBlockEntity(context.getClickedPos()) instanceof PrinterBlockEntity printer)) {
             return InteractionResult.PASS;
         }
-        if (level.isClientSide) {
+        if (level.isClientSide()) {
             return InteractionResult.SUCCESS;
         }
         if (printer.attachSpool(context.getItemInHand())) {

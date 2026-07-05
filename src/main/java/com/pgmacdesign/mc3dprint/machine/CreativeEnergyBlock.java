@@ -48,7 +48,7 @@ public class CreativeEnergyBlock extends BaseEntityBlock {
     @Nullable
     @Override
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
-        if (level.isClientSide) {
+        if (level.isClientSide()) {
             return null;
         }
         return createTickerHelper(type, ModBlockEntities.CREATIVE_ENERGY_SOURCE.get(),

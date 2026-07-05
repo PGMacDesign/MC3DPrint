@@ -56,7 +56,7 @@ public class RedstoneClockMenu extends AbstractContainerMenu {
 
     @Override
     public boolean clickMenuButton(Player player, int id) {
-        if (clock == null || clock.getLevel() == null || clock.getLevel().isClientSide) {
+        if (clock == null || clock.getLevel() == null || clock.getLevel().isClientSide()) {
             return false;
         }
         int delta = switch (id) {

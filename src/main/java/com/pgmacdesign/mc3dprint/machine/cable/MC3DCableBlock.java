@@ -1,6 +1,7 @@
 package com.pgmacdesign.mc3dprint.machine.cable;
 
 import com.mojang.serialization.MapCodec;
+import com.pgmacdesign.mc3dprint.compat.TransferCompat;
 import com.pgmacdesign.mc3dprint.registry.ModBlockEntities;
 import com.pgmacdesign.mc3dprint.registry.ModCapabilities;
 import net.minecraft.core.BlockPos;
@@ -21,7 +22,6 @@ import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import net.neoforged.neoforge.capabilities.Capabilities;
 
 import javax.annotation.Nullable;
 import java.util.EnumMap;
@@ -101,7 +101,7 @@ public class MC3DCableBlock extends BaseEntityBlock {
     @Nullable
     @Override
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
-        if (level.isClientSide) {
+        if (level.isClientSide()) {
             return null;
         }
         return createTickerHelper(type, ModBlockEntities.MC3DCABLE.get(), MC3DCableBlockEntity::serverTick);
@@ -145,7 +145,7 @@ public class MC3DCableBlock extends BaseEntityBlock {
             return false;
         }
         Direction face = dirToNeighbor.getOpposite();
-        return level.getCapability(Capabilities.EnergyStorage.BLOCK, neighborPos, face) != null
+        return TransferCompat.hasEnergyCap(level, neighborPos, face)
                 || level.getCapability(ModCapabilities.FILAMENT_SOURCE, neighborPos, face) != null;
     }
 

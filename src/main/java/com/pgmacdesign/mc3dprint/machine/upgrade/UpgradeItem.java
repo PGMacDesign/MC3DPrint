@@ -58,7 +58,7 @@ public class UpgradeItem extends Item {
         if (!(level.getBlockEntity(context.getClickedPos()) instanceof PrinterBlockEntity printer)) {
             return InteractionResult.PASS;
         }
-        if (level.isClientSide) {
+        if (level.isClientSide()) {
             return InteractionResult.SUCCESS;
         }
         if (printer.installUpgrade(context.getItemInHand())) {

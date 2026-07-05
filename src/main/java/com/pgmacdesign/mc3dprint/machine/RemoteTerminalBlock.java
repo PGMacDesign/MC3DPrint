@@ -64,7 +64,7 @@ public class RemoteTerminalBlock extends BaseEntityBlock {
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player,
                                                BlockHitResult hit) {
-        if (level.isClientSide) {
+        if (level.isClientSide()) {
             return InteractionResult.SUCCESS;
         }
         if (!(level.getBlockEntity(pos) instanceof TerminalBlockEntity terminal)) {
@@ -96,7 +96,7 @@ public class RemoteTerminalBlock extends BaseEntityBlock {
             Level level = context.getLevel();
             if (player != null && player.isSecondaryUseActive()
                     && level.getBlockEntity(context.getClickedPos()) instanceof PrinterBlockEntity) {
-                if (!level.isClientSide) {
+                if (!level.isClientSide()) {
                     BlockPos pos = context.getClickedPos();
                     // Pairing rides BLOCK_ENTITY_DATA so it restores into the terminal BE on place.
                     CompoundTag beTag = new CompoundTag();
@@ -115,7 +115,7 @@ public class RemoteTerminalBlock extends BaseEntityBlock {
                     player.displayClientMessage(Component.translatable("message.mc3dprint.terminal_paired",
                             pos.getX(), pos.getY(), pos.getZ()), true);
                 }
-                return InteractionCompat.sidedSuccess(level.isClientSide);
+                return InteractionCompat.sidedSuccess(level.isClientSide());
             }
             return super.useOn(context);
         }
@@ -129,10 +129,18 @@ public class RemoteTerminalBlock extends BaseEntityBlock {
         *///?} else {
         public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
         //?}
+            //? if >=1.21.9 {
+            /*net.minecraft.world.item.component.TypedEntityData<?> beData =
+                    stack.get(DataComponents.BLOCK_ENTITY_DATA);
+            Optional<BlockPos> target = beData == null
+                    ? Optional.empty()
+                    : NbtCompat.getBlockPos(beData.copyTagWithoutId(), "Target");
+            *///?} else {
             CustomData beData = stack.get(DataComponents.BLOCK_ENTITY_DATA);
             Optional<BlockPos> target = beData == null
                     ? Optional.empty()
                     : NbtCompat.getBlockPos(beData.copyTag(), "Target");
+            //?}
             if (target.isPresent()) {
                 BlockPos t = target.get();
                 tooltip.add(Component.translatable("tooltip.mc3dprint.terminal_paired",

@@ -62,7 +62,15 @@ public final class ScannerSelectionRenderer {
         }
 
         PoseStack poseStack = event.getPoseStack();
+        if (poseStack == null) {
+            return; // @Nullable on 1.21.9+; never null on the stages we subscribe to pre-1.21.9
+        }
+        // 1.21.9 removed getCamera() from the event; the camera now lives on the level render state.
+        //? if >=1.21.9 {
+        /*Vec3 camera = event.getLevelRenderState().cameraRenderState.pos;
+        *///?} else {
         Vec3 camera = event.getCamera().getPosition();
+        //?}
         MultiBufferSource.BufferSource buffers = minecraft.renderBuffers().bufferSource();
         VertexConsumer lines = buffers.getBuffer(RenderType.lines());
 
@@ -94,7 +102,9 @@ public final class ScannerSelectionRenderer {
 
     private static void renderBox(PoseStack poseStack, VertexConsumer consumer, AABB box,
                                   float red, float green, float blue, float alpha) {
-        //? if >=1.21.5 {
+        //? if >=1.21.9 {
+        /*net.minecraft.client.renderer.ShapeRenderer.renderLineBox(poseStack.last(), consumer, box, red, green, blue, alpha);
+        *///?} elif >=1.21.5 {
         /*net.minecraft.client.renderer.ShapeRenderer.renderLineBox(poseStack, consumer, box, red, green, blue, alpha);
         *///?} else {
         LevelRenderer.renderLineBox(poseStack, consumer, box, red, green, blue, alpha);

@@ -250,8 +250,25 @@ public class BlueprintRepositoryScreen extends AbstractContainerScreen<Blueprint
         graphics.drawString(font, counter, imageWidth - 14 - font.width(counter), titleLabelY, OFFICIAL, false);
     }
 
+    //? if >=1.21.9 {
+    /*@Override
+    public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent event, boolean doubleClick) {
+        if (selectRowAt(event.x(), event.y())) {
+            return true;
+        }
+        return super.mouseClicked(event, doubleClick);
+    }
+    *///?} else {
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (selectRowAt(mouseX, mouseY)) {
+            return true;
+        }
+        return super.mouseClicked(mouseX, mouseY, button);
+    }
+    //?}
+
+    private boolean selectRowAt(double mouseX, double mouseY) {
         int left = leftPos + LIST_X;
         int top = topPos + LIST_Y;
         if (mouseX >= left && mouseX < left + LIST_W && mouseY >= top && mouseY < top + ROWS * ROW_H) {
@@ -264,7 +281,7 @@ public class BlueprintRepositoryScreen extends AbstractContainerScreen<Blueprint
                 return true;
             }
         }
-        return super.mouseClicked(mouseX, mouseY, button);
+        return false;
     }
 
     @Override
@@ -277,6 +294,24 @@ public class BlueprintRepositoryScreen extends AbstractContainerScreen<Blueprint
         return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
     }
 
+    //? if >=1.21.9 {
+    /*@Override
+    public boolean keyPressed(net.minecraft.client.input.KeyEvent event) {
+        // Let the focused search box consume typing (incl. 'e') instead of closing the GUI.
+        if (search != null && search.isFocused() && event.key() != 256) {
+            return search.keyPressed(event) || search.canConsumeInput();
+        }
+        return super.keyPressed(event);
+    }
+
+    @Override
+    public boolean charTyped(net.minecraft.client.input.CharacterEvent event) {
+        if (search != null && search.isFocused()) {
+            return search.charTyped(event);
+        }
+        return super.charTyped(event);
+    }
+    *///?} else {
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         // Let the focused search box consume typing (incl. 'e') instead of closing the GUI.
@@ -293,6 +328,7 @@ public class BlueprintRepositoryScreen extends AbstractContainerScreen<Blueprint
         }
         return super.charTyped(c, modifiers);
     }
+    //?}
 
     @Nullable
     private RepoEntry selected() {

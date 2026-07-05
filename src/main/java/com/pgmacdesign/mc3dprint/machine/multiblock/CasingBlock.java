@@ -78,7 +78,7 @@ public class CasingBlock extends Block implements EntityBlock {
     *///?} else {
     @Override
     public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean isMoving) {
-        if (!level.isClientSide && !state.is(newState.getBlock())) {
+        if (!level.isClientSide() && !state.is(newState.getBlock())) {
             ControllerBlock.unformContaining(level, pos);
         }
         super.onRemove(state, level, pos, newState, isMoving);

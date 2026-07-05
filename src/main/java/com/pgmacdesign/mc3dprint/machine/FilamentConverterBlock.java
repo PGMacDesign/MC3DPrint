@@ -50,7 +50,7 @@ public class FilamentConverterBlock extends BaseEntityBlock {
     @Nullable
     @Override
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
-        if (level.isClientSide) {
+        if (level.isClientSide()) {
             return null;
         }
         return createTickerHelper(type, ModBlockEntities.FILAMENT_CONVERTER.get(),
@@ -68,7 +68,7 @@ public class FilamentConverterBlock extends BaseEntityBlock {
         if (!(level.getBlockEntity(pos) instanceof FilamentConverterBlockEntity converter)) {
             return InteractionCompat.ITEM_PASS;
         }
-        if (level.isClientSide) {
+        if (level.isClientSide()) {
             return InteractionCompat.ITEM_SUCCESS;
         }
         ItemStack held = player.getItemInHand(hand);

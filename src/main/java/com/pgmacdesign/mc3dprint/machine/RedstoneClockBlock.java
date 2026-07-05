@@ -59,10 +59,10 @@ public class RedstoneClockBlock extends BaseEntityBlock {
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player,
                                                BlockHitResult hit) {
-        if (!level.isClientSide && level.getBlockEntity(pos) instanceof RedstoneClockBlockEntity clock) {
+        if (!level.isClientSide() && level.getBlockEntity(pos) instanceof RedstoneClockBlockEntity clock) {
             ((ServerPlayer) player).openMenu(clock, pos);
         }
-        return InteractionCompat.sidedSuccess(level.isClientSide);
+        return InteractionCompat.sidedSuccess(level.isClientSide());
     }
 
     // --- Redstone signal: weak power 15 on all sides while pulsing, else 0 ---
@@ -86,7 +86,7 @@ public class RedstoneClockBlock extends BaseEntityBlock {
     @Nullable
     @Override
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
-        if (level.isClientSide) {
+        if (level.isClientSide()) {
             return null;
         }
         return createTickerHelper(type, ModBlockEntities.REDSTONE_CLOCK.get(),

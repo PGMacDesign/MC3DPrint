@@ -156,7 +156,7 @@ public class FilamentRackBlockEntity extends BlockEntity implements IFilamentSou
     }
 
     private void sync() {
-        if (level != null && !level.isClientSide) {
+        if (level != null && !level.isClientSide()) {
             level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
         }
     }

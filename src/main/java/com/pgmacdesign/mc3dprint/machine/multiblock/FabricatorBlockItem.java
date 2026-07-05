@@ -61,7 +61,7 @@ public class FabricatorBlockItem extends BlockItem {
         }
 
         InteractionResult result = super.place(context); // also restores BlockEntityTag
-        if (result.consumesAction() && !level.isClientSide) {
+        if (result.consumesAction() && !level.isClientSide()) {
             reformComponents(level, pos, controller.tier());
             BlockState placed = level.getBlockState(pos);
             if (placed.getBlock() instanceof ControllerBlock) {

@@ -1924,7 +1924,7 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
     }
 
     private void syncToClients() {
-        if (level != null && !level.isClientSide) {
+        if (level != null && !level.isClientSide()) {
             level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), Block.UPDATE_CLIENTS);
         }
     }
