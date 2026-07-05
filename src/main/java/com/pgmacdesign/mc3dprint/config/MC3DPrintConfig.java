@@ -218,9 +218,15 @@ public final class MC3DPrintConfig {
                         "every curated build can still be found as world loot regardless of this setting.")
                 .define("allowAllDiscsInCreative", true);
         FU_VALUES = builder
-                .comment("Filament Unit values: '<item_or_#tag>=<fu>@<min_tier>'. Symmetric: wind yield == print cost (before efficiency).")
-                .defineListAllowEmpty("fuValues", FuValueRegistry.defaultEntries(),
-                        o -> o instanceof String s && s.contains("=") && s.contains("@"));
+                .comment("Filament Unit value OVERRIDES, merged over the mod's built-in defaults at load —",
+                        "leave empty to use the defaults, and new/rebalanced defaults apply on every update",
+                        "without touching this file.",
+                        "  '<item_or_#tag>=<fu>@<min_tier>'  adds a value or overrides the default",
+                        "  '<item_or_#tag>=off'              removes a value (strict mode -> unprintable)",
+                        "Symmetric: wind yield == print cost (before efficiency). Configs written by <=0.10",
+                        "contained the full copied default list; those entries keep working as overrides.")
+                .defineListAllowEmpty("fuValues", List.of(),
+                        o -> o instanceof String s && s.contains("=") && (s.contains("@") || s.endsWith("=off")));
         builder.pop();
 
         builder.comment("Server Blueprint Repository: the library block that stores deposited",

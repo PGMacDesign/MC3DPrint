@@ -57,7 +57,7 @@ public final class FuValueRegistry {
     private static RegistryAccess boundRegistryAccess;
     private static RecipeFuValuator<Item> valuator;
 
-    private record TagEntry(TagKey<Item> tag, FuValue value) {}
+    public record TagEntry(TagKey<Item> tag, FuValue value) {}
 
     private FuValueRegistry() {}
 
@@ -318,44 +318,100 @@ public final class FuValueRegistry {
         }
         Map<Item, FuValue> items = new HashMap<>();
         List<TagEntry> tags = new ArrayList<>();
-        for (String entry : MC3DPrintConfig.FU_VALUES.get()) {
-            try {
-                parseEntry(entry.trim(), items, tags);
-            } catch (RuntimeException e) {
-                LOGGER.warn("Skipping invalid FU value entry '{}': {}", entry, e.getMessage());
-            }
-        }
+        int[] counts = loadMerged(defaultEntries(), MC3DPrintConfig.FU_VALUES.get(), items, tags);
+        LOGGER.info("[MC3DP] fuValues: {} defaults, {} config entries applied, {} removed via '=off'",
+                counts[0], counts[1], counts[2]);
         itemValues = items;
         tagValues = tags;
     }
 
-    private static void parseEntry(String entry, Map<Item, FuValue> items, List<TagEntry> tags) {
+    /**
+     * Config-over-defaults merge: {@code defaults} load first, then {@code overrides}
+     * replace per key ({@code <id>=off} removes). New defaults shipped by a mod update
+     * therefore apply without rewriting the user's toml — the config-no-wipe contract.
+     * Returns {defaults applied, overrides applied, removals} for the startup log.
+     */
+    public static int[] loadMerged(List<String> defaults, List<? extends String> overrides,
+                                   Map<Item, FuValue> items, List<TagEntry> tags) {
+        for (String entry : defaults) {
+            try {
+                parseEntry(entry.trim(), items, tags);
+            } catch (RuntimeException e) {
+                LOGGER.warn("Skipping invalid default FU entry '{}': {}", entry, e.getMessage());
+            }
+        }
+        int defaultCount = items.size() + tags.size();
+        int applied = 0;
+        int removed = 0;
+        for (String entry : overrides) {
+            try {
+                if (parseEntry(entry.trim(), items, tags)) {
+                    applied++;
+                } else {
+                    removed++;
+                }
+            } catch (RuntimeException e) {
+                LOGGER.warn("Skipping invalid FU value entry '{}': {}", entry, e.getMessage());
+            }
+        }
+        return new int[]{defaultCount, applied, removed};
+    }
+
+    /** Applies one entry; returns false when it was an {@code =off} removal. */
+    private static boolean parseEntry(String entry, Map<Item, FuValue> items, List<TagEntry> tags) {
         if (entry.isEmpty() || entry.startsWith("//")) {
-            return;
+            return true;
         }
         int eq = entry.indexOf('=');
-        int at = entry.indexOf('@', eq);
-        if (eq < 0 || at < 0) {
-            throw new IllegalArgumentException("expected <id>=<fu>@<tier>");
+        if (eq < 0) {
+            throw new IllegalArgumentException("expected <id>=<fu>@<tier> or <id>=off");
         }
         String id = entry.substring(0, eq).trim();
+        String rhs = entry.substring(eq + 1).trim();
+
+        if ("off".equalsIgnoreCase(rhs)) {
+            if (id.startsWith("#")) {
+                TagKey<Item> key = TagKey.create(Registries.ITEM, parseTagId(id));
+                tags.removeIf(t -> t.tag().equals(key));
+            } else {
+                items.remove(RegistryCompat.item(parseItemId(id)));
+            }
+            return false;
+        }
+
+        int at = rhs.indexOf('@');
+        if (at < 0) {
+            throw new IllegalArgumentException("expected <id>=<fu>@<tier> or <id>=off");
+        }
         FuValue value = new FuValue(
-                Integer.parseInt(entry.substring(eq + 1, at).trim()),
-                Integer.parseInt(entry.substring(at + 1).trim()));
+                Integer.parseInt(rhs.substring(0, at).trim()),
+                Integer.parseInt(rhs.substring(at + 1).trim()));
 
         if (id.startsWith("#")) {
-            ResourceLocation tagId = ResourceLocation.tryParse(id.substring(1));
-            if (tagId == null) {
-                throw new IllegalArgumentException("bad tag id " + id);
-            }
-            tags.add(new TagEntry(TagKey.create(Registries.ITEM, tagId), value));
+            TagKey<Item> key = TagKey.create(Registries.ITEM, parseTagId(id));
+            // an override of a tag REPLACES the default entry for that tag, never stacks
+            tags.removeIf(t -> t.tag().equals(key));
+            tags.add(new TagEntry(key, value));
         } else {
-            ResourceLocation itemId = ResourceLocation.tryParse(id);
-            if (itemId == null || !BuiltInRegistries.ITEM.containsKey(itemId)) {
-                throw new IllegalArgumentException("unknown item " + id);
-            }
-            items.put(RegistryCompat.item(itemId), value);
+            items.put(RegistryCompat.item(parseItemId(id)), value);
         }
+        return true;
+    }
+
+    private static ResourceLocation parseTagId(String id) {
+        ResourceLocation tagId = ResourceLocation.tryParse(id.substring(1));
+        if (tagId == null) {
+            throw new IllegalArgumentException("bad tag id " + id);
+        }
+        return tagId;
+    }
+
+    private static ResourceLocation parseItemId(String id) {
+        ResourceLocation itemId = ResourceLocation.tryParse(id);
+        if (itemId == null || !BuiltInRegistries.ITEM.containsKey(itemId)) {
+            throw new IllegalArgumentException("unknown item " + id);
+        }
+        return itemId;
     }
 
     public static List<String> defaultEntries() {

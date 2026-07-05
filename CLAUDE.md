@@ -28,7 +28,7 @@ reset active → `1.21.1` before every commit. `:NODE:test` green ≠ runtime-co
 ./gradlew :1.21.8:compileJava -q        # fast compile check (or :1.21.1)
 ./gradlew :1.21.8:test                  # JUnit (test/.../fu, blueprint, compat)
 ./gradlew :1.21.8:assemble -x test      # build jar → versions/1.21.8/build/libs/mc3dprint-<ver>.jar
-./gradlew :1.21.1:runGameTestServer     # in-world GameTests (gametest/); 116/116 green on 1.21.1 (the oracle;
+./gradlew :1.21.1:runGameTestServer     # in-world GameTests (gametest/); 118/118 green on 1.21.1 (the oracle;
                                         # forward nodes exclude gametest/ and boot-smoke only)
 # Single-target main/legacy branches use the un-scoped form: ./gradlew build
 ```
@@ -51,9 +51,11 @@ Two rules that bite if skipped:
 
 1. **Deploy = replace, never duplicate.** Copy the fresh jar into your test instance's
    `mods/` folder, replacing any existing `mc3dprint-*.jar` — never leave two.
-2. **After ANY FU/economy change, delete stale config.** The `fuValues` list does **not**
-   merge new defaults into an existing toml. Delete the dev `run/config/mc3dprint-common.toml`
-   **and** the `mc3dprint-common.toml` in your game instance's `config/`, or changes won't load.
+2. **fuValues is overrides-only (config no-wipe, since 0.11)** — the toml list merges OVER
+   built-in defaults in code (`FuValueRegistry.loadMerged`; `<id>=off` removes), so FU/economy
+   changes apply WITHOUT deleting configs. One-time exception: a toml written by ≤0.10 carries
+   the full copied default list, which now pins those values as overrides — delete it once
+   (dev `run/config/mc3dprint-common.toml` + game instance `config/`) to migrate.
 
 ## Architecture (`src/main/java/com/pgmacdesign/mc3dprint/`)
 
