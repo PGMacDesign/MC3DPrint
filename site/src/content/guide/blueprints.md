@@ -21,7 +21,7 @@ Each disc also shows a **Print Cost** in that top tier. Free structural blocks l
 
 ## Import & export (operators)
 
-- `/mc3dprint import <file>` reads `.schem` and `.nbt` files from `world/mc3dprint/import/`.
+- `/mc3dprint import <file>` reads `.schem`, `.litematic`, and `.nbt` files from `world/mc3dprint/import/`.
 - `/mc3dprint export` writes the disc in your hand out to a `.schem`.
 
 Shipped blueprints live in `world/mc3dprint/blueprints/`.
