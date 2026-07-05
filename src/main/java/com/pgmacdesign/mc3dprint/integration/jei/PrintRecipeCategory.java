@@ -17,7 +17,8 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 
 public class PrintRecipeCategory implements IRecipeCategory<PrintRecipeCategory.PrintEntry> {
-    public record PrintEntry(ItemStack stack, int baseFu, int tier) {}
+    /** {@code rf} = RF to print one, on the lowest machine tier that can print it. */
+    public record PrintEntry(ItemStack stack, int baseFu, int tier, int rf) {}
 
     public static final RecipeType<PrintEntry> TYPE =
             RecipeType.create(MC3DPrint.MOD_ID, "printing", PrintEntry.class);
@@ -26,7 +27,7 @@ public class PrintRecipeCategory implements IRecipeCategory<PrintRecipeCategory.
     private final IDrawable icon;
 
     public PrintRecipeCategory(IGuiHelper guiHelper) {
-        this.background = guiHelper.createBlankDrawable(150, 32);
+        this.background = guiHelper.createBlankDrawable(150, 44);
         this.icon = guiHelper.createDrawableItemStack(new ItemStack(ModItems.TIER1_PRINTER.get()));
     }
 
@@ -47,7 +48,7 @@ public class PrintRecipeCategory implements IRecipeCategory<PrintRecipeCategory.
 
     @Override
     public int getHeight() {
-        return 32;
+        return 44;
     }
 
     // getBackground() was deprecated from JEI 19 and removed in JEI 27 (1.21.11+);
@@ -77,5 +78,8 @@ public class PrintRecipeCategory implements IRecipeCategory<PrintRecipeCategory.
                 Component.translatable("jei.mc3dprint.fu_cost", entry.baseFu()), 28, 6, 0xFF404040, false);
         com.pgmacdesign.mc3dprint.compat.RenderCompat.drawString(graphics, font,
                 Component.translatable("jei.mc3dprint.tier_required", entry.tier()), 28, 18, 0xFF707070, false);
+        com.pgmacdesign.mc3dprint.compat.RenderCompat.drawString(graphics, font,
+                Component.translatable("jei.mc3dprint.rf_cost", String.format("%,d", entry.rf())),
+                28, 30, 0xFF707070, false);
     }
 }

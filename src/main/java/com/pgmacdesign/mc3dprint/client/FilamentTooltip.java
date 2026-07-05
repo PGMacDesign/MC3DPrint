@@ -42,6 +42,31 @@ public final class FilamentTooltip {
 
     private FilamentTooltip() {}
 
+    /** Shipped defaults ("item=fu@tier"), parsed once — the reference for the override marker. */
+    private static java.util.Map<String, int[]> defaultValues;
+
+    private static java.util.Map<String, int[]> defaults() {
+        if (defaultValues == null) {
+            java.util.Map<String, int[]> map = new java.util.HashMap<>();
+            for (String entry : FuValueRegistry.defaultEntries()) {
+                int eq = entry.indexOf('=');
+                int at = entry.indexOf('@');
+                if (eq <= 0 || at <= eq || entry.startsWith("#")) {
+                    continue; // tag defaults aren't attributable to a single item — skip
+                }
+                try {
+                    map.put(entry.substring(0, eq).trim(), new int[]{
+                            Integer.parseInt(entry.substring(eq + 1, at).trim()),
+                            Integer.parseInt(entry.substring(at + 1).trim())});
+                } catch (NumberFormatException ignored) {
+                    // malformed default line — nothing to compare against
+                }
+            }
+            defaultValues = map;
+        }
+        return defaultValues;
+    }
+
     @SubscribeEvent
     public static void onTooltip(ItemTooltipEvent event) {
         FuValueRegistry.valueOf(event.getItemStack()).ifPresent(value -> {
@@ -49,6 +74,16 @@ public final class FilamentTooltip {
             event.getToolTip().add(Component.translatable(
                             "tooltip.mc3dprint.fu_value", value.tier(), String.format("%,d", value.fu()))
                     .withStyle(style -> style.withColor(TextColor.fromRgb(TIER_COLORS[tier]))));
+            // JEI's searchable filament/tier_N tags mirror the DEFAULTS only, so when a
+            // fuValues config override moves an item, say so — the live line above is
+            // authoritative, the tag-driven search grouping may lag.
+            String id = net.minecraft.core.registries.BuiltInRegistries.ITEM
+                    .getKey(event.getItemStack().getItem()).toString();
+            int[] shipped = defaults().get(id);
+            if (shipped != null && (shipped[0] != value.fu() || shipped[1] != value.tier())) {
+                event.getToolTip().add(Component.translatable("tooltip.mc3dprint.fu_overridden")
+                        .withStyle(net.minecraft.ChatFormatting.DARK_GRAY));
+            }
         });
     }
 }
