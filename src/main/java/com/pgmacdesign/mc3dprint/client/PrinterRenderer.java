@@ -10,7 +10,12 @@ import com.pgmacdesign.mc3dprint.machine.multiblock.MultiblockPattern;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
+//? if >=1.21.11 {
+/*import net.minecraft.client.renderer.rendertype.RenderType;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
+*///?} else {
 import net.minecraft.client.renderer.RenderType;
+//?}
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
 import net.minecraft.client.renderer.texture.OverlayTexture;
@@ -252,7 +257,7 @@ public class PrinterRenderer implements BlockEntityRenderer<PrinterBlockEntity> 
         }
 
         collector.submitCustomGeometry(poseStack, RenderType.lines(), (pose, vc) ->
-                net.minecraft.client.renderer.ShapeRenderer.renderLineBox(pose, vc,
+                com.pgmacdesign.mc3dprint.compat.RenderCompat.lineBox(pose, vc,
                         origin.getX() - machine.getX(), origin.getY() - machine.getY(), origin.getZ() - machine.getZ(),
                         origin.getX() - machine.getX() + size.getX(),
                         origin.getY() - machine.getY() + size.getY(),
@@ -586,20 +591,13 @@ public class PrinterRenderer implements BlockEntityRenderer<PrinterBlockEntity> 
         return from + (to - from) * f;
     }
 
-    /** Version-split {@code renderLineBox}: owner class and first-arg type moved across 1.21.x. */
+    /** Wireframe box — hand-rolled in RenderCompat (vanilla's renderLineBox churned owner and
+     * signature across 1.21.x and was removed outright in 1.21.11). */
     private static void lineBox(PoseStack poseStack, VertexConsumer lines,
                                 double x0, double y0, double z0, double x1, double y1, double z1,
                                 float red, float green, float blue, float alpha) {
-        //? if >=1.21.9 {
-        /*net.minecraft.client.renderer.ShapeRenderer.renderLineBox(poseStack.last(), lines,
+        com.pgmacdesign.mc3dprint.compat.RenderCompat.lineBox(poseStack.last(), lines,
                 x0, y0, z0, x1, y1, z1, red, green, blue, alpha);
-        *///?} elif >=1.21.5 {
-        /*net.minecraft.client.renderer.ShapeRenderer.renderLineBox(poseStack, lines,
-                x0, y0, z0, x1, y1, z1, red, green, blue, alpha);
-        *///?} else {
-        LevelRenderer.renderLineBox(poseStack, lines,
-                x0, y0, z0, x1, y1, z1, red, green, blue, alpha);
-        //?}
     }
 
     // --- textured solid box primitives (NEW_ENTITY vertex format) ---

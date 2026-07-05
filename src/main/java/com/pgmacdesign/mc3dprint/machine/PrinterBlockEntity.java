@@ -467,7 +467,13 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         // Water flashes to steam in an ultrawarm dimension (the Nether), so a pure water block
         // can't print there — skip it. Routing through canPrintBlock also hides it from the
         // ghost preview (the printability mask reuses this method).
+        // 1.21.11 dissolved DimensionType.ultraWarm() into the WATER_EVAPORATES environment attribute.
+        //? if >=1.21.11 {
+        /*if (isWaterUnplaceableIn(resolvedState, level != null && level.environmentAttributes()
+                .getDimensionValue(net.minecraft.world.attribute.EnvironmentAttributes.WATER_EVAPORATES))) {
+        *///?} else {
         if (isWaterUnplaceableIn(resolvedState, level != null && level.dimensionType().ultraWarm())) {
+        //?}
             return false;
         }
         Optional<FuValue> value = blockFuValue(resolvedState);
@@ -1149,7 +1155,12 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             placedState = applyPlacementResin(serverLevel, placedState); // Verdant / Ore Salting
             // No water in an ultrawarm dimension: a waterlogged solid prints dry. (Pure water
             // blocks are already skipped by canPrintBlock and never reach here.)
+            //? if >=1.21.11 {
+            /*placedState = dewaterFor(placedState, serverLevel.environmentAttributes()
+                    .getDimensionValue(net.minecraft.world.attribute.EnvironmentAttributes.WATER_EVAPORATES));
+            *///?} else {
             placedState = dewaterFor(placedState, serverLevel.dimensionType().ultraWarm());
+            //?}
             // Place the exact captured state WITHOUT updateShape, so two-block pieces
             // (beds, doors, tall plants) and support-dependent blocks (crops on farmland)
             // don't self-break before their partner/support lands, and the blueprint's

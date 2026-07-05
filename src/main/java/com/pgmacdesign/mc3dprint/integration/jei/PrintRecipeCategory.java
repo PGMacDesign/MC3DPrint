@@ -40,12 +40,24 @@ public class PrintRecipeCategory implements IRecipeCategory<PrintRecipeCategory.
         return Component.translatable("jei.mc3dprint.printing");
     }
 
-    // TODO(PGM-19/C6): getBackground()/getIcon() are deprecated-for-removal in JEI 19 —
-    // migrate to getWidth()/getHeight() + createRecipeExtras when the soft-dep is verified.
+    @Override
+    public int getWidth() {
+        return 150;
+    }
+
+    @Override
+    public int getHeight() {
+        return 32;
+    }
+
+    // getBackground() was deprecated from JEI 19 and removed in JEI 27 (1.21.11+);
+    // getWidth()/getHeight() above are the replacement and exist on every JEI we target.
+    //? if <1.21.11 {
     @Override
     public IDrawable getBackground() {
         return background;
     }
+    //?}
 
     @Override
     public IDrawable getIcon() {

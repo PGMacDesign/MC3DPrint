@@ -8,6 +8,24 @@ plugins {
 version = mod_version
 group = mod_group_id
 
+stonecutter {
+    // 1.21.11 renamed/moved several classes wholesale. Global token replacements keep the
+    // shared source in the canonical (pre-rename) vocabulary; Stonecutter rewrites per node.
+    // Each pair is idempotent (the result never re-contains the source token) and reverses
+    // uniquely (the canonical tree never legitimately contains the target token).
+    replacements.string(current.parsed.matches('>=1.21.11')) {
+        replace 'ResourceLocation', 'Identifier'
+        replace 'net.minecraft.advancements.critereon', 'net.minecraft.advancements.criterion'
+        replace 'net.minecraft.world.entity.vehicle.Boat', 'net.minecraft.world.entity.vehicle.boat.Boat'
+        // RenderType static factories moved to RenderTypes (the RenderType import itself is a
+        // per-file guard — an import-path replacement would substring-collide with these).
+        replace 'RenderType.lines(', 'RenderTypes.lines('
+        replace 'RenderType.entitySolid(', 'RenderTypes.entitySolid('
+        replace 'RenderType.eyes(', 'RenderTypes.eyes('
+        replace 'RenderType.translucentMovingBlock(', 'RenderTypes.translucentMovingBlock('
+    }
+}
+
 base {
     archivesName = mod_id
 }
@@ -107,7 +125,7 @@ tasks.named('processResources', ProcessResources).configure {
     // pack.mcmeta pack_format is the DATA pack format of the target MC version (1.21.1=48,
     // 1.21.8=81, 1.21.9=88). Per-node so each jar declares the right value instead of a stale
     // hardcode. Source of truth: version.json ("pack_version".data_major) inside the MC client jar.
-    def dataPackFormat = ['1.21.1': 48, '1.21.8': 81, '1.21.9': 88, '1.21.10': 88].getOrDefault(stonecutter.current.project, 48)
+    def dataPackFormat = ['1.21.1': 48, '1.21.8': 81, '1.21.9': 88, '1.21.10': 88, '1.21.11': 94].getOrDefault(stonecutter.current.project, 48)
     // 1.21.9's pack schema requires explicit min_format/max_format once the format is >81;
     // older versions reject the unknown keys' absence gracefully but we keep them off there.
     def packFormatExtra = dataPackFormat > 81

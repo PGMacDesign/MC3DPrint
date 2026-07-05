@@ -43,13 +43,25 @@ public final class ImportCommand {
     public static void register(RegisterCommandsEvent event) {
         event.getDispatcher().register(Commands.literal("mc3dprint")
                 .then(Commands.literal("import")
-                        .requires(source -> source.hasPermission(2))
+                        .requires(source ->
+                                //? if >=1.21.11 {
+                                /*source.permissions().hasPermission(net.minecraft.server.permissions.Permissions.COMMANDS_GAMEMASTER)
+                                *///?} else {
+                                source.hasPermission(2)
+                                //?}
+                        )
                         .then(Commands.argument("file", StringArgumentType.greedyString())
                                 .suggests(FILE_SUGGESTIONS)
                                 .executes(context -> importFile(context.getSource(),
                                         StringArgumentType.getString(context, "file")))))
                 .then(Commands.literal("export")
-                        .requires(source -> source.hasPermission(2))
+                        .requires(source ->
+                                //? if >=1.21.11 {
+                                /*source.permissions().hasPermission(net.minecraft.server.permissions.Permissions.COMMANDS_GAMEMASTER)
+                                *///?} else {
+                                source.hasPermission(2)
+                                //?}
+                        )
                         .executes(context -> exportHeldDisc(context.getSource()))));
     }
 

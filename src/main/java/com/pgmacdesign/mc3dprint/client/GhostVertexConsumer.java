@@ -58,4 +58,18 @@ public class GhostVertexConsumer implements VertexConsumer {
         delegate.setNormal(x, y, z);
         return this;
     }
+
+    //? if >=1.21.11 {
+    /*@Override
+    public VertexConsumer setLineWidth(float width) {
+        delegate.setLineWidth(width);
+        return this;
+    }
+
+    @Override
+    public VertexConsumer setColor(int argb) {
+        // Route the packed form through the tinting overload so ghosts stay tinted.
+        return setColor((argb >> 16) & 0xFF, (argb >> 8) & 0xFF, argb & 0xFF, (argb >> 24) & 0xFF);
+    }
+    *///?}
 }

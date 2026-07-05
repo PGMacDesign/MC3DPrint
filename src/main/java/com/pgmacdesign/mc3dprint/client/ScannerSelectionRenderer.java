@@ -7,9 +7,13 @@ import com.pgmacdesign.mc3dprint.registry.ModDataComponents;
 import com.pgmacdesign.mc3dprint.scanner.ScanData;
 import com.pgmacdesign.mc3dprint.scanner.ScannerItem;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
+//? if >=1.21.11 {
+/*import net.minecraft.client.renderer.rendertype.RenderType;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
+*///?} else {
 import net.minecraft.client.renderer.RenderType;
+//?}
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -102,13 +106,10 @@ public final class ScannerSelectionRenderer {
 
     private static void renderBox(PoseStack poseStack, VertexConsumer consumer, AABB box,
                                   float red, float green, float blue, float alpha) {
-        //? if >=1.21.9 {
-        /*net.minecraft.client.renderer.ShapeRenderer.renderLineBox(poseStack.last(), consumer, box, red, green, blue, alpha);
-        *///?} elif >=1.21.5 {
-        /*net.minecraft.client.renderer.ShapeRenderer.renderLineBox(poseStack, consumer, box, red, green, blue, alpha);
-        *///?} else {
-        LevelRenderer.renderLineBox(poseStack, consumer, box, red, green, blue, alpha);
-        //?}
+        // Hand-rolled in RenderCompat — vanilla's renderLineBox churned owner/signature across
+        // 1.21.x and was removed in 1.21.11.
+        com.pgmacdesign.mc3dprint.compat.RenderCompat.lineBox(poseStack.last(), consumer,
+                box.minX, box.minY, box.minZ, box.maxX, box.maxY, box.maxZ, red, green, blue, alpha);
     }
 
     private static ItemStack heldScanner(Player player) {
