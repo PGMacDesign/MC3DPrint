@@ -258,11 +258,23 @@ Patrick's two seeds plus additions. Each is feasible per the map above.
 
 - **Q13 — Ore Salting (T3-only, confirmed).** A placed natural-stone block has a chance to come
   out as a mineable ore variant.
-  - **Hosts:** stone, deepslate, netherrack (natural stone-types only; NOT cobble/bricks/
-    polished/built blocks).
-  - **Output = ore variant matching the host:** stone→regular ores, deepslate→`deepslate_*`
-    ores, netherrack→nether gold/quartz ore. (Earlier "regular-ores-only" was a mutual
-    misread — variants are wanted and look correct.)
+  - **Hosts (broadened 2026-07-04):** all **solid full-cube stone variants**, grouped by
+    ore family — overworld-stone (stone, cobblestone+mossy, stone_bricks+mossy/cracked/
+    chiseled, smooth_stone, andesite/diorite/granite+polished, tuff, calcite,
+    dripstone_block), deepslate (deepslate, cobbled/polished, bricks/tiles+cracked,
+    chiseled), and nether (netherrack, blackstone+polished/bricks/chiseled). **Full blocks
+    ONLY** — stairs/slabs/walls/buttons excluded; **basalt and sandstone excluded** (no
+    matching ore / out of theme). This REVERSES the original "natural stone only, NOT
+    cobble/bricks/polished" rule: with raw stone rare in finished builds the resin used to
+    do almost nothing on real prints — broadening it makes the effect actually fire (the
+    64-vein per-print cap now genuinely binds on large stonework). Backing set is an
+    explicit vanilla allowlist in `ResinEffects` (single source of truth for the printer +
+    palette pre-scan). (1.20.1 lists only plain `tuff`; the 1.21+ tuff building blocks
+    don't exist here.)
+  - **Output = ore variant matching the host's stone family:** overworld→regular ores,
+    deepslate→`deepslate_*` ores, nether→nether gold/quartz ore. A salted brick/polished
+    cell wears a raw stone/deepslate/nether ore skin (no brick ore block exists) — an
+    accepted cosmetic mismatch ("a vein broke through the finished stonework").
   - **Pool:** coal, copper, iron, gold, redstone, lapis (common) + diamond, emerald (rare).
     Ancient debris excluded.
   - **Chances (config):** ~5% salt chance per eligible block; diamond+emerald ≈ 5% of salted

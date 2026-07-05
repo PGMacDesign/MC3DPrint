@@ -38,6 +38,7 @@ import net.minecraft.world.phys.Vec3;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Pure(ish) effect logic for the six Resin effects, called from
@@ -82,20 +83,54 @@ public final class ResinEffects {
 
     // ============================ ORE SALTING ============================
 
-    /** Natural stone-types that can grow ore veins (NOT cobble/bricks/polished). */
+    // Full-cube stone-family blocks that can grow ore veins, grouped by the ore family
+    // the salt produces. Broadened 2026-07-04 from the original raw-stone-only set
+    // (stone/deepslate/netherrack) to all SOLID stone variants — cobblestone, bricks,
+    // polished, etc. — so the resin actually fires on real builds (which are mostly
+    // finished stonework, not raw stone). This OVERRIDES catalysts-design.md Q13's
+    // "natural stone only, NOT cobble/bricks/polished" decision. Full cubes ONLY:
+    // stairs/slabs/walls/buttons are excluded by omission, so a salted cell is always a
+    // mineable full ore block. Salt output wears a raw stone/deepslate/nether ore skin
+    // regardless of the host's finish (no brick/polished ore block exists) — an accepted
+    // cosmetic mismatch. NOTE (1.20.1): the tuff building blocks (polished_tuff/tuff_bricks/
+    // chiseled_tuff) are 1.21+ and don't exist here, so only plain TUFF is listed.
+    private static final Set<Block> SALT_STONE = Set.of(
+            Blocks.STONE, Blocks.COBBLESTONE, Blocks.MOSSY_COBBLESTONE, Blocks.SMOOTH_STONE,
+            Blocks.STONE_BRICKS, Blocks.MOSSY_STONE_BRICKS, Blocks.CRACKED_STONE_BRICKS,
+            Blocks.CHISELED_STONE_BRICKS,
+            Blocks.ANDESITE, Blocks.POLISHED_ANDESITE,
+            Blocks.DIORITE, Blocks.POLISHED_DIORITE,
+            Blocks.GRANITE, Blocks.POLISHED_GRANITE,
+            Blocks.TUFF,
+            Blocks.CALCITE, Blocks.DRIPSTONE_BLOCK);
+
+    private static final Set<Block> SALT_DEEPSLATE = Set.of(
+            Blocks.DEEPSLATE, Blocks.COBBLED_DEEPSLATE, Blocks.POLISHED_DEEPSLATE,
+            Blocks.DEEPSLATE_BRICKS, Blocks.CRACKED_DEEPSLATE_BRICKS,
+            Blocks.DEEPSLATE_TILES, Blocks.CRACKED_DEEPSLATE_TILES,
+            Blocks.CHISELED_DEEPSLATE);
+
+    private static final Set<Block> SALT_NETHER = Set.of(
+            Blocks.NETHERRACK, Blocks.BLACKSTONE, Blocks.POLISHED_BLACKSTONE,
+            Blocks.POLISHED_BLACKSTONE_BRICKS, Blocks.CRACKED_POLISHED_BLACKSTONE_BRICKS,
+            Blocks.CHISELED_POLISHED_BLACKSTONE);
+
+    /** Full-cube stone variants (overworld/deepslate/nether) that can grow ore veins.
+     *  Full blocks only — stairs/slabs/walls are excluded by omission. */
     public static boolean isSaltableHost(BlockState state) {
         Block b = state.getBlock();
-        return b == Blocks.STONE || b == Blocks.DEEPSLATE || b == Blocks.NETHERRACK;
+        return SALT_STONE.contains(b) || SALT_DEEPSLATE.contains(b) || SALT_NETHER.contains(b);
     }
 
-    /** Pick the ore variant matching the host (stone/deepslate/netherrack). gemShare is
-     *  the chance the (overworld) result is diamond/emerald rather than a common ore. */
+    /** Pick the ore variant matching the host's stone family. gemShare is the chance the
+     *  (overworld/deepslate) result is diamond/emerald rather than a common ore; nether
+     *  hosts always yield nether gold/quartz ore. */
     public static BlockState pickOre(BlockState host, RandomSource rng, double gemShare) {
         Block b = host.getBlock();
-        if (b == Blocks.NETHERRACK) {
+        if (SALT_NETHER.contains(b)) {
             return (rng.nextBoolean() ? Blocks.NETHER_GOLD_ORE : Blocks.NETHER_QUARTZ_ORE).defaultBlockState();
         }
-        boolean deep = b == Blocks.DEEPSLATE;
+        boolean deep = SALT_DEEPSLATE.contains(b);
         if (rng.nextDouble() < gemShare) {
             boolean diamond = rng.nextBoolean();
             if (deep) {
