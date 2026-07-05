@@ -59,6 +59,15 @@ public class ScannerItem extends Item {
         Player player = context.getPlayer();
         BlockPos clicked = context.getClickedPos();
 
+        // Sneak-click a printer/fabricator: hand the two-corner selection off as its
+        // Deconstruct region (arms Deconstruct Mode) instead of setting a corner.
+        if (player != null && player.isSecondaryUseActive()
+                && level.getBlockEntity(clicked)
+                        instanceof com.pgmacdesign.mc3dprint.machine.PrinterBlockEntity printer) {
+            handOffDeconstructRegion(level, player, stack, clicked, printer);
+            return InteractionResult.CONSUME;
+        }
+
         ScanData data = scanData(stack);
         boolean settingB = data.nextIsB();
         ScanData next = settingB
@@ -172,6 +181,29 @@ public class ScannerItem extends Item {
                 blueprint.blockCount()));
         level.playSound(null, player.blockPosition(), SoundEvents.PLAYER_LEVELUP, SoundSource.PLAYERS, 0.5F, 1.5F);
         return InteractionCompat.holderConsume(stack);
+    }
+
+    private static void handOffDeconstructRegion(Level level, Player player, ItemStack stack,
+            BlockPos clicked, com.pgmacdesign.mc3dprint.machine.PrinterBlockEntity printer) {
+        ScanData data = scanData(stack);
+        if (data.cornerA().isEmpty() || data.cornerB().isEmpty()) {
+            com.pgmacdesign.mc3dprint.compat.MsgCompat.actionBar(player,
+                    Component.translatable("message.mc3dprint.decon_need_corners"));
+            return;
+        }
+        BlockPos a = data.cornerA().get();
+        BlockPos b = data.cornerB().get();
+        int dx = Math.abs(a.getX() - b.getX()) + 1;
+        int dy = Math.abs(a.getY() - b.getY()) + 1;
+        int dz = Math.abs(a.getZ() - b.getZ()) + 1;
+        Component message = switch (printer.setDeconstructRegion(a, b)) {
+            case SET -> Component.translatable("message.mc3dprint.decon_region_set", dx, dy, dz);
+            case TOO_LARGE -> Component.translatable("message.mc3dprint.decon_region_too_large", dx, dy, dz);
+            case TOO_FAR -> Component.translatable("message.mc3dprint.decon_region_too_far",
+                    com.pgmacdesign.mc3dprint.machine.PrinterBlockEntity.DECON_MAX_DISTANCE);
+        };
+        com.pgmacdesign.mc3dprint.compat.MsgCompat.actionBar(player, message);
+        level.playSound(null, clicked, SoundEvents.NOTE_BLOCK_BELL.value(), SoundSource.PLAYERS, 0.5F, 1.2F);
     }
 
     private static ScanData scanData(ItemStack stack) {

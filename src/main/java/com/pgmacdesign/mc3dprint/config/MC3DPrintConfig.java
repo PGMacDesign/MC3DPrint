@@ -29,6 +29,7 @@ public final class MC3DPrintConfig {
     public static final ModConfigSpec.IntValue WINDER_TICKS_PER_ITEM;
     public static final ModConfigSpec.IntValue WINDER_ENERGY_BUFFER;
     public static final ModConfigSpec.IntValue WINDER_MAX_ENERGY_RECEIVE;
+    public static final ModConfigSpec.DoubleValue DECONSTRUCT_YIELD_FACTOR;
     public static final ModConfigSpec.IntValue CABLE_TRANSFER_RATE;
     public static final ModConfigSpec.IntValue CLOCK_GENERATOR_RF_PER_TICK;
     public static final ModConfigSpec.DoubleValue UPGRADE_SPEED_FACTOR;
@@ -122,6 +123,16 @@ public final class MC3DPrintConfig {
         WINDER_MAX_ENERGY_RECEIVE = builder
                 .comment("Max RF accepted per tick from cables")
                 .defineInRange("maxEnergyReceive", 1_000, 1, Integer.MAX_VALUE);
+        builder.pop();
+
+        builder.comment("Deconstruct Mode: a printer/fabricator running in reverse — consumes a",
+                        "selected region back into Filament Units at a LOSSY rate. The yield factor is",
+                        "hard-capped below 1.0 so wind -> print -> deconstruct always strictly loses FU",
+                        "(no laundering loop), independent of Efficiency modules or resins.").push("deconstruct");
+        DECONSTRUCT_YIELD_FACTOR = builder
+                .comment("Fraction of an item's wind value credited when its block is deconstructed",
+                        "(floor, exact-tier). 0 makes Deconstruct a pure clearing tool.")
+                .defineInRange("yieldFactor", 0.5, 0.0, 0.99);
         builder.pop();
 
         builder.comment("MC3D Cable: a single deliberately-modest cable that carries BOTH RF",

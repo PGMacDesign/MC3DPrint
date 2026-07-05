@@ -131,22 +131,22 @@ public class FarmCollectionGameTests {
 
     // ── one @GameTest per farm (each gets its own world instance / pass-fail line) ──
 
-    @GameTest(template = "empty5", timeoutTicks = ROUTE_TICKS + 60)
+    @GameTest(template = "empty16", timeoutTicks = ROUTE_TICKS + 60)
     public static void sugarcaneFarmRoutesToChest(GameTestHelper helper) {
         runRoutingTest(helper, FARMS[0]);
     }
 
-    @GameTest(template = "empty5", timeoutTicks = ROUTE_TICKS + 60)
+    @GameTest(template = "empty16", timeoutTicks = ROUTE_TICKS + 60)
     public static void kelpFarmRoutesToChest(GameTestHelper helper) {
         runRoutingTest(helper, FARMS[1]);
     }
 
-    @GameTest(template = "empty5", timeoutTicks = ROUTE_TICKS + 60)
+    @GameTest(template = "empty16", timeoutTicks = ROUTE_TICKS + 60)
     public static void bambooFarmRoutesToChest(GameTestHelper helper) {
         runRoutingTest(helper, FARMS[2]);
     }
 
-    @GameTest(template = "empty5", timeoutTicks = ROUTE_TICKS + 60)
+    @GameTest(template = "empty16", timeoutTicks = ROUTE_TICKS + 60)
     public static void cactusFarmRoutesToChest(GameTestHelper helper) {
         runRoutingTest(helper, FARMS[3]);
     }
@@ -158,7 +158,7 @@ public class FarmCollectionGameTests {
     // nothing missing, and more ticks don't help). Per this file's convention the gametest
     // verifies the COLLECTION STRUCTURE is intact (chest present + a hopper in the chain);
     // end-to-end iron delivery is an [in-world] check, not a sandbox one.
-    @GameTest(template = "empty5", timeoutTicks = 200)
+    @GameTest(template = "empty16", timeoutTicks = 200)
     public static void ironFarmRoutesToChest(GameTestHelper helper) {
         Farm farm = FARMS[4];
         Blueprint blueprint = CuratedBlueprints.loadBundled(farm.blueprint())

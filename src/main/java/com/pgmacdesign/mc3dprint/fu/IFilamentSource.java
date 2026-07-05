@@ -30,6 +30,21 @@ public interface IFilamentSource {
     long availableExactTier(int tier);
 
     /**
+     * Inserts up to {@code maxBase} base-FU into spools of <b>exactly</b>
+     * {@code tier}, mutating them in place. Returns the base-FU actually
+     * accepted. The reverse flow of {@link #drainExactTier} — used by
+     * Deconstruct Mode to bank recovered filament. Default: accepts nothing.
+     */
+    default long insertExactTier(int tier, long maxBase) {
+        return 0;
+    }
+
+    /** Non-mutating peek: base-FU of free capacity in spools of exactly {@code tier}. */
+    default long insertableExactTier(int tier) {
+        return 0;
+    }
+
+    /**
      * Adds the concrete leaf sources reachable through this one to {@code out}
      * (identity-deduped by the caller). A rack adds itself; a cable adds the
      * racks across its network. The caller then sweeps tier bands across the

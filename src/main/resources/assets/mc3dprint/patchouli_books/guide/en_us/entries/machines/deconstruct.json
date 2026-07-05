@@ -1,0 +1,22 @@
+{
+  "name": "Deconstruct Mode",
+  "category": "mc3dprint:machines",
+  "icon": "mc3dprint:scanner",
+  "sortnum": 4,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "Every printer and fabricator can run $(l)in reverse$(): select a region and the machine consumes it block by block, banking $(l)Filament Units$() into its docked spools (then any racks on the cable network).$(br2)To arm it: set $(l)two corners$() with the $(item)Structure Scanner$(), then $(o)sneak-click the machine$(). The region can't be wider than the machine's print footprint, and must be within $(l)64 blocks$()."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Lossy By Design",
+      "text": "Deconstructing credits a $(l)fraction$() of each block's winding value ($(o)deconstruct.yieldFactor$(), default $(l)50%$()) at its exact tier — always less than winding the item yourself, so there's no free filament loop.$(br)$(li)Winder-blacklisted blocks (planks, cactus…) recycle at $(l)zero$()$(li)Water, crops and other itemless blocks clear for free$(li)$(l)Unvalued$() blocks and $(l)non-empty containers$() are skipped in place — the machine never destroys what it can't value, and never touches stored items."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Running a Job",
+      "text": "Toggle $(l)Print / Decon$() in the machine GUI (handing a region to a machine arms Decon automatically). Start with the $(l)Start button$(), $(l)Auto$(), or a redstone pulse — same as printing.$(br2)Jobs work $(l)top-down$(), pause on power loss without losing progress, and pause $(l)before$() removing a block when every spool is full — filament is never voided. Changing the region or mode cancels the job cleanly."
+    }
+  ]
+}
