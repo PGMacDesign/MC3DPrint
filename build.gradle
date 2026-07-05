@@ -107,7 +107,7 @@ tasks.named('processResources', ProcessResources).configure {
     // pack.mcmeta pack_format is the DATA pack format of the target MC version (1.21.1=48,
     // 1.21.8=81, 1.21.9=88). Per-node so each jar declares the right value instead of a stale
     // hardcode. Source of truth: version.json ("pack_version".data_major) inside the MC client jar.
-    def dataPackFormat = ['1.21.1': 48, '1.21.8': 81, '1.21.9': 88].getOrDefault(stonecutter.current.project, 48)
+    def dataPackFormat = ['1.21.1': 48, '1.21.8': 81, '1.21.9': 88, '1.21.10': 88].getOrDefault(stonecutter.current.project, 48)
     // 1.21.9's pack schema requires explicit min_format/max_format once the format is >81;
     // older versions reject the unknown keys' absence gracefully but we keep them off there.
     def packFormatExtra = dataPackFormat > 81
