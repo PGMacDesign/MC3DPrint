@@ -53,8 +53,8 @@ public class FabricatorBlockItem extends BlockItem {
         for (BlockPos offset : MultiblockPattern.componentOffsets(controller.tier())) {
             if (!level.getBlockState(pos.offset(offset)).canBeReplaced()) {
                 if (context.getPlayer() != null) {
-                    context.getPlayer().displayClientMessage(
-                            Component.translatable("message.mc3dprint.reform_blocked"), true);
+                    com.pgmacdesign.mc3dprint.compat.MsgCompat.actionBar(context.getPlayer(), 
+                            Component.translatable("message.mc3dprint.reform_blocked"));
                 }
                 return InteractionResult.FAIL;
             }

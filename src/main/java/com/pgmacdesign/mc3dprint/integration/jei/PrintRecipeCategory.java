@@ -73,9 +73,9 @@ public class PrintRecipeCategory implements IRecipeCategory<PrintRecipeCategory.
     public void draw(PrintEntry entry, IRecipeSlotsView recipeSlotsView, GuiGraphics graphics,
                      double mouseX, double mouseY) {
         var font = Minecraft.getInstance().font;
-        graphics.drawString(font,
+        com.pgmacdesign.mc3dprint.compat.RenderCompat.drawString(graphics, font,
                 Component.translatable("jei.mc3dprint.fu_cost", entry.baseFu()), 28, 6, 0xFF404040, false);
-        graphics.drawString(font,
+        com.pgmacdesign.mc3dprint.compat.RenderCompat.drawString(graphics, font,
                 Component.translatable("jei.mc3dprint.tier_required", entry.tier()), 28, 18, 0xFF707070, false);
     }
 }

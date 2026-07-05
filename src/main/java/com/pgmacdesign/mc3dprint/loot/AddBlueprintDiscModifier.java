@@ -45,11 +45,21 @@ public class AddBlueprintDiscModifier extends LootModifier {
     private final float chance;
     private final List<String> blueprintNames;
 
+    // 26.1: LootModifier's ctor + codecStart carry an int priority between the
+    // conditions and the modifier's own fields; the codec's ::new binds per node.
+    //? if >=26.1 {
+    /*public AddBlueprintDiscModifier(LootItemCondition[] conditions, int priority, float chance, List<String> blueprintNames) {
+        super(conditions, priority);
+        this.chance = chance;
+        this.blueprintNames = blueprintNames;
+    }
+    *///?} else {
     public AddBlueprintDiscModifier(LootItemCondition[] conditions, float chance, List<String> blueprintNames) {
         super(conditions);
         this.chance = chance;
         this.blueprintNames = blueprintNames;
     }
+    //?}
 
     @Override
     protected ObjectArrayList<ItemStack> doApply(ObjectArrayList<ItemStack> generatedLoot, LootContext context) {

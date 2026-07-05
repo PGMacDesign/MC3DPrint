@@ -822,9 +822,9 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         if (armedResinEffect == ResinItem.Effect.ORE_SALTING
                 && saltedThisJob < MC3DPrintConfig.RESIN_ORE_SALT_MAX.get()
                 && ResinEffects.isSaltableHost(placedState)
-                && serverLevel.random.nextDouble() < MC3DPrintConfig.RESIN_ORE_SALT_CHANCE.get()) {
+                && serverLevel.getRandom().nextDouble() < MC3DPrintConfig.RESIN_ORE_SALT_CHANCE.get()) {
             saltedThisJob++;
-            return ResinEffects.pickOre(placedState, serverLevel.random,
+            return ResinEffects.pickOre(placedState, serverLevel.getRandom(),
                     MC3DPrintConfig.RESIN_ORE_SALT_GEM_SHARE.get());
         }
         return placedState;
@@ -839,9 +839,9 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
                     : MC3DPrintConfig.RESIN_TREASURE_CHANCE_T2.get();
             if (treasureThisJob < cap && ResinEffects.isStorageContainer(placedBe)
                     && placedBe instanceof Container container
-                    && serverLevel.random.nextDouble() < chance) {
+                    && serverLevel.getRandom().nextDouble() < chance) {
                 ResinEffects.fillTreasure(serverLevel, worldPos, container,
-                        ResinEffects.treasureTable(armedResinTier, serverLevel.random,
+                        ResinEffects.treasureTable(armedResinTier, serverLevel.getRandom(),
                                 MC3DPrintConfig.RESIN_TREASURE_T2_UNCOMMON.get(),
                                 MC3DPrintConfig.RESIN_TREASURE_T3_RARE.get()));
                 treasureThisJob++;
@@ -2126,8 +2126,8 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
                     int cap = MC3DPrintConfig.PREVIEW_MAX_BLOCKS.get();
                     if (blueprint.blockCount() > cap) {
                         if (player != null) {
-                            player.displayClientMessage(Component.translatable("message.mc3dprint.preview_too_big",
-                                    blueprint.blockCount(), cap), true);
+                            com.pgmacdesign.mc3dprint.compat.MsgCompat.actionBar(player, Component.translatable("message.mc3dprint.preview_too_big",
+                                    blueprint.blockCount(), cap));
                         }
                     } else {
                         previewBlueprint = blueprint;

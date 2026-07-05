@@ -209,7 +209,10 @@ public class ClockGeneratorBlockEntity extends BlockEntity implements MenuProvid
                 burnRemaining = FuelCompat.burnTime(level, next) * burnMultiplier();
                 burnTotal = burnRemaining; // remember the full burn for the GUI flame fill
                 // burnable containers (lava bucket) leave their empty container behind
-                //? if >=1.21.5 {
+                //? if >=26.1 {
+                /*net.minecraft.world.item.ItemStackTemplate remainderTemplate = next.getCraftingRemainder();
+                ItemStack remainder = remainderTemplate == null ? ItemStack.EMPTY : remainderTemplate.create();
+                *///?} elif >=1.21.5 {
                 /*ItemStack remainder = next.getCraftingRemainder();
                 *///?} else {
                 ItemStack remainder = next.getCraftingRemainingItem();

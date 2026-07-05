@@ -35,7 +35,7 @@ public final class ModItems {
             List<net.neoforged.neoforge.registries.DeferredHolder<net.minecraft.world.level.block.Block, net.minecraft.world.level.block.Block>> blocks) {
         List<DeferredHolder<Item, Item>> items = new ArrayList<>(blocks.size());
         for (var block : blocks) {
-            items.add(ITEMS.registerItem(block.getId().getPath(),
+            items.add(com.pgmacdesign.mc3dprint.compat.RegistryCompat.registerItem(ITEMS, block.getId().getPath(),
                     props -> new BlockItem(block.get(), props), blockItemProps()));
         }
         return List.copyOf(items);
@@ -50,75 +50,75 @@ public final class ModItems {
         return com.pgmacdesign.mc3dprint.compat.RegistryCompat.blockItem(new Item.Properties());
     }
 
-    public static final DeferredHolder<Item, Item> BLANK_BLUEPRINT_DISC = ITEMS.registerItem("blank_blueprint_disc",
+    public static final DeferredHolder<Item, Item> BLANK_BLUEPRINT_DISC = com.pgmacdesign.mc3dprint.compat.RegistryCompat.registerItem(ITEMS, "blank_blueprint_disc",
             Item::new, new Item.Properties().stacksTo(16));
 
-    public static final DeferredHolder<Item, Item> BLUEPRINT_DISC = ITEMS.registerItem("blueprint_disc",
+    public static final DeferredHolder<Item, Item> BLUEPRINT_DISC = com.pgmacdesign.mc3dprint.compat.RegistryCompat.registerItem(ITEMS, "blueprint_disc",
             BlueprintDiscItem::new, new Item.Properties().stacksTo(1));
 
-    public static final DeferredHolder<Item, Item> SCANNER = ITEMS.registerItem("scanner",
+    public static final DeferredHolder<Item, Item> SCANNER = com.pgmacdesign.mc3dprint.compat.RegistryCompat.registerItem(ITEMS, "scanner",
             ScannerItem::new, new Item.Properties().stacksTo(1));
 
     public static final DeferredHolder<Item, Item> FILAMENT_WINDER = WINDERS.get(0);
 
-    public static final DeferredHolder<Item, Item> PRINTER_CASING = ITEMS.registerItem("printer_casing",
+    public static final DeferredHolder<Item, Item> PRINTER_CASING = com.pgmacdesign.mc3dprint.compat.RegistryCompat.registerItem(ITEMS, "printer_casing",
             props -> new BlockItem(ModBlocks.PRINTER_CASING.get(), props), blockItemProps());
 
-    public static final DeferredHolder<Item, Item> FILAMENT_CONVERTER = ITEMS.registerItem("filament_converter",
+    public static final DeferredHolder<Item, Item> FILAMENT_CONVERTER = com.pgmacdesign.mc3dprint.compat.RegistryCompat.registerItem(ITEMS, "filament_converter",
             props -> new BlockItem(ModBlocks.FILAMENT_CONVERTER.get(), props), blockItemProps());
 
-    public static final DeferredHolder<Item, Item> REMOTE_TERMINAL = ITEMS.registerItem("remote_terminal",
+    public static final DeferredHolder<Item, Item> REMOTE_TERMINAL = com.pgmacdesign.mc3dprint.compat.RegistryCompat.registerItem(ITEMS, "remote_terminal",
             props -> new com.pgmacdesign.mc3dprint.machine.RemoteTerminalBlock.TerminalBlockItem(
                     ModBlocks.REMOTE_TERMINAL.get(), props), blockItemProps());
 
-    public static final DeferredHolder<Item, Item> FILAMENT_RACK = ITEMS.registerItem("filament_rack",
+    public static final DeferredHolder<Item, Item> FILAMENT_RACK = com.pgmacdesign.mc3dprint.compat.RegistryCompat.registerItem(ITEMS, "filament_rack",
             props -> new BlockItem(ModBlocks.FILAMENT_RACK.get(), props), blockItemProps());
 
-    public static final DeferredHolder<Item, Item> MC3DCABLE = ITEMS.registerItem("mc3dcable",
+    public static final DeferredHolder<Item, Item> MC3DCABLE = com.pgmacdesign.mc3dprint.compat.RegistryCompat.registerItem(ITEMS, "mc3dcable",
             props -> new BlockItem(ModBlocks.MC3DCABLE.get(), props), blockItemProps());
 
-    public static final DeferredHolder<Item, Item> BLUEPRINT_REPOSITORY = ITEMS.registerItem("blueprint_repository",
+    public static final DeferredHolder<Item, Item> BLUEPRINT_REPOSITORY = com.pgmacdesign.mc3dprint.compat.RegistryCompat.registerItem(ITEMS, "blueprint_repository",
             props -> new BlockItem(ModBlocks.BLUEPRINT_REPOSITORY.get(), props), blockItemProps());
 
     // These three carry a hover line via TooltipBlockItem (1.21.5 removed Block.appendHoverText —
     // tooltips live on the item now; same mechanism on both nodes for visual parity).
-    public static final DeferredHolder<Item, Item> CLOCK_GENERATOR = ITEMS.registerItem("clock_generator",
+    public static final DeferredHolder<Item, Item> CLOCK_GENERATOR = com.pgmacdesign.mc3dprint.compat.RegistryCompat.registerItem(ITEMS, "clock_generator",
             props -> new com.pgmacdesign.mc3dprint.compat.TooltipBlockItem(ModBlocks.CLOCK_GENERATOR.get(), props,
                     () -> net.minecraft.network.chat.Component.translatable("tooltip.mc3dprint.clock_generator",
                             com.pgmacdesign.mc3dprint.machine.ClockGeneratorBlockEntity.ratePerTick(),
                             com.pgmacdesign.mc3dprint.machine.ClockGeneratorBlockEntity.burnMultiplier())
                             .withStyle(net.minecraft.ChatFormatting.GRAY)), blockItemProps());
 
-    public static final DeferredHolder<Item, Item> REDSTONE_CLOCK = ITEMS.registerItem("redstone_clock",
+    public static final DeferredHolder<Item, Item> REDSTONE_CLOCK = com.pgmacdesign.mc3dprint.compat.RegistryCompat.registerItem(ITEMS, "redstone_clock",
             props -> new com.pgmacdesign.mc3dprint.compat.TooltipBlockItem(ModBlocks.REDSTONE_CLOCK.get(), props,
                     () -> net.minecraft.network.chat.Component.translatable("tooltip.mc3dprint.redstone_clock")
                             .withStyle(net.minecraft.ChatFormatting.GRAY)), blockItemProps());
 
-    public static final DeferredHolder<Item, Item> CREATIVE_ENERGY_SOURCE = ITEMS.registerItem("creative_energy_source",
+    public static final DeferredHolder<Item, Item> CREATIVE_ENERGY_SOURCE = com.pgmacdesign.mc3dprint.compat.RegistryCompat.registerItem(ITEMS, "creative_energy_source",
             props -> new com.pgmacdesign.mc3dprint.compat.TooltipBlockItem(ModBlocks.CREATIVE_ENERGY_SOURCE.get(), props,
                     () -> net.minecraft.network.chat.Component.translatable("tooltip.mc3dprint.creative_energy")
                             .withStyle(net.minecraft.ChatFormatting.LIGHT_PURPLE)), blockItemProps());
 
-    public static final DeferredHolder<Item, Item> CREATIVE_SPOOL = ITEMS.registerItem("creative_filament_spool",
+    public static final DeferredHolder<Item, Item> CREATIVE_SPOOL = com.pgmacdesign.mc3dprint.compat.RegistryCompat.registerItem(ITEMS, "creative_filament_spool",
             com.pgmacdesign.mc3dprint.fu.CreativeSpoolItem::new, new Item.Properties());
 
-    public static final DeferredHolder<Item, Item> EXTRUDIUM_ORE = ITEMS.registerItem("extrudium_ore",
+    public static final DeferredHolder<Item, Item> EXTRUDIUM_ORE = com.pgmacdesign.mc3dprint.compat.RegistryCompat.registerItem(ITEMS, "extrudium_ore",
             props -> new BlockItem(ModBlocks.EXTRUDIUM_ORE.get(), props), blockItemProps());
 
-    public static final DeferredHolder<Item, Item> EXTRUDIUM_CRYSTAL = ITEMS.registerItem("extrudium_crystal",
+    public static final DeferredHolder<Item, Item> EXTRUDIUM_CRYSTAL = com.pgmacdesign.mc3dprint.compat.RegistryCompat.registerItem(ITEMS, "extrudium_crystal",
             Item::new, new Item.Properties());
 
-    public static final DeferredHolder<Item, Item> SPEED_UPGRADE = ITEMS.registerItem("speed_upgrade",
+    public static final DeferredHolder<Item, Item> SPEED_UPGRADE = com.pgmacdesign.mc3dprint.compat.RegistryCompat.registerItem(ITEMS, "speed_upgrade",
             props -> new UpgradeItem(UpgradeItem.Type.SPEED, props), new Item.Properties().stacksTo(16));
-    public static final DeferredHolder<Item, Item> EFFICIENCY_UPGRADE = ITEMS.registerItem("efficiency_upgrade",
+    public static final DeferredHolder<Item, Item> EFFICIENCY_UPGRADE = com.pgmacdesign.mc3dprint.compat.RegistryCompat.registerItem(ITEMS, "efficiency_upgrade",
             props -> new UpgradeItem(UpgradeItem.Type.EFFICIENCY, props), new Item.Properties().stacksTo(16));
-    public static final DeferredHolder<Item, Item> RF_EFFICIENCY_UPGRADE = ITEMS.registerItem("rf_efficiency_upgrade",
+    public static final DeferredHolder<Item, Item> RF_EFFICIENCY_UPGRADE = com.pgmacdesign.mc3dprint.compat.RegistryCompat.registerItem(ITEMS, "rf_efficiency_upgrade",
             props -> new UpgradeItem(UpgradeItem.Type.RF_EFFICIENCY, props), new Item.Properties().stacksTo(16));
-    public static final DeferredHolder<Item, Item> BUFFER_UPGRADE = ITEMS.registerItem("buffer_upgrade",
+    public static final DeferredHolder<Item, Item> BUFFER_UPGRADE = com.pgmacdesign.mc3dprint.compat.RegistryCompat.registerItem(ITEMS, "buffer_upgrade",
             props -> new UpgradeItem(UpgradeItem.Type.BUFFER, props), new Item.Properties().stacksTo(16));
 
     /** Crafting intermediate for all craftable resins (extrudium crystal + slime). */
-    public static final DeferredHolder<Item, Item> RESIN_BASE = ITEMS.registerItem("resin_base",
+    public static final DeferredHolder<Item, Item> RESIN_BASE = com.pgmacdesign.mc3dprint.compat.RegistryCompat.registerItem(ITEMS, "resin_base",
             Item::new, new Item.Properties());
 
     /** All resin variants (effect × its valid tiers — the gated matrix). 11 items. */
@@ -130,7 +130,7 @@ public final class ModItems {
             for (int tier : effect.tiers()) {
                 final ResinItem.Effect e = effect;
                 final int t = tier;
-                resins.add(ITEMS.registerItem(ResinItem.registryId(e, t),
+                resins.add(com.pgmacdesign.mc3dprint.compat.RegistryCompat.registerItem(ITEMS, ResinItem.registryId(e, t),
                         props -> new ResinItem(e, t, props), new Item.Properties().stacksTo(64)));
             }
         }
@@ -143,7 +143,7 @@ public final class ModItems {
     private static List<DeferredHolder<Item, Item>> buildFabricators() {
         List<DeferredHolder<Item, Item>> fabricators = new ArrayList<>(ModBlocks.CONTROLLERS.size());
         for (var controller : ModBlocks.CONTROLLERS) {
-            fabricators.add(ITEMS.registerItem(controller.getId().getPath(),
+            fabricators.add(com.pgmacdesign.mc3dprint.compat.RegistryCompat.registerItem(ITEMS, controller.getId().getPath(),
                     props -> new FabricatorBlockItem(controller.get(), props),
                     com.pgmacdesign.mc3dprint.compat.RegistryCompat.blockItem(new Item.Properties().stacksTo(1))));
         }
@@ -157,7 +157,7 @@ public final class ModItems {
         List<DeferredHolder<Item, Item>> spools = new ArrayList<>(SpoolItem.CAPACITY_BY_TIER.length);
         for (int tier = 1; tier <= SpoolItem.CAPACITY_BY_TIER.length; tier++) {
             final int t = tier;
-            spools.add(ITEMS.registerItem("filament_spool_t" + tier,
+            spools.add(com.pgmacdesign.mc3dprint.compat.RegistryCompat.registerItem(ITEMS, "filament_spool_t" + tier,
                     props -> new SpoolItem(t, props), new Item.Properties()));
         }
         return List.copyOf(spools);

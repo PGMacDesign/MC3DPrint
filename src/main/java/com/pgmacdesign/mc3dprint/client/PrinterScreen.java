@@ -60,11 +60,20 @@ public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
     private Button rotateButton;
 
     public PrinterScreen(PrinterMenu menu, Inventory playerInventory, Component title) {
+        // 26.1 made imageWidth/imageHeight final; dimensions go through the 5-arg super.
+        //? if >=26.1 {
+        /*super(menu, playerInventory, title, 230, 216);
+        *///?} else {
         super(menu, playerInventory, title);
+        //?}
         // Widened from 176 to fit the upgrade-slot column + "Upgrades" header.
         // Heightened from 200 to host the dedicated Rotate row below the XYZ offsets.
+        //? if <26.1 {
         this.imageWidth = 230;
+        //?}
+        //? if <26.1 {
         this.imageHeight = 216;
+        //?}
         this.inventoryLabelY = this.imageHeight - 94;
     }
 
@@ -131,10 +140,16 @@ public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
     }
 
     @Override
+    //? if >=26.1 {
+    /*public void extractRenderState(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        super.extractRenderState(graphics, mouseX, mouseY, partialTick);
+        extractTooltip(graphics, mouseX, mouseY);
+    *///?} else {
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         renderBackground(graphics, mouseX, mouseY, partialTick);
         super.render(graphics, mouseX, mouseY, partialTick);
         renderTooltip(graphics, mouseX, mouseY);
+    //?}
 
         if (isHovering(ENERGY_X, ENERGY_Y, ENERGY_WIDTH, ENERGY_HEIGHT, mouseX, mouseY)) {
             RenderCompat.tooltip(graphics, font,
@@ -211,7 +226,12 @@ public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
     }
 
     @Override
+    //? if >=26.1 {
+    /*public void extractBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        super.extractBackground(graphics, mouseX, mouseY, partialTick);
+    *///?} else {
     protected void renderBg(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
+    //?}
         int left = leftPos;
         int top = topPos;
         RenderCompat.blit(graphics, TEXTURE, left, top, 0, 0, imageWidth, imageHeight);
@@ -261,11 +281,15 @@ public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
     }
 
     @Override
+    //? if >=26.1 {
+    /*protected void extractLabels(GuiGraphics graphics, int mouseX, int mouseY) {
+    *///?} else {
     protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
+    //?}
         // Draw the title + inventory label ourselves in light text instead of
         // super's dark-grey (which is invisible on the new charcoal console).
-        graphics.drawString(font, title, titleLabelX, titleLabelY, LABEL, false);
-        graphics.drawString(font, playerInventoryTitle, inventoryLabelX, inventoryLabelY, LABEL, false);
+        RenderCompat.drawString(graphics, font, title, titleLabelX, titleLabelY, LABEL, false);
+        RenderCompat.drawString(graphics, font, playerInventoryTitle, inventoryLabelX, inventoryLabelY, LABEL, false);
 
         Component status = switch (menu.state()) {
             case IDLE -> Component.translatable("gui.mc3dprint.state.idle");
@@ -292,10 +316,10 @@ public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
         // the column edge; never push it left of the status anchor at 80.
         int statusRightEdge = PrinterMenu.UPGRADE_SLOT_X - 4;
         int statusX = Math.min(80, statusRightEdge - font.width(status));
-        graphics.drawString(font, status, statusX, 58, color, false);
+        RenderCompat.drawString(graphics, font, status, statusX, 58, color, false);
         int cost = menu.templateCost();
         if (cost > 0) {
-            graphics.drawString(font, Component.translatable("gui.mc3dprint.cost", cost), 36, 58, LABEL, false);
+            RenderCompat.drawString(graphics, font, Component.translatable("gui.mc3dprint.cost", cost), 36, 58, LABEL, false);
         }
         // "Spools X/Y" — smaller and moved DOWN to sit just above the spool-slot grid
         // (roughly in line with the 2nd inventory row), right-aligned over the grid. The
@@ -309,7 +333,7 @@ public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
         /*var pose = graphics.pose();
         pose.pushMatrix();
         pose.scale(spoolScale, spoolScale);
-        graphics.drawString(font, spools,
+        RenderCompat.drawString(graphics, font, spools,
                 Math.round(spoolRightEdge / spoolScale - font.width(spools)),
                 Math.round(spoolTopY / spoolScale), spoolsColor, false);
         pose.popMatrix();
@@ -317,7 +341,7 @@ public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
         var pose = graphics.pose();
         pose.pushPose();
         pose.scale(spoolScale, spoolScale, 1f);
-        graphics.drawString(font, spools,
+        RenderCompat.drawString(graphics, font, spools,
                 Math.round(spoolRightEdge / spoolScale - font.width(spools)),
                 Math.round(spoolTopY / spoolScale), spoolsColor, false);
         pose.popPose();
@@ -327,12 +351,12 @@ public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
         // the loaded blueprint is player-made (resin won't apply — the Q9 gate).
         Component resinLabel = Component.translatable("gui.mc3dprint.resin");
         int resinColor = menu.resinBlockedByPlayerBlueprint() ? WARN : LABEL;
-        graphics.drawString(font, resinLabel, PrinterMenu.RESIN_SLOT_X - 3,
+        RenderCompat.drawString(graphics, font, resinLabel, PrinterMenu.RESIN_SLOT_X - 3,
                 PrinterMenu.RESIN_SLOT_Y - 10, resinColor, false);
 
         // "Upgrades" header over the upgrade-slot column (only when this tier has slots)
         if (menu.upgradeSlotCount() > 0) {
-            graphics.drawString(font, Component.translatable("gui.mc3dprint.upgrades"),
+            RenderCompat.drawString(graphics, font, Component.translatable("gui.mc3dprint.upgrades"),
                     PrinterMenu.UPGRADE_SLOT_X, PrinterMenu.UPGRADE_SLOT_Y - 10, LABEL, false);
         }
 
@@ -341,7 +365,7 @@ public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
         for (int axis = 0; axis < 3; axis++) {
             String text = axes[axis] + " " + menu.offset(axis);
             int x = 10 + axis * 54 + 12 + (24 - font.width(text)) / 2;
-            graphics.drawString(font, text, x, OFFSETS_Y + 2, LABEL, false);
+            RenderCompat.drawString(graphics, font, text, x, OFFSETS_Y + 2, LABEL, false);
         }
     }
 }

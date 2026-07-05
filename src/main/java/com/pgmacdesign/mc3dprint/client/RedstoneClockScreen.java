@@ -1,5 +1,6 @@
 package com.pgmacdesign.mc3dprint.client;
 
+import com.pgmacdesign.mc3dprint.compat.RenderCompat;
 import com.pgmacdesign.mc3dprint.machine.RedstoneClockMenu;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -22,9 +23,18 @@ public class RedstoneClockScreen extends AbstractContainerScreen<RedstoneClockMe
     private static final int LABEL = 0xFFC0C0C8;
 
     public RedstoneClockScreen(RedstoneClockMenu menu, Inventory playerInventory, Component title) {
+        // 26.1 made imageWidth/imageHeight final; dimensions go through the 5-arg super.
+        //? if >=26.1 {
+        /*super(menu, playerInventory, title, 176, 84);
+        *///?} else {
         super(menu, playerInventory, title);
+        //?}
+        //? if <26.1 {
         this.imageWidth = 176;
+        //?}
+        //? if <26.1 {
         this.imageHeight = 84;
+        //?}
     }
 
     @Override
@@ -49,14 +59,25 @@ public class RedstoneClockScreen extends AbstractContainerScreen<RedstoneClockMe
     }
 
     @Override
+    //? if >=26.1 {
+    /*public void extractRenderState(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        super.extractRenderState(graphics, mouseX, mouseY, partialTick);
+        extractTooltip(graphics, mouseX, mouseY);
+    *///?} else {
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         renderBackground(graphics, mouseX, mouseY, partialTick);
         super.render(graphics, mouseX, mouseY, partialTick);
         renderTooltip(graphics, mouseX, mouseY);
+    //?}
     }
 
     @Override
+    //? if >=26.1 {
+    /*public void extractBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        super.extractBackground(graphics, mouseX, mouseY, partialTick);
+    *///?} else {
     protected void renderBg(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
+    //?}
         int left = leftPos;
         int top = topPos;
         int w = imageWidth;
@@ -74,12 +95,16 @@ public class RedstoneClockScreen extends AbstractContainerScreen<RedstoneClockMe
     }
 
     @Override
+    //? if >=26.1 {
+    /*protected void extractLabels(GuiGraphics graphics, int mouseX, int mouseY) {
+    *///?} else {
     protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
-        graphics.drawString(font, title, titleLabelX, 6, LABEL, false);
+    //?}
+        RenderCompat.drawString(graphics, font, title, titleLabelX, 6, LABEL, false);
         Component prompt = Component.translatable("gui.mc3dprint.redstone_clock.interval");
-        graphics.drawString(font, prompt, (imageWidth - font.width(prompt)) / 2, 22, LABEL, false);
+        RenderCompat.drawString(graphics, font, prompt, (imageWidth - font.width(prompt)) / 2, 22, LABEL, false);
         // big interval value, centred in the recessed field at panel y=44
         Component value = Component.translatable("gui.mc3dprint.redstone_clock.seconds", menu.intervalSeconds());
-        graphics.drawString(font, value, (imageWidth - font.width(value)) / 2, 47, ACCENT, false);
+        RenderCompat.drawString(graphics, font, value, (imageWidth - font.width(value)) / 2, 47, ACCENT, false);
     }
 }

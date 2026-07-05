@@ -77,8 +77,8 @@ public class PrinterBlock extends BaseEntityBlock {
         if (player.isSecondaryUseActive() && player.getMainHandItem().isEmpty() && player.getOffhandItem().isEmpty()) {
             if (!level.isClientSide()) {
                 if (printer.isActivelyPrinting()) {
-                    player.displayClientMessage(net.minecraft.network.chat.Component.translatable(
-                            "message.mc3dprint.spool_locked_printing"), true);
+                    com.pgmacdesign.mc3dprint.compat.MsgCompat.actionBar(player, net.minecraft.network.chat.Component.translatable(
+                            "message.mc3dprint.spool_locked_printing"));
                 } else {
                     ItemStack spool = printer.detachSpool();
                     if (!spool.isEmpty() && !player.getInventory().add(spool)) {

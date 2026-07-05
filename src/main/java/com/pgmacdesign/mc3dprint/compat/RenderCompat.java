@@ -5,6 +5,7 @@ import java.util.List;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.FormattedText;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FormattedCharSequence;
 //? if >=1.21.5 {
@@ -79,6 +80,35 @@ public final class RenderCompat {
         /*g.setTooltipForNextFrame(font, lines, java.util.Optional.empty(), net.minecraft.world.item.ItemStack.EMPTY, x, y);
         *///?} else {
         g.renderComponentTooltip(font, lines, x, y);
+        //?}
+    }
+
+    /** Shadow-controlled string draw; 26.1 renamed the {@code drawString} family to {@code text}. */
+    public static void drawString(GuiGraphics g, Font font, Component text, int x, int y, int color, boolean shadow) {
+        //? if >=26.1 {
+        /*g.text(font, text, x, y, color, shadow);
+        *///?} else {
+        g.drawString(font, text, x, y, color, shadow);
+        //?}
+    }
+
+    /** String overload of {@link #drawString(GuiGraphics, Font, Component, int, int, int, boolean)}. */
+    public static void drawString(GuiGraphics g, Font font, String text, int x, int y, int color, boolean shadow) {
+        //? if >=26.1 {
+        /*g.text(font, text, x, y, color, shadow);
+        *///?} else {
+        g.drawString(font, text, x, y, color, shadow);
+        //?}
+    }
+
+    /** Word-wrapped shadowless draw; 26.1 renamed {@code drawWordWrap} to {@code textWithWordWrap},
+     *  whose short overload defaults to a drop shadow — pass the explicit no-shadow flag to keep
+     *  the pre-26.1 (shadowless) appearance. */
+    public static void drawWordWrap(GuiGraphics g, Font font, FormattedText text, int x, int y, int width, int color) {
+        //? if >=26.1 {
+        /*g.textWithWordWrap(font, text, x, y, width, color, false);
+        *///?} else {
+        g.drawWordWrap(font, text, x, y, width, color);
         //?}
     }
 

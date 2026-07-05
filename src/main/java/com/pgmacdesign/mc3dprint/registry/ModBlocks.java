@@ -42,15 +42,15 @@ public final class ModBlocks {
     }
 
     /** Bookshelf-style spool storage that doubles as a Filament-Unit reservoir. */
-    public static final DeferredHolder<Block, Block> FILAMENT_RACK = BLOCKS.registerBlock("filament_rack",
+    public static final DeferredHolder<Block, Block> FILAMENT_RACK = com.pgmacdesign.mc3dprint.compat.RegistryCompat.registerBlock(BLOCKS, "filament_rack",
             com.pgmacdesign.mc3dprint.machine.rack.FilamentRackBlock::new, machineProperties());
 
     /** Single dual-carry (RF + Filament Units) cable. */
-    public static final DeferredHolder<Block, Block> MC3DCABLE = BLOCKS.registerBlock("mc3dcable",
+    public static final DeferredHolder<Block, Block> MC3DCABLE = com.pgmacdesign.mc3dprint.compat.RegistryCompat.registerBlock(BLOCKS, "mc3dcable",
             com.pgmacdesign.mc3dprint.machine.cable.MC3DCableBlock::new, cableProperties());
 
     /** Library terminal: browse deposited blueprints, re-burn them onto blank discs. */
-    public static final DeferredHolder<Block, Block> BLUEPRINT_REPOSITORY = BLOCKS.registerBlock("blueprint_repository",
+    public static final DeferredHolder<Block, Block> BLUEPRINT_REPOSITORY = com.pgmacdesign.mc3dprint.compat.RegistryCompat.registerBlock(BLOCKS, "blueprint_repository",
             com.pgmacdesign.mc3dprint.machine.repository.BlueprintRepositoryBlock::new, machineProperties());
 
     /** Single-block printers, index 0 = Tier 1. T5-T8 are multiblock controllers (phase b). */
@@ -63,30 +63,30 @@ public final class ModBlocks {
     /** Multiblock controllers, index 0 = Tier 5. */
     public static final List<DeferredHolder<Block, Block>> CONTROLLERS = buildControllers();
 
-    public static final DeferredHolder<Block, Block> PRINTER_CASING = BLOCKS.registerBlock("printer_casing",
+    public static final DeferredHolder<Block, Block> PRINTER_CASING = com.pgmacdesign.mc3dprint.compat.RegistryCompat.registerBlock(BLOCKS, "printer_casing",
             CasingBlock::new, machineProperties()
                     .lightLevel(s -> s.getValue(CasingBlock.ACTIVE) ? 6 : 0));
 
-    public static final DeferredHolder<Block, Block> FILAMENT_CONVERTER = BLOCKS.registerBlock("filament_converter",
+    public static final DeferredHolder<Block, Block> FILAMENT_CONVERTER = com.pgmacdesign.mc3dprint.compat.RegistryCompat.registerBlock(BLOCKS, "filament_converter",
             com.pgmacdesign.mc3dprint.machine.FilamentConverterBlock::new, machineProperties());
 
-    public static final DeferredHolder<Block, Block> REMOTE_TERMINAL = BLOCKS.registerBlock("remote_terminal",
+    public static final DeferredHolder<Block, Block> REMOTE_TERMINAL = com.pgmacdesign.mc3dprint.compat.RegistryCompat.registerBlock(BLOCKS, "remote_terminal",
             com.pgmacdesign.mc3dprint.machine.RemoteTerminalBlock::new, machineProperties());
 
     /** Free trickle generator so the mod works with no other RF mod installed. */
-    public static final DeferredHolder<Block, Block> CLOCK_GENERATOR = BLOCKS.registerBlock("clock_generator",
+    public static final DeferredHolder<Block, Block> CLOCK_GENERATOR = com.pgmacdesign.mc3dprint.compat.RegistryCompat.registerBlock(BLOCKS, "clock_generator",
             com.pgmacdesign.mc3dprint.machine.ClockGeneratorBlock::new, machineProperties());
 
     /** Autonomous, silent redstone timer: pulses all 6 sides every N (1-60) seconds. */
-    public static final DeferredHolder<Block, Block> REDSTONE_CLOCK = BLOCKS.registerBlock("redstone_clock",
+    public static final DeferredHolder<Block, Block> REDSTONE_CLOCK = com.pgmacdesign.mc3dprint.compat.RegistryCompat.registerBlock(BLOCKS, "redstone_clock",
             com.pgmacdesign.mc3dprint.machine.RedstoneClockBlock::new, machineProperties());
 
     /** Creative-only infinite RF source (no recipe). */
-    public static final DeferredHolder<Block, Block> CREATIVE_ENERGY_SOURCE = BLOCKS.registerBlock("creative_energy_source",
+    public static final DeferredHolder<Block, Block> CREATIVE_ENERGY_SOURCE = com.pgmacdesign.mc3dprint.compat.RegistryCompat.registerBlock(BLOCKS, "creative_energy_source",
             com.pgmacdesign.mc3dprint.machine.CreativeEnergyBlock::new, machineProperties());
 
     /** End-only ore for T5+ machine components (name placeholder per design doc). */
-    public static final DeferredHolder<Block, Block> EXTRUDIUM_ORE = BLOCKS.registerBlock("extrudium_ore",
+    public static final DeferredHolder<Block, Block> EXTRUDIUM_ORE = com.pgmacdesign.mc3dprint.compat.RegistryCompat.registerBlock(BLOCKS, "extrudium_ore",
             Block::new, BlockBehaviour.Properties.of()
                     .mapColor(MapColor.COLOR_BLUE)
                     .strength(4.5F, 9.0F)
@@ -102,7 +102,7 @@ public final class ModBlocks {
         List<DeferredHolder<Block, Block>> controllers = new ArrayList<>(4);
         for (int tierNumber = 5; tierNumber <= 8; tierNumber++) {
             final MachineTier tier = MachineTier.byNumber(tierNumber);
-            controllers.add(BLOCKS.registerBlock("tier" + tierNumber + "_fabricator",
+            controllers.add(com.pgmacdesign.mc3dprint.compat.RegistryCompat.registerBlock(BLOCKS, "tier" + tierNumber + "_fabricator",
                     props -> new ControllerBlock(tier, props), machineProperties()
                             .lightLevel(s -> s.hasProperty(ControllerBlock.FORMED)
                                     && s.getValue(ControllerBlock.FORMED) ? 8 : 0)));
@@ -114,7 +114,7 @@ public final class ModBlocks {
         List<DeferredHolder<Block, Block>> printers = new ArrayList<>(4);
         for (int tierNumber = 1; tierNumber <= 4; tierNumber++) {
             final MachineTier tier = MachineTier.byNumber(tierNumber);
-            printers.add(BLOCKS.registerBlock("tier" + tierNumber + "_printer",
+            printers.add(com.pgmacdesign.mc3dprint.compat.RegistryCompat.registerBlock(BLOCKS, "tier" + tierNumber + "_printer",
                     props -> new PrinterBlock(tier, props), machineProperties()));
         }
         return List.copyOf(printers);
@@ -123,7 +123,7 @@ public final class ModBlocks {
     private static List<DeferredHolder<Block, Block>> buildWinders() {
         // one universal winder — the spool tier (not a winder ladder) gates which
         // materials it accepts, so a single block handles every tier
-        return List.of(BLOCKS.registerBlock("filament_winder",
+        return List.of(com.pgmacdesign.mc3dprint.compat.RegistryCompat.registerBlock(BLOCKS, "filament_winder",
                 WinderBlock::new, machineProperties()));
     }
 

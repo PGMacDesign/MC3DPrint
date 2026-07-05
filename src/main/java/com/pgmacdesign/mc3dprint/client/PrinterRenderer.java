@@ -267,7 +267,6 @@ public class PrinterRenderer implements BlockEntityRenderer<PrinterBlockEntity> 
         Vec3 camPos = camera.pos;
         int maxDistance = com.pgmacdesign.mc3dprint.config.MC3DPrintConfig.PREVIEW_RENDER_DISTANCE.get();
         double maxDistanceSq = (double) maxDistance * maxDistance;
-        var dispatcher = net.minecraft.client.Minecraft.getInstance().getBlockRenderer();
         var level = printer.getLevel();
 
         for (PrinterBlockEntity.PreviewBlock ghost : printer.clientPreview()) {
@@ -280,11 +279,6 @@ public class PrinterRenderer implements BlockEntityRenderer<PrinterBlockEntity> 
                 continue; // already correct — repair mode will skip it too
             }
             boolean blocked = !existing.canBeReplaced();
-            float gr = blocked ? 1.0F : 0.65F;
-            float gg = blocked ? 0.35F : 1.0F;
-            float gb = blocked ? 0.35F : 0.70F;
-            int ga = blocked ? 150 : 140;
-            int ghostLight = LevelRenderer.getLightColor(level, pos);
 
             poseStack.pushPose();
             poseStack.translate(pos.getX() - machine.getX(), pos.getY() - machine.getY(),
@@ -293,18 +287,84 @@ public class PrinterRenderer implements BlockEntityRenderer<PrinterBlockEntity> 
             poseStack.translate(0.5, 0.5, 0.5);
             poseStack.scale(0.95F, 0.95F, 0.95F);
             poseStack.translate(-0.5, -0.5, -0.5);
-            collector.submitCustomGeometry(poseStack, RenderType.translucentMovingBlock(), (pose, vc) -> {
-                // renderSingleBlock wants a PoseStack; rebuild one from the captured pose.
-                PoseStack ps = new PoseStack();
-                ps.mulPose(pose.pose());
-                MultiBufferSource ghostBuffers = type -> new GhostVertexConsumer(vc, gr, gg, gb, ga);
-                dispatcher.renderSingleBlock(ghost.state(), ps, ghostBuffers, ghostLight,
-                        OverlayTexture.NO_OVERLAY, level, pos);
-            });
+            submitGhostBlock(collector, poseStack, ghost, level, blocked);
             poseStack.popPose();
         }
     }
-    *///?} else {
+    *///?}
+    //? if >=26.1 {
+    /*// 26.1 removed the single-block dispatcher path (renderSingleBlock/BlockRenderDispatcher).
+    // Render the real model via submitMovingBlock (correct light/biome from the client level)
+    // and carry the validity color as a translucent shell box around it.
+    private static void submitGhostBlock(SubmitNodeCollector collector, PoseStack poseStack,
+                                         PrinterBlockEntity.PreviewBlock ghost,
+                                         net.minecraft.world.level.Level level, boolean blocked) {
+        net.minecraft.client.renderer.block.MovingBlockRenderState mb =
+                new net.minecraft.client.renderer.block.MovingBlockRenderState();
+        mb.blockPos = ghost.pos();
+        mb.randomSeedPos = ghost.pos();
+        mb.blockState = ghost.state();
+        if (level instanceof net.minecraft.client.multiplayer.ClientLevel clientLevel) {
+            mb.biome = clientLevel.getBiome(ghost.pos());
+            mb.cardinalLighting = clientLevel.cardinalLighting();
+            mb.lightEngine = clientLevel.getLightEngine();
+        }
+        collector.submitMovingBlock(poseStack, mb);
+
+        float gr = blocked ? 1.0F : 0.65F;
+        float gg = blocked ? 0.35F : 1.0F;
+        float gb = blocked ? 0.35F : 0.70F;
+        float ga = blocked ? 0.45F : 0.30F;
+        collector.submitCustomGeometry(poseStack,
+                net.minecraft.client.renderer.rendertype.RenderTypes.debugQuads(), (pose, vc) ->
+                        shellBox(pose, vc, -0.01F, -0.01F, -0.01F, 1.01F, 1.01F, 1.01F, gr, gg, gb, ga));
+    }
+
+    // Position-color translucent box (6 quads, both faces reachable via disabled cull on debugQuads).
+    private static void shellBox(PoseStack.Pose pose, VertexConsumer vc,
+                                 float x0, float y0, float z0, float x1, float y1, float z1,
+                                 float r, float g, float b, float a) {
+        // -Z / +Z
+        shellQuad(pose, vc, r, g, b, a, x0,y0,z0, x1,y0,z0, x1,y1,z0, x0,y1,z0);
+        shellQuad(pose, vc, r, g, b, a, x0,y0,z1, x1,y0,z1, x1,y1,z1, x0,y1,z1);
+        // -X / +X
+        shellQuad(pose, vc, r, g, b, a, x0,y0,z0, x0,y0,z1, x0,y1,z1, x0,y1,z0);
+        shellQuad(pose, vc, r, g, b, a, x1,y0,z0, x1,y0,z1, x1,y1,z1, x1,y1,z0);
+        // -Y / +Y
+        shellQuad(pose, vc, r, g, b, a, x0,y0,z0, x1,y0,z0, x1,y0,z1, x0,y0,z1);
+        shellQuad(pose, vc, r, g, b, a, x0,y1,z0, x1,y1,z0, x1,y1,z1, x0,y1,z1);
+    }
+
+    private static void shellQuad(PoseStack.Pose pose, VertexConsumer vc,
+                                  float r, float g, float b, float a,
+                                  float ax, float ay, float az, float bx, float by, float bz,
+                                  float cx, float cy, float cz, float dx, float dy, float dz) {
+        vc.addVertex(pose, ax, ay, az).setColor(r, g, b, a);
+        vc.addVertex(pose, bx, by, bz).setColor(r, g, b, a);
+        vc.addVertex(pose, cx, cy, cz).setColor(r, g, b, a);
+        vc.addVertex(pose, dx, dy, dz).setColor(r, g, b, a);
+    }
+    *///?} elif >=1.21.9 {
+    /*private static void submitGhostBlock(SubmitNodeCollector collector, PoseStack poseStack,
+                                         PrinterBlockEntity.PreviewBlock ghost,
+                                         net.minecraft.world.level.Level level, boolean blocked) {
+        float gr = blocked ? 1.0F : 0.65F;
+        float gg = blocked ? 0.35F : 1.0F;
+        float gb = blocked ? 0.35F : 0.70F;
+        int ga = blocked ? 150 : 140;
+        int ghostLight = LevelRenderer.getLightColor(level, ghost.pos());
+        var dispatcher = net.minecraft.client.Minecraft.getInstance().getBlockRenderer();
+        collector.submitCustomGeometry(poseStack, RenderType.translucentMovingBlock(), (pose, vc) -> {
+            // renderSingleBlock wants a PoseStack; rebuild one from the captured pose.
+            PoseStack ps = new PoseStack();
+            ps.mulPose(pose.pose());
+            MultiBufferSource ghostBuffers = type -> new GhostVertexConsumer(vc, gr, gg, gb, ga);
+            dispatcher.renderSingleBlock(ghost.state(), ps, ghostBuffers, ghostLight,
+                    OverlayTexture.NO_OVERLAY, level, ghost.pos());
+        });
+    }
+    *///?}
+    //? if <1.21.9 {
     @Override
     //? if >=1.21.5 {
     /*public void render(PrinterBlockEntity printer, float partialTick, PoseStack poseStack,

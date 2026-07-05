@@ -72,12 +72,12 @@ public class RemoteTerminalBlock extends BaseEntityBlock {
         }
         BlockPos target = terminal.target();
         if (target == null) {
-            player.displayClientMessage(Component.translatable("message.mc3dprint.terminal_unpaired"), true);
+            com.pgmacdesign.mc3dprint.compat.MsgCompat.actionBar(player, Component.translatable("message.mc3dprint.terminal_unpaired"));
             return InteractionResult.CONSUME;
         }
         if (!level.isLoaded(target) || !(level.getBlockEntity(target) instanceof PrinterBlockEntity printer)) {
-            player.displayClientMessage(Component.translatable("message.mc3dprint.terminal_lost",
-                    target.getX(), target.getY(), target.getZ()), true);
+            com.pgmacdesign.mc3dprint.compat.MsgCompat.actionBar(player, Component.translatable("message.mc3dprint.terminal_lost",
+                    target.getX(), target.getY(), target.getZ()));
             return InteractionResult.CONSUME;
         }
         ((ServerPlayer) player).openMenu(printer, target);
@@ -112,8 +112,8 @@ public class RemoteTerminalBlock extends BaseEntityBlock {
                     BlockItem.setBlockEntityData(context.getItemInHand(),
                             ModBlockEntities.REMOTE_TERMINAL.get(), beTag);
                     //?}
-                    player.displayClientMessage(Component.translatable("message.mc3dprint.terminal_paired",
-                            pos.getX(), pos.getY(), pos.getZ()), true);
+                    com.pgmacdesign.mc3dprint.compat.MsgCompat.actionBar(player, Component.translatable("message.mc3dprint.terminal_paired",
+                            pos.getX(), pos.getY(), pos.getZ()));
                 }
                 return InteractionCompat.sidedSuccess(level.isClientSide());
             }

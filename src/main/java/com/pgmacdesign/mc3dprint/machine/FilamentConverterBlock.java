@@ -74,17 +74,17 @@ public class FilamentConverterBlock extends BaseEntityBlock {
         ItemStack held = player.getItemInHand(hand);
         if (player.isSecondaryUseActive() && held.isEmpty()) {
             converter.setFilter(ItemStack.EMPTY);
-            player.displayClientMessage(Component.translatable("message.mc3dprint.converter_filter_cleared"), true);
+            com.pgmacdesign.mc3dprint.compat.MsgCompat.actionBar(player, Component.translatable("message.mc3dprint.converter_filter_cleared"));
         } else if (!held.isEmpty()) {
             converter.setFilter(held);
-            player.displayClientMessage(Component.translatable("message.mc3dprint.converter_filter_set",
-                    held.getHoverName()), true);
+            com.pgmacdesign.mc3dprint.compat.MsgCompat.actionBar(player, Component.translatable("message.mc3dprint.converter_filter_set",
+                    held.getHoverName()));
         } else {
             Component filterName = converter.filter().isEmpty()
                     ? Component.translatable("message.mc3dprint.converter_no_filter")
                     : converter.filter().getHoverName();
-            player.displayClientMessage(Component.translatable("message.mc3dprint.converter_status",
-                    filterName), true);
+            com.pgmacdesign.mc3dprint.compat.MsgCompat.actionBar(player, Component.translatable("message.mc3dprint.converter_status",
+                    filterName));
         }
         return InteractionCompat.ITEM_CONSUME;
     }

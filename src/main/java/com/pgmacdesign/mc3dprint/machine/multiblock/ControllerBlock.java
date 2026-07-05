@@ -55,12 +55,12 @@ public class ControllerBlock extends PrinterBlock {
         if (!level.isClientSide()) {
             Component error = MultiblockPattern.validate(level, pos, tier());
             if (error != null) {
-                player.displayClientMessage(error, true);
+                com.pgmacdesign.mc3dprint.compat.MsgCompat.actionBar(player, error);
             } else {
                 level.setBlock(pos, state.setValue(FORMED, true), Block.UPDATE_ALL);
                 setComponentsActive(level, pos, tier(), true, null);
-                player.displayClientMessage(Component.translatable("message.mc3dprint.multiblock_formed",
-                        tier().number()), true);
+                com.pgmacdesign.mc3dprint.compat.MsgCompat.actionBar(player, Component.translatable("message.mc3dprint.multiblock_formed",
+                        tier().number()));
                 level.playSound(null, pos, SoundEvents.BEACON_ACTIVATE, SoundSource.BLOCKS, 0.6F, 1.2F);
             }
         }
@@ -187,7 +187,13 @@ public class ControllerBlock extends PrinterBlock {
      * casings/controllers are skipped (they self-handle: casings
      * via onRemove, the controller via {@code playerWillDestroy}).
      */
+    // 26.1 moved/renamed BlockEvent.BreakEvent -> level.block.BreakBlockEvent (getLevel/
+    // getState/getPos are inherited from BlockEvent unchanged).
+    //? if >=26.1 {
+    /*public static void onBlockBreak(net.neoforged.neoforge.event.level.block.BreakBlockEvent event) {
+    *///?} else {
     public static void onBlockBreak(BlockEvent.BreakEvent event) {
+    //?}
         if (!(event.getLevel() instanceof Level level) || level.isClientSide()) {
             return;
         }

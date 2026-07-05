@@ -52,9 +52,18 @@ public class BlueprintRepositoryScreen extends AbstractContainerScreen<Blueprint
     private int scroll;
 
     public BlueprintRepositoryScreen(BlueprintRepositoryMenu menu, Inventory playerInventory, Component title) {
+        // 26.1 made imageWidth/imageHeight final; dimensions go through the 5-arg super.
+        //? if >=26.1 {
+        /*super(menu, playerInventory, title, 248, 186);
+        *///?} else {
         super(menu, playerInventory, title);
+        //?}
+        //? if <26.1 {
         this.imageWidth = 248;
+        //?}
+        //? if <26.1 {
         this.imageHeight = 186;
+        //?}
         this.inventoryLabelX = 43;
         this.inventoryLabelY = 154;
     }
@@ -133,15 +142,26 @@ public class BlueprintRepositoryScreen extends AbstractContainerScreen<Blueprint
     }
 
     @Override
+    //? if >=26.1 {
+    /*public void extractRenderState(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        super.extractRenderState(graphics, mouseX, mouseY, partialTick);
+        extractTooltip(graphics, mouseX, mouseY);
+    *///?} else {
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         renderBackground(graphics, mouseX, mouseY, partialTick);
         super.render(graphics, mouseX, mouseY, partialTick);
         renderTooltip(graphics, mouseX, mouseY);
+    //?}
         renderRowTooltip(graphics, mouseX, mouseY);
     }
 
     @Override
+    //? if >=26.1 {
+    /*public void extractBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        super.extractBackground(graphics, mouseX, mouseY, partialTick);
+    *///?} else {
     protected void renderBg(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
+    //?}
         RenderCompat.blit(graphics, TEXTURE, leftPos, topPos, 0, 0, imageWidth, imageHeight);
         renderList(graphics, mouseX, mouseY);
         renderDetail(graphics);
@@ -151,7 +171,7 @@ public class BlueprintRepositoryScreen extends AbstractContainerScreen<Blueprint
         int left = leftPos + LIST_X;
         int top = topPos + LIST_Y;
         if (menu.entries().isEmpty()) {
-            graphics.drawWordWrap(font, Component.translatable("gui.mc3dprint.repository.empty"),
+            RenderCompat.drawWordWrap(graphics, font, Component.translatable("gui.mc3dprint.repository.empty"),
                     left + 4, top + 4, LIST_W - 8, LABEL_DIM);
             return;
         }
@@ -167,9 +187,9 @@ public class BlueprintRepositoryScreen extends AbstractContainerScreen<Blueprint
             } else if (hovered) {
                 graphics.fill(left, rowY, left + LIST_W, rowY + ROW_H, ROW_HOVER);
             }
-            graphics.drawString(font, "T" + entry.tier(), left + 2, rowY + 3, tierColor(entry.tier()), false);
+            RenderCompat.drawString(graphics, font, "T" + entry.tier(), left + 2, rowY + 3, tierColor(entry.tier()), false);
             String name = font.plainSubstrByWidth(displayName(entry), LIST_W - 44);
-            graphics.drawString(font, name, left + 20, rowY + 3, LABEL, false);
+            RenderCompat.drawString(graphics, font, name, left + 20, rowY + 3, LABEL, false);
             // printed marker (green dot) left of the official/scan dot, official builds only
             if (entry.official() && menu.isPrinted(entry.id())) {
                 graphics.fill(left + LIST_W - 13, rowY + 4, left + LIST_W - 9, rowY + 8, PRINTED);
@@ -181,18 +201,18 @@ public class BlueprintRepositoryScreen extends AbstractContainerScreen<Blueprint
         // library-wide printed progress footer (official builds only)
         Component progress = Component.translatable("gui.mc3dprint.repository.printed_count",
                 menu.printedCount(), CuratedBlueprints.CURATED_NAMES.size());
-        graphics.drawString(font, progress, left + 2, topPos + 116, PRINTED, false);
+        RenderCompat.drawString(graphics, font, progress, left + 2, topPos + 116, PRINTED, false);
     }
 
     private void renderDetail(GuiGraphics graphics) {
         int x = leftPos + DETAIL_X;
         RepoEntry entry = selected();
         if (entry == null) {
-            graphics.drawString(font, Component.translatable("gui.mc3dprint.repository.select_hint"),
+            RenderCompat.drawString(graphics, font, Component.translatable("gui.mc3dprint.repository.select_hint"),
                     leftPos + PREVIEW_X + 4, topPos + PREVIEW_Y + PREVIEW_H / 2 - 4, LABEL_DIM, false);
             return;
         }
-        graphics.drawWordWrap(font, Component.literal(displayName(entry)),
+        RenderCompat.drawWordWrap(graphics, font, Component.literal(displayName(entry)),
                 leftPos + PREVIEW_X + 4, topPos + PREVIEW_Y + 4, PREVIEW_W - 8, ACCENT);
 
         int y = topPos + 56;
@@ -201,21 +221,21 @@ public class BlueprintRepositoryScreen extends AbstractContainerScreen<Blueprint
         line(graphics, x, y += 12, "gui.mc3dprint.repository.blocks", Integer.toString(entry.blockCount()), LABEL);
         line(graphics, x, y += 12, "gui.mc3dprint.repository.tier", "T" + entry.tier(), tierColor(entry.tier()));
         line(graphics, x, y += 12, "gui.mc3dprint.repository.cost", entry.cost() + " FU", LABEL);
-        graphics.drawString(font, Component.translatable(entry.official()
+        RenderCompat.drawString(graphics, font, Component.translatable(entry.official()
                         ? "gui.mc3dprint.repository.official" : "gui.mc3dprint.repository.scanned"),
                 x + 4, y += 12, entry.official() ? OFFICIAL : SCANNED, false);
         // print status (official builds are the only ones tracked)
         if (entry.official()) {
             boolean printed = menu.isPrinted(entry.id());
-            graphics.drawString(font, Component.translatable(printed
+            RenderCompat.drawString(graphics, font, Component.translatable(printed
                             ? "gui.mc3dprint.repository.printed_yes" : "gui.mc3dprint.repository.printed_no"),
                     x + 4, y + 12, printed ? PRINTED : LABEL_DIM, false);
         }
     }
 
     private void line(GuiGraphics graphics, int x, int y, String key, String value, int valueColor) {
-        graphics.drawString(font, Component.translatable(key), x + 4, y, LABEL_DIM, false);
-        graphics.drawString(font, value, x + 50, y, valueColor, false);
+        RenderCompat.drawString(graphics, font, Component.translatable(key), x + 4, y, LABEL_DIM, false);
+        RenderCompat.drawString(graphics, font, value, x + 50, y, valueColor, false);
     }
 
     private void renderRowTooltip(GuiGraphics graphics, int mouseX, int mouseY) {
@@ -240,14 +260,18 @@ public class BlueprintRepositoryScreen extends AbstractContainerScreen<Blueprint
     }
 
     @Override
+    //? if >=26.1 {
+    /*protected void extractLabels(GuiGraphics graphics, int mouseX, int mouseY) {
+    *///?} else {
     protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
-        graphics.drawString(font, title, titleLabelX, titleLabelY, LABEL, false);
-        graphics.drawString(font, playerInventoryTitle, inventoryLabelX, inventoryLabelY, LABEL, false);
+    //?}
+        RenderCompat.drawString(graphics, font, title, titleLabelX, titleLabelY, LABEL, false);
+        RenderCompat.drawString(graphics, font, playerInventoryTitle, inventoryLabelX, inventoryLabelY, LABEL, false);
 
         int collected = (int) menu.entries().stream().filter(RepoEntry::official).count();
         Component counter = Component.translatable("gui.mc3dprint.repository.collected",
                 collected, CuratedBlueprints.CURATED_NAMES.size());
-        graphics.drawString(font, counter, imageWidth - 14 - font.width(counter), titleLabelY, OFFICIAL, false);
+        RenderCompat.drawString(graphics, font, counter, imageWidth - 14 - font.width(counter), titleLabelY, OFFICIAL, false);
     }
 
     //? if >=1.21.9 {
