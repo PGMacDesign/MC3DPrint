@@ -124,6 +124,28 @@ public class RackCableGameTests {
         helper.succeed();
     }
 
+    @GameTest(template = "empty5", timeoutTicks = 120)
+    public static void networkFuVisibleToPrinterGauge(GameTestHelper helper) {
+        // The gauge readout must see rack FU across a cable — a printer with empty
+        // docked spools but a stocked network is NOT out of filament.
+        BlockPos printerPos = new BlockPos(3, 1, 2);
+        helper.setBlock(printerPos, ModBlocks.PRINTERS.get(2).get()); // T3
+        if (!(helper.getBlockEntity(printerPos) instanceof PrinterBlockEntity printer)) {
+            throw new GameTestAssertException("Printer block entity missing");
+        }
+        FilamentRackBlockEntity rack = placeRack(helper, new BlockPos(1, 1, 2));
+        rack.spools().setStackInSlot(0, spoolWithFu(1, 500));
+        helper.setBlock(new BlockPos(2, 1, 2), ModBlocks.MC3DCABLE.get());
+
+        // cable topology is throttle-cached; give it a moment to flood
+        helper.succeedWhen(() -> {
+            int network = printer.networkFu(1);
+            if (network != 500) {
+                throw new GameTestAssertException("gauge should see 500 network FU, got " + network);
+            }
+        });
+    }
+
     // --- Cable relays RF as standard Forge Energy ---
 
     @GameTest(template = "empty5", timeoutTicks = 120)
