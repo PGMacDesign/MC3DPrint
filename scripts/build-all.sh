@@ -2,9 +2,11 @@
 #
 # build-all.sh — build every shippable MC3DPrint jar in one shot, into ./dist/.
 #
-# Produces:
-#   dist/mc3dprint-<ver>-neoforge-1.21.1.jar   (Stonecutter node, this tree, Java 21)
-#   dist/mc3dprint-<ver>-neoforge-1.21.8.jar   (Stonecutter node, this tree, Java 21)
+# Produces one jar per NeoForge Stonecutter node (see NEOFORGE_NODES below):
+#   dist/mc3dprint-<ver>-neoforge-<node>.jar   (this tree; Java 21 launcher, 26.x
+#                                               nodes compile on a Java 25 toolchain
+#                                               that Gradle/foojay provisions itself)
+# plus the legacy line:
 #   dist/mc3dprint-<ver>-forge-1.20.1.jar      (legacy/1.20.1 branch, Forge, Java 17)
 #
 # The NeoForge jars come from the multi-version Stonecutter tree (one source, one jar
@@ -28,7 +30,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
 # --- the NeoForge nodes built from THIS tree. Add future versions here (e.g. "1.21.8 26.2"). ---
-NEOFORGE_NODES=("1.21.1" "1.21.8")
+NEOFORGE_NODES=("1.21.1" "1.21.8" "1.21.9" "1.21.10" "1.21.11" "26.1" "26.2")
 LEGACY_BRANCH="legacy/1.20.1"
 LEGACY_MC="1.20.1"
 CANONICAL_NODE="1.21.1"   # the vcsVersion; the tree is left on this on exit

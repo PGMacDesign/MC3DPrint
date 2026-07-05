@@ -52,9 +52,18 @@ public class WinderScreen extends AbstractContainerScreen<WinderMenu> {
     private float reelAngle;
 
     public WinderScreen(WinderMenu menu, Inventory playerInventory, Component title) {
+        // 26.1 made imageWidth/imageHeight final; dimensions go through the 5-arg super.
+        //? if >=26.1 {
+        /*super(menu, playerInventory, title, 200, 188);
+        *///?} else {
         super(menu, playerInventory, title);
+        //?}
+        //? if <26.1 {
         this.imageWidth = 200;
+        //?}
+        //? if <26.1 {
         this.imageHeight = 188;
+        //?}
         this.inventoryLabelX = 19;
         this.inventoryLabelY = 97;
     }
@@ -76,10 +85,16 @@ public class WinderScreen extends AbstractContainerScreen<WinderMenu> {
     }
 
     @Override
+    //? if >=26.1 {
+    /*public void extractRenderState(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        super.extractRenderState(graphics, mouseX, mouseY, partialTick);
+        extractTooltip(graphics, mouseX, mouseY);
+    *///?} else {
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         renderBackground(graphics, mouseX, mouseY, partialTick);
         super.render(graphics, mouseX, mouseY, partialTick);
         renderTooltip(graphics, mouseX, mouseY);
+    //?}
 
         if (isHovering(ENERGY_X, ENERGY_Y, ENERGY_W, ENERGY_H, mouseX, mouseY)) {
             RenderCompat.tooltip(graphics, font,
@@ -94,7 +109,12 @@ public class WinderScreen extends AbstractContainerScreen<WinderMenu> {
     }
 
     @Override
+    //? if >=26.1 {
+    /*public void extractBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        super.extractBackground(graphics, mouseX, mouseY, partialTick);
+    *///?} else {
     protected void renderBg(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
+    //?}
         int left = leftPos;
         int top = topPos;
         RenderCompat.blit(graphics, TEXTURE, left, top, 0, 0, imageWidth, imageHeight);
@@ -138,9 +158,13 @@ public class WinderScreen extends AbstractContainerScreen<WinderMenu> {
     }
 
     @Override
+    //? if >=26.1 {
+    /*protected void extractLabels(GuiGraphics graphics, int mouseX, int mouseY) {
+    *///?} else {
     protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
-        graphics.drawString(font, title, titleLabelX, titleLabelY, LABEL, false);
-        graphics.drawString(font, playerInventoryTitle, inventoryLabelX, inventoryLabelY, LABEL, false);
+    //?}
+        RenderCompat.drawString(graphics, font, title, titleLabelX, titleLabelY, LABEL, false);
+        RenderCompat.drawString(graphics, font, playerInventoryTitle, inventoryLabelX, inventoryLabelY, LABEL, false);
 
         drawStatusLine(graphics);
         drawMaterialCard(graphics);
@@ -175,7 +199,7 @@ public class WinderScreen extends AbstractContainerScreen<WinderMenu> {
             color = ACCENT;
         }
         int x = (imageWidth - font.width(msg)) / 2;
-        graphics.drawString(font, msg, x, STATUS_Y, color, false);
+        RenderCompat.drawString(graphics, font, msg, x, STATUS_Y, color, false);
     }
 
     private void drawMaterialCard(GuiGraphics graphics) {
@@ -242,14 +266,14 @@ public class WinderScreen extends AbstractContainerScreen<WinderMenu> {
         pose.pushMatrix();
         pose.translate((float) x, (float) y);
         pose.scale(scale, scale);
-        graphics.drawString(font, text, 0, 0, color, false);
+        RenderCompat.drawString(graphics, font, text, 0, 0, color, false);
         pose.popMatrix();
         *///?} else {
         var pose = graphics.pose();
         pose.pushPose();
         pose.translate(x, y, 0);
         pose.scale(scale, scale, 1f);
-        graphics.drawString(font, text, 0, 0, color, false);
+        RenderCompat.drawString(graphics, font, text, 0, 0, color, false);
         pose.popPose();
         //?}
     }

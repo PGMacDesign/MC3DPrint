@@ -1,12 +1,12 @@
 package com.pgmacdesign.mc3dprint.machine;
 
+import com.pgmacdesign.mc3dprint.compat.TransferCompat;
 import com.pgmacdesign.mc3dprint.registry.ModBlockEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.energy.IEnergyStorage;
 
 /**
@@ -54,7 +54,7 @@ public class CreativeEnergyBlockEntity extends BlockEntity {
 
     public static void serverTick(Level level, BlockPos pos, BlockState state, CreativeEnergyBlockEntity source) {
         for (Direction direction : Direction.values()) {
-            IEnergyStorage handler = level.getCapability(Capabilities.EnergyStorage.BLOCK,
+            IEnergyStorage handler = TransferCompat.findEnergy(level,
                     pos.relative(direction), direction.getOpposite());
             if (handler != null) {
                 handler.receiveEnergy(Integer.MAX_VALUE, false);

@@ -1,6 +1,7 @@
 package com.pgmacdesign.mc3dprint.registry;
 
 import com.pgmacdesign.mc3dprint.MC3DPrint;
+import com.pgmacdesign.mc3dprint.compat.TransferCompat;
 import com.pgmacdesign.mc3dprint.fu.IFilamentSource;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
@@ -34,6 +35,26 @@ public final class ModCapabilities {
     @SubscribeEvent
     public static void register(RegisterCapabilitiesEvent event) {
         // --- Energy ---
+        //? if >=1.21.9 {
+        /*event.registerBlockEntity(Capabilities.Energy.BLOCK, ModBlockEntities.MC3DCABLE.get(),
+                (be, side) -> TransferCompat.energyHandler(be.getEnergyStorage()));
+        event.registerBlockEntity(Capabilities.Energy.BLOCK, ModBlockEntities.PRINTER.get(),
+                (be, side) -> TransferCompat.energyHandler(be.getEnergyStorage()));
+        event.registerBlockEntity(Capabilities.Energy.BLOCK, ModBlockEntities.FILAMENT_CONVERTER.get(),
+                (be, side) -> TransferCompat.energyHandler(be.getEnergyStorage()));
+        event.registerBlockEntity(Capabilities.Energy.BLOCK, ModBlockEntities.FILAMENT_WINDER.get(),
+                (be, side) -> TransferCompat.energyHandler(be.getEnergyStorage()));
+        event.registerBlockEntity(Capabilities.Energy.BLOCK, ModBlockEntities.CLOCK_GENERATOR.get(),
+                (be, side) -> TransferCompat.energyHandler(be.getEnergyStorage()));
+        event.registerBlockEntity(Capabilities.Energy.BLOCK, ModBlockEntities.CREATIVE_ENERGY_SOURCE.get(),
+                (be, side) -> TransferCompat.energyHandler(be.getEnergyStorage()));
+        // Casing re-exposes the formed controller's energy (the power-inlet forwarding).
+        event.registerBlockEntity(Capabilities.Energy.BLOCK, ModBlockEntities.CASING.get(),
+                (be, side) -> {
+                    var storage = be.getEnergyStorage(side);
+                    return storage == null ? null : TransferCompat.energyHandler(storage);
+                });
+        *///?} else {
         event.registerBlockEntity(Capabilities.EnergyStorage.BLOCK, ModBlockEntities.MC3DCABLE.get(),
                 (be, side) -> be.getEnergyStorage());
         event.registerBlockEntity(Capabilities.EnergyStorage.BLOCK, ModBlockEntities.PRINTER.get(),
@@ -49,6 +70,7 @@ public final class ModCapabilities {
         // Casing re-exposes the formed controller's energy (the power-inlet forwarding).
         event.registerBlockEntity(Capabilities.EnergyStorage.BLOCK, ModBlockEntities.CASING.get(),
                 (be, side) -> be.getEnergyStorage(side));
+        //?}
 
         // --- Filament source (custom) ---
         event.registerBlockEntity(FILAMENT_SOURCE, ModBlockEntities.MC3DCABLE.get(),
@@ -57,12 +79,27 @@ public final class ModCapabilities {
                 (be, side) -> be.getFilamentSource());
 
         // --- Item handler (per-face logic lives in each BE's getItemHandler) ---
+        //? if >=1.21.9 {
+        /*// The BEs declare IItemHandler but always hand back ItemStackHandler/RangedWrapper,
+        // both IItemHandlerModifiable — required by the bridge's snapshot revert. The
+        // instanceof keeps the cast safe if a future view ever isn't modifiable.
+        event.registerBlockEntity(Capabilities.Item.BLOCK, ModBlockEntities.PRINTER.get(),
+                (be, side) -> be.getItemHandler(side) instanceof net.neoforged.neoforge.items.IItemHandlerModifiable m
+                        ? TransferCompat.itemHandler(m) : null);
+        event.registerBlockEntity(Capabilities.Item.BLOCK, ModBlockEntities.FILAMENT_WINDER.get(),
+                (be, side) -> be.getItemHandler(side) instanceof net.neoforged.neoforge.items.IItemHandlerModifiable m
+                        ? TransferCompat.itemHandler(m) : null);
+        event.registerBlockEntity(Capabilities.Item.BLOCK, ModBlockEntities.CLOCK_GENERATOR.get(),
+                (be, side) -> be.getItemHandler(side) instanceof net.neoforged.neoforge.items.IItemHandlerModifiable m
+                        ? TransferCompat.itemHandler(m) : null);
+        *///?} else {
         event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, ModBlockEntities.PRINTER.get(),
                 (be, side) -> be.getItemHandler(side));
         event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, ModBlockEntities.FILAMENT_WINDER.get(),
                 (be, side) -> be.getItemHandler(side));
         event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, ModBlockEntities.CLOCK_GENERATOR.get(),
                 (be, side) -> be.getItemHandler(side));
+        //?}
     }
 
     private ModCapabilities() {}

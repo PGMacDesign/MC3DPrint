@@ -58,7 +58,7 @@ public class UpgradeItem extends Item {
         if (!(level.getBlockEntity(context.getClickedPos()) instanceof PrinterBlockEntity printer)) {
             return InteractionResult.PASS;
         }
-        if (level.isClientSide) {
+        if (level.isClientSide()) {
             return InteractionResult.SUCCESS;
         }
         if (printer.installUpgrade(context.getItemInHand())) {
@@ -68,8 +68,8 @@ public class UpgradeItem extends Item {
             String key = printer.upgradeTypeAtCap(this.type)
                     ? "message.mc3dprint.upgrade_type_at_cap"
                     : "message.mc3dprint.upgrade_slots_full";
-            context.getPlayer().displayClientMessage(Component.translatable(key,
-                    com.pgmacdesign.mc3dprint.config.MC3DPrintConfig.UPGRADE_MAX_PER_TYPE.get()), true);
+            com.pgmacdesign.mc3dprint.compat.MsgCompat.actionBar(context.getPlayer(), Component.translatable(key,
+                    com.pgmacdesign.mc3dprint.config.MC3DPrintConfig.UPGRADE_MAX_PER_TYPE.get()));
         }
         return InteractionResult.CONSUME;
     }

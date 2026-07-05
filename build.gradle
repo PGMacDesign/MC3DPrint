@@ -8,13 +8,56 @@ plugins {
 version = mod_version
 group = mod_group_id
 
+stonecutter {
+    // 1.21.11 renamed/moved several classes wholesale. Global token replacements keep the
+    // shared source in the canonical (pre-rename) vocabulary; Stonecutter rewrites per node.
+    // Each pair is idempotent (the result never re-contains the source token) and reverses
+    // uniquely (the canonical tree never legitimately contains the target token).
+    replacements.string(current.parsed.matches('>=1.21.11')) {
+        replace 'ResourceLocation', 'Identifier'
+        replace 'net.minecraft.world.entity.vehicle.Boat', 'net.minecraft.world.entity.vehicle.boat.Boat'
+        // RenderType static factories moved to RenderTypes (the RenderType import itself is a
+        // per-file guard — an import-path replacement would substring-collide with these).
+        replace 'RenderType.lines(', 'RenderTypes.lines('
+        replace 'RenderType.entitySolid(', 'RenderTypes.entitySolid('
+        replace 'RenderType.eyes(', 'RenderTypes.eyes('
+        replace 'RenderType.translucentMovingBlock(', 'RenderTypes.translucentMovingBlock('
+    }
+    // MC 26.1 (first of the 2026 scheme): the GUI pipeline's GuiGraphics became
+    // GuiGraphicsExtractor, and several utilities moved/renamed. Same invertibility
+    // rules as above (the ';' / ' ' / '(' anchors keep every pair collision-free).
+    replacements.string(current.parsed.matches('>=26.1')) {
+        replace 'GuiGraphics;', 'GuiGraphicsExtractor;'
+        replace 'GuiGraphics ', 'GuiGraphicsExtractor '
+        replace 'net.minecraft.client.renderer.state.CameraRenderState', 'net.minecraft.client.renderer.state.level.CameraRenderState'
+        replace 'import net.minecraft.client.renderer.LightTexture;', 'import net.minecraft.util.LightCoordsUtil;'
+        replace 'LightTexture.FULL_BRIGHT', 'LightCoordsUtil.FULL_BRIGHT'
+        replace 'FarmBlock', 'FarmlandBlock'
+    }
+    // MC 26.2: advancement criteria split into triggers/ + predicates/ subpackages,
+    // the EntityType spawn-egg-style constants moved to an EntityTypes holder, and the
+    // light sampler moved onto LightCoordsUtil.
+    // NOTE: version-RANGE conditions ('>=A <B' or composed booleans) do not reliably fire
+    // for replacement groups on this Stonecutter — anything that moves TWICE across nodes
+    // (criteria packages, the light sampler) is handled with in-file guard chains instead.
+    replacements.string(current.parsed.matches('>=26.2')) {
+        replace 'EntityType.ARMOR_STAND', 'net.minecraft.world.entity.EntityTypes.ARMOR_STAND'
+        replace 'EntityType.ITEM_FRAME', 'net.minecraft.world.entity.EntityTypes.ITEM_FRAME'
+        replace 'EntityType.GLOW_ITEM_FRAME', 'net.minecraft.world.entity.EntityTypes.GLOW_ITEM_FRAME'
+        replace 'EntityType.PAINTING', 'net.minecraft.world.entity.EntityTypes.PAINTING'
+        replace 'EntityType.MINECART', 'net.minecraft.world.entity.EntityTypes.MINECART'
+    }
+}
+
 base {
     archivesName = mod_id
 }
 
-// 1.21.1 ships on Java 21. Gradle launches on 17 but the toolchain provisions 21
-// for compile + the NeoForge run tasks (foojay resolver is wired in settings.gradle).
-java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+// 1.21.x ships on Java 21; the 26.x line (2026 version scheme) bumped to Java 25.
+// The toolchain provisions the right JDK per node for compile + the NeoForge run
+// tasks (foojay resolver is wired in settings.gradle); the Gradle daemon stays on 21.
+def nodeJavaVersion = ['26.1': 25, '26.2': 25].getOrDefault(stonecutter.current.project, 21)
+java.toolchain.languageVersion = JavaLanguageVersion.of(nodeJavaVersion)
 
 println "Java: ${System.getProperty 'java.version'}, JVM: ${System.getProperty 'java.vm.version'} (${System.getProperty 'java.vendor'}), Arch: ${System.getProperty 'os.arch'}"
 
@@ -62,9 +105,12 @@ repositories {
 dependencies {
     // JEI: API at compile time, full mod at dev runtime. Both the version family (15.x -> 19.x)
     // and the artifact id (forge -> neoforge) change vs the 1.20.1 build.
-    compileOnly "mezz.jei:jei-${minecraft_version}-common-api:${jei_version}"
-    compileOnly "mezz.jei:jei-${minecraft_version}-neoforge-api:${jei_version}"
-    runtimeOnly "mezz.jei:jei-${minecraft_version}-neoforge:${jei_version}"
+    // From MC 26.x JEI's artifact tracks the PATCH version (jei-26.1.2-…) while the node id is
+    // the minor (26.1) — jei_mc_version overrides the coordinate where they diverge.
+    def jeiMc = findProperty('jei_mc_version') ?: minecraft_version
+    compileOnly "mezz.jei:jei-${jeiMc}-common-api:${jei_version}"
+    compileOnly "mezz.jei:jei-${jeiMc}-neoforge-api:${jei_version}"
+    runtimeOnly "mezz.jei:jei-${jeiMc}-neoforge:${jei_version}"
 
     testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
@@ -105,8 +151,14 @@ tasks.named('test', Test).configure {
 // Expand declared replace properties into the mod metadata + pack.mcmeta at process time.
 tasks.named('processResources', ProcessResources).configure {
     // pack.mcmeta pack_format is the DATA pack format of the target MC version (1.21.1=48,
-    // 1.21.8=81). Per-node so each jar declares the right value instead of a stale hardcode.
-    def dataPackFormat = ['1.21.1': 48, '1.21.8': 81].getOrDefault(stonecutter.current.project, 48)
+    // 1.21.8=81, 1.21.9=88). Per-node so each jar declares the right value instead of a stale
+    // hardcode. Source of truth: version.json ("pack_version".data_major) inside the MC client jar.
+    def dataPackFormat = ['1.21.1': 48, '1.21.8': 81, '1.21.9': 88, '1.21.10': 88, '1.21.11': 94, '26.1': 101, '26.2': 107].getOrDefault(stonecutter.current.project, 48)
+    // 1.21.9's pack schema requires explicit min_format/max_format once the format is >81;
+    // older versions reject the unknown keys' absence gracefully but we keep them off there.
+    def packFormatExtra = dataPackFormat > 81
+            ? ",\n    \"min_format\": ${dataPackFormat},\n    \"max_format\": ${dataPackFormat}"
+            : ''
     var replaceProperties = [
             minecraft_version_range: minecraft_version_range,
             neo_version_range: neo_version_range,
@@ -114,11 +166,20 @@ tasks.named('processResources', ProcessResources).configure {
             mod_id: mod_id, mod_name: mod_name, mod_license: mod_license, mod_version: mod_version,
             mod_authors: mod_authors, mod_description: mod_description,
             pack_format: dataPackFormat,
+            pack_format_extra: packFormatExtra,
     ]
     inputs.properties replaceProperties
 
     filesMatching(['META-INF/neoforge.mods.toml', 'pack.mcmeta']) {
         expand replaceProperties + [project: project]
+    }
+
+    // NeoForge 26.1 dropped the global_loot_modifiers.json index — every file under
+    // data/<ns>/loot_modifiers/ now loads as a modifier directly (ordering via the new
+    // per-modifier "priority" field). Shipping the old index there makes it parse as a
+    // (malformed) modifier, so strip it from 26.1+ jars.
+    if (stonecutter.current.parsed.matches('>=26.1')) {
+        exclude 'data/neoforge/loot_modifiers/global_loot_modifiers.json'
     }
 
     // MC 1.21.2 changed the recipe-ingredient codec: the {"item":"x"} / {"tag":"x"} objects

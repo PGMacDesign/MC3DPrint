@@ -48,7 +48,7 @@ public class WinderBlock extends BaseEntityBlock {
     @Nullable
     @Override
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
-        if (level.isClientSide) {
+        if (level.isClientSide()) {
             return null;
         }
         return createTickerHelper(type, ModBlockEntities.FILAMENT_WINDER.get(), WinderBlockEntity::serverTick);
@@ -57,10 +57,10 @@ public class WinderBlock extends BaseEntityBlock {
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player,
                                                BlockHitResult hit) {
-        if (!level.isClientSide && level.getBlockEntity(pos) instanceof WinderBlockEntity winder) {
+        if (!level.isClientSide() && level.getBlockEntity(pos) instanceof WinderBlockEntity winder) {
             ((ServerPlayer) player).openMenu(winder, pos);
         }
-        return InteractionCompat.sidedSuccess(level.isClientSide);
+        return InteractionCompat.sidedSuccess(level.isClientSide());
     }
 
     // 1.21.5 replaced onRemove(state,level,pos,newState,isMoving) with

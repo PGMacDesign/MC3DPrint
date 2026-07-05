@@ -127,6 +127,6 @@ public class SimpleGeneratorMenu extends AbstractContainerMenu {
             return false;
         }
         return generator.getLevel().getBlockEntity(generator.getBlockPos()) == generator
-                && player.distanceToSqr(generator.getBlockPos().getCenter()) <= 64.0;
+                && player.distanceToSqr(net.minecraft.world.phys.Vec3.atCenterOf(generator.getBlockPos())) <= 64.0;
     }
 }

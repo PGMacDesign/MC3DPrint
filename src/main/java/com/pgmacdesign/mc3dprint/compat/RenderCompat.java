@@ -5,6 +5,7 @@ import java.util.List;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.FormattedText;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FormattedCharSequence;
 //? if >=1.21.5 {
@@ -80,5 +81,72 @@ public final class RenderCompat {
         *///?} else {
         g.renderComponentTooltip(font, lines, x, y);
         //?}
+    }
+
+    /** Shadow-controlled string draw; 26.1 renamed the {@code drawString} family to {@code text}. */
+    public static void drawString(GuiGraphics g, Font font, Component text, int x, int y, int color, boolean shadow) {
+        //? if >=26.1 {
+        /*g.text(font, text, x, y, color, shadow);
+        *///?} else {
+        g.drawString(font, text, x, y, color, shadow);
+        //?}
+    }
+
+    /** String overload of {@link #drawString(GuiGraphics, Font, Component, int, int, int, boolean)}. */
+    public static void drawString(GuiGraphics g, Font font, String text, int x, int y, int color, boolean shadow) {
+        //? if >=26.1 {
+        /*g.text(font, text, x, y, color, shadow);
+        *///?} else {
+        g.drawString(font, text, x, y, color, shadow);
+        //?}
+    }
+
+    /** Word-wrapped shadowless draw; 26.1 renamed {@code drawWordWrap} to {@code textWithWordWrap},
+     *  whose short overload defaults to a drop shadow — pass the explicit no-shadow flag to keep
+     *  the pre-26.1 (shadowless) appearance. */
+    public static void drawWordWrap(GuiGraphics g, Font font, FormattedText text, int x, int y, int width, int color) {
+        //? if >=26.1 {
+        /*g.textWithWordWrap(font, text, x, y, width, color, false);
+        *///?} else {
+        g.drawWordWrap(font, text, x, y, width, color);
+        //?}
+    }
+
+    /**
+     * Emits a 12-edge wireframe box into a {@code RenderType.lines()} buffer — a hand-rolled,
+     * version-neutral replacement for {@code LevelRenderer/ShapeRenderer.renderLineBox}, whose
+     * owner and signature changed at 1.21.5 and 1.21.9 and which was removed outright in
+     * 1.21.11 (superseded by the debug-only Gizmos API, wrong tool for gameplay overlays).
+     * Normals follow the lines-shader convention: each vertex's normal is the edge direction.
+     */
+    public static void lineBox(com.mojang.blaze3d.vertex.PoseStack.Pose pose,
+                               com.mojang.blaze3d.vertex.VertexConsumer lines,
+                               double x0, double y0, double z0, double x1, double y1, double z1,
+                               float r, float g, float b, float a) {
+        float fx0 = (float) x0, fy0 = (float) y0, fz0 = (float) z0;
+        float fx1 = (float) x1, fy1 = (float) y1, fz1 = (float) z1;
+        // 4 edges along X
+        edge(pose, lines, fx0, fy0, fz0, fx1, fy0, fz0, r, g, b, a, 1, 0, 0);
+        edge(pose, lines, fx0, fy1, fz0, fx1, fy1, fz0, r, g, b, a, 1, 0, 0);
+        edge(pose, lines, fx0, fy0, fz1, fx1, fy0, fz1, r, g, b, a, 1, 0, 0);
+        edge(pose, lines, fx0, fy1, fz1, fx1, fy1, fz1, r, g, b, a, 1, 0, 0);
+        // 4 edges along Y
+        edge(pose, lines, fx0, fy0, fz0, fx0, fy1, fz0, r, g, b, a, 0, 1, 0);
+        edge(pose, lines, fx1, fy0, fz0, fx1, fy1, fz0, r, g, b, a, 0, 1, 0);
+        edge(pose, lines, fx0, fy0, fz1, fx0, fy1, fz1, r, g, b, a, 0, 1, 0);
+        edge(pose, lines, fx1, fy0, fz1, fx1, fy1, fz1, r, g, b, a, 0, 1, 0);
+        // 4 edges along Z
+        edge(pose, lines, fx0, fy0, fz0, fx0, fy0, fz1, r, g, b, a, 0, 0, 1);
+        edge(pose, lines, fx1, fy0, fz0, fx1, fy0, fz1, r, g, b, a, 0, 0, 1);
+        edge(pose, lines, fx0, fy1, fz0, fx0, fy1, fz1, r, g, b, a, 0, 0, 1);
+        edge(pose, lines, fx1, fy1, fz0, fx1, fy1, fz1, r, g, b, a, 0, 0, 1);
+    }
+
+    private static void edge(com.mojang.blaze3d.vertex.PoseStack.Pose pose,
+                             com.mojang.blaze3d.vertex.VertexConsumer c,
+                             float x0, float y0, float z0, float x1, float y1, float z1,
+                             float r, float g, float b, float a, float nx, float ny, float nz) {
+        c.addVertex(pose, x0, y0, z0).setColor(r, g, b, a).setNormal(pose, nx, ny, nz);
+        c.addVertex(pose, x1, y1, z1).setColor(r, g, b, a).setNormal(pose, nx, ny, nz);
     }
 }

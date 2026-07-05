@@ -74,13 +74,28 @@ public class CatalystGameTests {
     public static void oreSaltingMapping(GameTestHelper helper) {
         assertTrue(helper, ResinEffects.isSaltableHost(Blocks.STONE.defaultBlockState()), "stone is saltable");
         assertTrue(helper, ResinEffects.isSaltableHost(Blocks.DEEPSLATE.defaultBlockState()), "deepslate is saltable");
-        assertTrue(helper, !ResinEffects.isSaltableHost(Blocks.COBBLESTONE.defaultBlockState()), "cobble is NOT saltable");
+        // Broadened 2026-07-04: all solid stone VARIANTS salt now (was raw-stone only).
+        assertTrue(helper, ResinEffects.isSaltableHost(Blocks.COBBLESTONE.defaultBlockState()), "cobblestone is saltable");
+        assertTrue(helper, ResinEffects.isSaltableHost(Blocks.STONE_BRICKS.defaultBlockState()), "stone bricks are saltable");
+        assertTrue(helper, ResinEffects.isSaltableHost(Blocks.BLACKSTONE.defaultBlockState()), "blackstone is saltable");
+        // Full blocks ONLY — stairs/slabs/walls are excluded, and basalt/sandstone are out of scope.
+        assertTrue(helper, !ResinEffects.isSaltableHost(Blocks.STONE_BRICK_STAIRS.defaultBlockState()), "stone-brick stairs NOT saltable");
+        assertTrue(helper, !ResinEffects.isSaltableHost(Blocks.STONE_BRICK_SLAB.defaultBlockState()), "stone-brick slab NOT saltable");
+        assertTrue(helper, !ResinEffects.isSaltableHost(Blocks.COBBLESTONE_WALL.defaultBlockState()), "cobblestone wall NOT saltable");
+        assertTrue(helper, !ResinEffects.isSaltableHost(Blocks.BASALT.defaultBlockState()), "basalt NOT saltable");
+        assertTrue(helper, !ResinEffects.isSaltableHost(Blocks.SANDSTONE.defaultBlockState()), "sandstone NOT saltable");
         RandomSource rng = RandomSource.create(7);
         BlockState common = ResinEffects.pickOre(Blocks.STONE.defaultBlockState(), rng, 0.0);
         assertTrue(helper, common.getBlock() != Blocks.STONE, "stone salts to an ore (gemShare 0)");
         BlockState gem = ResinEffects.pickOre(Blocks.STONE.defaultBlockState(), rng, 1.0);
         assertTrue(helper, gem.getBlock() == Blocks.DIAMOND_ORE || gem.getBlock() == Blocks.EMERALD_ORE,
                 "gemShare 1.0 yields diamond/emerald ore");
+        // Variant hosts salt into the ORE FAMILY of their parent stone.
+        BlockState deepOre = ResinEffects.pickOre(Blocks.COBBLED_DEEPSLATE.defaultBlockState(), rng, 0.0);
+        assertTrue(helper, deepOre.getBlock().toString().contains("deepslate"), "cobbled deepslate -> a deepslate ore");
+        BlockState netherOre = ResinEffects.pickOre(Blocks.BLACKSTONE.defaultBlockState(), rng, 0.0);
+        assertTrue(helper, netherOre.getBlock() == Blocks.NETHER_GOLD_ORE || netherOre.getBlock() == Blocks.NETHER_QUARTZ_ORE,
+                "blackstone -> a nether ore");
         helper.succeed();
     }
 

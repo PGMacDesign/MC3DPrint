@@ -46,7 +46,12 @@ public class RepositoryData extends SavedData {
     private final Set<UUID> printed = new LinkedHashSet<>();
 
     public static RepositoryData get(MinecraftServer server) {
-        //? if >=1.21.5 {
+        //? if >=26.1 {
+        /*return server.overworld().getDataStorage().computeIfAbsent(
+                new SavedDataType<>(net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(
+                        com.pgmacdesign.mc3dprint.MC3DPrint.MOD_ID, NAME),
+                        RepositoryData::new, CODEC, DataFixTypes.LEVEL));
+        *///?} elif >=1.21.5 {
         /*return server.overworld().getDataStorage().computeIfAbsent(
                 new SavedDataType<>(NAME, RepositoryData::new, CODEC, DataFixTypes.LEVEL));
         *///?} else {

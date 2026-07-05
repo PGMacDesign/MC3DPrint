@@ -73,4 +73,32 @@ public final class RegistryCompat {
         return BlockEntityType.Builder.of(factory, blocks).build(null);
         //?}
     }
+
+    /**
+     * Register a block with explicit {@code Properties}. NeoForge 26.1 dropped the
+     * direct-Properties overload of {@code DeferredRegister.Blocks.registerBlock} in
+     * favour of a {@code Supplier<Properties>} form.
+     */
+    public static <B extends Block> net.neoforged.neoforge.registries.DeferredBlock<B> registerBlock(
+            net.neoforged.neoforge.registries.DeferredRegister.Blocks register, String name,
+            java.util.function.Function<net.minecraft.world.level.block.state.BlockBehaviour.Properties, ? extends B> factory,
+            net.minecraft.world.level.block.state.BlockBehaviour.Properties props) {
+        //? if >=26.1 {
+        /*return register.registerBlock(name, factory, () -> props);
+        *///?} else {
+        return register.registerBlock(name, factory, props);
+        //?}
+    }
+
+    /** Item counterpart of {@link #registerBlock} — same 26.1 Supplier-form migration. */
+    public static <I extends Item> net.neoforged.neoforge.registries.DeferredItem<I> registerItem(
+            net.neoforged.neoforge.registries.DeferredRegister.Items register, String name,
+            java.util.function.Function<Item.Properties, ? extends I> factory,
+            Item.Properties props) {
+        //? if >=26.1 {
+        /*return register.registerItem(name, factory, () -> props);
+        *///?} else {
+        return register.registerItem(name, factory, props);
+        //?}
+    }
 }

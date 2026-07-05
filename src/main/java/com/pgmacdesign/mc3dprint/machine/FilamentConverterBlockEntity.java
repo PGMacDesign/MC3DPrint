@@ -2,6 +2,7 @@ package com.pgmacdesign.mc3dprint.machine;
 
 import com.pgmacdesign.mc3dprint.compat.BeData;
 
+import com.pgmacdesign.mc3dprint.compat.TransferCompat;
 import com.pgmacdesign.mc3dprint.config.MC3DPrintConfig;
 import com.pgmacdesign.mc3dprint.fu.FuConversion;
 import com.pgmacdesign.mc3dprint.fu.FuValue;
@@ -17,7 +18,6 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.energy.IEnergyStorage;
 import net.neoforged.neoforge.items.IItemHandler;
 
@@ -134,7 +134,7 @@ public class FilamentConverterBlockEntity extends BlockEntity {
                     || neighbor instanceof FilamentConverterBlockEntity) {
                 continue; // never raid printers (their faces expose outputs)
             }
-            IItemHandler handler = level.getCapability(Capabilities.ItemHandler.BLOCK,
+            IItemHandler handler = TransferCompat.findItems(level,
                     pos.relative(direction), direction.getOpposite());
             if (handler == null) {
                 continue;

@@ -98,7 +98,7 @@ public class SpoolItem extends Item {
         if (!(level.getBlockEntity(context.getClickedPos()) instanceof PrinterBlockEntity printer)) {
             return InteractionResult.PASS;
         }
-        if (level.isClientSide) {
+        if (level.isClientSide()) {
             return InteractionResult.SUCCESS;
         }
         if (printer.attachSpool(context.getItemInHand())) {
@@ -106,8 +106,8 @@ public class SpoolItem extends Item {
                     SoundSource.BLOCKS, 0.7F, 1.2F);
             return InteractionResult.CONSUME;
         }
-        context.getPlayer().displayClientMessage(
-                Component.translatable("message.mc3dprint.spool_slots_full"), true);
+        com.pgmacdesign.mc3dprint.compat.MsgCompat.actionBar(context.getPlayer(), 
+                Component.translatable("message.mc3dprint.spool_slots_full"));
         return InteractionResult.CONSUME;
     }
 

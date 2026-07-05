@@ -65,7 +65,7 @@ public class BlueprintRepositoryBlock extends BaseEntityBlock {
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player,
                                                BlockHitResult hit) {
-        if (!level.isClientSide
+        if (!level.isClientSide()
                 && level.getBlockEntity(pos) instanceof BlueprintRepositoryBlockEntity repository
                 && player instanceof ServerPlayer serverPlayer) {
             serverPlayer.openMenu(repository, pos);
@@ -73,7 +73,7 @@ public class BlueprintRepositoryBlock extends BaseEntityBlock {
             // listing arrives after the menu exists client-side.
             repository.sendListing(serverPlayer);
         }
-        return InteractionCompat.sidedSuccess(level.isClientSide);
+        return InteractionCompat.sidedSuccess(level.isClientSide());
     }
 
     // 1.21.5 replaced onRemove(state,level,pos,newState,isMoving) with

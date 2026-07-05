@@ -2,6 +2,7 @@ package com.pgmacdesign.mc3dprint.machine.cable;
 
 import com.pgmacdesign.mc3dprint.compat.BeData;
 
+import com.pgmacdesign.mc3dprint.compat.TransferCompat;
 import com.pgmacdesign.mc3dprint.config.MC3DPrintConfig;
 import com.pgmacdesign.mc3dprint.fu.IFilamentSource;
 import com.pgmacdesign.mc3dprint.registry.ModBlockEntities;
@@ -13,7 +14,6 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.energy.EnergyStorage;
 import net.neoforged.neoforge.energy.IEnergyStorage;
 
@@ -90,7 +90,7 @@ public class MC3DCableBlockEntity extends BlockEntity implements IFilamentSource
             if (level.getCapability(ModCapabilities.FILAMENT_SOURCE, pos, face) != null) {
                 sources.put(pos, face);
             }
-            IEnergyStorage e = level.getCapability(Capabilities.EnergyStorage.BLOCK, pos, face);
+            IEnergyStorage e = TransferCompat.findEnergy(level, pos, face);
             if (e != null && e.canReceive()) {
                 acceptors.put(pos, face);
             }
@@ -110,7 +110,7 @@ public class MC3DCableBlockEntity extends BlockEntity implements IFilamentSource
             if (be == null || be instanceof MC3DCableBlockEntity) {
                 continue;
             }
-            IEnergyStorage src = level.getCapability(Capabilities.EnergyStorage.BLOCK, neighbourPos, dir.getOpposite());
+            IEnergyStorage src = TransferCompat.findEnergy(level, neighbourPos, dir.getOpposite());
             if (src == null || !src.canExtract()) {
                 continue;
             }
@@ -136,7 +136,7 @@ public class MC3DCableBlockEntity extends BlockEntity implements IFilamentSource
             if (be == null || be.isRemoved()) {
                 continue;
             }
-            IEnergyStorage acc = level.getCapability(Capabilities.EnergyStorage.BLOCK, entry.getKey(), entry.getValue());
+            IEnergyStorage acc = TransferCompat.findEnergy(level, entry.getKey(), entry.getValue());
             if (acc == null || !acc.canReceive()) {
                 continue;
             }
@@ -279,13 +279,23 @@ public class MC3DCableBlockEntity extends BlockEntity implements IFilamentSource
     }
 
     /** Cable buffer: one tick's worth, freely receivable and extractable. */
-    private static final class CableEnergyStorage extends EnergyStorage {
+    private static final class CableEnergyStorage extends EnergyStorage implements TransferCompat.RawEnergy {
         CableEnergyStorage(int rate) {
             super(rate, rate, rate);
         }
 
         void setEnergy(int value) {
             this.energy = Math.max(0, Math.min(capacity, value));
+        }
+
+        @Override
+        public int rawEnergy() {
+            return this.energy;
+        }
+
+        @Override
+        public void rawEnergy(int value) {
+            this.energy = value;
         }
     }
 }

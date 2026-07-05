@@ -1,6 +1,22 @@
 # MC3DPrint — Multi-Version Architecture (Stonecutter) · Phases 2–3
 
-**Status:** Phase 2 in progress (branch `stage2/multi-version`) · **NeoForge-only, single (version) axis.**
+**Status:** Phase 3 proven (branch `stage2/multi-version`) · **NeoForge-only, single (version) axis.**
+
+> ### ✅ Phase 3 — the forward ladder is COMPLETE (2026-07-05)
+> One tree now builds **seven NeoForge jars**: `1.21.1 · 1.21.8 · 1.21.9 · 1.21.10 · 1.21.11 · 26.1 · 26.2`
+> (+ the separate `legacy/1.20.1` Forge jar via `build-all.sh`). Every node compiles main+test and passes
+> JUnit; 1.21.1 stays the oracle (105/105 GameTests); forward nodes boot `runGameTestServer` clean.
+> Per-node facts: 1.21.9 = NeoForge beta-only (21.9.16-beta), transfer-API + BER render-state waves;
+> 1.21.10 = zero new seams; 1.21.11 = the great renames (Identifier, RenderTypes, criterion) — first use of
+> **Stonecutter global string replacements** (`build.gradle`); 26.1 = **Java 25**, GUI extract pipeline,
+> registry/loot churn, JEI artifact tracks the MC patch version (`jei_mc_version`); 26.2 (beta) = criteria
+> split into triggers/predicates, `MultiBufferSource` deleted (scanner overlay → **Gizmos API**).
+> **Hard-won rules:** (1) replacement pairs must be single-hop — anything that moves TWICE across versions
+> gets guard chains, version-RANGE replacement conditions don't fire reliably; (2) never hand-write nested
+> block-comment guards inside an already-commented region — hoist to a class-level helper with a sibling
+> `if/elif` chain; (3) never put bare `//` lines as the first content of a guard block.
+> The ~890-error data-driven gametest migration stays deferred until a 26.x stable is the declared
+> ship target (Linear tracks it). [HUMAN] in-world soaks per node are the remaining ship gates.
 **Supersedes:** the Stage-1 port doc (`docs/port/archive/stage1-neoforge-1.21.1-port-COMPLETE.md`).
 **This is the single source of truth** for all forward work.
 

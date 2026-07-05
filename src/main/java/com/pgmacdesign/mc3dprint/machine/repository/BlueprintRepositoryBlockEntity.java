@@ -164,7 +164,7 @@ public class BlueprintRepositoryBlockEntity extends BlockEntity implements MenuP
     }
 
     private void feedback(ServerPlayer player, String key) {
-        player.displayClientMessage(Component.translatable("message.mc3dprint.repository." + key), true);
+        com.pgmacdesign.mc3dprint.compat.MsgCompat.actionBar(player, Component.translatable("message.mc3dprint.repository." + key));
     }
 
     @Override

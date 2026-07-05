@@ -52,24 +52,24 @@ public class ControllerBlock extends PrinterBlock {
         if (state.getValue(FORMED)) {
             return super.useWithoutItem(state, level, pos, player, hit);
         }
-        if (!level.isClientSide) {
+        if (!level.isClientSide()) {
             Component error = MultiblockPattern.validate(level, pos, tier());
             if (error != null) {
-                player.displayClientMessage(error, true);
+                com.pgmacdesign.mc3dprint.compat.MsgCompat.actionBar(player, error);
             } else {
                 level.setBlock(pos, state.setValue(FORMED, true), Block.UPDATE_ALL);
                 setComponentsActive(level, pos, tier(), true, null);
-                player.displayClientMessage(Component.translatable("message.mc3dprint.multiblock_formed",
-                        tier().number()), true);
+                com.pgmacdesign.mc3dprint.compat.MsgCompat.actionBar(player, Component.translatable("message.mc3dprint.multiblock_formed",
+                        tier().number()));
                 level.playSound(null, pos, SoundEvents.BEACON_ACTIVATE, SoundSource.BLOCKS, 0.6F, 1.2F);
             }
         }
-        return InteractionCompat.sidedSuccess(level.isClientSide);
+        return InteractionCompat.sidedSuccess(level.isClientSide());
     }
 
     @Override
     public BlockState playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player) {
-        if (!level.isClientSide && state.getValue(FORMED)
+        if (!level.isClientSide() && state.getValue(FORMED)
                 && level.getBlockEntity(pos) instanceof PrinterBlockEntity printer) {
             printer.cancelActiveJob();
             printer.markCollapsing();
@@ -155,7 +155,7 @@ public class ControllerBlock extends PrinterBlock {
      * (possibly smaller) footprint before unforming.
      */
     public static void unformContaining(Level level, BlockPos brokenPos) {
-        if (level.isClientSide) {
+        if (level.isClientSide()) {
             return;
         }
         int maxHalf = MultiblockPattern.baseEdge(MachineTier.T8) / 2;
@@ -187,8 +187,14 @@ public class ControllerBlock extends PrinterBlock {
      * casings/controllers are skipped (they self-handle: casings
      * via onRemove, the controller via {@code playerWillDestroy}).
      */
+    // 26.1 moved/renamed BlockEvent.BreakEvent -> level.block.BreakBlockEvent (getLevel/
+    // getState/getPos are inherited from BlockEvent unchanged).
+    //? if >=26.1 {
+    /*public static void onBlockBreak(net.neoforged.neoforge.event.level.block.BreakBlockEvent event) {
+    *///?} else {
     public static void onBlockBreak(BlockEvent.BreakEvent event) {
-        if (!(event.getLevel() instanceof Level level) || level.isClientSide) {
+    //?}
+        if (!(event.getLevel() instanceof Level level) || level.isClientSide()) {
             return;
         }
         Block broken = event.getState().getBlock();
@@ -261,7 +267,7 @@ public class ControllerBlock extends PrinterBlock {
                                 BlockPos neighborPos, boolean movedByPiston) {
         super.neighborChanged(state, level, pos, neighborBlock, neighborPos, movedByPiston);
     //?}
-        if (!level.isClientSide && level.getBlockEntity(pos) instanceof PrinterBlockEntity printer) {
+        if (!level.isClientSide() && level.getBlockEntity(pos) instanceof PrinterBlockEntity printer) {
             printer.onNeighborSignal(level.hasNeighborSignal(pos));
         }
     }

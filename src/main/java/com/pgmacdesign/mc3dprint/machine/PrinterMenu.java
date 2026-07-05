@@ -318,7 +318,7 @@ public class PrinterMenu extends AbstractContainerMenu {
 
     @Override
     public boolean clickMenuButton(Player player, int id) {
-        if (printer == null || printer.getLevel() == null || printer.getLevel().isClientSide) {
+        if (printer == null || printer.getLevel() == null || printer.getLevel().isClientSide()) {
             return false;
         }
         if (id == BUTTON_START) {

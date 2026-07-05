@@ -64,7 +64,7 @@ public class RemoteTerminalBlock extends BaseEntityBlock {
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player,
                                                BlockHitResult hit) {
-        if (level.isClientSide) {
+        if (level.isClientSide()) {
             return InteractionResult.SUCCESS;
         }
         if (!(level.getBlockEntity(pos) instanceof TerminalBlockEntity terminal)) {
@@ -72,12 +72,12 @@ public class RemoteTerminalBlock extends BaseEntityBlock {
         }
         BlockPos target = terminal.target();
         if (target == null) {
-            player.displayClientMessage(Component.translatable("message.mc3dprint.terminal_unpaired"), true);
+            com.pgmacdesign.mc3dprint.compat.MsgCompat.actionBar(player, Component.translatable("message.mc3dprint.terminal_unpaired"));
             return InteractionResult.CONSUME;
         }
         if (!level.isLoaded(target) || !(level.getBlockEntity(target) instanceof PrinterBlockEntity printer)) {
-            player.displayClientMessage(Component.translatable("message.mc3dprint.terminal_lost",
-                    target.getX(), target.getY(), target.getZ()), true);
+            com.pgmacdesign.mc3dprint.compat.MsgCompat.actionBar(player, Component.translatable("message.mc3dprint.terminal_lost",
+                    target.getX(), target.getY(), target.getZ()));
             return InteractionResult.CONSUME;
         }
         ((ServerPlayer) player).openMenu(printer, target);
@@ -96,7 +96,7 @@ public class RemoteTerminalBlock extends BaseEntityBlock {
             Level level = context.getLevel();
             if (player != null && player.isSecondaryUseActive()
                     && level.getBlockEntity(context.getClickedPos()) instanceof PrinterBlockEntity) {
-                if (!level.isClientSide) {
+                if (!level.isClientSide()) {
                     BlockPos pos = context.getClickedPos();
                     // Pairing rides BLOCK_ENTITY_DATA so it restores into the terminal BE on place.
                     CompoundTag beTag = new CompoundTag();
@@ -112,10 +112,10 @@ public class RemoteTerminalBlock extends BaseEntityBlock {
                     BlockItem.setBlockEntityData(context.getItemInHand(),
                             ModBlockEntities.REMOTE_TERMINAL.get(), beTag);
                     //?}
-                    player.displayClientMessage(Component.translatable("message.mc3dprint.terminal_paired",
-                            pos.getX(), pos.getY(), pos.getZ()), true);
+                    com.pgmacdesign.mc3dprint.compat.MsgCompat.actionBar(player, Component.translatable("message.mc3dprint.terminal_paired",
+                            pos.getX(), pos.getY(), pos.getZ()));
                 }
-                return InteractionCompat.sidedSuccess(level.isClientSide);
+                return InteractionCompat.sidedSuccess(level.isClientSide());
             }
             return super.useOn(context);
         }
@@ -129,10 +129,18 @@ public class RemoteTerminalBlock extends BaseEntityBlock {
         *///?} else {
         public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
         //?}
+            //? if >=1.21.9 {
+            /*net.minecraft.world.item.component.TypedEntityData<?> beData =
+                    stack.get(DataComponents.BLOCK_ENTITY_DATA);
+            Optional<BlockPos> target = beData == null
+                    ? Optional.empty()
+                    : NbtCompat.getBlockPos(beData.copyTagWithoutId(), "Target");
+            *///?} else {
             CustomData beData = stack.get(DataComponents.BLOCK_ENTITY_DATA);
             Optional<BlockPos> target = beData == null
                     ? Optional.empty()
                     : NbtCompat.getBlockPos(beData.copyTag(), "Target");
+            //?}
             if (target.isPresent()) {
                 BlockPos t = target.get();
                 tooltip.add(Component.translatable("tooltip.mc3dprint.terminal_paired",

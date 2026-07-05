@@ -85,7 +85,7 @@ public class FilamentRackBlock extends BaseEntityBlock {
         if (!(level.getBlockEntity(pos) instanceof FilamentRackBlockEntity rack)) {
             return InteractionCompat.ITEM_PASS;
         }
-        if (level.isClientSide) {
+        if (level.isClientSide()) {
             return InteractionCompat.ITEM_SUCCESS;
         }
         ItemStack held = player.getItemInHand(hand);
@@ -148,8 +148,19 @@ public class FilamentRackBlock extends BaseEntityBlock {
         return true;
     }
 
+    //? if >=1.21.9 {
+    /*@Override
+    public int getAnalogOutputSignal(BlockState state, Level level, BlockPos pos, Direction direction) {
+        return spoolSignal(level, pos);
+    }
+    *///?} else {
     @Override
     public int getAnalogOutputSignal(BlockState state, Level level, BlockPos pos) {
+        return spoolSignal(level, pos);
+    }
+    //?}
+
+    private int spoolSignal(Level level, BlockPos pos) {
         if (level.getBlockEntity(pos) instanceof FilamentRackBlockEntity rack) {
             int count = rack.spoolCount();
             return count == 0 ? 0 : Math.max(1, count * 15 / FilamentRackBlockEntity.SLOTS);

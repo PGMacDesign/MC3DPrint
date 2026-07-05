@@ -467,7 +467,13 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         // Water flashes to steam in an ultrawarm dimension (the Nether), so a pure water block
         // can't print there — skip it. Routing through canPrintBlock also hides it from the
         // ghost preview (the printability mask reuses this method).
+        // 1.21.11 dissolved DimensionType.ultraWarm() into the WATER_EVAPORATES environment attribute.
+        //? if >=1.21.11 {
+        /*if (isWaterUnplaceableIn(resolvedState, level != null && level.environmentAttributes()
+                .getDimensionValue(net.minecraft.world.attribute.EnvironmentAttributes.WATER_EVAPORATES))) {
+        *///?} else {
         if (isWaterUnplaceableIn(resolvedState, level != null && level.dimensionType().ultraWarm())) {
+        //?}
             return false;
         }
         Optional<FuValue> value = blockFuValue(resolvedState);
@@ -816,9 +822,9 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         if (armedResinEffect == ResinItem.Effect.ORE_SALTING
                 && saltedThisJob < MC3DPrintConfig.RESIN_ORE_SALT_MAX.get()
                 && ResinEffects.isSaltableHost(placedState)
-                && serverLevel.random.nextDouble() < MC3DPrintConfig.RESIN_ORE_SALT_CHANCE.get()) {
+                && serverLevel.getRandom().nextDouble() < MC3DPrintConfig.RESIN_ORE_SALT_CHANCE.get()) {
             saltedThisJob++;
-            return ResinEffects.pickOre(placedState, serverLevel.random,
+            return ResinEffects.pickOre(placedState, serverLevel.getRandom(),
                     MC3DPrintConfig.RESIN_ORE_SALT_GEM_SHARE.get());
         }
         return placedState;
@@ -833,9 +839,9 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
                     : MC3DPrintConfig.RESIN_TREASURE_CHANCE_T2.get();
             if (treasureThisJob < cap && ResinEffects.isStorageContainer(placedBe)
                     && placedBe instanceof Container container
-                    && serverLevel.random.nextDouble() < chance) {
+                    && serverLevel.getRandom().nextDouble() < chance) {
                 ResinEffects.fillTreasure(serverLevel, worldPos, container,
-                        ResinEffects.treasureTable(armedResinTier, serverLevel.random,
+                        ResinEffects.treasureTable(armedResinTier, serverLevel.getRandom(),
                                 MC3DPrintConfig.RESIN_TREASURE_T2_UNCOMMON.get(),
                                 MC3DPrintConfig.RESIN_TREASURE_T3_RARE.get()));
                 treasureThisJob++;
@@ -1149,7 +1155,12 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             placedState = applyPlacementResin(serverLevel, placedState); // Verdant / Ore Salting
             // No water in an ultrawarm dimension: a waterlogged solid prints dry. (Pure water
             // blocks are already skipped by canPrintBlock and never reach here.)
+            //? if >=1.21.11 {
+            /*placedState = dewaterFor(placedState, serverLevel.environmentAttributes()
+                    .getDimensionValue(net.minecraft.world.attribute.EnvironmentAttributes.WATER_EVAPORATES));
+            *///?} else {
             placedState = dewaterFor(placedState, serverLevel.dimensionType().ultraWarm());
+            //?}
             // Place the exact captured state WITHOUT updateShape, so two-block pieces
             // (beds, doors, tall plants) and support-dependent blocks (crops on farmland)
             // don't self-break before their partner/support lands, and the blueprint's
@@ -1439,7 +1450,11 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             pos.add(net.minecraft.nbt.DoubleTag.valueOf(wz));
             nbt.put("Pos", pos);
             net.minecraft.world.entity.Entity entity =
-                    //? if >=1.21.5 {
+                    //? if >=26.2 {
+                    /*net.minecraft.world.entity.EntityType.loadEntityRecursive(nbt, level,
+                            new net.minecraft.world.entity.EntitySpawnRequest(
+                                    net.minecraft.world.entity.EntitySpawnReason.LOAD, false), e -> e);
+                    *///?} elif >=1.21.5 {
                     /*net.minecraft.world.entity.EntityType.loadEntityRecursive(
                             nbt, level, net.minecraft.world.entity.EntitySpawnReason.LOAD, e -> e);
                     *///?} else {
@@ -1924,7 +1939,7 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
     }
 
     private void syncToClients() {
-        if (level != null && !level.isClientSide) {
+        if (level != null && !level.isClientSide()) {
             level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), Block.UPDATE_CLIENTS);
         }
     }
@@ -2115,8 +2130,8 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
                     int cap = MC3DPrintConfig.PREVIEW_MAX_BLOCKS.get();
                     if (blueprint.blockCount() > cap) {
                         if (player != null) {
-                            player.displayClientMessage(Component.translatable("message.mc3dprint.preview_too_big",
-                                    blueprint.blockCount(), cap), true);
+                            com.pgmacdesign.mc3dprint.compat.MsgCompat.actionBar(player, Component.translatable("message.mc3dprint.preview_too_big",
+                                    blueprint.blockCount(), cap));
                         }
                     } else {
                         previewBlueprint = blueprint;

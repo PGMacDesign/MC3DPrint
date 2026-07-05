@@ -169,6 +169,6 @@ public class BlueprintRepositoryMenu extends AbstractContainerMenu {
             return false;
         }
         return repository.getLevel().getBlockEntity(repository.getBlockPos()) == repository
-                && player.distanceToSqr(repository.getBlockPos().getCenter()) <= 64.0;
+                && player.distanceToSqr(net.minecraft.world.phys.Vec3.atCenterOf(repository.getBlockPos())) <= 64.0;
     }
 }

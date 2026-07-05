@@ -25,17 +25,32 @@ public class SimpleGeneratorScreen extends AbstractContainerScreen<SimpleGenerat
     private static final int TICKS_PER_SECOND = 20;
 
     public SimpleGeneratorScreen(SimpleGeneratorMenu menu, Inventory playerInventory, Component title) {
+        // 26.1 made imageWidth/imageHeight final; dimensions go through the 5-arg super.
+        //? if >=26.1 {
+        /*super(menu, playerInventory, title, 176, 166);
+        *///?} else {
         super(menu, playerInventory, title);
+        //?}
+        //? if <26.1 {
         this.imageWidth = 176;
+        //?}
+        //? if <26.1 {
         this.imageHeight = 166;
+        //?}
         this.inventoryLabelY = this.imageHeight - 94;
     }
 
     @Override
+    //? if >=26.1 {
+    /*public void extractRenderState(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        super.extractRenderState(graphics, mouseX, mouseY, partialTick);
+        extractTooltip(graphics, mouseX, mouseY);
+    *///?} else {
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         renderBackground(graphics, mouseX, mouseY, partialTick);
         super.render(graphics, mouseX, mouseY, partialTick);
         renderTooltip(graphics, mouseX, mouseY);
+    //?}
 
         if (isHovering(ENERGY_X, ENERGY_Y, ENERGY_W, ENERGY_H, mouseX, mouseY)) {
             RenderCompat.tooltip(graphics, font,
@@ -51,7 +66,12 @@ public class SimpleGeneratorScreen extends AbstractContainerScreen<SimpleGenerat
     }
 
     @Override
+    //? if >=26.1 {
+    /*public void extractBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        super.extractBackground(graphics, mouseX, mouseY, partialTick);
+    *///?} else {
     protected void renderBg(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
+    //?}
         int left = leftPos;
         int top = topPos;
         RenderCompat.blit(graphics, TEXTURE, left, top, 0, 0, imageWidth, imageHeight);
@@ -75,13 +95,17 @@ public class SimpleGeneratorScreen extends AbstractContainerScreen<SimpleGenerat
     }
 
     @Override
+    //? if >=26.1 {
+    /*protected void extractLabels(GuiGraphics graphics, int mouseX, int mouseY) {
+    *///?} else {
     protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
-        graphics.drawString(font, title, titleLabelX, titleLabelY, LABEL, false);
-        graphics.drawString(font, playerInventoryTitle, inventoryLabelX, inventoryLabelY, LABEL, false);
+    //?}
+        RenderCompat.drawString(graphics, font, title, titleLabelX, titleLabelY, LABEL, false);
+        RenderCompat.drawString(graphics, font, playerInventoryTitle, inventoryLabelX, inventoryLabelY, LABEL, false);
 
         Component gen = Component.translatable("gui.mc3dprint.generator.rate", menu.genRate());
-        graphics.drawString(font, gen, 8, 20, LABEL, false);
+        RenderCompat.drawString(graphics, font, gen, 8, 20, LABEL, false);
         Component stored = Component.translatable("gui.mc3dprint.generator.stored", menu.energy(), menu.maxEnergy());
-        graphics.drawString(font, stored, 8, 32, LABEL, false);
+        RenderCompat.drawString(graphics, font, stored, 8, 32, LABEL, false);
     }
 }

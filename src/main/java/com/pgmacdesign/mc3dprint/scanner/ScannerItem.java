@@ -52,7 +52,7 @@ public class ScannerItem extends Item {
     @Override
     public InteractionResult useOn(UseOnContext context) {
         Level level = context.getLevel();
-        if (level.isClientSide) {
+        if (level.isClientSide()) {
             return InteractionResult.SUCCESS;
         }
         ItemStack stack = context.getItemInHand();
@@ -67,9 +67,9 @@ public class ScannerItem extends Item {
         stack.set(ModDataComponents.SCAN.get(), next);
 
         if (player != null) {
-            player.displayClientMessage(Component.translatable(
+            com.pgmacdesign.mc3dprint.compat.MsgCompat.actionBar(player, Component.translatable(
                     settingB ? "message.mc3dprint.corner_b_set" : "message.mc3dprint.corner_a_set",
-                    clicked.getX(), clicked.getY(), clicked.getZ()), true);
+                    clicked.getX(), clicked.getY(), clicked.getZ()));
             level.playSound(null, clicked, SoundEvents.NOTE_BLOCK_HAT.value(), SoundSource.PLAYERS,
                     0.5F, settingB ? 1.4F : 1.0F);
         }
@@ -83,13 +83,13 @@ public class ScannerItem extends Item {
     public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
     //?}
         ItemStack stack = player.getItemInHand(hand);
-        if (level.isClientSide) {
+        if (level.isClientSide()) {
             return InteractionCompat.holderSuccess(stack);
         }
 
         if (player.isSecondaryUseActive()) {
             stack.remove(ModDataComponents.SCAN.get());
-            player.displayClientMessage(Component.translatable("message.mc3dprint.corners_cleared"), true);
+            com.pgmacdesign.mc3dprint.compat.MsgCompat.actionBar(player, Component.translatable("message.mc3dprint.corners_cleared"));
             return InteractionCompat.holderConsume(stack);
         }
 
@@ -105,7 +105,7 @@ public class ScannerItem extends Item {
         Optional<BlockPos> cornerA = data.cornerA();
         Optional<BlockPos> cornerB = data.cornerB();
         if (cornerA.isEmpty() || cornerB.isEmpty()) {
-            player.displayClientMessage(Component.translatable("message.mc3dprint.scan_no_corners"), true);
+            com.pgmacdesign.mc3dprint.compat.MsgCompat.actionBar(player, Component.translatable("message.mc3dprint.scan_no_corners"));
             return InteractionCompat.holderFail(stack);
         }
 
@@ -128,8 +128,8 @@ public class ScannerItem extends Item {
         int dy = Math.abs(a.getY() - b.getY()) + 1;
         int dz = Math.abs(a.getZ() - b.getZ()) + 1;
         if (dx > maxEdge || dy > maxEdge || dz > maxEdge) {
-            player.displayClientMessage(Component.translatable("message.mc3dprint.scan_too_large",
-                    dx, dy, dz, maxEdge), true);
+            com.pgmacdesign.mc3dprint.compat.MsgCompat.actionBar(player, Component.translatable("message.mc3dprint.scan_too_large",
+                    dx, dy, dz, maxEdge));
             return InteractionCompat.holderFail(stack);
         }
 
@@ -144,7 +144,7 @@ public class ScannerItem extends Item {
             }
         }
         if (blankSlot < 0) {
-            player.displayClientMessage(Component.translatable("message.mc3dprint.scan_need_blank_disc"), true);
+            com.pgmacdesign.mc3dprint.compat.MsgCompat.actionBar(player, Component.translatable("message.mc3dprint.scan_need_blank_disc"));
             return InteractionCompat.holderFail(stack);
         }
 
@@ -168,8 +168,8 @@ public class ScannerItem extends Item {
         if (player instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
             com.pgmacdesign.mc3dprint.advancement.ModCriteria.STRUCTURE_SCANNED.trigger(serverPlayer);
         }
-        player.displayClientMessage(Component.translatable("message.mc3dprint.scan_complete",
-                blueprint.blockCount()), true);
+        com.pgmacdesign.mc3dprint.compat.MsgCompat.actionBar(player, Component.translatable("message.mc3dprint.scan_complete",
+                blueprint.blockCount()));
         level.playSound(null, player.blockPosition(), SoundEvents.PLAYER_LEVELUP, SoundSource.PLAYERS, 0.5F, 1.5F);
         return InteractionCompat.holderConsume(stack);
     }

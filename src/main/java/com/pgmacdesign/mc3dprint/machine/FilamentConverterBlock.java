@@ -50,7 +50,7 @@ public class FilamentConverterBlock extends BaseEntityBlock {
     @Nullable
     @Override
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
-        if (level.isClientSide) {
+        if (level.isClientSide()) {
             return null;
         }
         return createTickerHelper(type, ModBlockEntities.FILAMENT_CONVERTER.get(),
@@ -68,23 +68,23 @@ public class FilamentConverterBlock extends BaseEntityBlock {
         if (!(level.getBlockEntity(pos) instanceof FilamentConverterBlockEntity converter)) {
             return InteractionCompat.ITEM_PASS;
         }
-        if (level.isClientSide) {
+        if (level.isClientSide()) {
             return InteractionCompat.ITEM_SUCCESS;
         }
         ItemStack held = player.getItemInHand(hand);
         if (player.isSecondaryUseActive() && held.isEmpty()) {
             converter.setFilter(ItemStack.EMPTY);
-            player.displayClientMessage(Component.translatable("message.mc3dprint.converter_filter_cleared"), true);
+            com.pgmacdesign.mc3dprint.compat.MsgCompat.actionBar(player, Component.translatable("message.mc3dprint.converter_filter_cleared"));
         } else if (!held.isEmpty()) {
             converter.setFilter(held);
-            player.displayClientMessage(Component.translatable("message.mc3dprint.converter_filter_set",
-                    held.getHoverName()), true);
+            com.pgmacdesign.mc3dprint.compat.MsgCompat.actionBar(player, Component.translatable("message.mc3dprint.converter_filter_set",
+                    held.getHoverName()));
         } else {
             Component filterName = converter.filter().isEmpty()
                     ? Component.translatable("message.mc3dprint.converter_no_filter")
                     : converter.filter().getHoverName();
-            player.displayClientMessage(Component.translatable("message.mc3dprint.converter_status",
-                    filterName), true);
+            com.pgmacdesign.mc3dprint.compat.MsgCompat.actionBar(player, Component.translatable("message.mc3dprint.converter_status",
+                    filterName));
         }
         return InteractionCompat.ITEM_CONSUME;
     }

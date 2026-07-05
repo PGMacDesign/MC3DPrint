@@ -43,11 +43,21 @@ public class AddCatalystModifier extends LootModifier {
     private final float chance;
     private final List<String> resinIds;
 
+    // 26.1: LootModifier's ctor + codecStart carry an int priority between the
+    // conditions and the modifier's own fields; the codec's ::new binds per node.
+    //? if >=26.1 {
+    /*public AddCatalystModifier(LootItemCondition[] conditions, int priority, float chance, List<String> resinIds) {
+        super(conditions, priority);
+        this.chance = chance;
+        this.resinIds = resinIds;
+    }
+    *///?} else {
     public AddCatalystModifier(LootItemCondition[] conditions, float chance, List<String> resinIds) {
         super(conditions);
         this.chance = chance;
         this.resinIds = resinIds;
     }
+    //?}
 
     @Override
     protected ObjectArrayList<ItemStack> doApply(ObjectArrayList<ItemStack> generatedLoot, LootContext context) {

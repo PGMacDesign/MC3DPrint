@@ -53,15 +53,15 @@ public class FabricatorBlockItem extends BlockItem {
         for (BlockPos offset : MultiblockPattern.componentOffsets(controller.tier())) {
             if (!level.getBlockState(pos.offset(offset)).canBeReplaced()) {
                 if (context.getPlayer() != null) {
-                    context.getPlayer().displayClientMessage(
-                            Component.translatable("message.mc3dprint.reform_blocked"), true);
+                    com.pgmacdesign.mc3dprint.compat.MsgCompat.actionBar(context.getPlayer(), 
+                            Component.translatable("message.mc3dprint.reform_blocked"));
                 }
                 return InteractionResult.FAIL;
             }
         }
 
         InteractionResult result = super.place(context); // also restores BlockEntityTag
-        if (result.consumesAction() && !level.isClientSide) {
+        if (result.consumesAction() && !level.isClientSide()) {
             reformComponents(level, pos, controller.tier());
             BlockState placed = level.getBlockState(pos);
             if (placed.getBlock() instanceof ControllerBlock) {

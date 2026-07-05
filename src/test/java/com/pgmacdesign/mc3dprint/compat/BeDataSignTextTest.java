@@ -23,15 +23,34 @@ import org.junit.jupiter.api.Test;
  */
 class BeDataSignTextTest {
 
+    /** False when the component codec can't class-init in this headless env (see bootstrap()). */
+    private static boolean codecUsable;
+
     @BeforeAll
     static void bootstrap() {
         try {
             SharedConstants.setVersion(DetectedVersion.BUILT_IN);
             Bootstrap.bootStrap();
         } catch (Throwable ignored) {
-            // Plain text components are registry-free; full bootstrap isn't required (and
-            // fails under NeoForge's headless JUnit env, where FML's mod list is absent).
+            // Full bootstrap fails under NeoForge's headless JUnit env, where FML's mod
+            // list is absent. Pre-1.21.9 that was fine: plain text components were
+            // registry-free. 1.21.9 wired Dialog/ClickEvent codecs into Style's static
+            // init, which touches BuiltInRegistries — probe below and skip if unusable.
         }
+        try {
+            ComponentSerialization.CODEC.parse(NbtOps.INSTANCE,
+                    net.minecraft.nbt.StringTag.valueOf("probe")).result();
+            codecUsable = true;
+        } catch (Throwable t) {
+            codecUsable = false;
+        }
+    }
+
+    @org.junit.jupiter.api.BeforeEach
+    void requireCodec() {
+        org.junit.jupiter.api.Assumptions.assumeTrue(codecUsable,
+                "component codec needs a bootstrapped registry on this MC version; "
+                        + "covered by the 1.21.1 oracle node");
     }
 
     /** What the sign codec would read back from a converted message tag. */

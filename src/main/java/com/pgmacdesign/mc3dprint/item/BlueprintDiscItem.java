@@ -405,7 +405,7 @@ public class BlueprintDiscItem extends Item {
         if (!player.isSecondaryUseActive() || !hasBlueprint(stack)) {
             return InteractionCompat.holderPass(stack);
         }
-        if (!level.isClientSide) {
+        if (!level.isClientSide()) {
             boolean nowLocked = !isLocked(stack);
             if (nowLocked) {
                 stack.set(ModDataComponents.LOCKED.get(), Boolean.TRUE);
@@ -413,13 +413,13 @@ public class BlueprintDiscItem extends Item {
                 // Remove rather than store false so an unlocked disc is value-equal to a never-locked one.
                 stack.remove(ModDataComponents.LOCKED.get());
             }
-            player.displayClientMessage(Component.translatable(
-                    nowLocked ? "message.mc3dprint.disc_locked" : "message.mc3dprint.disc_unlocked"), true);
+            com.pgmacdesign.mc3dprint.compat.MsgCompat.actionBar(player, Component.translatable(
+                    nowLocked ? "message.mc3dprint.disc_locked" : "message.mc3dprint.disc_unlocked"));
             level.playSound(null, player.blockPosition(),
                     nowLocked ? SoundEvents.IRON_DOOR_CLOSE : SoundEvents.IRON_DOOR_OPEN,
                     SoundSource.PLAYERS, 0.4F, 1.6F);
         }
-        return InteractionCompat.holderSuccess(stack, level.isClientSide);
+        return InteractionCompat.holderSuccess(stack, level.isClientSide());
     }
 
     @Override
