@@ -205,6 +205,30 @@ public final class CuratedBlueprints {
     }
 
     /**
+     * Per-blueprint allowances for {@code #mc3dprint:print_restricted} items
+     * (trophy blocks like mob heads). A restricted item prints ONLY from an
+     * OFFICIAL disc whose curated blueprint is listed here with that item —
+     * player-scanned discs never qualify (same anti-exploit shape as resins).
+     */
+    private static final java.util.Map<String, java.util.Set<String>> RESTRICTED_ALLOWANCES = java.util.Map.of(
+            // the imported pig-house scan ships decorative dragon + creeper heads
+            "tristans_pig_house", java.util.Set.of("minecraft:dragon_head", "minecraft:creeper_head"));
+
+    private static volatile java.util.Map<UUID, java.util.Set<String>> allowancesByUuid;
+
+    /** Restricted-item ids the OFFICIAL blueprint {@code id} may print; empty for all others. */
+    public static java.util.Set<String> restrictedAllowance(UUID id) {
+        java.util.Map<UUID, java.util.Set<String>> byUuid = allowancesByUuid;
+        if (byUuid == null) {
+            java.util.Map<UUID, java.util.Set<String>> built = new java.util.HashMap<>();
+            RESTRICTED_ALLOWANCES.forEach((name, items) ->
+                    built.put(uuidFor(MC3DPrint.MOD_ID, name), items));
+            allowancesByUuid = byUuid = built;
+        }
+        return byUuid.getOrDefault(id, java.util.Set.of());
+    }
+
+    /**
      * Load a bundled curated blueprint straight from the mod's resources (no world
      * needed) so the creative tab can hand out fully-populated discs. The same
      * {@link #uuidFor} UUID resolves against the world store at print time.

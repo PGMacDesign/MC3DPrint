@@ -397,12 +397,42 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         return net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
     }
 
+    // --- #print_restricted trophy gate ---
+
+    private static boolean isRestrictedBlock(BlockState state) {
+        Item item = state.getBlock().asItem();
+        return item != Items.AIR
+                && new ItemStack(item).is(com.pgmacdesign.mc3dprint.registry.ModItemTags.PRINT_RESTRICTED);
+    }
+
+    /** True when the loaded disc is OFFICIAL and its curated allowance lists this block's item. */
+    private boolean restrictedAllowedForLoadedDisc(BlockState state) {
+        ItemStack disc = inventory.getStackInSlot(SLOT_TEMPLATE);
+        if (!isLoadedDisc(disc) || !BlueprintDiscItem.isOfficial(disc)) {
+            return false;
+        }
+        UUID id = BlueprintDiscItem.getBlueprintId(disc).orElse(null);
+        return id != null && com.pgmacdesign.mc3dprint.blueprint.CuratedBlueprints
+                .restrictedAllowance(id)
+                .contains(net.minecraft.core.registries.BuiltInRegistries.ITEM
+                        .getKey(state.getBlock().asItem()).toString());
+    }
+
     // --- Item Mode ---
 
     private void tickItemMode(ItemStack template) {
         if (template.isEmpty()) {
             state = State.IDLE;
             itemProgress = 0;
+            return;
+        }
+        // Item mode with a restricted trophy would be straight duplication — refuse
+        // regardless of FU value (blueprint mode has the official-allowance gate).
+        if (template.is(com.pgmacdesign.mc3dprint.registry.ModItemTags.PRINT_RESTRICTED)) {
+            state = State.NOT_PRINTABLE;
+            itemProgress = 0;
+            notPrintableReason = idOf(template)
+                    + " is a restricted trophy item — printers never duplicate it";
             return;
         }
         int fuCost = itemFuCost(template);
@@ -515,6 +545,12 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         }
         Optional<FuValue> value = blockFuValue(resolvedState);
         if (value.isPresent()) {
+            // Trophy gate: a #print_restricted block prints only from an OFFICIAL disc
+            // whose curated blueprint carries an allowance for it. Routing through
+            // canPrintBlock covers the print loop, the calculator, and the ghost mask.
+            if (isRestrictedBlock(resolvedState) && !restrictedAllowedForLoadedDisc(resolvedState)) {
+                return false;
+            }
             return value.get().tier() <= tier.number();
         }
         // Structural matter (farmland, crops, water, wall torches, redstone wire, fire…)
