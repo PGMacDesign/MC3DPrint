@@ -12,7 +12,14 @@ Every printer and fabricator can run **in reverse**. Select a region and the mac
 1. Set **two corners** with the Structure Scanner, exactly like scanning.
 2. **Sneak-click the machine** with the scanner. That hands the selection over as its deconstruct region and flips the machine into Deconstruct Mode.
 
-The region obeys the machine's own print footprint (a Tier 3 printer deconstructs at most 3×3, a Tier 8 fabricator up to 51×51) and must be within 64 blocks of the machine. Start the job with the Start button, Auto mode, or a redstone pulse — identical to printing.
+The region obeys the machine's own print footprint (a Tier 3 printer deconstructs at most 3×3, a Tier 8 fabricator up to 51×51) and must be within 64 blocks of the machine. Once armed, the region is outlined in the world as a **red wireframe** so the hazard zone is always visible.
+
+Two safety rules keep accidents out:
+
+- **The first job after arming always needs an explicit Start.** Auto mode never fires on a freshly armed region — handing a machine a region can't start dissolving blocks by surprise, even if Auto was left on from printing. After that one Start, Auto resumes as a standing recycler for the region (anything later placed inside gets consumed too — the wireframe is your reminder).
+- **Re-arming resets the gate.** A new region, or toggling Print↔Deconstruct, cancels the job and requires a fresh Start.
+
+Deconstruct works on **any blocks in the region** — it doesn't matter whether they were printed, scanned, or built by hand. The wireframe plus the manual first Start exist precisely so you always know what's about to be consumed.
 
 ## Lossy by design
 

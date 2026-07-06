@@ -202,6 +202,13 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
     private BlockPos deconstructSize;
     @Nullable
     private DeconstructJob deconstructJob;
+    /**
+     * Safety arm-gate: true from the moment a region is handed over (or the machine
+     * is switched into Deconstruct) until the player presses Start once. While set,
+     * Auto NEVER starts a deconstruct — arming a machine can't dissolve blocks by
+     * surprise. After that first explicit Start, Auto resumes standing-recycler duty.
+     */
+    private boolean deconArmedRequiresStart;
     @Nullable
     private transient Blueprint cachedBlueprint;          // lazily loaded for activeJob
     @Nullable
@@ -1700,13 +1707,25 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             return RegionResult.TOO_FAR;
         }
         cancelActiveJob(); // region epoch: an in-flight job never crosses onto a new region
+        startRequested = false; // ...and neither does a pending Start trigger
         deconstructMin = min;
         deconstructSize = size;
         deconstructMode = true;
+        deconArmedRequiresStart = true; // fresh region: first job is manual-start only
         state = State.IDLE;
         setChanged();
         syncToClients();
         return RegionResult.SET;
+    }
+
+    @Nullable
+    public BlockPos deconstructRegionMin() {
+        return deconstructMin;
+    }
+
+    @Nullable
+    public BlockPos deconstructRegionSize() {
+        return deconstructSize;
     }
 
     private static int chebyshev(BlockPos a, BlockPos b) {
@@ -1724,6 +1743,10 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             return;
         }
         deconstructMode = value;
+        if (value) {
+            deconArmedRequiresStart = true; // entering Decon re-arms the manual-start gate
+        }
+        startRequested = false; // a pending Start never crosses a mode switch
         cancelActiveJob();
         state = State.IDLE;
         setChanged();
@@ -1740,7 +1763,10 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             return;
         }
         if (deconstructJob == null) {
-            if (!autoStart && !startRequested) {
+            // Auto is honored only after the first explicit Start on a freshly armed
+            // region — see deconArmedRequiresStart.
+            boolean autoAllowed = autoStart && !deconArmedRequiresStart;
+            if (!autoAllowed && !startRequested) {
                 if (state == State.IDLE || state == State.DECONSTRUCTING) {
                     state = deconstructMin != null ? State.READY : State.IDLE;
                 }
@@ -1751,6 +1777,10 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
                 return;
             }
             retryCooldown = 20;
+            if (startRequested && deconArmedRequiresStart) {
+                deconArmedRequiresStart = false; // the one explicit Start disarms the gate
+                setChanged();
+            }
             startRequested = false;
             tryStartDeconstruct(serverLevel);
             return;
@@ -2189,6 +2219,13 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             historyList.add(history.get(i).copy());
         }
         tag.put("History", historyList);
+
+        // Armed deconstruct region -> client, so the renderer can draw the red hazard box.
+        tag.putBoolean("DeconOn", deconstructMode);
+        if (deconstructMode && deconstructMin != null && deconstructSize != null) {
+            NbtCompat.putBlockPos(tag, "DeconMin", deconstructMin);
+            NbtCompat.putBlockPos(tag, "DeconSize", deconstructSize);
+        }
         // Nest under one key so the client side can recover the whole payload as a CompoundTag:
         // 1.21.5's handleUpdateTag receives a ValueInput (no backing-tag accessor), so we read
         // "D" back via CompoundTag.CODEC and reuse the version-agnostic applyUpdateData body.
@@ -2213,6 +2250,10 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         activeJob = NbtCompat.contains(tag, "ActiveJob") ? PrintJob.load(NbtCompat.getCompound(tag, "ActiveJob")) : null;
         lastPlacedPos = NbtCompat.getBlockPos(tag, "LastPlaced").orElse(null);
         state = State.byOrdinal(NbtCompat.getInt(tag, "State"));
+
+        deconstructMode = NbtCompat.getBoolean(tag, "DeconOn");
+        deconstructMin = NbtCompat.getBlockPos(tag, "DeconMin").orElse(null);
+        deconstructSize = NbtCompat.getBlockPos(tag, "DeconSize").orElse(null);
 
         // client mirror of the recent-history slice (the client BE never loads full NBT)
         history.clear();
@@ -2311,6 +2352,13 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
                     net.minecraft.world.phys.Vec3.atLowerCornerOf(clientPreviewOrigin),
                     net.minecraft.world.phys.Vec3.atLowerCornerOf(
                             clientPreviewOrigin.offset(clientPreviewSize))));
+        }
+        if (deconstructMode && deconstructMin != null && deconstructSize != null) {
+            // the red hazard wireframe draws over the whole armed region
+            box = box.minmax(new net.minecraft.world.phys.AABB(
+                    net.minecraft.world.phys.Vec3.atLowerCornerOf(deconstructMin),
+                    net.minecraft.world.phys.Vec3.atLowerCornerOf(
+                            deconstructMin.offset(deconstructSize))));
         }
         var blockState = getBlockState();
         if (blockState.hasProperty(com.pgmacdesign.mc3dprint.machine.multiblock.ControllerBlock.FORMED)
@@ -2843,6 +2891,7 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         }
         w.putBoolean("PreviewEnabled", previewEnabled);
         w.putBoolean("DeconMode", deconstructMode);
+        w.putBoolean("DeconArm", deconArmedRequiresStart);
         if (deconstructMin != null && deconstructSize != null) {
             w.store("DeconMin", BlockPos.CODEC, deconstructMin);
             w.store("DeconSize", BlockPos.CODEC, deconstructSize);
@@ -2879,6 +2928,7 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         owner = r.getUUID("Owner").orElse(null);
         previewEnabled = r.getBooleanOr("PreviewEnabled", false);
         deconstructMode = r.getBooleanOr("DeconMode", false);
+        deconArmedRequiresStart = r.getBooleanOr("DeconArm", deconstructMode); // safe default: re-arm
         deconstructMin = r.read("DeconMin", BlockPos.CODEC).orElse(null);
         deconstructSize = r.read("DeconSize", BlockPos.CODEC).orElse(null);
         deconstructJob = r.read("DeconJob", CompoundTag.CODEC).map(DeconstructJob::load).orElse(null);
