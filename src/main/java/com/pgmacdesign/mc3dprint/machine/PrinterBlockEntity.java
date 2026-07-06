@@ -2014,6 +2014,12 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
                 serverLevel.setChunkForced(cx, cz, add);
             }
         }
+        // The MACHINE's own chunk too: build offsets (±32) or a deconstruct region
+        // (up to 64 away) can put the job box in different chunks than the machine —
+        // a region kept loaded while the machine that works it unloads would stall
+        // the job (and never self-recover after a restart). Idempotent when the
+        // machine already sits inside the box footprint.
+        serverLevel.setChunkForced(worldPosition.getX() >> 4, worldPosition.getZ() >> 4, add);
     }
 
     private boolean ensureBlueprintLoaded(ServerLevel serverLevel) {
