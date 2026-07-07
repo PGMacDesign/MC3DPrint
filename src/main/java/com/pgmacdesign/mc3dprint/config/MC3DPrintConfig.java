@@ -22,6 +22,7 @@ public final class MC3DPrintConfig {
     private static final ModConfigSpec.IntValue[] RF_PER_BLOCK = new ModConfigSpec.IntValue[8];
     private static final ModConfigSpec.IntValue[] TICKS_PER_BLOCK = new ModConfigSpec.IntValue[8];
     private static final ModConfigSpec.DoubleValue[] EFFICIENCY = new ModConfigSpec.DoubleValue[8];
+    private static final ModConfigSpec.IntValue[] MAX_FOOTPRINT = new ModConfigSpec.IntValue[8];
 
     public static final ModConfigSpec.IntValue T1_SCANNER_MAX_EDGE;
     public static final ModConfigSpec.BooleanValue UNLOCK_SCANNER_SIZE;
@@ -91,6 +92,13 @@ public final class MC3DPrintConfig {
                     "cost = base / efficiency; each module removes an equal share, reaching exactly",
                     "1:1 at upgrades.maxPerType modules. Lower tiers are deliberately less efficient.")
                     .defineInRange("efficiency", tier.defaultEfficiency(), 0.01, 1.0);
+            MAX_FOOTPRINT[i] = builder.comment(
+                    "Max horizontal print footprint (per axis, in blocks). 0 = items only (the",
+                    "T1/T2 default). Also caps Deconstruct regions — a machine un-prints exactly",
+                    "what it can print. Crank it up if you want ludicrously large prints; very",
+                    "large builds keep their chunks force-loaded for the whole job, so expect a",
+                    "server-performance cost to match your ambition.")
+                    .defineInRange("maxFootprint", tier.maxFootprint(), 0, 1_000);
             builder.pop();
         }
 
@@ -104,8 +112,9 @@ public final class MC3DPrintConfig {
         UNLOCK_SCANNER_SIZE = builder
                 .comment("Scanner size override. FALSE (default): the scanner is capped at the flat",
                         "t1MaxEdge above. TRUE: raise the scan cap to the largest footprint a buildable",
-                        "fabricator can actually print — T8=51 with Draconic Evolution installed, otherwise",
-                        "T7=33 — so you can scan a very large build and turn it into a printable blueprint.",
+                        "fabricator can actually print — the configured tier8.maxFootprint (default 51)",
+                        "with Draconic Evolution installed, otherwise tier7.maxFootprint (default 33) —",
+                        "so you can scan a very large build and turn it into a printable blueprint.",
                         "Advanced/opt-in; off by default.")
                 .define("unlockScannerSize", false);
         builder.pop();
@@ -328,6 +337,15 @@ public final class MC3DPrintConfig {
 
     public static double efficiency(MachineTier tier) {
         return EFFICIENCY[tier.number() - 1].get();
+    }
+
+    public static int maxFootprint(MachineTier tier) {
+        return MAX_FOOTPRINT[tier.number() - 1].get();
+    }
+
+    /** The raw config value, for tests that need to set-and-restore the cap. */
+    public static ModConfigSpec.IntValue maxFootprintValue(MachineTier tier) {
+        return MAX_FOOTPRINT[tier.number() - 1];
     }
 
     public static int cableTransferRate() {

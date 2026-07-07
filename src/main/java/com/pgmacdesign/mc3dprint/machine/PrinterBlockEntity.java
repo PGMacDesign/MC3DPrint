@@ -1698,7 +1698,7 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
                 Math.min(a.getY(), b.getY()), Math.min(a.getZ(), b.getZ()));
         BlockPos size = new BlockPos(Math.abs(a.getX() - b.getX()) + 1,
                 Math.abs(a.getY() - b.getY()) + 1, Math.abs(a.getZ() - b.getZ()) + 1);
-        if (Math.max(size.getX(), size.getZ()) > tier.maxFootprint()) {
+        if (Math.max(size.getX(), size.getZ()) > MC3DPrintConfig.maxFootprint(tier)) {
             return RegionResult.TOO_LARGE;
         }
         BlockPos max = min.offset(size.getX() - 1, size.getY() - 1, size.getZ() - 1);
@@ -2512,7 +2512,7 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
      */
     private boolean footprintTooLarge(BlockPos size) {
         int footprint = Math.max(size.getX(), size.getZ());
-        if (footprint <= tier.maxFootprint()) {
+        if (footprint <= MC3DPrintConfig.maxFootprint(tier)) {
             return false;
         }
         MachineTier fit = smallestTierFor(footprint);
@@ -2529,7 +2529,7 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
     /** Smallest tier whose print footprint fits {@code footprint}, or null if none (too big for T8). */
     private static MachineTier smallestTierFor(int footprint) {
         for (MachineTier candidate : MachineTier.values()) {
-            if (candidate.maxFootprint() >= footprint) {
+            if (MC3DPrintConfig.maxFootprint(candidate) >= footprint) {
                 return candidate;
             }
         }

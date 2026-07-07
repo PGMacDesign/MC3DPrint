@@ -16,7 +16,7 @@
     {
       "type": "patchouli:text",
       "title": "Higher Tiers",
-      "text": "Higher tiers print $(l)faster$(), cost $(l)less FU$() per block, and accept $(l)more upgrades$() (more slots at higher tiers, up to 8). They also unlock higher material tiers — a Tier 3 machine can't print a Tier 6 (netherite) block.$(br2)Tiers 5-8 are multiblock $(item)Fabricators$() — see the Multiblocks category."
+      "text": "Higher tiers print $(l)faster$(), cost $(l)less FU$() per block, and accept $(l)more upgrades$() (more slots at higher tiers, up to 8). They also unlock higher material tiers — a Tier 3 machine can't print a Tier 6 (netherite) block.$(br2)Tiers 5-8 are multiblock $(item)Fabricators$() — see the Multiblocks category.$(br2)Every tier's print footprint is a config default ($(o)maxFootprint$())."
     },
     {
       "type": "patchouli:text",
