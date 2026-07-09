@@ -124,12 +124,13 @@ public class ScannerItem extends Item {
         // builds on a high-tier fabricator. Tune via the `t1MaxEdge` config.
         int maxEdge = MC3DPrintConfig.T1_SCANNER_MAX_EDGE.get();
         // Opt-in override (config `unlockScannerSize`): raise the cap to the largest footprint a
-        // buildable fabricator can print — T8=51 with Draconic Evolution, else T7=33 — so a very
-        // large build can be captured and printed. Off by default; never lowers the configured cap.
+        // buildable fabricator can print — the configured T8 footprint with Draconic Evolution
+        // (default 51), else T7's (default 33) — so a very large build can be captured and
+        // printed. Off by default; never lowers the configured cap.
         if (MC3DPrintConfig.UNLOCK_SCANNER_SIZE.get()) {
             MachineTier top = ModList.get().isLoaded(MultiblockPattern.DRACONIC_MOD_ID)
                     ? MachineTier.T8 : MachineTier.T7;
-            maxEdge = Math.max(maxEdge, top.maxFootprint());
+            maxEdge = Math.max(maxEdge, MC3DPrintConfig.maxFootprint(top));
         }
         BlockPos a = cornerA.get();
         BlockPos b = cornerB.get();

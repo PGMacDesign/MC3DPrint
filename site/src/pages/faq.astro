@@ -36,6 +36,11 @@ const faqs = [
         <p>Server operators can also import <code>.schem</code> / <code>.litematic</code> / <code>.nbt</code> files with <code>/mc3dprint import</code>. In Creative, a config toggle (<code>allowAllDiscsInCreative</code>) lists every curated disc the mod ships.</p>`,
   },
   {
+    q: "Can I raise the max print size?",
+    a: `<p>Yes. Every tier's print footprint is a config value — <code>maxFootprint</code> under each <code>[tierN]</code> section of <code>mc3dprint-common.toml</code>. The defaults run 3×3 (Tier 3) up to 51×51 (Tier 8), but you can raise any tier as high as 1000×1000 if you want a truly ludicrous print area. The same cap governs Deconstruct regions, and <em>Build Too Large</em> / <em>Requires a Higher Tier</em> statuses follow whatever you configure.</p>
+        <p>One caveat: a running print keeps its whole build area chunk-loaded until the job finishes, so giant footprints carry a matching server-performance cost.</p>`,
+  },
+  {
     q: "Can I add a screenshot of a build?",
     a: `<p>Yes — it's an open bounty. Open any build in the <a href="/gallery">gallery</a> and use <strong>"Add a screenshot"</strong>: paste a direct image link (imgur, catbox, etc.), add your handle, and submit. No GitHub account needed.</p>
         <p>Every submission is <strong>reviewed before it appears</strong> — appropriate, on-topic shots get published on the build's page, in submission order, and <strong>credited to your handle</strong> in the repo. Builds without a screenshot yet show a <em>"📷 Screenshot wanted"</em> badge. You can send up to two per build per day, so there's no need to race to be first.</p>`,

@@ -12,7 +12,7 @@ Every printer and fabricator can run **in reverse**. Select a region and the mac
 1. Set **two corners** with the Structure Scanner, exactly like scanning.
 2. **Sneak-click the machine** with the scanner. That hands the selection over as its deconstruct region and flips the machine into Deconstruct Mode.
 
-The region obeys the machine's own print footprint (a Tier 3 printer deconstructs at most 3×3, a Tier 8 fabricator up to 51×51) and must be within 64 blocks of the machine. Once armed, the region is outlined in the world as a **red wireframe** so the hazard zone is always visible.
+The region obeys the machine's own print footprint (by default a Tier 3 printer deconstructs at most 3×3, a Tier 8 fabricator up to 51×51 — each tier's cap is configurable via `maxFootprint`) and must be within 64 blocks of the machine. Once armed, the region is outlined in the world as a **red wireframe** so the hazard zone is always visible.
 
 Two safety rules keep accidents out:
 

@@ -14,6 +14,8 @@ Once a single-block printer stops cutting it, you graduate to Fabricators. These
 - **T7** — 7×7 base, 48 casing
 - **T8** — 9×9 base, 76 casing + 4 Awakened Draconium corners
 
+Print footprints scale with tier: 9×9 (T5), 15×15 (T6), 33×33 (T7), and 51×51 (T8) by default — each tier has a `maxFootprint` config entry if you want bigger.
+
 `Printer Casing` is the building block of every base — one craft yields four. The T5 Fabricator controller itself is built around a Tier 4 printer and an Extrudium Crystal.
 
 ## Forming the machine
