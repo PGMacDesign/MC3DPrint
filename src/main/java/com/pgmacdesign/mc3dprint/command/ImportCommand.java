@@ -5,6 +5,7 @@ import com.mojang.brigadier.suggestion.SuggestionProvider;
 import com.pgmacdesign.mc3dprint.blueprint.Blueprint;
 import com.pgmacdesign.mc3dprint.blueprint.BlueprintFileStore;
 import com.pgmacdesign.mc3dprint.blueprint.BlueprintFormatException;
+import com.pgmacdesign.mc3dprint.blueprint.io.LitematicaImporter;
 import com.pgmacdesign.mc3dprint.blueprint.io.SpongeSchematicImporter;
 import com.pgmacdesign.mc3dprint.blueprint.io.VanillaStructureImporter;
 import com.pgmacdesign.mc3dprint.item.BlueprintDiscItem;
@@ -28,9 +29,9 @@ import java.util.UUID;
 import java.util.stream.Stream;
 
 /**
- * {@code /mc3dprint import <file>} — converts a WorldEdit {@code .schem} or a
- * vanilla/Create structure {@code .nbt} from {@code world/mc3dprint/import/}
- * into a Blueprint Disc. The v1 interop path for both formats.
+ * {@code /mc3dprint import <file>} — converts a WorldEdit {@code .schem}, a
+ * vanilla/Create structure {@code .nbt}, or a Litematica {@code .litematic}
+ * from {@code world/mc3dprint/import/} into a Blueprint Disc.
  */
 public final class ImportCommand {
 
@@ -90,7 +91,11 @@ public final class ImportCommand {
     }
 
     private static Path importDir(CommandSourceStack source) {
-        return source.getServer().getWorldPath(LevelResource.ROOT).resolve("mc3dprint").resolve("import");
+        // normalize: LevelResource.ROOT is literally "." — an unnormalized "<world>/./…"
+        // here makes the traversal guard below (file.startsWith(dir)) reject EVERY file,
+        // because the resolved file path is normalized before comparing.
+        return source.getServer().getWorldPath(LevelResource.ROOT)
+                .resolve("mc3dprint").resolve("import").normalize();
     }
 
     private static List<String> listImportable(Path dir) {
@@ -99,7 +104,8 @@ public final class ImportCommand {
         }
         try (Stream<Path> files = Files.list(dir)) {
             return files.map(p -> p.getFileName().toString())
-                    .filter(name -> name.endsWith(".schem") || name.endsWith(".nbt"))
+                    .filter(name -> name.endsWith(".schem") || name.endsWith(".nbt")
+                            || name.endsWith(".litematic"))
                     .sorted()
                     .toList();
         } catch (IOException e) {
@@ -122,6 +128,8 @@ public final class ImportCommand {
             String name = fileName.substring(0, fileName.lastIndexOf('.'));
             if (fileName.endsWith(".schem")) {
                 blueprint = SpongeSchematicImporter.importSchematic(name, tag);
+            } else if (fileName.endsWith(".litematic")) {
+                blueprint = LitematicaImporter.importLitematic(name, tag);
             } else {
                 blueprint = VanillaStructureImporter.importStructure(name, tag);
             }

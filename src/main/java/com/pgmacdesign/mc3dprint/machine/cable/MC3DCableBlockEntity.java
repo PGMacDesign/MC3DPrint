@@ -197,6 +197,36 @@ public class MC3DCableBlockEntity extends BlockEntity implements IFilamentSource
         return total;
     }
 
+    @Override
+    public long insertExactTier(int tier, long maxBase) {
+        if (level == null || maxBase <= 0) {
+            return 0;
+        }
+        long inserted = 0;
+        long remaining = maxBase;
+        for (IFilamentSource src : reachableSources()) {
+            if (remaining <= 0) {
+                break;
+            }
+            long accepted = src.insertExactTier(tier, remaining);
+            inserted += accepted;
+            remaining -= accepted;
+        }
+        return inserted;
+    }
+
+    @Override
+    public long insertableExactTier(int tier) {
+        if (level == null) {
+            return 0;
+        }
+        long total = 0;
+        for (IFilamentSource src : reachableSources()) {
+            total += src.insertableExactTier(tier);
+        }
+        return total;
+    }
+
     private Set<IFilamentSource> reachableSources() {
         Set<IFilamentSource> set = Collections.newSetFromMap(new IdentityHashMap<>());
         collectSources(set);
