@@ -618,6 +618,27 @@ public class StructurePrintGameTests {
         });
     }
 
+    @GameTest(template = "empty5", timeoutTicks = 300)
+    public static void completedJobsRecordHistory(GameTestHelper helper) {
+        BlockPos printerPos = new BlockPos(2, 1, 2);
+        PrinterBlockEntity printer = poweredPrinter(helper, printerPos);
+        printer.inventory().setStackInSlot(PrinterBlockEntity.SLOT_TEMPLATE, discFor(helper, smallBlueprint()));
+
+        helper.succeedWhen(() -> {
+            helper.assertBlockPresent(Blocks.STONE, new BlockPos(1, 2, 1));
+            if (printer.history().isEmpty()) {
+                throw new GameTestAssertException("completed print must record a history entry");
+            }
+            CompoundTag entry = printer.history().get(0);
+            String name = com.pgmacdesign.mc3dprint.compat.NbtCompat.getString(entry, "Name");
+            int blocks = com.pgmacdesign.mc3dprint.compat.NbtCompat.getInt(entry, "Blocks");
+            if (!"gametest-structure".equals(name) || blocks != 2) {
+                throw new GameTestAssertException("history entry should be gametest-structure/2, got "
+                        + name + "/" + blocks);
+            }
+        });
+    }
+
     @GameTest(template = "empty5", timeoutTicks = 400)
     public static void cancelMidPrintThenRepairRestartCostsNoExtra(GameTestHelper helper) {
         // Cancel is no-rollback by design: placed blocks and spent FU stand, the disc

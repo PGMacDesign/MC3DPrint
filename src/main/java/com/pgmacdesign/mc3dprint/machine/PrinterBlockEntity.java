@@ -119,6 +119,9 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
     public static final int DATA_JOB_ACTIVE = 38;      // 1 while a print OR deconstruct job exists
     public static final int DATA_COUNT = 39;
 
+    /** Newest history entries mirrored to clients for the GUI tooltip. */
+    public static final int HISTORY_SYNC_CAP = 8;
+
     /** Build offsets are clamped to [-MAX_OFFSET, MAX_OFFSET] on each axis. */
     public static final int MAX_OFFSET = 32;
 
@@ -2124,6 +2127,14 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             spoolList.add(entry);
         }
         tag.put("Spools", spoolList);
+
+        // Recent print history for the GUI tooltip — newest first, capped small so the
+        // update packet stays lean regardless of the printHistorySize config.
+        ListTag historyList = new ListTag();
+        for (int i = 0; i < history.size() && i < HISTORY_SYNC_CAP; i++) {
+            historyList.add(history.get(i).copy());
+        }
+        tag.put("History", historyList);
         // Nest under one key so the client side can recover the whole payload as a CompoundTag:
         // 1.21.5's handleUpdateTag receives a ValueInput (no backing-tag accessor), so we read
         // "D" back via CompoundTag.CODEC and reuse the version-agnostic applyUpdateData body.
@@ -2148,6 +2159,13 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         activeJob = NbtCompat.contains(tag, "ActiveJob") ? PrintJob.load(NbtCompat.getCompound(tag, "ActiveJob")) : null;
         lastPlacedPos = NbtCompat.getBlockPos(tag, "LastPlaced").orElse(null);
         state = State.byOrdinal(NbtCompat.getInt(tag, "State"));
+
+        // client mirror of the recent-history slice (the client BE never loads full NBT)
+        history.clear();
+        ListTag historyList = NbtCompat.getList(tag, "History", Tag.TAG_COMPOUND);
+        for (int i = 0; i < historyList.size(); i++) {
+            history.add(NbtCompat.listGetCompound(historyList, i).copy());
+        }
 
         clientPreviewOn = NbtCompat.getBoolean(tag, "PreviewOn");
         clientPreview.clear();
