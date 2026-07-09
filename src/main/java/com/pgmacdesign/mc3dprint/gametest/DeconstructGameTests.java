@@ -73,6 +73,7 @@ public class DeconstructGameTests {
         PrinterBlockEntity printer = poweredPrinter(helper, new BlockPos(2, 1, 2));
         attachEmptySpool(printer, iron.tier());
         printer.setDeconstructRegion(helper.absolutePos(target), helper.absolutePos(target));
+        printer.requestStart(); // fresh-arm gate: first job always needs an explicit Start
 
         helper.succeedWhen(() -> {
             helper.assertBlockPresent(Blocks.AIR, target);
@@ -94,6 +95,7 @@ public class DeconstructGameTests {
         PrinterBlockEntity printer = poweredPrinter(helper, new BlockPos(2, 1, 2));
         attachEmptySpool(printer, planks.tier());
         printer.setDeconstructRegion(helper.absolutePos(target), helper.absolutePos(target));
+        printer.requestStart(); // fresh-arm gate: first job always needs an explicit Start
 
         helper.succeedWhen(() -> {
             helper.assertBlockPresent(Blocks.AIR, target);
@@ -122,6 +124,7 @@ public class DeconstructGameTests {
         PrinterBlockEntity printer = poweredPrinter(helper, new BlockPos(2, 1, 3));
         attachEmptySpool(printer, valueOf(Items.IRON_BLOCK).tier());
         printer.setDeconstructRegion(helper.absolutePos(bedrock), helper.absolutePos(iron));
+        printer.requestStart(); // fresh-arm gate: first job always needs an explicit Start
 
         helper.succeedWhen(() -> {
             helper.assertBlockPresent(Blocks.AIR, iron);
@@ -150,6 +153,7 @@ public class DeconstructGameTests {
         SpoolItem.setFu(fullSpool, ((SpoolItem) fullSpool.getItem()).capacity());
         printer.spoolInventory().setStackInSlot(0, fullSpool);
         printer.setDeconstructRegion(helper.absolutePos(target), helper.absolutePos(target));
+        printer.requestStart(); // fresh-arm gate: first job always needs an explicit Start
 
         helper.runAfterDelay(100, () -> {
             helper.assertBlockPresent(Blocks.IRON_BLOCK, target);
@@ -186,6 +190,7 @@ public class DeconstructGameTests {
         PrinterBlockEntity printer = poweredPrinter(helper, new BlockPos(2, 1, 3));
         attachEmptySpool(printer, valueOf(Items.IRON_BLOCK).tier());
         printer.setDeconstructRegion(helper.absolutePos(a), helper.absolutePos(b));
+        printer.requestStart(); // fresh-arm gate: first job always needs an explicit Start
 
         helper.runAfterDelay(60, () -> {
             if (printer.deconstructJob() == null && printer.state() != PrinterBlockEntity.State.DECONSTRUCTING) {

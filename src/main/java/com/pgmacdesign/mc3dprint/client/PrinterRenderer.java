@@ -211,6 +211,20 @@ public class PrinterRenderer implements BlockEntityRenderer<PrinterBlockEntity> 
         collector.submitCustomGeometry(poseStack, RenderType.eyes(WHITE),
                 (pose, vc) -> renderFormedGlow(printer, partialTick, pose, vc));
 
+        // Red wireframe over the ARMED deconstruct region — always visible while armed.
+        BlockPos deconMin = printer.deconstructRegionMin();
+        BlockPos deconSize = printer.deconstructRegionSize();
+        if (printer.deconstructMode() && deconMin != null && deconSize != null) {
+            BlockPos m = printer.getBlockPos();
+            collector.submitCustomGeometry(poseStack, RenderType.lines(), (pose, vc) ->
+                    com.pgmacdesign.mc3dprint.compat.RenderCompat.lineBox(pose, vc,
+                            deconMin.getX() - m.getX(), deconMin.getY() - m.getY(), deconMin.getZ() - m.getZ(),
+                            deconMin.getX() - m.getX() + deconSize.getX(),
+                            deconMin.getY() - m.getY() + deconSize.getY(),
+                            deconMin.getZ() - m.getZ() + deconSize.getZ(),
+                            1.0F, 0.25F, 0.25F, 0.85F));
+        }
+
         PrintJob job = printer.activeJob();
         if (job == null) {
             HEAD_STATES.remove(printer.getBlockPos());
@@ -430,6 +444,7 @@ public class PrinterRenderer implements BlockEntityRenderer<PrinterBlockEntity> 
         renderSpools(printer, partialTick, pose, bufferSource.getBuffer(RenderType.lines()));
         renderFormedSolid(printer, pose, bufferSource.getBuffer(RenderType.entitySolid(METAL)), packedLight);
         renderFormedGlow(printer, partialTick, pose, bufferSource.getBuffer(RenderType.eyes(WHITE)));
+        renderDeconstructRegion(printer, poseStack, bufferSource);
 
         PrintJob job = printer.activeJob();
         if (job == null) {
@@ -473,6 +488,27 @@ public class PrinterRenderer implements BlockEntityRenderer<PrinterBlockEntity> 
         // its batch (the shared builder switches type) is safe.
         VertexConsumer glow = bufferSource.getBuffer(RenderType.eyes(WHITE));
         renderFilament(pose, glow, printer, hs, head[0], head[1], head[2], partialTick);
+    }
+
+    /**
+     * Red wireframe over the ARMED deconstruct region — the standing hazard zone.
+     * Drawn whenever the machine is in Deconstruct Mode with a region set (idle,
+     * paused, or mid-job), so what the machine will consume is always visible.
+     */
+    private void renderDeconstructRegion(PrinterBlockEntity printer, PoseStack poseStack,
+                                         MultiBufferSource bufferSource) {
+        BlockPos min = printer.deconstructRegionMin();
+        BlockPos size = printer.deconstructRegionSize();
+        if (!printer.deconstructMode() || min == null || size == null) {
+            return;
+        }
+        BlockPos machine = printer.getBlockPos();
+        lineBox(poseStack, bufferSource.getBuffer(RenderType.lines()),
+                min.getX() - machine.getX(), min.getY() - machine.getY(), min.getZ() - machine.getZ(),
+                min.getX() - machine.getX() + size.getX(),
+                min.getY() - machine.getY() + size.getY(),
+                min.getZ() - machine.getZ() + size.getZ(),
+                1.0F, 0.25F, 0.25F, 0.85F);
     }
 
     /**
