@@ -27,3 +27,7 @@ Lower-tier machines pay a higher FU multiplier per block, and printing always co
 ## Printing food
 
 Food has FU values too, so a printer in item mode can print meals — bread is cheap, cooked and golden food cost more. But food **can't be wound back** into FU, so printing food is a one-way sink, not a loop.
+
+## Restricted trophies
+
+Mob heads and skulls are **trophy items**: printers never duplicate them in item mode, and in blueprint mode they place only from an **official curated blueprint that specifically carries them** (like the Pig House's decorative heads). A scanned or imported build containing a head prints everything else and silently skips the trophy — same anti-exploit gate as [resins](/guide/resins-overview/).

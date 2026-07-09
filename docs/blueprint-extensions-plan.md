@@ -5,7 +5,7 @@ Three extensions to what blueprints distribute, gate, and capture. Status as of 
 | # | Feature | Status |
 |---|---------|--------|
 | 1 | World-loot distribution (opt-out) | **Shipped** (local; pending commit) |
-| 2 | Restricted items + per-blueprint allowlist | **Planned** |
+| 2 | Restricted items + per-blueprint allowlist | **Shipped** (2026-07-05) |
 | 3 | Decorative entity support (armor stands, frames, paintings, carts, boats) | **Built (grilled); pending in-game test** |
 
 ---
@@ -38,7 +38,16 @@ only if early-game chests yielding end-game trophies proves a problem.
 
 ---
 
-## 2. Restricted items + per-blueprint allowlist (PLANNED)
+## 2. Restricted items + per-blueprint allowlist (SHIPPED 2026-07-05)
+
+> **As-built notes:** the restricted set is the `#mc3dprint:print_restricted` item tag (all mob
+> heads/skulls); the allowlist lives in `CuratedBlueprints.RESTRICTED_ALLOWANCES` **keyed by curated
+> name/UUID** rather than a `.blueprint` format field — the "never bump the format pre-release" rule
+> wins, and official curated builds are the only legal carriers anyway. Gate sits in
+> `PrinterBlockEntity.canPrintBlock`, which the print loop, Matter Calculator quote, and ghost
+> preview all share — so the quote-honesty requirement below fell out for free. Item mode refuses
+> restricted trophies outright (duplication path). Values kept (heads stay winder-blacklisted).
+> Original plan text preserved below for the record.
 
 **Goal:** keep special items (mob heads/skulls, other trophies) **unprintable and unwindable by
 default**, but printable on **specific blueprints PGMacDesign designates** — so a unique build can
