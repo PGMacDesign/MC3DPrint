@@ -253,9 +253,14 @@ public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
         if (isHovering(FU_X, FU_Y, FU_WIDTH, FU_HEIGHT, mouseX, mouseY)) {
             java.util.List<Component> lines = new java.util.ArrayList<>();
             lines.add(Component.translatable("tooltip.mc3dprint.fu", menu.fu(), menu.fuCapacity()));
+            if (menu.networkFu() > 0) {
+                // gauge fill is docked-only; a stocked rack/cable network still feeds prints
+                lines.add(Component.translatable("tooltip.mc3dprint.fu_network",
+                        String.format("%,d", menu.networkFu())));
+            }
             lines.add(Component.translatable("tooltip.mc3dprint.spools_docked",
                     menu.spoolsUsed(), menu.spoolSlots()));
-            if (menu.spoolsUsed() == 0) {
+            if (menu.spoolsUsed() == 0 && menu.networkFu() == 0) {
                 lines.add(Component.translatable("tooltip.mc3dprint.fu_no_spools"));
             }
             RenderCompat.tooltipComponents(graphics, font, lines, mouseX, mouseY);

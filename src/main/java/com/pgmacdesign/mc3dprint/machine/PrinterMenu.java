@@ -350,6 +350,11 @@ public class PrinterMenu extends AbstractContainerMenu {
         return SplitContainerData.combine(data, PrinterBlockEntity.DATA_AVAIL_TIER_BASE + tier - 1);
     }
 
+    /** FU reachable over racks/cable toward the display tier (beyond the docked gauge). */
+    public int networkFu() {
+        return SplitContainerData.combine(data, PrinterBlockEntity.DATA_FU_NETWORK);
+    }
+
     public boolean preview() {
         return SplitContainerData.combine(data, PrinterBlockEntity.DATA_PREVIEW) != 0;
     }

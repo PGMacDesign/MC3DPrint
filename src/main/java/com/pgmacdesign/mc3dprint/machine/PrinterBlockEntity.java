@@ -117,7 +117,8 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
     public static final int DATA_COST_TIER_BASE = 22; // +0..7 — per-tier FU cost (tier units)
     public static final int DATA_AVAIL_TIER_BASE = 30;// +0..7 — exact-tier FU available, docked + network
     public static final int DATA_JOB_ACTIVE = 38;      // 1 while a print OR deconstruct job exists
-    public static final int DATA_COUNT = 39;
+    public static final int DATA_FU_NETWORK = 39;      // rack/cable FU toward the display tier (docked shows on the gauge)
+    public static final int DATA_COUNT = 40;
 
     /** Newest history entries mirrored to clients for the GUI tooltip. */
     public static final int HISTORY_SYNC_CAP = 8;
@@ -703,6 +704,23 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             base += FilamentDrain.availableTier(spools, tier, ratio); // docked
             for (IFilamentSource src : sources) {
                 base += src.availableExactTier(tier);
+            }
+        }
+        return FuConversion.clampToInt(FuConversion.fromBase(base, costTier, ratio));
+    }
+
+    /**
+     * Network-only FU (racks direct or via cable) toward a {@code costTier} cost,
+     * in tier units — what the gauge tooltip reports beyond the docked spools. A
+     * printer whose gauge reads near-empty but has a stocked rack is NOT out of
+     * filament; this is the number that says so.
+     */
+    public int networkFu(int costTier) {
+        int ratio = FuConversion.ratio();
+        long base = 0;
+        for (IFilamentSource src : reachableSources()) {
+            for (int t = costTier; t <= SpoolItem.CAPACITY_BY_TIER.length; t++) {
+                base += src.availableExactTier(t);
             }
         }
         return FuConversion.clampToInt(FuConversion.fromBase(base, costTier, ratio));
@@ -2694,6 +2712,7 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             case DATA_BP_ETA -> costReportEta();
             case DATA_BP_SHORTFALL -> shortfallTier();
             case DATA_JOB_ACTIVE -> activeJob != null || deconstructJob != null ? 1 : 0;
+            case DATA_FU_NETWORK -> networkFu(displayTier());
             default -> {
                 if (index >= DATA_COST_TIER_BASE && index < DATA_COST_TIER_BASE + 8) {
                     ensureCostReport();

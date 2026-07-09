@@ -7,6 +7,8 @@ summary: "A bookshelf-style rack that stores eight Filament Spools and doubles a
 
 Filament Spools don't stack, so a drawer full of them clutters fast. The Filament Rack is a bookshelf-style shelf with 8 slots (2×4) built to hold them.
 
+A printer fed by a rack (directly or over [MC3D Cable](/guide/mc3d-cable/)) shows that supply in its GUI: the FU gauge tooltip adds a **"+N FU via rack network"** line, so a near-empty gauge with a stocked rack never reads as "out of filament."
+
 ## Storing spools
 
 - Right-click the rack with a spool in hand to shelve it.

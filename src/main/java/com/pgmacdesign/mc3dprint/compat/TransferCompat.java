@@ -45,6 +45,28 @@ public final class TransferCompat {
         //?}
     }
 
+    /**
+     * Cached energy lookup for hot per-tick paths: wraps {@code BlockCapabilityCache}
+     * so repeated neighbor pulls skip the capability resolution chain. The cache
+     * self-invalidates on neighbor changes; callers hold one per (pos, side) for the
+     * lifetime of their block entity. The supplier yields null while absent.
+     */
+    public static java.util.function.Supplier<IEnergyStorage> energyCache(
+            net.minecraft.server.level.ServerLevel level, BlockPos pos, Direction side) {
+        //? if >=1.21.9 {
+        /*var cache = net.neoforged.neoforge.capabilities.BlockCapabilityCache
+                .create(Capabilities.Energy.BLOCK, level, pos, side);
+        return () -> {
+            EnergyHandler handler = cache.getCapability();
+            return handler == null ? null : IEnergyStorage.of(handler);
+        };
+        *///?} else {
+        var cache = net.neoforged.neoforge.capabilities.BlockCapabilityCache
+                .create(Capabilities.EnergyStorage.BLOCK, level, pos, side);
+        return cache::getCapability;
+        //?}
+    }
+
     /** Legacy view of the block item capability at {@code pos} (null if absent). */
     @Nullable
     public static IItemHandler findItems(Level level, BlockPos pos, @Nullable Direction side) {

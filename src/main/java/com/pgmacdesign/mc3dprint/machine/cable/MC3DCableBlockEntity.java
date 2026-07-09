@@ -100,17 +100,31 @@ public class MC3DCableBlockEntity extends BlockEntity implements IFilamentSource
         this.lastRecompute = now;
     }
 
+    /** Per-direction cached energy lookups for the hot pull loop (PGM-13 done). */
+    @SuppressWarnings("unchecked")
+    private java.util.function.Supplier<IEnergyStorage>[] pullCaches;
+
     private void transferEnergy(Level level, BlockPos pos) {
         int rate = MC3DPrintConfig.cableTransferRate();
-        // 1) Pull from adjacent, non-cable, extractable sources (always live — responsiveness).
-        // TODO(PGM-13 / decision 5.2): optimize to BlockCapabilityCache
+        // 1) Pull from adjacent, non-cable, extractable sources. Capability lookups go
+        //    through self-invalidating BlockCapabilityCaches — the resolution chain runs
+        //    only when a neighbor actually changes, not every tick.
+        if (pullCaches == null && level instanceof net.minecraft.server.level.ServerLevel serverLevel) {
+            pullCaches = new java.util.function.Supplier[Direction.values().length];
+            for (Direction d : Direction.values()) {
+                pullCaches[d.get3DDataValue()] =
+                        TransferCompat.energyCache(serverLevel, pos.relative(d), d.getOpposite());
+            }
+        }
         for (Direction dir : Direction.values()) {
             BlockPos neighbourPos = pos.relative(dir);
             BlockEntity be = level.getBlockEntity(neighbourPos);
             if (be == null || be instanceof MC3DCableBlockEntity) {
-                continue;
+                continue; // cable-to-cable moves via the network push, never the pull loop
             }
-            IEnergyStorage src = TransferCompat.findEnergy(level, neighbourPos, dir.getOpposite());
+            IEnergyStorage src = pullCaches == null
+                    ? TransferCompat.findEnergy(level, neighbourPos, dir.getOpposite())
+                    : pullCaches[dir.get3DDataValue()].get();
             if (src == null || !src.canExtract()) {
                 continue;
             }
