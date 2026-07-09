@@ -295,12 +295,65 @@ public class PrinterMenu extends AbstractContainerMenu {
         return SplitContainerData.combine(data, PrinterBlockEntity.DATA_OFFSET_X + axis);
     }
 
-    // GUI button ids: 0 start, 1 auto toggle, 2..7 = X-/X+/Y-/Y+/Z-/Z+, 8 preview, 9 rotate
+    // GUI button ids: 0 start, 1 auto toggle, 2..7 = X-/X+/Y-/Y+/Z-/Z+, 8 preview, 9 rotate, 10 mode
     public static final int BUTTON_START = 0;
     public static final int BUTTON_AUTO = 1;
     public static final int BUTTON_OFFSET_BASE = 2;
     public static final int BUTTON_PREVIEW = 8;
     public static final int BUTTON_ROTATE = 9;
+    public static final int BUTTON_MODE = 10;
+    public static final int BUTTON_CANCEL = 11;
+
+    /** True while a print or deconstruct job exists (drives the Start/Cancel swap). */
+    public boolean jobActive() {
+        return SplitContainerData.combine(data, PrinterBlockEntity.DATA_JOB_ACTIVE) != 0;
+    }
+
+    /**
+     * The backing block entity when available — always on the server; on the client
+     * whenever the machine's chunk is loaded (a Remote Terminal across dimensions may
+     * not have it, and history simply doesn't render there).
+     */
+    @Nullable
+    public PrinterBlockEntity printerBlockEntity() {
+        return printer;
+    }
+
+    public boolean deconstructMode() {
+        return SplitContainerData.combine(data, PrinterBlockEntity.DATA_DECON_MODE) != 0;
+    }
+
+    // --- Matter Calculator readout (0s when no disc is loaded) ---
+
+    public int blueprintFuTotal() {
+        return SplitContainerData.combine(data, PrinterBlockEntity.DATA_BP_FU_TOTAL);
+    }
+
+    public int blueprintRf() {
+        return SplitContainerData.combine(data, PrinterBlockEntity.DATA_BP_RF);
+    }
+
+    public int blueprintEtaTicks() {
+        return SplitContainerData.combine(data, PrinterBlockEntity.DATA_BP_ETA);
+    }
+
+    /** Lowest tier whose down-only filament coverage fails, or 0 when affordable. */
+    public int shortfallTier() {
+        return SplitContainerData.combine(data, PrinterBlockEntity.DATA_BP_SHORTFALL);
+    }
+
+    public int costForTier(int tier) {
+        return SplitContainerData.combine(data, PrinterBlockEntity.DATA_COST_TIER_BASE + tier - 1);
+    }
+
+    public int availForTier(int tier) {
+        return SplitContainerData.combine(data, PrinterBlockEntity.DATA_AVAIL_TIER_BASE + tier - 1);
+    }
+
+    /** FU reachable over racks/cable toward the display tier (beyond the docked gauge). */
+    public int networkFu() {
+        return SplitContainerData.combine(data, PrinterBlockEntity.DATA_FU_NETWORK);
+    }
 
     public boolean preview() {
         return SplitContainerData.combine(data, PrinterBlockEntity.DATA_PREVIEW) != 0;
@@ -335,6 +388,17 @@ public class PrinterMenu extends AbstractContainerMenu {
         }
         if (id == BUTTON_ROTATE) {
             printer.cycleRotation();
+            return true;
+        }
+        if (id == BUTTON_MODE) {
+            printer.setDeconstructMode(!printer.deconstructMode());
+            return true;
+        }
+        if (id == BUTTON_CANCEL) {
+            // No rollback by design: placed/removed blocks and spent/credited FU stand.
+            // A cancelled print restarts cheap — repair mode fast-forwards matching
+            // blocks at zero cost, so a mis-click never wastes filament.
+            printer.cancelActiveJob();
             return true;
         }
         int offsetId = id - BUTTON_OFFSET_BASE;

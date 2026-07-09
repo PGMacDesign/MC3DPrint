@@ -59,6 +59,15 @@ public class ScannerItem extends Item {
         CompoundTag tag = stack.getOrCreateTag();
         BlockPos clicked = context.getClickedPos();
 
+        // Sneak-click a printer/fabricator: hand the two-corner selection off as its
+        // Deconstruct region (arms Deconstruct Mode) instead of setting a corner.
+        if (player != null && player.isSecondaryUseActive()
+                && level.getBlockEntity(clicked)
+                        instanceof com.pgmacdesign.mc3dprint.machine.PrinterBlockEntity printer) {
+            handOffDeconstructRegion(level, player, stack, clicked, printer);
+            return InteractionResult.CONSUME;
+        }
+
         boolean settingB = tag.getBoolean(TAG_NEXT_IS_B);
         tag.put(settingB ? TAG_CORNER_B : TAG_CORNER_A, NbtUtils.writeBlockPos(clicked));
         tag.putBoolean(TAG_NEXT_IS_B, !settingB);
@@ -163,6 +172,30 @@ public class ScannerItem extends Item {
                 blueprint.blockCount()), true);
         level.playSound(null, player.blockPosition(), SoundEvents.PLAYER_LEVELUP, SoundSource.PLAYERS, 0.5F, 1.5F);
         return InteractionResultHolder.consume(stack);
+    }
+
+    private static void handOffDeconstructRegion(Level level, Player player, ItemStack stack,
+            BlockPos clicked, com.pgmacdesign.mc3dprint.machine.PrinterBlockEntity printer) {
+        Optional<BlockPos> cornerA = readCorner(stack, TAG_CORNER_A);
+        Optional<BlockPos> cornerB = readCorner(stack, TAG_CORNER_B);
+        if (cornerA.isEmpty() || cornerB.isEmpty()) {
+            player.displayClientMessage(
+                    Component.translatable("message.mc3dprint.decon_need_corners"), true);
+            return;
+        }
+        BlockPos a = cornerA.get();
+        BlockPos b = cornerB.get();
+        int dx = Math.abs(a.getX() - b.getX()) + 1;
+        int dy = Math.abs(a.getY() - b.getY()) + 1;
+        int dz = Math.abs(a.getZ() - b.getZ()) + 1;
+        Component message = switch (printer.setDeconstructRegion(a, b)) {
+            case SET -> Component.translatable("message.mc3dprint.decon_region_set", dx, dy, dz);
+            case TOO_LARGE -> Component.translatable("message.mc3dprint.decon_region_too_large", dx, dy, dz);
+            case TOO_FAR -> Component.translatable("message.mc3dprint.decon_region_too_far",
+                    com.pgmacdesign.mc3dprint.machine.PrinterBlockEntity.DECON_MAX_DISTANCE);
+        };
+        player.displayClientMessage(message, true);
+        level.playSound(null, clicked, SoundEvents.NOTE_BLOCK_BELL.value(), SoundSource.PLAYERS, 0.5F, 1.2F);
     }
 
     private static Optional<BlockPos> readCorner(ItemStack stack, String key) {

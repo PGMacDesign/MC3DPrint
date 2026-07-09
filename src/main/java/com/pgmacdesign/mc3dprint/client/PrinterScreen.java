@@ -57,6 +57,7 @@ public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
     private Button autoButton;
     private Button previewButton;
     private Button rotateButton;
+    private Button modeButton;
 
     public PrinterScreen(PrinterMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
@@ -70,9 +71,12 @@ public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
     @Override
     protected void init() {
         super.init();
+        // One slot, two verbs: Start when idle, Cancel while a job runs (cancel is
+        // safe — no rollback, and a repair restart re-covers placed blocks for free).
         startButton = addRenderableWidget(Button.builder(
                         Component.translatable("gui.mc3dprint.start"),
-                        b -> sendButtonClick(PrinterMenu.BUTTON_START))
+                        b -> sendButtonClick(menu.jobActive()
+                                ? PrinterMenu.BUTTON_CANCEL : PrinterMenu.BUTTON_START))
                 .bounds(leftPos + 8, topPos + CONTROLS_Y, 40, 14).build());
         autoButton = addRenderableWidget(Button.builder(
                         autoLabel(),
@@ -98,6 +102,48 @@ public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
                         rotateLabel(),
                         b -> sendButtonClick(PrinterMenu.BUTTON_ROTATE))
                 .bounds(leftPos + 10, topPos + ROTATE_Y, 100, 14).build());
+
+        modeButton = addRenderableWidget(Button.builder(
+                        modeLabel(),
+                        b -> sendButtonClick(PrinterMenu.BUTTON_MODE))
+                .bounds(leftPos + 114, topPos + ROTATE_Y, 56, 14).build());
+    }
+
+    private Component modeLabel() {
+        return Component.translatable(menu.deconstructMode()
+                ? "gui.mc3dprint.mode_deconstruct" : "gui.mc3dprint.mode_print");
+    }
+
+    /** 12_400 -> "12.4k"; keeps the one-line calculator readout narrow. */
+    private static String compact(int value) {
+        if (value < 10_000) {
+            return Integer.toString(value);
+        }
+        if (value < 1_000_000) {
+            return String.format("%.1fk", value / 1000.0);
+        }
+        return String.format("%.1fM", value / 1_000_000.0);
+    }
+
+    /** Ticks elapsed -> "12s" / "5m" / "2h" (coarse — it's a history stamp, not a timer). */
+    private static String agoText(long ticks) {
+        long seconds = Math.max(0, ticks / 20);
+        if (seconds < 60) {
+            return seconds + "s";
+        }
+        if (seconds < 3600) {
+            return (seconds / 60) + "m";
+        }
+        return (seconds / 3600) + "h";
+    }
+
+    /** Ticks -> "~42s" / "~3m10s". */
+    private static String etaText(int ticks) {
+        int seconds = Math.max(1, ticks / 20);
+        if (seconds < 60) {
+            return seconds + "s";
+        }
+        return (seconds / 60) + "m" + (seconds % 60) + "s";
     }
 
     private Component rotateLabel() {
@@ -126,7 +172,11 @@ public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
         autoButton.setMessage(autoLabel());
         previewButton.setMessage(previewLabel());
         rotateButton.setMessage(rotateLabel());
-        startButton.active = !menu.autoStart();
+        modeButton.setMessage(modeLabel());
+        boolean jobActive = menu.jobActive();
+        startButton.setMessage(Component.translatable(jobActive
+                ? "gui.mc3dprint.cancel" : "gui.mc3dprint.start"));
+        startButton.active = jobActive || !menu.autoStart();
     }
 
     @Override
@@ -140,12 +190,61 @@ public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
                     Component.translatable("tooltip.mc3dprint.energy", menu.energy(), menu.maxEnergy()),
                     mouseX, mouseY);
         }
+        // Print history: hover the (empty) output slot for the machine's recent jobs.
+        // With an item in the slot, the item tooltip wins; hidden when the client
+        // doesn't have the backing BE (e.g. a Remote Terminal in an unloaded chunk).
+        if (isHovering(PrinterMenu.OUTPUT_SLOT_X - 1, PrinterMenu.OUTPUT_SLOT_Y - 1, 18, 18, mouseX, mouseY)
+                && !menu.getSlot(1).hasItem() && menu.printerBlockEntity() != null) {
+            var lines = new java.util.ArrayList<Component>();
+            var entries = menu.printerBlockEntity().history();
+            if (entries.isEmpty()) {
+                lines.add(Component.translatable("tooltip.mc3dprint.history_empty"));
+            } else {
+                lines.add(Component.translatable("tooltip.mc3dprint.history_header"));
+                long now = minecraft != null && minecraft.level != null ? minecraft.level.getGameTime() : 0;
+                for (var entry : entries) {
+                    lines.add(Component.translatable("tooltip.mc3dprint.history_entry",
+                            entry.getString("Name"),
+                            entry.getInt("Blocks"),
+                            agoText(now - entry.getLong("Time"))));
+                }
+            }
+            graphics.renderComponentTooltip(font, lines, mouseX, mouseY);
+        }
+        if (isHovering(FU_X, FU_Y, FU_WIDTH, FU_HEIGHT, mouseX, mouseY) && menu.blueprintFuTotal() > 0) {
+            // Matter Calculator: full pre-print breakdown on the FU gauge
+            var lines = new java.util.ArrayList<Component>();
+            lines.add(Component.translatable("tooltip.mc3dprint.calc_header",
+                    menu.blueprintFuTotal(), compact(menu.blueprintRf()), etaText(menu.blueprintEtaTicks())));
+            int shortfall = menu.shortfallTier();
+            for (int t = 1; t <= 8; t++) {
+                int need = menu.costForTier(t);
+                if (need > 0) {
+                    Component line = Component.translatable("tooltip.mc3dprint.calc_tier",
+                            t, need, menu.availForTier(t));
+                    lines.add(t == shortfall
+                            ? line.copy().withStyle(ChatFormatting.RED) : line);
+                }
+            }
+            if (shortfall > 0) {
+                lines.add(Component.translatable("tooltip.mc3dprint.calc_shortfall", shortfall)
+                        .withStyle(ChatFormatting.RED));
+            }
+            lines.add(Component.translatable("tooltip.mc3dprint.fu", menu.fu(), menu.fuCapacity()));
+            graphics.renderComponentTooltip(font, lines, mouseX, mouseY);
+            return;
+        }
         if (isHovering(FU_X, FU_Y, FU_WIDTH, FU_HEIGHT, mouseX, mouseY)) {
             java.util.List<Component> lines = new java.util.ArrayList<>();
             lines.add(Component.translatable("tooltip.mc3dprint.fu", menu.fu(), menu.fuCapacity()));
+            if (menu.networkFu() > 0) {
+                // gauge fill is docked-only; a stocked rack/cable network still feeds prints
+                lines.add(Component.translatable("tooltip.mc3dprint.fu_network",
+                        String.format("%,d", menu.networkFu())));
+            }
             lines.add(Component.translatable("tooltip.mc3dprint.spools_docked",
                     menu.spoolsUsed(), menu.spoolSlots()));
-            if (menu.spoolsUsed() == 0) {
+            if (menu.spoolsUsed() == 0 && menu.networkFu() == 0) {
                 lines.add(Component.translatable("tooltip.mc3dprint.fu_no_spools"));
             }
             graphics.renderComponentTooltip(font, lines, mouseX, mouseY);
@@ -278,23 +377,50 @@ public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
             case NOT_PRINTABLE -> Component.translatable("gui.mc3dprint.state.not_printable");
             case NEEDS_HIGHER_TIER -> Component.translatable("gui.mc3dprint.state.needs_higher_tier", menu.requiredTier());
             case AREA_TOO_SMALL -> Component.translatable("gui.mc3dprint.state.area_too_small");
+            case DECONSTRUCTING -> Component.translatable("gui.mc3dprint.state.deconstructing");
         };
         // Status lights accent cyan when printing/ready, warm red for paused/error,
         // neutral light grey when idle.
         int color = switch (menu.state()) {
-            case PRINTING, READY -> ACCENT;
+            case PRINTING, READY, DECONSTRUCTING -> ACCENT;
             case IDLE -> LABEL;
             default -> WARN;
         };
-        // Keep the status text from running into the upgrade column on the right.
-        // If a localized string is wide, shift its draw x left so it never crosses
-        // the column edge; never push it left of the status anchor at 80.
+        // The row at y=58 is shared: quote on the left (x=36), status on the right.
+        // The status is RIGHT-aligned against the upgrade column — a fixed anchor at
+        // 80 let the wider Matter Calculator quote run underneath it (soak finding:
+        // "24.7k FU · ~1m3s" vs "Ready").
         int statusRightEdge = PrinterMenu.UPGRADE_SLOT_X - 4;
-        int statusX = Math.min(80, statusRightEdge - font.width(status));
+        int statusX = statusRightEdge - font.width(status);
         graphics.drawString(font, status, statusX, 58, color, false);
-        int cost = menu.templateCost();
+        // An error/paused status owns the whole row: the cost/ETA quote is meaningless
+        // for a job that can't run, and long statuses ("Build Too Large") physically
+        // overlap the quote text (soak finding). WARN color == error/paused here.
+        // Deconstruct Mode also suppresses it — the quote describes a PRINT of the
+        // loaded disc, which is not what Start does in that mode.
+        boolean quoteHidden = color == WARN || menu.deconstructMode();
+        int cost = quoteHidden ? 0 : menu.templateCost();
+        // Whatever ends up on the left may never run under the status text: degrade
+        // the quote (full → FU-only → nothing) until it fits. The gauge tooltip
+        // always carries the full breakdown, so dropping the ETA loses nothing.
+        int quoteLimit = statusX - 6;
         if (cost > 0) {
-            graphics.drawString(font, Component.translatable("gui.mc3dprint.cost", cost), 36, 58, LABEL, false);
+            Component itemCost = Component.translatable("gui.mc3dprint.cost", cost);
+            if (36 + font.width(itemCost) <= quoteLimit) {
+                graphics.drawString(font, itemCost, 36, 58, LABEL, false);
+            }
+        } else if (!quoteHidden && menu.blueprintFuTotal() > 0) {
+            // Matter Calculator: compact cost/ETA line for the loaded disc; warm-red when
+            // filament coverage fails (details live in the FU gauge tooltip).
+            Component calc = Component.translatable("gui.mc3dprint.bp_cost",
+                    compact(menu.blueprintFuTotal()), etaText(menu.blueprintEtaTicks()));
+            if (36 + font.width(calc) > quoteLimit) {
+                calc = Component.translatable("gui.mc3dprint.cost", compact(menu.blueprintFuTotal()));
+            }
+            if (36 + font.width(calc) <= quoteLimit) {
+                graphics.drawString(font, calc, 36, 58,
+                        menu.shortfallTier() > 0 ? WARN : LABEL, false);
+            }
         }
         // "Spools X/Y" — smaller and moved DOWN to sit just above the spool-slot grid
         // (roughly in line with the 2nd inventory row), right-aligned over the grid. The

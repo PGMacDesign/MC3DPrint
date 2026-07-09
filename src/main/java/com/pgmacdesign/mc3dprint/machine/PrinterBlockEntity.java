@@ -108,14 +108,28 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
     // the GUI so a NEEDS_HIGHER_TIER status can name the tier ("Requires a Tier N
     // Printer"). 0 when no tier fits / not applicable.
     public static final int DATA_REQUIRED_TIER = 16;
-    public static final int DATA_COUNT = 17;
+    public static final int DATA_DECON_MODE = 17;
+    // Matter Calculator: pre-print readout for the loaded disc (0 when no disc/report).
+    public static final int DATA_BP_FU_TOTAL = 18;    // summed FU cost across tiers (display units)
+    public static final int DATA_BP_RF = 19;          // total RF the job will consume
+    public static final int DATA_BP_ETA = 20;         // total ticks at current speed
+    public static final int DATA_BP_SHORTFALL = 21;   // lowest tier whose filament coverage fails; 0 = covered
+    public static final int DATA_COST_TIER_BASE = 22; // +0..7 — per-tier FU cost (tier units)
+    public static final int DATA_AVAIL_TIER_BASE = 30;// +0..7 — exact-tier FU available, docked + network
+    public static final int DATA_JOB_ACTIVE = 38;      // 1 while a print OR deconstruct job exists
+    public static final int DATA_FU_NETWORK = 39;      // rack/cable FU toward the display tier (docked shows on the gauge)
+    public static final int DATA_COUNT = 40;
+
+    /** Newest history entries mirrored to clients for the GUI tooltip. */
+    public static final int HISTORY_SYNC_CAP = 8;
 
     /** Build offsets are clamped to [-MAX_OFFSET, MAX_OFFSET] on each axis. */
     public static final int MAX_OFFSET = 32;
 
     public enum State {
         IDLE, PRINTING, PAUSED_NO_POWER, PAUSED_OUTPUT_FULL, PAUSED_OBSTRUCTED, ZONE_CONFLICT,
-        PAUSED_NO_FILAMENT, NOT_PRINTABLE, AREA_TOO_SMALL, NEEDS_HIGHER_TIER, READY;
+        PAUSED_NO_FILAMENT, NOT_PRINTABLE, AREA_TOO_SMALL, NEEDS_HIGHER_TIER, READY,
+        DECONSTRUCTING; // appended last: State syncs/persists by ordinal
 
         public static State byOrdinal(int ordinal) {
             return ordinal >= 0 && ordinal < values().length ? values()[ordinal] : IDLE;
@@ -179,6 +193,22 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
     // Blueprint Mode
     @Nullable
     private PrintJob activeJob;
+
+    // --- Deconstruct Mode (the printer in reverse; see DeconstructJob) ---
+    private boolean deconstructMode;
+    @Nullable
+    private BlockPos deconstructMin;   // world min corner of the armed region
+    @Nullable
+    private BlockPos deconstructSize;
+    @Nullable
+    private DeconstructJob deconstructJob;
+    /**
+     * Safety arm-gate: true from the moment a region is handed over (or the machine
+     * is switched into Deconstruct) until the player presses Start once. While set,
+     * Auto NEVER starts a deconstruct — arming a machine can't dissolve blocks by
+     * surprise. After that first explicit Start, Auto resumes standing-recycler duty.
+     */
+    private boolean deconArmedRequiresStart;
     @Nullable
     private transient Blueprint cachedBlueprint;          // lazily loaded for activeJob
     @Nullable
@@ -323,6 +353,21 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             return;
         }
         State previous = state;
+
+        if (deconstructMode) {
+            if (activeJob != null) {
+                cancelActiveJob(); // mode epoch: a print job never survives the switch
+            }
+            tickDeconstructMode();
+            if (state != previous) {
+                setChanged();
+            }
+            return;
+        }
+        if (deconstructJob != null) {
+            cancelActiveJob(); // mode switched back to Print mid-deconstruct
+        }
+
         ItemStack template = inventory.getStackInSlot(SLOT_TEMPLATE);
 
         if (isLoadedDisc(template)) {
@@ -364,12 +409,42 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         return net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
     }
 
+    // --- #print_restricted trophy gate ---
+
+    private static boolean isRestrictedBlock(BlockState state) {
+        Item item = state.getBlock().asItem();
+        return item != Items.AIR
+                && new ItemStack(item).is(com.pgmacdesign.mc3dprint.registry.ModItemTags.PRINT_RESTRICTED);
+    }
+
+    /** True when the loaded disc is OFFICIAL and its curated allowance lists this block's item. */
+    private boolean restrictedAllowedForLoadedDisc(BlockState state) {
+        ItemStack disc = inventory.getStackInSlot(SLOT_TEMPLATE);
+        if (!isLoadedDisc(disc) || !BlueprintDiscItem.isOfficial(disc)) {
+            return false;
+        }
+        UUID id = BlueprintDiscItem.getBlueprintId(disc).orElse(null);
+        return id != null && com.pgmacdesign.mc3dprint.blueprint.CuratedBlueprints
+                .restrictedAllowance(id)
+                .contains(net.minecraft.core.registries.BuiltInRegistries.ITEM
+                        .getKey(state.getBlock().asItem()).toString());
+    }
+
     // --- Item Mode ---
 
     private void tickItemMode(ItemStack template) {
         if (template.isEmpty()) {
             state = State.IDLE;
             itemProgress = 0;
+            return;
+        }
+        // Item mode with a restricted trophy would be straight duplication — refuse
+        // regardless of FU value (blueprint mode has the official-allowance gate).
+        if (template.is(com.pgmacdesign.mc3dprint.registry.ModItemTags.PRINT_RESTRICTED)) {
+            state = State.NOT_PRINTABLE;
+            itemProgress = 0;
+            notPrintableReason = idOf(template)
+                    + " is a restricted trophy item — printers never duplicate it";
             return;
         }
         int fuCost = itemFuCost(template);
@@ -470,6 +545,12 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
     private boolean canPrintBlock(BlockState resolvedState) {
         Optional<FuValue> value = blockFuValue(resolvedState);
         if (value.isPresent()) {
+            // Trophy gate: a #print_restricted block prints only from an OFFICIAL disc
+            // whose curated blueprint carries an allowance for it. Routing through
+            // canPrintBlock covers the print loop, the calculator, and the ghost mask.
+            if (isRestrictedBlock(resolvedState) && !restrictedAllowedForLoadedDisc(resolvedState)) {
+                return false;
+            }
             return value.get().tier() <= tier.number();
         }
         // Structural matter (farmland, crops, water, wall torches, redstone wire, fire…)
@@ -596,6 +677,23 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             base += FilamentDrain.availableTier(spools, tier, ratio); // docked
             for (IFilamentSource src : sources) {
                 base += src.availableExactTier(tier);
+            }
+        }
+        return FuConversion.clampToInt(FuConversion.fromBase(base, costTier, ratio));
+    }
+
+    /**
+     * Network-only FU (racks direct or via cable) toward a {@code costTier} cost,
+     * in tier units — what the gauge tooltip reports beyond the docked spools. A
+     * printer whose gauge reads near-empty but has a stocked rack is NOT out of
+     * filament; this is the number that says so.
+     */
+    public int networkFu(int costTier) {
+        int ratio = FuConversion.ratio();
+        long base = 0;
+        for (IFilamentSource src : reachableSources()) {
+            for (int t = costTier; t <= SpoolItem.CAPACITY_BY_TIER.length; t++) {
+                base += src.availableExactTier(t);
             }
         }
         return FuConversion.clampToInt(FuConversion.fromBase(base, costTier, ratio));
@@ -1520,11 +1618,309 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         }
     }
 
+    // --- Deconstruct Mode: the printer in reverse ---
+    //
+    // A selected region is consumed block-by-block back into Filament Units at a
+    // LOSSY rate (config yieldFactor, hard-capped < 1.0). The lifecycle mirrors
+    // printing — same cadence, RF gate, zone claim, chunk tickets, pause states —
+    // but runs TOP-DOWN so supported blocks come off before their supports.
+
+    /** Region hand-off outcome, surfaced to the scanner's action bar. */
+    public enum RegionResult { SET, TOO_LARGE, TOO_FAR }
+
+    /** Corners of the armed region may sit at most this far from the machine. */
+    public static final int DECON_MAX_DISTANCE = 64;
+
+    /**
+     * Arms a deconstruct region from a scanner two-corner selection and switches
+     * the machine into Deconstruct Mode. Refuses regions wider than this tier's
+     * print footprint (a machine can un-print exactly what it could print) or
+     * farther than {@link #DECON_MAX_DISTANCE} from the machine.
+     */
+    public RegionResult setDeconstructRegion(BlockPos a, BlockPos b) {
+        BlockPos min = new BlockPos(Math.min(a.getX(), b.getX()),
+                Math.min(a.getY(), b.getY()), Math.min(a.getZ(), b.getZ()));
+        BlockPos size = new BlockPos(Math.abs(a.getX() - b.getX()) + 1,
+                Math.abs(a.getY() - b.getY()) + 1, Math.abs(a.getZ() - b.getZ()) + 1);
+        if (Math.max(size.getX(), size.getZ()) > MC3DPrintConfig.maxFootprint(tier)) {
+            return RegionResult.TOO_LARGE;
+        }
+        BlockPos max = min.offset(size.getX() - 1, size.getY() - 1, size.getZ() - 1);
+        if (chebyshev(worldPosition, min) > DECON_MAX_DISTANCE
+                || chebyshev(worldPosition, max) > DECON_MAX_DISTANCE) {
+            return RegionResult.TOO_FAR;
+        }
+        cancelActiveJob(); // region epoch: an in-flight job never crosses onto a new region
+        startRequested = false; // ...and neither does a pending Start trigger
+        deconstructMin = min;
+        deconstructSize = size;
+        deconstructMode = true;
+        deconArmedRequiresStart = true; // fresh region: first job is manual-start only
+        state = State.IDLE;
+        setChanged();
+        syncToClients();
+        return RegionResult.SET;
+    }
+
+    @Nullable
+    public BlockPos deconstructRegionMin() {
+        return deconstructMin;
+    }
+
+    @Nullable
+    public BlockPos deconstructRegionSize() {
+        return deconstructSize;
+    }
+
+    private static int chebyshev(BlockPos a, BlockPos b) {
+        return Math.max(Math.abs(a.getX() - b.getX()),
+                Math.max(Math.abs(a.getY() - b.getY()), Math.abs(a.getZ() - b.getZ())));
+    }
+
+    public boolean deconstructMode() {
+        return deconstructMode;
+    }
+
+    /** Toggles Print/Deconstruct. Any in-flight job of either kind is cancelled (mode epoch). */
+    public void setDeconstructMode(boolean value) {
+        if (deconstructMode == value) {
+            return;
+        }
+        deconstructMode = value;
+        if (value) {
+            deconArmedRequiresStart = true; // entering Decon re-arms the manual-start gate
+        }
+        startRequested = false; // a pending Start never crosses a mode switch
+        cancelActiveJob();
+        state = State.IDLE;
+        setChanged();
+        syncToClients();
+    }
+
+    @Nullable
+    public DeconstructJob deconstructJob() {
+        return deconstructJob;
+    }
+
+    private void tickDeconstructMode() {
+        if (!(level instanceof ServerLevel serverLevel)) {
+            return;
+        }
+        if (deconstructJob == null) {
+            // Auto is honored only after the first explicit Start on a freshly armed
+            // region — see deconArmedRequiresStart.
+            boolean autoAllowed = autoStart && !deconArmedRequiresStart;
+            if (!autoAllowed && !startRequested) {
+                if (state == State.IDLE || state == State.DECONSTRUCTING) {
+                    state = deconstructMin != null ? State.READY : State.IDLE;
+                }
+                return;
+            }
+            if (retryCooldown > 0) {
+                retryCooldown--;
+                return;
+            }
+            retryCooldown = 20;
+            if (startRequested && deconArmedRequiresStart) {
+                deconArmedRequiresStart = false; // the one explicit Start disarms the gate
+                setChanged();
+            }
+            startRequested = false;
+            tryStartDeconstruct(serverLevel);
+            return;
+        }
+        if (deconstructJob.isComplete()) {
+            finishDeconstruct(serverLevel);
+            return;
+        }
+
+        placementCooldown++;
+        if (placementCooldown < speedAdjusted(MC3DPrintConfig.ticksPerBlock(tier))) {
+            if (state == State.IDLE) {
+                state = State.DECONSTRUCTING;
+            }
+            return;
+        }
+        int rfPerBlock = rfAdjusted(MC3DPrintConfig.rfPerBlock(tier));
+        if (!energy.hasAtLeast(rfPerBlock)) {
+            state = State.PAUSED_NO_POWER;
+            return;
+        }
+
+        // Fast-forward (no tick cost) past air and skip-in-place positions. Each is
+        // processed exactly once — progress is monotonic, so nothing is revisited.
+        BlockPos pos = null;
+        DeconstructYield yield = null;
+        while (!deconstructJob.isComplete()) {
+            BlockPos candidate = deconstructJob.posFor(deconstructJob.progress());
+            DeconstructYield classified = classifyForDeconstruct(serverLevel, candidate,
+                    serverLevel.getBlockState(candidate));
+            if (classified.removable()) {
+                pos = candidate;
+                yield = classified;
+                break;
+            }
+            deconstructJob.advance();
+        }
+        if (deconstructJob.isComplete()) {
+            setChanged();
+            finishDeconstruct(serverLevel);
+            return;
+        }
+
+        // Halt BEFORE removing when the yield has nowhere to go — filament is never voided.
+        if (yield.fu() > 0 && insertableFuFor(yield.tier()) < yield.fu()) {
+            state = State.PAUSED_OUTPUT_FULL;
+            return;
+        }
+
+        energy.consume(rfPerBlock);
+        if (yield.fu() > 0) {
+            creditFu(yield.fu(), yield.tier());
+        }
+        serverLevel.setBlock(pos, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(),
+                Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE | Block.UPDATE_SUPPRESS_DROPS);
+        deconstructJob.recordRemoval(yield.fu());
+        deconstructJob.advance();
+
+        // un-zap: the head fires and the block dissolves
+        serverLevel.sendParticles(net.minecraft.core.particles.ParticleTypes.PORTAL,
+                pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5,
+                12, 0.3, 0.3, 0.3, 0.05);
+        serverLevel.playSound(null, pos, net.minecraft.sounds.SoundEvents.AMETHYST_BLOCK_BREAK,
+                net.minecraft.sounds.SoundSource.BLOCKS, 0.6F, 0.8F);
+        lastPlacedPos = pos.immutable(); // drives the gantry/beam render
+        placementCooldown = 0;
+        state = State.DECONSTRUCTING;
+        setChanged();
+        syncToClients();
+    }
+
+    private void tryStartDeconstruct(ServerLevel serverLevel) {
+        if (deconstructMin == null || deconstructSize == null) {
+            state = State.NOT_PRINTABLE;
+            notPrintableReason = "no deconstruct region set — sneak-click this machine "
+                    + "with a Structure Scanner holding a two-corner selection";
+            return;
+        }
+        if (footprintTooLarge(deconstructSize)) {
+            return; // sets NEEDS_HIGHER_TIER / AREA_TOO_SMALL + requiredTier
+        }
+        BoundingBox box = deconstructBox(deconstructMin, deconstructSize);
+        if (!PrintZoneManager.claim(serverLevel, worldPosition, box)) {
+            state = State.ZONE_CONFLICT;
+            return;
+        }
+        deconstructJob = new DeconstructJob(deconstructMin, deconstructSize);
+        placementCooldown = 0;
+        forceChunks(serverLevel, box, true);
+        state = State.DECONSTRUCTING;
+        setChanged();
+        syncToClients();
+    }
+
+    private void finishDeconstruct(ServerLevel serverLevel) {
+        PrintZoneManager.release(serverLevel, worldPosition);
+        forceChunks(serverLevel, deconstructBox(deconstructJob.min(), deconstructJob.size()), false);
+        recordDeconstructHistory(deconstructJob);
+        serverLevel.playSound(null, worldPosition, net.minecraft.sounds.SoundEvents.PLAYER_LEVELUP,
+                net.minecraft.sounds.SoundSource.BLOCKS, 0.5F, 0.8F);
+        deconstructJob = null;
+        lastPlacedPos = null;
+        state = State.IDLE;
+        setChanged();
+        syncToClients();
+    }
+
+    private static BoundingBox deconstructBox(BlockPos min, BlockPos size) {
+        return BoundingBox.fromCorners(min,
+                min.offset(size.getX() - 1, size.getY() - 1, size.getZ() - 1));
+    }
+
+    /**
+     * Classification of one region position. {@code removable=false} means skip in
+     * place (never machine-destroyed): unbreakables, non-empty containers, and
+     * unvalued blocks. Removable-at-zero covers itemless structural blocks (water,
+     * crops, fire) and winder-blacklisted items — both yield exactly 0 FU.
+     */
+    private record DeconstructYield(boolean removable, int fu, int tier) {
+        static final DeconstructYield SKIP = new DeconstructYield(false, 0, 1);
+        static final DeconstructYield FREE = new DeconstructYield(true, 0, 1);
+    }
+
+    private DeconstructYield classifyForDeconstruct(ServerLevel serverLevel, BlockPos pos, BlockState existing) {
+        if (existing.isAir()) {
+            return DeconstructYield.SKIP;
+        }
+        if (existing.getDestroySpeed(serverLevel, pos) < 0) {
+            return DeconstructYield.SKIP; // bedrock-class unbreakable
+        }
+        BlockEntity be = serverLevel.getBlockEntity(pos);
+        if (be instanceof net.minecraft.world.Container container && !container.isEmpty()) {
+            return DeconstructYield.SKIP; // never delete or eject items
+        }
+        Item item = existing.getBlock().asItem();
+        if (item == Items.AIR) {
+            return DeconstructYield.FREE; // itemless structural — symmetric with printing free
+        }
+        ItemStack stack = new ItemStack(item);
+        Optional<FuValue> value = FuValueRegistry.valueOf(stack);
+        if (value.isEmpty()) {
+            return DeconstructYield.SKIP; // unvalued (strict-mode rare) — never destroyed for 0
+        }
+        if (stack.is(com.pgmacdesign.mc3dprint.registry.ModItemTags.WINDER_BLACKLIST)) {
+            return DeconstructYield.FREE; // anti-laundering tag: removable, zero yield
+        }
+        // Yield derives from the WIND value only — Efficiency modules and resins never
+        // touch it, so wind -> print -> deconstruct stays strictly FU-negative.
+        int fu = (int) Math.floor(value.get().fu() * MC3DPrintConfig.DECONSTRUCT_YIELD_FACTOR.get());
+        return new DeconstructYield(true, fu, value.get().tier());
+    }
+
+    /** Reverse of {@link #drainFu}: banks tier-unit FU docked-spools-first, then the network. */
+    private void creditFu(int amount, int tier) {
+        int ratio = FuConversion.ratio();
+        long remainingBase = FuConversion.toBase(amount, tier, ratio);
+        remainingBase -= FilamentDrain.fillTier(spools, remainingBase, tier, ratio);
+        if (remainingBase > 0) {
+            for (IFilamentSource src : reachableSources()) {
+                if (remainingBase <= 0) {
+                    break;
+                }
+                remainingBase -= src.insertExactTier(tier, remainingBase);
+            }
+        }
+    }
+
+    /** Tier-unit FU of free exact-tier capacity across docked spools + the network. */
+    private int insertableFuFor(int tier) {
+        int ratio = FuConversion.ratio();
+        long base = FilamentDrain.insertableTier(spools, tier, ratio);
+        for (IFilamentSource src : reachableSources()) {
+            base += src.insertableExactTier(tier);
+        }
+        return FuConversion.clampToInt(FuConversion.fromBase(base, tier, ratio));
+    }
+
+    private void recordDeconstructHistory(DeconstructJob job) {
+        CompoundTag entry = new CompoundTag();
+        entry.putString("Name", "Deconstruct (" + job.removed() + " blocks)");
+        entry.putInt("Blocks", job.removed());
+        entry.putLong("Time", level != null ? level.getGameTime() : 0);
+        history.add(0, entry);
+        int max = MC3DPrintConfig.PRINT_HISTORY_SIZE.get();
+        while (history.size() > max) {
+            history.remove(history.size() - 1);
+        }
+    }
+
     public void cancelActiveJob() {
-        if (activeJob != null && level instanceof ServerLevel serverLevel) {
+        if ((activeJob != null || deconstructJob != null) && level instanceof ServerLevel serverLevel) {
             releaseJobResources(serverLevel);
         }
+        // No rollback by design: blocks already placed/removed stay, FU spent/credited stays.
         activeJob = null;
+        deconstructJob = null;
         clearArmedResin();
         cachedBlueprint = null;
         placementOrder = null;
@@ -1538,6 +1934,9 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         PrintZoneManager.release(serverLevel, worldPosition);
         if (activeJob != null && cachedBlueprint != null) {
             forceChunks(serverLevel, jobBox(), false);
+        }
+        if (deconstructJob != null) {
+            forceChunks(serverLevel, deconstructBox(deconstructJob.min(), deconstructJob.size()), false);
         }
     }
 
@@ -1557,6 +1956,13 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
                 ForgeChunkManager.forceChunk(serverLevel, MC3DPrint.MOD_ID, worldPosition, cx, cz, add, false);
             }
         }
+        // The MACHINE's own chunk too: build offsets (±32) or a deconstruct region
+        // (up to 64 away) can put the job box in different chunks than the machine —
+        // a region kept loaded while the machine that works it unloads would stall
+        // the job (and never self-recover after a restart). Idempotent when the
+        // machine already sits inside the box footprint.
+        ForgeChunkManager.forceChunk(serverLevel, MC3DPrint.MOD_ID, worldPosition,
+                worldPosition.getX() >> 4, worldPosition.getZ() >> 4, add, false);
     }
 
     private boolean ensureBlueprintLoaded(ServerLevel serverLevel) {
@@ -1635,6 +2041,11 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         if (activeJob != null && level instanceof ServerLevel serverLevel) {
             PrintZoneManager.claim(serverLevel, worldPosition, jobBox());
             forceChunks(serverLevel, jobBox(), true);
+        }
+        if (deconstructJob != null && level instanceof ServerLevel serverLevel) {
+            BoundingBox box = deconstructBox(deconstructJob.min(), deconstructJob.size());
+            PrintZoneManager.claim(serverLevel, worldPosition, box);
+            forceChunks(serverLevel, box, true);
         }
     }
 
@@ -1750,6 +2161,21 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             spoolList.add(entry);
         }
         tag.put("Spools", spoolList);
+
+        // Recent print history for the GUI tooltip — newest first, capped small so the
+        // update packet stays lean regardless of the printHistorySize config.
+        ListTag historyList = new ListTag();
+        for (int i = 0; i < history.size() && i < HISTORY_SYNC_CAP; i++) {
+            historyList.add(history.get(i).copy());
+        }
+        tag.put("History", historyList);
+
+        // Armed deconstruct region -> client, so the renderer can draw the red hazard box.
+        tag.putBoolean("DeconOn", deconstructMode);
+        if (deconstructMode && deconstructMin != null && deconstructSize != null) {
+            tag.put("DeconMin", net.minecraft.nbt.NbtUtils.writeBlockPos(deconstructMin));
+            tag.put("DeconSize", net.minecraft.nbt.NbtUtils.writeBlockPos(deconstructSize));
+        }
         return tag;
     }
 
@@ -1759,6 +2185,19 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         lastPlacedPos = tag.contains("LastPlaced", Tag.TAG_COMPOUND)
                 ? net.minecraft.nbt.NbtUtils.readBlockPos(tag.getCompound("LastPlaced")) : null;
         state = State.byOrdinal(tag.getInt("State"));
+
+        deconstructMode = tag.getBoolean("DeconOn");
+        deconstructMin = tag.contains("DeconMin", Tag.TAG_COMPOUND)
+                ? net.minecraft.nbt.NbtUtils.readBlockPos(tag.getCompound("DeconMin")) : null;
+        deconstructSize = tag.contains("DeconSize", Tag.TAG_COMPOUND)
+                ? net.minecraft.nbt.NbtUtils.readBlockPos(tag.getCompound("DeconSize")) : null;
+
+        // client mirror of the recent-history slice (the client BE never loads full NBT)
+        history.clear();
+        ListTag historyList = tag.getList("History", Tag.TAG_COMPOUND);
+        for (int i = 0; i < historyList.size(); i++) {
+            history.add(historyList.getCompound(i).copy());
+        }
 
         clientPreviewOn = tag.getBoolean("PreviewOn");
         clientPreview.clear();
@@ -1834,6 +2273,13 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         } else if (clientPreviewOrigin != null && clientPreviewSize != null) {
             box = box.minmax(new net.minecraft.world.phys.AABB(clientPreviewOrigin,
                     clientPreviewOrigin.offset(clientPreviewSize)));
+        }
+        if (deconstructMode && deconstructMin != null && deconstructSize != null) {
+            // the red hazard wireframe draws over the whole armed region
+            box = box.minmax(new net.minecraft.world.phys.AABB(
+                    net.minecraft.world.phys.Vec3.atLowerCornerOf(deconstructMin),
+                    net.minecraft.world.phys.Vec3.atLowerCornerOf(
+                            deconstructMin.offset(deconstructSize))));
         }
         var blockState = getBlockState();
         if (blockState.hasProperty(com.pgmacdesign.mc3dprint.machine.multiblock.ControllerBlock.FORMED)
@@ -1981,7 +2427,7 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
      */
     private boolean footprintTooLarge(BlockPos size) {
         int footprint = Math.max(size.getX(), size.getZ());
-        if (footprint <= tier.maxFootprint()) {
+        if (footprint <= MC3DPrintConfig.maxFootprint(tier)) {
             return false;
         }
         MachineTier fit = smallestTierFor(footprint);
@@ -1998,7 +2444,7 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
     /** Smallest tier whose print footprint fits {@code footprint}, or null if none (too big for T8). */
     private static MachineTier smallestTierFor(int footprint) {
         for (MachineTier candidate : MachineTier.values()) {
-            if (candidate.maxFootprint() >= footprint) {
+            if (MC3DPrintConfig.maxFootprint(candidate) >= footprint) {
                 return candidate;
             }
         }
@@ -2056,6 +2502,135 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         syncToClients();
     }
 
+    // --- Matter Calculator: cached pre-print cost report for the loaded disc ---
+    //
+    // Recomputed only when the disc / upgrade loadout / slotted resin changes (the
+    // stamp), so the per-tick menu poll never touches the blueprint file. Costs come
+    // from the SAME per-block primitives the print path spends through
+    // (blockFuCost/blockFuTier + the Overdrive floor), so predicted == consumed.
+
+    /** Per-tier FU cost (tier units), printable block count, and the stamp it was built for. */
+    private transient int[] reportPerTier;
+    private transient int reportBlocks;
+    private transient int reportStamp;
+
+    private void ensureCostReport() {
+        ItemStack template = inventory.getStackInSlot(SLOT_TEMPLATE);
+        UUID id = isLoadedDisc(template) ? BlueprintDiscItem.getBlueprintId(template).orElse(null) : null;
+        ItemStack resin = resins.getStackInSlot(0);
+        int stamp = java.util.Objects.hash(id,
+                upgradeCount(UpgradeItem.Type.EFFICIENCY),
+                upgradeCount(UpgradeItem.Type.SPEED),
+                upgradeCount(UpgradeItem.Type.RF_EFFICIENCY),
+                resin.getItem(), resin.isEmpty() ? 0 : 1,
+                id != null && BlueprintDiscItem.isOfficial(template));
+        if (stamp == reportStamp) {
+            return;
+        }
+        reportStamp = stamp;
+        reportPerTier = null;
+        reportBlocks = 0;
+        if (id == null || !(level instanceof ServerLevel serverLevel)) {
+            return;
+        }
+        Blueprint blueprint = BlueprintFileStore.forServer(serverLevel.getServer()).load(id).orElse(null);
+        if (blueprint == null) {
+            return;
+        }
+        boolean overdrive = !resin.isEmpty() && resin.getItem() instanceof ResinItem resinItem
+                && resinItem.effect() == ResinItem.Effect.OVERDRIVE
+                && BlueprintDiscItem.isOfficial(template);
+        int overdriveTier = overdrive && resin.getItem() instanceof ResinItem ri ? ri.tier() : 0;
+
+        // per-palette-index block counts, then one cost resolve per palette entry
+        int[] counts = new int[blueprint.palette().size()];
+        blueprint.forEachBlock((local, paletteIndex) -> counts[paletteIndex]++);
+
+        int[] perTier = new int[SpoolItem.CAPACITY_BY_TIER.length];
+        int blocks = 0;
+        for (int i = 0; i < counts.length; i++) {
+            if (counts[i] == 0) {
+                continue;
+            }
+            Optional<BlockState> resolved = blueprint.palette().get(i).resolve();
+            if (resolved.isEmpty() || !canPrintBlock(resolved.get())) {
+                continue; // skipped at print time — free, no RF, no tick
+            }
+            int fuCost = blockFuCost(resolved.get());
+            if (overdrive) {
+                int baseFu = blockFuValue(resolved.get()).map(FuValue::fu).orElse(0);
+                if (baseFu > 0) {
+                    fuCost = Math.min(fuCost, ResinEffects.overdriveFloor(baseFu, overdriveTier,
+                            MC3DPrintConfig.RESIN_OVERDRIVE_T3_BELOW.get()));
+                }
+            }
+            int costTier = blockFuTier(resolved.get());
+            perTier[costTier - 1] += fuCost * counts[i];
+            blocks += counts[i];
+        }
+        reportPerTier = perTier;
+        reportBlocks = blocks;
+    }
+
+    /** Per-tier FU cost of the loaded disc, or null when no report. Test/API surface. */
+    @Nullable
+    public int[] costReportPerTier() {
+        ensureCostReport();
+        return reportPerTier == null ? null : reportPerTier.clone();
+    }
+
+    /** Total RF the loaded disc's print will consume at the current upgrade loadout. */
+    public int costReportRf() {
+        ensureCostReport();
+        return reportPerTier == null ? 0
+                : FuConversion.clampToInt((long) reportBlocks * rfAdjusted(MC3DPrintConfig.rfPerBlock(tier)));
+    }
+
+    /** Total ticks the loaded disc's print will take at the current upgrade loadout. */
+    public int costReportEta() {
+        ensureCostReport();
+        return reportPerTier == null ? 0
+                : FuConversion.clampToInt((long) reportBlocks * speedAdjusted(MC3DPrintConfig.ticksPerBlock(tier)));
+    }
+
+    /** Exact-tier FU available to this printer (docked + network), in tier units. */
+    private int exactTierAvailable(int tierNumber) {
+        int ratio = FuConversion.ratio();
+        long base = FilamentDrain.availableTier(spools, tierNumber, ratio);
+        for (IFilamentSource src : reachableSources()) {
+            base += src.availableExactTier(tierNumber);
+        }
+        return FuConversion.clampToInt(FuConversion.fromBase(base, tierNumber, ratio));
+    }
+
+    /**
+     * Down-only feasibility: cost at tier T may be paid by filament of tier >= T, so
+     * coverage holds iff for every T the cumulative need at >= T fits the cumulative
+     * supply at >= T (base units). Returns the LOWEST failing tier, or 0 when covered.
+     */
+    private int shortfallTier() {
+        ensureCostReport();
+        if (reportPerTier == null) {
+            return 0;
+        }
+        int ratio = FuConversion.ratio();
+        long needBase = 0;
+        long availBase = 0;
+        int worst = 0;
+        for (int t = SpoolItem.CAPACITY_BY_TIER.length; t >= 1; t--) {
+            needBase += FuConversion.toBase(reportPerTier[t - 1], t, ratio);
+            long dockedAndNet = FilamentDrain.availableTier(spools, t, ratio);
+            for (IFilamentSource src : reachableSources()) {
+                dockedAndNet += src.availableExactTier(t);
+            }
+            availBase += dockedAndNet;
+            if (needBase > availBase) {
+                worst = t;
+            }
+        }
+        return worst;
+    }
+
     public ContainerData containerData() {
         return new SplitContainerData(DATA_COUNT, this::dataValue);
     }
@@ -2090,7 +2665,33 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             case DATA_PREVIEW -> previewEnabled ? 1 : 0;
             case DATA_ROTATION -> rotation.ordinal();
             case DATA_REQUIRED_TIER -> requiredTier;
-            default -> 0;
+            case DATA_DECON_MODE -> deconstructMode ? 1 : 0;
+            case DATA_BP_FU_TOTAL -> {
+                ensureCostReport();
+                if (reportPerTier == null) {
+                    yield 0;
+                }
+                long total = 0;
+                for (int c : reportPerTier) {
+                    total += c;
+                }
+                yield FuConversion.clampToInt(total);
+            }
+            case DATA_BP_RF -> costReportRf();
+            case DATA_BP_ETA -> costReportEta();
+            case DATA_BP_SHORTFALL -> shortfallTier();
+            case DATA_JOB_ACTIVE -> activeJob != null || deconstructJob != null ? 1 : 0;
+            case DATA_FU_NETWORK -> networkFu(displayTier());
+            default -> {
+                if (index >= DATA_COST_TIER_BASE && index < DATA_COST_TIER_BASE + 8) {
+                    ensureCostReport();
+                    yield reportPerTier == null ? 0 : reportPerTier[index - DATA_COST_TIER_BASE];
+                }
+                if (index >= DATA_AVAIL_TIER_BASE && index < DATA_AVAIL_TIER_BASE + 8) {
+                    yield exactTierAvailable(index - DATA_AVAIL_TIER_BASE + 1);
+                }
+                yield 0;
+            }
         };
     }
 
@@ -2194,6 +2795,15 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             tag.putUUID("Owner", owner);
         }
         tag.putBoolean("PreviewEnabled", previewEnabled);
+        tag.putBoolean("DeconMode", deconstructMode);
+        tag.putBoolean("DeconArm", deconArmedRequiresStart);
+        if (deconstructMin != null && deconstructSize != null) {
+            tag.put("DeconMin", net.minecraft.nbt.NbtUtils.writeBlockPos(deconstructMin));
+            tag.put("DeconSize", net.minecraft.nbt.NbtUtils.writeBlockPos(deconstructSize));
+        }
+        if (deconstructJob != null) {
+            tag.put("DeconJob", deconstructJob.save());
+        }
     }
 
     @Override
@@ -2226,5 +2836,14 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         rotation = Rotation.values()[tag.getInt("Rotation") % Rotation.values().length];
         owner = tag.hasUUID("Owner") ? tag.getUUID("Owner") : null;
         previewEnabled = tag.getBoolean("PreviewEnabled");
+        deconstructMode = tag.getBoolean("DeconMode");
+        // safe default: re-arm the manual-start gate when the flag is absent (older saves)
+        deconArmedRequiresStart = tag.contains("DeconArm") ? tag.getBoolean("DeconArm") : deconstructMode;
+        deconstructMin = tag.contains("DeconMin", Tag.TAG_COMPOUND)
+                ? net.minecraft.nbt.NbtUtils.readBlockPos(tag.getCompound("DeconMin")) : null;
+        deconstructSize = tag.contains("DeconSize", Tag.TAG_COMPOUND)
+                ? net.minecraft.nbt.NbtUtils.readBlockPos(tag.getCompound("DeconSize")) : null;
+        deconstructJob = tag.contains("DeconJob", Tag.TAG_COMPOUND)
+                ? DeconstructJob.load(tag.getCompound("DeconJob")) : null;
     }
 }

@@ -145,6 +145,7 @@ public class PrinterRenderer implements BlockEntityRenderer<PrinterBlockEntity> 
                        MultiBufferSource bufferSource, int packedLight, int packedOverlay) {
         renderSpools(printer, partialTick, poseStack, bufferSource);
         renderFormedStructure(printer, partialTick, poseStack, bufferSource, packedLight);
+        renderDeconstructRegion(printer, poseStack, bufferSource);
 
         PrintJob job = printer.activeJob();
         if (job == null) {
@@ -441,6 +442,27 @@ public class PrinterRenderer implements BlockEntityRenderer<PrinterBlockEntity> 
                 x0 - px, y0, z0 - pz, x1 - px, y1, z1 - pz,
                 x1 + px, y1, z1 + pz, x0 + px, y0, z0 + pz,
                 r, g, b, a);
+    }
+
+    /**
+     * Red wireframe over the ARMED deconstruct region — the standing hazard zone.
+     * Drawn whenever the machine is in Deconstruct Mode with a region set (idle,
+     * paused, or mid-job), so what the machine will consume is always visible.
+     */
+    private void renderDeconstructRegion(PrinterBlockEntity printer, PoseStack poseStack,
+                                         MultiBufferSource bufferSource) {
+        BlockPos min = printer.deconstructRegionMin();
+        BlockPos size = printer.deconstructRegionSize();
+        if (!printer.deconstructMode() || min == null || size == null) {
+            return;
+        }
+        BlockPos machine = printer.getBlockPos();
+        LevelRenderer.renderLineBox(poseStack, bufferSource.getBuffer(RenderType.lines()),
+                min.getX() - machine.getX(), min.getY() - machine.getY(), min.getZ() - machine.getZ(),
+                min.getX() - machine.getX() + size.getX(),
+                min.getY() - machine.getY() + size.getY(),
+                min.getZ() - machine.getZ() + size.getZ(),
+                1.0F, 0.25F, 0.25F, 0.85F);
     }
 
     /**
