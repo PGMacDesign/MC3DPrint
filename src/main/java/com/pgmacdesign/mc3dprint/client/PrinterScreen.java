@@ -411,11 +411,12 @@ public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
             case IDLE -> LABEL;
             default -> WARN;
         };
-        // Keep the status text from running into the upgrade column on the right.
-        // If a localized string is wide, shift its draw x left so it never crosses
-        // the column edge; never push it left of the status anchor at 80.
+        // The row at y=58 is shared: quote on the left (x=36), status on the right.
+        // The status is RIGHT-aligned against the upgrade column — a fixed anchor at
+        // 80 let the wider Matter Calculator quote run underneath it (soak finding:
+        // "24.7k FU · ~1m3s" vs "Ready").
         int statusRightEdge = PrinterMenu.UPGRADE_SLOT_X - 4;
-        int statusX = Math.min(80, statusRightEdge - font.width(status));
+        int statusX = statusRightEdge - font.width(status);
         RenderCompat.drawString(graphics, font, status, statusX, 58, color, false);
         // An error/paused status owns the whole row: the cost/ETA quote is meaningless
         // for a job that can't run, and long statuses ("Build Too Large") physically
@@ -424,15 +425,27 @@ public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
         // loaded disc, which is not what Start does in that mode.
         boolean quoteHidden = color == WARN || menu.deconstructMode();
         int cost = quoteHidden ? 0 : menu.templateCost();
+        // Whatever ends up on the left may never run under the status text: degrade
+        // the quote (full → FU-only → nothing) until it fits. The gauge tooltip
+        // always carries the full breakdown, so dropping the ETA loses nothing.
+        int quoteLimit = statusX - 6;
         if (cost > 0) {
-            RenderCompat.drawString(graphics, font, Component.translatable("gui.mc3dprint.cost", cost), 36, 58, LABEL, false);
+            Component itemCost = Component.translatable("gui.mc3dprint.cost", cost);
+            if (36 + font.width(itemCost) <= quoteLimit) {
+                RenderCompat.drawString(graphics, font, itemCost, 36, 58, LABEL, false);
+            }
         } else if (!quoteHidden && menu.blueprintFuTotal() > 0) {
             // Matter Calculator: compact cost/ETA line for the loaded disc; warm-red when
             // filament coverage fails (details live in the FU gauge tooltip).
             Component calc = Component.translatable("gui.mc3dprint.bp_cost",
                     compact(menu.blueprintFuTotal()), etaText(menu.blueprintEtaTicks()));
-            RenderCompat.drawString(graphics, font, calc, 36, 58,
-                    menu.shortfallTier() > 0 ? WARN : LABEL, false);
+            if (36 + font.width(calc) > quoteLimit) {
+                calc = Component.translatable("gui.mc3dprint.cost", compact(menu.blueprintFuTotal()));
+            }
+            if (36 + font.width(calc) <= quoteLimit) {
+                RenderCompat.drawString(graphics, font, calc, 36, 58,
+                        menu.shortfallTier() > 0 ? WARN : LABEL, false);
+            }
         }
         // "Spools X/Y" — smaller and moved DOWN to sit just above the spool-slot grid
         // (roughly in line with the 2nd inventory row), right-aligned over the grid. The
