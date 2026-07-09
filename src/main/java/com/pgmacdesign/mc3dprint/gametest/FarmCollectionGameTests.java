@@ -131,27 +131,27 @@ public class FarmCollectionGameTests {
 
     // ── one @GameTest per farm (each gets its own world instance / pass-fail line) ──
 
-    @GameTest(template = "empty5", timeoutTicks = ROUTE_TICKS + 60)
+    @GameTest(template = "empty16", timeoutTicks = ROUTE_TICKS + 60)
     public static void sugarcaneFarmRoutesToChest(GameTestHelper helper) {
         runRoutingTest(helper, FARMS[0]);
     }
 
-    @GameTest(template = "empty5", timeoutTicks = ROUTE_TICKS + 60)
+    @GameTest(template = "empty16", timeoutTicks = ROUTE_TICKS + 60)
     public static void kelpFarmRoutesToChest(GameTestHelper helper) {
         runRoutingTest(helper, FARMS[1]);
     }
 
-    @GameTest(template = "empty5", timeoutTicks = ROUTE_TICKS + 60)
+    @GameTest(template = "empty16", timeoutTicks = ROUTE_TICKS + 60)
     public static void bambooFarmRoutesToChest(GameTestHelper helper) {
         runRoutingTest(helper, FARMS[2]);
     }
 
-    @GameTest(template = "empty5", timeoutTicks = ROUTE_TICKS + 60)
+    @GameTest(template = "empty16", timeoutTicks = ROUTE_TICKS + 60)
     public static void cactusFarmRoutesToChest(GameTestHelper helper) {
         runRoutingTest(helper, FARMS[3]);
     }
 
-    @GameTest(template = "empty5", timeoutTicks = ROUTE_TICKS + 60)
+    @GameTest(template = "empty16", timeoutTicks = ROUTE_TICKS + 60)
     public static void ironFarmRoutesToChest(GameTestHelper helper) {
         runRoutingTest(helper, FARMS[4]);
     }
