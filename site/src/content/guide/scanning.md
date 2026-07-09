@@ -23,6 +23,6 @@ If a position is already occupied, the printer **pauses** there — its status r
 
 ## Importing existing files
 
-Server operators don't have to scan everything by hand. You can pull WorldEdit `.schem` files and Create or vanilla `.nbt` files straight onto discs with `/mc3dprint import`. From there they behave like any other written disc — print them anywhere a printer can reach.
+Server operators don't have to scan everything by hand. You can pull WorldEdit `.schem` files, Litematica `.litematic` files, and Create or vanilla `.nbt` files straight onto discs with `/mc3dprint import`. From there they behave like any other written disc — print them anywhere a printer can reach.
 
 Once you've got a written disc, head to [Blueprint Discs & files](/guide/blueprints/) to learn how tiers and print costs work.

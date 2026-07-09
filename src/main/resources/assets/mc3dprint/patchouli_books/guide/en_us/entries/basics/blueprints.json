@@ -17,7 +17,7 @@
     {
       "type": "patchouli:text",
       "title": "Import & Export",
-      "text": "Operators can exchange blueprints with other tools:$(br)$(li)$(o)/mc3dprint import <file>$() reads WorldEdit $(l).schem$() and Create / vanilla $(l).nbt$() files from $(o)world/mc3dprint/import/$()$(li)$(o)/mc3dprint export$() writes the disc in your hand to a $(l).schem$()$(br2)Shipped blueprints live in $(o)world/mc3dprint/blueprints/$()."
+      "text": "Operators can exchange blueprints with other tools:$(br)$(li)$(o)/mc3dprint import <file>$() reads WorldEdit $(l).schem$(), Litematica $(l).litematic$(), and Create / vanilla $(l).nbt$() files from $(o)world/mc3dprint/import/$()$(li)$(o)/mc3dprint export$() writes the disc in your hand to a $(l).schem$()$(br2)Shipped blueprints live in $(o)world/mc3dprint/blueprints/$()."
     }
   ]
 }

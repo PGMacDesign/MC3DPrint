@@ -559,4 +559,62 @@ public class StructurePrintGameTests {
         }
         helper.succeed();
     }
+
+    @GameTest(template = "empty5", timeoutTicks = 300)
+    public static void printsImportedLitematic(GameTestHelper helper) {
+        // End-to-end interop: a Litematica schematic (built in-memory, same shape the
+        // mod reads from disk) imports through LitematicaImporter and prints, with
+        // block-state properties intact.
+        CompoundTag paletteAir = new CompoundTag();
+        paletteAir.putString("Name", "minecraft:air");
+        CompoundTag paletteStone = new CompoundTag();
+        paletteStone.putString("Name", "minecraft:stone");
+        CompoundTag paletteStairs = new CompoundTag();
+        paletteStairs.putString("Name", "minecraft:oak_stairs");
+        CompoundTag stairProps = new CompoundTag();
+        stairProps.putString("facing", "east");
+        paletteStairs.put("Properties", stairProps);
+        ListTag palette = new ListTag();
+        palette.add(paletteAir);
+        palette.add(paletteStone);
+        palette.add(paletteStairs);
+
+        CompoundTag region = new CompoundTag();
+        CompoundTag position = new CompoundTag();
+        position.putInt("x", 0);
+        position.putInt("y", 0);
+        position.putInt("z", 0);
+        region.put("Position", position);
+        CompoundTag size = new CompoundTag();
+        size.putInt("x", 2);
+        size.putInt("y", 1);
+        size.putInt("z", 2);
+        region.put("Size", size);
+        region.put("BlockStatePalette", palette);
+        // 2 bits/entry, YZX indices {stone, stairs, air, stone} = 0b01_00_10_01
+        region.putLongArray("BlockStates", new long[]{0b01_00_10_01});
+
+        CompoundTag regions = new CompoundTag();
+        regions.put("main", region);
+        CompoundTag root = new CompoundTag();
+        root.putInt("Version", 6);
+        root.put("Metadata", new CompoundTag());
+        root.put("Regions", regions);
+
+        Blueprint blueprint = com.pgmacdesign.mc3dprint.blueprint.io.LitematicaImporter
+                .importLitematic("gametest-litematic", root);
+
+        BlockPos printerPos = new BlockPos(2, 1, 2);
+        PrinterBlockEntity printer = poweredPrinter(helper, printerPos);
+        printer.inventory().setStackInSlot(PrinterBlockEntity.SLOT_TEMPLATE, discFor(helper, blueprint));
+
+        // origin = printer + (-1, 1, -1) for a 2x1x2 blueprint
+        helper.succeedWhen(() -> {
+            helper.assertBlockPresent(Blocks.STONE, new BlockPos(1, 2, 1));
+            helper.assertBlockPresent(Blocks.OAK_STAIRS, new BlockPos(2, 2, 1));
+            helper.assertBlockProperty(new BlockPos(2, 2, 1),
+                    BlockStateProperties.HORIZONTAL_FACING, Direction.EAST);
+            helper.assertBlockPresent(Blocks.STONE, new BlockPos(2, 2, 2));
+        });
+    }
 }
