@@ -417,10 +417,16 @@ public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
         int statusRightEdge = PrinterMenu.UPGRADE_SLOT_X - 4;
         int statusX = Math.min(80, statusRightEdge - font.width(status));
         RenderCompat.drawString(graphics, font, status, statusX, 58, color, false);
-        int cost = menu.templateCost();
+        // An error/paused status owns the whole row: the cost/ETA quote is meaningless
+        // for a job that can't run, and long statuses ("Build Too Large") physically
+        // overlap the quote text (soak finding). WARN color == error/paused here.
+        // Deconstruct Mode also suppresses it — the quote describes a PRINT of the
+        // loaded disc, which is not what Start does in that mode.
+        boolean quoteHidden = color == WARN || menu.deconstructMode();
+        int cost = quoteHidden ? 0 : menu.templateCost();
         if (cost > 0) {
             RenderCompat.drawString(graphics, font, Component.translatable("gui.mc3dprint.cost", cost), 36, 58, LABEL, false);
-        } else if (menu.blueprintFuTotal() > 0) {
+        } else if (!quoteHidden && menu.blueprintFuTotal() > 0) {
             // Matter Calculator: compact cost/ETA line for the loaded disc; warm-red when
             // filament coverage fails (details live in the FU gauge tooltip).
             Component calc = Component.translatable("gui.mc3dprint.bp_cost",

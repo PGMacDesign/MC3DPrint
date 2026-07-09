@@ -108,7 +108,11 @@ public final class ImportCommand {
     }
 
     private static Path importDir(CommandSourceStack source) {
-        return source.getServer().getWorldPath(LevelResource.ROOT).resolve("mc3dprint").resolve("import");
+        // normalize: LevelResource.ROOT is literally "." — an unnormalized "<world>/./…"
+        // here makes the traversal guard below (file.startsWith(dir)) reject EVERY file,
+        // because the resolved file path is normalized before comparing.
+        return source.getServer().getWorldPath(LevelResource.ROOT)
+                .resolve("mc3dprint").resolve("import").normalize();
     }
 
     private static List<String> listImportable(Path dir) {

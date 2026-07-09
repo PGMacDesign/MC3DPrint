@@ -5,7 +5,7 @@
 > ### ✅ Phase 3 — the forward ladder is COMPLETE (2026-07-05)
 > One tree now builds **seven NeoForge jars**: `1.21.1 · 1.21.8 · 1.21.9 · 1.21.10 · 1.21.11 · 26.1 · 26.2`
 > (+ the separate `legacy/1.20.1` Forge jar via `build-all.sh`). Every node compiles main+test and passes
-> JUnit; 1.21.1 stays the oracle (124/124 GameTests); forward nodes boot `runGameTestServer` clean.
+> JUnit; 1.21.1 stays the oracle (125/125 GameTests); forward nodes boot `runGameTestServer` clean.
 > Per-node facts: 1.21.9 = NeoForge beta-only (21.9.16-beta), transfer-API + BER render-state waves;
 > 1.21.10 = zero new seams; 1.21.11 = the great renames (Identifier, RenderTypes, criterion) — first use of
 > **Stonecutter global string replacements** (`build.gradle`); 26.1 = **Java 25**, GUI extract pipeline,
