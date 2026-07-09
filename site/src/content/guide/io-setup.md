@@ -7,6 +7,10 @@ summary: "Wire up a printer's faces for discs, filament spools and RF, then arm 
 
 A printer has dedicated faces for everything it needs. Get the I/O right and hoppers or pipes can feed it hands-free.
 
+## The Matter Calculator
+
+With a disc loaded, the GUI answers "can I afford this?" before you commit: the cost line shows total Filament Units and estimated time, and hovering the FU gauge breaks the job down — FU needed per tier vs. what's on hand (docked spools plus the rack network), total RF, and the ETA at your current upgrade loadout. If a tier can't be covered the readout turns red and names the missing tier. Predictions track Efficiency modules and a slotted Overdrive resin exactly — what it quotes is what the job consumes.
+
 ## Faces & I/O
 
 - **Top** — input: templates and discs go in here.
