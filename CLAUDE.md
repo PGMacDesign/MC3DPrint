@@ -28,7 +28,7 @@ reset active → `1.21.1` before every commit. `:NODE:test` green ≠ runtime-co
 ./gradlew :1.21.8:compileJava -q        # fast compile check (or :1.21.1)
 ./gradlew :1.21.8:test                  # JUnit (test/.../fu, blueprint, compat)
 ./gradlew :1.21.8:assemble -x test      # build jar → versions/1.21.8/build/libs/mc3dprint-<ver>.jar
-./gradlew :1.21.1:runGameTestServer     # in-world GameTests (gametest/); 114/114 green on 1.21.1 (the oracle;
+./gradlew :1.21.1:runGameTestServer     # in-world GameTests (gametest/); 115/115 green on 1.21.1 (the oracle;
                                         # forward nodes exclude gametest/ and boot-smoke only)
 # Single-target main/legacy branches use the un-scoped form: ./gradlew build
 ```
