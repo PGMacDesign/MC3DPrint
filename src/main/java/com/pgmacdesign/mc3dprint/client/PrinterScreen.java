@@ -58,6 +58,7 @@ public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
     private Button autoButton;
     private Button previewButton;
     private Button rotateButton;
+    private Button modeButton;
 
     public PrinterScreen(PrinterMenu menu, Inventory playerInventory, Component title) {
         // 26.1 made imageWidth/imageHeight final; dimensions go through the 5-arg super.
@@ -108,6 +109,16 @@ public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
                         rotateLabel(),
                         b -> sendButtonClick(PrinterMenu.BUTTON_ROTATE))
                 .bounds(leftPos + 10, topPos + ROTATE_Y, 100, 14).build());
+
+        modeButton = addRenderableWidget(Button.builder(
+                        modeLabel(),
+                        b -> sendButtonClick(PrinterMenu.BUTTON_MODE))
+                .bounds(leftPos + 114, topPos + ROTATE_Y, 56, 14).build());
+    }
+
+    private Component modeLabel() {
+        return Component.translatable(menu.deconstructMode()
+                ? "gui.mc3dprint.mode_deconstruct" : "gui.mc3dprint.mode_print");
     }
 
     private Component rotateLabel() {
@@ -136,6 +147,7 @@ public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
         autoButton.setMessage(autoLabel());
         previewButton.setMessage(previewLabel());
         rotateButton.setMessage(rotateLabel());
+        modeButton.setMessage(modeLabel());
         startButton.active = !menu.autoStart();
     }
 
@@ -303,11 +315,12 @@ public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
             case NOT_PRINTABLE -> Component.translatable("gui.mc3dprint.state.not_printable");
             case NEEDS_HIGHER_TIER -> Component.translatable("gui.mc3dprint.state.needs_higher_tier", menu.requiredTier());
             case AREA_TOO_SMALL -> Component.translatable("gui.mc3dprint.state.area_too_small");
+            case DECONSTRUCTING -> Component.translatable("gui.mc3dprint.state.deconstructing");
         };
         // Status lights accent cyan when printing/ready, warm red for paused/error,
         // neutral light grey when idle.
         int color = switch (menu.state()) {
-            case PRINTING, READY -> ACCENT;
+            case PRINTING, READY, DECONSTRUCTING -> ACCENT;
             case IDLE -> LABEL;
             default -> WARN;
         };

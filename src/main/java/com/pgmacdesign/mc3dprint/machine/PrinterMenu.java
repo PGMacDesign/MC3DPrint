@@ -295,12 +295,17 @@ public class PrinterMenu extends AbstractContainerMenu {
         return SplitContainerData.combine(data, PrinterBlockEntity.DATA_OFFSET_X + axis);
     }
 
-    // GUI button ids: 0 start, 1 auto toggle, 2..7 = X-/X+/Y-/Y+/Z-/Z+, 8 preview, 9 rotate
+    // GUI button ids: 0 start, 1 auto toggle, 2..7 = X-/X+/Y-/Y+/Z-/Z+, 8 preview, 9 rotate, 10 mode
     public static final int BUTTON_START = 0;
     public static final int BUTTON_AUTO = 1;
     public static final int BUTTON_OFFSET_BASE = 2;
     public static final int BUTTON_PREVIEW = 8;
     public static final int BUTTON_ROTATE = 9;
+    public static final int BUTTON_MODE = 10;
+
+    public boolean deconstructMode() {
+        return SplitContainerData.combine(data, PrinterBlockEntity.DATA_DECON_MODE) != 0;
+    }
 
     public boolean preview() {
         return SplitContainerData.combine(data, PrinterBlockEntity.DATA_PREVIEW) != 0;
@@ -335,6 +340,10 @@ public class PrinterMenu extends AbstractContainerMenu {
         }
         if (id == BUTTON_ROTATE) {
             printer.cycleRotation();
+            return true;
+        }
+        if (id == BUTTON_MODE) {
+            printer.setDeconstructMode(!printer.deconstructMode());
             return true;
         }
         int offsetId = id - BUTTON_OFFSET_BASE;

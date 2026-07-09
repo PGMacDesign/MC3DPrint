@@ -111,6 +111,19 @@ public class FilamentRackBlockEntity extends BlockEntity implements IFilamentSou
         return FilamentDrain.availableTier(spools, tier, FuConversion.ratio());
     }
 
+    @Override
+    public long insertExactTier(int tier, long maxBase) {
+        if (maxBase <= 0) {
+            return 0;
+        }
+        return FilamentDrain.fillTier(spools, maxBase, tier, FuConversion.ratio());
+    }
+
+    @Override
+    public long insertableExactTier(int tier) {
+        return FilamentDrain.insertableTier(spools, tier, FuConversion.ratio());
+    }
+
     // --- Capability (exposed raw; registered centrally in ModCapabilities) ---
 
     public IFilamentSource getFilamentSource() {
