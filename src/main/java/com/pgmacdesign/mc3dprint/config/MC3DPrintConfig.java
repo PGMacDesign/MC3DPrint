@@ -22,6 +22,7 @@ public final class MC3DPrintConfig {
     private static final ForgeConfigSpec.IntValue[] RF_PER_BLOCK = new ForgeConfigSpec.IntValue[8];
     private static final ForgeConfigSpec.IntValue[] TICKS_PER_BLOCK = new ForgeConfigSpec.IntValue[8];
     private static final ForgeConfigSpec.DoubleValue[] EFFICIENCY = new ForgeConfigSpec.DoubleValue[8];
+    private static final ForgeConfigSpec.IntValue[] MAX_FOOTPRINT = new ForgeConfigSpec.IntValue[8];
 
     public static final ForgeConfigSpec.IntValue T1_SCANNER_MAX_EDGE;
     public static final ForgeConfigSpec.BooleanValue UNLOCK_SCANNER_SIZE;
@@ -29,6 +30,7 @@ public final class MC3DPrintConfig {
     public static final ForgeConfigSpec.IntValue WINDER_TICKS_PER_ITEM;
     public static final ForgeConfigSpec.IntValue WINDER_ENERGY_BUFFER;
     public static final ForgeConfigSpec.IntValue WINDER_MAX_ENERGY_RECEIVE;
+    public static final ForgeConfigSpec.DoubleValue DECONSTRUCT_YIELD_FACTOR;
     public static final ForgeConfigSpec.IntValue CABLE_TRANSFER_RATE;
     public static final ForgeConfigSpec.IntValue CLOCK_GENERATOR_RF_PER_TICK;
     public static final ForgeConfigSpec.DoubleValue UPGRADE_SPEED_FACTOR;
@@ -90,6 +92,13 @@ public final class MC3DPrintConfig {
                     "cost = base / efficiency; each module removes an equal share, reaching exactly",
                     "1:1 at upgrades.maxPerType modules. Lower tiers are deliberately less efficient.")
                     .defineInRange("efficiency", tier.defaultEfficiency(), 0.01, 1.0);
+            MAX_FOOTPRINT[i] = builder.comment(
+                    "Max horizontal print footprint (per axis, in blocks). 0 = items only (the",
+                    "T1/T2 default). Also caps Deconstruct regions — a machine un-prints exactly",
+                    "what it can print. Crank it up if you want ludicrously large prints; very",
+                    "large builds keep their chunks force-loaded for the whole job, so expect a",
+                    "server-performance cost to match your ambition.")
+                    .defineInRange("maxFootprint", tier.maxFootprint(), 0, 1_000);
             builder.pop();
         }
 
@@ -103,8 +112,9 @@ public final class MC3DPrintConfig {
         UNLOCK_SCANNER_SIZE = builder
                 .comment("Scanner size override. FALSE (default): the scanner is capped at the flat",
                         "t1MaxEdge above. TRUE: raise the scan cap to the largest footprint a buildable",
-                        "fabricator can actually print — T8=51 with Draconic Evolution installed, otherwise",
-                        "T7=33 — so you can scan a very large build and turn it into a printable blueprint.",
+                        "fabricator can actually print — the configured tier8.maxFootprint (default 51)",
+                        "with Draconic Evolution installed, otherwise tier7.maxFootprint (default 33) —",
+                        "so you can scan a very large build and turn it into a printable blueprint.",
                         "Advanced/opt-in; off by default.")
                 .define("unlockScannerSize", false);
         builder.pop();
@@ -122,6 +132,16 @@ public final class MC3DPrintConfig {
         WINDER_MAX_ENERGY_RECEIVE = builder
                 .comment("Max RF accepted per tick from cables")
                 .defineInRange("maxEnergyReceive", 1_000, 1, Integer.MAX_VALUE);
+        builder.pop();
+
+        builder.comment("Deconstruct Mode: a printer/fabricator running in reverse — consumes a",
+                        "selected region back into Filament Units at a LOSSY rate. The yield factor is",
+                        "hard-capped below 1.0 so wind -> print -> deconstruct always strictly loses FU",
+                        "(no laundering loop), independent of Efficiency modules or resins.").push("deconstruct");
+        DECONSTRUCT_YIELD_FACTOR = builder
+                .comment("Fraction of an item's wind value credited when its block is deconstructed",
+                        "(floor, exact-tier). 0 makes Deconstruct a pure clearing tool.")
+                .defineInRange("yieldFactor", 0.5, 0.0, 0.99);
         builder.pop();
 
         builder.comment("MC3D Cable: a single deliberately-modest cable that carries BOTH RF",
@@ -207,9 +227,15 @@ public final class MC3DPrintConfig {
                         "every curated build can still be found as world loot regardless of this setting.")
                 .define("allowAllDiscsInCreative", true);
         FU_VALUES = builder
-                .comment("Filament Unit values: '<item_or_#tag>=<fu>@<min_tier>'. Symmetric: wind yield == print cost (before efficiency).")
-                .defineListAllowEmpty("fuValues", FuValueRegistry.defaultEntries(),
-                        o -> o instanceof String s && s.contains("=") && s.contains("@"));
+                .comment("Filament Unit value OVERRIDES, merged over the mod's built-in defaults at load —",
+                        "leave empty to use the defaults, and new/rebalanced defaults apply on every update",
+                        "without touching this file.",
+                        "  '<item_or_#tag>=<fu>@<min_tier>'  adds a value or overrides the default",
+                        "  '<item_or_#tag>=off'              removes a value (strict mode -> unprintable)",
+                        "Symmetric: wind yield == print cost (before efficiency). Configs written by <=0.10",
+                        "contained the full copied default list; those entries keep working as overrides.")
+                .defineListAllowEmpty("fuValues", List.of(),
+                        o -> o instanceof String s && s.contains("=") && (s.contains("@") || s.endsWith("=off")));
         builder.pop();
 
         builder.comment("Server Blueprint Repository: the library block that stores deposited",
@@ -311,6 +337,15 @@ public final class MC3DPrintConfig {
 
     public static double efficiency(MachineTier tier) {
         return EFFICIENCY[tier.number() - 1].get();
+    }
+
+    public static int maxFootprint(MachineTier tier) {
+        return MAX_FOOTPRINT[tier.number() - 1].get();
+    }
+
+    /** The raw config value, for tests that need to set-and-restore the cap. */
+    public static ForgeConfigSpec.IntValue maxFootprintValue(MachineTier tier) {
+        return MAX_FOOTPRINT[tier.number() - 1];
     }
 
     public static int cableTransferRate() {

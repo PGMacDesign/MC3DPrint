@@ -50,5 +50,17 @@ public final class ModItemTags {
     public static final TagKey<Item> WINDER_BLACKLIST =
             TagKey.create(Registries.ITEM, new ResourceLocation(MC3DPrint.MOD_ID, "winder_blacklist"));
 
+    /**
+     * Trophy-class items a printer must NOT reproduce freely even when they carry
+     * an FU value (needed to price official builds that contain them). Printable
+     * ONLY when the loaded disc is an OFFICIAL curated blueprint whose
+     * {@code CuratedBlueprints.restrictedAllowance} lists the item — the same
+     * anti-exploit shape as the resin official-only gate. Item mode refuses them
+     * outright (that path would be straight duplication).
+     * Backed by {@code data/mc3dprint/tags/item/print_restricted.json}.
+     */
+    public static final TagKey<Item> PRINT_RESTRICTED =
+            TagKey.create(Registries.ITEM, new ResourceLocation(MC3DPrint.MOD_ID, "print_restricted"));
+
     private ModItemTags() {}
 }

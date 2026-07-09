@@ -49,5 +49,45 @@ public final class FilamentDrain {
         return base;
     }
 
+    /**
+     * Fills spools of <b>exactly</b> {@code exactTier} with up to {@code amountBase}
+     * base-FU, in slot order. The reverse of {@link #drainTier}: whole tier units
+     * only (floor), so at most one sub-unit remainder is left unbanked per call.
+     * Returns the base-FU actually accepted.
+     */
+    public static long fillTier(IItemHandlerModifiable spools, long amountBase, int exactTier, int ratio) {
+        long accepted = 0;
+        for (int i = 0; i < spools.getSlots() && amountBase - accepted > 0; i++) {
+            ItemStack spool = spools.getStackInSlot(i);
+            if (!(spool.getItem() instanceof SpoolItem spoolItem) || spoolItem.tier() != exactTier) {
+                continue;
+            }
+            long units = FuConversion.fromBase(amountBase - accepted, exactTier, ratio);
+            if (units <= 0) {
+                break;
+            }
+            int added = SpoolItem.fill(spool, FuConversion.clampToInt(units));
+            if (added > 0) {
+                accepted += FuConversion.toBase(added, exactTier, ratio);
+                spools.setStackInSlot(i, spool); // onContentsChanged syncs the reel
+            }
+        }
+        return accepted;
+    }
+
+    /** Base-FU of free capacity in spools of exactly {@code exactTier} (non-mutating). */
+    public static long insertableTier(IItemHandlerModifiable spools, int exactTier, int ratio) {
+        long base = 0;
+        for (int i = 0; i < spools.getSlots(); i++) {
+            ItemStack stack = spools.getStackInSlot(i);
+            if (stack.getItem() instanceof SpoolItem spool && spool.tier() == exactTier) {
+                base += FuConversion.toBase(
+                        Math.max(0, spool.capacity() - SpoolItem.getFu(stack)),
+                        exactTier, ratio);
+            }
+        }
+        return base;
+    }
+
     private FilamentDrain() {}
 }

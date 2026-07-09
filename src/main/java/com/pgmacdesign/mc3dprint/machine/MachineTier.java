@@ -46,6 +46,7 @@ public enum MachineTier {
         return number;
     }
 
+    /** Config DEFAULT only — runtime checks must read {@code MC3DPrintConfig.maxFootprint(tier)}. */
     public int maxFootprint() {
         return maxFootprint;
     }
