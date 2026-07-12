@@ -489,7 +489,11 @@ public final class FuValueRegistry {
                 "minecraft:end_stone=5@2", "minecraft:packed_ice=5@2", "minecraft:magma_block=5@2",
                 "minecraft:copper_ingot=10@2", "minecraft:amethyst_shard=10@2", "minecraft:lapis_lazuli=10@2",
                 "minecraft:gold_ingot=15@2", "minecraft:iron_ingot=20@2",
-                "minecraft:gold_nugget=1@2", "minecraft:iron_nugget=2@2",
+                // Nuggets priced so 9 nuggets cost MORE than the ingot (2*9=18 > gold 15; 3*9=27 >
+                // iron 20). Item Mode can print a cheap nugget and craft it up, so an exactly-1/9
+                // nugget would make print-9-nuggets -> craft ingot -> wind ingot a net-positive FU
+                // pump; the ceil keeps that round-trip lossy.
+                "minecraft:gold_nugget=2@2", "minecraft:iron_nugget=3@2",
                 // leather: farmable animal drop (needed so book→enchanting_table chain derives)
                 "minecraft:leather=8@2",
                 // huge-mushroom blocks (no recipe → direct value): giant-mushroom material, a step
@@ -535,10 +539,15 @@ public final class FuValueRegistry {
                 "minecraft:sponge=60@5", "minecraft:sculk=15@5", "minecraft:sculk_vein=15@5",
                 "minecraft:sculk_catalyst=40@5", "minecraft:sculk_sensor=40@5", "minecraft:sculk_shrieker=40@5",
                 "minecraft:shulker_shell=80@5", "minecraft:golden_apple=300@5",
+                // trident + nautilus_shell are drowned-farmable (renewable via a mob farm), so the
+                // abundance rule caps them BELOW netherite: at T6 their spool could print netherite
+                // (unfarmable), letting an AFK drowned farm launder into it. T5 keeps them alongside
+                // the already-capped shulker_shell; a T5 spool tops out at diamond-tier prints.
+                "minecraft:trident=150@5", "minecraft:nautilus_shell=80@5",
 
                 // ===== T6 — netherite + high-value finite =====
                 "minecraft:netherite_ingot=500@6", "minecraft:netherite_scrap=125@6",
-                "minecraft:ancient_debris=125@6", "minecraft:trident=150@6", "minecraft:nautilus_shell=80@6",
+                "minecraft:ancient_debris=125@6",
                 "minecraft:elytra=2000@6", "minecraft:enchanted_golden_apple=1500@6",
                 // dragon_head: post-dragon End-ship trophy, renewable via End-city exploration.
                 // Tiered T6 (kept off T7 so it prints on a T6 setup); the winder blacklist neutralizes

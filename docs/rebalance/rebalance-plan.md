@@ -1,8 +1,13 @@
 # MC3DPrint FU Tier Rebalance — Plan (for sign-off)
 
 _Synthesised from the grill-me session + the three research docs in this folder
-(`acquisition-rarity.md`, `utility-ranking.md`, `current-fu-map.md`). Nothing here is
-implemented yet — this is the spec to approve before touching `FuValueRegistry`._
+(`acquisition-rarity.md`, `utility-ranking.md`, `current-fu-map.md`)._
+
+> **STATUS: IMPLEMENTED.** The vanilla ladder (sections 2 to 8), the winder blacklist
+> (food + farmable stragglers), and all nine modded compat hooks are live in
+> `FuValueRegistry.defaultEntries()` + `integration/<mod>/`. The remaining sign-off items
+> and the laundering exploits surfaced by the 2026-07 full-mod audit were resolved in one
+> pass; see "Implementation status" at the bottom of this file.
 
 ---
 
@@ -128,10 +133,48 @@ Derivation rates these ~T2 from cobble/iron/redstone, but their power warrants a
 
 ---
 
-## Open items for your sign-off
+## Open items (resolved)
 
-1. The **§8 abundance check** on shulker shell / trident / nautilus (cap or blacklist?).
-2. Whether to bump the optional utility items (note block, target, daylight detector) or leave them deriving.
-3. Exact FU **amounts** in §3 (tiers are the priority; amounts are tunable).
+1. **§8 abundance check (shulker shell / trident / nautilus): CAP at T5.** All three are
+   renewable via mob farms, so at T6 their spool could print netherite (unfarmable). Capped
+   to T5 (shulker_shell already was; trident + nautilus_shell moved T6 to T5). They stay
+   printable and windable, just one tier lower. A T5 spool tops out at diamond-tier prints.
+2. **Optional utility items (note block, target, daylight detector): LEFT DERIVING.** Their
+   redstone content already derives them to T3, which is the intended floor; explicit entries
+   would be redundant.
+3. **FU amounts: as shipped.** Tiers were the priority; amounts remain tunable via config
+   overrides (which now merge OVER defaults, so retuning needs no config wipe).
 
-Everything else is settled. On your OK I'll implement §1–§10.
+## Implementation status
+
+The ladder + modded values landed across prior sessions. The **2026-07 pass** (stacked on the
+full-mod security audit) closed the laundering holes that audit surfaced, which are economy
+tuning rather than security:
+
+- **Storage-block proxies for blacklisted farmables (ECON-5).** A blacklisted farmable's
+  compress-to-block product derived a full windable value, laundering the farmable the
+  blacklist was meant to stop. Blacklisted `dried_kelp_block` (9x dried_kelp = 72@T3, the
+  material one), `bamboo_block`, `bamboo_mosaic`, and `green_dye` (a cactus proxy). The
+  general fix (propagate a "tainted, non-windable" bit through any derivation whose winning
+  cost path includes a blacklisted ingredient) is deferred; it mainly matters for MODDED
+  storage blocks derived from blacklisted modded farmables, which each compat author controls.
+- **Same-tier nugget pump (ECON-6).** `gold_nugget` 1 to **2@2**, `iron_nugget` 2 to **3@2** so
+  9 nuggets cost more than the ingot; Item Mode could otherwise print cheap nuggets, craft the
+  ingot, and wind it for a net FU gain. The residual smelting-transform trickle (sand to glass,
+  cobble to stone) is tiny, RF-gated, and needs Item-Mode automation; left as-is rather than
+  distorting core building-block values.
+- **Free-lava obsidian faucet (ECON-8).** Printing free (itemless) lava next to water forms
+  obsidian, a renewable T3 windable. Blacklisted `obsidian` from winding (which also zeroes its
+  Deconstruct yield). `crying_obsidian` is NOT formable this way (barter/ruined-portal only), so
+  it stays windable.
+
+A **modded abundance cross-check** (all nine compat hooks vs the final ladder) found no hard
+violations: every renewable that reaches a dangerous tier is either capped at T5, gated behind a
+non-renewable input (real diamond / ancient debris / mined ore), or a boss-grind. One **LOW soak
+watch item**: `botania:life_essence` / `gaia_ingot` sit at T6 (netherite wall). Gaia Guardian is
+re-summonable, but the fight is a manual, non-AFK ritual gated behind terrasteel (transitively
+real diamonds) + a beacon, so it matches the already-accepted `nether_star=1500@7` precedent
+(windable boss-grind that prints netherite). If an in-world soak shows `life_essence` is windable
+AND Gaia is cheaply repeatable, add both ids to `winder_blacklist.json` as optional-tag entries
+(`{"id": "botania:life_essence", "required": false}`) to kill the launder while keeping the T6
+print cost. No FU/tier change is needed either way.

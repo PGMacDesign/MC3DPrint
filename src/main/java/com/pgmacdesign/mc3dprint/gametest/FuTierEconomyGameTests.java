@@ -135,14 +135,16 @@ public class FuTierEconomyGameTests {
 
     @GameTest(template = "empty5", timeoutTicks = 100)
     public static void nuggetAndConcreteValuesRegistered(GameTestHelper helper) {
-        // nuggets = ingot/9 rounded DOWN (lossy by design); concrete joins the 5 FU group
+        // Nuggets are pinned so 9 cost MORE than the ingot (gold 2*9=18 > 15; iron 3*9=27 > 20):
+        // Item Mode could otherwise print cheap 1/9 nuggets, craft the ingot, and wind it for a
+        // net FU gain. Concrete joins the 5 FU group.
         var goldNugget = com.pgmacdesign.mc3dprint.fu.FuValueRegistry.valueOf(new ItemStack(Items.GOLD_NUGGET));
         var ironNugget = com.pgmacdesign.mc3dprint.fu.FuValueRegistry.valueOf(new ItemStack(Items.IRON_NUGGET));
         var concrete = com.pgmacdesign.mc3dprint.fu.FuValueRegistry.valueOf(new ItemStack(Items.RED_CONCRETE));
-        if (goldNugget.isEmpty() || goldNugget.get().fu() != 1 || goldNugget.get().tier() != 2) {
-            helper.fail("Gold nugget should be 1 FU @ T2, got " + goldNugget);
-        } else if (ironNugget.isEmpty() || ironNugget.get().fu() != 2 || ironNugget.get().tier() != 2) {
-            helper.fail("Iron nugget should be 2 FU @ T2, got " + ironNugget);
+        if (goldNugget.isEmpty() || goldNugget.get().fu() != 2 || goldNugget.get().tier() != 2) {
+            helper.fail("Gold nugget should be 2 FU @ T2, got " + goldNugget);
+        } else if (ironNugget.isEmpty() || ironNugget.get().fu() != 3 || ironNugget.get().tier() != 2) {
+            helper.fail("Iron nugget should be 3 FU @ T2, got " + ironNugget);
         } else if (concrete.isEmpty() || concrete.get().fu() != 5 || concrete.get().tier() != 1) {
             helper.fail("Concrete should be 5 FU @ T1, got " + concrete);
         } else {
@@ -222,6 +224,59 @@ public class FuTierEconomyGameTests {
                 helper.fail("Blacklisted powder_snow_bucket was wound: spool gained " + fu + " FU");
             } else if (!inputKept) {
                 helper.fail("Winder consumed a blacklisted powder_snow_bucket");
+            } else {
+                helper.succeed();
+            }
+        });
+    }
+
+    @GameTest(template = "empty5", timeoutTicks = 100)
+    public static void drownedFarmablesCappedAtT5(GameTestHelper helper) {
+        // trident + nautilus_shell are drowned-farmable, so the abundance rule caps them below
+        // netherite (T6): at T6 their spool could print netherite an AFK farm can't otherwise get.
+        var trident = com.pgmacdesign.mc3dprint.fu.FuValueRegistry.valueOf(new ItemStack(Items.TRIDENT));
+        var nautilus = com.pgmacdesign.mc3dprint.fu.FuValueRegistry.valueOf(new ItemStack(Items.NAUTILUS_SHELL));
+        if (trident.isEmpty() || trident.get().tier() != 5) {
+            helper.fail("Trident should be capped at T5, got " + trident);
+        } else if (nautilus.isEmpty() || nautilus.get().tier() != 5) {
+            helper.fail("Nautilus shell should be capped at T5, got " + nautilus);
+        } else {
+            helper.succeed();
+        }
+    }
+
+    @GameTest(template = "empty5", timeoutTicks = 150)
+    public static void blacklistedLaunderProxiesAreNotWindable(GameTestHelper helper) {
+        // Obsidian (free-lava faucet) and dried_kelp_block (a windable proxy for blacklisted
+        // dried_kelp) both carry a print value but must refuse winding, or they launder a
+        // renewable/blacklisted resource into FU. A matching-tier spool must gain nothing.
+        WinderBlockEntity winder = placePoweredWinder(helper, new BlockPos(2, 1, 2));
+        winder.inventory().setStackInSlot(WinderBlockEntity.SLOT_SPOOL, spoolWithFu(3, 0));
+        winder.inventory().setStackInSlot(WinderBlockEntity.SLOT_INPUT, new ItemStack(Items.OBSIDIAN, 1));
+
+        // Winding is ~20 ticks, so ASSERT the obsidian outcome at tick 60 BEFORE swapping in the
+        // dried_kelp_block case; otherwise the swap wipes the only window to catch obsidian winding.
+        helper.runAfterDelay(60, () -> {
+            int fu = SpoolItem.getFu(winder.inventory().getStackInSlot(WinderBlockEntity.SLOT_SPOOL));
+            boolean inputKept = !winder.inventory().getStackInSlot(WinderBlockEntity.SLOT_INPUT).isEmpty();
+            if (fu != 0) {
+                helper.fail("Blacklisted obsidian was wound: spool gained " + fu + " FU");
+                return;
+            }
+            if (!inputKept) {
+                helper.fail("Winder consumed blacklisted obsidian");
+                return;
+            }
+            winder.inventory().setStackInSlot(WinderBlockEntity.SLOT_SPOOL, spoolWithFu(3, 0));
+            winder.inventory().setStackInSlot(WinderBlockEntity.SLOT_INPUT, new ItemStack(Items.DRIED_KELP_BLOCK, 1));
+        });
+        helper.runAfterDelay(120, () -> {
+            int fu = SpoolItem.getFu(winder.inventory().getStackInSlot(WinderBlockEntity.SLOT_SPOOL));
+            boolean inputKept = !winder.inventory().getStackInSlot(WinderBlockEntity.SLOT_INPUT).isEmpty();
+            if (fu != 0) {
+                helper.fail("Blacklisted dried_kelp_block was wound: spool gained " + fu + " FU");
+            } else if (!inputKept) {
+                helper.fail("Winder consumed blacklisted dried_kelp_block");
             } else {
                 helper.succeed();
             }
