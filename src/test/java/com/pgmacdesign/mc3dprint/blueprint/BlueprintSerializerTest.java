@@ -96,4 +96,28 @@ class BlueprintSerializerTest {
         Blueprint restored = BlueprintSerializer.read(tag);
         assertEquals(0, restored.entities().size());
     }
+
+    @Test
+    void rejectsOverflowingSize() {
+        // A crafted Size whose int product overflows must fail as a format error before the
+        // Blocks-length check or any allocation (prevents OOM / AIOOBE on the printer serverTick).
+        CompoundTag tag = BlueprintSerializer.write(sample());
+        tag.putIntArray("Size", new int[]{65536, 65536, 1});
+        assertThrows(BlueprintFormatException.class, () -> BlueprintSerializer.read(tag));
+    }
+
+    @Test
+    void rejectsNegativeSize() {
+        CompoundTag tag = BlueprintSerializer.write(sample());
+        tag.putIntArray("Size", new int[]{-1, 3, 2});
+        assertThrows(BlueprintFormatException.class, () -> BlueprintSerializer.read(tag));
+    }
+
+    @Test
+    void rejectsBlocksLengthMismatch() {
+        // Volume says one thing, Blocks array says another: reject rather than index out of bounds.
+        CompoundTag tag = BlueprintSerializer.write(sample());
+        tag.putIntArray("Blocks", new int[]{Blueprint.NO_BLOCK});
+        assertThrows(BlueprintFormatException.class, () -> BlueprintSerializer.read(tag));
+    }
 }
