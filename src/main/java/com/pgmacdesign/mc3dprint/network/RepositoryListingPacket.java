@@ -37,18 +37,31 @@ public record RepositoryListingPacket(List<RepoEntry> entries, List<UUID> printe
         }
     }
 
+    // A repository holds far fewer builds than this; the cap just stops a garbage/hostile
+    // varint length from pre-allocating a huge list on the client.
+    private static final int MAX_ENTRIES = 4096;
+
     private static RepositoryListingPacket read(RegistryFriendlyByteBuf buf) {
-        int count = buf.readVarInt();
+        int count = readBounded(buf, "entries");
         List<RepoEntry> entries = new ArrayList<>(count);
         for (int i = 0; i < count; i++) {
             entries.add(RepoEntry.fromBuf(buf));
         }
-        int printedCount = buf.readVarInt();
+        int printedCount = readBounded(buf, "printed");
         List<UUID> printed = new ArrayList<>(printedCount);
         for (int i = 0; i < printedCount; i++) {
             printed.add(buf.readUUID());
         }
         return new RepositoryListingPacket(entries, printed);
+    }
+
+    private static int readBounded(RegistryFriendlyByteBuf buf, String field) {
+        int count = buf.readVarInt();
+        if (count < 0 || count > MAX_ENTRIES) {
+            throw new io.netty.handler.codec.DecoderException(
+                    "RepositoryListing " + field + " count out of range: " + count);
+        }
+        return count;
     }
 
     @Override

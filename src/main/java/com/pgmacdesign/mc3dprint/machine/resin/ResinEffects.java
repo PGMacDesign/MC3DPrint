@@ -85,6 +85,32 @@ public final class ResinEffects {
         return state;
     }
 
+    /**
+     * Inverse of {@link #matureState}: the just-planted (age 0) form of a growable plant, else the
+     * input unchanged. The printer normalizes free-printed crops through this so a scanned mature
+     * field can't become a no-grow harvest faucet (Verdant is the intended path to print mature).
+     * AttachedStemBlock has no age to reset, so it passes through untouched.
+     */
+    public static BlockState ungrownState(BlockState state) {
+        Block block = state.getBlock();
+        if (block instanceof CropBlock crop) {
+            return crop.getStateForAge(0);
+        }
+        if (block instanceof NetherWartBlock) {
+            return state.setValue(NetherWartBlock.AGE, 0);
+        }
+        if (block instanceof StemBlock) {
+            return state.setValue(StemBlock.AGE, 0);
+        }
+        if (block instanceof SweetBerryBushBlock) {
+            return state.setValue(SweetBerryBushBlock.AGE, 0);
+        }
+        if (block instanceof CocoaBlock) {
+            return state.setValue(CocoaBlock.AGE, 0);
+        }
+        return state;
+    }
+
     // ============================ ORE SALTING ============================
 
     // Full-cube stone-family blocks that can grow ore veins, grouped by the ore family

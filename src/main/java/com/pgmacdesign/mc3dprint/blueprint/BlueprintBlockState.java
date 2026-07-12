@@ -65,12 +65,21 @@ public final class BlueprintBlockState {
         if (bracket < 0) {
             return new BlueprintBlockState(serialized.trim());
         }
+        // Validate the bracket/'=' structure so a malformed palette string ("stone[", "foo[bar]")
+        // fails as a format error the caller handles, not an escaping StringIndexOutOfBounds.
+        int close = serialized.lastIndexOf(']');
+        if (close < bracket) {
+            throw new BlueprintFormatException("Malformed block state (no closing ']'): " + serialized);
+        }
         String id = serialized.substring(0, bracket).trim();
-        String body = serialized.substring(bracket + 1, serialized.lastIndexOf(']')).trim();
+        String body = serialized.substring(bracket + 1, close).trim();
         SortedMap<String, String> props = new TreeMap<>();
         if (!body.isEmpty()) {
             for (String pair : body.split(",")) {
                 int eq = pair.indexOf('=');
+                if (eq < 0) {
+                    throw new BlueprintFormatException("Malformed block state property (missing '='): " + serialized);
+                }
                 props.put(pair.substring(0, eq).trim(), pair.substring(eq + 1).trim());
             }
         }

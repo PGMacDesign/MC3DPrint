@@ -119,6 +119,12 @@ public class PrinterBlock extends BaseEntityBlock {
             for (int slot = 0; slot < upgrades.getSlots(); slot++) {
                 Containers.dropItemStack(level, pos.getX(), pos.getY(), pos.getZ(), upgrades.getStackInSlot(slot));
             }
+            // Resins are loot-only, so dropping them on break avoids silently voiding a stack (the
+            // T5-T8 multiblock preserves them via full-NBT collapse; the single block must too).
+            ItemStackHandler resins = printer.resinInventory();
+            for (int slot = 0; slot < resins.getSlots(); slot++) {
+                Containers.dropItemStack(level, pos.getX(), pos.getY(), pos.getZ(), resins.getStackInSlot(slot));
+            }
         }
         super.affectNeighborsAfterRemoval(state, level, pos, movedByPiston);
     }
@@ -145,6 +151,12 @@ public class PrinterBlock extends BaseEntityBlock {
             ItemStackHandler upgrades = printer.upgradeInventory();
             for (int slot = 0; slot < upgrades.getSlots(); slot++) {
                 Containers.dropItemStack(level, pos.getX(), pos.getY(), pos.getZ(), upgrades.getStackInSlot(slot));
+            }
+            // Resins are loot-only, so dropping them on break avoids silently voiding a stack (the
+            // T5-T8 multiblock preserves them via full-NBT collapse; the single block must too).
+            ItemStackHandler resins = printer.resinInventory();
+            for (int slot = 0; slot < resins.getSlots(); slot++) {
+                Containers.dropItemStack(level, pos.getX(), pos.getY(), pos.getZ(), resins.getStackInSlot(slot));
             }
         }
         super.onRemove(state, level, pos, newState, isMoving);

@@ -78,7 +78,14 @@ public final class SpongeSchematicImporter {
             throw new BlueprintFormatException("Sponge schematic has invalid dimensions "
                     + width + "x" + height + "x" + length);
         }
-        int volume = width * height * length;
+        // Each dim can be up to 65535; the int product overflows and/or allocates multi-GB.
+        // Compute as long and reject anything past a sane build size BEFORE any allocation.
+        long volumeL = (long) width * height * length;
+        if (volumeL > Blueprint.MAX_VOLUME) {
+            throw new BlueprintFormatException("Sponge schematic volume " + volumeL
+                    + " exceeds the maximum of " + Blueprint.MAX_VOLUME + " blocks");
+        }
+        int volume = (int) volumeL;
         int[] indices = VarInt.decodeAll(blockData, volume);
 
         Blueprint.Builder builder = Blueprint.builder(name, width, height, length);

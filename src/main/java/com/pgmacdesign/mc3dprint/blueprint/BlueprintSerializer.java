@@ -104,6 +104,13 @@ public final class BlueprintSerializer {
         if (size.length != 3) {
             throw new BlueprintFormatException("Blueprint Size must be [x, y, z], got length " + size.length);
         }
+        // Reject a hostile/corrupt size (negative dims, int-overflow product, over-cap) here as a
+        // format error, before it can reach the Blueprint constructor's allocation.
+        long volume = (long) size[0] * size[1] * size[2];
+        if (size[0] < 0 || size[1] < 0 || size[2] < 0 || volume > Blueprint.MAX_VOLUME) {
+            throw new BlueprintFormatException("Blueprint Size out of range: "
+                    + size[0] + "x" + size[1] + "x" + size[2]);
+        }
 
         List<BlueprintBlockState> palette = new ArrayList<>();
         for (Tag tag : NbtCompat.getList(root, KEY_PALETTE, Tag.TAG_STRING)) {
@@ -111,6 +118,10 @@ public final class BlueprintSerializer {
         }
 
         int[] blocks = NbtCompat.getIntArray(root, KEY_BLOCKS).clone();
+        if (blocks.length != volume) {
+            throw new BlueprintFormatException("Blocks length " + blocks.length
+                    + " does not match volume " + volume);
+        }
         for (int paletteIndex : blocks) {
             if (paletteIndex != Blueprint.NO_BLOCK && (paletteIndex < 0 || paletteIndex >= palette.size())) {
                 throw new BlueprintFormatException("Block palette index " + paletteIndex

@@ -141,7 +141,8 @@ public final class ImportCommand {
 
         Blueprint blueprint;
         try {
-            CompoundTag tag = NbtIo.readCompressed(file, NbtAccounter.unlimitedHeap());
+            // Bound the decompressed NBT (op-gated, but still no reason to allow a gzip bomb).
+            CompoundTag tag = NbtIo.readCompressed(file, NbtAccounter.create(64L * 1024 * 1024));
             String name = fileName.substring(0, fileName.lastIndexOf('.'));
             if (fileName.endsWith(".schem")) {
                 blueprint = SpongeSchematicImporter.importSchematic(name, tag);

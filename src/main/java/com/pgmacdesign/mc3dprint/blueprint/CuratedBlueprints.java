@@ -353,7 +353,9 @@ public final class CuratedBlueprints {
                 }
                 store.save(id, bundled);
                 installed++;
-            } catch (IOException | BlueprintFormatException e) {
+            } catch (IOException | RuntimeException e) {
+                // RuntimeException too (e.g. a corrupt existing world file surfacing as
+                // UncheckedIOException): one bad blueprint must not abort server start.
                 LOGGER.warn("Skipping curated blueprint {}: {}", rl, e.getMessage());
             }
         }

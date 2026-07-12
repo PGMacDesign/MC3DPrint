@@ -1,10 +1,12 @@
 package com.pgmacdesign.mc3dprint.blueprint;
 
+import com.mojang.logging.LogUtils;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtAccounter;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.storage.LevelResource;
+import org.slf4j.Logger;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -26,7 +28,13 @@ import java.util.stream.Stream;
  * externally synchronized) — no internal locking.
  */
 public final class BlueprintFileStore {
+    private static final Logger LOGGER = LogUtils.getLogger();
     public static final String EXTENSION = ".blueprint";
+
+    // Bound the decompressed NBT so a gzip bomb or a corrupt/oversized file can't OOM the
+    // server thread on load. 64 MB sits comfortably above any real blueprint (the largest
+    // curated builds are a few hundred KB).
+    private static final long MAX_BLUEPRINT_BYTES = 64L * 1024 * 1024;
     private static final Pattern FILE_NAME = Pattern.compile(
             "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\" + EXTENSION);
 
@@ -71,10 +79,14 @@ public final class BlueprintFileStore {
             return Optional.empty();
         }
         try {
-            CompoundTag tag = NbtIo.readCompressed(path, NbtAccounter.unlimitedHeap());
+            CompoundTag tag = NbtIo.readCompressed(path, NbtAccounter.create(MAX_BLUEPRINT_BYTES));
             return Optional.of(BlueprintSerializer.read(tag));
-        } catch (IOException e) {
-            throw new UncheckedIOException("Failed to read blueprint " + id, e);
+        } catch (IOException | RuntimeException e) {
+            // A corrupt/truncated/oversized file must degrade to "no blueprint"; this runs on
+            // the printer's serverTick with no try/catch, so throwing here crashes the ticking
+            // block entity (and crash-loops if the job auto-starts).
+            LOGGER.warn("Failed to read blueprint {}: {}", id, e.toString());
+            return Optional.empty();
         }
     }
 
