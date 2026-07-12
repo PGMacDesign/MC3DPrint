@@ -254,17 +254,29 @@ public class FuTierEconomyGameTests {
         winder.inventory().setStackInSlot(WinderBlockEntity.SLOT_SPOOL, spoolWithFu(3, 0));
         winder.inventory().setStackInSlot(WinderBlockEntity.SLOT_INPUT, new ItemStack(Items.OBSIDIAN, 1));
 
+        // Winding is ~20 ticks, so ASSERT the obsidian outcome at tick 60 BEFORE swapping in the
+        // dried_kelp_block case; otherwise the swap wipes the only window to catch obsidian winding.
         helper.runAfterDelay(60, () -> {
-            winder.inventory().setStackInSlot(WinderBlockEntity.SLOT_SPOOL, spoolWithFu(3, 0));
-            winder.inventory().setStackInSlot(WinderBlockEntity.SLOT_INPUT, new ItemStack(Items.DRIED_KELP_BLOCK, 1));
-        });
-        helper.runAfterDelay(140, () -> {
             int fu = SpoolItem.getFu(winder.inventory().getStackInSlot(WinderBlockEntity.SLOT_SPOOL));
             boolean inputKept = !winder.inventory().getStackInSlot(WinderBlockEntity.SLOT_INPUT).isEmpty();
             if (fu != 0) {
-                helper.fail("A blacklisted launder-proxy was wound: spool gained " + fu + " FU");
+                helper.fail("Blacklisted obsidian was wound: spool gained " + fu + " FU");
+                return;
+            }
+            if (!inputKept) {
+                helper.fail("Winder consumed blacklisted obsidian");
+                return;
+            }
+            winder.inventory().setStackInSlot(WinderBlockEntity.SLOT_SPOOL, spoolWithFu(3, 0));
+            winder.inventory().setStackInSlot(WinderBlockEntity.SLOT_INPUT, new ItemStack(Items.DRIED_KELP_BLOCK, 1));
+        });
+        helper.runAfterDelay(120, () -> {
+            int fu = SpoolItem.getFu(winder.inventory().getStackInSlot(WinderBlockEntity.SLOT_SPOOL));
+            boolean inputKept = !winder.inventory().getStackInSlot(WinderBlockEntity.SLOT_INPUT).isEmpty();
+            if (fu != 0) {
+                helper.fail("Blacklisted dried_kelp_block was wound: spool gained " + fu + " FU");
             } else if (!inputKept) {
-                helper.fail("Winder consumed a blacklisted launder-proxy");
+                helper.fail("Winder consumed blacklisted dried_kelp_block");
             } else {
                 helper.succeed();
             }
