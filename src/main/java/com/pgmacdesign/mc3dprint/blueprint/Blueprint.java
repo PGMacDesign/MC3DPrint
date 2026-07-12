@@ -29,6 +29,24 @@ public final class Blueprint {
     // any real build (the largest fabricator footprint is a few hundred thousand blocks).
     public static final long MAX_VOLUME = 8_000_000L;
 
+    /**
+     * The block volume of a size, or -1 if it is out of range. Uses multiplyExact so even three
+     * near-max int dimensions (whose product overflows LONG, not just int) are caught rather than
+     * wrapping to a small value that would slip past the {@link #MAX_VOLUME} check. Rejects negative
+     * dimensions and anything over the cap. The single guard every construction path shares.
+     */
+    static long checkedVolume(int sizeX, int sizeY, int sizeZ) {
+        if (sizeX < 0 || sizeY < 0 || sizeZ < 0) {
+            return -1;
+        }
+        try {
+            long volume = Math.multiplyExact(Math.multiplyExact((long) sizeX, sizeY), (long) sizeZ);
+            return volume > MAX_VOLUME ? -1 : volume;
+        } catch (ArithmeticException overflow) {
+            return -1;
+        }
+    }
+
     private final String name;
     private final int sizeX;
     private final int sizeY;
@@ -41,8 +59,8 @@ public final class Blueprint {
     Blueprint(String name, int sizeX, int sizeY, int sizeZ,
               List<BlueprintBlockState> palette, int[] blocks,
               Map<BlockPos, CompoundTag> blockEntities, List<BlueprintEntity> entities) {
-        long volume = (long) sizeX * sizeY * sizeZ;
-        if (sizeX < 0 || sizeY < 0 || sizeZ < 0 || volume > MAX_VOLUME) {
+        long volume = checkedVolume(sizeX, sizeY, sizeZ);
+        if (volume < 0) {
             throw new IllegalArgumentException("Blueprint size out of range: "
                     + sizeX + "x" + sizeY + "x" + sizeZ);
         }
@@ -197,8 +215,8 @@ public final class Blueprint {
         private final List<BlueprintEntity> entities = new ArrayList<>();
 
         private Builder(String name, int sizeX, int sizeY, int sizeZ) {
-            long volume = (long) sizeX * sizeY * sizeZ;
-            if (sizeX <= 0 || sizeY <= 0 || sizeZ <= 0 || volume > MAX_VOLUME) {
+            long volume = checkedVolume(sizeX, sizeY, sizeZ);
+            if (sizeX <= 0 || sizeY <= 0 || sizeZ <= 0 || volume < 0) {
                 throw new IllegalArgumentException("Blueprint dimensions out of range: "
                         + sizeX + "x" + sizeY + "x" + sizeZ);
             }

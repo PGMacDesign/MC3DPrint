@@ -71,4 +71,17 @@ class BlueprintBlockStateTest {
     void rejectsPropertyWithoutEquals() {
         assertThrows(BlueprintFormatException.class, () -> BlueprintBlockState.parse("minecraft:stone[waterlogged]"));
     }
+
+    @Test
+    void rejectsTrailingJunkAfterBracket() {
+        // The ']' must close the string; trailing text was silently dropped before.
+        assertThrows(BlueprintFormatException.class,
+                () -> BlueprintBlockState.parse("minecraft:stone[waterlogged=true]junk"));
+    }
+
+    @Test
+    void rejectsStrayCloseBracket() {
+        // A ']' with no '[' is malformed, not a plain block id containing ']'.
+        assertThrows(BlueprintFormatException.class, () -> BlueprintBlockState.parse("minecraft:stone]"));
+    }
 }

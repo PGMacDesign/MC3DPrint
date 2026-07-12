@@ -120,4 +120,15 @@ class BlueprintSerializerTest {
         tag.putIntArray("Blocks", new int[]{Blueprint.NO_BLOCK});
         assertThrows(BlueprintFormatException.class, () -> BlueprintSerializer.read(tag));
     }
+
+    @Test
+    void rejectsLongOverflowSize() {
+        // Three near-max dims whose product overflows LONG (not just int) must be caught by the
+        // multiplyExact guard, not wrap to a small value that slips past MAX_VOLUME with an empty
+        // Blocks array. (1<<30)^2 * 16 wraps a naive long product back to 0.
+        CompoundTag tag = BlueprintSerializer.write(sample());
+        tag.putIntArray("Size", new int[]{1 << 30, 1 << 30, 16});
+        tag.putIntArray("Blocks", new int[0]);
+        assertThrows(BlueprintFormatException.class, () -> BlueprintSerializer.read(tag));
+    }
 }
