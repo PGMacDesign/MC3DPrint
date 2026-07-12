@@ -31,7 +31,7 @@ from .masks import BODY, FRAME, GLOW, METAL, TIER, TRANSPARENT
 
 
 def _clamp8(v):
-    return max(0, min(255, int(round(v))))
+    return max(0, min(255, round(v)))
 
 
 def _lum(r, g, b):
@@ -67,9 +67,9 @@ def _sobel(height, x, y, w, h):
         yy = 0 if yy < 0 else h - 1 if yy >= h else yy
         return height[yy][xx]
     tl, t, tr = hv(x - 1, y - 1), hv(x, y - 1), hv(x + 1, y - 1)
-    l, r = hv(x - 1, y), hv(x + 1, y)
+    left, r = hv(x - 1, y), hv(x + 1, y)
     bl, b, br = hv(x - 1, y + 1), hv(x, y + 1), hv(x + 1, y + 1)
-    gx = (tr + 2 * r + br) - (tl + 2 * l + bl)
+    gx = (tr + 2 * r + br) - (tl + 2 * left + bl)
     gy = (bl + 2 * b + br) - (tl + 2 * t + tr)
     return gx, gy
 

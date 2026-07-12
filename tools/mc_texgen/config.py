@@ -124,7 +124,11 @@ def load(source):
         return source
     if isinstance(source, dict):
         return from_dict(source)
-    if isinstance(source, str) and source.endswith(".py") and os.path.exists(source):
+    if isinstance(source, str) and source.endswith(".py"):
+        # A path-shaped arg that isn't there is a missing file, not a bare name: say
+        # so plainly instead of falling through to a confusing ModuleNotFoundError.
+        if not os.path.exists(source):
+            raise FileNotFoundError(f"config file not found: {source}")
         ns = {}
         with open(source) as fh:
             exec(compile(fh.read(), source, "exec"), ns)  # noqa: S102 (trusted local config)

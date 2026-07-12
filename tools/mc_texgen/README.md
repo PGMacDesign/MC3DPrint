@@ -16,7 +16,7 @@ MC3DPrint but written to lift into any mod repo by writing one config file.
 
 Each stage is a small module you can test or swap in isolation:
 
-```
+```text
 ingest  ->  masks  ->  { upscale , pbr , detail }  ->  assemble
 ```
 

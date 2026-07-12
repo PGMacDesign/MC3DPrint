@@ -62,8 +62,13 @@ def records(cfg, kinds=None):
             with Image.open(path) as im:
                 w, h = im.size
             # Animation strips are N square frames stacked vertically (frame edge
-            # == width); a static texture is a single frame.
-            if animated and w and h % w == 0:
+            # == width); a static texture is a single frame. A .mcmeta present with
+            # a non-multiple height is a malformed strip: reject it rather than
+            # silently framing the whole image as one padded/corrupted frame.
+            if animated:
+                if not w or h % w != 0:
+                    raise ValueError(
+                        f"malformed animation strip {path}: height {h} is not a multiple of width {w}")
                 frame, frames = w, h // w
             else:
                 frame, frames = h, 1

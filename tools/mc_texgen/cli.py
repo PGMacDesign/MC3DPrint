@@ -9,7 +9,8 @@ Phases:
   pbr      Phase 0: labPBR _n/_s companion maps for the EXISTING resolution,
            written as a small overlay pack (default -> resourcepacks/pbr_addon).
   upscale  Phase 1: a pixel-art upscaled pack at --scale (default -> build out_dir).
-  both     upscale pack, plus its own _n/_s maps when --pbr is set.
+  both     runs BOTH phases: the pbr overlay pack AND the upscale pack. In every
+           phase, --pbr is what gates _n/_s maps inside the UPSCALE pack.
 """
 import argparse
 import os
@@ -52,7 +53,10 @@ def phase_pbr(cfg, out_root, description, previews=True):
         np = assemble.save_texture(out_root, cfg.namespace, rec.kind, rec.name + "_n", n_img, meta)
         sp = assemble.save_texture(out_root, cfg.namespace, rec.kind, rec.name + "_s", s_img, meta)
         count += 1
-        if rec.kind == "block":
+        # Mask debug tiles exist only to feed the preview contact sheets; skip the
+        # classify/save cost entirely (and the temp files in the tracked docs dir)
+        # when previews are off.
+        if previews and rec.kind == "block":
             n_maps.append(np)
             s_maps.append(sp)
             grid = masks.classify(rec.open().crop((0, 0, rec.frame_size, rec.frame_size)),
@@ -62,7 +66,9 @@ def phase_pbr(cfg, out_root, description, previews=True):
             dbg.save(dpath)
             mask_dbg.append(dpath)
         if rec.name.startswith("tier4"):
-            hero = n_img
+            # pack.png hero is the ALBEDO texture; the normal map's tint and
+            # height-alpha make an unreadable icon.
+            hero = rec.open().crop((0, 0, rec.frame_size, rec.frame_size))
     assemble.write_pack_icon(out_root, hero)
     if previews:
         _write_previews(n_maps, s_maps, mask_dbg)
@@ -160,7 +166,7 @@ def main(argv=None):
         cfg = config.override(cfg, detail=True)
 
     summary = []
-    if args.phase in ("pbr",):
+    if args.phase in ("pbr", "both"):
         out = args.out or os.path.join(_ROOT, "src/main/resources/resourcepacks/pbr_addon")
         os.makedirs(out, exist_ok=True)
         n = phase_pbr(cfg, out, "MC3DPrint: labPBR PBR Add-on", previews=not args.no_previews)
@@ -169,8 +175,10 @@ def main(argv=None):
     if args.phase in ("upscale", "both"):
         out = args.out or os.path.join(cfg.out_dir, f"upscale_{args.scale}x")
         os.makedirs(out, exist_ok=True)
+        # --pbr alone gates _n/_s emission, matching the documented contract; "both"
+        # without --pbr is just the upscale pack.
         n = phase_upscale(cfg, out, args.scale,
-                          f"MC3DPrint: {args.scale}x", with_pbr=args.pbr or args.phase == "both")
+                          f"MC3DPrint: {args.scale}x", with_pbr=args.pbr)
         summary.append(f"upscale {args.scale}x: {n} textures -> {out}")
 
     print("mc-texgen done:")
