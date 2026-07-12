@@ -96,4 +96,39 @@ class BlueprintSerializerTest {
         Blueprint restored = BlueprintSerializer.read(tag);
         assertEquals(0, restored.entities().size());
     }
+
+    @Test
+    void rejectsOverflowingSize() {
+        // A crafted Size whose int product overflows must fail as a format error before the
+        // Blocks-length check or any allocation (prevents OOM / AIOOBE on the printer serverTick).
+        CompoundTag tag = BlueprintSerializer.write(sample());
+        tag.putIntArray("Size", new int[]{65536, 65536, 1});
+        assertThrows(BlueprintFormatException.class, () -> BlueprintSerializer.read(tag));
+    }
+
+    @Test
+    void rejectsNegativeSize() {
+        CompoundTag tag = BlueprintSerializer.write(sample());
+        tag.putIntArray("Size", new int[]{-1, 3, 2});
+        assertThrows(BlueprintFormatException.class, () -> BlueprintSerializer.read(tag));
+    }
+
+    @Test
+    void rejectsBlocksLengthMismatch() {
+        // Volume says one thing, Blocks array says another: reject rather than index out of bounds.
+        CompoundTag tag = BlueprintSerializer.write(sample());
+        tag.putIntArray("Blocks", new int[]{Blueprint.NO_BLOCK});
+        assertThrows(BlueprintFormatException.class, () -> BlueprintSerializer.read(tag));
+    }
+
+    @Test
+    void rejectsLongOverflowSize() {
+        // Three near-max dims whose product overflows LONG (not just int) must be caught by the
+        // multiplyExact guard, not wrap to a small value that slips past MAX_VOLUME with an empty
+        // Blocks array. (1<<30)^2 * 16 wraps a naive long product back to 0.
+        CompoundTag tag = BlueprintSerializer.write(sample());
+        tag.putIntArray("Size", new int[]{1 << 30, 1 << 30, 16});
+        tag.putIntArray("Blocks", new int[0]);
+        assertThrows(BlueprintFormatException.class, () -> BlueprintSerializer.read(tag));
+    }
 }

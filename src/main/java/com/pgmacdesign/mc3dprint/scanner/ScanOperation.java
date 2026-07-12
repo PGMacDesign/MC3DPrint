@@ -1,5 +1,6 @@
 package com.pgmacdesign.mc3dprint.scanner;
 
+import com.pgmacdesign.mc3dprint.compat.BeData;
 import com.pgmacdesign.mc3dprint.compat.NbtCompat;
 
 import com.pgmacdesign.mc3dprint.blueprint.Blueprint;
@@ -49,15 +50,10 @@ public final class ScanOperation {
 
             BlockEntity blockEntity = level.getBlockEntity(pos);
             if (blockEntity != null) {
-                //? if >=1.21.5 {
-                /*net.minecraft.world.level.storage.TagValueOutput beOut =
-                        net.minecraft.world.level.storage.TagValueOutput.createWithContext(
-                                net.minecraft.util.ProblemReporter.DISCARDING, level.registryAccess());
-                blockEntity.saveWithId(beOut);
-                CompoundTag data = beOut.buildResult();
-                *///?} else {
-                CompoundTag data = blockEntity.saveWithId(level.registryAccess());
-                //?}
+                // Anti-dupe parity with the entity path (below): strip stored container contents
+                // so printing a player-scanned disc can't restore (dupe) the items for the price
+                // of the container block alone.
+                CompoundTag data = strippedOfContents(level, pos, state, saveBlockEntity(level, blockEntity));
                 builder.blockEntity(localX, localY, localZ, data);
             }
         }
@@ -102,6 +98,39 @@ public final class ScanOperation {
                     nbt);
         }
         return builder.build();
+    }
+
+    private static CompoundTag saveBlockEntity(Level level, BlockEntity blockEntity) {
+        //? if >=1.21.5 {
+        /*net.minecraft.world.level.storage.TagValueOutput beOut =
+                net.minecraft.world.level.storage.TagValueOutput.createWithContext(
+                        net.minecraft.util.ProblemReporter.DISCARDING, level.registryAccess());
+        blockEntity.saveWithId(beOut);
+        return beOut.buildResult();
+        *///?} else {
+        return blockEntity.saveWithId(level.registryAccess());
+        //?}
+    }
+
+    /**
+     * Returns {@code data} with any stored contents removed. Rebuilds a throwaway block entity
+     * from the state, loads the captured tag, clears it via {@link net.minecraft.world.Clearable}
+     * (vanilla containers + most modded storage implement it), and re-saves. Structural/cosmetic
+     * NBT (sign text, banners, note blocks, skulls) survives the round-trip untouched.
+     */
+    private static CompoundTag strippedOfContents(Level level, BlockPos pos, BlockState state, CompoundTag data) {
+        if (!(state.getBlock() instanceof net.minecraft.world.level.block.EntityBlock entityBlock)) {
+            return data;
+        }
+        BlockEntity temp = entityBlock.newBlockEntity(pos, state);
+        if (temp == null) {
+            return data;
+        }
+        BeData.loadInto(temp, data, level.registryAccess());
+        if (temp instanceof net.minecraft.world.Clearable clearable) {
+            clearable.clearContent();
+        }
+        return saveBlockEntity(level, temp);
     }
 
     /**

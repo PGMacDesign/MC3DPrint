@@ -383,9 +383,14 @@ public final class FuValueRegistry {
         if (at < 0) {
             throw new IllegalArgumentException("expected <id>=<fu>@<tier> or <id>=off");
         }
-        FuValue value = new FuValue(
-                Integer.parseInt(rhs.substring(0, at).trim()),
-                Integer.parseInt(rhs.substring(at + 1).trim()));
+        int fu = Integer.parseInt(rhs.substring(0, at).trim());
+        int tier = Integer.parseInt(rhs.substring(at + 1).trim());
+        // Non-positive FU or a sub-1 tier corrupts cost math (negative filament, tier-0 lookups);
+        // reject like any other malformed entry (loadMerged logs + skips). The =off path is above.
+        if (fu <= 0 || tier < 1) {
+            throw new IllegalArgumentException("fu must be > 0 and tier >= 1, got " + fu + "@" + tier);
+        }
+        FuValue value = new FuValue(fu, tier);
 
         if (id.startsWith("#")) {
             TagKey<Item> key = TagKey.create(Registries.ITEM, parseTagId(id));

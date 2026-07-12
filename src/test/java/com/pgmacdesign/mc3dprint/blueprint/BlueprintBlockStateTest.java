@@ -6,6 +6,7 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class BlueprintBlockStateTest {
@@ -57,5 +58,30 @@ class BlueprintBlockStateTest {
     void handlesWhitespaceInPropertyList() {
         BlueprintBlockState state = BlueprintBlockState.parse("minecraft:oak_stairs[facing=east, half=top]");
         assertEquals("top", state.properties().get("half"));
+    }
+
+    @Test
+    void rejectsMalformedBracket() {
+        // A '[' with no closing ']' must fail as a format error, not an escaping
+        // StringIndexOutOfBounds that would crash the parsing caller.
+        assertThrows(BlueprintFormatException.class, () -> BlueprintBlockState.parse("minecraft:stone[waterlogged"));
+    }
+
+    @Test
+    void rejectsPropertyWithoutEquals() {
+        assertThrows(BlueprintFormatException.class, () -> BlueprintBlockState.parse("minecraft:stone[waterlogged]"));
+    }
+
+    @Test
+    void rejectsTrailingJunkAfterBracket() {
+        // The ']' must close the string; trailing text was silently dropped before.
+        assertThrows(BlueprintFormatException.class,
+                () -> BlueprintBlockState.parse("minecraft:stone[waterlogged=true]junk"));
+    }
+
+    @Test
+    void rejectsStrayCloseBracket() {
+        // A ']' with no '[' is malformed, not a plain block id containing ']'.
+        assertThrows(BlueprintFormatException.class, () -> BlueprintBlockState.parse("minecraft:stone]"));
     }
 }

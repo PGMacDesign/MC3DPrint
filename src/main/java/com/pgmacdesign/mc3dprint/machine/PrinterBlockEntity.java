@@ -149,6 +149,18 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
                 recheckObstruction();
             }
         }
+
+        @Override
+        public boolean isItemValid(int slot, @Nonnull ItemStack stack) {
+            // A wound spool stores FU in a component; Item Mode would copy it for a trivial derived
+            // cost. The GUI's mayPlace blocks this, but a hopper into the UP-face template slot
+            // bypasses the GUI, so reject spools at the capability layer too. (CreativeSpoolItem
+            // extends SpoolItem, so this covers both.)
+            if (slot == SLOT_TEMPLATE && stack.getItem() instanceof SpoolItem) {
+                return false;
+            }
+            return super.isItemValid(slot, stack);
+        }
     };
 
     // Resin slot (one slot, holds a stack up to 64): a consumed-per-print modifier
@@ -432,6 +444,14 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         if (template.isEmpty()) {
             state = State.IDLE;
             itemProgress = 0;
+            return;
+        }
+        // A spool must never be printable: it carries stored FU, so copying it would launder
+        // filament for a derived cost. Defense-in-depth choke point behind the handler guard.
+        if (template.getItem() instanceof SpoolItem) {
+            state = State.NOT_PRINTABLE;
+            itemProgress = 0;
+            notPrintableReason = idOf(template) + " is a filament spool; printers never duplicate stored filament";
             return;
         }
         // Item mode with a restricted trophy would be straight duplication — refuse
@@ -1117,7 +1137,10 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
     private void emitCopy(ItemStack template) {
         ItemStack output = inventory.getStackInSlot(SLOT_OUTPUT);
         if (output.isEmpty()) {
-            inventory.setStackInSlot(SLOT_OUTPUT, template.copyWithCount(1));
+            // Emit matter, not stored history: the FU cost is keyed on the base item only, so the
+            // output must NOT carry value-bearing components (shulker container, bundle_contents,
+            // enchantments, etc.) that copyWithCount would clone for free (anti-dupe).
+            inventory.setStackInSlot(SLOT_OUTPUT, new ItemStack(template.getItem()));
         } else {
             output.grow(1);
             inventory.setStackInSlot(SLOT_OUTPUT, output);
@@ -1250,6 +1273,14 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             BlockState placedState = resolved.get()
                     .mirror(activeJob.orientation().mirror())
                     .rotate(activeJob.orientation().rotation());
+            // Free-printed crops from a PLAYER scan must plant ungrown: printing an age-7 field free
+            // would be a no-grow crop/seed faucet. Official curated discs are trusted content (a
+            // player can't inject a mature field into one), so they keep their authored ages.
+            // Normalize before Verdant, which is the intended way to print mature. No-op for
+            // non-crop states.
+            if (!BlueprintDiscItem.isOfficial(disc)) {
+                placedState = ResinEffects.ungrownState(placedState);
+            }
             placedState = applyPlacementResin(serverLevel, placedState); // Verdant / Ore Salting
             // No water in an ultrawarm dimension: a waterlogged solid prints dry. (Pure water
             // blocks are already skipped by canPrintBlock and never reach here.)
@@ -1476,7 +1507,10 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         releaseJobResources(serverLevel);
         inventory.setStackInSlot(SLOT_OUTPUT, disc.copy());
         inventory.setStackInSlot(SLOT_TEMPLATE, ItemStack.EMPTY);
-        if (armedResinEffect == ResinItem.Effect.XP) {
+        // Only pay XP if the resin was actually consumed (a block was placed). Re-printing an
+        // already-built official blueprint places nothing and never extracts the resin, so
+        // without this gate it would bank XP every no-op cycle for free.
+        if (armedResinEffect == ResinItem.Effect.XP && resinConsumed) {
             bankedXp += ResinEffects.bankedXpFor(BlueprintDiscItem.getPrintCost(disc), armedResinTier,
                     MC3DPrintConfig.RESIN_XP_CAP_T1.get(), MC3DPrintConfig.RESIN_XP_CAP_T2.get(),
                     MC3DPrintConfig.RESIN_XP_CAP_T3.get(), MC3DPrintConfig.RESIN_XP_REF.get());
@@ -1904,6 +1938,18 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         static final DeconstructYield FREE = new DeconstructYield(true, 0, 1);
     }
 
+    /** The upper door/tall-plant half or the bed head: the piece that shares its partner's item. */
+    private static boolean isSecondaryDoubleHalf(BlockState state) {
+        if (state.hasProperty(net.minecraft.world.level.block.state.properties.BlockStateProperties.DOUBLE_BLOCK_HALF)
+                && state.getValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.DOUBLE_BLOCK_HALF)
+                        == net.minecraft.world.level.block.state.properties.DoubleBlockHalf.UPPER) {
+            return true;
+        }
+        return state.hasProperty(net.minecraft.world.level.block.state.properties.BlockStateProperties.BED_PART)
+                && state.getValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.BED_PART)
+                        == net.minecraft.world.level.block.state.properties.BedPart.HEAD;
+    }
+
     private DeconstructYield classifyForDeconstruct(ServerLevel serverLevel, BlockPos pos, BlockState existing) {
         if (existing.isAir()) {
             return DeconstructYield.SKIP;
@@ -1918,6 +1964,12 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         Item item = existing.getBlock().asItem();
         if (item == Items.AIR) {
             return DeconstructYield.FREE; // itemless structural — symmetric with printing free
+        }
+        // Two-block pieces (beds, doors, tall plants) resolve BOTH halves to the same item, so
+        // pricing each half would double-credit its yield. Yield on the primary half only; the
+        // secondary half removes for zero. (Print-side likewise charges per half, unchanged.)
+        if (isSecondaryDoubleHalf(existing)) {
+            return DeconstructYield.FREE;
         }
         ItemStack stack = new ItemStack(item);
         Optional<FuValue> value = FuValueRegistry.valueOf(stack);
