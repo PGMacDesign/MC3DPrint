@@ -47,7 +47,10 @@ public final class ScanOperation {
 
             BlockEntity blockEntity = level.getBlockEntity(pos);
             if (blockEntity != null) {
-                CompoundTag data = blockEntity.saveWithId();
+                // Anti-dupe parity with the entity path (below): strip stored container contents
+                // so printing a player-scanned disc can't restore (dupe) the items for the price
+                // of the container block alone.
+                CompoundTag data = strippedOfContents(pos, state, blockEntity.saveWithId());
                 builder.blockEntity(localX, localY, localZ, data);
             }
         }
@@ -81,6 +84,27 @@ public final class ScanOperation {
                     nbt);
         }
         return builder.build();
+    }
+
+    /**
+     * Returns {@code data} with any stored contents removed. Rebuilds a throwaway block entity
+     * from the state, loads the captured tag, clears it via {@link net.minecraft.world.Clearable}
+     * (vanilla containers + most modded storage implement it), and re-saves. Structural/cosmetic
+     * NBT (sign text, banners, note blocks, skulls) survives the round-trip untouched.
+     */
+    private static CompoundTag strippedOfContents(BlockPos pos, BlockState state, CompoundTag data) {
+        if (!(state.getBlock() instanceof net.minecraft.world.level.block.EntityBlock entityBlock)) {
+            return data;
+        }
+        BlockEntity temp = entityBlock.newBlockEntity(pos, state);
+        if (temp == null) {
+            return data;
+        }
+        temp.load(data);
+        if (temp instanceof net.minecraft.world.Clearable clearable) {
+            clearable.clearContent();
+        }
+        return temp.saveWithId();
     }
 
     /**

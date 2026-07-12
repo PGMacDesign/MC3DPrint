@@ -1,10 +1,15 @@
 package com.pgmacdesign.mc3dprint.blueprint;
 
+import com.mojang.logging.LogUtils;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtAccounter;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.storage.LevelResource;
+import org.slf4j.Logger;
 
+import java.io.BufferedInputStream;
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -15,6 +20,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
+import java.util.zip.GZIPInputStream;
 
 /**
  * Disk-backed blueprint storage: one gzipped-NBT {@code .blueprint} file per
@@ -25,7 +31,14 @@ import java.util.stream.Stream;
  * externally synchronized) — no internal locking.
  */
 public final class BlueprintFileStore {
+    private static final Logger LOGGER = LogUtils.getLogger();
     public static final String EXTENSION = ".blueprint";
+
+    // Bound the decompressed NBT so a gzip bomb or a corrupt/oversized file can't OOM the
+    // server thread on load. 64 MB sits comfortably above any real blueprint (the largest
+    // curated builds are a few hundred KB). 1.20.1's readCompressed has no accounter overload,
+    // so read the gzip stream through a bounded NbtIo.read directly.
+    private static final long MAX_BLUEPRINT_BYTES = 64L * 1024 * 1024;
     private static final Pattern FILE_NAME = Pattern.compile(
             "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\" + EXTENSION);
 
@@ -70,10 +83,21 @@ public final class BlueprintFileStore {
             return Optional.empty();
         }
         try {
-            CompoundTag tag = NbtIo.readCompressed(path.toFile());
+            CompoundTag tag = readCompressedBounded(path);
             return Optional.of(BlueprintSerializer.read(tag));
-        } catch (IOException e) {
-            throw new UncheckedIOException("Failed to read blueprint " + id, e);
+        } catch (IOException | RuntimeException e) {
+            // A corrupt/truncated/oversized file must degrade to "no blueprint"; this runs on
+            // the printer's serverTick with no try/catch, so throwing here crashes the ticking
+            // block entity (and crash-loops if the job auto-starts).
+            LOGGER.warn("Failed to read blueprint {}: {}", id, e.toString());
+            return Optional.empty();
+        }
+    }
+
+    private static CompoundTag readCompressedBounded(Path path) throws IOException {
+        try (DataInputStream in = new DataInputStream(new BufferedInputStream(
+                new GZIPInputStream(Files.newInputStream(path))))) {
+            return NbtIo.read(in, new NbtAccounter(MAX_BLUEPRINT_BYTES));
         }
     }
 

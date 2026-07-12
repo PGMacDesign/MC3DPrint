@@ -24,6 +24,11 @@ import java.util.function.ObjIntConsumer;
 public final class Blueprint {
     public static final int NO_BLOCK = -1;
 
+    // Hard ceiling on block volume. Guards every construction path (deserialization + importers)
+    // against a crafted/corrupt size that overflows int math or allocates gigabytes. Well above
+    // any real build (the largest fabricator footprint is a few hundred thousand blocks).
+    public static final long MAX_VOLUME = 8_000_000L;
+
     private final String name;
     private final int sizeX;
     private final int sizeY;
@@ -36,7 +41,12 @@ public final class Blueprint {
     Blueprint(String name, int sizeX, int sizeY, int sizeZ,
               List<BlueprintBlockState> palette, int[] blocks,
               Map<BlockPos, CompoundTag> blockEntities, List<BlueprintEntity> entities) {
-        if (blocks.length != sizeX * sizeY * sizeZ) {
+        long volume = (long) sizeX * sizeY * sizeZ;
+        if (sizeX < 0 || sizeY < 0 || sizeZ < 0 || volume > MAX_VOLUME) {
+            throw new IllegalArgumentException("Blueprint size out of range: "
+                    + sizeX + "x" + sizeY + "x" + sizeZ);
+        }
+        if (blocks.length != volume) {
             throw new IllegalArgumentException("Block array length " + blocks.length
                     + " does not match volume " + sizeX + "x" + sizeY + "x" + sizeZ);
         }
@@ -187,15 +197,16 @@ public final class Blueprint {
         private final List<BlueprintEntity> entities = new ArrayList<>();
 
         private Builder(String name, int sizeX, int sizeY, int sizeZ) {
-            if (sizeX <= 0 || sizeY <= 0 || sizeZ <= 0) {
-                throw new IllegalArgumentException("Blueprint dimensions must be positive: "
+            long volume = (long) sizeX * sizeY * sizeZ;
+            if (sizeX <= 0 || sizeY <= 0 || sizeZ <= 0 || volume > MAX_VOLUME) {
+                throw new IllegalArgumentException("Blueprint dimensions out of range: "
                         + sizeX + "x" + sizeY + "x" + sizeZ);
             }
             this.name = name;
             this.sizeX = sizeX;
             this.sizeY = sizeY;
             this.sizeZ = sizeZ;
-            this.blocks = new int[sizeX * sizeY * sizeZ];
+            this.blocks = new int[(int) volume];
             Arrays.fill(this.blocks, NO_BLOCK);
         }
 

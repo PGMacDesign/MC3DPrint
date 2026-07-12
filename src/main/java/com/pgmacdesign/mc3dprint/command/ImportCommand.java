@@ -14,6 +14,7 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtAccounter;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
@@ -21,12 +22,15 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.storage.LevelResource;
 import net.minecraftforge.event.RegisterCommandsEvent;
 
+import java.io.BufferedInputStream;
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
+import java.util.zip.GZIPInputStream;
 
 /**
  * {@code /mc3dprint import <file>} — converts a WorldEdit {@code .schem}, a
@@ -124,7 +128,13 @@ public final class ImportCommand {
 
         Blueprint blueprint;
         try {
-            CompoundTag tag = NbtIo.readCompressed(file.toFile());
+            // Bound the decompressed NBT (op-gated, but still no reason to allow a gzip bomb).
+            // 1.20.1's readCompressed has no accounter overload, so read the gzip stream bounded.
+            CompoundTag tag;
+            try (DataInputStream in = new DataInputStream(new BufferedInputStream(
+                    new GZIPInputStream(Files.newInputStream(file))))) {
+                tag = NbtIo.read(in, new NbtAccounter(64L * 1024 * 1024));
+            }
             String name = fileName.substring(0, fileName.lastIndexOf('.'));
             if (fileName.endsWith(".schem")) {
                 blueprint = SpongeSchematicImporter.importSchematic(name, tag);
