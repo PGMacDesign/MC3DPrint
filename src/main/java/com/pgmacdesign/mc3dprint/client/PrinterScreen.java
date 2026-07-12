@@ -412,7 +412,7 @@ public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
             default -> WARN;
         };
         // The row at y=58 is shared: quote on the left (x=36), status on the right.
-        // The status is RIGHT-aligned against the FU gauge's LEFT edge — the row
+        // The status is RIGHT-aligned against the FU gauge's LEFT edge; the row
         // crosses the gauge's vertical span, so anchoring to the upgrade column let
         // long statuses ("Obstructed") paint over the gauge (soak finding). The
         // earlier anchor-at-80 collided the other way (quote ran under "Ready").
