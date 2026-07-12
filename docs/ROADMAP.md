@@ -1,6 +1,6 @@
 # MC3DPrint — Roadmap & Outstanding Items
 
-_Last updated: 2026-06-24 · **v0.9.0 ("Beta 4")** · 94 GameTests passing · 134 curated builds · deployed to Prism · website live at [mc3dprint.dev](https://mc3dprint.dev)._
+_Last updated: 2026-06-24 · **v0.9.0 ("Beta 4")** · 94 GameTests passing · 140 curated builds (134 vanilla + 6 mod-gated) · deployed to Prism · website live at [mc3dprint.dev](https://mc3dprint.dev)._
 
 MC3DPrint is a Forge **1.20.1** tech mod: "WorldEdit for survival." Scan a build
 with the Structure Scanner → save it to a Blueprint Disc → print it anywhere with
@@ -71,6 +71,14 @@ v0.4.0.
   by a ruleset + fork-PR approval. Memory `github-blueprint-renderer`.
 - **Releases** — cut **v0.8.0** and **v0.9.0 ("Beta 4")** via the new project `mc3dp-release`
   skill (auto-grouped notes from conventional commits; CI builds + attaches the jar).
+
+**Shipped Jul 12:**
+- **Coppertide Park** — the first **cross-mod curated builds**: six MC Waterslides rides
+  (`water_park_*`: geyser lagoon hub, Coppertop Drop tower, lazy river ring, Glasswyrm
+  enclosed serpentine, Pendulum Gorge half-pipe, Rainbow Racer). Gated by `requiredMods()`:
+  the discs surface in creative + world loot ONLY when `mcwaterslides` is
+  installed; FU costs recipe-derive from its all-vanilla copper/clay inputs, so no compat
+  hook was needed. Printability gate + requiredMods gametest now understand mod-gated builds.
 
 ---
 

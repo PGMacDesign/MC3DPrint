@@ -189,7 +189,11 @@ public final class CuratedBlueprints {
             // Imported player scan — Tristan's Castle (gift build; powder snow priced via the bucket)
             "tristans_castle",
             // Imported player scan — Tristan's Pig House
-            "tristans_pig_house");
+            "tristans_pig_house",
+            // Coppertide Park: MC Waterslides mod-gated water park set (only
+            // surfaces when the mcwaterslides mod is installed; requiredMods gate)
+            "water_park_lagoon", "water_park_coppertop_drop", "water_park_lazy_river",
+            "water_park_glasswyrm", "water_park_pendulum_gorge", "water_park_rainbow_racer");
 
     /**
      * Blueprints explicitly kept OUT of world loot. <b>Opt-out by design:</b> every

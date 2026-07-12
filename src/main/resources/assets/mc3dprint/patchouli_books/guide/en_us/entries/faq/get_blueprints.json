@@ -18,6 +18,11 @@
       "type": "patchouli:text",
       "title": "Scan Size",
       "text": "The $(item)Structure Scanner$() caps each axis at $(l)33$() by default. Capturing something $(l)bigger$()? Set$(br)$(o)[scanner]$()$(br)$(o)unlockScannerSize = true$()$(br)in $(o)mc3dprint-common.toml$() to scan up to the largest printable size (51 with a $(l)Tier 8$() fabricator)."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Cross-mod builds",
+      "text": "Some curated builds use $(l)another mod's blocks$() and only appear when that mod is installed. The $(l)Coppertide Park$() set (a geyser lagoon, drop tower, lazy river, glass serpentine, pendulum half-pipe, and four-lane racer) is built from $(item)MC Waterslides$() blocks: install that mod and the six park discs join creative and $(l)world loot$(); without it they stay hidden. Print costs derive from its recipes automatically."
     }
   ]
 }

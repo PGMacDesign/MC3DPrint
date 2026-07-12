@@ -158,21 +158,44 @@ public class LaunchContentGameTests {
         helper.succeed();
     }
 
+    /**
+     * The shipped builds that intentionally require another mod, and exactly which.
+     * The Coppertide Park set is built from MC Waterslides blocks so it only surfaces
+     * when that mod is installed. Anything NOT listed here must stay vanilla-only.
+     */
+    private static final java.util.Map<String, java.util.Set<String>> EXPECTED_MODDED_BUILDS =
+            java.util.Map.of(
+                    "water_park_lagoon", java.util.Set.of("mcwaterslides"),
+                    "water_park_coppertop_drop", java.util.Set.of("mcwaterslides"),
+                    "water_park_lazy_river", java.util.Set.of("mcwaterslides"),
+                    "water_park_glasswyrm", java.util.Set.of("mcwaterslides"),
+                    "water_park_pendulum_gorge", java.util.Set.of("mcwaterslides"),
+                    "water_park_rainbow_racer", java.util.Set.of("mcwaterslides"));
+
     @GameTest(template = "empty5", timeoutTicks = 200)
     public static void curatedBlueprintRequiredModsGate(GameTestHelper helper) {
         // PGM-57: a blueprint's required mods are derived from its palette/entity namespaces so a
-        // modded build (e.g. an AE2 setup) only surfaces in creative + world loot once that mod is
-        // loaded. Verify every curated build's requiredMods() computes without throwing, and that
-        // our shipped builds — all vanilla + mc3dprint — declare nothing and are available in dev.
+        // modded build only surfaces in creative + world loot once that mod is loaded. Verify every
+        // curated build's requiredMods() computes without throwing, that non-listed builds declare
+        // nothing (vanilla + mc3dprint only), and that the deliberately modded builds declare
+        // EXACTLY their expected mods with availability matching the mod's actual loaded state.
         for (String name : CuratedBlueprints.CURATED_NAMES) {
             java.util.Set<String> mods = CuratedBlueprints.requiredMods(name);
-            if (!mods.isEmpty()) {
-                helper.fail("Curated build '" + name + "' unexpectedly requires mods " + mods
-                        + " — shipped builds must be vanilla/mc3dprint only");
+            java.util.Set<String> expected = EXPECTED_MODDED_BUILDS.getOrDefault(name, java.util.Set.of());
+            if (!mods.equals(expected)) {
+                helper.fail("Curated build '" + name + "' requires mods " + mods
+                        + " but expected " + expected
+                        + "; unlisted builds must be vanilla/mc3dprint only");
                 return;
             }
-            if (!CuratedBlueprints.modsAvailable(name)) {
-                helper.fail("Curated build '" + name + "' reports unavailable with no required mods");
+            boolean allLoaded = true;
+            for (String mod : expected) {
+                allLoaded &= net.neoforged.fml.ModList.get().isLoaded(mod);
+            }
+            if (CuratedBlueprints.modsAvailable(name) != allLoaded) {
+                helper.fail("Curated build '" + name + "' availability="
+                        + CuratedBlueprints.modsAvailable(name)
+                        + " disagrees with loaded-state of its required mods " + expected);
                 return;
             }
         }

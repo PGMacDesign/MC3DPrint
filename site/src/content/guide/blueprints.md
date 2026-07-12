@@ -19,6 +19,10 @@ Every written disc shows its **tier** — the highest material tier among its bl
 
 Each disc also shows a **Print Cost** in that top tier. Free structural blocks like water and crops cost nothing toward it. See [the FU economy](/guide/fu-economy/) for how costs are derived.
 
+## Cross-mod builds
+
+Some curated builds are made from **another mod's blocks** and only appear when that mod is installed. The **Coppertide Park** set (a geyser lagoon, drop tower, lazy river, enclosed glass serpentine, pendulum half-pipe, and four-lane racer) is built from [MC Waterslides](https://pgmacdesign.github.io/MCWaterSlides/) blocks: install that mod and the six park discs join the creative list and world loot; without it they stay hidden. Their print costs derive from the mod's own recipes automatically.
+
 ## Import & export (operators)
 
 - `/mc3dprint import <file>` reads `.schem`, `.litematic`, and `.nbt` files from `world/mc3dprint/import/`.

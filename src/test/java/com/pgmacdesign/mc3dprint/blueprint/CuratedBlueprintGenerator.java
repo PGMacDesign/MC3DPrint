@@ -339,6 +339,14 @@ class CuratedBlueprintGenerator {
         builds.put("tristans_castle", tristansCastle());
         // Imported player scan — Tristan's Pig House
         builds.put("tristans_pig_house", tristansPigHouse());
+        // Coppertide Park: MC Waterslides mod-gated water park set (only
+        // surfaces when mcwaterslides is installed; requiredMods gate)
+        builds.put("water_park_lagoon", coppertideLagoon());
+        builds.put("water_park_coppertop_drop", coppertopDrop());
+        builds.put("water_park_lazy_river", lazyCopperRiver());
+        builds.put("water_park_glasswyrm", glasswyrm());
+        builds.put("water_park_pendulum_gorge", pendulumGorge());
+        builds.put("water_park_rainbow_racer", rainbowRacer());
 
         int written = 0;
         for (Map.Entry<String, Blueprint> e : builds.entrySet()) {
@@ -19040,6 +19048,611 @@ class CuratedBlueprintGenerator {
         b.set(8, 1, 2, polBS);
         b.set(7, 1, 3, blackstone);
 
+        return b.build();
+    }
+
+    // =====================================================================
+    //  COPPERTIDE PARK  (MC Waterslides mod-gated water park set)
+    //
+    //  Six composable rides built from mcwaterslides: blocks. requiredMods()
+    //  derives "mcwaterslides" from the palette, so these only surface in the
+    //  creative tab + world loot when that mod is installed (the required-mods
+    //  gate); FU values recipe-derive at runtime (all-vanilla copper/clay inputs).
+    //
+    //  Jet placement grammar (verified against the mod's gametests + docs):
+    //   - a jet's current seeds at the cell IN FRONT of its face, which must be
+    //     water or a slide block; the field is a 3x3 beam up to ~24 blocks with
+    //     a 45-degree vertical envelope, so one flat run-head jet also powers
+    //     the climb/descent beyond it.
+    //   - jets are FULL collision blocks: keep them out of the rider's path
+    //     (run heads, corner pockets, under water columns facing up).
+    //   - jets touching each other share RF; otherwise wire pump_house ->
+    //     water_conduit -> jet, orthogonal face adjacency every hop.
+    //  Channel walls: wall_neg/wall_pos are the perpendicular-axis sides
+    //  (north_south run: neg=west, pos=east; east_west run: neg=north,
+    //  pos=south); drop the flag toward an abutting parallel lane so merged
+    //  lanes read as one wide slide. Corner/ascending flags are inert.
+    //  Real-water rule: every water body is OPEN-TOPPED with its surface level
+    //  equal to its rim top, so nothing can spill (no sealed volumes to drain).
+    // =====================================================================
+
+    /** A slide channel (natural when {@code color} is null) with explicit shape + walls. */
+    private static BlueprintBlockState wsChannel(String color, String shape,
+                                                 boolean wallNeg, boolean wallPos) {
+        String id = color == null ? "mcwaterslides:slide_channel"
+                : "mcwaterslides:" + color + "_slide_channel";
+        return bs(id + "[shape=" + shape + ",wall_neg=" + wallNeg + ",wall_pos=" + wallPos + "]");
+    }
+
+    /** An enclosed slide tube. Solo bore (no stacked tall-bore flags). */
+    private static BlueprintBlockState wsTube(String color, String shape) {
+        return bs("mcwaterslides:" + color + "_slide_tube[shape=" + shape
+                + ",open_up=false,open_down=false]");
+    }
+
+    private static BlueprintBlockState wsJet(String facing) {
+        return bs("mcwaterslides:jet[enabled=true,energized=false,facing=" + facing + "]");
+    }
+
+    private static final BlueprintBlockState WS_CONDUIT = bs("mcwaterslides:water_conduit");
+
+    private static BlueprintBlockState wsPump(String facing) {
+        return bs("mcwaterslides:pump_house[facing=" + facing + ",lit=false]");
+    }
+
+    /**
+     * A rectangular splash-pool pad: every cell a splash_pool with its n/s/e/w
+     * connection flags true toward in-pad neighbors, so edge walls form only on
+     * the outer rim (the printer suppresses shape updates, so the flags must be
+     * authored, not derived).
+     */
+    private static void wsPoolPad(Blueprint.Builder b, int y, int x0, int z0, int x1, int z1) {
+        for (int x = x0; x <= x1; x++) {
+            for (int z = z0; z <= z1; z++) {
+                b.set(x, y, z, bs("mcwaterslides:splash_pool"
+                        + "[north=" + (z > z0) + ",south=" + (z < z1)
+                        + ",east=" + (x < x1) + ",west=" + (x > x0) + "]"));
+            }
+        }
+    }
+
+    /**
+     * Coppertide Lagoon, the park hub. A 15x15 sunken swim lagoon on a
+     * splash-pool bed, an up-jet geyser (clear tube shaft) that launches
+     * swimmers onto the hub deck, and a return flume that drops them back
+     * mid-pool: a complete lagoon -> geyser -> deck -> flume self-loop from
+     * one coal-fed Pump House.
+     */
+    private static Blueprint coppertideLagoon() {
+        Blueprint.Builder b = Blueprint.builder("Coppertide Lagoon", 25, 13, 25);
+        BlueprintBlockState smooth = bs("minecraft:smooth_sandstone");
+        BlueprintBlockState cut = bs("minecraft:cut_sandstone");
+        BlueprintBlockState copper = bs("minecraft:copper_block");
+
+        // 1) BASE PLATE + BASIN: sandstone plate at y0, splash-pool bed at y1
+        //    (x5..19 x z5..19), cut rim ring one cell outside it (y1..y3), and
+        //    two-deep swim water at y2..y3 whose surface matches the rim top.
+        floor(b, 0, 0, 0, 24, 24, smooth);
+        for (int y = 1; y <= 3; y++) {
+            walls(b, 4, 4, 20, 20, y, y, cut);
+        }
+        wsPoolPad(b, 1, 5, 5, 19, 19);
+        solid(b, 5, 2, 5, 19, 3, 19, WATER);
+
+        // 2) ENTRY STEPS up the south rim: riser then tread to the rim coping,
+        //    hop in from there (the rim stays sealed, so no water escapes).
+        for (int x = 11; x <= 13; x++) {
+            b.set(x, 1, 22, cut);
+            b.set(x, 2, 21, bs("minecraft:sandstone_stairs[facing=north,half=bottom,shape=straight]"));
+            b.set(x, 1, 21, cut);
+            b.set(x, 4, 20, bs("minecraft:sandstone_slab[type=bottom]"));
+        }
+
+        // 3) GEYSER: an up-jet buried in the pool bed at (17,1,12); the water
+        //    cells above it are the swim-in entry (a vertical current seeds in
+        //    the y2 water and carries up the tube bore, y4..y9). The bore top
+        //    is flush with the deck plate, so riders pop out onto the deck.
+        b.set(17, 1, 12, wsJet("up"));
+        for (int y = 4; y <= 9; y++) {
+            b.set(17, y, 12, wsTube("clear", "vertical"));
+        }
+
+        // 4) HUB DECK at y9 (x15..21 x z9..15) around the bore mouth, on
+        //    copper piers; slab parapet on the north/south/east edges (west
+        //    edge stays open for the return flume).
+        for (int x = 15; x <= 21; x++) {
+            for (int z = 9; z <= 15; z++) {
+                if (x == 17 && z == 12) {
+                    continue; // the geyser mouth
+                }
+                b.set(x, 9, z, copperPatina(0));
+            }
+        }
+        pillar(b, 21, 9, 1, 8, copper);   // outer piers rise from the plate
+        pillar(b, 21, 15, 1, 8, copper);
+        pillar(b, 15, 9, 2, 8, copper);   // inner piers rise from the pool bed
+        pillar(b, 15, 15, 2, 8, copper);
+        for (int x = 15; x <= 21; x++) {
+            b.set(x, 10, 9, bs("minecraft:cut_copper_slab[type=bottom]"));
+            b.set(x, 10, 15, bs("minecraft:cut_copper_slab[type=bottom]"));
+        }
+        for (int z = 10; z <= 14; z++) {
+            b.set(21, 10, z, bs("minecraft:cut_copper_slab[type=bottom]"));
+        }
+        b.set(18, 10, 12, SEA_LANTERN); // deck beacon beside the mouth
+
+        // 5) RETURN FLUME off the deck's open west edge: a natural channel
+        //    staircase descending over the pool (rises toward east = descends
+        //    flowing west), ending mid-air at y4 so riders splash down in
+        //    open water. Copper piers rise from the pool bed under it.
+        b.set(14, 8, 12, wsChannel(null, "ascending_east", true, true));
+        b.set(13, 7, 12, wsChannel(null, "ascending_east", true, true));
+        b.set(12, 6, 12, wsChannel(null, "ascending_east", true, true));
+        b.set(11, 5, 12, wsChannel(null, "ascending_east", true, true));
+        b.set(10, 4, 12, wsChannel(null, "east_west", true, true));
+        pillar(b, 14, 12, 2, 7, copper);
+        pillar(b, 12, 12, 2, 5, copper);
+        pillar(b, 10, 12, 2, 3, copper);
+
+        // 6) POWER: Pump House on the west apron; conduits buried in the y0
+        //    plate run east to directly under the geyser jet.
+        b.set(2, 1, 12, wsPump("west"));
+        for (int x = 2; x <= 17; x++) {
+            b.set(x, 0, 12, WS_CONDUIT);
+        }
+        signText(b, "minecraft:oak_sign[rotation=12]", 2, 1, 13,
+                "Coppertide Lagoon", "Feed the Pump House", "coal + water.", "Ride the geyser up!");
+
+        // 7) RIM LIGHTING set into the rim top corners.
+        b.set(4, 3, 4, SEA_LANTERN);
+        b.set(20, 3, 4, SEA_LANTERN);
+        b.set(4, 3, 20, SEA_LANTERN);
+        b.set(20, 3, 20, SEA_LANTERN);
+        return b.build();
+    }
+
+    /**
+     * Coppertop Drop, the signature tower ride. A jet-climb tube (the park's
+     * "elevator") launches riders up the tower's west face to the y18 deck; a
+     * run-head jet fires them down the orange launch run into a clear vertical
+     * drop shaft, 14 blocks straight down into a walled splash pool. Committed
+     * once you are in the bore, by design.
+     */
+    private static Blueprint coppertopDrop() {
+        Blueprint.Builder b = Blueprint.builder("Coppertop Drop", 13, 24, 19);
+        BlueprintBlockState copper = bs("minecraft:copper_block");
+        BlueprintBlockState smooth = bs("minecraft:smooth_sandstone");
+        BlueprintBlockState cut = bs("minecraft:cut_sandstone");
+
+        // 1) TOWER FRAME (x2..10 x z0..8): copper corner columns to y17, cut
+        //    copper lattice bands every 4 levels (patina deepens with height),
+        //    full copper deck plate at y18.
+        floor(b, 0, 0, 0, 12, 18, smooth);
+        corners(b, 2, 0, 10, 8, 1, 17, copper);
+        for (int y = 4; y <= 16; y += 4) {
+            walls(b, 2, 0, 10, 8, y, y, copperPatina(Math.min(3, y / 5)));
+        }
+        for (int x = 2; x <= 10; x++) {
+            for (int z = 0; z <= 8; z++) {
+                b.set(x, 18, z, copperPatina(0));
+            }
+        }
+
+        // 2) JET CLIMB up the west face: a 1x1 walled entry pool at the base
+        //    (hop in over the y2 rim), an up-jet under the water, and a clear
+        //    tube shaft y3..y18 whose mouth sits flush with the deck plate.
+        walls(b, 0, 1, 2, 3, 1, 2, cut);
+        b.set(1, 1, 2, wsJet("up"));
+        b.set(1, 2, 2, WATER);
+        for (int y = 3; y <= 18; y++) {
+            b.set(1, y, 2, wsTube("clear", "vertical"));
+        }
+
+        // 3) LAUNCH RUN on the deck at y19: run-head jet, three orange
+        //    channels flowing south, then open air over the drop shaft mouth.
+        b.set(6, 19, 2, wsJet("south"));
+        b.set(6, 19, 3, wsChannel("orange", "north_south", true, true));
+        b.set(6, 19, 4, wsChannel("orange", "north_south", true, true));
+        b.set(6, 19, 5, wsChannel("orange", "north_south", true, true));
+        b.set(6, 19, 6, wsChannel("orange", "north_south", true, true));
+        b.set(6, 19, 7, wsChannel("orange", "north_south", true, true));
+        b.set(6, 19, 8, wsChannel("orange", "north_south", true, true));
+        // slab parapet around the deck edge; gaps at the climb arrival (x2,
+        // z2) and where the launch run crosses the south edge (x6)
+        for (int x = 2; x <= 10; x++) {
+            if (x != 6) {
+                b.set(x, 19, 0, bs("minecraft:cut_copper_slab[type=bottom]"));
+                b.set(x, 19, 8, bs("minecraft:cut_copper_slab[type=bottom]"));
+            }
+        }
+        for (int z = 0; z <= 8; z++) {
+            if (z != 2) {
+                b.set(2, 19, z, bs("minecraft:cut_copper_slab[type=bottom]"));
+            }
+            b.set(10, 19, z, bs("minecraft:cut_copper_slab[type=bottom]"));
+        }
+        signText(b, "minecraft:oak_wall_sign[facing=south]", 6, 20, 1,
+                "COPPERTOP DROP", "Step past the jet,", "sit down, and", "commit to the tube!");
+        b.set(6, 20, 0, copper); // sign backing on the parapet line
+
+        // 4) DROP SHAFT + SPLASH POOL: the run crosses the tower's south wall
+        //    line on a copper trestle and drops into a clear vertical bore at
+        //    z10, which stands in the pool and opens at y4, one block above
+        //    the water. Pool: cut rim y1..y2, splash-pool bed, one-deep water
+        //    level with the rim top.
+        pillar(b, 6, 9, 3, 18, copper); // trestle through the pool's north wall line
+        for (int y = 4; y <= 18; y++) {
+            b.set(6, y, 10, wsTube("clear", "vertical"));
+        }
+        walls(b, 2, 9, 10, 17, 1, 2, cut);
+        wsPoolPad(b, 1, 3, 10, 9, 16);
+        solid(b, 3, 2, 10, 9, 2, 16, WATER);
+
+        // 5) POWER: Pump House inside the tower base; a buried conduit line
+        //    feeds the climb jet, and a conduit column up the tower core hops
+        //    over to the launch jet. Every hop is orthogonal.
+        b.set(4, 1, 2, wsPump("north"));
+        b.set(4, 0, 2, WS_CONDUIT);
+        b.set(3, 0, 2, WS_CONDUIT);
+        b.set(2, 0, 2, WS_CONDUIT);
+        b.set(1, 0, 2, WS_CONDUIT); // under the climb jet
+        pillar(b, 4, 3, 1, 18, WS_CONDUIT); // core column beside the pump
+        b.set(4, 19, 3, WS_CONDUIT);
+        b.set(5, 19, 3, WS_CONDUIT);
+        b.set(5, 19, 2, WS_CONDUIT); // touches the launch jet's west face
+        signText(b, "minecraft:oak_sign[rotation=8]", 3, 1, 1,
+                "Pump House:", "coal + water in,", "thrust out.", "");
+
+        // 6) LIGHTING on the pool rim corners.
+        b.set(2, 3, 9, SEA_LANTERN);
+        b.set(10, 3, 17, SEA_LANTERN);
+        return b.build();
+    }
+
+    /**
+     * Lazy Copper River: a flat 25x25 natural-channel ring circulated
+     * clockwise by four corner-pocket jets. Each jet sits OUTSIDE the ring
+     * with its face against the corner channel, so its current seeds in the
+     * loop and drives the straightaway ahead (edge length 23 sits under the
+     * ~24-block reach) while the jet block itself stays out of the path. One
+     * island Pump House feeds a buried conduit ring under the channel bed.
+     */
+    private static Blueprint lazyCopperRiver() {
+        Blueprint.Builder b = Blueprint.builder("Lazy Copper River", 29, 7, 29);
+        BlueprintBlockState smooth = bs("minecraft:smooth_sandstone");
+        BlueprintBlockState cut = bs("minecraft:cut_sandstone");
+
+        // 1) BASE under the ring corridor and island only (open ground
+        //    elsewhere keeps the print honest about its footprint).
+        for (int i = 1; i <= 27; i++) {
+            for (int j = 1; j <= 3; j++) {
+                b.set(i, 0, j, smooth);
+                b.set(i, 0, 28 - j, smooth);
+                b.set(j, 0, i, smooth);
+                b.set(28 - j, 0, i, smooth);
+            }
+        }
+        solid(b, 10, 0, 10, 18, 1, 18, smooth);
+
+        // 2) CONDUIT RING at y1 directly under the channel ring, the four jet
+        //    under-cells, and one spoke to the island pump. RF passes hop by
+        //    hop, so the whole loop stays fed from one machine.
+        for (int i = 2; i <= 26; i++) {
+            b.set(i, 1, 2, WS_CONDUIT);
+            b.set(i, 1, 26, WS_CONDUIT);
+            b.set(2, 1, i, WS_CONDUIT);
+            b.set(26, 1, i, WS_CONDUIT);
+        }
+        for (int z = 3; z <= 11; z++) {
+            b.set(14, 1, z, WS_CONDUIT); // spoke: ring z2 -> under the pump riser
+        }
+        b.set(1, 1, 2, WS_CONDUIT);   // NW jet feed
+        b.set(26, 1, 1, WS_CONDUIT);  // NE jet feed
+        b.set(27, 1, 26, WS_CONDUIT); // SE jet feed
+        b.set(2, 1, 27, WS_CONDUIT);  // SW jet feed
+
+        // 3) THE RING at y2, clockwise flow: corners carry connecting shapes,
+        //    straights keep both intrinsic walls (one lane wide).
+        for (int x = 3; x <= 25; x++) {
+            b.set(x, 2, 2, wsChannel(null, "east_west", true, true));
+            b.set(x, 2, 26, wsChannel(null, "east_west", true, true));
+        }
+        for (int z = 3; z <= 25; z++) {
+            b.set(2, 2, z, wsChannel(null, "north_south", true, true));
+            b.set(26, 2, z, wsChannel(null, "north_south", true, true));
+        }
+        b.set(2, 2, 2, wsChannel(null, "south_east", true, true));   // NW: in from south, out east
+        b.set(26, 2, 2, wsChannel(null, "south_west", true, true));  // NE: in from west, out south
+        b.set(26, 2, 26, wsChannel(null, "north_west", true, true)); // SE: in from north, out west
+        b.set(2, 2, 26, wsChannel(null, "north_east", true, true));  // SW: in from east, out north
+
+        // 4) CORNER-POCKET JETS (see the section header for the grammar).
+        b.set(1, 2, 2, wsJet("east"));    // drives the north edge
+        b.set(26, 2, 1, wsJet("south"));  // drives the east edge
+        b.set(27, 2, 26, wsJet("west"));  // drives the south edge
+        b.set(2, 2, 27, wsJet("north"));  // drives the west edge
+
+        // 5) ISLAND: deck at y2 with the Pump House on a conduit riser over
+        //    the spoke head, copper lamp posts, and a welcome sign. Reach the
+        //    island by riding: bail (jump) out of the river onto the deck.
+        floor(b, 2, 10, 10, 18, 18, smooth);
+        b.set(14, 2, 11, WS_CONDUIT); // riser: spoke -> under the pump
+        b.set(14, 3, 11, wsPump("north"));
+        signText(b, "minecraft:oak_sign[rotation=8]", 13, 3, 11,
+                "Lazy Copper River", "One pump, four jets,", "infinite laps.", "Jump out anywhere!");
+        for (int[] p : new int[][]{{11, 11}, {17, 11}, {11, 17}, {17, 17}}) {
+            pillar(b, p[0], p[1], 3, 5, copperPatina(1));
+            b.set(p[0], 6, p[1], SEA_LANTERN);
+        }
+
+        // 6) ENTRY STEPS outside the south edge: climb the tread, hop over
+        //    the channel wall, float away.
+        for (int x = 13; x <= 15; x++) {
+            b.set(x, 1, 27, bs("minecraft:sandstone_stairs[facing=north,half=bottom,shape=straight]"));
+        }
+        return b.build();
+    }
+
+    /**
+     * Glasswyrm: a fully enclosed clear-tube serpentine. A run-head jet fires
+     * riders through an S-bend, the bore dives to y2 and runs UNDER the
+     * waterline of an open reflecting pool (real tube-through-water with zero
+     * leak risk: the pool is open-topped and its surface matches the rim), and
+     * the wyrm spits them out through the far rim into a splash pool.
+     */
+    private static Blueprint glasswyrm() {
+        Blueprint.Builder b = Blueprint.builder("Glasswyrm", 31, 10, 13);
+        BlueprintBlockState smooth = bs("minecraft:smooth_sandstone");
+        BlueprintBlockState cut = bs("minecraft:cut_sandstone");
+
+        // 1) GROUND PLATE + ENTRY DECK (west): a solid core with a stair
+        //    flight up its south face to the y6 deck.
+        floor(b, 0, 0, 0, 30, 12, smooth);
+        solid(b, 1, 1, 4, 3, 5, 8, cut);
+        for (int i = 0; i < 4; i++) {
+            b.set(4, 1 + i, 8 - i, bs("minecraft:sandstone_stairs[facing=north,half=bottom,shape=straight]"));
+            pillar(b, 4, 8 - i, 1, i, cut);
+        }
+        b.set(4, 5, 4, bs("minecraft:sandstone_stairs[facing=west,half=bottom,shape=straight]"));
+        floor(b, 6, 1, 3, 3, 5, cut); // deck top
+        b.set(1, 7, 3, SEA_LANTERN);
+        // the mod's Flood Valve as a themed prop on the deck (its real job,
+        // flooding sealed builds, is deliberately not needed here)
+        b.set(1, 7, 5, bs("mcwaterslides:flood_valve[facing=east,powered=false]"));
+        signText(b, "minecraft:oak_sign[rotation=4]", 1, 7, 4,
+                "GLASSWYRM", "Enclosed tube.", "No bailing until", "it spits you out!");
+
+        // 2) LAUNCH: run-head jet firing east; the first run cell is an OPEN
+        //    channel (the boarding gap; a bore has a lid you cannot enter
+        //    through), then the lid closes and the wyrm has you.
+        b.set(2, 6, 4, wsJet("east"));
+        b.set(3, 6, 4, wsChannel("clear", "east_west", true, true));
+
+        // 3) THE BORE, west to east: flat at y6 through an S-bend, a four-step
+        //    dive to y2 (ascending_west cells: the run descends flowing east),
+        //    then the underwater leg at y2. Cut piers support the elevated
+        //    sections (nothing floats).
+        for (int x = 4; x <= 8; x++) {
+            b.set(x, 6, 4, wsTube("clear", "east_west"));
+        }
+        b.set(9, 6, 4, wsTube("clear", "south_west"));   // in from west, out south
+        b.set(9, 6, 5, wsTube("clear", "north_south"));
+        b.set(9, 6, 6, wsTube("clear", "north_south"));
+        b.set(9, 6, 7, wsTube("clear", "north_east"));   // in from north, out east
+        for (int x = 10; x <= 12; x++) {
+            b.set(x, 6, 7, wsTube("clear", "east_west"));
+        }
+        b.set(13, 5, 7, wsTube("clear", "ascending_west"));
+        b.set(14, 4, 7, wsTube("clear", "ascending_west"));
+        b.set(15, 3, 7, wsTube("clear", "ascending_west"));
+        for (int x = 17; x <= 24; x++) {
+            b.set(x, 2, 7, wsTube("clear", "east_west")); // the underwater leg
+        }
+        pillar(b, 6, 4, 1, 5, cut);
+        pillar(b, 9, 4, 1, 5, cut);
+        pillar(b, 9, 7, 1, 5, cut);
+        pillar(b, 11, 7, 1, 5, cut);
+        b.set(13, 1, 7, cut);
+        b.set(13, 2, 7, cut);
+        b.set(13, 3, 7, cut);
+        b.set(14, 1, 7, cut);
+        b.set(14, 2, 7, cut);
+        b.set(15, 1, 7, cut);
+
+        // 4) REFLECTING POOL (x16..26 x z3..11): cut rim y1..y2, smooth floor
+        //    at y1, one-deep water at y2 lapping the bore on both sides. The
+        //    rim cells the bore pierces are re-set as tube AFTER the walls so
+        //    the glass, not sandstone, seals the water line.
+        walls(b, 16, 3, 26, 11, 1, 2, cut);
+        floor(b, 1, 17, 4, 25, 10, smooth);
+        for (int x = 17; x <= 25; x++) {
+            for (int z = 4; z <= 10; z++) {
+                if (!(z == 7 && x >= 17)) { // bore cells + east mouth stay dry
+                    b.set(x, 2, z, WATER);
+                }
+            }
+        }
+        b.set(16, 2, 7, wsTube("clear", "ascending_west")); // pierces the west rim
+        b.set(25, 2, 7, wsTube("clear", "east_west"));
+        b.set(26, 2, 7, wsTube("clear", "east_west"));      // pierces the east rim
+        b.set(16, 3, 4, SEA_LANTERN);
+        b.set(26, 3, 10, SEA_LANTERN);
+
+        // 5) SPLASH POOL (x26..30 x z5..9): the bore mouth opens east over its
+        //    water; swimmers hop out over the one-block rim.
+        walls(b, 26, 5, 30, 9, 1, 2, cut);
+        wsPoolPad(b, 1, 27, 6, 29, 8);
+        solid(b, 27, 2, 6, 29, 2, 8, WATER);
+        b.set(26, 2, 7, wsTube("clear", "east_west")); // shared rim cell stays bore
+
+        // 6) POWER: Pump House beside the entry deck; a conduit column rises
+        //    to touch the jet's north face.
+        b.set(2, 1, 2, wsPump("north"));
+        pillar(b, 2, 3, 1, 6, WS_CONDUIT);
+        return b.build();
+    }
+
+    /**
+     * Pendulum Gorge: a cyan half-pipe with two valleys and a center crest.
+     * Rim jets fire inward from sealed machinery towers at both ends, so
+     * riders hop into a valley, get caught by the current, and swing valley
+     * to valley (the rims re-pay what the climbs cost) until they brake
+     * (crouch) or bail (jump) into the side splash pool.
+     */
+    private static Blueprint pendulumGorge() {
+        Blueprint.Builder b = Blueprint.builder("Pendulum Gorge", 29, 11, 9);
+        BlueprintBlockState smooth = bs("minecraft:smooth_sandstone");
+        BlueprintBlockState cut = bs("minecraft:cut_sandstone");
+        String cyan = "cyan";
+
+        // 1) GROUND PLATE + RIM TOWERS: solid cut cores at both ends carry the
+        //    rim jets at y8. Riders never climb them; entry is at the valleys.
+        floor(b, 0, 0, 0, 28, 8, smooth);
+        solid(b, 0, 1, 3, 1, 7, 5, cut);
+        solid(b, 27, 1, 3, 28, 7, 5, cut);
+
+        // 2) GORGE PROFILE along z=4, x2..x26: rim y8, valley y1, crest y4,
+        //    valley y1, rim y8. Ascending cells rise toward the named
+        //    direction; solid masonry fills under every channel cell so the
+        //    half-pipe reads as carved rock.
+        b.set(2, 8, 4, wsChannel(cyan, "east_west", true, true));
+        for (int x = 3; x <= 8; x++) {
+            b.set(x, 10 - x, 4, wsChannel(cyan, "ascending_west", true, true));
+        }
+        for (int x = 9; x <= 11; x++) {
+            b.set(x, 1, 4, wsChannel(cyan, "east_west", true, true));
+        }
+        b.set(12, 2, 4, wsChannel(cyan, "ascending_east", true, true));
+        b.set(13, 3, 4, wsChannel(cyan, "ascending_east", true, true));
+        b.set(14, 4, 4, wsChannel(cyan, "east_west", true, true)); // the crest
+        b.set(15, 3, 4, wsChannel(cyan, "ascending_west", true, true));
+        b.set(16, 2, 4, wsChannel(cyan, "ascending_west", true, true));
+        for (int x = 17; x <= 19; x++) {
+            b.set(x, 1, 4, wsChannel(cyan, "east_west", true, true));
+        }
+        for (int x = 20; x <= 25; x++) {
+            b.set(x, x - 18, 4, wsChannel(cyan, "ascending_east", true, true));
+        }
+        b.set(26, 8, 4, wsChannel(cyan, "east_west", true, true));
+        for (int x = 2; x <= 26; x++) {
+            int y = gorgeHeightAt(x);
+            for (int yy = 1; yy < y; yy++) {
+                b.set(x, yy, 4, cut);
+            }
+        }
+
+        // 3) RIM JETS fire inward off the tower tops; their fields follow the
+        //    slopes down (the 45-degree envelope) and meet in the valleys.
+        b.set(1, 8, 4, wsJet("east"));
+        b.set(27, 8, 4, wsJet("west"));
+
+        // 4) BAIL-OUT SPLASH POOL beside the crest (z5..8): jump the channel
+        //    wall at either valley or the crest and land wet.
+        walls(b, 12, 5, 18, 8, 1, 2, cut);
+        wsPoolPad(b, 1, 13, 6, 17, 7);
+        solid(b, 13, 2, 6, 17, 2, 7, WATER);
+        signText(b, "minecraft:oak_sign[rotation=0]", 10, 1, 6,
+                "PENDULUM GORGE", "Hop into a valley,", "swing! Crouch=brake,", "jump=bail to pool.");
+
+        // 5) POWER: one Pump House, a buried y0 line under the run, conduit
+        //    risers hidden inside both towers up to the jets.
+        b.set(2, 1, 2, wsPump("north"));
+        b.set(2, 1, 3, WS_CONDUIT);
+        b.set(2, 0, 3, WS_CONDUIT);
+        for (int x = 1; x <= 27; x++) {
+            b.set(x, 0, 4, WS_CONDUIT);
+        }
+        pillar(b, 1, 4, 1, 7, WS_CONDUIT);
+        pillar(b, 27, 4, 1, 7, WS_CONDUIT);
+        return b.build();
+    }
+
+    /** Channel height at gorge column x (mirrors the profile laid down above). */
+    private static int gorgeHeightAt(int x) {
+        if (x <= 2 || x >= 26) return 8;
+        if (x <= 8) return 10 - x;
+        if (x <= 11) return 1;
+        if (x <= 14) return x - 10;
+        if (x == 15) return 3;
+        if (x == 16) return 2;
+        if (x <= 19) return 1;
+        return x - 18;
+    }
+
+    /**
+     * Rainbow Racer: four dye-colored lanes (red, yellow, lime, light blue)
+     * merged into one wide slide by dropped interior wall flags, fired
+     * simultaneously by a touching row of jets (they share RF, so one conduit
+     * feed powers all four), racing down an 8-step descent and a flat sprint
+     * into a shared finish pool.
+     */
+    private static Blueprint rainbowRacer() {
+        Blueprint.Builder b = Blueprint.builder("Rainbow Racer", 15, 13, 29);
+        BlueprintBlockState smooth = bs("minecraft:smooth_sandstone");
+        BlueprintBlockState cut = bs("minecraft:cut_sandstone");
+        String[] laneColor = {"red", "yellow", "lime", "light_blue"};
+
+        // 1) START TOWER (north): a solid core (x3..11 x z0..2, y1..8) with a
+        //    stair flight carved into its north row, arriving at the y9 deck.
+        floor(b, 0, 0, 0, 14, 28, smooth);
+        solid(b, 3, 1, 0, 11, 8, 2, cut);
+        for (int s = 0; s < 8; s++) {
+            int x = 3 + s, y = 1 + s;
+            b.set(x, y, 0, bs("minecraft:sandstone_stairs[facing=east,half=bottom,shape=straight]"));
+            clearIfInBounds(b, x, y + 1, 0); // headroom through the core
+            clearIfInBounds(b, x, y + 2, 0);
+        }
+        floor(b, 9, 3, 0, 11, 2, cut); // deck plate
+        clearIfInBounds(b, 10, 9, 0);  // stair arrival opening
+        b.set(3, 10, 2, SEA_LANTERN);
+        b.set(11, 10, 0, SEA_LANTERN);
+
+        // 2) JET ROW + WINGS at z3..5: four touching jets fire south down the
+        //    lanes; boarding wings flank the lane mouths at deck level so
+        //    riders side-hop into the outer lanes past the jet wall.
+        floor(b, 9, 3, 3, 11, 5, cut); // wings + jet/channel support band
+        for (int i = 0; i < 4; i++) {
+            b.set(5 + i, 10, 3, wsJet("south"));
+        }
+        signText(b, "minecraft:oak_sign[rotation=8]", 7, 10, 1,
+                "RAINBOW RACER", "Four lanes.", "One finish pool.", "GO!");
+
+        // 3) LANES: flat launch (z4..5), an 8-step descent to y2 (descending
+        //    toward south = rises toward north), then a flat sprint (z14..21).
+        //    Interior wall flags drop toward abutting lanes; outer lanes keep
+        //    their outer walls. Masonry under every cell.
+        for (int i = 0; i < 4; i++) {
+            int x = 5 + i;
+            boolean wallW = i == 0, wallE = i == 3;
+            String c = laneColor[i];
+            b.set(x, 10, 4, wsChannel(c, "north_south", wallW, wallE));
+            b.set(x, 10, 5, wsChannel(c, "north_south", wallW, wallE));
+            for (int s = 0; s < 8; s++) {
+                b.set(x, 9 - s, 6 + s, wsChannel(c, "ascending_north", wallW, wallE));
+                pillar(b, x, 6 + s, 1, 8 - s, cut);
+            }
+            for (int z = 14; z <= 21; z++) {
+                b.set(x, 2, z, wsChannel(c, "north_south", wallW, wallE));
+                b.set(x, 1, z, cut);
+            }
+        }
+
+        // 4) SHARED FINISH POOL (x3..11 x z21..28): cut rim y1..y2, one-deep
+        //    water level with the rim; the rim cells the lanes pierce are
+        //    re-set as channel so the water line seals against the lane walls.
+        walls(b, 3, 21, 11, 28, 1, 2, cut);
+        wsPoolPad(b, 1, 4, 22, 10, 27);
+        solid(b, 4, 2, 22, 10, 2, 27, WATER);
+        for (int x = 5; x <= 8; x++) {
+            b.set(x, 2, 21, wsChannel(laneColor[x - 5], "north_south", x == 5, x == 8));
+            b.set(x, 1, 21, cut);
+        }
+
+        // 5) POWER: Pump House on the east wing, one conduit hop to the jet
+        //    row's east end (the canonical pump -> conduit -> jet chain), and
+        //    the touching row daisy-chains the other three.
+        b.set(10, 10, 3, wsPump("east"));
+        b.set(9, 10, 3, WS_CONDUIT);
         return b.build();
     }
 }

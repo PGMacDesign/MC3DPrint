@@ -106,6 +106,14 @@ public class CuratedBlueprintPrintabilityGameTests {
                 failures.add("[" + blueprintName + "] MISSING — blueprint file not found on classpath");
                 continue;
             }
+            if (!CuratedBlueprints.modsAvailable(blueprintName)) {
+                // Mod-gated build (e.g. the Coppertide Park set) whose mod is not in
+                // this environment: it is hidden from creative + loot here and its
+                // blocks cannot resolve, so printability is not a meaningful contract.
+                // With the mod installed, its blocks resolve and recipe-derive FU
+                // values from their all-vanilla ingredients.
+                continue;
+            }
 
             Blueprint blueprint = maybeBlueprint.get();
             List<BlueprintBlockState> palette = blueprint.palette();
