@@ -167,3 +167,14 @@ tuning rather than security:
   obsidian, a renewable T3 windable. Blacklisted `obsidian` from winding (which also zeroes its
   Deconstruct yield). `crying_obsidian` is NOT formable this way (barter/ruined-portal only), so
   it stays windable.
+
+A **modded abundance cross-check** (all nine compat hooks vs the final ladder) found no hard
+violations: every renewable that reaches a dangerous tier is either capped at T5, gated behind a
+non-renewable input (real diamond / ancient debris / mined ore), or a boss-grind. One **LOW soak
+watch item**: `botania:life_essence` / `gaia_ingot` sit at T6 (netherite wall). Gaia Guardian is
+re-summonable, but the fight is a manual, non-AFK ritual gated behind terrasteel (transitively
+real diamonds) + a beacon, so it matches the already-accepted `nether_star=1500@7` precedent
+(windable boss-grind that prints netherite). If an in-world soak shows `life_essence` is windable
+AND Gaia is cheaply repeatable, add both ids to `winder_blacklist.json` as optional-tag entries
+(`{"id": "botania:life_essence", "required": false}`) to kill the launder while keeping the T6
+print cost. No FU/tier change is needed either way.
