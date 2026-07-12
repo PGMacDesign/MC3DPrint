@@ -136,6 +136,36 @@ if [ "$NEOFORGE_ONLY" -eq 0 ]; then
     git worktree remove --force "$WT"
 fi
 
+# --- alternate-style resource packs (docs/texture-packs.md) ---
+# One UNIVERSAL zip per style: the dual-era pack.mcmeta covers every target,
+# so the same zip serves 1.20.1 through the newest 26.x node. Smoke-check the
+# declared range against each shipped target's resource pack_format before
+# zipping — extend PACK_TARGETS alongside NEOFORGE_NODES when a node lands.
+# (node:format pairs; macOS ships bash 3.2, so no associative arrays here.)
+PACK_TARGETS="1.20.1:15 1.21.1:34 1.21.8:64 1.21.9:69 1.21.10:69 1.21.11:75 26.1:84 26.2:88"
+STYLE_SRC="$ROOT/src/main/resources/resourcepacks"
+if [ -d "$STYLE_SRC" ]; then
+    echo "==> Style resource packs"
+    for style_path in "$STYLE_SRC"/*/; do
+        style="$(basename "$style_path")"
+        meta="$style_path/pack.mcmeta"
+        [ -f "$meta" ] || { echo "ERROR: style '$style' has no pack.mcmeta" >&2; exit 1; }
+        min="$(python3 -c "import json;print(json.load(open('$meta'))['pack']['min_format'])")"
+        max="$(python3 -c "import json;print(json.load(open('$meta'))['pack']['max_format'])")"
+        for pair in $PACK_TARGETS; do
+            node="${pair%%:*}"; fmt="${pair##*:}"
+            if [ "$fmt" -lt "$min" ] || [ "$fmt" -gt "$max" ]; then
+                echo "ERROR: style '$style' declares formats $min..$max, which misses $node (format $fmt)." >&2
+                echo "       Bump FORMAT_MAX in tools/gen_style_packs.py and re-run it." >&2
+                exit 1
+            fi
+        done
+        zipfile="$DIST/mc3dprint-style-$style-$VERSION.zip"
+        (cd "$style_path" && zip -qr9X "$zipfile" . -x '.*')
+        echo "    $(basename "$zipfile") (formats $min..$max verified)"
+    done
+fi
+
 echo
 echo "==> Done. Artifacts in $DIST:"
-ls -la "$DIST"/*.jar | awk '{print "    " $NF, "(" $5 " bytes)"}'
+ls -la "$DIST"/*.jar "$DIST"/*.zip 2>/dev/null | awk '{print "    " $NF, "(" $5 " bytes)"}'
