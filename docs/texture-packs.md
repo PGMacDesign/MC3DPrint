@@ -1,7 +1,8 @@
 # Alternate Texture Styles (Resource Packs)
 
-**Status: PLANNED, not implemented.** Decisions aligned 2026-07-11. Implementation is gated
-behind the in-world soak pass; nothing below exists in the tree yet.
+**Status: IMPLEMENTED** (2026-07-11; decisions aligned the same day). Both styles ship as
+built-in packs on all seven NeoForge nodes and Forge 1.20.1, plus standalone release zips.
+In-world soak of each style is the remaining human gate.
 
 ## What ships
 
@@ -107,13 +108,20 @@ darker plates and dimmed line details, same geometry.
 
 ### Generation (`tools/`)
 
-`tex_common.py` grows a **StyleProfile**: palette ramps (BODY/FRAME/GLOW/TIER/accents) plus
-surface-treatment hooks (shade/bevel pass for the default and Dark Mode; a line-art renderer
-for Blueprint Mode). Each generator runs once per style; the default style writes
-`assets/mc3dprint/` as today, non-default styles write
-`src/main/resources/resourcepacks/<style>/assets/mc3dprint/`. Outputs are committed
-(reproducible generation, same convention as the existing textures). Each pack folder carries
-its `pack.mcmeta` and a generated `pack.png`.
+`tex_common.py` grows a **StyleProfile**: a named, deterministic per-image TRANSFORM applied
+over the committed default textures (Dark Mode = value-compression that spares saturated
+glow/tier pixels; Blueprint Mode = brighter-side edge inking onto a quantized blue field, with
+GUI-specific calibration). `tools/gen_style_packs.py` orchestrates: it reads the default
+block/item/gui textures and writes each style to
+`src/main/resources/resourcepacks/<style>/assets/mc3dprint/`, handles animation strips
+per-frame (copying `.png.mcmeta` verbatim), and emits each pack's `pack.mcmeta` + generated
+`pack.png` plus review contact sheets under `build/style-previews/`.
+
+This is a deliberate refinement of the original "each generator runs once per style" sketch:
+transforms guarantee the default set stays byte-identical (it is input, never output), cover
+every texture uniformly including future ones, and avoid style-conditional branches inside
+eleven hand-drawn generators. `StylePackTest` fails if a newly added default texture is
+missing its styled counterpart (the "forgot to re-run gen_style_packs.py" guard).
 
 ### Registration (per loader)
 

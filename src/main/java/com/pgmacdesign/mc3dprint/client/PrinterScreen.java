@@ -412,10 +412,11 @@ public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
             default -> WARN;
         };
         // The row at y=58 is shared: quote on the left (x=36), status on the right.
-        // The status is RIGHT-aligned against the upgrade column — a fixed anchor at
-        // 80 let the wider Matter Calculator quote run underneath it (soak finding:
-        // "24.7k FU · ~1m3s" vs "Ready").
-        int statusRightEdge = PrinterMenu.UPGRADE_SLOT_X - 4;
+        // The status is RIGHT-aligned against the FU gauge's LEFT edge; the row
+        // crosses the gauge's vertical span, so anchoring to the upgrade column let
+        // long statuses ("Obstructed") paint over the gauge (soak finding). The
+        // earlier anchor-at-80 collided the other way (quote ran under "Ready").
+        int statusRightEdge = FU_X - 4;
         int statusX = statusRightEdge - font.width(status);
         RenderCompat.drawString(graphics, font, status, statusX, 58, color, false);
         // An error/paused status owns the whole row: the cost/ETA quote is meaningless

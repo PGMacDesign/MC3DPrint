@@ -1,0 +1,29 @@
+language: "en-US"
+early_access: false
+reviews:
+  profile: "chill"
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: false
+  review_status: false
+  collapse_walkthrough: true
+  # Disable all walkthrough components
+  changed_files_summary: false
+  sequence_diagrams: true
+  estimate_code_review_effort: false
+  assess_linked_issues: false
+  related_issues: false
+  related_prs: false
+  suggested_labels: false
+  suggested_reviewers: false
+  commit_status: false
+  tools:
+    github-checks:
+      enabled: false
+  auto_review:
+    enabled: false
+    drafts: false
+    labels:
+      - "needs-ai-review"
+chat:
+  auto_reply: true
