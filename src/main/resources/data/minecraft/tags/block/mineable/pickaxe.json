@@ -15,6 +15,9 @@
     "mc3dprint:filament_converter",
     "mc3dprint:remote_terminal",
     "mc3dprint:clock_generator",
-    "mc3dprint:creative_energy_source"
+    "mc3dprint:creative_energy_source",
+    "mc3dprint:blueprint_repository",
+    "mc3dprint:filament_rack",
+    "mc3dprint:redstone_clock"
   ]
 }

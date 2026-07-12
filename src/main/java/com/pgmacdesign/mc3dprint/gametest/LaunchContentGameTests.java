@@ -8,6 +8,7 @@ import com.pgmacdesign.mc3dprint.registry.ModBlocks;
 import com.pgmacdesign.mc3dprint.registry.ModItems;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
@@ -107,6 +108,44 @@ public class LaunchContentGameTests {
                 || silk.stream().anyMatch(s -> s.is(ModItems.EXTRUDIUM_CRYSTAL.get()))) {
             helper.fail("silk touch must drop the ore block, not the crystal — got " + silk);
             return;
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty5", timeoutTicks = 20)
+    public static void everyToolGatedBlockIsPickaxeMineable(GameTestHelper helper) {
+        // Recurring-bug guardrail (see PGM-51 extrudium_ore, and the blueprint_repository /
+        // filament_rack / redstone_clock misses): machineProperties() sets
+        // requiresCorrectToolForDrops(), so a block that ISN'T in a mineable tag has NO correct
+        // tool and silently drops nothing when broken. Every mod block that requires the correct
+        // tool must therefore be in mineable/pickaxe (all mod machines are pickaxe-mined). This
+        // iterates the live registry so a NEW block added without its tag fails here, not in a
+        // player's world.
+        StringBuilder missing = new StringBuilder();
+        for (var holder : ModBlocks.BLOCKS.getEntries()) {
+            BlockState state = holder.get().defaultBlockState();
+            if (state.requiresCorrectToolForDrops() && !state.is(BlockTags.MINEABLE_WITH_PICKAXE)) {
+                missing.append(' ').append(holder.getId());
+            }
+        }
+        if (!missing.isEmpty()) {
+            helper.fail("tool-gated block(s) missing from mineable/pickaxe (break to nothing):"
+                    + missing + " — add each to data/minecraft/tags/block/mineable/pickaxe.json");
+            return;
+        }
+        // The two machine blocks this fix restored must be iron-tier mineable (like the others),
+        // matching the owner's "iron pickaxe" requirement and pinning the tier so it can't drift
+        // down to any-pickaxe or up to diamond.
+        for (Block machine : new Block[]{ModBlocks.BLUEPRINT_REPOSITORY.get(), ModBlocks.FILAMENT_RACK.get()}) {
+            BlockState state = machine.defaultBlockState();
+            if (!new ItemStack(Items.IRON_PICKAXE).isCorrectToolForDrops(state)) {
+                helper.fail("iron pickaxe must mine " + BuiltInRegistries.BLOCK.getKey(machine) + " for drops");
+                return;
+            }
+            if (new ItemStack(Items.STONE_PICKAXE).isCorrectToolForDrops(state)) {
+                helper.fail(BuiltInRegistries.BLOCK.getKey(machine) + " must require iron tier, not stone");
+                return;
+            }
         }
         helper.succeed();
     }
