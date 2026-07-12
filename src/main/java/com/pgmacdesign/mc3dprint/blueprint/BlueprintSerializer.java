@@ -102,10 +102,11 @@ public final class BlueprintSerializer {
         if (size.length != 3) {
             throw new BlueprintFormatException("Blueprint Size must be [x, y, z], got length " + size.length);
         }
-        // Reject a hostile/corrupt size (negative dims, int-overflow product, over-cap) here as a
-        // format error, before it can reach the Blueprint constructor's allocation.
-        long volume = (long) size[0] * size[1] * size[2];
-        if (size[0] < 0 || size[1] < 0 || size[2] < 0 || volume > Blueprint.MAX_VOLUME) {
+        // Reject a hostile/corrupt size (negative dims, long-overflow product, over-cap) here as a
+        // format error, before it can reach the Blueprint constructor's allocation. Shared helper so
+        // the overflow-exact check can't drift from the constructor's.
+        long volume = Blueprint.checkedVolume(size[0], size[1], size[2]);
+        if (volume < 0) {
             throw new BlueprintFormatException("Blueprint Size out of range: "
                     + size[0] + "x" + size[1] + "x" + size[2]);
         }

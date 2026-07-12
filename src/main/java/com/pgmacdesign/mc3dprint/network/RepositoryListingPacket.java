@@ -1,10 +1,12 @@
 package com.pgmacdesign.mc3dprint.network;
 
+import com.mojang.logging.LogUtils;
 import com.pgmacdesign.mc3dprint.blueprint.repository.RepoEntry;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.network.NetworkEvent;
+import org.slf4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,20 +20,30 @@ import java.util.function.Supplier;
  */
 public record RepositoryListingPacket(List<RepoEntry> entries, List<UUID> printed) {
 
+    private static final Logger LOGGER = LogUtils.getLogger();
+
+    // A repository holds far fewer builds than this; the cap stops a garbage/hostile varint
+    // length from pre-allocating a huge list on the client, and it bounds the write side to
+    // the SAME limit so a genuinely huge repository truncates (GUI shows the first N) instead
+    // of writing a count the reader then rejects with a DecoderException (breaking the GUI).
+    private static final int MAX_ENTRIES = 4096;
+
     public static void encode(RepositoryListingPacket msg, FriendlyByteBuf buf) {
-        buf.writeVarInt(msg.entries.size());
-        for (RepoEntry entry : msg.entries) {
-            entry.toBuf(buf);
+        int entryCount = Math.min(msg.entries.size(), MAX_ENTRIES);
+        if (msg.entries.size() > MAX_ENTRIES) {
+            LOGGER.warn("Repository listing has {} entries; syncing only the first {} to the GUI",
+                    msg.entries.size(), MAX_ENTRIES);
         }
-        buf.writeVarInt(msg.printed.size());
-        for (UUID id : msg.printed) {
-            buf.writeUUID(id);
+        buf.writeVarInt(entryCount);
+        for (int i = 0; i < entryCount; i++) {
+            msg.entries.get(i).toBuf(buf);
+        }
+        int printedCount = Math.min(msg.printed.size(), MAX_ENTRIES);
+        buf.writeVarInt(printedCount);
+        for (int i = 0; i < printedCount; i++) {
+            buf.writeUUID(msg.printed.get(i));
         }
     }
-
-    // A repository holds far fewer builds than this; the cap just stops a garbage/hostile
-    // varint length from pre-allocating a huge list on the client.
-    private static final int MAX_ENTRIES = 4096;
 
     public static RepositoryListingPacket decode(FriendlyByteBuf buf) {
         int count = readBounded(buf, "entries");

@@ -107,6 +107,17 @@ class BlueprintSerializerTest {
     }
 
     @Test
+    void rejectsLongOverflowSize() {
+        // Three near-max int dims whose product overflows LONG (not just int) must still fail as a
+        // format error: multiplyExact catches it rather than wrapping past MAX_VOLUME with an empty
+        // Blocks array that would otherwise pass the length check.
+        CompoundTag tag = BlueprintSerializer.write(sample());
+        tag.putIntArray("Size", new int[]{1 << 30, 1 << 30, 16});
+        tag.putIntArray("Blocks", new int[]{});
+        assertThrows(BlueprintFormatException.class, () -> BlueprintSerializer.read(tag));
+    }
+
+    @Test
     void rejectsNegativeSize() {
         CompoundTag tag = BlueprintSerializer.write(sample());
         tag.putIntArray("Size", new int[]{-1, 3, 2});

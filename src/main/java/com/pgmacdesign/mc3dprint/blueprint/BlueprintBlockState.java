@@ -59,18 +59,25 @@ public final class BlueprintBlockState {
 
     /** Parses {@code namespace:path[key=value,...]}. */
     public static BlueprintBlockState parse(String serialized) {
-        int bracket = serialized.indexOf('[');
+        // Validate the bracket/'=' structure so a malformed palette string fails as a format error
+        // the caller handles, not an escaping StringIndexOutOfBounds (and not a silent accept of
+        // stray/trailing junk). Trim once up front so the closing-bracket-is-last check is exact.
+        String trimmed = serialized.trim();
+        int bracket = trimmed.indexOf('[');
         if (bracket < 0) {
-            return new BlueprintBlockState(serialized.trim());
+            // No property block: a stray ']' means the string is malformed, not a plain id.
+            if (trimmed.indexOf(']') >= 0) {
+                throw new BlueprintFormatException("Malformed block state (stray ']'): " + serialized);
+            }
+            return new BlueprintBlockState(trimmed);
         }
-        // Validate the bracket/'=' structure so a malformed palette string ("stone[", "foo[bar]")
-        // fails as a format error the caller handles, not an escaping StringIndexOutOfBounds.
-        int close = serialized.lastIndexOf(']');
-        if (close < bracket) {
-            throw new BlueprintFormatException("Malformed block state (no closing ']'): " + serialized);
+        // The ']' must CLOSE the string: rejects "stone[a=b]junk" (trailing text) and "stone[" (none).
+        int close = trimmed.lastIndexOf(']');
+        if (close != trimmed.length() - 1) {
+            throw new BlueprintFormatException("Malformed block state (']' must close the string): " + serialized);
         }
-        String id = serialized.substring(0, bracket).trim();
-        String body = serialized.substring(bracket + 1, close).trim();
+        String id = trimmed.substring(0, bracket).trim();
+        String body = trimmed.substring(bracket + 1, close).trim();
         SortedMap<String, String> props = new TreeMap<>();
         if (!body.isEmpty()) {
             for (String pair : body.split(",")) {
