@@ -71,8 +71,13 @@ class StylePackTest {
                         style + ": node " + node + " (format " + format
                                 + ") outside supported_formats " + supMin + ".." + supMax);
             });
-            assertTrue(legacy == supMin,
-                    style + ": pack_format should equal the range minimum for 1.20.1 clients");
+            // Pin BOTH legacy fields to the actual 1.20.1 format; legacy == supMin
+            // alone lets the pair drift together (e.g. both to 20) while 1.20.1
+            // clients get the "incompatible" warning.
+            int format1201 = NODE_FORMATS.get("1.20.1");
+            assertTrue(legacy == format1201 && supMin == format1201,
+                    style + ": pack_format (" + legacy + ") and supported_formats minimum ("
+                            + supMin + ") must equal the 1.20.1 format " + format1201);
         }
     }
 
@@ -84,14 +89,20 @@ class StylePackTest {
             Path styled = root.resolve("src/main/resources/resourcepacks/" + style
                     + "/assets/mc3dprint/textures");
             for (String kind : TEXTURE_KINDS) {
-                try (Stream<Path> files = Files.list(defaults.resolve(kind))) {
-                    files.filter(p -> {
+                // walk, not list: a future nested texture (block/subdir/foo.png)
+                // must trip this guard, not dodge it
+                Path defaultKind = defaults.resolve(kind);
+                Path styledKind = styled.resolve(kind);
+                try (Stream<Path> files = Files.walk(defaultKind)) {
+                    files.filter(Files::isRegularFile).filter(p -> {
                         String n = p.getFileName().toString();
                         return n.endsWith(".png") || n.endsWith(".png.mcmeta");
-                    }).forEach(p -> assertTrue(
-                            Files.isRegularFile(styled.resolve(kind).resolve(p.getFileName())),
-                            style + " is missing " + kind + "/" + p.getFileName()
-                                    + " — re-run tools/gen_style_packs.py"));
+                    }).forEach(p -> {
+                        Path relative = defaultKind.relativize(p);
+                        assertTrue(Files.isRegularFile(styledKind.resolve(relative)),
+                                style + " is missing " + kind + "/" + relative
+                                        + "; re-run tools/gen_style_packs.py");
+                    });
                 }
             }
         }

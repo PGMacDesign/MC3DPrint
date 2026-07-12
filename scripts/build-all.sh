@@ -150,19 +150,38 @@ if [ -d "$STYLE_SRC" ]; then
         style="$(basename "$style_path")"
         meta="$style_path/pack.mcmeta"
         [ -f "$meta" ] || { echo "ERROR: style '$style' has no pack.mcmeta" >&2; exit 1; }
-        min="$(python3 -c "import json;print(json.load(open('$meta'))['pack']['min_format'])")"
-        max="$(python3 -c "import json;print(json.load(open('$meta'))['pack']['max_format'])")"
-        for pair in $PACK_TARGETS; do
-            node="${pair%%:*}"; fmt="${pair##*:}"
-            if [ "$fmt" -lt "$min" ] || [ "$fmt" -gt "$max" ]; then
-                echo "ERROR: style '$style' declares formats $min..$max, which misses $node (format $fmt)." >&2
-                echo "       Bump FORMAT_MAX in tools/gen_style_packs.py and re-run it." >&2
-                exit 1
-            fi
-        done
+        # Validate ALL manifest eras (pack_format, supported_formats, min/max_format)
+        # against every shipped target, mirroring StylePackTest. The NeoForge release
+        # path runs `assemble` (JUnit skipped), so this is the only gate at release time.
+        range="$(PACK_TARGETS="$PACK_TARGETS" python3 - "$meta" <<'PYEOF'
+import json, os, sys
+pack = json.load(open(sys.argv[1]))["pack"]
+lo, hi = pack["min_format"], pack["max_format"]
+sup = pack["supported_formats"]
+slo, shi = sup["min_inclusive"], sup["max_inclusive"]
+legacy = pack["pack_format"]
+targets = [(n, int(f)) for n, f in
+           (pair.split(":") for pair in os.environ["PACK_TARGETS"].split())]
+fail = []
+for node, fmt in targets:
+    if not lo <= fmt <= hi:
+        fail.append(f"{node} (format {fmt}) outside min_format/max_format {lo}..{hi}")
+    if not slo <= fmt <= shi:
+        fail.append(f"{node} (format {fmt}) outside supported_formats {slo}..{shi}")
+f1201 = dict(targets).get("1.20.1")
+if f1201 is not None and (legacy != f1201 or slo != f1201):
+    fail.append(f"pack_format {legacy} / supported_formats min {slo} must equal the 1.20.1 format {f1201}")
+if fail:
+    print("; ".join(fail), file=sys.stderr)
+    sys.exit(1)
+print(f"{lo}..{hi}")
+PYEOF
+)" || { echo "ERROR: style '$style' manifest check failed (see above)." >&2
+        echo "       Fix FORMAT_MIN/FORMAT_MAX in tools/gen_style_packs.py and re-run it." >&2
+        exit 1; }
         zipfile="$DIST/mc3dprint-style-$style-$VERSION.zip"
         (cd "$style_path" && zip -qr9X "$zipfile" . -x '.*')
-        echo "    $(basename "$zipfile") (formats $min..$max verified)"
+        echo "    $(basename "$zipfile") (formats $range verified)"
     done
 fi
 
