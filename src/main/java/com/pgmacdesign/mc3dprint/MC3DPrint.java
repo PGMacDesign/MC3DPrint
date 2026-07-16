@@ -65,7 +65,7 @@ public class MC3DPrint {
         net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(
                 com.pgmacdesign.mc3dprint.blueprint.CuratedBlueprints::onServerStarted);
         net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(
-                com.pgmacdesign.mc3dprint.integration.patchouli.GuidebookAutoGive::onItemCrafted);
+                com.pgmacdesign.mc3dprint.integration.patchouli.GuidebookAutoGive::onPlayerLogin);
         // Breaking a premium multiblock corner (T5 diamond, T8 awakened draconium) must
         // unform the machine like breaking a casing does; those are foreign blocks with
         // no onRemove hook of ours, so catch their break here.

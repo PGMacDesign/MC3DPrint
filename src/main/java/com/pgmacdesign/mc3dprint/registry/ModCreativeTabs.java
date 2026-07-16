@@ -138,7 +138,7 @@ public final class ModCreativeTabs {
                         // — now that PatchouliCompat binds it to the same patchouli:book component —
                         // makes an identical duplicate stack, and Patchouli's tab handler throws
                         // "already exists", crashing the creative/inventory screen (PGM-53). The
-                        // first-craft auto-give (GuidebookAutoGive) is our only book hand-out.
+                        // first-login auto-give (GuidebookAutoGive) is our only book hand-out.
                     })
                     .build());
 
