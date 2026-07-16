@@ -4,6 +4,7 @@ import com.pgmacdesign.mc3dprint.compat.NbtCompat;
 
 import com.pgmacdesign.mc3dprint.MC3DPrint;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -41,6 +42,7 @@ public final class GuidebookAutoGive {
         if (!player.getInventory().add(book)) {
             player.drop(book, false);
         }
+        player.sendSystemMessage(Component.translatable("message.mc3dprint.book_given"));
         persisted.putBoolean(TAG_BOOK_GIVEN, true);
         root.put(Player.PERSISTED_NBT_TAG, persisted);
     }
