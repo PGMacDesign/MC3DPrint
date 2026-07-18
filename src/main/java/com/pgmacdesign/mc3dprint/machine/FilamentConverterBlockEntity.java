@@ -78,7 +78,7 @@ public class FilamentConverterBlockEntity extends BlockEntity {
         // Same gate as the winder: a blacklisted filter still has an FU value
         // but must never be converted (it would automate the stick-laundering
         // exploit). Bail before pulling so blacklisted items are left in place.
-        if (value.isEmpty() || filter.is(ModItemTags.WINDER_BLACKLIST)
+        if (value.isEmpty() || ModItemTags.isWinderBlacklisted(filter)
                 || !energy.hasAtLeast(MC3DPrintConfig.WINDER_RF_PER_ITEM.get())) {
             return;
         }

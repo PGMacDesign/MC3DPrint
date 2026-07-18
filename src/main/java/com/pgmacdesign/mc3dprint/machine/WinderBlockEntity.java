@@ -112,7 +112,7 @@ public class WinderBlockEntity extends BlockEntity implements MenuProvider {
         // just must never be wound, to stop FU laundering. See ModItemTags.
         Optional<FuValue> value = FuValueRegistry.valueOf(input);
         if (value.isEmpty()
-                || input.is(ModItemTags.WINDER_BLACKLIST)
+                || ModItemTags.isWinderBlacklisted(input)
                 || !(spool.getItem() instanceof SpoolItem spoolItem) || spoolItem.creative()
                 || !FuConversion.canWindInto(value.get().tier(), spoolItem.tier())
                 || !energy.hasAtLeast(MC3DPrintConfig.WINDER_RF_PER_ITEM.get())) {
@@ -155,7 +155,7 @@ public class WinderBlockEntity extends BlockEntity implements MenuProvider {
         ItemStack spool = inventory.getStackInSlot(SLOT_SPOOL);
         Optional<FuValue> value = FuValueRegistry.valueOf(input);
         if (value.isEmpty()
-                || input.is(ModItemTags.WINDER_BLACKLIST)
+                || ModItemTags.isWinderBlacklisted(input)
                 || !(spool.getItem() instanceof SpoolItem spoolItem) || spoolItem.creative()
                 || !FuConversion.canWindInto(value.get().tier(), spoolItem.tier())) {
             return 0;
@@ -179,7 +179,7 @@ public class WinderBlockEntity extends BlockEntity implements MenuProvider {
         // a blacklist hit, NOT an unpriced item — the stack has an FU value,
         // it's just barred from winding. Checked before the wrong-tier branch so
         // it reports not-convertible regardless of the docked spool's tier.
-        if (input.is(ModItemTags.WINDER_BLACKLIST)) {
+        if (ModItemTags.isWinderBlacklisted(input)) {
             return STATUS_NOT_CONVERTIBLE;
         }
         ItemStack spool = inventory.getStackInSlot(SLOT_SPOOL);
