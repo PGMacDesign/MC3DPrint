@@ -17,7 +17,12 @@ import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 public class MC3DPrint {
     public static final String MOD_ID = "mc3dprint";
 
-    public MC3DPrint(FMLJavaModLoadingContext context) {
+    // No-arg constructor + FMLJavaModLoadingContext.get(): the universal Forge 1.20.1
+    // entry point that works across the whole declared range ([47,)). Taking the context
+    // as a constructor PARAMETER only works on newer Forge (47.4.x) — an older server
+    // (e.g. 47.1.106) rejects it with "Could not find mod constructor" and crashes.
+    public MC3DPrint() {
+        FMLJavaModLoadingContext context = FMLJavaModLoadingContext.get();
         IEventBus modEventBus = context.getModEventBus();
 
         ModBlocks.BLOCKS.register(modEventBus);
