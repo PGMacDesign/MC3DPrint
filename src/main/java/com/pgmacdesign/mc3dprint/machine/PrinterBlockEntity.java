@@ -1920,7 +1920,7 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         if (value.isEmpty()) {
             return DeconstructYield.SKIP; // unvalued (strict-mode rare) — never destroyed for 0
         }
-        if (stack.is(com.pgmacdesign.mc3dprint.registry.ModItemTags.WINDER_BLACKLIST)) {
+        if (com.pgmacdesign.mc3dprint.registry.ModItemTags.isWinderBlacklisted(stack)) {
             return DeconstructYield.FREE; // anti-laundering tag: removable, zero yield
         }
         // Yield derives from the WIND value only — Efficiency modules and resins never

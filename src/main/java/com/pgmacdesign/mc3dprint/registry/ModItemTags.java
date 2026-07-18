@@ -5,6 +5,10 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraftforge.registries.ForgeRegistries;
+
+import java.util.List;
 
 /**
  * Item {@link TagKey}s owned by MC3DPrint.
@@ -32,13 +36,17 @@ import net.minecraft.world.item.Item;
  * framework and documentation; the full set of launder-prone items is added
  * during the tier/economy rebalance.
  *
- * <p><b>How to extend.</b> Add item ids (or {@code #tag} entries) to that JSON
- * file. No Java change is needed — the winding/conversion gates test membership
- * via {@code stack.is(WINDER_BLACKLIST)} at runtime, so the data tag is the
- * single source of truth. A blacklisted input still reports the existing
- * {@code STATUS_NOT_CONVERTIBLE} GUI status (it reads as "not convertible",
- * which is precisely what it is from the player's perspective), so no new lang
- * or screen work is required when the list grows.
+ * <p><b>How to extend.</b> For exact items add ids (or {@code #tag} entries) to
+ * that JSON file. For a modded <em>family</em> a vanilla tag can't wildcard (e.g.
+ * RFTools Dimensions' {@code rftoolsdim:dimensional_*} blocks — seven-plus
+ * trivially-farmable variants, laundering vectors like the dimensional shard),
+ * add an id prefix to {@link #WINDER_BLACKLIST_ID_PREFIXES}. The winding /
+ * conversion / deconstruct gates all test membership through
+ * {@link #isWinderBlacklisted(ItemStack)} — call that, never a bare
+ * {@code stack.is(WINDER_BLACKLIST)}, so both the tag and the prefixes apply
+ * uniformly. A blacklisted input still reports the existing
+ * {@code STATUS_NOT_CONVERTIBLE} GUI status, so no new lang or screen work is
+ * required when the list grows.
  */
 public final class ModItemTags {
 
@@ -49,6 +57,42 @@ public final class ModItemTags {
      */
     public static final TagKey<Item> WINDER_BLACKLIST =
             TagKey.create(Registries.ITEM, new ResourceLocation(MC3DPrint.MOD_ID, "winder_blacklist"));
+
+    /**
+     * Item-id prefixes treated as winder-blacklisted, for modded families a vanilla
+     * tag can't wildcard. {@code rftoolsdim:dimensional_} covers RFTools Dimensions'
+     * seven-plus {@code dimensional_*} blocks — trivially farmable, so windable-proxy
+     * laundering vectors like {@code rftoolsbase:dimensionalshard} (which is an exact
+     * entry in the tag). Prefix-matched so new variants stay covered without a code change.
+     */
+    public static final List<String> WINDER_BLACKLIST_ID_PREFIXES = List.of(
+            "rftoolsdim:dimensional_");
+
+    /**
+     * Whether {@code stack} must never be wound / converted / deconstructed back into
+     * filament — true if it is in the {@link #WINDER_BLACKLIST} tag OR its registry id
+     * starts with a {@link #WINDER_BLACKLIST_ID_PREFIXES} entry. Every anti-laundering
+     * gate calls this, so the tag and the prefixes are honored uniformly.
+     */
+    public static boolean isWinderBlacklisted(ItemStack stack) {
+        if (stack.isEmpty()) {
+            return false;
+        }
+        if (stack.is(WINDER_BLACKLIST)) {
+            return true;
+        }
+        ResourceLocation key = ForgeRegistries.ITEMS.getKey(stack.getItem());
+        if (key == null) {
+            return false;
+        }
+        String id = key.toString();
+        for (String prefix : WINDER_BLACKLIST_ID_PREFIXES) {
+            if (id.startsWith(prefix)) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     /**
      * Trophy-class items a printer must NOT reproduce freely even when they carry
