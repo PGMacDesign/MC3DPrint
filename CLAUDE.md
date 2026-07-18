@@ -127,9 +127,11 @@ exact values: `docs/rebalance/{ae2,thermal,tconstruct}.md`.
 - **Blueprints:** `CuratedBlueprintGenerator` (gated JUnit) is the source of truth —
   regen with `./gradlew test --tests '*CuratedBlueprintGenerator*' -DgenBlueprints=true
   --rerun-tasks`; validate/dump ASCII layers with `*BlueprintDumpTest* -DdumpBlueprints=true`.
-- **Git:** commit → push every change, direct to `main` (solo repo; a ruleset requires PRs
-  for non-admins but admin/Patrick bypasses, so direct push still works). **Never** add
-  `Co-Authored-By: Claude` or "Generated with Claude Code" to commits/PRs.
+- **Git:** **all changes land via pull request** — branch → push → open a PR → let CI +
+  CodeRabbit run → merge on green. **No direct pushes** to `main` (policy since the 1.0.0
+  release; the same PR flow covers the `legacy/1.20.1` backport branch). Repository
+  administrators can technically bypass the branch ruleset, but don't. **Never** add `Co-Authored-By: Claude`
+  or "Generated with Claude Code" to commits/PRs.
 
 ## Where deeper context lives
 
