@@ -64,7 +64,9 @@ public class MC3DPrint {
         net.minecraftforge.common.MinecraftForge.EVENT_BUS.addListener(
                 com.pgmacdesign.mc3dprint.blueprint.CuratedBlueprints::onServerStarted);
         net.minecraftforge.common.MinecraftForge.EVENT_BUS.addListener(
-                com.pgmacdesign.mc3dprint.integration.patchouli.GuidebookAutoGive::onPlayerLogin);
+                com.pgmacdesign.mc3dprint.integration.patchouli.GuidebookAutoGive::onItemCrafted);
+        net.minecraftforge.common.MinecraftForge.EVENT_BUS.addListener(
+                com.pgmacdesign.mc3dprint.integration.patchouli.GuidebookAutoGive::onContainerClose);
         // Breaking a premium multiblock corner (T5 diamond, T8 awakened draconium) must
         // unform the machine like breaking a casing does; those are foreign blocks with
         // no onRemove hook of ours, so catch their break here.
