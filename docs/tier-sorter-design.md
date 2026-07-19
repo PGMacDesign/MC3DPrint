@@ -151,9 +151,118 @@ the plural form silently fails to load on 1.21 (PGM-51).
 
 ## Invariants
 
-To be derived via the `derive-invariants` skill before implementation. This block is stateful
-and multi-writer (buffered inventory, round-robin cursor, cached topology, concurrent insertion
-from pipes and hands), so it needs them.
+Derived 2026-07-20. The sorter runs entirely on the server tick thread, so the hazards are NOT
+data races — they are **staleness across ticks** (a cached winder position that broke or
+re-tiered since the flood) and **interleaving** (a hopper filling a winder's single input slot
+the same tick the sorter targets it). The laws below are written against those two.
+
+### Buffer pool + door filter
+1. **Permanent-reject at the door** — an unvalued or winder-blacklisted item never enters the
+   pool.
+   - Guarded by: `isItemValid` returns false when `FuValueRegistry.valueOf` is empty or
+     `ModItemTags.isWinderBlacklisted` is true; enforced for both hopper insertion and menu
+     shift-click (menu slots honour `isItemValid`).
+   - Test: push a stick (blacklisted, but valued) and an unvalued junk item at the pool; assert
+     neither is accepted and both back up upstream.
+2. **No item loss or duplication on routing** — an item leaves the pool only after its insertion
+   into a winder is committed, and only by the exact accepted count.
+   - Guarded by: insert into the winder's `IItemHandler` first, decrement the pool by
+     `accepted = requested - remainder` (drop-before-stage inverted: stage the destination, then
+     drop from source); never `extract-then-insert`.
+   - Test: target a winder whose input slot fills (a second hopper races it) between candidate
+     selection and insert; assert the un-inserted remainder stays in the pool and total item
+     count across pool+winder is conserved.
+3. **Buffered state survives unload; only topology is transient** — pool contents and every
+   per-tier cursor persist across save/chunk-unload/restart; the reachable-winder set is never
+   persisted and is rebuilt on load.
+   - Guarded by: pool `ItemStackHandler` and cursor array in `writeData`/`readData`; topology
+     held only in memory.
+   - Test: fill the pool, set a cursor mid-cycle, save+reload; assert pool and cursors restore
+     and routing resumes without a lost or duplicated item.
+4. **A full pool backs up, never voids** — when the pool cannot accept more, insertion fails
+   cleanly and upstream stalls; no item is ever dropped or destroyed to make room.
+   - Guarded by: `insertItem` returns the un-accepted remainder; no overflow/void path exists.
+   - Test: fill all nine slots with an item that has no reachable winder; assert further hopper
+     insertion is refused (remainder returned) and nothing is destroyed.
+
+### Router (per-tick placement)
+1. **Route only to an exact-tier, non-stalled winder** — an item is inserted only into a winder
+   whose spool tier equals the item's material tier AND which would actually consume it (input
+   slot empty or same-item-with-space, and spool has room for the full yield).
+   - Guarded by: mirror the winder's own acceptance gate (`WinderBlockEntity.tick`
+     tier + input-slot + `SpoolItem.getFu + yield <= capacity`) before inserting.
+   - Test: offer a T3 item with the only T3 winder's spool full; assert the item is held, not
+     inserted into a winder that would stall on it.
+2. **Cached positions are re-validated live at insert time** — a winder position from the cached
+   topology is used only after confirming, that tick, that it is still loaded, still a
+   `WinderBlockEntity`, and still the tier the router thinks it is.
+   - Guarded by: `isRemoved` check + `instanceof WinderBlockEntity` + live re-read of the spool
+     tier at use (never trust the cached snapshot's contents — mirrors the cable's
+     positions-only cache contract).
+   - Test: cache a T3 winder, then break it / swap its spool to T5 before the routing tick;
+     assert no insert into the removed block and no T3 item routed to the now-T5 winder.
+3. **Bounded work per tick** — at most N (config, default 4) insertions happen per tick, with no
+   unbounded scan of the network on the hot path.
+   - Guarded by: a hard per-tick placement counter; the expensive flood stays in the cable's
+     throttled cache, not the router loop.
+   - Test: connect many winders and a full pool; assert no more than N items move per tick and
+     tick time stays flat as the network grows.
+4. **Per-slot contention is atomic and non-destructive** — concurrent routers or hoppers
+   targeting the same winder input slot can never overfill it or lose an item; each writer
+   commits exactly what the slot accepted.
+   - Guarded by: single source of truth is the winder's input `ItemStackHandler`; every insert
+     honours the returned remainder, so a losing writer simply retains its item.
+   - Test: two sorters route the same item type to one winder in the same tick; assert the slot
+     holds a legal stack and the loser's item remains in its pool.
+
+### Round-robin cursor
+1. **The cursor advances exactly once per successful placement** — a routed item moves the
+   cursor for its tier by one; an attempt that places nothing leaves the cursor untouched.
+   - Guarded by: advance only on a committed insert, inside the success branch.
+   - Test: with two T3 winders, route four T3 items; assert a 2/2 split, and assert a tick that
+     places nothing (all candidates stalled) does not advance the cursor.
+2. **Stall-skip never burns a winder's turn** — when the cursor's next candidate is full or
+   occupied, it is skipped within the same attempt and the next candidate tried, without that
+   full winder consuming a turn.
+   - Guarded by: iterate candidates from the cursor, skipping stalled ones, advancing the cursor
+     only past the winder that actually took the item.
+   - Test: three T3 winders, the cursor's next one full; assert the item lands in the following
+     winder and the full one does not gain or waste a turn.
+3. **The cursor is topology-change-safe** — adding or removing a winder can never point the
+   cursor out of range or make it systematically skip a winder.
+   - Guarded by: store a monotonic per-tier counter and take it `mod (current candidate count)`
+     at use time; never a persisted absolute index into a list whose length changes.
+   - Test: run a cycle, remove one winder of that tier, continue; assert no index-out-of-range
+     and that surviving winders still receive an even share over time.
+
+### Topology view (delegated to the cable capability)
+1. **The sorter owns no persistent topology** — reachable winders come from the cable's
+   throttled flood (or direct adjacency), unioned across the sorter's six faces each use; the
+   sorter never maintains its own long-lived network cache.
+   - Guarded by: query the routing capability per face; the flood and its ~5s throttle live in
+     `MC3DCableBlockEntity`, matching `collectSources`.
+   - Test: wire a winder onto the network; assert it becomes a routing target within the cable's
+     refresh window without the sorter implementing its own BFS.
+2. **A winder reachable by multiple paths is counted once** — a winder the sorter can reach by
+   two cable routes (or cable + direct touch) appears once in the candidate set, so it is never
+   double-served against its single input slot in one tick.
+   - Guarded by: identity dedup of the collected winders (the `IdentityHashMap`-backed set idiom
+     `PrinterBlockEntity.reachableSources` already uses).
+   - Test: build a loop so one winder is reachable two ways; assert it appears once and receives
+     at most its slot's worth per tick.
+3. **Direct-touch and cable-reach are the same code path** — a winder adjacent to the sorter and
+   a winder across cable are discovered and validated identically, so an unpowered/cable-less
+   build behaves like a networked one.
+   - Guarded by: both answer the same routing capability; face query unions adjacent BEs and
+     cable-forwarded sets without a special case.
+   - Test: place winders directly around a sorter with no cable; assert routing works exactly as
+     the cabled case.
+
+**Decided during derivation (2026-07-20):** cursor advances only on successful placement,
+stalled candidates skipped without cost (Cursor #1/#2); routed winding stays **uncredited** to
+any player's advancement NBT, matching hopper-fed winders today (no attribution machinery in v1);
+the pool is **insert-only from external faces** — a one-way funnel, never externally extractable,
+so nothing a player funnels in can be pulled back out and unexpectedly destroyed.
 
 ---
 
