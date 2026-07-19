@@ -22,7 +22,7 @@ import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
  * so {@code ingot_osmium/tin/lead/uranium} DERIVE from the raws we value (as do all
  * {@code block_*} ×9 and nuggets). We only pin: the mined leaves (raw + ore blocks) and the
  * custom-machine leaves — the Metallurgic Infuser alloys (bronze / steel / infused / reinforced
- * / atomic) and the Osmium Compressor refined metals — which our {@code RecipeFuValuator}
+ * / atomic) and the Osmium Compressor refined metals — which our {@code RelaxationFuValuator}
  * cannot read.
  *
  * <p><b>Tiering</b> (anchored to vanilla: iron=20@T2, glowstone=20@T3, blaze=40@T4,

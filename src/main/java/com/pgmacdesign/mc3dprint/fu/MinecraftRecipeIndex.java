@@ -17,14 +17,12 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.function.Function;
 
 /**
- * Binds a live recipe snapshot (plus a {@link RegistryAccess} for assembling
- * recipe outputs) to the pure {@link RecipeFuValuator.RecipeGraph}. Built lazily
- * the first time derivation runs after a {@link FuValueRegistry#bind bind}, and
- * thrown away whenever recipes reload.
+ * Builds a live recipe snapshot (plus a {@link RegistryAccess} for assembling
+ * recipe outputs) into the output -> recipes index that {@link RelaxationFuValuator}
+ * relaxes. Built lazily the first time derivation runs after a
+ * {@link FuValueRegistry#bind bind}, and thrown away whenever recipes reload.
  *
  * <p>The snapshot is a flat {@code Collection<RecipeHolder<?>>} (every loaded
  * recipe), filtered here by {@link Recipe#getType() type} — the per-type lookup
@@ -36,48 +34,38 @@ import java.util.function.Function;
  * add nothing). {@link Recipe#isSpecial() Special} recipes (map cloning, firework
  * assembly, …) are skipped — they have no fixed ingredient set to value.
  */
-public final class MinecraftRecipeIndex implements RecipeFuValuator.RecipeGraph<Item> {
+public final class MinecraftRecipeIndex {
     private static final Logger LOGGER = LogUtils.getLogger();
 
     private final Collection<RecipeHolder<?>> recipes;
     private final RegistryAccess registryAccess;
-    /** Supplies the explicit/base value for an item (config + API map). */
-    private final Function<Item, Optional<FuValue>> baseLookup;
 
     /** Output item -> recipes producing it; built on first use. */
-    private Map<Item, List<RecipeFuValuator.RecipeView<Item>>> index;
+    private Map<Item, List<RelaxationFuValuator.RecipeView<Item>>> index;
 
     public MinecraftRecipeIndex(Collection<RecipeHolder<?>> recipes,
-                                RegistryAccess registryAccess,
-                                Function<Item, Optional<FuValue>> baseLookup) {
+                                RegistryAccess registryAccess) {
         this.recipes = recipes;
         this.registryAccess = registryAccess;
-        this.baseLookup = baseLookup;
     }
 
-    @Override
-    public List<RecipeFuValuator.RecipeView<Item>> recipesFor(Item output) {
+    /**
+     * The output -> recipes index (triggers the one-time build). Outputs and ingredient
+     * candidates are both canonicalized to their cosmetic-neutral sibling, so a dyeable
+     * family (wool, glass, shulker boxes…) collapses onto one node rather than exploding
+     * the walk across its complete re-dye graph. {@link RelaxationFuValuator} relaxes this.
+     */
+    public Map<Item, List<RelaxationFuValuator.RecipeView<Item>>> recipesByOutput() {
         if (index == null) {
             build();
         }
-        // Collapse cosmetic colour variants to their canonical sibling. Every dyeable
-        // family (wool, glass, shulker boxes…) is a COMPLETE re-dye graph (any colour
-        // from any other), so without this the valuator walks factorially-many colour
-        // permutations and hangs. Canonicalizing here (and the ingredient candidates in
-        // toView) collapses each family to one node, and the re-dye recipe's own-family
-        // ingredient becomes a self-reference the cycle guard prunes.
-        return index.getOrDefault(FuValueRegistry.canonicalCosmeticVariant(output), List.of());
-    }
-
-    @Override
-    public Optional<FuValue> baseValue(Item item) {
-        return baseLookup.apply(item);
+        return index;
     }
 
     private void build() {
         boolean smelting = MC3DPrintConfig.DERIVE_FROM_SMELTING.get();
         boolean stonecutting = MC3DPrintConfig.DERIVE_FROM_STONECUTTING.get();
-        Map<Item, List<RecipeFuValuator.RecipeView<Item>>> built = new HashMap<>();
+        Map<Item, List<RelaxationFuValuator.RecipeView<Item>>> built = new HashMap<>();
         for (RecipeHolder<?> holder : recipes) {
             Recipe<?> recipe = holder.value();
             RecipeType<?> type = recipe.getType();
@@ -93,7 +81,7 @@ public final class MinecraftRecipeIndex implements RecipeFuValuator.RecipeGraph<
         LOGGER.debug("Built recipe FU index: {} output items have recipes", built.size());
     }
 
-    private void add(Map<Item, List<RecipeFuValuator.RecipeView<Item>>> built, Recipe<?> recipe) {
+    private void add(Map<Item, List<RelaxationFuValuator.RecipeView<Item>>> built, Recipe<?> recipe) {
         if (recipe.isSpecial()) {
             return; // no fixed ingredient set to value
         }
@@ -109,7 +97,7 @@ public final class MinecraftRecipeIndex implements RecipeFuValuator.RecipeGraph<
         // Index under the canonical (colour-neutral) output so all of a dye family's
         // recipes — including the re-dye recipes — collapse onto one node.
         Item outputItem = FuValueRegistry.canonicalCosmeticVariant(result.getItem());
-        RecipeFuValuator.RecipeView<Item> view = toView(recipe, result.getCount());
+        RelaxationFuValuator.RecipeView<Item> view = toView(recipe, result.getCount());
         if (view != null) {
             built.computeIfAbsent(outputItem, k -> new ArrayList<>()).add(view);
         }
@@ -140,7 +128,7 @@ public final class MinecraftRecipeIndex implements RecipeFuValuator.RecipeGraph<
     }
 
     /** Snapshots a recipe's ingredient candidate keys; null if uninspectable. */
-    private RecipeFuValuator.RecipeView<Item> toView(Recipe<?> recipe, int outputCount) {
+    private RelaxationFuValuator.RecipeView<Item> toView(Recipe<?> recipe, int outputCount) {
         List<Ingredient> ingredients;
         try {
             ingredients = RecipeCompat.ingredients(recipe);
@@ -167,7 +155,7 @@ public final class MinecraftRecipeIndex implements RecipeFuValuator.RecipeGraph<
         }
         final List<List<Item>> finalSlots = slots;
         final int finalCount = Math.max(1, outputCount);
-        return new RecipeFuValuator.RecipeView<>() {
+        return new RelaxationFuValuator.RecipeView<>() {
             @Override
             public List<List<Item>> ingredientSlots() {
                 return finalSlots;

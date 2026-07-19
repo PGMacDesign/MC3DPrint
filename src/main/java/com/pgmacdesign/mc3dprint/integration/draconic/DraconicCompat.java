@@ -13,7 +13,7 @@ import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
  *
  * <p>Only the BASE draconium chain (ore → dust → ingot → block) is valued. DE's
  * fusion-crafted gear (Draconic/Wyvern cores, energy components, draconic chest) uses
- * custom Fusion Crafting recipe types our {@code RecipeFuValuator} can't read, so it
+ * custom Fusion Crafting recipe types our {@code RelaxationFuValuator} can't read, so it
  * stays unprintable by design. Standard-crafted DE items below the fusion tier derive
  * from this base chain.
  *

@@ -37,7 +37,7 @@ import java.util.Optional;
  * <p>Recipe derivation is wired in lazily: a server/client binds a live
  * recipe snapshot via {@link #bind} (from datapack-sync / recipes-updated
  * events), and the first {@link #valueOf} that misses the explicit + API maps
- * walks the recipe graph (see {@link RecipeFuValuator}). Until a bind happens
+ * relaxes the recipe graph (see {@link RelaxationFuValuator}). Until a bind happens
  * derivation returns empty — fail safe, never a crash.
  */
 public final class FuValueRegistry {
@@ -55,7 +55,7 @@ public final class FuValueRegistry {
     // --- Recipe derivation (bound from datapack/recipe events) ---
     private static Collection<RecipeHolder<?>> boundRecipes;
     private static RegistryAccess boundRegistryAccess;
-    private static RecipeFuValuator<Item> valuator;
+    private static RelaxationFuValuator<Item> valuator;
 
     public record TagEntry(TagKey<Item> tag, FuValue value) {}
 
@@ -137,16 +137,21 @@ public final class FuValueRegistry {
         return item.builtInRegistryHolder().is(tag);
     }
 
-    /** Recipe-derived value (or empty if unbound / underivable). */
+    /**
+     * Recipe-derived value (or empty if unbound / underivable). The valuator is built
+     * lazily on first use after a bind: it relaxes the whole recipe graph to a fixed point
+     * once (~0.5s), then every {@link #valueOf} is an O(1) lookup — versus the former DFS
+     * that re-walked the graph per item and stalled a modded startup for ~90s. Bounded to
+     * {@link RelaxationFuValuator#MAX_DEPTH}, keeping the historical depth cap.
+     */
     private static synchronized Optional<FuValue> derive(Item item) {
         if (boundRecipes == null || boundRegistryAccess == null) {
             return Optional.empty(); // not bound yet — fail safe
         }
         if (valuator == null) {
-            MinecraftRecipeIndex graph = new MinecraftRecipeIndex(
-                    boundRecipes, boundRegistryAccess,
-                    derivedItem -> baseValue(derivedItem, null));
-            valuator = new RecipeFuValuator<>(graph);
+            MinecraftRecipeIndex index = new MinecraftRecipeIndex(boundRecipes, boundRegistryAccess);
+            valuator = new RelaxationFuValuator<>(index.recipesByOutput(),
+                    derivedItem -> baseValue(derivedItem, null), RelaxationFuValuator.MAX_DEPTH);
         }
         return valuator.valueOf(item);
     }
