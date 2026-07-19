@@ -74,6 +74,18 @@ public final class MinecraftRecipeIndex implements RecipeFuValuator.RecipeGraph<
         return baseLookup.apply(item);
     }
 
+    /**
+     * Diagnostics only: the built output -> recipes index (triggers the one-time build).
+     * Feeds the bottom-up {@link RelaxationFuValuator} the exact same recipe set the DFS
+     * walks, so the {@code comparefu} diff is apples-to-apples.
+     */
+    public Map<Item, List<RecipeFuValuator.RecipeView<Item>>> recipesByOutput() {
+        if (index == null) {
+            build();
+        }
+        return index;
+    }
+
     private void build() {
         boolean smelting = MC3DPrintConfig.DERIVE_FROM_SMELTING.get();
         boolean stonecutting = MC3DPrintConfig.DERIVE_FROM_STONECUTTING.get();

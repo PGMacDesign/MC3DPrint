@@ -284,6 +284,11 @@ public final class FuValueRegistry {
         return boundRegistryAccess;
     }
 
+    /** Diagnostics only ({@code comparefu}): the live bound recipe snapshot, or empty if unbound. */
+    public static Collection<RecipeHolder<?>> boundRecipesForDiagnostics() {
+        return boundRecipes == null ? java.util.List.of() : boundRecipes;
+    }
+
     /** Drops the parsed explicit cache AND the derived cache (config reload). */
     public static synchronized void invalidate() {
         itemValues = null;
