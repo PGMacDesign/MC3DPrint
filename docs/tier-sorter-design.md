@@ -5,7 +5,7 @@ spool of that item's material tier. Solves the "eight winders, one per tier, fee
 from one chest" problem, which today needs a hand-built vanilla sort line per tier.
 
 Status: **designed, not built.** Decisions below were settled in a design interview
-(2026-07-19/20). Next step is `derive-invariants`, then implementation.
+(2026-07-19). Next step is `derive-invariants`, then implementation.
 
 ---
 
@@ -115,7 +115,12 @@ their contention problem. This is a router, not a warehouse; visibly backing up 
 
 ### 6. Fast, and free
 
-Up to N items routed per tick, N configurable, default 4.
+Up to N items routed **per sorter** per tick, N configurable, default 4, clamped to `[1, 64]`
+(one stack's worth is the ceiling — anything more can't help, since a winder's single input slot
+takes at most a stack, and an unbounded N would let a mis-config turn one sorter into an
+arbitrarily large per-tick workload that starves the server thread). N is per-sorter, not a global
+budget, so the cost scales with the number of sorters you place — deliberately, since each is
+also doing bounded work.
 
 The Filament Converter's pacing is the wrong template: one item per `ticksPerItem` delivers one
 item per second against eight winders' eight per second of demand, starving seven of them. The
@@ -151,7 +156,7 @@ the plural form silently fails to load on 1.21 (PGM-51).
 
 ## Invariants
 
-Derived 2026-07-20. The sorter runs entirely on the server tick thread, so the hazards are NOT
+Derived 2026-07-19. The sorter runs entirely on the server tick thread, so the hazards are NOT
 data races — they are **staleness across ticks** (a cached winder position that broke or
 re-tiered since the flood) and **interleaving** (a hopper filling a winder's single input slot
 the same tick the sorter targets it). The laws below are written against those two.
@@ -201,10 +206,11 @@ the same tick the sorter targets it). The laws below are written against those t
      positions-only cache contract).
    - Test: cache a T3 winder, then break it / swap its spool to T5 before the routing tick;
      assert no insert into the removed block and no T3 item routed to the now-T5 winder.
-3. **Bounded work per tick** — at most N (config, default 4) insertions happen per tick, with no
-   unbounded scan of the network on the hot path.
-   - Guarded by: a hard per-tick placement counter; the expensive flood stays in the cable's
-     throttled cache, not the router loop.
+3. **Bounded work per tick** — at most N insertions happen per tick per sorter, where N is the
+   config value clamped to `[1, 64]` (default 4), with no unbounded scan of the network on the
+   hot path.
+   - Guarded by: clamp the config read to `[1, 64]` at load; a hard per-tick placement counter;
+     the expensive flood stays in the cable's throttled cache, not the router loop.
    - Test: connect many winders and a full pool; assert no more than N items move per tick and
      tick time stays flat as the network grows.
 4. **Per-slot contention is atomic and non-destructive** — concurrent routers or hoppers
@@ -258,7 +264,7 @@ the same tick the sorter targets it). The laws below are written against those t
    - Test: place winders directly around a sorter with no cable; assert routing works exactly as
      the cabled case.
 
-**Decided during derivation (2026-07-20):** cursor advances only on successful placement,
+**Decided during derivation (2026-07-19):** cursor advances only on successful placement,
 stalled candidates skipped without cost (Cursor #1/#2); routed winding stays **uncredited** to
 any player's advancement NBT, matching hopper-fed winders today (no attribution machinery in v1);
 the pool is **insert-only from external faces** — a one-way funnel, never externally extractable,
