@@ -67,6 +67,8 @@ public class MC3DPrint {
         net.minecraftforge.common.MinecraftForge.EVENT_BUS.addListener(
                 com.pgmacdesign.mc3dprint.command.ImportCommand::register);
         net.minecraftforge.common.MinecraftForge.EVENT_BUS.addListener(
+                com.pgmacdesign.mc3dprint.command.FuDumpCommand::register);
+        net.minecraftforge.common.MinecraftForge.EVENT_BUS.addListener(
                 com.pgmacdesign.mc3dprint.blueprint.CuratedBlueprints::onServerStarted);
         net.minecraftforge.common.MinecraftForge.EVENT_BUS.addListener(
                 com.pgmacdesign.mc3dprint.integration.patchouli.GuidebookAutoGive::onItemCrafted);
