@@ -12,7 +12,7 @@ import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
  *
  * <p><b>Why only ingots + cobalt leaves?</b> Every TC metal block (9 ingots) and nugget
  * (1/9 ingot) is registered through a normal {@code minecraft:crafting} recipe, so our
- * {@code RecipeFuValuator} derives them automatically from the ingot — we only pin the
+ * {@code RelaxationFuValuator} derives them automatically from the ingot — we only pin the
  * ingot. Cobalt is the exception: it is <i>mined</i> in the Nether, so we value the raw
  * item + ore block (the leaves) and let the ingot derive from vanilla smelting (pinned
  * here too for clarity). The alloys below come from the <b>Smeltery</b> (a custom alloy
