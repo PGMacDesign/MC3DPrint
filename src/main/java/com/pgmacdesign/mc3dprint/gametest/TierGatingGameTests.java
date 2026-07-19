@@ -77,8 +77,14 @@ public class TierGatingGameTests {
         t1.inventory().setStackInSlot(PrinterBlockEntity.SLOT_TEMPLATE, new ItemStack(Items.DIAMOND)); // T5
 
         helper.runAfterDelay(60, () -> {
-            if (t1.state() != PrinterBlockEntity.State.NOT_PRINTABLE) {
-                helper.fail("Expected NOT_PRINTABLE for diamond on T1, got " + t1.state());
+            // A valued-but-too-high item points at the tier that WOULD print it, rather
+            // than a dead-end NOT_PRINTABLE (which is reserved for genuinely unvalued items).
+            if (t1.state() != PrinterBlockEntity.State.NEEDS_HIGHER_TIER) {
+                helper.fail("Expected NEEDS_HIGHER_TIER for diamond on T1, got " + t1.state());
+                return;
+            }
+            if (t1.requiredTier() != 5) {
+                helper.fail("Expected requiredTier 5 (diamond is T5), got " + t1.requiredTier());
                 return;
             }
             if (!t1.inventory().getStackInSlot(PrinterBlockEntity.SLOT_OUTPUT).isEmpty()) {

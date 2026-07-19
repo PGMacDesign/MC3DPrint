@@ -470,14 +470,20 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         int fuCost = itemFuCost(template);
         int costTier = itemFuTier(template);
         if (fuCost < 0) {
-            state = State.NOT_PRINTABLE;
             itemProgress = 0;
             Optional<FuValue> value = FuValueRegistry.valueOf(template);
             if (value.isEmpty()) {
+                state = State.NOT_PRINTABLE;
                 notPrintableReason = String.format(
                         "%s has no FU value (unpriced/unknown item — register one via the API/config, "
                                 + "or set unknownBlocksPrintable=true)", idOf(template));
             } else {
+                // Valued but above this machine's tier: a bigger printer WOULD print it, so
+                // point the player at the tier they need rather than a dead-end "Not Printable".
+                // (itemFuCost only returns <0 for unvalued or tier-too-high, so value present
+                // here always means the latter.)
+                requiredTier = value.get().tier();
+                state = State.NEEDS_HIGHER_TIER;
                 notPrintableReason = String.format(
                         "%s is Tier %d, which exceeds this machine's Tier %d",
                         idOf(template), value.get().tier(), tier.number());
@@ -2084,6 +2090,11 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
 
     public State state() {
         return state;
+    }
+
+    /** Tier a {@code NEEDS_HIGHER_TIER} state points at; 0 when not applicable. */
+    public int requiredTier() {
+        return requiredTier;
     }
 
     @Override
