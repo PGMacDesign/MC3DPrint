@@ -441,6 +441,9 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
     // --- Item Mode ---
 
     private void tickItemMode(ItemStack template) {
+        // Reset per tick; only the tier-gate branch below re-sets it, so requiredTier()
+        // honours its "0 when not applicable" contract for empty/unvalued/printable items.
+        requiredTier = 0;
         if (template.isEmpty()) {
             state = State.IDLE;
             itemProgress = 0;
@@ -471,8 +474,8 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             if (value.isEmpty()) {
                 state = State.NOT_PRINTABLE;
                 notPrintableReason = String.format(
-                        "%s has no FU value (unpriced/unknown item — register one via the API/config, "
-                                + "or set unknownBlocksPrintable=true)", idOf(template));
+                        "%s has no FU value (unpriced/unknown item — register one via the API/config)",
+                        idOf(template));
             } else {
                 // Valued but above this machine's tier: a bigger printer WOULD print it, so
                 // point the player at the tier they need rather than a dead-end "Not Printable".
