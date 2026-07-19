@@ -13,7 +13,7 @@ import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
  * <p>Only the custom-recipe LEAVES need explicit values: AE2's ME network, cables,
  * storage cells, autocrafting, spatial and quantum trees are plain vanilla crafting and
  * derive automatically. The leaves below come from the Inscriber / Charger / in-world
- * transforms our {@code RecipeFuValuator} can't read.
+ * transforms our {@code RelaxationFuValuator} can't read.
  *
  * <p><b>Abundance cap:</b> certus quartz auto-farms in 1.20.1 (budding certus + growth
  * accelerator), so the certus → charged → fluix chain is pinned low (T2–T3, ~amethyst).
