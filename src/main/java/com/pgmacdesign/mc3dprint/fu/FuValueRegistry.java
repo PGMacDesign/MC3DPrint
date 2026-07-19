@@ -255,6 +255,16 @@ public final class FuValueRegistry {
         LOGGER.debug("Bound recipe manager for FU derivation");
     }
 
+    /** Diagnostics only ({@code comparefu}): the live bound recipe manager, or null if unbound. */
+    public static RecipeManager boundRecipeManagerForDiagnostics() {
+        return boundRecipeManager;
+    }
+
+    /** Diagnostics only ({@code comparefu}): the registry access bound at server start, or null. */
+    public static RegistryAccess boundRegistriesForDiagnostics() {
+        return boundRegistryAccess;
+    }
+
     /** Drops the parsed explicit cache AND the derived cache (config reload). */
     public static synchronized void invalidate() {
         itemValues = null;
