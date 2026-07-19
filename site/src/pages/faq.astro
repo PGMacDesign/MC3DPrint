@@ -4,12 +4,12 @@ import Base from "../layouts/Base.astro";
 const faqs = [
   {
     q: "Why won't it print? (Not Printable)",
-    a: `<p>A <strong>Not Printable</strong> status means the machine can't print what you gave it, for one of two reasons:</p>
+    a: `<p><strong>Not Printable</strong> means the machine will <em>never</em> print that item:</p>
         <ul>
-          <li>The block's material tier is above the machine's tier — e.g. netherite on a Tier 3 printer.</li>
-          <li>The block has no Filament Unit value and you're in <strong>strict mode</strong> (the default) — un-priced blocks can't be printed.</li>
+          <li>It has no Filament Unit value and you're in <strong>strict mode</strong> (the default) — un-priced items can't be printed.</li>
+          <li>It's a filament spool or a restricted trophy — the printer never duplicates those.</li>
         </ul>
-        <p>Use a higher-tier machine, or set <code>unknownBlocksPrintable=true</code> in the config to price unknown blocks.</p>`,
+        <p>A material that's simply <strong>above the machine's tier</strong> — e.g. Tier 3 string in a Tier 2 printer — shows <strong>Requires a Tier N Printer</strong> instead; just use a higher-tier machine. To price unknown blocks, set <code>unknownBlocksPrintable=true</code> in the config.</p>`,
   },
   {
     q: "My structure has a few blocks that won't print",
