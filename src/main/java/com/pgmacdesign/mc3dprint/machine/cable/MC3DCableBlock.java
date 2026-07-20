@@ -124,6 +124,11 @@ public class MC3DCableBlock extends BaseEntityBlock {
         if (neighbor.getBlock() instanceof MC3DCableBlock) {
             return true;
         }
+        // Cosmetic tag: blocks that ride the cable graph without exposing energy or filament
+        // (e.g. the Filament Tier Item Sorter) still get an arm rendered toward them.
+        if (neighbor.is(com.pgmacdesign.mc3dprint.registry.ModBlockTags.CABLE_CONNECTABLE)) {
+            return true;
+        }
         BlockEntity be = getter.getBlockEntity(neighborPos);
         if (be == null) {
             return false;

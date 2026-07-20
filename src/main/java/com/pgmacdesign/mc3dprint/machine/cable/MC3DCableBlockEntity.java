@@ -2,6 +2,8 @@ package com.pgmacdesign.mc3dprint.machine.cable;
 
 import com.pgmacdesign.mc3dprint.config.MC3DPrintConfig;
 import com.pgmacdesign.mc3dprint.fu.IFilamentSource;
+import com.pgmacdesign.mc3dprint.machine.WinderBlockEntity;
+import com.pgmacdesign.mc3dprint.machine.sorter.IWinderRouting;
 import com.pgmacdesign.mc3dprint.registry.ModBlockEntities;
 import com.pgmacdesign.mc3dprint.registry.ModCapabilities;
 import net.minecraft.core.BlockPos;
@@ -53,17 +55,19 @@ import java.util.Set;
  * via an isRemoved check). Direct-touch (no cable) is never throttled — printers
  * scan their own neighbors live.
  */
-public class MC3DCableBlockEntity extends BlockEntity implements IFilamentSource {
+public class MC3DCableBlockEntity extends BlockEntity implements IFilamentSource, IWinderRouting {
     private static final int MAX_NETWORK = 4096;   // runaway-flood backstop
     private static final int RECOMPUTE_INTERVAL = 100; // ticks between membership refloods (~5s)
 
     private final CableEnergyStorage energy;
     private final LazyOptional<IEnergyStorage> energyCap;
     private final LazyOptional<IFilamentSource> filamentCap = LazyOptional.of(() -> this);
+    private final LazyOptional<IWinderRouting> routingCap = LazyOptional.of(() -> this);
 
     // Cached network membership (positions only) — recomputed on the throttle.
     private Map<BlockPos, Direction> sourceFaces;   // reachable Filament-Unit sources (racks)
     private Map<BlockPos, Direction> energyFaces;   // reachable FE acceptors
+    private Map<BlockPos, Direction> winderFaces;   // reachable winders (item-sorter routing targets)
     private long lastRecompute = Long.MIN_VALUE;
 
     public MC3DCableBlockEntity(BlockPos pos, BlockState state) {
@@ -88,11 +92,15 @@ public class MC3DCableBlockEntity extends BlockEntity implements IFilamentSource
         }
         Map<BlockPos, Direction> sources = new LinkedHashMap<>();
         Map<BlockPos, Direction> acceptors = new LinkedHashMap<>();
+        Map<BlockPos, Direction> winders = new LinkedHashMap<>();
         for (NeighborRef ref : collectNeighbors(level, worldPosition)) {
             BlockPos pos = ref.be().getBlockPos();
             Direction face = ref.side();
             if (ref.be().getCapability(ModCapabilities.FILAMENT_SOURCE, face).isPresent()) {
                 sources.put(pos, face);
+            }
+            if (ref.be().getCapability(ModCapabilities.WINDER_ROUTING, face).isPresent()) {
+                winders.put(pos, face);
             }
             ref.be().getCapability(ForgeCapabilities.ENERGY, face).ifPresent(e -> {
                 if (e.canReceive()) {
@@ -102,6 +110,7 @@ public class MC3DCableBlockEntity extends BlockEntity implements IFilamentSource
         }
         this.sourceFaces = sources;
         this.energyFaces = acceptors;
+        this.winderFaces = winders;
         this.lastRecompute = now;
     }
 
@@ -164,6 +173,27 @@ public class MC3DCableBlockEntity extends BlockEntity implements IFilamentSource
                 continue;
             }
             be.getCapability(ModCapabilities.FILAMENT_SOURCE, entry.getValue()).ifPresent(out::add);
+        }
+    }
+
+    // --- IWinderRouting: forward every winder reachable across this cable network ---
+    // Topology only — the cable never carries the routed items, it just reports which winders
+    // exist. Reuses the same throttled flood as collectSources; contents (spool tier, input slot)
+    // are read live by the sorter, and a freshly-broken winder is skipped via isRemoved.
+
+    @Override
+    public void collectWinders(Set<WinderBlockEntity> out) {
+        if (level == null) {
+            return;
+        }
+        ensureFresh();
+        for (Map.Entry<BlockPos, Direction> entry : winderFaces.entrySet()) {
+            BlockEntity be = level.getBlockEntity(entry.getKey());
+            if (be == null || be.isRemoved()) {
+                continue;
+            }
+            be.getCapability(ModCapabilities.WINDER_ROUTING, entry.getValue())
+                    .ifPresent(routing -> routing.collectWinders(out));
         }
     }
 
@@ -275,6 +305,9 @@ public class MC3DCableBlockEntity extends BlockEntity implements IFilamentSource
         if (cap == ModCapabilities.FILAMENT_SOURCE) {
             return filamentCap.cast();
         }
+        if (cap == ModCapabilities.WINDER_ROUTING) {
+            return routingCap.cast();
+        }
         return super.getCapability(cap, side);
     }
 
@@ -283,6 +316,7 @@ public class MC3DCableBlockEntity extends BlockEntity implements IFilamentSource
         super.invalidateCaps();
         energyCap.invalidate();
         filamentCap.invalidate();
+        routingCap.invalidate();
     }
 
     @Override

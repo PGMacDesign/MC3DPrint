@@ -35,5 +35,9 @@ public final class ModMenuTypes {
             MENU_TYPES.register("blueprint_repository",
                     () -> IForgeMenuType.create(com.pgmacdesign.mc3dprint.machine.repository.BlueprintRepositoryMenu::new));
 
+    public static final RegistryObject<MenuType<com.pgmacdesign.mc3dprint.machine.sorter.SorterMenu>> FILAMENT_ITEM_SORTER =
+            MENU_TYPES.register("filament_item_sorter",
+                    () -> IForgeMenuType.create(com.pgmacdesign.mc3dprint.machine.sorter.SorterMenu::new));
+
     private ModMenuTypes() {}
 }

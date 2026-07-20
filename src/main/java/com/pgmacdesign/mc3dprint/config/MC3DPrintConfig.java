@@ -66,6 +66,7 @@ public final class MC3DPrintConfig {
     public static final ForgeConfigSpec.IntValue RESIN_QM_TORCH_BUDGET;
     public static final ForgeConfigSpec.ConfigValue<List<? extends String>> FU_VALUES;
     public static final ForgeConfigSpec.BooleanValue BLUEPRINT_REPOSITORY_SHARED;
+    public static final ForgeConfigSpec.IntValue SORTER_MAX_PER_TICK;
 
     private static final int[] DEFAULT_ITEM_RF_PER_TICK = {40, 60, 80, 100, 120, 150, 200, 250};
 
@@ -251,6 +252,16 @@ public final class MC3DPrintConfig {
                 .define("blueprintRepositoryIsShared", true);
         builder.pop();
 
+        builder.comment("Filament Tier Item Sorter: a passive, unpowered block that routes items to",
+                        "the Filament Winder holding a spool of that item's material tier.").push("sorter");
+        SORTER_MAX_PER_TICK = builder
+                .comment("Items routed per sorter per tick. Clamped to [1,64] — one stack is the ceiling",
+                        "because a winder's single input slot takes at most a stack, and an unbounded",
+                        "value would let one sorter starve the server thread. Per-sorter, not a global",
+                        "budget, so cost scales with how many sorters you place. No RF cost.")
+                .defineInRange("maxRoutedPerTick", 4, 1, 64);
+        builder.pop();
+
         builder.comment("Resin: consumed-per-print blueprint modifiers. All effects apply only",
                         "to official/found blueprints, never player-scanned ones.").push("resin");
         RESIN_OVERDRIVE_T3_BELOW = builder
@@ -350,6 +361,11 @@ public final class MC3DPrintConfig {
 
     public static int cableTransferRate() {
         return CABLE_TRANSFER_RATE.get();
+    }
+
+    /** Items routed per sorter per tick, defensively clamped to [1,64] at read. */
+    public static int sorterMaxPerTick() {
+        return Math.max(1, Math.min(64, SORTER_MAX_PER_TICK.get()));
     }
 
     private MC3DPrintConfig() {}

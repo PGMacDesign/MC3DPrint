@@ -50,6 +50,10 @@ public final class ModBlocks {
     public static final RegistryObject<Block> BLUEPRINT_REPOSITORY = BLOCKS.register("blueprint_repository",
             () -> new com.pgmacdesign.mc3dprint.machine.repository.BlueprintRepositoryBlock(machineProperties()));
 
+    /** Routes items to the Filament Winder holding a spool of that item's material tier. */
+    public static final RegistryObject<Block> FILAMENT_ITEM_SORTER = BLOCKS.register("filament_item_sorter",
+            () -> new com.pgmacdesign.mc3dprint.machine.sorter.SorterBlock(machineProperties()));
+
     /** Single-block printers, index 0 = Tier 1. T5-T8 are multiblock controllers (phase b). */
     public static final List<RegistryObject<Block>> PRINTERS = buildPrinters();
 
