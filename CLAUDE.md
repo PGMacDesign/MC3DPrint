@@ -8,8 +8,8 @@ Units (FU)**. T1–T4 = single printer blocks; T5–T8 = N×N multiblock fabrica
   MIT, solo (PGMacDesign). **`main` IS the Stonecutter multi-version tree** — one tree that builds
   **seven NeoForge jars** (1.21.1 · 1.21.8 · 1.21.9 · 1.21.10 · 1.21.11 · 26.1 · 26.2), active node
   `1.21.1`; **1.20.1 Forge** (Java 17, Forge 47.4.10) lives on the separate `legacy/1.20.1` backport
-  branch. See the multi-version note at the bottom of this file. (`stage2/multi-version` is a stale
-  pre-merge pointer — ignore it; the nodes live on `main`.)
+  branch. See the multi-version note at the bottom of this file. **`main` and `legacy/1.20.1` are the
+  only long-lived branches**; everything else is a short-lived PR branch, deleted on merge.
 - **Public repo** (`PGMacDesign/MC3DPrint`): no secrets/PII, original content only. `.env` is gitignored.
   **Nothing that points at private systems or the owner goes in committed files** — no Linear links
   or ticket ids (`PGM-…`), no personal info (emails), no internal infra ids beyond what a deploy file
