@@ -24,6 +24,7 @@ public final class ClientSetup {
         event.register(ModMenuTypes.SIMPLE_GENERATOR.get(), SimpleGeneratorScreen::new);
         event.register(ModMenuTypes.REDSTONE_CLOCK.get(), RedstoneClockScreen::new);
         event.register(ModMenuTypes.BLUEPRINT_REPOSITORY.get(), BlueprintRepositoryScreen::new);
+        event.register(ModMenuTypes.FILAMENT_ITEM_SORTER.get(), SorterScreen::new);
     }
 
     @SubscribeEvent

@@ -1,0 +1,37 @@
+{
+  "name": "Filament Tier Item Sorter",
+  "category": "mc3dprint:machines",
+  "icon": "mc3dprint:filament_item_sorter",
+  "sortnum": 5,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "Winding is $(l)exact-tier$(): cobblestone only winds into a T1 spool, netherite only into a T6. Feed eight winders from one chest and you normally need a hand-built sort line per tier.$(br2)The $(item)Filament Tier Item Sorter$() does it for you. Drop items into its $(l)9-slot pool$() and each one is delivered to the winder holding a spool of $(l)that item's tier$()."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Finding Winders",
+      "text": "The sorter looks at all $(l)six of its faces$(). A winder touching it is found directly — no cable needed at all.$(br2)To reach more than six, run $(item)MC3D Cable$(): the sorter reads every winder across the connected network. The cable only $(l)tells it where they are$() — items are never stored in or carried through a cable, they go straight from the pool into the winder."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "What It Refuses",
+      "text": "Two things are turned away at the door and simply won't enter the pool:$(br)$(li)items with $(l)no Filament Unit value$()$(li)items on the $(l)winder blacklist$() (sticks and friends)$(br)That's deliberate — a winder would accept them and then jam forever."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "What It Holds",
+      "text": "Everything else is kept and retried: no winder of that tier yet, the winder's input slot is busy, or its spool has no room.$(br2)Items are $(l)never voided$(). When the pool fills up, your hoppers back up — that's the signal. The GUI shows a per-tier readout ($(l)how many are waiting$() and $(l)how many winders$() it can see) so you know which tier is stuck.$(br2)The pool is a $(l)one-way funnel$(): a hopper can feed it, but nothing can pull items back out."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Sharing the Load",
+      "text": "Two winders on the same tier both get fed. The sorter alternates between them $(l)round-robin$(), and skips any that would stall — a full spool or a busy input slot never wastes a turn, the item just goes to the next one.$(br2)It moves up to $(l)4 items per tick$() by default (configurable 1-64), and costs $(l)no RF at all$() — it runs completely unpowered."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "mc3dprint:filament_item_sorter",
+      "text": "The Filament Tier Item Sorter. One chest in, every tier sorted out."
+    }
+  ]
+}

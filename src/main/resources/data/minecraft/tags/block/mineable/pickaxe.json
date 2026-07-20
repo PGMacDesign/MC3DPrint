@@ -18,6 +18,7 @@
     "mc3dprint:creative_energy_source",
     "mc3dprint:blueprint_repository",
     "mc3dprint:filament_rack",
+    "mc3dprint:filament_item_sorter",
     "mc3dprint:redstone_clock"
   ]
 }

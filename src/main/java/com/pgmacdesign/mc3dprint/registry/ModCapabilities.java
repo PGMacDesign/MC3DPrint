@@ -3,6 +3,7 @@ package com.pgmacdesign.mc3dprint.registry;
 import com.pgmacdesign.mc3dprint.MC3DPrint;
 import com.pgmacdesign.mc3dprint.compat.TransferCompat;
 import com.pgmacdesign.mc3dprint.fu.IFilamentSource;
+import com.pgmacdesign.mc3dprint.machine.sorter.IWinderRouting;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -31,6 +32,16 @@ public final class ModCapabilities {
             BlockCapability.createSided(
                     ResourceLocation.fromNamespaceAndPath(MC3DPrint.MOD_ID, "filament_source"),
                     IFilamentSource.class);
+
+    /**
+     * Topology-only discovery for the Filament Tier Item Sorter: a winder exposes itself, a cable
+     * forwards its whole network. Kept separate from {@link #FILAMENT_SOURCE} because "which
+     * winders can I reach" and "drain FU from spools" are different flows over the same cable graph.
+     */
+    public static final BlockCapability<IWinderRouting, Direction> WINDER_ROUTING =
+            BlockCapability.createSided(
+                    ResourceLocation.fromNamespaceAndPath(MC3DPrint.MOD_ID, "winder_routing"),
+                    IWinderRouting.class);
 
     @SubscribeEvent
     public static void register(RegisterCapabilitiesEvent event) {
@@ -78,6 +89,12 @@ public final class ModCapabilities {
         event.registerBlockEntity(FILAMENT_SOURCE, ModBlockEntities.FILAMENT_RACK.get(),
                 (be, side) -> be.getFilamentSource());
 
+        // --- Winder routing (custom) — a winder exposes itself; the cable forwards its network ---
+        event.registerBlockEntity(WINDER_ROUTING, ModBlockEntities.FILAMENT_WINDER.get(),
+                (be, side) -> be.getWinderRouting());
+        event.registerBlockEntity(WINDER_ROUTING, ModBlockEntities.MC3DCABLE.get(),
+                (be, side) -> be.getWinderRouting());
+
         // --- Item handler (per-face logic lives in each BE's getItemHandler) ---
         //? if >=1.21.9 {
         /*// The BEs declare IItemHandler but always hand back ItemStackHandler/RangedWrapper,
@@ -92,12 +109,17 @@ public final class ModCapabilities {
         event.registerBlockEntity(Capabilities.Item.BLOCK, ModBlockEntities.CLOCK_GENERATOR.get(),
                 (be, side) -> be.getItemHandler(side) instanceof net.neoforged.neoforge.items.IItemHandlerModifiable m
                         ? TransferCompat.itemHandler(m) : null);
+        event.registerBlockEntity(Capabilities.Item.BLOCK, ModBlockEntities.FILAMENT_ITEM_SORTER.get(),
+                (be, side) -> be.getItemHandler(side) instanceof net.neoforged.neoforge.items.IItemHandlerModifiable m
+                        ? TransferCompat.itemHandler(m) : null);
         *///?} else {
         event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, ModBlockEntities.PRINTER.get(),
                 (be, side) -> be.getItemHandler(side));
         event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, ModBlockEntities.FILAMENT_WINDER.get(),
                 (be, side) -> be.getItemHandler(side));
         event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, ModBlockEntities.CLOCK_GENERATOR.get(),
+                (be, side) -> be.getItemHandler(side));
+        event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, ModBlockEntities.FILAMENT_ITEM_SORTER.get(),
                 (be, side) -> be.getItemHandler(side));
         //?}
     }

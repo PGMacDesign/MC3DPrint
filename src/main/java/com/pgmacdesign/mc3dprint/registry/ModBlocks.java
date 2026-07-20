@@ -53,6 +53,10 @@ public final class ModBlocks {
     public static final DeferredHolder<Block, Block> BLUEPRINT_REPOSITORY = com.pgmacdesign.mc3dprint.compat.RegistryCompat.registerBlock(BLOCKS, "blueprint_repository",
             com.pgmacdesign.mc3dprint.machine.repository.BlueprintRepositoryBlock::new, machineProperties());
 
+    /** Routes items to the Filament Winder holding a spool of that item's material tier. */
+    public static final DeferredHolder<Block, Block> FILAMENT_ITEM_SORTER = com.pgmacdesign.mc3dprint.compat.RegistryCompat.registerBlock(BLOCKS, "filament_item_sorter",
+            com.pgmacdesign.mc3dprint.machine.sorter.SorterBlock::new, machineProperties());
+
     /** Single-block printers, index 0 = Tier 1. T5-T8 are multiblock controllers (phase b). */
     public static final List<DeferredHolder<Block, Block>> PRINTERS = buildPrinters();
 

@@ -15,6 +15,7 @@
     "mc3dprint:remote_terminal",
     "mc3dprint:extrudium_ore",
     "mc3dprint:blueprint_repository",
-    "mc3dprint:filament_rack"
+    "mc3dprint:filament_rack",
+    "mc3dprint:filament_item_sorter"
   ]
 }

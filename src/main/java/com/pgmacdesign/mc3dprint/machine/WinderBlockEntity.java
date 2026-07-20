@@ -8,6 +8,7 @@ import com.pgmacdesign.mc3dprint.fu.FuConversion;
 import com.pgmacdesign.mc3dprint.fu.FuValue;
 import com.pgmacdesign.mc3dprint.fu.FuValueRegistry;
 import com.pgmacdesign.mc3dprint.fu.SpoolItem;
+import com.pgmacdesign.mc3dprint.machine.sorter.IWinderRouting;
 import com.pgmacdesign.mc3dprint.registry.ModBlockEntities;
 import com.pgmacdesign.mc3dprint.registry.ModItemTags;
 import net.minecraft.core.BlockPos;
@@ -32,6 +33,7 @@ import net.neoforged.neoforge.items.wrapper.RangedWrapper;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Filament Winder: converts materials into FU wound onto a spool. RF is
@@ -44,7 +46,7 @@ import java.util.Optional;
  * items that can still be printed but must never be wound (e.g. sticks, to
  * stop FU laundering through cheap micro-crafts). See that tag's javadoc.
  */
-public class WinderBlockEntity extends BlockEntity implements MenuProvider {
+public class WinderBlockEntity extends BlockEntity implements MenuProvider, IWinderRouting {
     public static final int SLOT_INPUT = 0;
     public static final int SLOT_SPOOL = 1;
     public static final int SLOT_COUNT = 2;
@@ -228,6 +230,59 @@ public class WinderBlockEntity extends BlockEntity implements MenuProvider {
     /** {@code null} side is the full inventory; any face exposes only the input slot. */
     public IItemHandler getItemHandler(@Nullable Direction side) {
         return side == null ? inventory : inputHandler;
+    }
+
+    // --- Winder-routing capability (a sorter targets winders by docked-spool tier) ---
+
+    /** A winder is its own routing leaf: it adds itself to the sorter's discovery set. */
+    @Override
+    public void collectWinders(Set<WinderBlockEntity> out) {
+        out.add(this);
+    }
+
+    public IWinderRouting getWinderRouting() {
+        return this;
+    }
+
+    /**
+     * Tier of the docked spool (1..8), or 0 if the spool slot is empty, holds a non-spool, or a
+     * creative spool. Read directly because {@code SLOT_SPOOL} is exposed on no face — the item
+     * capability only ever hands out the input slot.
+     */
+    public int dockedSpoolTier() {
+        ItemStack spool = inventory.getStackInSlot(SLOT_SPOOL);
+        return spool.getItem() instanceof SpoolItem s && !s.creative() ? s.tier() : 0;
+    }
+
+    /**
+     * Whether this winder would actually consume {@code material} right now, mirroring the tick
+     * acceptance gate (minus RF, which routing does not require): the material is valued and not
+     * blacklisted, the docked spool is the matching tier with room for the full yield, and the
+     * input slot is empty or already holds the same item with space. A sorter must not route into
+     * a winder that would stall on the item.
+     */
+    public boolean acceptsForRouting(ItemStack material) {
+        if (material.isEmpty()) {
+            return false;
+        }
+        Optional<FuValue> value = FuValueRegistry.valueOf(material);
+        if (value.isEmpty() || ModItemTags.isWinderBlacklisted(material)) {
+            return false;
+        }
+        ItemStack spool = inventory.getStackInSlot(SLOT_SPOOL);
+        if (!(spool.getItem() instanceof SpoolItem spoolItem) || spoolItem.creative()
+                || !FuConversion.canWindInto(value.get().tier(), spoolItem.tier())) {
+            return false;
+        }
+        long yield = FuConversion.windYield(value.get().fu(), value.get().tier(),
+                spoolItem.tier(), FuConversion.ratio());
+        if (SpoolItem.getFu(spool) + yield > spoolItem.capacity()) {
+            return false;
+        }
+        ItemStack input = inventory.getStackInSlot(SLOT_INPUT);
+        return input.isEmpty()
+                || (ItemStack.isSameItemSameComponents(input, material)
+                        && input.getCount() < input.getMaxStackSize());
     }
 
     public void setOwner(@Nullable java.util.UUID owner) {

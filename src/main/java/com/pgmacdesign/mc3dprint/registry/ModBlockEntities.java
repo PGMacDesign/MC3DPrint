@@ -66,6 +66,11 @@ public final class ModBlockEntities {
                     RegistryCompat.blockEntityType(com.pgmacdesign.mc3dprint.machine.repository.BlueprintRepositoryBlockEntity::new,
                             ModBlocks.BLUEPRINT_REPOSITORY.get()));
 
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<com.pgmacdesign.mc3dprint.machine.sorter.SorterBlockEntity>> FILAMENT_ITEM_SORTER =
+            BLOCK_ENTITIES.register("filament_item_sorter", () ->
+                    RegistryCompat.blockEntityType(com.pgmacdesign.mc3dprint.machine.sorter.SorterBlockEntity::new,
+                            ModBlocks.FILAMENT_ITEM_SORTER.get()));
+
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<WinderBlockEntity>> FILAMENT_WINDER =
             BLOCK_ENTITIES.register("filament_winder", () ->
                     RegistryCompat.blockEntityType(WinderBlockEntity::new,

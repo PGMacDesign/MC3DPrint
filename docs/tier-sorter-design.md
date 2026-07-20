@@ -4,8 +4,10 @@ A logistics block that accepts items and routes each one to the Filament Winder 
 spool of that item's material tier. Solves the "eight winders, one per tier, feed them all
 from one chest" problem, which today needs a hand-built vanilla sort line per tier.
 
-Status: **designed, not built.** Decisions below were settled in a design interview
-(2026-07-19). Next step is `derive-invariants`, then implementation.
+Status: **built** (2026-07-19) as `mc3dprint:filament_item_sorter`, display name "Filament Tier
+Item Sorter", package `machine/sorter/`. Decisions below were settled in a design interview and the
+Invariants section was derived before implementation; both are now reflected in the code and in
+`SorterGameTests`. Deviations from this doc are listed under "Built — deviations" at the bottom.
 
 ---
 
@@ -150,7 +152,7 @@ therefore not side-aware, which is correct for the sorter's omnidirectional disc
 needing per-face control uses the capability path instead.
 
 Note this is the repo's first `data/mc3dprint/tags/block/` directory. **Singular `block/`** —
-the plural form silently fails to load on 1.21 (PGM-51).
+the plural form (the 1.20.1 layout) silently fails to load on 1.21.
 
 ---
 
@@ -295,8 +297,23 @@ Follows the Blueprint Repository as the newest-machine template.
    `site/src/content/guide/<slug>.md` (category `Machines`, unique `order`)
 10. Cascade to `legacy/1.20.1` per the standing rule
 
+## Built — deviations
+
+Everything in Decisions and Invariants shipped as written, with three exceptions:
+
+- **"One item per placement" is the routing unit.** The doc says "up to N items routed per tick"
+  without fixing what one placement moves. The implementation routes exactly ONE item per
+  placement and advances the cursor once, so N=4 against two same-tier winders yields a clean
+  2/2 split. Inserting a whole stack per placement would have satisfied the letter of the cap
+  while defeating the round-robin decision entirely.
+- **No opportunistic topology refresh.** Decision 4 suggested one forced re-flood while the pool
+  holds unroutable items. Not implemented — the cable exposes no cache-invalidation hook, and the
+  ~5s `RECOMPUTE_INTERVAL` already bounds the delay. Purely additive if it proves annoying in play.
+- **The GUI background is drawn procedurally**, not blitted from a `textures/gui/*.png`. Keeps the
+  screen out of `gen_printer_gui.py` coordinate lockstep and out of style-pack parity entirely.
+
 ## Open
 
-- Block name (working title "Filament Sorter")
 - Comparator output on pool fullness, as the Filament Rack has
-- No facing property; discovery is omnidirectional
+- A reject/overflow side, if holding transient failures proves annoying in play (purely additive)
+- Cascade to `legacy/1.20.1` per the standing rule
