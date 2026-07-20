@@ -80,6 +80,9 @@ public final class ModItems {
     public static final DeferredHolder<Item, Item> BLUEPRINT_REPOSITORY = com.pgmacdesign.mc3dprint.compat.RegistryCompat.registerItem(ITEMS, "blueprint_repository",
             props -> new BlockItem(ModBlocks.BLUEPRINT_REPOSITORY.get(), props), blockItemProps());
 
+    public static final DeferredHolder<Item, Item> FILAMENT_ITEM_SORTER = com.pgmacdesign.mc3dprint.compat.RegistryCompat.registerItem(ITEMS, "filament_item_sorter",
+            props -> new BlockItem(ModBlocks.FILAMENT_ITEM_SORTER.get(), props), blockItemProps());
+
     // These three carry a hover line via TooltipBlockItem (1.21.5 removed Block.appendHoverText —
     // tooltips live on the item now; same mechanism on both nodes for visual parity).
     public static final DeferredHolder<Item, Item> CLOCK_GENERATOR = com.pgmacdesign.mc3dprint.compat.RegistryCompat.registerItem(ITEMS, "clock_generator",
