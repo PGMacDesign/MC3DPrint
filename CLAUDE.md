@@ -12,23 +12,25 @@ Units (FU)**. T1–T4 = single printer blocks; T5–T8 = N×N multiblock fabrica
 ```bash
 ./gradlew build                 # full build + tests → build/libs/mc3dprint-<ver>.jar
 ./gradlew compileJava -q        # fast compile check
-./gradlew runGameTestServer -q  # GameTests (gametest/) + JUnit (test/.../fu, blueprint)
+./gradlew runGameTestServer -q  # in-world GameTests (gametest/) only; JUnit runs under `build`
 ```
 
 Two rules that bite if skipped:
 
 1. **Deploy = replace, never duplicate.** Copy the fresh jar into your test instance's
    `mods/` folder, replacing any existing `mc3dprint-*.jar` — never leave two.
-2. **After ANY FU/economy change, delete stale config.** The `fuValues` list does **not**
-   merge new defaults into an existing toml. Delete the dev `run/config/mc3dprint-common.toml`
-   **and** the `mc3dprint-common.toml` in your game instance's `config/`, or changes won't load.
+2. **fuValues is overrides-only (config no-wipe, since 0.11)**: the toml list merges OVER the
+   built-in defaults in code (`FuValueRegistry.loadMerged`; `<id>=off` removes), so FU/economy
+   changes apply WITHOUT deleting configs. One-time exception: a toml written by ≤0.10 carries
+   the full copied default list, which now pins those values as overrides. Delete it once (dev
+   `run/config/mc3dprint-common.toml` + the game instance's `config/`) to migrate.
 
 ## Architecture (`src/main/java/com/pgmacdesign/mc3dprint/`)
 
 | Package | What lives there |
 |---|---|
 | `MC3DPrint.java` | Mod entry; registries + event-listener wiring (incl. compat hooks) |
-| `fu/` | **FU economy core** — `FuValueRegistry` (values + tiers), `RecipeFuValuator`, `FuEvents` |
+| `fu/` | **FU economy core** — `FuValueRegistry` (values + tiers), `RelaxationFuValuator`, `FuEvents` |
 | `machine/` | Printer block entity, menu, upgrades, **Resin slot + `machine/resin/`**; `machine/multiblock/` fabricator; `machine/repository/` Blueprint Repository; Filament Rack + MC3D Cable |
 | `blueprint/` | `.blueprint` GZIP-NBT I/O, `CuratedBlueprints` install, `blueprint/repository/` saved-data |
 | `scanner/` | Structure Scanner (capture builds) |
@@ -93,9 +95,31 @@ exact values: `docs/rebalance/{ae2,thermal,tconstruct}.md`.
 - **Blueprints:** `CuratedBlueprintGenerator` (gated JUnit) is the source of truth —
   regen with `./gradlew test --tests '*CuratedBlueprintGenerator*' -DgenBlueprints=true
   --rerun-tasks`; validate/dump ASCII layers with `*BlueprintDumpTest* -DdumpBlueprints=true`.
-- **Git:** commit → push every change, direct to `main` (solo repo; a ruleset requires PRs
-  for non-admins but admin/Patrick bypasses, so direct push still works). **Never** add
-  `Co-Authored-By: Claude` or "Generated with Claude Code" to commits/PRs.
+- **Git:** **all changes land via pull request**: branch → push → open a PR → let CI +
+  CodeRabbit run → merge on green. **No direct pushes** to `legacy/1.20.1` or to `main`
+  (policy since the 1.0.0 release). Repository administrators can technically bypass the
+  branch ruleset, but don't. This branch's PRs target **`legacy/1.20.1`**, never `main`.
+  **Never** add `Co-Authored-By: Claude` or "Generated with Claude Code" to commits/PRs.
+
+## Definition of Done
+
+**This branch is one of two lines, and it is the older one.** A feature or fix is **not complete
+until it ships on every supported version**: this Forge **1.20.1** line AND all seven NeoForge
+Stonecutter nodes (1.21.1 · 1.21.8 · 1.21.9 · 1.21.10 · 1.21.11 · 26.1 · 26.2), which live on
+**`main`** (one Stonecutter tree, not a separate branch). "It works on 1.20.1" is a half-done fix.
+
+**The cascade runs both ways.** Work that starts here has to be ported forward to `main` in its own
+PR, exactly as `main`'s work gets backported here. Forward-porting is the easier direction to forget,
+because nothing on `main` will flag the omission, so do it in the same sitting.
+
+Skip a version only for an **explicitly stated version-specific reason** (an API that exists on one
+side only, for example), and write that reason into the PR rather than leaving it to be inferred.
+
+Verify here before calling it done: `./gradlew build` (compiles + the full JUnit suite) and
+`./gradlew runGameTestServer` (the in-world GameTests). On `main`, the matching gates are
+`:1.21.1:runGameTestServer` plus `:NODE:test` and a `:NODE:runGameTestServer` boot-smoke on each
+forward node. This covers behaviour AND the two doc surfaces. See the `fixes-cascade-all-versions`
+memory for the standing rule.
 
 ## Where deeper context lives
 
@@ -107,7 +131,9 @@ decisions), `docs/rebalance/` (FU rebalance plan + per-mod research), `docs/blue
 `github-blueprint-renderer` (the website + submission Worker), `blueprint-repository`,
 `rack-and-cable`.
 
-The **NeoForge 1.21.1 port** (the version-support blitz) is planned in
-`docs/port/neoforge-1.21.1-port.md` (two-pass adversarially reviewed; Stage 1 = single-target port,
-Stage 2 = Stonecutter multi-version, deferred) and tracked in the Linear project "MC3DPrint Version
-Support Blitz" (tickets PGM-5…25). Memory: `neoforge-port-blitz`.
+The **NeoForge port is COMPLETE** and is not a plan any more. `main` is a Stonecutter multi-version
+tree building seven NeoForge jars (1.21.1 · 1.21.8 · 1.21.9 · 1.21.10 · 1.21.11 · 26.1 · 26.2); this
+branch is the Forge 1.20.1 line that ships alongside them. `main` and `legacy/1.20.1` are the only
+long-lived branches, everything else is a short-lived PR branch deleted on merge. The single source
+of truth for the node ladder and its guard lore is `docs/port/stage2-stonecutter-multiversion.md`
+on `main`. Memory: `neoforge-port-blitz`.
