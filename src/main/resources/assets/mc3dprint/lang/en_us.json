@@ -87,7 +87,7 @@
   "jei.mc3dprint.bp_stats": "%s blocks · Tier %s",
   "jei.mc3dprint.bp_more": "+%s more types",
   "tooltip.mc3dprint.fu_overridden": "Value set by config (default differs)",
-  "tooltip.mc3dprint.fu_value": "MC3DP: Tier %s (%s FU)",
+  "tooltip.mc3dprint.fu_value": "MC3DP: Tier-%s (%s FU)",
   "command.mc3dprint.import_not_found": "No importable file '%s' in %s",
   "command.mc3dprint.import_failed": "Could not import %s: %s",
   "command.mc3dprint.import_success": "Imported %s — %s blocks. Blueprint Disc added to your inventory",
