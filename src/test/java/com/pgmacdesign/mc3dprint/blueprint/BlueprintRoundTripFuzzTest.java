@@ -1,5 +1,6 @@
 package com.pgmacdesign.mc3dprint.blueprint;
 
+import com.pgmacdesign.mc3dprint.compat.NbtCompat;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import org.junit.jupiter.api.Test;
@@ -104,7 +105,7 @@ class BlueprintRoundTripFuzzTest {
                 .comparingDouble((Integer i) -> positions.get(i)[0])
                 .thenComparingDouble(i -> positions.get(i)[1])
                 .thenComparingDouble(i -> positions.get(i)[2])
-                .thenComparing(i -> tags.get(i).getString("id")));
+                .thenComparing(i -> NbtCompat.getString(tags.get(i), "id")));
         for (int i : order) {
             double[] p = positions.get(i);
             builder.entity(p[0], p[1], p[2], tags.get(i));

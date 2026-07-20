@@ -27,9 +27,9 @@ reset active → `1.21.1` before every commit. `:NODE:test` green ≠ runtime-co
 
 ```bash
 ./gradlew :1.21.8:compileJava -q        # fast compile check (or :1.21.1)
-./gradlew :1.21.8:test                  # JUnit (test/.../fu, blueprint, compat)
+./gradlew :1.21.8:test                  # JUnit (test/.../fu, blueprint, compat); 122 on EVERY node
 ./gradlew :1.21.8:assemble -x test      # build jar → versions/1.21.8/build/libs/mc3dprint-<ver>.jar
-./gradlew :1.21.1:runGameTestServer     # in-world GameTests (gametest/); 126/126 green on 1.21.1 (the oracle;
+./gradlew :1.21.1:runGameTestServer     # in-world GameTests (gametest/); 147/147 green on 1.21.1 (the oracle;
                                         # forward nodes exclude gametest/ and boot-smoke only)
 # Single-target main/legacy branches use the un-scoped form: ./gradlew build
 ```
@@ -142,8 +142,11 @@ A feature or fix is **not complete until it ships on every supported version** �
 states a version-specific reason**. "It works on 1.21.1" is a half-done feature; if it's in one
 version it's in all of them (1.20.1 → current). This covers behaviour AND the two doc surfaces.
 
-Verify before calling it done: `:1.21.1:runGameTestServer` (the gametest oracle) + `:NODE:compileJava`
+Verify before calling it done: `:1.21.1:runGameTestServer` (the gametest oracle) + **`:NODE:test`**
 and a `:NODE:runGameTestServer` boot-smoke on each forward node, plus the `legacy/1.20.1` build.
+(`:NODE:test` compiles main + test, so it subsumes the old `:NODE:compileJava` step.) The JUnit suite
+is **122 tests on every node** — it is not 1.21.1-only, and a forward node that can't compile
+`src/test/` is a real failure, not an accepted limitation. It silently was one until 2026-07-20.
 See the `fixes-cascade-all-versions` memory for the standing rule.
 
 ## Where deeper context lives
