@@ -17,7 +17,7 @@ import javax.annotation.Nullable;
 
 public class SorterMenu extends AbstractContainerMenu {
     public static final int POOL_X = 8, POOL_Y = 20;
-    private static final int INV_X = 8, INV_Y = 112, HOTBAR_Y = 172;
+    public static final int INV_X = 8, HOTBAR_Y = 168;
 
     @Nullable
     private final SorterBlockEntity sorter;
@@ -44,9 +44,13 @@ public class SorterMenu extends AbstractContainerMenu {
             addSlot(new SlotItemHandler(pool, col, POOL_X + col * 18, POOL_Y));
         }
 
+        // The three main rows are added but inactive: the screen buys eight readout lines by not
+        // drawing them, while shift-click still fills the whole inventory because moveItemStackTo
+        // ignores isActive() (rendering, hit-testing and hotbar swaps all honour it). They share the
+        // hotbar's coordinates since nothing ever draws or hit-tests them.
         for (int row = 0; row < 3; row++) {
             for (int col = 0; col < 9; col++) {
-                addSlot(new Slot(playerInventory, col + row * 9 + 9, INV_X + col * 18, INV_Y + row * 18));
+                addSlot(new HiddenSlot(playerInventory, col + row * 9 + 9, INV_X + col * 18, HOTBAR_Y));
             }
         }
         for (int col = 0; col < 9; col++) {
@@ -54,6 +58,18 @@ public class SorterMenu extends AbstractContainerMenu {
         }
 
         addDataSlots(data);
+    }
+
+    /** A live-but-undrawn player-inventory slot. See the comment at its construction site. */
+    private static class HiddenSlot extends Slot {
+        HiddenSlot(Inventory inventory, int index, int x, int y) {
+            super(inventory, index, x, y);
+        }
+
+        @Override
+        public boolean isActive() {
+            return false;
+        }
     }
 
     @Nullable
