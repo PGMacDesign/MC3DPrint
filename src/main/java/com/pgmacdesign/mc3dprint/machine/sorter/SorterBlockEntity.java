@@ -310,9 +310,22 @@ public class SorterBlockEntity extends BlockEntity implements MenuProvider {
     }
 
     /**
-     * IItemHandlerModifiable so the 1.21.9+ capability bridge (which needs a modifiable handler
-     * for its snapshot revert) accepts it, but {@code extractItem} is a hard no-op: the external
-     * world can only ever insert. The menu bypasses this and touches the raw pool directly.
+     * IItemHandlerModifiable so the 1.21.9+ capability bridge accepts it, but {@code extractItem}
+     * is a hard no-op: the external world can only ever insert. The menu bypasses this and touches
+     * the raw pool directly.
+     *
+     * <p><b>Do not narrow this to plain {@code IItemHandler}.</b> On 1.21.9+ {@code ModCapabilities}
+     * registers the sorter's item capability behind an {@code instanceof IItemHandlerModifiable}
+     * guard and hands the handler to {@code TransferCompat.ItemHandlerBridge}, whose
+     * {@code revertToSnapshot} restores each slot through {@link #setStackInSlot}. Drop the
+     * interface and that guard fails, the capability resolves to {@code null}, and hoppers/pipes
+     * can no longer feed the sorter at all on five of the eight supported targets.
+     *
+     * <p>{@code setStackInSlot} stays unfiltered for the same reason: it is the rollback path, and a
+     * rollback has to restore exactly what it snapshotted even if the pool filter would reject those
+     * stacks today (FU values can move between reloads). It is a privileged internal API — a caller
+     * that abuses it to park an unroutable item only makes the sorter hold that item, which the
+     * player can undo by hand.
      */
     private static final class InsertOnlyHandler implements IItemHandlerModifiable {
         private final ItemStackHandler backing;

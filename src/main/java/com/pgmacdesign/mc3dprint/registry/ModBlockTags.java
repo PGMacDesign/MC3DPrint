@@ -18,7 +18,8 @@ import net.minecraft.world.level.block.Block;
  * author can make any future block attach without it carrying energy or filament.
  *
  * <p><b>Backed by {@code data/mc3dprint/tags/block/cable_connectable.json}</b> — SINGULAR
- * {@code block/}; the plural {@code blocks/} form silently fails to load on 1.21 (PGM-51).
+ * {@code block/}; the plural {@code blocks/} form (the 1.20.1 layout) silently fails to load on
+ * 1.21 — a repeat offender in this repo.
  */
 public final class ModBlockTags {
 

@@ -229,7 +229,7 @@ public class SorterGameTests {
 
     @GameTest(template = "empty5", timeoutTicks = 40)
     public static void cableAttachesToSorter(GameTestHelper helper) {
-        // Guards the PGM-51 trap: the tag lives in data/mc3dprint/tags/block/ (SINGULAR).
+        // Guards the tag-directory trap: the tag lives in data/mc3dprint/tags/block/ (SINGULAR).
         // The plural "blocks/" form silently fails to load, which would leave this tag empty
         // and the cable visibly refusing to attach — reading as a bug to the player.
         if (!ModBlocks.FILAMENT_ITEM_SORTER.get().defaultBlockState().is(ModBlockTags.CABLE_CONNECTABLE)) {

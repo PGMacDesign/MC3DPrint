@@ -152,7 +152,7 @@ therefore not side-aware, which is correct for the sorter's omnidirectional disc
 needing per-face control uses the capability path instead.
 
 Note this is the repo's first `data/mc3dprint/tags/block/` directory. **Singular `block/`** —
-the plural form silently fails to load on 1.21 (PGM-51).
+the plural form (the 1.20.1 layout) silently fails to load on 1.21.
 
 ---
 
