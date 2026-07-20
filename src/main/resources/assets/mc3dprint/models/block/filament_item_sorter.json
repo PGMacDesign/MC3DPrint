@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "top": "mc3dprint:block/filament_item_sorter_top",
+    "bottom": "mc3dprint:block/filament_item_sorter_bottom",
+    "side": "mc3dprint:block/filament_item_sorter_side"
+  }
+}
