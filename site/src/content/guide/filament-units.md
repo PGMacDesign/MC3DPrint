@@ -28,7 +28,7 @@ A mismatch shows `Requires Tier X Spool` and leaves both items untouched. Items 
 
 MC3DPrint adds a line like `MC3DP: Tier-5 (50 FU)` to the tooltip of every item that has an FU value. JEI indexes tooltips, so you can search that line to list a whole tier at once. Type this into JEI's search box:
 
-```
+```text
 tier-5
 ```
 
