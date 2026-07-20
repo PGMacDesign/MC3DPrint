@@ -133,6 +133,18 @@ exact values: `docs/rebalance/{ae2,thermal,tconstruct}.md`.
   administrators can technically bypass the branch ruleset, but don't. **Never** add `Co-Authored-By: Claude`
   or "Generated with Claude Code" to commits/PRs.
 
+## Definition of Done
+
+A feature or fix is **not complete until it ships on every supported version** — the Forge
+**1.20.1** legacy line (`legacy/1.20.1`) AND all seven NeoForge Stonecutter nodes
+(1.21.1 · 1.21.8 · 1.21.9 · 1.21.10 · 1.21.11 · 26.1 · 26.2) — **unless the change explicitly
+states a version-specific reason**. "It works on 1.21.1" is a half-done feature; if it's in one
+version it's in all of them (1.20.1 → current). This covers behaviour AND the two doc surfaces.
+
+Verify before calling it done: `:1.21.1:runGameTestServer` (the gametest oracle) + `:NODE:compileJava`
+and a `:NODE:runGameTestServer` boot-smoke on each forward node, plus the `legacy/1.20.1` build.
+See the `fixes-cascade-all-versions` memory for the standing rule.
+
 ## Where deeper context lives
 
 `docs/ROADMAP.md` (state + next-up), `docs/catalysts-design.md` (Resin/Catalyst spec +
