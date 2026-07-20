@@ -67,12 +67,16 @@ public final class FilamentTooltip {
     public static void onTooltip(ItemTooltipEvent event) {
         FuValueRegistry.valueOf(event.getItemStack()).ifPresent(value -> {
             int tier = Math.max(1, Math.min(8, value.tier()));
+            // The lang string hyphenates the tier ("Tier-5") so JEI can filter on it. JEI indexes
+            // tooltips as whitespace-split tokens and matches substrings, so an unhyphenated
+            // "Tier 5" indexes as "tier" + "5" and searching it also returns every item whose FU
+            // cost contains a 5. One token makes "tier-5" an exact filter. FuTooltipSearchTest
+            // fails if the hyphen is ever "corrected" back to a space.
             event.getToolTip().add(Component.translatable(
                             "tooltip.mc3dprint.fu_value", value.tier(), String.format("%,d", value.fu()))
                     .withStyle(style -> style.withColor(TextColor.fromRgb(TIER_COLORS[tier]))));
-            // JEI's searchable filament/tier_N tags mirror the DEFAULTS only, so when a
-            // fuValues config override moves an item, say so — the live line above is
-            // authoritative, the tag-driven search grouping may lag.
+            // A fuValues config override moves an item off its shipped default; flag that so a
+            // surprising value reads as deliberate rather than a bug.
             String id = net.minecraft.core.registries.BuiltInRegistries.ITEM
                     .getKey(event.getItemStack().getItem()).toString();
             int[] shipped = defaults().get(id);

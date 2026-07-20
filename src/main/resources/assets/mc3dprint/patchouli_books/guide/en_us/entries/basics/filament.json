@@ -22,6 +22,11 @@
       "type": "patchouli:text",
       "title": "Spending FU",
       "text": "At print time the rule relaxes one way: a spool can pay any cost $(l)at or below$() its own tier, never above. High-tier FU covers low-tier blocks (down-converted at the configured ratio); low-tier FU contributes $(l)nothing$() toward higher-tier blocks.$(br2)So a high-tier spool can print a whole stone house, but a Tier 1 spool can never print netherite."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Finding a Tier in JEI",
+      "text": "Every item with an FU value carries a tooltip line like $(l)MC3DP: Tier-5 (50 FU)$(). JEI indexes tooltips, so typing $(l)tier-5$() in its search box lists that whole tier at once: no prefix, no quotes. Any tier from 1 to 8 works.$(br2)The hyphen is deliberate: JEI splits tooltips on spaces, so $(l)tier 5$() would be read as two words and would also match every item whose FU $(o)cost$() contains a 5. One word keeps it exact."
     }
   ]
 }
