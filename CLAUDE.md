@@ -115,11 +115,17 @@ because nothing on `main` will flag the omission, so do it in the same sitting.
 Skip a version only for an **explicitly stated version-specific reason** (an API that exists on one
 side only, for example), and write that reason into the PR rather than leaving it to be inferred.
 
-Verify here before calling it done: `./gradlew build` (compiles + the full JUnit suite) and
+**Code gates** here: `./gradlew build` (compiles + the full JUnit suite) and
 `./gradlew runGameTestServer` (the in-world GameTests). On `main`, the matching gates are
 `:1.21.1:runGameTestServer` plus `:NODE:test` and a `:NODE:runGameTestServer` boot-smoke on each
-forward node. This covers behaviour AND the two doc surfaces. See the `fixes-cascade-all-versions`
-memory for the standing rule.
+forward node.
+
+**Doc gates are separate and manual.** No Gradle task validates either doc surface, so a green build
+says nothing about whether the guides still match the code. For any player-facing change, re-read and
+update BOTH the Patchouli guide (`src/main/resources/.../patchouli_books/guide/`) and the website
+guide (`site/src/content/guide/*.md` + `site/src/pages/faq.astro`), on **both** lines, verifying each
+claim against the Java. `cd site && npm run build` only proves the site compiles, not that it is
+accurate. See the `fixes-cascade-all-versions` memory for the standing rule.
 
 ## Where deeper context lives
 
