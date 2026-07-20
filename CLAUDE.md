@@ -5,10 +5,11 @@ Disc → print it anywhere with a tiered printer/fabricator, powered by RF + tie
 Units (FU)**. T1–T4 = single printer blocks; T5–T8 = N×N multiblock fabricators.
 
 - **Stack:** Java 21 (26.x nodes: Java 25 toolchain), NeoForge, official Mojang mappings. mod id `mc3dprint`,
-  MIT, solo (PGMacDesign). `main` is the NeoForge 1.21.1 line; the **multi-version** branch (Stonecutter) builds
-  **seven NeoForge jars from one tree** (1.21.1 · 1.21.8 · 1.21.9 · 1.21.10 · 1.21.11 · 26.1 · 26.2);
-  **1.20.1 Forge** (Java 17, Forge 47.4.10) lives on the `legacy/1.20.1` backport branch. See the
-  multi-version note at the bottom of this file.
+  MIT, solo (PGMacDesign). **`main` IS the Stonecutter multi-version tree** — one tree that builds
+  **seven NeoForge jars** (1.21.1 · 1.21.8 · 1.21.9 · 1.21.10 · 1.21.11 · 26.1 · 26.2), active node
+  `1.21.1`; **1.20.1 Forge** (Java 17, Forge 47.4.10) lives on the separate `legacy/1.20.1` backport
+  branch. See the multi-version note at the bottom of this file. (`stage2/multi-version` is a stale
+  pre-merge pointer — ignore it; the nodes live on `main`.)
 - **Public repo** (`PGMacDesign/MC3DPrint`): no secrets/PII, original content only. `.env` is gitignored.
   **Nothing that points at private systems or the owner goes in committed files** — no Linear links
   or ticket ids (`PGM-…`), no personal info (emails), no internal infra ids beyond what a deploy file
@@ -17,7 +18,7 @@ Units (FU)**. T1–T4 = single printer blocks; T5–T8 = N×N multiblock fabrica
 
 ## Build · Test · Deploy
 
-On the **multi-version (Stonecutter) branch**, tasks are node-scoped and need a **Java 21 launcher
+In the **Stonecutter multi-version tree** (i.e. `main`), tasks are node-scoped and need a **Java 21 launcher
 JVM** (`JAVA_HOME=~/.gradle/jdks/eclipse_adoptium-21-*/jdk-21*/Contents/Home`). Edit at active node
 `1.21.1` (plain code = 1.21.1; the 1.21.5+ variant lives in `//? if >=1.21.5 {/*…*///?} else {…//?}`
 guards); after writing new guards run `"Set active project to <node>"` to re-toggle before compiling;
@@ -132,6 +133,18 @@ exact values: `docs/rebalance/{ae2,thermal,tconstruct}.md`.
   release; the same PR flow covers the `legacy/1.20.1` backport branch). Repository
   administrators can technically bypass the branch ruleset, but don't. **Never** add `Co-Authored-By: Claude`
   or "Generated with Claude Code" to commits/PRs.
+
+## Definition of Done
+
+A feature or fix is **not complete until it ships on every supported version** — the Forge
+**1.20.1** legacy line (`legacy/1.20.1`) AND all seven NeoForge Stonecutter nodes
+(1.21.1 · 1.21.8 · 1.21.9 · 1.21.10 · 1.21.11 · 26.1 · 26.2) — **unless the change explicitly
+states a version-specific reason**. "It works on 1.21.1" is a half-done feature; if it's in one
+version it's in all of them (1.20.1 → current). This covers behaviour AND the two doc surfaces.
+
+Verify before calling it done: `:1.21.1:runGameTestServer` (the gametest oracle) + `:NODE:compileJava`
+and a `:NODE:runGameTestServer` boot-smoke on each forward node, plus the `legacy/1.20.1` build.
+See the `fixes-cascade-all-versions` memory for the standing rule.
 
 ## Where deeper context lives
 
