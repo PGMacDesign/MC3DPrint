@@ -24,6 +24,22 @@ A mismatch shows `Requires Tier X Spool` and leaves both items untouched. Items 
 
 > Every spool holds 100,000 FU regardless of tier — tier gates which materials it accepts, not how much it stores.
 
+## Finding every item of a tier
+
+MC3DPrint adds a line like `MC3DP: Tier-5 (50 FU)` to the tooltip of every item that has an FU value. JEI indexes tooltips, so you can search that line to list a whole tier at once. Type this into JEI's search box:
+
+```
+tier-5
+```
+
+That's the whole trick: no prefix, no quotes. Swap the number for any tier from 1 to 8.
+
+The hyphen matters. JEI splits tooltips on spaces and matches each search word as a fragment, so `tier 5` is read as two separate words and also returns every item whose FU *cost* contains a 5 (Tier 3 items costing 50 FU, Tier 1 items costing 15 FU, and so on). Writing the tier as one word keeps the match exact.
+
+If you have turned JEI's tooltip search off, the tooltip prefix still reaches it: `$tier-5` on 1.21+, or `#tier-5` on 1.20.1 (JEI swapped the tooltip and tag prefixes between those versions).
+
+Combine it with the mod filter to narrow further: `@mc3dprint tier-3` lists only this mod's own Tier 3 items.
+
 ## Automation
 
 With **Applied Energistics 2** installed, the **Filament Converter** automates winding straight from an ME network and keeps your docked spools topped up.
