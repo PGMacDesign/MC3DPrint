@@ -139,6 +139,11 @@ public class MC3DCableBlock extends BaseEntityBlock {
         if (neighbor.getBlock() instanceof MC3DCableBlock) {
             return true;
         }
+        // Cosmetic tag: blocks that ride the cable graph without exposing energy or filament
+        // (e.g. the Filament Tier Item Sorter) still get an arm rendered toward them.
+        if (neighbor.is(com.pgmacdesign.mc3dprint.registry.ModBlockTags.CABLE_CONNECTABLE)) {
+            return true;
+        }
         // Capability queries are level-scoped in NeoForge; updateShape/placement always
         // pass a real Level here, but guard for the BlockGetter contract regardless.
         if (!(getter instanceof Level level)) {
