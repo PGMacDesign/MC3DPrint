@@ -79,19 +79,37 @@ before drafting. Do not tag on top of unpushed work.
 The jars carry `mod_version` from `gradle.properties`, built separately on each line, so a
 mismatch ships two different version numbers under one tag.
 
-- Read `mod_version` on `main`: `grep '^mod_version=' gradle.properties`.
-- Read it on legacy: `git show origin/legacy/1.20.1:gradle.properties | grep '^mod_version='`.
-- They must be equal, and that value is the tag. If the user named a different version, or the
-  two lines disagree, **stop and surface it** rather than guessing or silently bumping. A bump
-  is its own PR on both branches, not something to fold into drafting a release.
-- Find the previous tag for the notes range: `git tag --sort=-creatordate | head -1`.
+- Extract the bare value on each line (the RHS, not the whole `mod_version=1.2.0` line):
+
+  ```shell
+  main_ver=$(sed -n 's/^mod_version=//p' gradle.properties)
+  legacy_ver=$(git show origin/legacy/1.20.1:gradle.properties | sed -n 's/^mod_version=//p')
+  ```
+
+- Validate before trusting either: each must be exactly one non-empty bare-semver value
+  (`MAJOR.MINOR.PATCH`, e.g. `1.2.0`, no `v`, no suffix). If `main_ver` and `legacy_ver` differ,
+  either is empty/missing/duplicated/malformed, or the user named a different version, **stop and
+  surface it** rather than guessing or silently bumping. A bump is its own PR on both branches,
+  not something to fold into drafting a release. The validated, agreed value is the tag.
+- Find the previous tag for the notes range. Use the **latest published release**, not the newest
+  tag by date, because the repo also carries tooling tags (e.g. `v0.10.0-neoforge-1.21.1`) that
+  would poison the commit range:
+
+  ```shell
+  prev_tag=$(gh release list --exclude-drafts --exclude-pre-releases --limit 20 \
+    --json tagName,isLatest --jq 'map(select(.isLatest)) | .[0].tagName')
+  ```
+
+  Sanity-check that `prev_tag` is a bare-semver release older than the version you are cutting, and
+  that it is an ancestor of `main` (`git merge-base --is-ancestor "$prev_tag" HEAD`). If it is not,
+  stop and ask rather than generating notes over the wrong range.
 
 ### 3. Write the release notes: curated prose, not a commit dump
 
 The bundled script buckets the commits since the last tag by Conventional-Commit type. Treat
 its output as **raw material**, not the finished notes:
 
-```
+```shell
 .claude/skills/mc3dp-release/scripts/release_notes.sh <prev-tag> <new-tag> > /tmp/mc3dp-raw.md
 ```
 
@@ -116,10 +134,21 @@ the actual diff before writing it, the same as any doc surface. Write the notes 
 
 ### 4. Create the DRAFT release
 
-Create it pinned to the current `main` HEAD, and get the target right the first time, because editing
+First fail fast if the tag or a release already claims that name. `gh release create` against an
+existing tag attaches the release to **that tag's commit**, not your `HEAD`, so a re-run or a leftover
+tag would silently pin the release to the wrong code:
+
+```shell
+git ls-remote --exit-code --tags origin "refs/tags/<tag>" && echo "TAG EXISTS - stop" && exit 1
+gh release view <tag> >/dev/null 2>&1 && echo "RELEASE EXISTS - stop" && exit 1
+```
+
+If either exists, stop and surface it rather than drafting on top of it.
+
+Then create it pinned to the current `main` HEAD. Get the target right the first time, because editing
 `--target` after creation reshuffles the release's internal identifier, which is avoidable churn:
 
-```
+```shell
 gh release create <tag> \
   --draft \
   --target "$(git rev-parse HEAD)" \
@@ -129,13 +158,22 @@ gh release create <tag> \
 
 `--draft` is the whole point. Never add `--latest`, and never drop `--draft`.
 
+Verify the draft actually pinned to `HEAD` before reporting it as ready:
+
+```shell
+test "$(gh release view <tag> --json targetCommitish --jq .targetCommitish)" = "$(git rev-parse HEAD)"
+```
+
+If that does not match, the draft is pinned to the wrong commit; delete it and investigate rather
+than handing the user a mispinned release.
+
 ### 5. Stop and hand off
 
 Report to the user:
 
 - the draft release URL,
 - the tag, title, and the version you verified on both lines,
-- a one or two line summary of the notes,
+- a one- or two-line summary of the notes,
 - and a plain statement of what publishing will do: build and attach all eight jars, and
   auto-publish Forge 1.20.1 + NeoForge 1.21.1 to CurseForge with these notes as the changelog.
 
@@ -150,13 +188,31 @@ restate that this pushes Forge 1.20.1 + NeoForge 1.21.1 live to CurseForge for a
 the current notes as the changelog, and confirm the notes are final. Only after they confirm in
 that exchange, publish:
 
-```
+```shell
 gh release edit <tag> --draft=false --latest
 ```
 
-Then confirm the workflow started (`gh run list --workflow=release.yml --limit 1`), and once it
-finishes, that all eight jars attached (`gh release view <tag>`). Report the release URL, the CI
-run status, and the CurseForge outcome.
+Then verify what actually happened, and do not report success from a green checkmark alone. Grab the
+run that this publish triggered, not merely the newest run:
+
+```shell
+run_id=$(gh run list --workflow=release.yml --event=release --limit 1 --json databaseId --jq '.[0].databaseId')
+gh run watch "$run_id"
+```
+
+Two things the workflow does NOT make obvious:
+
+- **The CurseForge steps are conditional and best-effort.** They run only when the `CF_TOKEN` secret
+  is set, and they carry `continue-on-error: true`, so a skipped or failed CurseForge upload still
+  lets the overall run go green. A successful run is therefore NOT proof that CurseForge published.
+  Inspect the two "Publish ... to CurseForge" steps in *this* run's logs
+  (`gh run view "$run_id" --log`) and confirm each actually uploaded rather than skipping or erroring.
+- **Jar attachment is the reliable signal.** Confirm all eight jars attached to the release
+  (`gh release view <tag> --json assets --jq '.assets | length'` should be at least 8, plus the style
+  packs).
+
+Report the release URL, the CI run status, the jar-attachment count, and the **actual** CurseForge
+outcome per step (published / skipped / errored), not an assumption.
 
 Never publish as a reflex, with `--auto`, or as a probe. If you are ever unsure whether the user
 means "publish now" versus "get it ready", assume the latter and ask.
