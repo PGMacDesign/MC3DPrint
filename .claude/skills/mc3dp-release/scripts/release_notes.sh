@@ -5,7 +5,7 @@
 #
 # Logs <prev-tag>..HEAD (the commits that will ship in <new-tag>), buckets them
 # by Conventional-Commit type, and appends a GitHub compare link
-# <prev-tag>...<new-tag>. Prints Markdown to stdout — redirect into a notes file
+# <prev-tag>...<new-tag>. Prints Markdown to stdout; redirect into a notes file
 # or feed `gh release create --notes-file`.
 #
 # Plain POSIX-ish bash (no associative arrays) so it runs on macOS's bash 3.2.
@@ -18,8 +18,8 @@ REPO="PGMacDesign/MC3DPrint"
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 
-# Parse "type(scope): message" with plain parameter expansion — no [[ =~ ]] /
-# BASH_REMATCH, which mis-parses some subjects under macOS's bash 3.2.
+# Parse "type(scope): message" with plain parameter expansion (no [[ =~ ]] /
+# BASH_REMATCH, which mis-parses some subjects under macOS's bash 3.2).
 # `tformat:` (not `format:`) terminates every line with a newline; combined with the
 # `|| [ -n "$subject" ]` guard, this also processes a final newline-less line, so the
 # oldest commit in the range is never silently dropped.
