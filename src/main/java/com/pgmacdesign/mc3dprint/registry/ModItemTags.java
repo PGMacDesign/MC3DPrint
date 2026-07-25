@@ -106,5 +106,21 @@ public final class ModItemTags {
     public static final TagKey<Item> PRINT_RESTRICTED =
             TagKey.create(Registries.ITEM, new ResourceLocation(MC3DPrint.MOD_ID, "print_restricted"));
 
+    /**
+     * "Can wind, can't print" — the mirror of {@link #WINDER_BLACKLIST}. These items carry
+     * an FU value (so they wind into filament for a recycle payout) but the printer must never
+     * reproduce them in any mode. Distinct from {@link #PRINT_RESTRICTED}: a restricted trophy
+     * still prints from an official curated disc, whereas a NO_PRINT item never prints at all,
+     * so this gate takes precedence when an item is on both (e.g. wither_skeleton_skull).
+     *
+     * <p>Two uses: treasure/uncraftable items we want recyclable but not duplicable (saddle,
+     * name_tag), and launder-risk items kept unprintable even though they must be valued to wind
+     * (wither_skeleton_skull — a wither-skeleton farm is AFK-automatable, so it is valued LOW,
+     * capped at T4 not its T7 rarity, and barred from printing here). Backed by
+     * {@code data/mc3dprint/tags/items/no_print.json}.
+     */
+    public static final TagKey<Item> NO_PRINT =
+            TagKey.create(Registries.ITEM, new ResourceLocation(MC3DPrint.MOD_ID, "no_print"));
+
     private ModItemTags() {}
 }

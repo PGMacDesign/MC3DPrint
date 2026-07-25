@@ -40,8 +40,8 @@ implemented yet — this is the spec to approve before touching `FuValueRegistry
 | **T4** | renewable-valuable | emerald, blaze rod, ghast tear, prismarine, totem, **chorus family** (purpur, end rod), hearty food |
 | **T5** | deep mining / monument | diamond, ender pearl, sea lantern, sponge, sculk family, **golden apple** |
 | **T6** | netherite + high-value finite | netherite family, shulker shell*, trident*, nautilus shell*, **elytra**, **enchanted golden apple** |
-| **T7** | boss / heavy-grind | nether star, wither skeleton skull, beacon |
-| **T8** | finite trophies + modded endgame | echo shard, heart of the sea (→ conduit derives here), **draconium chain** (DE only) |
+| **T7** | boss / heavy-grind | nether star, beacon, dragon egg (wind-only), **base draconium chain** (DE only) |
+| **T8** | finite trophies + modded endgame | echo shard, heart of the sea (→ conduit derives here), **awakened draconium** (DE only, wind-only) |
 
 \* flagged for the abundance check — see §8.
 
@@ -92,7 +92,7 @@ Derivation rates these ~T2 from cobble/iron/redstone, but their power warrants a
 
 ## 7. Unprintable (no tier — strict mode refuses them)
 
-- **Real items:** `dragon_egg` (1 per world). _(Elytra and enchanted golden apple are now printable — T6.)_
+- **Real items:** none now — `dragon_egg` moved to **T7 as a wind-only trophy** (windable recycle, never printed via `#no_print`), and `wither_skeleton_skull` to T4 the same way. _(Elytra and enchanted golden apple are now printable — T6.)_
 - **Survival-unobtainables:** `bedrock`, `barrier`, `command_block` family, `structure_block`/`jigsaw`/`structure_void`, `spawner`, `reinforced_deepslate`, `budding_amethyst`, `infested_*`, `end_portal_frame`, `light`, `petrified_oak_slab`, `frosted_ice`, `player_head`. (Leave un-priced; strict mode blocks them. Optionally hard-blacklist for clarity.)
 
 ---
@@ -103,18 +103,30 @@ Derivation rates these ~T2 from cobble/iron/redstone, but their power warrants a
 - `wool`/`string` → **T3** (early-game friction; ripples beds/banners/carpets up a tier — fine).
 - `chorus_fruit`/`popped_chorus_fruit`/`chorus_flower`/`purpur_block`/`end_rod` → **T4** (abundance-capped).
 - `golden_apple` **T5**, `enchanted_golden_apple` **T6**, `elytra` **T6**.
-- `nether_star` **T7** (done), `wither_skeleton_skull` **T7**, `beacon` **T7** (derives via star).
+- `nether_star` **T7** (done), `beacon` **T7** (derives via star), `dragon_egg` **T7** wind-only. `wither_skeleton_skull` is now **T4** wind-only (AFK-farmable, so abundance-capped, not T7).
 - `heart_of_the_sea` **T8**, `conduit` → **T8** (derives from heart of the sea), `echo_shard` **T8**.
 - **⚠ Abundance check before locking:** `shulker_shell` (auto-dupe-farmable), `trident`, `nautilus_shell` are at T6 from the rarity research — but if any are cheaply farmable they could launder into netherite (T6). **Recommendation: cap shulker_shell at T5 (or winder-blacklist it); confirm trident/nautilus aren't farm-trivial.** Flagging for your call, not locked.
 
 ---
 
-## 9. Draconium (T8, Draconic Evolution soft-dep)
+## 9. Draconium (Draconic Evolution soft-dep)
 
-- Explicit T8 values for the **base chain only:** `draconium_ore` (overworld/nether/end variants) → dust → ingot → **`draconium_block`**. Standard-crafted DE items below the fusion tier **derive** from these.
-- **No Fusion Crafting** — the valuator can't read DE's custom recipe types, so fusion-tier gear (Draconic/Wyvern cores, energy components, draconic chest) stays unprintable. Intended.
-- `awakened_draconium_block` remains the **T8 multiblock corner**, not a print target.
-- All conditional on DE being loaded (FuValueRegistry handles missing items gracefully).
+- **Base chain = Tier 7** (`dust` → `ingot` → `block` + all four ores). Draconium is a
+  post-netherite *mined* material, so it fills the otherwise-empty modded T7 band below vanilla
+  `nether_star`; pinned at ~250/ingot so a mined block can't launder into multiple nether stars.
+  `draconium_dust` is the true leaf (every ore drops it without silk); standard-crafted DE items
+  below the fusion tier (`draconium_core`, `wyvern_core`) **derive** from this chain.
+- **Ore ids:** `overworld_draconium_ore`, `deepslate_draconium_ore`, `nether_draconium_ore`,
+  `end_draconium_ore`. (An earlier build registered a phantom `draconium_ore`, leaving the
+  overworld ore unvalued and the deepslate ore missing — fixed.)
+- **Awakened draconium = Tier 8, WIND-ONLY.** DE's Fusion-Crafting endgame and the T8 fabricator's
+  structural corner. The ingot is valued `500@8` so it *winds* for a recycle payout (~1.3 nether
+  stars of down-print), but all four forms (ingot/block/dust/nugget) are on `#no_print`, so the
+  printer can never reproduce it and the Fusion-Crafting gate stays intact.
+- **No Fusion Crafting derivation** — the valuator can't read DE's custom recipe types, so deeper
+  fusion gear (cores, chaos, energy components, draconic chest) stays unvalued/unprintable. Intended.
+- All conditional on DE being loaded (FuValueRegistry handles missing items gracefully; the
+  `#no_print` modded entries use the optional `required:false` form).
 
 ---
 
