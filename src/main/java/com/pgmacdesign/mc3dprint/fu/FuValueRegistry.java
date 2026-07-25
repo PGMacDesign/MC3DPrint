@@ -546,7 +546,7 @@ public final class FuValueRegistry {
                 // biome; kept at T6 (off T7) so it also still trophy-prints on a T6 setup.
                 "minecraft:dragon_head=250@6",
 
-                // ===== T7 — boss / heavy-grind =====
+                // ===== T7 — boss / heavy-grind (base draconium added @T7 via DE compat when loaded) =====
                 "minecraft:nether_star=1500@7",
                 // dragon_egg: the ultimate 1-per-world trophy (unfarmable — drops once, never again),
                 // WIND-ONLY (on #no_print). A big 10k recycle payout for your unique egg, kept
@@ -554,7 +554,7 @@ public final class FuValueRegistry {
                 // with no pump/abundance concern despite sitting a tier above its spool's rarest print.
                 "minecraft:dragon_egg=10000@7",
 
-                // ===== T8 — finite trophies (draconium added via DE compat when loaded) =====
+                // ===== T8 — finite trophies (awakened draconium added @T8 wind-only via DE compat) =====
                 "minecraft:echo_shard=500@8", "minecraft:heart_of_the_sea=800@8");
         // Derivation fills the rest: storage blocks (9x/4x base), stairs/slabs/walls,
         // tools, beacon (via nether_star), conduit (via heart_of_the_sea), quartz_block
