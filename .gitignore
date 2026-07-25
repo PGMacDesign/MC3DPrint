@@ -38,3 +38,7 @@ __pycache__/
 # Release artifacts + throwaway build worktrees (scripts/build-all.sh)
 /dist/
 /.worktrees/
+
+# Local, machine-specific Claude Code settings (never committed — may reference
+# private/work plugin names that don't belong in a public repo).
+/.claude/settings.local.json

@@ -4,16 +4,14 @@
     "minecraft:stick",
     "minecraft:cactus",
     "minecraft:kelp",
-    "minecraft:bamboo",
     "minecraft:twisting_vines",
     "minecraft:dried_kelp_block",
     "minecraft:bamboo_block",
     "minecraft:bamboo_mosaic",
     "minecraft:green_dye",
+    "minecraft:bone",
     "minecraft:obsidian",
     "minecraft:powder_snow_bucket",
-    "minecraft:creeper_head",
-    "minecraft:dragon_head",
     "#minecraft:planks",
     "minecraft:bread",
     "minecraft:apple",
@@ -34,7 +32,6 @@
     "minecraft:rabbit_stew",
     "minecraft:suspicious_stew",
     "minecraft:golden_apple",
-    "minecraft:enchanted_golden_apple",
     { "id": "rftoolsbase:dimensionalshard", "required": false }
   ]
 }

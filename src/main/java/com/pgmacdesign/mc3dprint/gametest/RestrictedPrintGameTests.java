@@ -137,4 +137,39 @@ public class RestrictedPrintGameTests {
             helper.succeed();
         });
     }
+
+    /**
+     * NO_PRINT (wind-only) items are valued so they wind for a recycle payout, but the printer
+     * must refuse them in item mode even on a tier-capable machine. wither_skeleton_skull is the
+     * key case: it is ALSO on #print_restricted, so this proves NO_PRINT wins over the trophy gate.
+     */
+    @GameTest(template = "empty5", timeoutTicks = 120)
+    public static void itemModeRefusesNoPrintTreasure(GameTestHelper helper) {
+        PrinterBlockEntity printer = poweredPrinter(helper, new BlockPos(2, 1, 2)); // T4, clears all three tiers
+        net.minecraft.world.item.Item[] windOnly = {
+                Items.SADDLE, Items.NAME_TAG, Items.WITHER_SKELETON_SKULL, Items.DRAGON_EGG };
+        stepRefusal(helper, printer, windOnly, 0);
+    }
+
+    // Load each wind-only item into the template slot in turn, asserting NOT_PRINTABLE + no output
+    // after the printer has had a tick to recompute, before advancing to the next.
+    private static void stepRefusal(GameTestHelper helper, PrinterBlockEntity printer,
+                                    net.minecraft.world.item.Item[] items, int index) {
+        printer.inventory().setStackInSlot(PrinterBlockEntity.SLOT_TEMPLATE, new ItemStack(items[index]));
+        helper.runAfterDelay(30, () -> {
+            if (printer.state() != PrinterBlockEntity.State.NOT_PRINTABLE) {
+                helper.fail("item mode must refuse wind-only " + items[index] + ", got " + printer.state());
+                return;
+            }
+            if (!printer.inventory().getStackInSlot(PrinterBlockEntity.SLOT_OUTPUT).isEmpty()) {
+                helper.fail("no copy may be emitted for " + items[index]);
+                return;
+            }
+            if (index + 1 < items.length) {
+                stepRefusal(helper, printer, items, index + 1);
+            } else {
+                helper.succeed();
+            }
+        });
+    }
 }
