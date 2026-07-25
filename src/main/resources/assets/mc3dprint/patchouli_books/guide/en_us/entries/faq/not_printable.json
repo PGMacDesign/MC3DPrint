@@ -7,7 +7,7 @@
     {
       "type": "patchouli:text",
       "title": "Not Printable",
-      "text": "$(l)Not Printable$() means the machine will $(l)never$() print that item: it has $(l)no FU value$() in strict mode ($(l)default$()), or it's a filament spool / restricted trophy the printer won't duplicate.$(br2)Some treasure is $(l)wind-only$() — saddles, name tags, and wither skulls recycle into Filament Units at the Winder but never print back.$(br2)A material that's simply $(l)above the machine's tier$() — e.g. Tier 3 string in a Tier 2 printer — shows $(l)Requires a Tier N Printer$() instead; just use a higher-tier machine.$(br2)To price unknown blocks, set $(o)unknownBlocksPrintable=true$()."
+      "text": "$(l)Not Printable$() means the machine will $(l)never$() print that item: it has $(l)no FU value$() in strict mode ($(l)default$()), or it's a filament spool / restricted trophy the printer won't duplicate.$(br2)Some treasure is $(l)wind-only$() — saddles, name tags, wither skulls, and the dragon egg recycle into Filament Units at the Winder but never print back.$(br2)A material that's simply $(l)above the machine's tier$() — e.g. Tier 3 string in a Tier 2 printer — shows $(l)Requires a Tier N Printer$() instead; just use a higher-tier machine.$(br2)To price unknown blocks, set $(o)unknownBlocksPrintable=true$()."
     }
   ]
 }

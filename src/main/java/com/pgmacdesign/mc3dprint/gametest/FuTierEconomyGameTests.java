@@ -267,6 +267,9 @@ public class FuTierEconomyGameTests {
         } else if (!valued(Items.WITHER_SKELETON_SKULL, 40, 4)) {
             // capped at T4 (not its T7 rarity) because a wither-skeleton farm is AFK-automatable
             helper.fail("wither_skeleton_skull should be abundance-capped at 40@4");
+        } else if (!valued(Items.DRAGON_EGG, 10000, 7)) {
+            // unfarmable 1-per-world trophy: a big wind-only payout, pump-safe at any tier
+            helper.fail("dragon_egg should be a 10000@7 wind-only trophy");
         } else {
             helper.succeed();
         }
