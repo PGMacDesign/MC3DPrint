@@ -37,12 +37,12 @@ public final class DraconicCompat {
         event.enqueueWork(() -> {
             // Base draconium chain — Tier 7. Draconium is a post-netherite MINED material (not
             // AFK-farmable), so it sits at the boss/heavy-grind band alongside vanilla nether_star,
-            // below it in effort. draconium_dust is the true leaf (all four ores drop it without
-            // silk touch); ingot/block are pinned for a stable T7 anchor. Kept at ~250/ingot on
+            // below it in effort. Pin only the LEAVES: draconium_dust (every ore drops it without
+            // silk touch) and the four worldgen ore blocks. draconium_ingot (smelt dust) and
+            // draconium_block (9x ingot) DERIVE to the same 250@7 / 2250@7 through the valuator
+            // (tier = max ingredient tier), so pinning them would only risk drift. Kept at ~250 on
             // purpose: higher would let a mined block launder into multiple nether stars.
             register("draconium_dust", 250, 7);
-            register("draconium_ingot", 250, 7);
-            register("draconium_block", 2250, 7); // 9x ingot
             register("overworld_draconium_ore", 250, 7);
             register("deepslate_draconium_ore", 250, 7);
             register("nether_draconium_ore", 250, 7);

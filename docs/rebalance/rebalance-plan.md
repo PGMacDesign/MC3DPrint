@@ -103,7 +103,7 @@ Derivation rates these ~T2 from cobble/iron/redstone, but their power warrants a
 - `wool`/`string` → **T3** (early-game friction; ripples beds/banners/carpets up a tier — fine).
 - `chorus_fruit`/`popped_chorus_fruit`/`chorus_flower`/`purpur_block`/`end_rod` → **T4** (abundance-capped).
 - `golden_apple` **T5**, `enchanted_golden_apple` **T6**, `elytra` **T6**.
-- `nether_star` **T7** (done), `wither_skeleton_skull` **T7**, `beacon` **T7** (derives via star).
+- `nether_star` **T7** (done), `beacon` **T7** (derives via star), `dragon_egg` **T7** wind-only. `wither_skeleton_skull` is now **T4** wind-only (AFK-farmable, so abundance-capped, not T7).
 - `heart_of_the_sea` **T8**, `conduit` → **T8** (derives from heart of the sea), `echo_shard` **T8**.
 - **⚠ Abundance check before locking:** `shulker_shell` (auto-dupe-farmable), `trident`, `nautilus_shell` are at T6 from the rarity research — but if any are cheaply farmable they could launder into netherite (T6). **Recommendation: cap shulker_shell at T5 (or winder-blacklist it); confirm trident/nautilus aren't farm-trivial.** Flagging for your call, not locked.
 
