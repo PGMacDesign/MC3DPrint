@@ -429,6 +429,13 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
                 && new ItemStack(item).is(com.pgmacdesign.mc3dprint.registry.ModItemTags.PRINT_RESTRICTED);
     }
 
+    /** True when this block's item is on {@link ModItemTags#NO_PRINT} (wind-only, never printed). */
+    private static boolean isNoPrintBlock(BlockState state) {
+        Item item = state.getBlock().asItem();
+        return item != Items.AIR
+                && new ItemStack(item).is(com.pgmacdesign.mc3dprint.registry.ModItemTags.NO_PRINT);
+    }
+
     /** True when the loaded disc is OFFICIAL and its curated allowance lists this block's item. */
     private boolean restrictedAllowedForLoadedDisc(BlockState state) {
         ItemStack disc = inventory.getStackInSlot(SLOT_TEMPLATE);
@@ -468,6 +475,16 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             itemProgress = 0;
             notPrintableReason = idOf(template)
                     + " is a restricted trophy item — printers never duplicate it";
+            return;
+        }
+        // NO_PRINT is the "can wind, can't print" gate: the item is valued (so it winds for a
+        // recycle payout) but the printer must never reproduce it. Checked before the FU/tier
+        // branch so a valued no-print item never resolves as printable at any tier.
+        if (template.is(com.pgmacdesign.mc3dprint.registry.ModItemTags.NO_PRINT)) {
+            state = State.NOT_PRINTABLE;
+            itemProgress = 0;
+            notPrintableReason = idOf(template)
+                    + " is recyclable but not printable (wind-only)";
             return;
         }
         int fuCost = itemFuCost(template);
@@ -572,6 +589,11 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
      * anti-exploit gate is preserved (you can't obtain the block by skipping it).
      */
     private boolean canPrintBlock(BlockState resolvedState) {
+        // No-print (wind-only) blocks are valued but must never print, even from an official disc,
+        // so this precedes the trophy allowance below (wither_skeleton_skull is on both tags).
+        if (isNoPrintBlock(resolvedState)) {
+            return false;
+        }
         Optional<FuValue> value = blockFuValue(resolvedState);
         if (value.isPresent()) {
             // Trophy gate: a #print_restricted block prints only from an OFFICIAL disc

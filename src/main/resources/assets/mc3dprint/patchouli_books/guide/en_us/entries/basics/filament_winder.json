@@ -16,7 +16,7 @@
     {
       "type": "patchouli:text",
       "title": "What It Accepts",
-      "text": "The winder enforces the $(l)exact-tier$() rule: a material only winds into a spool of its own tier. If you load a mismatched spool, the GUI shows $(l)\"Requires Tier X Spool\"$().$(br2)Items with no FU value (un-priced blocks in strict mode) show $(l)\"Can't be converted\"$() and are left untouched."
+      "text": "The winder enforces the $(l)exact-tier$() rule: a material only winds into a spool of its own tier. If you load a mismatched spool, the GUI shows $(l)\"Requires Tier X Spool\"$().$(br2)Items with no FU value (un-priced blocks in strict mode) show $(l)\"Can't be converted\"$() and are left untouched. Renewable items like bamboo or bones are $(l)recyclable$() but some farmable outputs are held back so they can't be laundered into filament."
     },
     {
       "type": "patchouli:spotlight",
