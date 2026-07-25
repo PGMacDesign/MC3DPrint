@@ -52,7 +52,13 @@ public class MC3DPrintJeiPlugin implements IModPlugin {
                 var machine = com.pgmacdesign.mc3dprint.machine.MachineTier.byNumber(value.tier());
                 int rf = com.pgmacdesign.mc3dprint.config.MC3DPrintConfig.itemRfPerTick(machine)
                         * com.pgmacdesign.mc3dprint.config.MC3DPrintConfig.itemPrintTicks(machine);
-                entries.add(new PrintRecipeCategory.PrintEntry(stack, value.fu(), value.tier(), rf));
+                // Machine-use flags mirror the printer/winder gates so the card reads honestly.
+                boolean noPrint = stack.is(com.pgmacdesign.mc3dprint.registry.ModItemTags.NO_PRINT);
+                boolean trophy = !noPrint
+                        && stack.is(com.pgmacdesign.mc3dprint.registry.ModItemTags.PRINT_RESTRICTED);
+                boolean windable = !com.pgmacdesign.mc3dprint.registry.ModItemTags.isWinderBlacklisted(stack);
+                entries.add(new PrintRecipeCategory.PrintEntry(
+                        stack, value.fu(), value.tier(), rf, noPrint, trophy, windable));
             });
         });
         registration.addRecipes(PrintRecipeCategory.TYPE, entries);
