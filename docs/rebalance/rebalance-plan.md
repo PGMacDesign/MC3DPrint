@@ -92,7 +92,7 @@ Derivation rates these ~T2 from cobble/iron/redstone, but their power warrants a
 
 ## 7. Unprintable (no tier — strict mode refuses them)
 
-- **Real items:** `dragon_egg` (1 per world). _(Elytra and enchanted golden apple are now printable — T6.)_
+- **Real items:** none now — `dragon_egg` moved to **T7 as a wind-only trophy** (windable recycle, never printed via `#no_print`), and `wither_skeleton_skull` to T4 the same way. _(Elytra and enchanted golden apple are now printable — T6.)_
 - **Survival-unobtainables:** `bedrock`, `barrier`, `command_block` family, `structure_block`/`jigsaw`/`structure_void`, `spawner`, `reinforced_deepslate`, `budding_amethyst`, `infested_*`, `end_portal_frame`, `light`, `petrified_oak_slab`, `frosted_ice`, `player_head`. (Leave un-priced; strict mode blocks them. Optionally hard-blacklist for clarity.)
 
 ---

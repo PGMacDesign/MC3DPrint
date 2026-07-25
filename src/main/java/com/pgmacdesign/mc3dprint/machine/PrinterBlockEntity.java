@@ -468,6 +468,17 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             notPrintableReason = idOf(template) + " is a filament spool; printers never duplicate stored filament";
             return;
         }
+        // NO_PRINT is the "can wind, can't print" gate: the item is valued (so it winds for a
+        // recycle payout) but the printer must never reproduce it. Checked FIRST, ahead of the
+        // trophy gate and the FU/tier branch, so an item on BOTH #no_print and #print_restricted
+        // (wither_skeleton_skull) reports the wind-only status and NO_PRINT keeps its precedence.
+        if (template.is(com.pgmacdesign.mc3dprint.registry.ModItemTags.NO_PRINT)) {
+            state = State.NOT_PRINTABLE;
+            itemProgress = 0;
+            notPrintableReason = idOf(template)
+                    + " is recyclable but not printable (wind-only)";
+            return;
+        }
         // Item mode with a restricted trophy would be straight duplication — refuse
         // regardless of FU value (blueprint mode has the official-allowance gate).
         if (template.is(com.pgmacdesign.mc3dprint.registry.ModItemTags.PRINT_RESTRICTED)) {
@@ -475,16 +486,6 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             itemProgress = 0;
             notPrintableReason = idOf(template)
                     + " is a restricted trophy item — printers never duplicate it";
-            return;
-        }
-        // NO_PRINT is the "can wind, can't print" gate: the item is valued (so it winds for a
-        // recycle payout) but the printer must never reproduce it. Checked before the FU/tier
-        // branch so a valued no-print item never resolves as printable at any tier.
-        if (template.is(com.pgmacdesign.mc3dprint.registry.ModItemTags.NO_PRINT)) {
-            state = State.NOT_PRINTABLE;
-            itemProgress = 0;
-            notPrintableReason = idOf(template)
-                    + " is recyclable but not printable (wind-only)";
             return;
         }
         int fuCost = itemFuCost(template);
@@ -1623,6 +1624,12 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
 
     /** Charges an item if the printer can pay; unvalued items are kept free (designer intent). */
     private boolean chargeIfAffordable(ItemStack stack) {
+        // Wind-only items are never reproduced, even as official-blueprint entity contents
+        // (an item-frame's framed item or an armor/hand slot). Returning false makes the caller
+        // strip the slot, so #no_print holds across ALL print paths, not just item + block mode.
+        if (stack.is(com.pgmacdesign.mc3dprint.registry.ModItemTags.NO_PRINT)) {
+            return false;
+        }
         Optional<FuValue> v = FuValueRegistry.valueOf(stack);
         if (v.isEmpty()) {
             return true; // no FU value → reproduce free on the (official) build
