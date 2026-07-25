@@ -147,7 +147,7 @@ public class RestrictedPrintGameTests {
     public static void itemModeRefusesNoPrintTreasure(GameTestHelper helper) {
         PrinterBlockEntity printer = poweredPrinter(helper, new BlockPos(2, 1, 2)); // T4, clears all three tiers
         net.minecraft.world.item.Item[] windOnly = {
-                Items.SADDLE, Items.NAME_TAG, Items.WITHER_SKELETON_SKULL };
+                Items.SADDLE, Items.NAME_TAG, Items.WITHER_SKELETON_SKULL, Items.DRAGON_EGG };
         stepRefusal(helper, printer, windOnly, 0);
     }
 

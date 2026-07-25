@@ -588,16 +588,20 @@ public final class FuValueRegistry {
 
                 // ===== T7 — boss / heavy-grind =====
                 "minecraft:nether_star=1500@7",
+                // dragon_egg: the ultimate 1-per-world trophy (unfarmable — drops once, never again),
+                // WIND-ONLY (on #no_print). A big 10k recycle payout for your unique egg, kept
+                // unprintable so it stays 1-per-world. Unfarmable, so any value is a one-time windfall
+                // with no pump/abundance concern despite sitting a tier above its spool's rarest print.
+                "minecraft:dragon_egg=10000@7",
 
                 // ===== T8 — finite trophies (draconium added via DE compat when loaded) =====
                 "minecraft:echo_shard=500@8", "minecraft:heart_of_the_sea=800@8");
         // Derivation fills the rest: storage blocks (9x/4x base), stairs/slabs/walls,
         // tools, beacon (via nether_star), conduit (via heart_of_the_sea), quartz_block
         // (4x quartz), purpur/end_rod (via popped_chorus_fruit), etc.
-        // UNPRINTABLE (deliberately unvalued — strict mode refuses them): dragon_egg
-        // (1 per world) and survival-unobtainables (bedrock, spawner, reinforced_deepslate,
-        // budding_amethyst, command blocks, barrier, ...). wither_skeleton_skull is now valued
-        // but WIND-ONLY via #no_print (see the T4 block above), not unvalued.
-        // See docs/rebalance/rebalance-plan.md.
+        // UNPRINTABLE (deliberately unvalued — strict mode refuses them): survival-unobtainables
+        // (bedrock, spawner, reinforced_deepslate, budding_amethyst, command blocks, barrier, ...).
+        // wither_skeleton_skull and dragon_egg are now valued but WIND-ONLY via #no_print (recyclable,
+        // never printed), not unvalued. See docs/rebalance/rebalance-plan.md.
     }
 }

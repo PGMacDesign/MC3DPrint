@@ -28,13 +28,15 @@ A mismatch shows `Requires Tier X Spool` and leaves both items untouched. Items 
 
 Winding is also a sink for items you can't, or don't want to, print. Many treasures wind for a Filament Unit payout even when the printer won't reproduce them:
 
-- **Wind-only treasure** — saddles, name tags, and wither skulls recycle into FU but never print back.
+- **Wind-only treasure** — saddles, name tags, wither skulls, and the dragon egg recycle into FU but never print back. The dragon egg is a one-time 10,000-unit windfall at Tier 7, since you only ever get one.
 - **Mob heads** — creeper, zombie, skeleton, and piglin heads wind at Tier 4 (they still print only as decor from official blueprints, never as loose items).
 - **Bamboo and bones** wind at their base tier. A few trivially-farmable outputs stay held back so a farm can't launder them into filament.
 
 ## Reaching Tier 6
 
 The T6 spool is the gate to printing netherite, and it costs a single netherite ingot to craft. Once you have one, rare End and loot items give a netherite route that isn't debris mining: **elytra**, **dragon heads**, **enchanted golden apples**, and (on 1.21+) **heavy cores** all wind into a T6 spool. Because winding is equal-value, this converts hard-won rares into netherite without ever converting cheap materials up a tier.
+
+The next step up, the T7 spool, now costs a single **nether star** (down from four), so beating one wither opens Tier 7. Its main winding input is the nether star itself, plus the dragon egg's one-time windfall.
 
 ## Finding every item of a tier
 

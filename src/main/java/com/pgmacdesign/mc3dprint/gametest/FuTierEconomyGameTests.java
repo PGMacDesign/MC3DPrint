@@ -323,6 +323,9 @@ public class FuTierEconomyGameTests {
             helper.fail("wither_skeleton_skull should be abundance-capped at 40@4");
         } else if (!valued(Items.HEAVY_CORE, 250, 6)) {
             helper.fail("heavy_core should be a 250@6 T6-access route");
+        } else if (!valued(Items.DRAGON_EGG, 10000, 7)) {
+            // unfarmable 1-per-world trophy: a big wind-only payout, pump-safe at any tier
+            helper.fail("dragon_egg should be a 10000@7 wind-only trophy");
         } else {
             helper.succeed();
         }
