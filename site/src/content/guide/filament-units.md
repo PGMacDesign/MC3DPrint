@@ -30,7 +30,7 @@ Winding is also a sink for items you can't, or don't want to, print. Many treasu
 
 - **Wind-only treasure** — saddles, name tags, wither skulls, and the dragon egg recycle into FU but never print back. The dragon egg is a one-time 10,000-unit windfall at Tier 7, since you only ever get one.
 - **Mob heads** — creeper, zombie, skeleton, and piglin heads wind at Tier 4 (they still print only as decor from official blueprints, never as loose items).
-- **Bamboo and bones** wind at their base tier. A few trivially-farmable outputs stay held back so a farm can't launder them into filament.
+- **Bamboo** winds at its base tier now. Bones, by contrast, are printable but held back from winding (like other trivially-farmable outputs), so a skeleton farm can't launder them into filament.
 
 ## Reaching Tier 6
 
