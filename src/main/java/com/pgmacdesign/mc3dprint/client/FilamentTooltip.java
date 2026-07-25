@@ -4,6 +4,7 @@ import com.pgmacdesign.mc3dprint.MC3DPrint;
 import com.pgmacdesign.mc3dprint.fu.FuValueRegistry;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.TextColor;
+import net.minecraft.world.item.ItemStack;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.neoforge.event.entity.player.ItemTooltipEvent;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -87,6 +88,21 @@ public final class FilamentTooltip {
             if (shipped != null && (shipped[0] != value.fu() || shipped[1] != value.tier())) {
                 event.getToolTip().add(Component.translatable("tooltip.mc3dprint.fu_overridden")
                         .withStyle(net.minecraft.ChatFormatting.DARK_GRAY));
+            }
+            // Surface machine use so "can I print this?" reads at a glance anywhere you hover.
+            // Most valued items print AND wind, so only the exceptions get a line. Mirrors the
+            // printer/winder gates: #no_print = wind-only, #print_restricted = official-disc trophy,
+            // winder-blacklisted = print-only.
+            ItemStack stack = event.getItemStack();
+            if (stack.is(com.pgmacdesign.mc3dprint.registry.ModItemTags.NO_PRINT)) {
+                event.getToolTip().add(Component.translatable("tooltip.mc3dprint.wind_only")
+                        .withStyle(net.minecraft.ChatFormatting.GOLD));
+            } else if (stack.is(com.pgmacdesign.mc3dprint.registry.ModItemTags.PRINT_RESTRICTED)) {
+                event.getToolTip().add(Component.translatable("tooltip.mc3dprint.trophy")
+                        .withStyle(net.minecraft.ChatFormatting.GRAY));
+            } else if (com.pgmacdesign.mc3dprint.registry.ModItemTags.isWinderBlacklisted(stack)) {
+                event.getToolTip().add(Component.translatable("tooltip.mc3dprint.print_only")
+                        .withStyle(net.minecraft.ChatFormatting.AQUA));
             }
         });
     }
