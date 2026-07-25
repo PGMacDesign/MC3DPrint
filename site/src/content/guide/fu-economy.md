@@ -31,3 +31,5 @@ Food has FU values too, so a printer in item mode can print meals — bread is c
 ## Restricted trophies
 
 Mob heads and skulls are **trophy items**: printers never duplicate them in item mode, and in blueprint mode they place only from an **official curated blueprint that specifically carries them** (like the Pig House's decorative heads). A scanned or imported build containing a head prints everything else and silently skips the trophy — same anti-exploit gate as [resins](/guide/resins-overview/).
+
+Heads still **wind**, though. Creeper, zombie, skeleton, and piglin heads recycle into Tier 4 Filament Units, so charged-creeper trophies aren't a dead end. The **wither skeleton skull** is the exception: it winds for a Tier 4 payout but is **wind-only** — never printed, in any mode — so a wither-skeleton farm can't mint printable wither-spawn ingredients.

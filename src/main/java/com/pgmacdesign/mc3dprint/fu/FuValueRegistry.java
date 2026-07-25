@@ -501,6 +501,10 @@ public final class FuValueRegistry {
                 "minecraft:gold_nugget=2@2", "minecraft:iron_nugget=3@2",
                 // leather: farmable animal drop (needed so book→enchanting_table chain derives)
                 "minecraft:leather=8@2",
+                // bone: common skeleton drop, AFK-farmable → PRINTABLE (fossils/bone-block decor)
+                // but winder-blacklisted like the other renewable drops, so a skeleton farm can't
+                // launder it to FU. Valuing it also lets bone_meal (1→3) and bone_block derive.
+                "minecraft:bone=6@2",
                 // huge-mushroom blocks (no recipe → direct value): giant-mushroom material, a step
                 // above basic T1 building blocks. Bonemeal-renewable but involved to farm; T2's
                 // ceiling (end_stone/packed_ice/magma_block ~5 FU) is all low-value, so no laundering.
@@ -516,6 +520,10 @@ public final class FuValueRegistry {
                 "minecraft:redstone=4@3", "minecraft:quartz=5@3", "minecraft:string=8@3",
                 "minecraft:obsidian=10@3", "minecraft:crying_obsidian=15@3", "minecraft:shroomlight=10@3",
                 "minecraft:glowstone=20@3", "minecraft:slime_ball=30@3", "#minecraft:wool=30@3",
+                // treasure, uncraftable loot — WIND-ONLY (on #no_print): recyclable into FU but
+                // never printed. ~3x leather (8@2); at T3 a spool tops out at glowstone-tier prints,
+                // so abundance-safe even though saddles/name tags are slowly villager-renewable.
+                "minecraft:saddle=25@3", "minecraft:name_tag=25@3",
                 // utility overrides (cheap mats, high automation power — pinned above derivation)
                 "minecraft:hopper=100@3", "minecraft:bookshelf=40@3",
                 // basic food (print-to-eat unlock; all food is winder-blacklisted)
@@ -526,9 +534,20 @@ public final class FuValueRegistry {
                 // ===== T4 — renewable-valuable =====
                 "minecraft:emerald=50@4", "minecraft:magma_cream=30@4",
                 "minecraft:blaze_rod=40@4", "minecraft:ghast_tear=50@4", "minecraft:totem_of_undying=200@4",
-                // creeper_head: charged-creeper drop — renewable but fiddly, no recipe. Valued so
-                // scanned builds with mob-head decor print; winder-blacklisted (renewable supply).
-                "minecraft:creeper_head=40@4",
+                // Mob heads (no recipe → direct value). The four charged-creeper heads share one
+                // acquisition path (a lightning-charged creeper must kill the mob), which is slow and
+                // NOT AFK-automatable, so they are windable for a recycle payout AND stay trophy-
+                // printable from official discs (#print_restricted) — the latter also lets scanned
+                // builds using them as decor print. Capped at T4: a 40-FU spool tops out at blaze_rod,
+                // so no head can wind into anything rarer than itself.
+                "minecraft:creeper_head=40@4", "minecraft:zombie_head=40@4",
+                "minecraft:skeleton_skull=40@4", "minecraft:piglin_head=40@4",
+                // wither_skeleton_skull: WIND-ONLY (on #no_print). A wither-skeleton farm is AFK-
+                // automatable, so it is deliberately capped at T4 (not its T7 boss-rarity) and barred
+                // from printing. Winding is a lossy sink (its spool can't out-print the skull), and
+                // keeping it unprintable preserves the "no printed wither-spawn ingredient" guard its
+                // old unvalued status gave.
+                "minecraft:wither_skeleton_skull=40@4",
                 "minecraft:prismarine_shard=8@4", "minecraft:prismarine_crystals=12@4",
                 // chorus is abundance-capped at T4 (a T6 chorus spool could print netherite)
                 "minecraft:chorus_fruit=8@4", "minecraft:popped_chorus_fruit=10@4",
@@ -553,14 +572,21 @@ public final class FuValueRegistry {
                 // ===== T6 — netherite + high-value finite =====
                 "minecraft:netherite_ingot=500@6", "minecraft:netherite_scrap=125@6",
                 "minecraft:ancient_debris=125@6",
+                // T6-ACCESS ROUTES: high-value End/loot rares that WIND into a T6 spool, giving a
+                // netherite path that isn't ancient-debris mining. All are manual grinds, never AFK
+                // farms, so none can pump: elytra + dragon_head are End-city/ship exploration, notch
+                // apples are loot-only (uncraftable, so pulled out of the blanket food blacklist for
+                // this), heavy_core is Trial Chamber ominous-vault loot (1.21+ item; simply absent on
+                // the 1.20.1 legacy line). This is what makes "convert equal-value rares into
+                // netherite" work through the winder without touching the exact-tier backbone.
                 "minecraft:elytra=2000@6", "minecraft:enchanted_golden_apple=1500@6",
-                // dragon_head: post-dragon End-ship trophy, renewable via End-city exploration.
-                // Tiered T6 (kept off T7 so it prints on a T6 setup); the winder blacklist neutralizes
-                // the infinite-supply laundering risk (can't wind it to FU), so the tier is a pure
-                // print-cost/gate knob here, not an abundance lever.
+                "minecraft:heavy_core=250@6",
+                // dragon_head: post-dragon End-ship trophy, End-city-grindable. Now windable (off the
+                // winder blacklist) as a slow netherite route, consistent with elytra from the same
+                // biome; kept at T6 (off T7) so it also still trophy-prints on a T6 setup.
                 "minecraft:dragon_head=250@6",
 
-                // ===== T7 — boss / heavy-grind (wither_skeleton_skull stays UNPRINTABLE on purpose) =====
+                // ===== T7 — boss / heavy-grind =====
                 "minecraft:nether_star=1500@7",
 
                 // ===== T8 — finite trophies (draconium added via DE compat when loaded) =====
@@ -569,8 +595,9 @@ public final class FuValueRegistry {
         // tools, beacon (via nether_star), conduit (via heart_of_the_sea), quartz_block
         // (4x quartz), purpur/end_rod (via popped_chorus_fruit), etc.
         // UNPRINTABLE (deliberately unvalued — strict mode refuses them): dragon_egg
-        // (1 per world), wither_skeleton_skull (would mass-spawn withers -> nether stars),
-        // and survival-unobtainables (bedrock, spawner, reinforced_deepslate,
-        // budding_amethyst, command blocks, barrier, ...). See docs/rebalance/rebalance-plan.md.
+        // (1 per world) and survival-unobtainables (bedrock, spawner, reinforced_deepslate,
+        // budding_amethyst, command blocks, barrier, ...). wither_skeleton_skull is now valued
+        // but WIND-ONLY via #no_print (see the T4 block above), not unvalued.
+        // See docs/rebalance/rebalance-plan.md.
     }
 }

@@ -300,4 +300,71 @@ public class FuTierEconomyGameTests {
             }
         });
     }
+
+    // --- 1.2.0 windable expansion: new wind targets + T6-access routes ---
+
+    private static boolean valued(net.minecraft.world.item.Item item, int fu, int tier) {
+        var v = com.pgmacdesign.mc3dprint.fu.FuValueRegistry.valueOf(new ItemStack(item));
+        return v.isPresent() && v.get().fu() == fu && v.get().tier() == tier;
+    }
+
+    /** The newly-valued wind targets land at their intended (abundance-capped) tiers. */
+    @GameTest(template = "empty5", timeoutTicks = 40)
+    public static void newlyValuedWindablesHaveExpectedTiers(GameTestHelper helper) {
+        if (!valued(Items.SADDLE, 25, 3)) {
+            helper.fail("saddle should be 25@3");
+        } else if (!valued(Items.NAME_TAG, 25, 3)) {
+            helper.fail("name_tag should be 25@3");
+        } else if (!valued(Items.CREEPER_HEAD, 40, 4) || !valued(Items.ZOMBIE_HEAD, 40, 4)
+                || !valued(Items.SKELETON_SKULL, 40, 4) || !valued(Items.PIGLIN_HEAD, 40, 4)) {
+            helper.fail("all four charged-creeper heads should be 40@4");
+        } else if (!valued(Items.WITHER_SKELETON_SKULL, 40, 4)) {
+            // capped at T4 (not its T7 rarity) because a wither-skeleton farm is AFK-automatable
+            helper.fail("wither_skeleton_skull should be abundance-capped at 40@4");
+        } else if (!valued(Items.HEAVY_CORE, 250, 6)) {
+            helper.fail("heavy_core should be a 250@6 T6-access route");
+        } else {
+            helper.succeed();
+        }
+    }
+
+    /**
+     * Items pulled off the winder blacklist now wind, while the launder-prone ones they were
+     * grouped with stay blocked. Physically winds bamboo (T1) to prove the tag change loads at
+     * runtime, not just in the tag data.
+     */
+    @GameTest(template = "empty5", timeoutTicks = 150)
+    public static void previouslyBlacklistedItemsNowWindable(GameTestHelper helper) {
+        boolean bambooFree = !com.pgmacdesign.mc3dprint.registry.ModItemTags
+                .isWinderBlacklisted(new ItemStack(Items.BAMBOO));
+        boolean creeperFree = !com.pgmacdesign.mc3dprint.registry.ModItemTags
+                .isWinderBlacklisted(new ItemStack(Items.CREEPER_HEAD));
+        boolean dragonFree = !com.pgmacdesign.mc3dprint.registry.ModItemTags
+                .isWinderBlacklisted(new ItemStack(Items.DRAGON_HEAD));
+        boolean notchAppleFree = !com.pgmacdesign.mc3dprint.registry.ModItemTags
+                .isWinderBlacklisted(new ItemStack(Items.ENCHANTED_GOLDEN_APPLE));
+        // regular golden_apple is craftable, so it MUST stay blacklisted (laundering guard)
+        boolean plainAppleBlocked = com.pgmacdesign.mc3dprint.registry.ModItemTags
+                .isWinderBlacklisted(new ItemStack(Items.GOLDEN_APPLE));
+        if (!bambooFree || !creeperFree || !dragonFree || !notchAppleFree) {
+            helper.fail("bamboo/creeper_head/dragon_head/enchanted_golden_apple must be off the blacklist");
+            return;
+        }
+        if (!plainAppleBlocked) {
+            helper.fail("craftable golden_apple must stay winder-blacklisted");
+            return;
+        }
+        WinderBlockEntity winder = placePoweredWinder(helper, new BlockPos(2, 1, 2));
+        winder.inventory().setStackInSlot(WinderBlockEntity.SLOT_SPOOL, spoolWithFu(1, 0));
+        winder.inventory().setStackInSlot(WinderBlockEntity.SLOT_INPUT, new ItemStack(Items.BAMBOO, 1));
+        helper.succeedWhen(() -> {
+            if (!winder.inventory().getStackInSlot(WinderBlockEntity.SLOT_INPUT).isEmpty()) {
+                throw new GameTestAssertException("bamboo not wound yet");
+            }
+            int fu = SpoolItem.getFu(winder.inventory().getStackInSlot(WinderBlockEntity.SLOT_SPOOL));
+            if (fu != 2) {
+                helper.fail("Expected 2 T1 FU from one bamboo into a T1 spool, got " + fu);
+            }
+        });
+    }
 }
