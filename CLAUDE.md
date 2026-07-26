@@ -100,8 +100,9 @@ Live at **mc3dprint.dev** (GitHub Pages, custom apex domain; DNS at Squarespace)
 - **2-block / stateful placement** uses `UPDATE_CLIENTS | UPDATE_KNOWN_SHAPE |
   UPDATE_SUPPRESS_DROPS` so beds/doors don't self-break and captured connections reproduce.
 - **Abundance rule:** a farmable resource can't sit at a tier whose spool could print
-  something rarer (why chorus=T4, manyullyn=T6). Some items are intentionally **unvalued**
-  (strict mode → unprintable): dragon egg, wither skeleton skull, survival-unobtainables.
+  something rarer (why chorus=T4, manyullyn=T6). Survival-unobtainables stay intentionally
+  **unvalued** (strict mode → unprintable). Dragon egg and wither skeleton skull are **wind-only**
+  (valued, on `#no_print`): windable as a lossy FU sink, never printable.
 - Tier tests assert specific values (`gametest/`, `fu/`) — update them with any rebalance.
 - **Resins** (`item/ResinItem`, `machine/resin/`): consumed-per-print blueprint modifiers,
   **official-blueprints-only** (`BlueprintDiscItem.isOfficial` — never player-scanned discs; the
