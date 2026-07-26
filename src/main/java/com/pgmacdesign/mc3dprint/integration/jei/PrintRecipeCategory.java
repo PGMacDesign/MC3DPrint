@@ -94,23 +94,20 @@ public class PrintRecipeCategory implements IRecipeCategory<PrintRecipeCategory.
                 ? Component.translatable("jei.mc3dprint.cant_print")
                 : Component.translatable("jei.mc3dprint.rf_cost", String.format("%,d", entry.rf()));
         com.pgmacdesign.mc3dprint.compat.RenderCompat.drawString(graphics, font, thirdLine, 28, 28, 0xFF707070, false);
-        // Line 4 — machine-use status, color-coded so printability reads at a glance.
-        String statusKey;
-        int color;
-        if (entry.noPrint()) {
-            statusKey = "jei.mc3dprint.status_wind_only";
-            color = 0xFFB8860B; // gold: recycle-only
-        } else if (entry.trophy()) {
-            statusKey = "jei.mc3dprint.status_trophy";
-            color = 0xFF707070; // gray: official-disc print only
-        } else if (!entry.windable()) {
-            statusKey = "jei.mc3dprint.status_print_only";
-            color = 0xFF1565C0; // blue: print but not wind
-        } else {
-            statusKey = "jei.mc3dprint.status_print_wind";
-            color = 0xFF2E7D32; // green: fully usable
-        }
+        // Line 4 — machine-use status. Print-ability and wind-ability are shown as INDEPENDENT
+        // parts ("Prints/Trophy/No print · Winds/No wind") so a trophy item that is also winder-
+        // blacklisted can't collapse into a misleading "windable trophy", and the compact form fits
+        // the 150px card. Color keys off the most restrictive axis.
+        String printKey = entry.noPrint() ? "jei.mc3dprint.p_noprint"
+                : entry.trophy() ? "jei.mc3dprint.p_trophy" : "jei.mc3dprint.p_print";
+        String windKey = entry.windable() ? "jei.mc3dprint.w_wind" : "jei.mc3dprint.w_nowind";
+        int color = entry.noPrint() ? 0xFFB8860B          // gold: can't print
+                : !entry.windable() ? 0xFF1565C0           // blue: can't wind
+                : entry.trophy() ? 0xFF707070              // gray: official-disc print only
+                : 0xFF2E7D32;                              // green: fully usable
         com.pgmacdesign.mc3dprint.compat.RenderCompat.drawString(graphics, font,
-                Component.translatable(statusKey), 28, 42, color, false);
+                Component.translatable("jei.mc3dprint.mstatus",
+                        Component.translatable(printKey), Component.translatable(windKey)),
+                28, 42, color, false);
     }
 }

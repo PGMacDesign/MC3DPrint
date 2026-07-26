@@ -94,13 +94,25 @@ public final class FilamentTooltip {
             // printer/winder gates: #no_print = wind-only, #print_restricted = official-disc trophy,
             // winder-blacklisted = print-only.
             ItemStack stack = event.getItemStack();
-            if (stack.is(com.pgmacdesign.mc3dprint.registry.ModItemTags.NO_PRINT)) {
-                event.getToolTip().add(Component.translatable("tooltip.mc3dprint.wind_only")
+            boolean noPrint = stack.is(com.pgmacdesign.mc3dprint.registry.ModItemTags.NO_PRINT);
+            boolean trophy = !noPrint
+                    && stack.is(com.pgmacdesign.mc3dprint.registry.ModItemTags.PRINT_RESTRICTED);
+            boolean windable = !com.pgmacdesign.mc3dprint.registry.ModItemTags.isWinderBlacklisted(stack);
+            // Print restriction and wind restriction are independent, so show them independently — a
+            // trophy item that is also winder-blacklisted gets BOTH lines, never a misleading single one.
+            if (noPrint) {
+                event.getToolTip().add(Component.translatable(windable
+                                ? "tooltip.mc3dprint.wind_only"     // valued recycle, can't print
+                                : "tooltip.mc3dprint.no_machine_use") // can neither print nor wind
                         .withStyle(net.minecraft.ChatFormatting.GOLD));
-            } else if (stack.is(com.pgmacdesign.mc3dprint.registry.ModItemTags.PRINT_RESTRICTED)) {
+            } else if (trophy) {
                 event.getToolTip().add(Component.translatable("tooltip.mc3dprint.trophy")
                         .withStyle(net.minecraft.ChatFormatting.GRAY));
-            } else if (com.pgmacdesign.mc3dprint.registry.ModItemTags.isWinderBlacklisted(stack)) {
+                if (!windable) {
+                    event.getToolTip().add(Component.translatable("tooltip.mc3dprint.cant_wind")
+                            .withStyle(net.minecraft.ChatFormatting.AQUA));
+                }
+            } else if (!windable) {
                 event.getToolTip().add(Component.translatable("tooltip.mc3dprint.print_only")
                         .withStyle(net.minecraft.ChatFormatting.AQUA));
             }
