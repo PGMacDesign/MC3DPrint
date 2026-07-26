@@ -7,12 +7,12 @@
     {
       "type": "patchouli:text",
       "title": "Scan, Disc, Print",
-      "text": "The whole loop: $(l)scan$() a build with the Structure Scanner, save it to a $(l)disc$(), then $(l)print$() it anywhere a printer can reach.$(br2)Scans are stored as $(l)blueprints$() in the world save; a $(item)Blueprint Disc$() is the key that references one. Shift+Right Click a written disc to $(l)lock$() it against being overwritten.$(br2)Discs also turn up in $(l)village and exploration loot$() — print what you find, no scanning required."
+      "text": "The whole loop: $(l)scan$() a build with the Structure Scanner, save it to a $(l)disc$(), then $(l)print$() it anywhere a printer can reach.$(br2)Scans are stored as $(l)blueprints$() in the world save; a $(item)Blueprint Disc$() is the key that references one. Shift+Right Click a written disc to $(l)lock$() it against being overwritten.$(br2)Discs also turn up in $(l)village and exploration loot$(): print what you find, no scanning required."
     },
     {
       "type": "patchouli:text",
       "title": "Naming & Tier",
-      "text": "Every written disc shows its $(l)tier$() — the highest material tier among its blocks (one diamond block in a pile of stone still reads as that tier). That's the lowest machine tier that can print all of it.$(br2)It also shows a $(l)Print Cost$() in that top tier — the total Filament the print needs if you feed it a single top-tier spool (cheaper blocks fold in at the down-conversion rate). Free structural blocks like water and crops cost nothing.$(br2)To $(l)rename$() a disc, drop it in an $(item)Anvil$() and type a name — just $(l)1 level$() of XP.$(br2)$(l)Trophy items$() (mob heads/skulls) are restricted: printers never duplicate them, and they place only from specific $(l)official$() blueprints that carry them."
+      "text": "Every written disc shows its $(l)tier$(): the highest material tier among its blocks (one diamond block in a pile of stone still reads as that tier). That's the lowest machine tier that can print all of it.$(br2)It also shows a $(l)Print Cost$() in that top tier: the total Filament the print needs if you feed it a single top-tier spool (cheaper blocks fold in at the down-conversion rate). Free structural blocks like water and crops cost nothing.$(br2)To $(l)rename$() a disc, drop it in an $(item)Anvil$() and type a name, just $(l)1 level$() of XP.$(br2)$(l)Trophy items$() (mob heads/skulls) are restricted: printers never duplicate them, and they place only from specific $(l)official$() blueprints that carry them."
     },
     {
       "type": "patchouli:text",

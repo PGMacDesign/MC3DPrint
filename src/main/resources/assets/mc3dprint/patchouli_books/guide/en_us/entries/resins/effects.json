@@ -6,12 +6,12 @@
   "pages": [
     {
       "type": "patchouli:text",
-      "text": "$(li)$(item)Verdant$() — plants print fully grown$(li)$(item)Experience$() — the print banks XP for you$(li)$(item)Treasure$() — printed chests may hold loot$(li)$(item)Overdrive$() — the print costs less filament$(li)$(item)Quartermaster$() — printed fixtures arrive stocked$(li)20 20 12 61 79 80 81 98 33 100 204 250 395 398 399 400 701item)Ore Salting20 20 12 61 79 80 81 98 33 100 204 250 395 398 399 400 701) — printed stone and its variants hide ore veins"
+      "text": "$(li)$(item)Verdant$(): plants print fully grown$(li)$(item)Experience$(): the print banks XP for you$(li)$(item)Treasure$(): printed chests may hold loot$(li)$(item)Overdrive$(): the print costs less filament$(li)$(item)Quartermaster$(): printed fixtures arrive stocked$(li)$(item)Ore Salting$(): printed stone and its variants hide ore veins"
     },
     {
       "type": "patchouli:text",
       "title": "Overdrive",
-      "text": "$(l)Uncommon$() prints at exact $(l)break-even$(); $(l)Rare$() prints at a $(l)profit$() — you get back more filament than you spent."
+      "text": "$(l)Uncommon$() prints at exact $(l)break-even$(); $(l)Rare$() prints at a $(l)profit$(): you get back more filament than you spent."
     },
     {
       "type": "patchouli:text",
@@ -21,7 +21,7 @@
     {
       "type": "patchouli:text",
       "title": "Treasure",
-      "text": "$(l)Treasure$() drops rare loot into printed chests, barrels and shulkers — the haul scales with the resin's rarity."
+      "text": "$(l)Treasure$() drops rare loot into printed chests, barrels and shulkers. The haul scales with the resin's rarity."
     },
     {
       "type": "patchouli:text",

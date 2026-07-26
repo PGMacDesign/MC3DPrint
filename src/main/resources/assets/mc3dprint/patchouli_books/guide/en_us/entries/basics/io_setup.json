@@ -6,12 +6,12 @@
   "pages": [
     {
       "type": "patchouli:text",
-      "text": "Printer I/O:$(br)$(li)$(l)Top$() — input (templates, discs)$(li)$(l)Bottom$() — output (prints, ejected discs)$(li)$(l)Sides$() — filament spools $(l)only$()$(br2)Hoppers work from Tier 1, and any pipe mod that respects inventory faces works too."
+      "text": "Printer I/O:$(br)$(li)$(l)Top$(): input (templates, discs)$(li)$(l)Bottom$(): output (prints, ejected discs)$(li)$(l)Sides$(): filament spools $(l)only$()$(br2)Hoppers work from Tier 1, and any pipe mod that respects inventory faces works too."
     },
     {
       "type": "patchouli:text",
       "title": "Power & Filament",
-      "text": "RF cables connect on $(l)any$() face. Spools dock on the sides — Shift+Right Click the printer with a spool in hand, or Shift+Click it into the spool docks in the GUI.$(br2)Docked spools render on the machine and visibly shrink as filament depletes. The $(item)Filament Converter$() can keep them topped up automatically."
+      "text": "RF cables connect on $(l)any$() face. Spools dock on the sides: Shift+Right Click the printer with a spool in hand, or Shift+Click it into the spool docks in the GUI.$(br2)Docked spools render on the machine and visibly shrink as filament depletes. The $(item)Filament Converter$() can keep them topped up automatically."
     },
     {
       "type": "patchouli:spotlight",
@@ -22,7 +22,7 @@
     {
       "type": "patchouli:text",
       "title": "Starting a Print",
-      "text": "Loading a disc arms the printer ($(l)Ready$()). Press $(l)Start$() in the GUI or pulse $(l)redstone$() to begin — or flip $(l)Auto$() on to start the moment a disc lands.$(br2)Use the X / Y / Z offsets in the GUI to move the build area; the default is centered directly above the printer. See the $(l)FAQ$() if a print won't begin."
+      "text": "Loading a disc arms the printer ($(l)Ready$()). Press $(l)Start$() in the GUI or pulse $(l)redstone$() to begin, or flip $(l)Auto$() on to start the moment a disc lands.$(br2)Use the X / Y / Z offsets in the GUI to move the build area; the default is centered directly above the printer. See the $(l)FAQ$() if a print won't begin."
     }
   ]
 }

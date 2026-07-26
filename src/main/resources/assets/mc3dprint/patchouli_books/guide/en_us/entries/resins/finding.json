@@ -6,11 +6,11 @@
   "pages": [
     {
       "type": "patchouli:text",
-      "text": "The strongest resins can't be crafted at all — $(l)Quartermaster$() and $(l)Ore Salting$() exist only here. Find them while exploring end-game structures:$(br)$(li)End cities$(li)Ancient cities$(li)Nether fortresses & bastions$(li)Woodland mansions$(li)Strongholds$(li)Buried treasure"
+      "text": "The strongest resins can't be crafted at all: $(l)Quartermaster$() and $(l)Ore Salting$() exist only here. Find them while exploring end-game structures:$(br)$(li)End cities$(li)Ancient cities$(li)Nether fortresses & bastions$(li)Woodland mansions$(li)Strongholds$(li)Buried treasure"
     },
     {
       "type": "patchouli:text",
-      "text": "Each qualifying chest has a small chance to hold one random Rare resin. They're scarce on purpose — pair a hard-won resin with a hard-won blueprint for the best print of your life."
+      "text": "Each qualifying chest has a small chance to hold one random Rare resin. They're scarce on purpose: pair a hard-won resin with a hard-won blueprint for the best print of your life."
     }
   ]
 }

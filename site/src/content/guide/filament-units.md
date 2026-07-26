@@ -7,11 +7,11 @@ summary: "Turn raw materials into Filament Units on the Winder, then dock the sp
 
 Every block a printer places is paid for in **Filament Units (FU)**. To make FU, you feed raw materials into a **Filament Winder** to wind them onto a **Filament Spool**, then `Shift+Right Click` the spool onto a printer's side.
 
-A material's FU value is derived from its crafting and smelting recipe graph — stone is nearly free, diamond blocks cost what their diamonds are worth.
+A material's FU value is derived from its crafting and smelting recipe graph: stone is nearly free, diamond blocks cost what their diamonds are worth.
 
 ## Using the Winder
 
-Put a material in the input slot and an empty (or partial) spool in the spool slot. The Winder consumes the material and winds its FU onto the spool. One universal Winder handles every tier — the **spool's** tier, not the Winder, decides what it accepts. It's craftable from Tier 1 (string, sticks, and a smooth-stone base).
+Put a material in the input slot and an empty (or partial) spool in the spool slot. The Winder consumes the material and winds its FU onto the spool. One universal Winder handles every tier: the **spool's** tier, not the Winder, decides what it accepts. It's craftable from Tier 1 (string, sticks, and a smooth-stone base).
 
 ## Exact-tier winding
 
@@ -22,7 +22,7 @@ A material only winds into a spool of its **exact** tier:
 
 A mismatch shows `Requires Tier X Spool` and leaves both items untouched. Items with no FU value show `Can't be converted`.
 
-> Every spool holds 100,000 FU regardless of tier — tier gates which materials it accepts, not how much it stores.
+> Every spool holds 100,000 FU regardless of tier: tier gates which materials it accepts, not how much it stores.
 
 ### Why exact-tier is the good part
 
@@ -50,4 +50,4 @@ Combine it with the mod filter to narrow further: `@mc3dprint tier-3` lists only
 
 With **Applied Energistics 2** installed, the **Filament Converter** automates winding straight from an ME network and keeps your docked spools topped up.
 
-For the spending rules — how a spool pays for prints — see [the FU economy](/guide/fu-economy/).
+For the spending rules (how a spool pays for prints), see [the FU economy](/guide/fu-economy/).

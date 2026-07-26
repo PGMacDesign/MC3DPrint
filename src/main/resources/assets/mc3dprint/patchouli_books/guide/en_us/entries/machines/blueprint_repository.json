@@ -6,17 +6,17 @@
   "pages": [
     {
       "type": "patchouli:text",
-      "text": "The $(item)Blueprint Repository$() is your blueprint library. It starts $(l)empty$() — you fill it by depositing the discs you find and scan, then re-burn any catalogued build onto a fresh disc whenever you need a copy.$(br2)Right-click it to open the browser: catalogued builds on the left, details on the right."
+      "text": "The $(item)Blueprint Repository$() is your blueprint library. It starts $(l)empty$(): you fill it by depositing the discs you find and scan, then re-burn any catalogued build onto a fresh disc whenever you need a copy.$(br2)Right-click it to open the browser: catalogued builds on the left, details on the right."
     },
     {
       "type": "patchouli:text",
       "title": "Depositing Discs",
-      "text": "Drop a $(l)written$() Blueprint Disc into the input slot and press $(l)Deposit Disc$(). The build is catalogued into the library and the disc is consumed.$(br2)Nothing is lost — once catalogued, a build stays forever and you can re-burn as many copies as you like."
+      "text": "Drop a $(l)written$() Blueprint Disc into the input slot and press $(l)Deposit Disc$(). The build is catalogued into the library and the disc is consumed.$(br2)Nothing is lost: once catalogued, a build stays forever and you can re-burn as many copies as you like."
     },
     {
       "type": "patchouli:text",
       "title": "Duplicates Recycle",
-      "text": "Deposit a disc the library $(l)already has$() and it won't be wasted — the disc is wiped and handed back as a $(item)Blank Blueprint Disc$() you can reuse.$(br2)$(l)Locked$() discs are protected: a duplicate locked disc is left untouched instead of being recycled."
+      "text": "Deposit a disc the library $(l)already has$() and it won't be wasted: the disc is wiped and handed back as a $(item)Blank Blueprint Disc$() you can reuse.$(br2)$(l)Locked$() discs are protected: a duplicate locked disc is left untouched instead of being recycled."
     },
     {
       "type": "patchouli:text",
@@ -31,7 +31,7 @@
     {
       "type": "patchouli:crafting",
       "recipe": "mc3dprint:blueprint_repository",
-      "text": "The Blueprint Repository. One per base is plenty — it's the home for every build you collect."
+      "text": "The Blueprint Repository. One per base is plenty: it's the home for every build you collect."
     }
   ]
 }

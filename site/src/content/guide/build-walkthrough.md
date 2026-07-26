@@ -9,17 +9,17 @@ Every [Fabricator](/guide/fabricators/) is built the same way. Lay a flat N×N s
 
 ## Layouts by tier
 
-1. **T5** — 3×3: 8 Printer Casing + the T5 Fabricator in the middle. The smallest Fabricator.
-2. **T6** — 5×5: 24 Printer Casing + the T6 Fabricator in the center cell.
-3. **T7** — 7×7: 48 Printer Casing + the T7 Fabricator. Clear a big flat platform first.
-4. **T8** — 9×9: 76 Printer Casing + 4 corner Awakened Draconium blocks + the T8 Fabricator. Requires Draconic Evolution.
+1. **T5**: 3×3: 8 Printer Casing + the T5 Fabricator in the middle. The smallest Fabricator.
+2. **T6**: 5×5: 24 Printer Casing + the T6 Fabricator in the center cell.
+3. **T7**: 7×7: 48 Printer Casing + the T7 Fabricator. Clear a big flat platform first.
+4. **T8**: 9×9: 76 Printer Casing + 4 corner Awakened Draconium blocks + the T8 Fabricator. Requires Draconic Evolution.
 
 ## If it won't form
 
 Forming checks every base cell and names the exact coordinates that failed:
 
-- `Wrong/missing block` — a base cell isn't Printer Casing.
-- `T8 corner` — a corner isn't Awakened Draconium.
+- `Wrong/missing block`: a base cell isn't Printer Casing.
+- `T8 corner`: a corner isn't Awakened Draconium.
 
 Fix the named position and `Right Click` the controller again.
 
