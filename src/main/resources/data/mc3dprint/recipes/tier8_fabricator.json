@@ -11,16 +11,16 @@
       "recipe": {
         "type": "minecraft:crafting_shaped",
         "pattern": [
-          "NEN",
-          "EFE",
-          "NEN"
+          "NAN",
+          "AFA",
+          "NAN"
         ],
         "key": {
           "N": {
             "item": "minecraft:nether_star"
           },
-          "E": {
-            "item": "minecraft:dragon_egg"
+          "A": {
+            "item": "draconicevolution:awakened_draconium_ingot"
           },
           "F": {
             "item": "mc3dprint:tier7_fabricator"
