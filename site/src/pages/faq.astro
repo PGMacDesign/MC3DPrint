@@ -3,6 +3,12 @@ import Base from "../layouts/Base.astro";
 
 const faqs = [
   {
+    q: "Can I turn one material into another?",
+    a: `<p>Yes, and it's one of the main things the mod is for. Filament is denominated by <strong>tier</strong>, not by item, so a spool doesn't remember what you wound into it. Anything of the <strong>same tier is interchangeable</strong>, and a spool also pays for anything <em>below</em> its tier.</p>
+        <p>Wind sculk (Tier 5) and print diamonds (also Tier 5). Wind your surplus copper (Tier 2) and print gold. Drop the target item into the printer's Smart Print Slot to put it in <a href="/guide/item-mode/">Item Mode</a>, and it prints copies paid for out of the spool.</p>
+        <p>The one thing you can't do is convert <em>upward</em>. Low-tier filament contributes nothing toward a higher-tier cost, so no amount of cobblestone will ever add up to a diamond.</p>`,
+  },
+  {
     q: "Why won't it print? (Not Printable)",
     a: `<p>A <strong>Not Printable</strong> status means the machine can't print what you gave it, for one of two reasons:</p>
         <ul>
@@ -54,7 +60,7 @@ const faqs = [
 ---
 <Base
   title="FAQ — MC3DPrint"
-  description="Answers to the common MC3DPrint questions: why a build won't print, moving and rotating the print area, auto vs manual, getting blueprints, upgrades, and recovering a stalled print."
+  description="Answers to the common MC3DPrint questions: converting one material into another, why a build won't print, moving and rotating the print area, auto vs manual, getting blueprints, upgrades, and recovering a stalled print."
 >
   <section class="section">
     <div class="wrap narrow">

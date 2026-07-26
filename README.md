@@ -7,10 +7,15 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue)](LICENSE)
 [![Website](https://img.shields.io/badge/website-mc3dprint.dev-5cc8ff)](https://mc3dprint.dev)
 
-**WorldEdit for survival.** A Minecraft Forge **1.20.1** tech mod that scans any
-structure you build and prints it back anywhere — no creative mode, no commands.
-Prints are paid for in **Filament Units (FU)** and **Redstone Flux (RF)**, so you
-earn your builds instead of conjuring them.
+**Wind anything. Print anything.** A Minecraft Forge **1.20.1** tech mod with a
+material economy at its center: wind any item into tiered **Filament Units (FU)**,
+then spend that filament to print anything else at the same tier or below. Wind
+copper, print gold. Wind sculk, print diamonds.
+
+The same filament also prints *structures*. Scan any build with the Structure
+Scanner and reprint it anywhere, block state and connections intact, powered by FU
+plus **Redstone Flux (RF)**. WorldEdit for survival, with no creative mode and no
+commands.
 
 ### 🌐 [mc3dprint.dev](https://mc3dprint.dev)
 
@@ -23,18 +28,46 @@ open source (MIT).
 
 ## How it works
 
-1. **Scan** a build with the **Structure Scanner** → it saves to a **Blueprint Disc**.
-2. **Wind** items into **Filament Units** with the **Filament Winder**.
-3. **Print** anywhere: load the disc + a filament spool into a printer, supply RF,
-   and it reconstructs your structure block by block — every block state and
-   connection preserved.
+1. **Wind** any valued item into **Filament Units** with the **Filament Winder**.
+   FU is denominated at that item's own material tier.
+2. **Pick a template.** Drop an item into a printer's Smart Print Slot to print
+   copies of it (**Item Mode**), or load a **Blueprint Disc** to build a whole
+   structure (**Blueprint Mode**). Discs come from the **Structure Scanner**, from
+   world loot, or from the 130+ curated builds the mod ships.
+3. **Print** anywhere: supply RF and a docked spool, and it prints, block state and
+   connections preserved.
 
 Eight tiers run from a desktop single-block printer (Tiers 1–4) up to multiblock
 **Fabricators** (Tiers 5–8, an N×N Printer Casing base + controller, formed by
 right-click), ending at the Draconic-powered Tier 8.
 
+## Turning one material into another
+
+Filament is denominated by **tier**, not by item, and a spool doesn't remember what
+you wound into it. Winding is **exact-tier** and spending is **down-only**, and
+those two rules together mean matter is **interchangeable within a tier**:
+
+| Wind this | Tier | Print this |
+|---|---|---|
+| 3 copper ingots | T2 | 2 gold ingots |
+| 4 end stone | T2 | 1 iron ingot |
+| 5 redstone | T3 | 1 glowstone |
+| 5 blaze rods | T4 | 4 emeralds |
+| 10 sculk | T5 | 3 diamonds |
+| 1 spare elytra | T6 | 4 netherite ingots |
+
+Ratios are at exact break-even (four Efficiency modules); below that, printing
+carries a markup and costs slightly more than the matter is worth.
+
+Converting *upward* is impossible by construction: low-tier filament contributes
+nothing toward a higher-tier cost, so a cobblestone farm can never become a
+netherite farm. That asymmetry is the whole anti-dupe design, and the rationale is
+in [Design notes](#design-notes-economy--anti-exploit-rationale) below.
+
 ## Features
 
+- **Convert materials** — wind anything into FU, print anything else at that tier
+  or below, with copies made in Item Mode from a template that's never consumed.
 - **Scan & print** any structure, with block states, orientation, and connections intact.
 - **A real economy** — FU is wound from real items; printing is lossy by design and
   reaches 1:1 break-even only with max Efficiency upgrades, so it can't be a dupe exploit.
@@ -163,6 +196,27 @@ The Filament Winder is strict: a material only winds into a spool of its **exact
 tier (netherite → Tier 6 spool, cobblestone → Tier 1 spool). This is deliberate.
 It stops cheap, mass-farmed blocks (e.g. cobblestone from a cobble farm) from
 ever filling a high-tier spool and undercutting the economy.
+
+The player-facing upside is the same rule read forward: a spool stores a *tier*,
+not a *material*, so everything at that tier is interchangeable. Sculk and diamond
+are both Tier 5, so a sculk-wound spool prints diamonds. That's a feature, not a
+leak, and the abundance rule below is what keeps it honest.
+
+### The abundance rule (why tiers are where they are)
+
+Because everything in a tier is interchangeable, tier assignment *is* the balance
+lever. The rule: **a farmable resource can't sit at a tier whose spool could print
+something rarer than the resource itself.** That's why chorus fruit is capped at
+Tier 4 (a Tier 6 chorus spool could print netherite) and why tridents and nautilus
+shells stay at Tier 5 rather than Tier 6.
+
+Tier 5 is a deliberate exception in spirit: sculk and ender pearls are farmable and
+sit alongside diamond. Reaching a Tier 5 spool at all is a real investment, so the
+leeway is intentional. Tier 2 needs no such care, since everything it can reach
+(iron, gold) is already farmable in vanilla.
+
+Survival-unobtainable blocks stay intentionally **unvalued**, so strict mode
+refuses them outright.
 
 ### Down-only spending (printing)
 

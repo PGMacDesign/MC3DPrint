@@ -24,6 +24,12 @@ A mismatch shows `Requires Tier X Spool` and leaves both items untouched. Items 
 
 > Every spool holds 100,000 FU regardless of tier — tier gates which materials it accepts, not how much it stores.
 
+### Why exact-tier is the good part
+
+Winding is where one material becomes another. A spool doesn't remember what you wound into it, only the tier, so **anything of the same tier is interchangeable**: wind sculk into a T5 spool and it will print diamonds, because both are T5. Wind your surplus copper and print gold.
+
+It only ever works sideways or downward. Cheap materials can't climb a tier, which is exactly why the rule is strict. The printing side of this is [Item Mode](/guide/item-mode/).
+
 ## Finding every item of a tier
 
 MC3DPrint adds a line like `MC3DP: Tier-5 (50 FU)` to the tooltip of every item that has an FU value. JEI indexes tooltips, so you can search that line to list a whole tier at once. Type this into JEI's search box:
