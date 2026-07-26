@@ -40,7 +40,7 @@ The next step up, the T7 spool, now costs a single **nether star** (down from fo
 
 ## Finding every item of a tier
 
-MC3DPrint adds a line like `MC3DP: Tier-5 (50 FU)` to the tooltip of every item that has an FU value. JEI indexes tooltips, so you can search that line to list a whole tier at once. Type this into JEI's search box:
+MC3DPrint adds a line like `MC3DP: Tier-5 (50 FU)` to the tooltip of every item that has an FU value. Items that can't be freely printed also get a status line, so you can tell at a glance: **Wind-only (can't print)** for recycle-only treasure, **Trophy (prints in official builds only)** for mob heads, and **Print-only (can't wind)** for farmable outputs like bones. The JEI "3D Printing" panel shows the same status, color-coded. JEI indexes tooltips, so you can search that line to list a whole tier at once. Type this into JEI's search box:
 
 ```text
 tier-5
