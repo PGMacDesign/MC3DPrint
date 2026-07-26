@@ -17,6 +17,11 @@
       "type": "patchouli:text",
       "title": "Running a Job",
       "text": "Toggle $(l)Print / Decon$() in the machine GUI (handing a region to a machine arms Decon automatically). The armed region shows as a $(c:red)red wireframe$() in the world, and the $(l)first$() job after arming ALWAYS needs the $(l)Start button$(): $(l)Auto$() never fires on a fresh region, so nothing dissolves by surprise. After that first Start, Auto resumes as a standing recycler for the region.$(br2)Jobs work $(l)top-down$(), pause on power loss without losing progress, and pause $(l)before$() removing a block when every spool is full: filament is never voided. Changing the region or mode cancels the job cleanly and re-arms the Start gate."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Wind-Only Isn't Safe",
+      "text": "Skipping keys off $(l)FU value alone$(). Wind-only treasure like the $(item)Dragon Egg$() $(o)is$() valued, it just never prints back, so it is $(l)not$() skipped: one inside an armed region is consumed like any other block, crediting half its winding value.$(br2)Move anything you care about outside the region before you press Start."
     }
   ]
 }

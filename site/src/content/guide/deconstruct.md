@@ -27,9 +27,11 @@ Deconstructing credits a **fraction of each block's winding value** (config `dec
 
 - **Winder-blacklisted** blocks (planks, cactus, bamboo…) are removed at **zero** credit: the anti-laundering tag holds in both directions.
 - **Itemless blocks** (water, crops, fire) clear for free, mirroring how printing places them for free.
-- **Unvalued blocks** (dragon eggs, strict-mode unknowns) are **skipped in place**: the machine never destroys something for nothing.
+- **Unvalued blocks** (spawners, budding amethyst, strict-mode unknowns) are **skipped in place**: the machine never destroys something for nothing.
 - **Containers with items** are skipped in place. Empty them first; the machine never deletes or ejects stored items.
 - Unbreakable blocks (bedrock) are skipped.
+
+> **Wind-only treasure is not protected.** Skipping is decided purely by whether a block has an FU value, and wind-only items like the **dragon egg** are valued (they just can't be printed back). So a dragon egg inside an armed region is consumed like anything else, crediting half its winding value. Move anything you care about outside the region before you start.
 
 ## Job behavior
 
