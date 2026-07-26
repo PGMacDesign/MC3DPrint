@@ -2,18 +2,18 @@
 import Base from "../layouts/Base.astro";
 
 const steps = [
-  { t: "Install Forge 1.20.1", d: "MC3DPrint runs on Minecraft Java 1.20.1 with Minecraft Forge 47.4.10 or newer. Install the Forge profile from files.minecraftforge.net and launch it once to create the profile." },
-  { t: "Drop in the jar", d: "Download the latest mc3dprint-<version>.jar from the Releases page and place it in your instance's mods/ folder. Replace any older copy. Never keep two." },
+  { t: "Install your loader", d: "MC3DPrint ships for two loaders: Minecraft 1.20.1 on Forge 47.4.10+, and 1.21.1 through 26.2 on NeoForge. Install the matching profile from files.minecraftforge.net or neoforged.net and launch it once to create the profile." },
+  { t: "Drop in the jar", d: "Grab the jar matching your version, mc3dprint-<version>-forge-1.20.1.jar or mc3dprint-<version>-neoforge-<mc>.jar, and place it in your instance's mods/ folder. Replace any older copy. Never keep two." },
   { t: "Launch & verify", d: "Start the game. Open the Mods list and confirm MC3DPrint appears. If you have Patchouli installed (optional), you'll also get the in-game guide book." },
   { t: "Your first build", d: "Craft a Structure Scanner and a Printer. Scan something small, wind some filament, and print it. The Guide walks through each step in detail." },
 ];
 ---
-<Base title="Get Started · MC3DPrint" description="Install MC3DPrint for Minecraft 1.20.1 Forge and print your first build.">
+<Base title="Get Started · MC3DPrint" description="Install MC3DPrint on Minecraft 1.20.1 (Forge) or 1.21.1 through 26.2 (NeoForge) and print your first build.">
   <section class="section">
     <div class="wrap narrow">
       <span class="eyebrow">Get started</span>
       <h1>Up and printing in four steps.</h1>
-      <p class="lede">MC3DPrint is a standard Forge mod. If you've installed a mod before, this will feel familiar. If you haven't, follow along; it's about five minutes.</p>
+      <p class="lede">MC3DPrint is a standard Forge/NeoForge mod. If you've installed a mod before, this will feel familiar. If you haven't, follow along; it's about five minutes.</p>
 
       <ol class="steps">
         {steps.map((s, i) => (
@@ -45,14 +45,14 @@ const steps = [
             />
           </a>
         </p>
-        <p class="muted small">Same jar on both, grab it wherever you manage your mods.</p>
+        <p class="muted small">CurseForge carries the two soak-tested builds (1.20.1 Forge and 1.21.1 NeoForge). Every other version ships on the GitHub release.</p>
       </div>
 
       <div class="req">
         <h3>Requirements</h3>
         <ul>
-          <li><strong>Minecraft</strong> Java Edition 1.20.1</li>
-          <li><strong>Forge</strong> 47.4.10+</li>
+          <li><strong>Minecraft</strong> Java Edition 1.20.1, or 1.21.1 / 1.21.8 / 1.21.9 / 1.21.10 / 1.21.11 / 26.1 / 26.2</li>
+          <li><strong>Loader</strong> Forge 47.4.10+ on 1.20.1; NeoForge on 1.21.1 and up</li>
           <li><strong>Optional:</strong> Patchouli (in-game guide), JEI (recipe lookup)</li>
         </ul>
       </div>

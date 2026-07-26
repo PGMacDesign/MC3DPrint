@@ -2,13 +2,13 @@
 
 [![CurseForge downloads](https://img.shields.io/curseforge/dt/1587177?logo=curseforge&label=CurseForge&color=f16436)](https://www.curseforge.com/minecraft/mc-mods/mc3dprint)
 [![CurseForge version](https://img.shields.io/curseforge/v/1587177?logo=curseforge&label=latest&color=f16436)](https://www.curseforge.com/minecraft/mc-mods/mc3dprint/files)
-[![Minecraft](https://img.shields.io/badge/Minecraft-1.20.1-62B47A)](https://www.minecraft.net)
-[![Forge](https://img.shields.io/badge/Forge-47.4.10%2B-1D2731)](https://files.minecraftforge.net)
+[![Minecraft](https://img.shields.io/badge/Minecraft-1.20.1%20%7C%201.21.1--26.2-62B47A)](https://www.minecraft.net)
+[![Loader](https://img.shields.io/badge/loader-Forge%20%7C%20NeoForge-1D2731)](https://neoforged.net)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue)](LICENSE)
 [![Website](https://img.shields.io/badge/website-mc3dprint.dev-5cc8ff)](https://mc3dprint.dev)
 
-**Wind anything. Print anything.** A Minecraft Forge **1.20.1** tech mod with a
-material economy at its center: wind any item into tiered **Filament Units (FU)**,
+**Wind anything. Print anything.** A Minecraft tech mod with a material economy at
+its center, for **Forge 1.20.1** and **NeoForge 1.21.1 through 26.2**: wind any item into tiered **Filament Units (FU)**,
 then spend that filament to print anything else at the same tier or below. Wind
 copper, print gold. Wind sculk, print diamonds.
 
@@ -84,13 +84,23 @@ in [Design notes](#design-notes-economy--anti-exploit-rationale) below.
 
 ## Install
 
-MC3DPrint is a standard Forge mod:
+MC3DPrint is a standard Forge/NeoForge mod. Every supported version ships from the
+same release:
 
-1. Install **Minecraft 1.20.1** with **Forge 47.4.10+**.
-2. Download the latest `mc3dprint-<version>.jar` from
+| Minecraft | Loader | On CurseForge |
+|---|---|---|
+| 1.20.1 | Forge 47.4.10+ | yes |
+| 1.21.1 | NeoForge | yes |
+| 1.21.8 · 1.21.9 · 1.21.10 · 1.21.11 · 26.1 · 26.2 | NeoForge | GitHub release only |
+
+CurseForge carries the two soak-tested builds; the forward jars are attached to every
+GitHub release and get promoted to CurseForge as each one clears its in-world soak.
+
+1. Install **Minecraft** with the matching loader from the table above.
+2. Download the jar for your version, `mc3dprint-<version>-forge-1.20.1.jar` or
+   `mc3dprint-<version>-neoforge-<mc>.jar`, from
    [**CurseForge**](https://www.curseforge.com/minecraft/mc-mods/mc3dprint) or the
-   [**GitHub Releases**](https://github.com/PGMacDesign/MC3DPrint/releases/latest) page
-   (same jar on both).
+   [**GitHub Releases**](https://github.com/PGMacDesign/MC3DPrint/releases/latest) page.
 3. Drop it into your instance's `mods/` folder (replace any older copy; don't keep two).
 
 **Optional:** [Patchouli](https://www.curseforge.com/minecraft/mc-mods/patchouli)
@@ -111,6 +121,10 @@ If it's a good fit, it ships with the mod and you're credited. You can also brow
 and preview every curated build in the [gallery](https://mc3dprint.dev/gallery).
 
 ## Build from source
+
+This is the `legacy/1.20.1` branch: a single-target Forge tree that builds **only**
+the Minecraft 1.20.1 jar, on Java 17. The NeoForge jars (1.21.1 through 26.2) come
+from the Stonecutter tree on `main`, where Gradle tasks are node-scoped instead.
 
 ```bash
 ./gradlew build                 # full build + tests → build/libs/mc3dprint-<ver>.jar
