@@ -171,7 +171,7 @@ let galleryBase = '';
       renderGallery();
       $('search').addEventListener('input', (e) => renderGallery(e.target.value));
     }
-  } catch (_) { /* no manifest locally — gallery just stays hidden */ }
+  } catch (_) { /* no manifest locally, gallery just stays hidden */ }
 })();
 
 // ?src= deep-link (the PR-comment flow) works locally too.

@@ -1,5 +1,5 @@
 /* ============================================================================
-   MC3DPrint — design system
+   MC3DPrint · design system
    Dark, machined-console theme matching the in-game identity: deep charcoal
    canvas, molten-amber primary accent (the filament), a cyan "magic glow"
    secondary (links/tech), machined-grey hardware surfaces, and a per-tier
@@ -22,15 +22,15 @@
   --ink-faint: #717789;
 
   /* accents */
-  --filament:    #f4a23c;   /* molten amber — primary (the filament) */
+  --filament:    #f4a23c;   /* molten amber: primary (the filament) */
   --filament-hi: #ffc06a;
-  --cyan:        #5cc8ff;   /* the mod's "magic glow" — secondary */
+  --cyan:        #5cc8ff;   /* the mod's "magic glow": secondary */
   --cyan-hi:     #bfe9ff;
   /* legacy aliases (older pages still reference --teal*); resolve to cyan */
   --teal:        var(--cyan);
   --teal-hi:     var(--cyan-hi);
 
-  /* machined grey — "hardware" surfaces echoing the in-game GUIs */
+  /* machined grey: "hardware" surfaces echoing the in-game GUIs */
   --steel:      #dce1e6;
   --steel-2:    #bcc4cc;
   --steel-3:    #9aa3ad;
