@@ -27,7 +27,7 @@
       "type": "patchouli:spotlight",
       "item": "mc3dprint:tier8_fabricator",
       "title": "Tier 8: Draconic",
-      "text": "The $(item)Tier 8 Fabricator$() is the endgame. It requires $(l)Draconic Evolution$() to be installed, and its four base corners must be $(l)Awakened Draconium$() blocks instead of casing. Without Draconic Evolution it refuses to form."
+      "text": "The $(item)Tier 8 Fabricator$() is the endgame. It requires $(l)Draconic Evolution$() to be installed, and its four base corners must be $(l)Awakened Draconium$() blocks instead of casing. Without Draconic Evolution it refuses to form.$(br2)DE gates $(l)both halves$(): the controller crafts from $(l)4 Nether Stars$() and $(l)4 Awakened Draconium Ingots$() around a $(item)Tier 7 Fabricator$()."
     }
   ]
 }
