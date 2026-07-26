@@ -89,12 +89,18 @@ public class PrintRecipeCategory implements IRecipeCategory<PrintRecipeCategory.
         // Line 2 — tier
         com.pgmacdesign.mc3dprint.compat.RenderCompat.drawString(graphics, font,
                 Component.translatable("jei.mc3dprint.tier_required", entry.tier()), 28, 16, 0xFF707070, false);
-        // Line 3 — RF for a printable item; wind-only items can't print, so say so instead.
-        Component thirdLine = entry.noPrint()
-                ? Component.translatable("jei.mc3dprint.cant_print")
-                : Component.translatable("jei.mc3dprint.rf_cost", String.format("%,d", entry.rf()));
-        com.pgmacdesign.mc3dprint.compat.RenderCompat.drawString(graphics, font, thirdLine, 28, 28, 0xFF707070, false);
-        // Line 4 — machine-use status. Print-ability and wind-ability are shown as INDEPENDENT
+        // Line 3 — RF cost, printable items only. A wind-only item has no RF cost, and the status
+        // line below already reads "No print", so a separate "Can't print" here just says it twice.
+        // Skip the row and let the status line take it, so wind-only cards read as three tight lines.
+        int statusY = 42;
+        if (entry.noPrint()) {
+            statusY = 28;
+        } else {
+            com.pgmacdesign.mc3dprint.compat.RenderCompat.drawString(graphics, font,
+                    Component.translatable("jei.mc3dprint.rf_cost", String.format("%,d", entry.rf())),
+                    28, 28, 0xFF707070, false);
+        }
+        // Status line — machine-use. Print-ability and wind-ability are shown as INDEPENDENT
         // parts ("Prints/Trophy/No print · Winds/No wind") so a trophy item that is also winder-
         // blacklisted can't collapse into a misleading "windable trophy", and the compact form fits
         // the 150px card. Color keys off the most restrictive axis.
@@ -108,6 +114,6 @@ public class PrintRecipeCategory implements IRecipeCategory<PrintRecipeCategory.
         com.pgmacdesign.mc3dprint.compat.RenderCompat.drawString(graphics, font,
                 Component.translatable("jei.mc3dprint.mstatus",
                         Component.translatable(printKey), Component.translatable(windKey)),
-                28, 42, color, false);
+                28, statusY, color, false);
     }
 }
