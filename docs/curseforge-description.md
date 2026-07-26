@@ -74,8 +74,8 @@ invisible when a mod isn't installed: no crashes, warnings, or config.
 
 ## Requirements
 
-- **Minecraft** 1.20.1 (Java Edition)
-- **Forge** 47.4.10 or newer
+- **Minecraft** 1.20.1 (Java Edition) with **Forge** 47.4.10 or newer, **or**
+- **Minecraft** 1.21.1 / 1.21.8 / 1.21.9 / 1.21.10 / 1.21.11 / 26.1 / 26.2 with **NeoForge**
 - Optional: **Patchouli** (in-game guide book), **JEI** (recipe/cost lookup)
 
 ## Links
