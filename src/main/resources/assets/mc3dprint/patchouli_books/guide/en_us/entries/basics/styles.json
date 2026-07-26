@@ -2,7 +2,7 @@
   "name": "Alternate Styles",
   "category": "mc3dprint:basics",
   "icon": "minecraft:painting",
-  "sortnum": 7,
+  "sortnum": 8,
   "pages": [
     {
       "type": "patchouli:text",

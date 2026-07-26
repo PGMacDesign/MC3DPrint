@@ -1,7 +1,7 @@
 ---
 title: "Alternate styles (texture packs)"
 category: "Basics"
-order: 6
+order: 7
 summary: "Two optional built-in looks — Blueprint Mode and Dark Mode — ship inside the mod and flip on from the Resource Packs screen."
 ---
 
