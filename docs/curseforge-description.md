@@ -8,13 +8,13 @@
 
 # Summary (short tagline field)
 
-Wind any material into filament, print any other material back — and scan and reprint entire builds.
+Wind any material into filament, print any other material back, and scan and reprint entire builds.
 
 ---
 
 # Description (paste into the Markdown editor)
 
-# MC3DPrint — Wind Anything, Print Anything
+# MC3DPrint: Wind Anything, Print Anything
 
 **MC3DPrint** is a tech mod built around a material economy. Wind any item into
 tiered **Filament Units (FU)** on the Filament Winder, then spend that filament to
@@ -46,31 +46,31 @@ survival play.
 
 ## Features
 
-- **Convert one material into another** — wind anything into FU, print anything else at that tier or below.
-- **Item Mode** — drop any item into a printer to run off copies. The template is never consumed.
+- **Convert one material into another**: wind anything into FU, print anything else at that tier or below.
+- **Item Mode**: drop any item into a printer to run off copies. The template is never consumed.
 - **Scan & print** any structure, with block states, orientation, and connections preserved.
-- **Eight tiers** — desktop single-block printers (T1–T4) scaling up to N×N multiblock fabricators (T5–T8).
-- **A real economy** — Filament Units are wound from items at an exact-tier rate; printing is lossy by design and only reaches break-even with max efficiency upgrades.
-- **130+ curated builds** included — houses, towers, monuments, gardens, and working automatic farms (sugar cane, kelp, bamboo, pumpkin/melon, cactus, iron, mob-XP, and more).
-- **Blueprint Discs in world loot** — curated builds can drop as treasure.
-- **Resins** — one-shot print modifiers (grow crops on print, stock chests, bank XP, cheaper prints, and more).
-- **Upgrade modules** — tune print Speed, FU Efficiency, RF Efficiency, and RF buffer.
-- **Blueprint Repository** — a block that catalogues your discs and re-burns copies on demand.
+- **Eight tiers**: desktop single-block printers (T1–T4) scaling up to N×N multiblock fabricators (T5–T8).
+- **A real economy**: Filament Units are wound from items at an exact-tier rate; printing is lossy by design and only reaches break-even with max efficiency upgrades.
+- **130+ curated builds** included: houses, towers, monuments, gardens, and working automatic farms (sugar cane, kelp, bamboo, pumpkin/melon, cactus, iron, mob-XP, and more).
+- **Blueprint Discs in world loot**: curated builds can drop as treasure.
+- **Resins**: one-shot print modifiers (grow crops on print, stock chests, bank XP, cheaper prints, and more).
+- **Upgrade modules**: tune print Speed, FU Efficiency, RF Efficiency, and RF buffer.
+- **Blueprint Repository**: a block that catalogues your discs and re-burns copies on demand.
 - **In-game guide** via Patchouli, plus JEI recipe/cost integration.
 
 ## How it works
 
 1. **Wind** any valued item into Filament Units with the Filament Winder. FU is denominated at that item's own material tier.
-2. **Pick a template** — drop an item into the printer's Smart Print Slot to print copies of it, or load a Blueprint Disc to build a whole structure.
+2. **Pick a template**: drop an item into the printer's Smart Print Slot to print copies of it, or load a Blueprint Disc to build a whole structure.
 3. **Print** anywhere: supply RF and a docked spool, and it prints. A spool pays for anything at its tier or below.
 
 ## Mod compatibility
 
 MC3DPrint adds optional, soft-dependency support so other mods' items can be wound
-into filament and printed — including **AE2, Thermal Series, Tinkers' Construct,
+into filament and printed, including **AE2, Thermal Series, Tinkers' Construct,
 Mekanism, Create, Botania, EnderIO, Immersive Engineering**, and **Draconic
 Evolution** (which also powers the top-tier fabricator). These hooks are completely
-invisible when a mod isn't installed — no crashes, warnings, or config.
+invisible when a mod isn't installed: no crashes, warnings, or config.
 
 ## Requirements
 
@@ -84,4 +84,4 @@ invisible when a mod isn't installed — no crashes, warnings, or config.
 - **Source code (open source, MIT):** https://github.com/PGMacDesign/MC3DPrint
 
 MC3DPrint is free and open source under the MIT license. Created by PGMacDesign.
-Community build submissions are welcome through the website — no account or coding required.
+Community build submissions are welcome through the website. No account or coding required.

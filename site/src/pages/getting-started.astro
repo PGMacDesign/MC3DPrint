@@ -3,17 +3,17 @@ import Base from "../layouts/Base.astro";
 
 const steps = [
   { t: "Install Forge 1.20.1", d: "MC3DPrint runs on Minecraft Java 1.20.1 with Minecraft Forge 47.4.10 or newer. Install the Forge profile from files.minecraftforge.net and launch it once to create the profile." },
-  { t: "Drop in the jar", d: "Download the latest mc3dprint-<version>.jar from the Releases page and place it in your instance's mods/ folder. Replace any older copy — never keep two." },
+  { t: "Drop in the jar", d: "Download the latest mc3dprint-<version>.jar from the Releases page and place it in your instance's mods/ folder. Replace any older copy. Never keep two." },
   { t: "Launch & verify", d: "Start the game. Open the Mods list and confirm MC3DPrint appears. If you have Patchouli installed (optional), you'll also get the in-game guide book." },
   { t: "Your first build", d: "Craft a Structure Scanner and a Printer. Scan something small, wind some filament, and print it. The Guide walks through each step in detail." },
 ];
 ---
-<Base title="Get Started — MC3DPrint" description="Install MC3DPrint for Minecraft 1.20.1 Forge and print your first build.">
+<Base title="Get Started · MC3DPrint" description="Install MC3DPrint for Minecraft 1.20.1 Forge and print your first build.">
   <section class="section">
     <div class="wrap narrow">
       <span class="eyebrow">Get started</span>
       <h1>Up and printing in four steps.</h1>
-      <p class="lede">MC3DPrint is a standard Forge mod — if you've installed a mod before, this will feel familiar. If you haven't, follow along; it's about five minutes.</p>
+      <p class="lede">MC3DPrint is a standard Forge mod. If you've installed a mod before, this will feel familiar. If you haven't, follow along; it's about five minutes.</p>
 
       <ol class="steps">
         {steps.map((s, i) => (
@@ -45,7 +45,7 @@ const steps = [
             />
           </a>
         </p>
-        <p class="muted small">Same jar on both — grab it wherever you manage your mods.</p>
+        <p class="muted small">Same jar on both, grab it wherever you manage your mods.</p>
       </div>
 
       <div class="req">

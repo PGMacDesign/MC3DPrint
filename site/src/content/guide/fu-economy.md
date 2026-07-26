@@ -5,11 +5,11 @@ order: 5
 summary: "Why tier is value, how block costs are derived, and the down-only rule that governs every print."
 ---
 
-FU is **denominated by tier** — a T5 spool stores T5 FU, a T1 spool stores T1 FU. One unit of Tier N FU is worth several units of Tier N-1 (the conversion ratio is set in config). Tier is value, not just capacity, and every spool T1–T8 holds a uniform 100,000 FU.
+FU is **denominated by tier**: a T5 spool stores T5 FU, a T1 spool stores T1 FU. One unit of Tier N FU is worth several units of Tier N-1 (the conversion ratio is set in config). Tier is value, not just capacity, and every spool T1–T8 holds a uniform 100,000 FU.
 
 ## Where costs come from
 
-Each block's FU cost and tier are derived from its recipe graph — crafting, plus optionally smelting and stonecutting. A diamond block costs what its diamonds are worth; stone costs almost nothing. A block's material tier sets the **minimum** machine and spool tier needed to print it.
+Each block's FU cost and tier are derived from its recipe graph: crafting, plus optionally smelting and stonecutting. A diamond block costs what its diamonds are worth; stone costs almost nothing. A block's material tier sets the **minimum** machine and spool tier needed to print it.
 
 ## Two different rules
 
@@ -41,14 +41,14 @@ The same two rules are the anti-exploit gate. Converting *upward* is impossible:
 
 ## The markup
 
-Lower-tier machines pay a higher FU multiplier per block, and printing always costs a little more than the matter is worth. Stack **4 Efficiency modules** to reach exact break-even (1:1) — you can never print matter for *less* than it's worth. See [upgrades](/guide/upgrades/) for module slots.
+Lower-tier machines pay a higher FU multiplier per block, and printing always costs a little more than the matter is worth. Stack **4 Efficiency modules** to reach exact break-even (1:1). You can never print matter for *less* than it's worth. See [upgrades](/guide/upgrades/) for module slots.
 
 ## Printing food
 
-Food has FU values too, so a printer in [Item Mode](/guide/item-mode/) can print meals — bread is cheap, cooked and golden food cost more. But food **can't be wound back** into FU, so printing food is a one-way sink, not a loop.
+Food has FU values too, so a printer in [Item Mode](/guide/item-mode/) can print meals: bread is cheap, cooked and golden food cost more. But food **can't be wound back** into FU, so printing food is a one-way sink, not a loop.
 
 ## Restricted trophies
 
-Mob heads and skulls are **trophy items**: printers never duplicate them in item mode, and in blueprint mode they place only from an **official curated blueprint that specifically carries them** (like the Pig House's decorative heads). A scanned or imported build containing a head prints everything else and silently skips the trophy — same anti-exploit gate as [resins](/guide/resins-overview/).
+Mob heads and skulls are **trophy items**: printers never duplicate them in item mode, and in blueprint mode they place only from an **official curated blueprint that specifically carries them** (like the Pig House's decorative heads). A scanned or imported build containing a head prints everything else and silently skips the trophy, the same anti-exploit gate as [resins](/guide/resins-overview/).
 
-Heads still **wind**, though. Creeper, zombie, skeleton, and piglin heads recycle into Tier 4 Filament Units, so charged-creeper trophies aren't a dead end. The **wither skeleton skull** is the exception: it winds for a Tier 4 payout but is **wind-only** — never printed, in any mode — so a wither-skeleton farm can't mint printable wither-spawn ingredients.
+Heads still **wind**, though. Creeper, zombie, skeleton, and piglin heads recycle into Tier 4 Filament Units, so charged-creeper trophies aren't a dead end. The **wither skeleton skull** is the exception: it winds for a Tier 4 payout but is **wind-only** (never printed, in any mode), so a wither-skeleton farm can't mint printable wither-spawn ingredients.

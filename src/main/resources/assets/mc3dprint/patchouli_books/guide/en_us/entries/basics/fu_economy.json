@@ -6,17 +6,17 @@
   "pages": [
     {
       "type": "patchouli:text",
-      "text": "FU (Filament Units) is denominated $(l)by tier$(): a Tier 5 spool stores Tier 5 FU, a Tier 1 spool stores Tier 1 FU. One unit of Tier N FU is worth several units of Tier N-1 (the $(l)conversion ratio$(), set in config).$(br2)Each unit is worth more the higher its tier — tier is value, not just capacity."
+      "text": "FU (Filament Units) is denominated $(l)by tier$(): a Tier 5 spool stores Tier 5 FU, a Tier 1 spool stores Tier 1 FU. One unit of Tier N FU is worth several units of Tier N-1 (the $(l)conversion ratio$(), set in config).$(br2)Each unit is worth more the higher its tier: tier is value, not just capacity."
     },
     {
       "type": "patchouli:text",
       "title": "Spool Capacities",
-      "text": "Every spool — T1 through T8 — holds a uniform $(l)100,000 FU$(). A spool's tier sets $(l)which materials it accepts$(), not how much it stores.$(br2)So a higher tier never means a bigger tank; it means a more valuable one."
+      "text": "Every spool (T1 through T8) holds a uniform $(l)100,000 FU$(). A spool's tier sets $(l)which materials it accepts$(), not how much it stores.$(br2)So a higher tier never means a bigger tank; it means a more valuable one."
     },
     {
       "type": "patchouli:text",
       "title": "FU Cost Calculations",
-      "text": "Each block's FU cost — and its tier — is $(l)derived from its recipe graph$(): crafting, plus optionally smelting and stonecutting. A diamond block costs what its diamonds are worth; stone costs almost nothing.$(br2)A block's material tier sets the minimum machine and spool tier needed to print it."
+      "text": "Each block's FU cost (and its tier) is $(l)derived from its recipe graph$(): crafting, plus optionally smelting and stonecutting. A diamond block costs what its diamonds are worth; stone costs almost nothing.$(br2)A block's material tier sets the minimum machine and spool tier needed to print it."
     },
     {
       "type": "patchouli:text",
@@ -26,12 +26,12 @@
     {
       "type": "patchouli:text",
       "title": "Lower Tiers Cost More",
-      "text": "Lower-tier machines pay a higher FU multiplier per block — a Tier 1 printer costs more per block than a Tier 8 Fabricator.$(br2)Printing always costs a little $(l)more$() than the matter is worth. Stack $(l)4 Efficiency modules$() to reach exact break-even (1:1); you can never print matter for less than it's worth. Per-tier efficiencies are in the config."
+      "text": "Lower-tier machines pay a higher FU multiplier per block: a Tier 1 printer costs more per block than a Tier 8 Fabricator.$(br2)Printing always costs a little $(l)more$() than the matter is worth. Stack $(l)4 Efficiency modules$() to reach exact break-even (1:1); you can never print matter for less than it's worth. Per-tier efficiencies are in the config."
     },
     {
       "type": "patchouli:text",
       "title": "Printing Food",
-      "text": "Food has FU values too, so a printer in $(l)item mode$() can print meals — bread and basics low, cooked food and golden food higher. Handy when you're short on supplies but flush with filament.$(br2)Food $(l)can't be wound back$() into FU — printing food is a one-way sink, not a loop."
+      "text": "Food has FU values too, so a printer in $(l)item mode$() can print meals: bread and basics low, cooked food and golden food higher. Handy when you're short on supplies but flush with filament.$(br2)Food $(l)can't be wound back$() into FU: printing food is a one-way sink, not a loop."
     }
   ]
 }

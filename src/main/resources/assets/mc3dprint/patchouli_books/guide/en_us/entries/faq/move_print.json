@@ -7,12 +7,12 @@
     {
       "type": "patchouli:text",
       "title": "Move the Build Area",
-      "text": "Use the $(l)X / Y / Z offset$() steppers in the printer GUI. They shift the build area relative to its default position (centered directly above the printer).$(br2)Each axis is capped at $(l)±32$() blocks — enough to place a build beside or above the machine without printing into the printer itself."
+      "text": "Use the $(l)X / Y / Z offset$() steppers in the printer GUI. They shift the build area relative to its default position (centered directly above the printer).$(br2)Each axis is capped at $(l)±32$() blocks, enough to place a build beside or above the machine without printing into the printer itself."
     },
     {
       "type": "patchouli:text",
       "title": "Rotate the Build",
-      "text": "The $(l)Rotate$() button below the offsets spins the whole print $(l)90° clockwise$() per tap (0 → 90 → 180 → 270 → 0). Everything turns with it — a north-facing door or stairway comes out facing east.$(br2)Rotation pivots around the build's center, so it stays put and your X/Y/Z offsets are never touched. The $(l)Ghost$() preview updates live, so you can line it up before you print."
+      "text": "The $(l)Rotate$() button below the offsets spins the whole print $(l)90° clockwise$() per tap (0 → 90 → 180 → 270 → 0). Everything turns with it: a north-facing door or stairway comes out facing east.$(br2)Rotation pivots around the build's center, so it stays put and your X/Y/Z offsets are never touched. The $(l)Ghost$() preview updates live, so you can line it up before you print."
     }
   ]
 }

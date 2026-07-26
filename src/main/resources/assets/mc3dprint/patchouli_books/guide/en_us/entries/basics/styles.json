@@ -7,12 +7,12 @@
     {
       "type": "patchouli:text",
       "title": "Alternate Styles",
-      "text": "MC3DPrint ships two optional looks for every machine, item, and screen — no extra download needed:$(br2)$(l)Blueprint Mode$() — every machine drawn as its own schematic: blueprint blues and white line-work.$(br2)$(l)Dark Mode$() — matte near-black chassis; the cyan glow and tier colors stay loud.$(br2)Both keep tier colors and shapes readable — they change the look, never the information."
+      "text": "MC3DPrint ships two optional looks for every machine, item, and screen, no extra download needed:$(br2)$(l)Blueprint Mode$(): every machine drawn as its own schematic: blueprint blues and white line-work.$(br2)$(l)Dark Mode$(): matte near-black chassis; the cyan glow and tier colors stay loud.$(br2)Both keep tier colors and shapes readable: they change the look, never the information."
     },
     {
       "type": "patchouli:text",
       "title": "How to Enable",
-      "text": "1. From the pause or title screen, open $(l)Options → Resource Packs$().$(br)2. Find $(l)MC3DPrint: Blueprint Mode$() or $(l)MC3DPrint: Dark Mode$() in the left column.$(br)3. Hover it and click the $(l)arrow$() to move it to the right (Selected) side.$(br)4. Click $(l)Done$() — resources reload and the new look applies immediately.$(br2)Move the pack back to the left column to return to the default art. The same packs are also downloadable as standalone zips from the project's release page."
+      "text": "1. From the pause or title screen, open $(l)Options → Resource Packs$().$(br)2. Find $(l)MC3DPrint: Blueprint Mode$() or $(l)MC3DPrint: Dark Mode$() in the left column.$(br)3. Hover it and click the $(l)arrow$() to move it to the right (Selected) side.$(br)4. Click $(l)Done$(): resources reload and the new look applies immediately.$(br2)Move the pack back to the left column to return to the default art. The same packs are also downloadable as standalone zips from the project's release page."
     }
   ]
 }

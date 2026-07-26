@@ -12,13 +12,13 @@ A printer fed by a rack (directly or over [MC3D Cable](/guide/mc3d-cable/)) show
 ## Storing spools
 
 - Right-click the rack with a spool in hand to shelve it.
-- Right-click with an empty hand to pop the last one back out — last in, first out.
+- Right-click with an empty hand to pop the last one back out: last in, first out.
 
 Shelved spools render on the front, each tinted with its tier color, and the shelf visibly fills in as you stock it. It also emits a comparator signal scaled to how full it is.
 
 ## A backup reservoir
 
-A rack is also a Filament Unit reservoir. When a printer or fabricator runs out of its own docked spools mid-print, it automatically pulls FU from a rack that's touching it — or one wired to it with an [MC3D Cable](/guide/mc3d-cable/).
+A rack is also a Filament Unit reservoir. When a printer or fabricator runs out of its own docked spools mid-print, it automatically pulls FU from a rack that's touching it, or one wired to it with an [MC3D Cable](/guide/mc3d-cable/).
 
 > Docked spools always feed first; the rack is the reserve.
 

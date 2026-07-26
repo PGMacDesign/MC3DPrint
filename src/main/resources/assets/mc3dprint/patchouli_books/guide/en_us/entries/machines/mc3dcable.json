@@ -6,17 +6,17 @@
   "pages": [
     {
       "type": "patchouli:text",
-      "text": "One wire, two cargos. The $(item)MC3D Cable$() carries $(l)both$() Redstone Flux and Filament Units down a single line.$(br2)It connects $(l)automatically$() to printers, fabricators, $(item)Filament Racks$(), generators, and any other mod's RF machines — no configuring faces."
+      "text": "One wire, two cargos. The $(item)MC3D Cable$() carries $(l)both$() Redstone Flux and Filament Units down a single line.$(br2)It connects $(l)automatically$() to printers, fabricators, $(item)Filament Racks$(), generators, and any other mod's RF machines, no configuring faces."
     },
     {
       "type": "patchouli:text",
       "title": "Power (RF)",
-      "text": "The cable moves standard Forge Energy, but $(l)modestly$() — $(l)2,000 FE/t$() (tunable in config).$(br2)That's plenty to run this mod's machines, and you can use it as a general-purpose power wire for $(l)any$() mod. It is deliberately $(l)not$() an endgame power backbone — for serious throughput, bring a dedicated cable."
+      "text": "The cable moves standard Forge Energy, but $(l)modestly$(): $(l)2,000 FE/t$() (tunable in config).$(br2)That's plenty to run this mod's machines, and you can use it as a general-purpose power wire for $(l)any$() mod. It is deliberately $(l)not$() an endgame power backbone. For serious throughput, bring a dedicated cable."
     },
     {
       "type": "patchouli:text",
       "title": "Filament Units",
-      "text": "Filament Units are pulled $(l)on demand$(). A printer wired to one or more $(item)Filament Racks$() drains them the moment its own docked spools run dry, so a single rack can feed a whole row of machines.$(br2)Transfer is $(l)lossless$() — no Filament Units lost to distance."
+      "text": "Filament Units are pulled $(l)on demand$(). A printer wired to one or more $(item)Filament Racks$() drains them the moment its own docked spools run dry, so a single rack can feed a whole row of machines.$(br2)Transfer is $(l)lossless$(): no Filament Units lost to distance."
     },
     {
       "type": "patchouli:crafting",

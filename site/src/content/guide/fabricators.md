@@ -9,21 +9,21 @@ Once a single-block printer stops cutting it, you graduate to Fabricators. These
 
 ## Sizes & base blocks
 
-- **T5** — 3×3 base, 8 casing
-- **T6** — 5×5 base, 24 casing
-- **T7** — 7×7 base, 48 casing
-- **T8** — 9×9 base, 76 casing + 4 Awakened Draconium corners
+- **T5**: 3×3 base, 8 casing
+- **T6**: 5×5 base, 24 casing
+- **T7**: 7×7 base, 48 casing
+- **T8**: 9×9 base, 76 casing + 4 Awakened Draconium corners
 
-Print footprints scale with tier: 9×9 (T5), 15×15 (T6), 33×33 (T7), and 51×51 (T8) by default — each tier has a `maxFootprint` config entry if you want bigger.
+Print footprints scale with tier: 9×9 (T5), 15×15 (T6), 33×33 (T7), and 51×51 (T8) by default. Each tier has a `maxFootprint` config entry if you want bigger.
 
-`Printer Casing` is the building block of every base — one craft yields four. The T5 Fabricator controller itself is built around a Tier 4 printer and an Extrudium Crystal.
+`Printer Casing` is the building block of every base, and one craft yields four. The T5 Fabricator controller itself is built around a Tier 4 printer and an Extrudium Crystal.
 
 ## Forming the machine
 
 Lay the base flat, place the controller in the center cell, and `Right Click` the controller to form it. The casing lights up to confirm. See [the build walkthrough](/guide/build-walkthrough/) for exact per-tier layouts.
 
-> Break a formed controller and the whole machine collapses back into a single item — re-place it and it re-forms, ready to run. You can relocate a Fabricator without rebuilding it.
+> Break a formed controller and the whole machine collapses back into a single item. Re-place it and it re-forms, ready to run. You can relocate a Fabricator without rebuilding it.
 
 ## The T8 endgame
 
-The Tier 8 Fabricator is the top of the line and requires **Draconic Evolution** installed. Its four base corners must be Awakened Draconium blocks instead of casing — without Draconic Evolution, it simply refuses to form.
+The Tier 8 Fabricator is the top of the line and requires **Draconic Evolution** installed. Its four base corners must be Awakened Draconium blocks instead of casing. Without Draconic Evolution, it simply refuses to form.

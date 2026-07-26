@@ -6,17 +6,17 @@
   "pages": [
     {
       "type": "patchouli:text",
-      "text": "A $(l)Resin$() is a one-shot additive that makes a blueprint print come out $(l)finer$() — better, not just bigger. Drop one into the $(l)Resin slot$() (between the upgrade and spool columns) before you print.$(br2)A resin only works on $(l)found blueprints$() (looted or creative discs, never your own scans), and it's $(l)consumed$() per print — but only when it has something to do. Slot one with nothing to act on (Treasure with no chests, say) and the printer leaves it untouched."
+      "text": "A $(l)Resin$() is a one-shot additive that makes a blueprint print come out $(l)finer$(): better, not just bigger. Drop one into the $(l)Resin slot$() (between the upgrade and spool columns) before you print.$(br2)A resin only works on $(l)found blueprints$() (looted or creative discs, never your own scans), and it's $(l)consumed$() per print, but only when it has something to do. Slot one with nothing to act on (Treasure with no chests, say) and the printer leaves it untouched."
     },
     {
       "type": "patchouli:text",
       "title": "Rarity",
-      "text": "Resins come in three rarities. $(l)Common$() and $(l)Uncommon$() are craftable; $(l)Rare$() is found only, in end-game loot. Rarer resins are stronger — and a few effects exist only at the top."
+      "text": "Resins come in three rarities. $(l)Common$() and $(l)Uncommon$() are craftable; $(l)Rare$() is found only, in end-game loot. Rarer resins are stronger, and a few effects exist only at the top."
     },
     {
       "type": "patchouli:crafting",
       "recipe": "mc3dprint:resin_base",
-      "text": "Everything starts with $(item)Resin Base$() — $(item)Extrudium Crystal$() plus any slimeball. Add a rarity ingredient (a gem makes it $(l)Uncommon$()) and an effect ingredient to finish a resin."
+      "text": "Everything starts with $(item)Resin Base$(): $(item)Extrudium Crystal$() plus any slimeball. Add a rarity ingredient (a gem makes it $(l)Uncommon$()) and an effect ingredient to finish a resin."
     }
   ]
 }

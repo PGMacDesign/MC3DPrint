@@ -7,11 +7,11 @@ summary: "Turn raw materials into Filament Units on the Winder, then dock the sp
 
 Every block a printer places is paid for in **Filament Units (FU)**. To make FU, you feed raw materials into a **Filament Winder** to wind them onto a **Filament Spool**, then `Shift+Right Click` the spool onto a printer's side.
 
-A material's FU value is derived from its crafting and smelting recipe graph — stone is nearly free, diamond blocks cost what their diamonds are worth.
+A material's FU value is derived from its crafting and smelting recipe graph: stone is nearly free, diamond blocks cost what their diamonds are worth.
 
 ## Using the Winder
 
-Put a material in the input slot and an empty (or partial) spool in the spool slot. The Winder consumes the material and winds its FU onto the spool. One universal Winder handles every tier — the **spool's** tier, not the Winder, decides what it accepts. It's an early-game craft: an iron frame around string, a stick, and a smooth-stone base.
+Put a material in the input slot and an empty (or partial) spool in the spool slot. The Winder consumes the material and winds its FU onto the spool. One universal Winder handles every tier: the **spool's** tier, not the Winder, decides what it accepts. It's an early-game craft: an iron frame around string, a stick, and a smooth-stone base.
 
 ## Exact-tier winding
 
@@ -22,7 +22,7 @@ A material only winds into a spool of its **exact** tier:
 
 A mismatch shows `Requires Tier X Spool` and leaves both items untouched. Items with no FU value show `Can't be converted`.
 
-> Every spool holds 100,000 FU regardless of tier — tier gates which materials it accepts, not how much it stores.
+> Every spool holds 100,000 FU regardless of tier: tier gates which materials it accepts, not how much it stores.
 
 ### Why exact-tier is the good part
 
@@ -34,8 +34,8 @@ It only ever works sideways or downward. Cheap materials can't climb a tier, whi
 
 Winding is also a sink for items you can't, or don't want to, print. Many treasures wind for a Filament Unit payout even when the printer won't reproduce them:
 
-- **Wind-only treasure** — saddles, name tags, wither skulls, and the dragon egg recycle into FU but never print back. The dragon egg is a one-time 10,000-unit windfall at Tier 7, since you only ever get one.
-- **Mob heads** — creeper, zombie, skeleton, and piglin heads wind at Tier 4 (they still print only as decor from official blueprints, never as loose items).
+- **Wind-only treasure**: saddles, name tags, wither skulls, and the dragon egg recycle into FU but never print back. The dragon egg is a one-time 10,000-unit windfall at Tier 7, since you only ever get one.
+- **Mob heads**: creeper, zombie, skeleton, and piglin heads wind at Tier 4 (they still print only as decor from official blueprints, never as loose items).
 - **Bamboo** winds at its base tier now. Bones, by contrast, are printable but held back from winding (like other trivially-farmable outputs), so a skeleton farm can't launder them into filament.
 
 ## Reaching Tier 6
@@ -64,4 +64,4 @@ Combine it with the mod filter to narrow further: `@mc3dprint tier-3` lists only
 
 With **Applied Energistics 2** installed, the **Filament Converter** automates winding straight from an ME network and keeps your docked spools topped up.
 
-For the spending rules — how a spool pays for prints — see [the FU economy](/guide/fu-economy/).
+For the spending rules (how a spool pays for prints), see [the FU economy](/guide/fu-economy/).

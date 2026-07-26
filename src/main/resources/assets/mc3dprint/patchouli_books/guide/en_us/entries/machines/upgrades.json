@@ -6,7 +6,7 @@
   "pages": [
     {
       "type": "patchouli:text",
-      "text": "Every printer has upgrade slots that grow with its tier (a Tier 3 printer has 3, topping out at 8). Shift+Right Click a module onto the machine to install it, or drop it into an upgrade slot in the GUI:$(br)$(li)$(item)Speed$() — faster printing$(li)$(item)Efficiency$() — less FU per print$(li)$(item)RF Efficiency$() — less RF power used per print$(li)$(item)Buffer$() — bigger RF tank$(br2)You can install at most $(l)4 of any one type$() per machine."
+      "text": "Every printer has upgrade slots that grow with its tier (a Tier 3 printer has 3, topping out at 8). Shift+Right Click a module onto the machine to install it, or drop it into an upgrade slot in the GUI:$(br)$(li)$(item)Speed$(): faster printing$(li)$(item)Efficiency$(): less FU per print$(li)$(item)RF Efficiency$(): less RF power used per print$(li)$(item)Buffer$(): bigger RF tank$(br2)You can install at most $(l)4 of any one type$() per machine."
     },
     {
       "type": "patchouli:crafting",
@@ -16,7 +16,7 @@
     {
       "type": "patchouli:crafting",
       "recipe": "mc3dprint:efficiency_upgrade",
-      "text": "$(item)Efficiency Upgrade$(): trims the tier's print markup. $(l)4 of them = break-even$() (1:1) — the print costs exactly what the matter is worth, and never less."
+      "text": "$(item)Efficiency Upgrade$(): trims the tier's print markup. $(l)4 of them = break-even$() (1:1): the print costs exactly what the matter is worth, and never less."
     },
     {
       "type": "patchouli:crafting",
@@ -31,7 +31,7 @@
     {
       "type": "patchouli:text",
       "title": "Stacking",
-      "text": "Speed, RF, and Buffer stack $(l)multiplicatively$() — two Speed Upgrades print at 0.8 × 0.8 = $(l)64%$() time. Efficiency is $(l)linear$(): each module shaves a quarter of the tier's print markup, so $(l)4$() reach exact break-even.$(br2)Only $(l)Tier 4+$() machines have 4 slots, so only they can hit 1:1 — and a Tier 4 must spend all four on Efficiency. Max $(l)4 of each type$(). Rates are in the config for pack makers."
+      "text": "Speed, RF, and Buffer stack $(l)multiplicatively$(): two Speed Upgrades print at 0.8 × 0.8 = $(l)64%$() time. Efficiency is $(l)linear$(): each module shaves a quarter of the tier's print markup, so $(l)4$() reach exact break-even.$(br2)Only $(l)Tier 4+$() machines have 4 slots, so only they can hit 1:1, and a Tier 4 must spend all four on Efficiency. Max $(l)4 of each type$(). Rates are in the config for pack makers."
     }
   ]
 }

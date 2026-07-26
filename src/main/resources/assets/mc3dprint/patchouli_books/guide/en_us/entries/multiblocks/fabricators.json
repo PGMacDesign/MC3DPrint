@@ -6,12 +6,12 @@
   "pages": [
     {
       "type": "patchouli:text",
-      "text": "Tiers 5-8 are $(l)Fabricators$(): multiblock machines built from a square base of $(item)Printer Casing$() with a controller block in the center. They print bigger, faster, and cheaper than any single-block printer.$(br2)$(li)$(l)T5$() — 3×3 base$(li)$(l)T6$() — 5×5 base$(li)$(l)T7$() — 7×7 base$(li)$(l)T8$() — 9×9 base"
+      "text": "Tiers 5-8 are $(l)Fabricators$(): multiblock machines built from a square base of $(item)Printer Casing$() with a controller block in the center. They print bigger, faster, and cheaper than any single-block printer.$(br2)$(li)$(l)T5$(): 3×3 base$(li)$(l)T6$(): 5×5 base$(li)$(l)T7$(): 7×7 base$(li)$(l)T8$(): 9×9 base"
     },
     {
       "type": "patchouli:crafting",
       "recipe": "mc3dprint:printer_casing",
-      "text": "$(item)Printer Casing$() — the building block of every Fabricator base. One craft yields $(l)four$(); a T5 needs 8, a T8 needs 76 (plus 4 Awakened Draconium corners)."
+      "text": "$(item)Printer Casing$(): the building block of every Fabricator base. One craft yields $(l)four$(); a T5 needs 8, a T8 needs 76 (plus 4 Awakened Draconium corners)."
     },
     {
       "type": "patchouli:crafting",
@@ -21,7 +21,7 @@
     {
       "type": "patchouli:text",
       "title": "Forming & Collapsing",
-      "text": "Lay the base, place the controller in the center, and $(l)right-click the controller$() to form the machine — the casing lights up. See the $(l)Build Walkthrough$() for the layouts.$(br2)Breaking a $(l)formed$() controller collapses the whole machine back into a $(l)single item$() that re-forms, fully intact, when re-placed. Move a Fabricator without rebuilding it."
+      "text": "Lay the base, place the controller in the center, and $(l)right-click the controller$() to form the machine. The casing lights up. See the $(l)Build Walkthrough$() for the layouts.$(br2)Breaking a $(l)formed$() controller collapses the whole machine back into a $(l)single item$() that re-forms, fully intact, when re-placed. Move a Fabricator without rebuilding it."
     },
     {
       "type": "patchouli:spotlight",

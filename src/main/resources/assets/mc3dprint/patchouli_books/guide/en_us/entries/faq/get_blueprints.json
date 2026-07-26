@@ -12,7 +12,7 @@
     {
       "type": "patchouli:text",
       "title": "Discs in Creative",
-      "text": "In $(l)Creative$(), MC3DPrint can list $(l)every$() curated $(item)Blueprint Disc$() it ships, or just a small hand-picked launch set — your call. Toggle it in $(o)mc3dprint-common.toml$():$(br)$(o)[general]$()$(br)$(o)allowAllDiscsInCreative$()$(br2)Cosmetic only — survival still finds every build as $(l)world loot$() either way."
+      "text": "In $(l)Creative$(), MC3DPrint can list $(l)every$() curated $(item)Blueprint Disc$() it ships, or just a small hand-picked launch set, your call. Toggle it in $(o)mc3dprint-common.toml$():$(br)$(o)[general]$()$(br)$(o)allowAllDiscsInCreative$()$(br2)Cosmetic only: survival still finds every build as $(l)world loot$() either way."
     },
     {
       "type": "patchouli:text",

@@ -1,12 +1,12 @@
 ---
 import Base from "../layouts/Base.astro";
 ---
-<Base title="Blueprint Gallery — MC3DPrint" description="Browse the curated builds that ship with MC3DPrint and preview each one in an interactive 3D viewer.">
+<Base title="Blueprint Gallery · MC3DPrint" description="Browse the curated builds that ship with MC3DPrint and preview each one in an interactive 3D viewer.">
   <section class="section">
     <div class="wrap">
       <span class="eyebrow">Gallery</span>
       <h1>Every build that ships with the mod.</h1>
-      <p class="lede">These curated blueprints come bundled with MC3DPrint — ready to print in survival. Click any one to spin it around in the 3D viewer.</p>
+      <p class="lede">These curated blueprints come bundled with MC3DPrint, ready to print in survival. Click any one to spin it around in the 3D viewer.</p>
 
       <div class="bar">
         <input id="q" type="search" placeholder="Search builds…" autocomplete="off" />
@@ -68,7 +68,7 @@ import Base from "../layouts/Base.astro";
     render(term ? builds.filter((b) => b.name.toLowerCase().includes(term)) : builds);
   }
 
-  // Credits are optional — if the file isn't there yet, every card just shows "wanted".
+  // Credits are optional: if the file isn't there yet, every card just shows "wanted".
   Promise.all([
     fetch("/viewer/manifest.json").then((r) => { if (!r.ok) throw new Error(); return r.json(); }),
     fetch("/builds/credits.json").then((r) => (r.ok ? r.json() : { builds: {} })).catch(() => ({ builds: {} })),
