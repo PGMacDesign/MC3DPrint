@@ -4,7 +4,7 @@ import { blockColor } from './colors.js';
 
 // Unit-cube faces, min corner at the voxel's (x,y,z). `shade` is a per-direction
 // brightness so the massing reads as 3D under flat lighting (top brightest,
-// bottom darkest) — the Minecraft face-lighting trick. Winding is irrelevant
+// bottom darkest), the Minecraft face-lighting trick. Winding is irrelevant
 // because the material is DoubleSide.
 const FACES = [
   { dir: [ 1, 0, 0], shade: 0.72, corners: [[1, 0, 0], [1, 1, 0], [1, 1, 1], [1, 0, 1]] },
@@ -17,7 +17,7 @@ const FACES = [
 
 // Surface-culled voxel renderer: only cells with at least one empty neighbor
 // are instanced (interior voxels are never visible), so a solid build draws its
-// shell, not its volume. Layer scrubbing is a Y clipping plane — cheap and
+// shell, not its volume. Layer scrubbing is a Y clipping plane: cheap and
 // smooth, no rebuild on drag.
 
 export class Viewer {
@@ -99,7 +99,7 @@ export class Viewer {
     geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
 
     // FrontSide (not DoubleSide): faces are wound CCW-outward, so one fragment per
-    // quad — a double-sided quad would draw front+back at identical depth and
+    // quad: a double-sided quad would draw front+back at identical depth and
     // z-fight under transparency (the slice-view speckle).
     const mat = new THREE.MeshLambertMaterial({
       vertexColors: true, side: THREE.FrontSide,

@@ -13,7 +13,7 @@
 //   6. deletes the sidecar.
 //
 // Run it on the submission PR's branch, review the downloaded image, then commit +
-// merge — image and credit land together, and nothing binary is committed until a
+// merge: image and credit land together, and nothing binary is committed until a
 // human has approved it. --dry reports what it would do without writing anything.
 //
 // Requires `sharp` (already a site dependency). Run from the repo root or anywhere;
@@ -76,13 +76,13 @@ const credits = loadCredits();
 let processed = 0, failed = 0;
 
 if (!existsSync(SIDECAR_DIR)) {
-  console.log(`No screenshot submissions dir (${SIDECAR_DIR}) — nothing to ingest.`);
+  console.log(`No screenshot submissions dir (${SIDECAR_DIR}), nothing to ingest.`);
   process.exit(0);
 }
 
 const sidecars = readdirSync(SIDECAR_DIR).filter((f) => f.endsWith('.json')).sort();
 if (sidecars.length === 0) {
-  console.log('No pending screenshot sidecars — nothing to ingest.');
+  console.log('No pending screenshot sidecars, nothing to ingest.');
   process.exit(0);
 }
 
@@ -133,7 +133,7 @@ for (const name of sidecars) {
     }
     processed++;
   } catch (e) {
-    console.warn(`✗ ${name}: ${e.message} — leaving sidecar in place for retry`);
+    console.warn(`✗ ${name}: ${e.message}, leaving sidecar in place for retry`);
     failed++;
   }
 }
