@@ -23,9 +23,9 @@ The template is **never consumed**. It sits in the slot as a pattern and you can
 
 ## What it costs
 
-A copy costs that item's own FU value, drawn from a docked spool at that item's tier, plus RF per tick while it runs. The GUI shows the per-copy cost before you start.
+A copy costs that item's own FU value, drawn from a docked spool at that item's tier **or higher** (spending is down-only), plus RF per tick while it runs. The GUI shows the per-copy cost before you start.
 
-Because printing carries a markup, a copy costs slightly more filament than the item is worth until you fit **four Efficiency modules**, which brings it to exact 1:1 break-even. You can never print an item for *less* than its value.
+Because printing carries a markup, a copy costs slightly more filament than the item is worth until you fit **four Efficiency modules**, which brings it to exact 1:1 break-even. That needs a **Tier 4 or higher** machine: upgrade slots scale with tier, so a T1-T3 printer physically cannot hold four of them. You can never print an item for *less* than its value.
 
 ## Converting one material into another
 
@@ -35,7 +35,7 @@ Here is where it gets interesting. Filament is denominated by **tier**, not by i
 
 Wind sculk and you get Tier 5 filament. Diamond is also Tier 5. So a Tier 5 spool wound from sculk will happily print diamonds. Nothing special is required; it falls straight out of the two rules.
 
-Some examples, all at exact break-even:
+Some examples, all at exact break-even (so on a Tier 4+ machine; smaller printers pay the markup):
 
 | Wind this | Tier | Print this |
 |---|---|---|

@@ -33,7 +33,7 @@ Down-only spending extends it in one direction: a high-tier spool also pays for 
 | 10 sculk | T5 | 3 diamonds |
 | 1 spare elytra | T6 | 4 netherite ingots |
 
-Ratios are at exact break-even; see [the markup](#the-markup) below. Doing this in practice is [Item Mode](/guide/item-mode/).
+Ratios are at exact break-even, which needs a Tier 4+ machine; see [the markup](#the-markup) below. Doing this in practice is [Item Mode](/guide/item-mode/).
 
 ### What it stops
 
@@ -41,7 +41,7 @@ The same two rules are the anti-exploit gate. Converting *upward* is impossible:
 
 ## The markup
 
-Lower-tier machines pay a higher FU multiplier per block, and printing always costs a little more than the matter is worth. Stack **4 Efficiency modules** to reach exact break-even (1:1). You can never print matter for *less* than it's worth. See [upgrades](/guide/upgrades/) for module slots.
+Lower-tier machines pay a higher FU multiplier per block, and printing always costs a little more than the matter is worth. Stack **4 Efficiency modules** to reach exact break-even (1:1), which only a **Tier 4+** machine has the slots for. You can never print matter for *less* than it's worth. See [upgrades](/guide/upgrades/) for module slots.
 
 ## Printing food
 
