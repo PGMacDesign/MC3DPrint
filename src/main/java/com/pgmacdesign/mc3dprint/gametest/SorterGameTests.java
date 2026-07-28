@@ -205,6 +205,41 @@ public class SorterGameTests {
 
     // --- 7. Insert-only funnel: the external handler accepts inserts but never extracts ---
 
+    // --- 7b. setStackInSlot is NOT a side door around the pool filter ---
+
+    @GameTest(template = "empty5", timeoutTicks = 40)
+    public static void setStackInSlotHonoursThePoolFilter(GameTestHelper helper) {
+        SorterBlockEntity sorter = placeSorter(helper, new BlockPos(2, 1, 2));
+        var external = sorter.getItemHandler(Direction.UP);
+        if (!(external instanceof net.minecraftforge.items.IItemHandlerModifiable m)) {
+            helper.fail("the external handler must stay IItemHandlerModifiable");
+            return;
+        }
+        // This exact object is what the item capability hands to other mods, so an unfiltered
+        // setStackInSlot let anything past isItemValid and into the routing pool.
+        m.setStackInSlot(0, new ItemStack(Items.STICK, 8));      // valued BUT winder-blacklisted
+        if (!sorter.pool().getStackInSlot(0).isEmpty()) {
+            helper.fail("blacklisted sticks must not enter the pool via setStackInSlot");
+            return;
+        }
+        m.setStackInSlot(1, new ItemStack(Items.BEDROCK, 4));    // no FU value
+        if (!sorter.pool().getStackInSlot(1).isEmpty()) {
+            helper.fail("unvalued bedrock must not enter the pool via setStackInSlot");
+            return;
+        }
+        m.setStackInSlot(2, new ItemStack(Items.COBBLESTONE, 4)); // valued + windable
+        if (sorter.pool().getStackInSlot(2).getCount() != 4) {
+            helper.fail("valid cobblestone must still be settable");
+            return;
+        }
+        m.setStackInSlot(2, ItemStack.EMPTY);
+        if (!sorter.pool().getStackInSlot(2).isEmpty()) {
+            helper.fail("setStackInSlot must still be able to clear a slot");
+            return;
+        }
+        helper.succeed();
+    }
+
     @GameTest(template = "empty5", timeoutTicks = 40)
     public static void poolInsertOnlyExternally(GameTestHelper helper) {
         SorterBlockEntity sorter = placeSorter(helper, new BlockPos(2, 1, 2));

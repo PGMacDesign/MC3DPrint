@@ -321,11 +321,11 @@ public class SorterBlockEntity extends BlockEntity implements MenuProvider {
      * transaction bridge restores each slot through {@link #setStackInSlot} — narrowing it there
      * makes the capability resolve to {@code null} and stops hoppers feeding the sorter entirely.
      *
-     * <p>{@code setStackInSlot} stays unfiltered for the same reason: it is the rollback path, and a
-     * rollback has to restore exactly what it snapshotted even if the pool filter would reject those
-     * stacks today (FU values can move between reloads). It is a privileged internal API — a caller
-     * that abuses it to park an unroutable item only makes the sorter hold that item, which the
-     * player can undo by hand.
+     * <p><b>{@code setStackInSlot} is filtered</b>, unlike an earlier version of this class which
+     * left it open and justified that as "a privileged internal API". It is not internal:
+     * ModCapabilities registers this handler with the item capability directly, so any mod holding
+     * the capability can call it, and an unfiltered write was a side door straight past
+     * {@code isItemValid}.
      */
     private static final class InsertOnlyHandler implements IItemHandlerModifiable {
         private final ItemStackHandler backing;
@@ -367,8 +367,24 @@ public class SorterBlockEntity extends BlockEntity implements MenuProvider {
             return backing.isItemValid(slot, stack);
         }
 
+        /**
+         * Filtered. This is a PUBLIC capability surface: ModCapabilities registers this handler
+         * with the item capability directly, so any mod holding it can call this. Left unfiltered
+         * it was a side door around {@code isItemValid} that could park unroutable items in the
+         * pool, where routing can never move them and only a player opening the GUI can clear them.
+         *
+         * <p>An invalid stack is REFUSED (no write), never swallowed: the caller's stack object is
+         * untouched, so nothing is voided. Clearing a slot with an empty stack still works.
+         *
+         * <p>Unlike the 1.21.9+ line, this branch needs no unfiltered escape hatch: Forge 1.20.1
+         * has no Transfer API, so there is no {@code revertToSnapshot} rollback path writing
+         * through this method and nothing to preserve.
+         */
         @Override
         public void setStackInSlot(int slot, @Nonnull ItemStack stack) {
+            if (!stack.isEmpty() && !backing.isItemValid(slot, stack)) {
+                return;
+            }
             backing.setStackInSlot(slot, stack);
         }
     }
