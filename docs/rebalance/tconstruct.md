@@ -122,6 +122,8 @@ against `TConstruct-1.20.1-3.11.2.166`:
 |---|---|---|
 | `necrotic_bone` | `tconstruct:severing`, `tconstruct:casting_basin` | no |
 | `blazing_bone` | `tconstruct:casting_table`, `casting_basin`, `material_fluid` | no |
+| `venombone` | `tconstruct:casting_table`, `casting_basin`, `material_fluid` | no |
+| `necronium_bone` | `tconstruct:casting_table` | no |
 
 None are types `RelaxationFuValuator` can read, so they fall through to unvalued exactly like
 the Smeltery alloys. That left them both unprintable *and* unwindable.
