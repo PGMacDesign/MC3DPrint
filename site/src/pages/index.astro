@@ -112,8 +112,9 @@ const conversions = [
       </div>
 
       <p class="muted conv-note">
-        Ratios shown at exact break-even, which a printer reaches with four Efficiency
-        modules. Below that you always pay a markup, so printing costs a little
+        Ratios shown at exact break-even, which takes four Efficiency modules and so a
+        <strong>Tier 4 or higher</strong> printer, since upgrade slots scale with tier.
+        Below that you always pay a markup, so printing costs a little
         <em>more</em> than the matter is worth. That markup is the reason this can
         never become a duplication exploit: filament spends downward, never up, and
         winding is strictly exact-tier.
@@ -443,8 +444,14 @@ const conversions = [
     .hero-grid { grid-template-columns: 1fr; }
     .hero-art { order: -1; }
     .feat-grid, .step-grid { grid-template-columns: 1fr; }
-    /* Tier chip moves under the pair so the from→to reading order survives. */
-    .conv-head { display: none; }
+    /* Tier chip moves under the pair so the from→to reading order survives. The header
+       row is hidden VISUALLY only: display:none would drop the sole columnheader
+       elements out of the ARIA table and leave screen readers without column context. */
+    .conv-head {
+      position: absolute; width: 1px; height: 1px;
+      margin: -1px; padding: 0; overflow: hidden;
+      clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
+    }
     .conv-row { grid-template-columns: 1fr 2rem 1fr; padding-block: 0.95rem; }
     .conv-tier { grid-column: 1 / -1; text-align: left; font-size: 0.74rem; }
   }

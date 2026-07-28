@@ -56,7 +56,8 @@ those two rules together mean matter is **interchangeable within a tier**:
 | 10 sculk | T5 | 3 diamonds |
 | 1 spare elytra | T6 | 4 netherite ingots |
 
-Ratios are at exact break-even (four Efficiency modules); below that, printing
+Ratios are at exact break-even, which takes four Efficiency modules and therefore a
+**Tier 4 or higher** printer, since upgrade slots scale with tier. Below that, printing
 carries a markup and costs slightly more than the matter is worth.
 
 Converting *upward* is impossible by construction: low-tier filament contributes
