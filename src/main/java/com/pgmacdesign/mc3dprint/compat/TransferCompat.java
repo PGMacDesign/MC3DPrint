@@ -231,10 +231,20 @@ public final class TransferCompat {
             return copy;
         }
 
+        // A revert must restore the snapshot EXACTLY. Handlers that filter setStackInSlot (the
+        // sorter does, because below 1.21.9 that method is reachable through the raw capability)
+        // would silently refuse stacks whose FU value or blacklist status moved since the
+        // snapshot, voiding them. SnapshotRestorable is the unfiltered path for exactly this.
         @Override
         protected void revertToSnapshot(net.minecraft.core.NonNullList<net.minecraft.world.item.ItemStack> snapshot) {
+            boolean restorable = handler instanceof com.pgmacdesign.mc3dprint.compat.SnapshotRestorable;
             for (int i = 0; i < snapshot.size(); i++) {
-                handler.setStackInSlot(i, snapshot.get(i));
+                if (restorable) {
+                    ((com.pgmacdesign.mc3dprint.compat.SnapshotRestorable) handler)
+                            .restoreSlot(i, snapshot.get(i));
+                } else {
+                    handler.setStackInSlot(i, snapshot.get(i));
+                }
             }
         }
 
