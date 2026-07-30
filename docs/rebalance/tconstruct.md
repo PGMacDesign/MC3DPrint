@@ -90,8 +90,7 @@ T6  manyullyn   (molten cobalt + molten ANCIENT DEBRIS / netherite scrap)
 own `minecraft:crafting` recipes; `cobalt_ingot` via smelting (pinned anyway).
 
 **Intentionally UNVALUED** (strict mode → unprintable, safe): `cheese_ingot` /
-`fake_ingot` (joke / render-only items); the crafting-derived bones (`necrotic_bone`,
-`venombone`, `blazing_bone`, `necronium_bone`) which derive from their own recipes;
+`fake_ingot` (joke / render-only items);
 `debris_nugget` / `netherite_nugget` / `copper_nugget` (derive). No tool parts, tool
 materials (datapack-defined, not items), or molten fluids are valued.
 
@@ -110,3 +109,34 @@ materials (datapack-defined, not items), or molten fluids are valued.
 All numbers are **tunable** — same as the vanilla rebalance. Related:
 [`thermal.md`](thermal.md), [`ae2.md`](ae2.md), `docs/rebalance/rebalance-plan.md`,
 and the `modded-fu-compat` memory.
+
+---
+
+## Correction: the bones do NOT derive
+
+An earlier pass listed `necrotic_bone`, `venombone`, `blazing_bone` and `necronium_bone` as
+"crafting-derived" and left them unvalued on that basis. That was wrong, and verified so
+against `TConstruct-1.20.1-3.11.2.166`:
+
+| item | producing recipe types | valuator-readable? |
+|---|---|---|
+| `necrotic_bone` | `tconstruct:severing`, `tconstruct:casting_basin` | no |
+| `blazing_bone` | `tconstruct:casting_table`, `casting_basin`, `material_fluid` | no |
+| `venombone` | `tconstruct:casting_table`, `casting_basin`, `material_fluid` | no |
+| `necronium_bone` | `tconstruct:casting_table` | no |
+
+None are types `RelaxationFuValuator` can read, so they fall through to unvalued exactly like
+the Smeltery alloys. That left them both unprintable *and* unwindable.
+
+`necrotic_bone` is now pinned at **`15@2`, wind-only** (`#no_print`):
+
+- **T2, not the skull's T4.** A wither-skeleton farm is AFK-automatable and Severing yields
+  2 bones per kill. T2's ceiling is iron (`20@2`), already farm-trivial, so nothing a
+  necrotic-bone spool can reach beats its own source.
+- **Wind-only**, mirroring vanilla `wither_skeleton_skull`. Printing it would mint the Necrotic
+  modifier's material (life steal) and Slimeskulls straight out of filament.
+- Valuing it unlocks **no derived chain**: no vanilla-readable recipe uses it as an ingredient,
+  so it is a pure winder input.
+
+`venombone`, `blazing_bone` and `necronium_bone` remain unvalued and would each need their own
+pin if they should be windable too.

@@ -485,6 +485,16 @@ public final class FuValueRegistry {
 
                 // ===== T3 — processing + early-game friction (wool/string are a real early gate) =====
                 "minecraft:redstone=4@3", "minecraft:quartz=5@3", "minecraft:string=8@3",
+                // gunpowder: creeper/ghast/witch drop, a real early-game friction item (TNT,
+                // rockets, fire charges) that is tedious to farm. Sits just above string (8@3),
+                // the same band and the same kind of hostile-mob gate, nudged up because creeper
+                // farms are fussier to build than picking spider drops out of a generic mob farm.
+                // PRINT-ONLY (winder-blacklisted) on the bone precedent: a creeper farm is
+                // AFK-automatable, so letting it wind would open a laundering channel into T3.
+                // Being unwindable also makes the abundance rule moot here: the tier only decides
+                // which machine/spool can print it, not what a farm can launder into.
+                // Valuing it lets tnt (5 gunpowder + 4 sand) and firework_rocket derive.
+                "minecraft:gunpowder=10@3",
                 "minecraft:obsidian=10@3", "minecraft:crying_obsidian=15@3", "minecraft:shroomlight=10@3",
                 "minecraft:glowstone=20@3", "minecraft:slime_ball=30@3", "#minecraft:wool=30@3",
                 // treasure, uncraftable loot — WIND-ONLY (on #no_print): recyclable into FU but

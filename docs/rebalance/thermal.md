@@ -62,7 +62,7 @@ gate and the headline deliverable of this doc.
 proposed explicit FU (only where it won't derive) · justification`. Tier anchors are the
 mod's vanilla anchors: T1 cobble(1) / T2 iron(20),copper(10),gold(15) / T3 redstone(4),
 quartz(5) / T4 emerald(50),blaze(40) / T5 diamond(50),ender_pearl(40) / T6 netherite(500) /
-T7 nether_star(1500) / T8 echo_shard(500),draconium(250).
+T7 nether_star(1500),draconium(40) / T8 echo_shard(500),awakened_draconium(500).
 
 > **Derivation reminder (from `RecipeFuValuator`):** an item with an explicit value
 > short-circuits. Otherwise `value = min over recipes of floor(Σ cheapest-ingredient FU /

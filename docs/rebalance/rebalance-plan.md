@@ -111,11 +111,18 @@ Derivation rates these ~T2 from cobble/iron/redstone, but their power warrants a
 
 ## 9. Draconium (Draconic Evolution soft-dep)
 
-- **Base chain = Tier 7** (`dust` → `ingot` → `block` + all four ores). Draconium is a
+- **Base chain = Tier 7, `40` FU** (`dust` → `ingot` → `block` + all four ores). Draconium is a
   post-netherite *mined* material, so it fills the otherwise-empty modded T7 band below vanilla
-  `nether_star`; pinned at ~250/ingot so a mined block can't launder into multiple nether stars.
-  `draconium_dust` is the true leaf (every ore drops it without silk); standard-crafted DE items
-  below the fusion tier (`draconium_core`, `wyvern_core`) **derive** from this chain.
+  `nether_star`. `draconium_dust` is the true leaf (every ore drops it without silk); standard-crafted
+  DE items below the fusion tier (`draconium_core`, `wyvern_core`) **derive** from this chain
+  (`block` lands at `360@7`).
+- **Why 40 and not the original 250.** The tier was right, the magnitude was not. At `250` one mined
+  dust down-converted to `250 × ratio(4) = 1000` T6 FU against a `500@6` netherite ingot, so **one
+  draconium minted two netherite ingots** and six minted a nether star. Draconium is quarry-able
+  where netherite and nether stars are not, which is precisely the abundance inversion the ladder
+  exists to stop. At `40` it takes ~38 dust per nether star and ~3.1 per netherite ingot.
+  Symmetrically this also makes draconium a *cheaper print* (~37 dust per wound nether star, up
+  from ~6); accepted, since base draconium stays off `#no_print` so DE builds remain printable.
 - **Ore ids:** `overworld_draconium_ore`, `deepslate_draconium_ore`, `nether_draconium_ore`,
   `end_draconium_ore`. (An earlier build registered a phantom `draconium_ore`, leaving the
   overworld ore unvalued and the deepslate ore missing — fixed.)

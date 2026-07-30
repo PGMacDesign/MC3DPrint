@@ -38,9 +38,17 @@ import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
  * so it is intentionally NOT winder-blacklisted.
  *
  * <p>Intentionally UNVALUED (strict mode refuses them): {@code cheese_ingot} /
- * {@code fake_ingot} (joke / render-only), and the crafting-derived bones
- * ({@code necrotic_bone}, {@code blazing_bone}, etc.) which derive on their own.
+ * {@code fake_ingot} (joke / render-only).
  * {@code knightmetal} is valued speculatively — verify its obtain path in-game.
+ *
+ * <p><b>The bones do NOT derive on their own</b> (this comment used to claim they did).
+ * Checked against TConstruct-1.20.1-3.11.2.166: {@code necrotic_bone} is produced only by
+ * {@code tconstruct:severing} and {@code tconstruct:casting_basin}, and {@code blazing_bone}
+ * only by {@code tconstruct:casting_table} / {@code casting_basin} / {@code material_fluid}.
+ * None of those are recipe types {@code RelaxationFuValuator} can read, so the bones fall
+ * through to unvalued exactly like the Smeltery alloys above. {@code necrotic_bone} is now
+ * pinned; {@code blazing_bone}, {@code venombone} and {@code necronium_bone} are still
+ * unvalued and would each need their own pin.
  */
 public final class TinkersCompat {
     private static final String TC = "tconstruct";
@@ -68,6 +76,17 @@ public final class TinkersCompat {
             register("queens_slime_ingot", 45, 4);
             register("cinderslime_ingot", 45, 4);
             register("soulsteel_ingot", 45, 4);
+
+            // T2, WIND-ONLY wither-skeleton drop. Not craftable by anything our valuator can
+            // read (its only producers are tconstruct:severing and tconstruct:casting_basin,
+            // both custom types), so without this pin it stays unvalued: unprintable AND
+            // unwindable, which is what made a wither-skeleton farm's necrotic bones a dead end.
+            // Capped at T2 rather than the skull's T4 because a wither-skeleton farm is
+            // AFK-automatable and Severing yields 2 bones per kill; T2's ceiling is iron (20@2),
+            // which is already farm-trivial, so nothing it can reach beats its own source.
+            // #no_print, mirroring vanilla wither_skeleton_skull: printing it would mint the
+            // Necrotic modifier's material (life steal) and Slimeskulls straight out of filament.
+            register("necrotic_bone", 15, 2);
 
             // T5 — top non-debris TC metal (cobalt + amethyst-bronze alloy)
             register("hepatizon_ingot", 70, 5);
