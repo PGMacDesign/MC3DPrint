@@ -38,6 +38,8 @@ The T6 spool is the gate to printing netherite, and it costs a single netherite 
 
 The next step up, the T7 spool, now costs a single **nether star** (down from four), so beating one wither opens Tier 7. Its main winding input is the nether star itself, plus the dragon egg's one-time windfall.
 
+The **T8 spool** tops the ladder and is the one recipe that leaves vanilla behind: **4 Awakened Draconium ingots** and **4 Extrudium Crystals** around a T7 spool. Awakened draconium is also its winding input, at 500 FU a piece, and it is wind-only: it recycles into filament but a printer will never reproduce it, which is what keeps Fusion Crafting from being printed around.
+
 ## Finding every item of a tier
 
 MC3DPrint adds a line like `MC3DP: Tier-5 (50 FU)` to the tooltip of every item that has an FU value. Items that can't be freely printed also get a status line, so you can tell at a glance: **Wind-only (can't print)** for recycle-only treasure, **Trophy (prints in official builds only)** for mob heads, and **Print-only (can't wind)** for farmable outputs like bones and gunpowder. The JEI "3D Printing" panel shows the same status, color-coded. JEI indexes tooltips, so you can search that line to list a whole tier at once. Type this into JEI's search box:

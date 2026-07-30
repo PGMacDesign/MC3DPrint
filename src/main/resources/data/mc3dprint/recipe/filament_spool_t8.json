@@ -1,13 +1,13 @@
 {
   "type": "minecraft:crafting_shaped",
   "pattern": [
-    "NPN",
+    "APA",
     "PSP",
-    "NPN"
+    "APA"
   ],
   "key": {
-    "N": {
-      "item": "minecraft:nether_star"
+    "A": {
+      "item": "draconicevolution:awakened_draconium_ingot"
     },
     "P": {
       "item": "mc3dprint:extrudium_crystal"
