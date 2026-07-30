@@ -321,13 +321,15 @@ public class SorterBlockEntity extends BlockEntity implements MenuProvider {
      * interface and that guard fails, the capability resolves to {@code null}, and hoppers/pipes
      * can no longer feed the sorter at all on five of the eight supported targets.
      *
-     * <p>{@code setStackInSlot} stays unfiltered for the same reason: it is the rollback path, and a
-     * rollback has to restore exactly what it snapshotted even if the pool filter would reject those
-     * stacks today (FU values can move between reloads). It is a privileged internal API — a caller
-     * that abuses it to park an unroutable item only makes the sorter hold that item, which the
-     * player can undo by hand.
+     * <p><b>{@code setStackInSlot} is filtered</b>, unlike an earlier version of this class which
+     * left it open and justified that as "a privileged internal API". It is not internal: below
+     * 1.21.9 this handler is registered with the item capability directly, so any mod holding the
+     * capability can call it, and an unfiltered write was a side door straight past
+     * {@code isItemValid}. The rollback path that genuinely needs unfiltered writes now goes
+     * through {@link com.pgmacdesign.mc3dprint.compat.SnapshotRestorable#restoreSlot} instead.
      */
-    private static final class InsertOnlyHandler implements IItemHandlerModifiable {
+    private static final class InsertOnlyHandler
+            implements IItemHandlerModifiable, com.pgmacdesign.mc3dprint.compat.SnapshotRestorable {
         private final ItemStackHandler backing;
 
         InsertOnlyHandler(ItemStackHandler backing) {
@@ -364,8 +366,33 @@ public class SorterBlockEntity extends BlockEntity implements MenuProvider {
             return backing.isItemValid(slot, stack);
         }
 
+        /**
+         * Filtered. This is a PUBLIC capability surface: below 1.21.9 the sorter registers this
+         * handler with the item capability directly, so any mod holding it can call this. Left
+         * unfiltered it was a side door around {@code isItemValid} that could park unroutable
+         * items in the pool, where routing can never move them and only a player opening the GUI
+         * can clear them.
+         *
+         * <p>An invalid stack is REFUSED (no write), never swallowed: the caller's stack object
+         * is untouched, so nothing is voided. Rollback restores go through
+         * {@link #restoreSlot} instead, which is unfiltered by design.
+         */
         @Override
         public void setStackInSlot(int slot, ItemStack stack) {
+            if (!stack.isEmpty() && !backing.isItemValid(slot, stack)) {
+                return;
+            }
+            backing.setStackInSlot(slot, stack);
+        }
+
+        /**
+         * Unfiltered restore path for our own snapshot journal. A revert has to put back exactly
+         * what it snapshotted even if the pool filter would refuse those stacks today (FU values
+         * and blacklist membership can move between reloads), and refusing there would void a
+         * player's items rather than protect them.
+         */
+        @Override
+        public void restoreSlot(int slot, ItemStack stack) {
             backing.setStackInSlot(slot, stack);
         }
     }
