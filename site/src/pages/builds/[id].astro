@@ -3,7 +3,7 @@ import Base from "../../layouts/Base.astro";
 import { readFileSync, existsSync } from "node:fs";
 
 // The gallery manifest is generated (not committed) and lives in publicDir, so
-// it can't be a Vite `import`. Read it from disk at build time — the Pages
+// it can't be a Vite `import`. Read it from disk at build time. The Pages
 // workflow regenerates it into public/viewer before `astro build` runs. Missing
 // manifest (a bare checkout) just yields no detail pages rather than failing.
 export function getStaticPaths() {
@@ -23,7 +23,7 @@ const tierVar = `var(--t${b.tier})`;
 const blocks = b.blocks.toLocaleString();
 ---
 <Base
-  title={`${b.name} — MC3DPrint Blueprint`}
+  title={`${b.name} · MC3DPrint Blueprint`}
   description={`${b.name}: a Tier ${b.tier} curated blueprint (${b.sx}×${b.sy}×${b.sz}, ${blocks} blocks) that ships with MC3DPrint. Preview it in 3D or print it in survival.`}
 >
   <section class="section">
@@ -52,7 +52,7 @@ const blocks = b.blocks.toLocaleString();
             <a class="btn btn-ghost" href="/gallery">← Back to gallery</a>
           </div>
           <p class="muted small">
-            Ships with MC3DPrint and turns up as world loot — print it in survival once you've
+            Ships with MC3DPrint and turns up as world loot. Print it in survival once you've
             got a Tier {b.tier} machine. New to printing? Start with the <a href="/guide">guide</a>.
           </p>
         </div>

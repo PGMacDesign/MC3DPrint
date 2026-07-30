@@ -10,12 +10,12 @@ The whole loop is simple: [scan a build](/guide/scanning/), save it to a disc, t
 ## Working with discs
 
 - `Shift+Right Click` a written disc to **lock** it against being overwritten.
-- Discs also turn up in **village and exploration loot** — print what you find, no scanning required.
+- Discs also turn up in **village and exploration loot**: print what you find, no scanning required.
 - To **rename** a disc, drop it in an Anvil and type a name (costs 1 level of XP).
 
 ## Tier and print cost
 
-Every written disc shows its **tier** — the highest material tier among its blocks. One diamond block in a pile of stone still reads as that tier, and that's the lowest [machine tier](/guide/printer-tiers/) that can print all of it.
+Every written disc shows its **tier**: the highest material tier among its blocks. One diamond block in a pile of stone still reads as that tier, and that's the lowest [machine tier](/guide/printer-tiers/) that can print all of it.
 
 Each disc also shows a **Print Cost** in that top tier. Free structural blocks like water and crops cost nothing toward it. See [the FU economy](/guide/fu-economy/) for how costs are derived.
 

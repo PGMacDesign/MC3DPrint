@@ -2,18 +2,32 @@
 import Base from "../layouts/Base.astro";
 
 const features = [
-  { icon: "📡", title: "Scan any build", body: "Point the Structure Scanner at anything you've built — every block, every state, every connection — and capture it to a Blueprint Disc." },
+  { icon: "🧵", title: "Turn matter into matter", body: "Wind any material into Filament Units, then print anything else at that tier or below. Ten sculk becomes three diamonds. A spare elytra becomes four netherite ingots." },
+  { icon: "📡", title: "Scan any build", body: "Point the Structure Scanner at anything you've built (every block, every state, every connection) and capture it to a Blueprint Disc." },
   { icon: "🖨️", title: "Print it anywhere", body: "Drop the disc in a printer, feed it power and filament, and watch your build reconstruct block by block, exactly as scanned." },
-  { icon: "🧵", title: "A real economy", body: "Builds cost Filament Units, wound from real items. Printing is lossy on purpose — efficiency upgrades earn back the break-even." },
   { icon: "🏗️", title: "Tiers T1–T8", body: "Single-block printers for small builds, scaling up to N×N multiblock fabricators that lay down entire bases." },
-  { icon: "💿", title: "Curated blueprints", body: "Ships with a library of ready-to-print builds — castles, farms, libraries — and you can re-burn copies whenever you like." },
+  { icon: "💿", title: "Curated blueprints", body: "Ships with a library of ready-to-print builds (castles, farms, libraries) and you can re-burn copies whenever you like." },
   { icon: "🧪", title: "Resins & upgrades", body: "Modifiers that grow crops, fill chests, or speed the print. Slot in upgrades to tune speed, efficiency, and capacity." },
 ];
 
 const steps = [
-  { n: "01", t: "Build & scan", d: "Make something in survival. Run the scanner over it to save it to a Blueprint Disc." },
-  { n: "02", t: "Wind filament", d: "Feed items into the Filament Winder to convert them into the Filament Units that fuel printing." },
-  { n: "03", t: "Print anywhere", d: "Load the disc and a spool into a printer, supply RF, and it rebuilds your structure in place." },
+  { n: "01", t: "Wind it in", d: "Feed any valued item into the Filament Winder. It becomes Filament Units denominated at that item's own tier." },
+  { n: "02", t: "Pick a template", d: "Drop an item into the printer to make copies of it, or load a Blueprint Disc (scanned or found) to build a whole structure." },
+  { n: "03", t: "Print it out", d: "Supply RF and let it run. A spool pays for any template at its own tier or below, so filament spends downward, never up." },
+];
+
+// Every ratio here is exact at 1:1 break-even, straight from the FU registry:
+// 3×copper(10)=30=2×gold(15), 4×end_stone(5)=20=1×iron(20), 5×redstone(4)=20=
+// 1×glowstone(20), 5×blaze_rod(40)=200=4×emerald(50), 10×sculk(15)=150=
+// 3×diamond(50), 1×elytra(2000)=4×netherite_ingot(500). Re-check against
+// FuValueRegistry after any rebalance rather than nudging these by feel.
+const conversions = [
+  { tier: 2, from: "3 copper ingots", to: "2 gold ingots" },
+  { tier: 2, from: "4 end stone", to: "1 iron ingot" },
+  { tier: 3, from: "5 redstone", to: "1 glowstone" },
+  { tier: 4, from: "5 blaze rods", to: "4 emeralds" },
+  { tier: 5, from: "10 sculk", to: "3 diamonds" },
+  { tier: 6, from: "1 spare elytra", to: "4 netherite ingots" },
 ];
 ---
 <Base>
@@ -21,18 +35,18 @@ const steps = [
   <section class="hero">
     <div class="wrap hero-grid">
       <div class="hero-copy">
-        <span class="eyebrow">Minecraft 1.20.1 · Forge · Free &amp; open source</span>
-        <h1>WorldEdit for<br/><span class="grad">survival.</span></h1>
+        <span class="eyebrow">Forge 1.20.1 · NeoForge 1.21.1–26.2 · Free &amp; open source</span>
+        <h1>Wind anything.<br/><span class="grad">Print anything.</span></h1>
         <p class="lede">
-          MC3DPrint scans any structure you build and prints it back anywhere —
-          powered by energy and tiered <strong>Filament Units</strong>. No creative
-          mode, no commands. Earn your builds.
+          MC3DPrint turns matter into <strong>Filament Units</strong>, and filament
+          back into matter. Wind copper, print gold. Wind sculk, print diamonds.
+          Scan a whole castle and print that too. No creative mode, no commands.
         </p>
         <div class="hero-cta">
           <a class="btn btn-primary" href="/getting-started#download">Download the mod</a>
           <a class="btn btn-ghost" href="/guide">Read the guide</a>
         </div>
-        <p class="muted small">Works with Forge 47.4.10 · MIT licensed · No paywalls, ever.</p>
+        <p class="muted small">WorldEdit for survival · MIT licensed · No paywalls, ever.</p>
       </div>
 
       <div class="hero-art" aria-hidden="true">
@@ -55,7 +69,7 @@ const steps = [
   <section class="section">
     <div class="wrap">
       <span class="eyebrow">What it does</span>
-      <h2>Capture a build once. Reprint it forever.</h2>
+      <h2>Every material is the same material.</h2>
       <div class="grid feat-grid">
         {features.map((f) => (
           <article class="card feat">
@@ -65,6 +79,49 @@ const steps = [
           </article>
         ))}
       </div>
+    </div>
+  </section>
+
+  <!-- ───────────────────────── CONVERSIONS ───────────────────────── -->
+  <section class="section conv">
+    <div class="wrap">
+      <span class="eyebrow">The exchange rate</span>
+      <h2>Wind the thing you have. Print the thing you want.</h2>
+      <p class="lede">
+        Filament Units are denominated by <strong>tier</strong>, not by item. Wind a
+        material and you get filament at that material's tier; spend it and you can
+        print anything at that tier or below. So within a tier, matter is
+        interchangeable.
+      </p>
+
+      <div class="conv-table" role="table" aria-label="Example material conversions">
+        <div class="conv-head" role="row">
+          <span role="columnheader">Wind this</span>
+          <span role="columnheader" class="conv-arrow-h" aria-hidden="true"></span>
+          <span role="columnheader">Print this</span>
+          <span role="columnheader">Tier</span>
+        </div>
+        {conversions.map((c) => (
+          <div class="conv-row" role="row">
+            <span class="conv-from" role="cell">{c.from}</span>
+            <span class="conv-arrow" role="cell" aria-label="becomes">→</span>
+            <span class="conv-to" role="cell">{c.to}</span>
+            <span class="conv-tier" role="cell" style={`color:var(--t${c.tier})`}>T{c.tier}</span>
+          </div>
+        ))}
+      </div>
+
+      <p class="muted conv-note">
+        Ratios shown at exact break-even, which takes four Efficiency modules and so a
+        <strong>Tier 4 or higher</strong> printer, since upgrade slots scale with tier.
+        Below that you always pay a markup, so printing costs a little
+        <em>more</em> than the matter is worth. That markup is the reason this can
+        never become a duplication exploit: filament spends downward, never up, and
+        winding is strictly exact-tier.
+      </p>
+      <p class="center" style="margin-top:1.6rem">
+        <a class="btn btn-ghost" href="/guide/item-mode/">How Item Mode works →</a>
+      </p>
     </div>
   </section>
 
@@ -94,7 +151,7 @@ const steps = [
       <span class="eyebrow">See it in action</span>
       <h2>Layer by layer, exactly as scanned.</h2>
       <p class="lede">Feed the printer power and a filament spool, drop in the disc, and your
-        build reconstructs in place — every block state and connection intact.</p>
+        build reconstructs in place, every block state and connection intact.</p>
 
       <figure class="media-frame">
         <img class="media-real" src="/media/scan-to-print.gif"
@@ -105,7 +162,7 @@ const steps = [
           <div class="mf-body">
             <h3>Preview any build in 3D</h3>
             <p class="muted">Spin, zoom, and inspect every curated blueprint right in your
-              browser — no install required.</p>
+              browser, no install required.</p>
             <a class="btn btn-primary" href="/viewer/" target="_blank" rel="noopener noreferrer">Open the 3D viewer ↗</a>
           </div>
         </div>
@@ -139,7 +196,7 @@ const steps = [
         <h2>Built something great? Add it to the mod.</h2>
         <p class="lede">
           Drag in your <code>.blueprint</code> file, preview it in 3D right in your
-          browser, and submit it for review — <strong>no GitHub account, no coding
+          browser, and submit it for review: <strong>no GitHub account, no coding
           required.</strong> If it's a fit, it ships with the mod for everyone.
         </p>
         <a class="btn btn-primary" href="/submit">Submit your build</a>
@@ -220,7 +277,7 @@ const steps = [
   .hero-cta { display: flex; gap: 0.8rem; flex-wrap: wrap; margin: 1.6rem 0 0.9rem; }
   .small { font-size: 0.85rem; }
 
-  /* hero art — a "printing" animation, pure CSS. Layers print bottom-up:
+  /* hero art: a "printing" animation, pure CSS. Layers print bottom-up:
      each voxel starts as a cyan "ghost" (not-yet-printed), then pops to a
      solid amber-edged block as the scan head sweeps past it. Staggering the
      animation-delay by row makes the print front climb the stack in a wave. */
@@ -286,6 +343,32 @@ const steps = [
   .feat-icon { font-size: 1.6rem; margin-bottom: 0.5rem; }
   .feat h3 { margin: 0 0 0.4rem; }
   .feat p { margin: 0; font-size: 0.95rem; }
+
+  /* conversions */
+  .conv .lede { max-width: 62ch; margin-block: 0.8rem 0; }
+  .conv-table {
+    margin-top: 1.8rem;
+    border: 1px solid var(--line); border-radius: var(--radius);
+    overflow: hidden; background: var(--panel);
+  }
+  .conv-head, .conv-row {
+    display: grid; grid-template-columns: 1fr 2.5rem 1fr 4rem;
+    align-items: center; gap: 0.5rem;
+    padding: 0.85rem clamp(0.9rem, 2vw, 1.4rem);
+  }
+  .conv-head {
+    background: var(--bg-soft); border-bottom: 1px solid var(--line);
+    font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--ink-faint);
+  }
+  .conv-row + .conv-row { border-top: 1px solid var(--line-soft); }
+  .conv-row { transition: background 0.12s ease; }
+  .conv-row:hover { background: var(--bg-soft); }
+  .conv-from { color: var(--ink-soft); }
+  .conv-to { color: var(--ink); font-weight: 600; }
+  .conv-arrow { color: var(--filament); font-size: 1.1rem; text-align: center; }
+  .conv-tier { font-family: var(--mono); font-weight: 700; font-size: 0.82rem; text-align: right; }
+  .conv-note { margin-top: 1.1rem; font-size: 0.9rem; max-width: 68ch; }
 
   /* steps */
   .how { background: var(--bg-soft); border-block: 1px solid var(--line-soft); }
@@ -361,6 +444,16 @@ const steps = [
     .hero-grid { grid-template-columns: 1fr; }
     .hero-art { order: -1; }
     .feat-grid, .step-grid { grid-template-columns: 1fr; }
+    /* Tier chip moves under the pair so the from→to reading order survives. The header
+       row is hidden VISUALLY only: display:none would drop the sole columnheader
+       elements out of the ARIA table and leave screen readers without column context. */
+    .conv-head {
+      position: absolute; width: 1px; height: 1px;
+      margin: -1px; padding: 0; overflow: hidden;
+      clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
+    }
+    .conv-row { grid-template-columns: 1fr 2rem 1fr; padding-block: 0.95rem; }
+    .conv-tier { grid-column: 1 / -1; text-align: left; font-size: 0.74rem; }
   }
   @media (max-width: 520px) { .fb-grid { grid-template-columns: 1fr; } }
 </style>

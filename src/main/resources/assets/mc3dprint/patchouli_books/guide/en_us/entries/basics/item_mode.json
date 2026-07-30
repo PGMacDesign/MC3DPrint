@@ -1,0 +1,37 @@
+{
+  "name": "Item Mode",
+  "category": "mc3dprint:basics",
+  "icon": "minecraft:diamond",
+  "sortnum": 7,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "A printer has one $(l)Smart Print Slot$(), and what you put in it picks the mode. A written Blueprint Disc gives you $(l)Blueprint Mode$() and builds a structure. Any plain item gives you $(l)Item Mode$() and prints copies of it.$(br2)Dock a spool, give it RF, drop in your item, then press Start (or flip Auto on)."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "The Template",
+      "text": "The item in the slot is a $(l)template$(), and it is never consumed. One diamond is enough to print diamonds forever, so long as you can pay for them.$(br2)Copies come out as $(l)clean base items$(). Enchantments and stored contents are stripped, so copying an enchanted book or a full shulker box never clones what is inside."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Turning Matter Into Matter",
+      "text": "Filament is denominated by $(l)tier$(), not by item, and a spool does not remember what you wound into it.$(br2)Winding is exact-tier and spending is down-only, so within a tier $(l)matter is interchangeable$(). Sculk and diamond are both Tier 5, so a spool wound from sculk prints diamonds. Copper and gold are both Tier 2."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "The Exchange Rate",
+      "text": "At exact break-even (four Efficiency modules, so $(l)Tier 4+$()):$(br)$(l)3 copper → 2 gold$()$(br)$(l)4 end stone → 1 iron$()$(br)$(l)5 redstone → 1 glowstone$()$(br)$(l)5 blaze rods → 4 emeralds$()$(br)$(l)10 sculk → 3 diamonds$()$(br)$(l)1 elytra → 4 netherite ingots$()$(br2)Below break-even you pay a markup, so a copy always costs a little more than the item is worth."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Only Sideways And Down",
+      "text": "A high-tier spool also pays for anything beneath it, so a Tier 6 spool prints gold, redstone and stone all day.$(br2)Converting $(o)upward$() is impossible. Low-tier filament contributes nothing toward a higher-tier cost, so no amount of cobblestone will ever add up to a diamond. That asymmetry is what keeps printing from becoming a duplication exploit."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "What It Refuses",
+      "text": "$(l)Not Printable$() covers unvalued items (in strict mode), filament spools, restricted trophies like mob heads, and wind-only treasure such as saddles, name tags, wither skulls and the dragon egg. Wind-only items still recycle into FU; they just never print back.$(br2)$(l)Requires a Tier N Printer$() means the machine is too small. $(l)No Filament$() means no spool at a tier that can pay."
+    }
+  ]
+}

@@ -2,7 +2,7 @@
 title: "Finding rare resins"
 category: "Resins"
 order: 3
-summary: "The strongest resins can't be crafted — Quartermaster and Ore Salting drop only from end-game loot."
+summary: "The strongest resins can't be crafted: Quartermaster and Ore Salting drop only from end-game loot."
 ---
 
 The strongest resins can't be crafted at all. **Quartermaster** and **Ore Salting** exist only as loot, so the only way to get them is to go exploring.

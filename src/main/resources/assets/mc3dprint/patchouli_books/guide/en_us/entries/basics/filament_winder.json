@@ -6,7 +6,7 @@
   "pages": [
     {
       "type": "patchouli:text",
-      "text": "The $(item)Filament Winder$() turns raw materials into Filament Units. Put a $(l)material$() in the input slot and an empty (or partial) $(item)Filament Spool$() in the spool slot; the winder consumes the material and winds its FU onto the spool.$(br2)One universal winder handles $(l)every tier$() — the spool's tier, not the winder, decides what it accepts."
+      "text": "The $(item)Filament Winder$() turns raw materials into Filament Units. Put a $(l)material$() in the input slot and an empty (or partial) $(item)Filament Spool$() in the spool slot; the winder consumes the material and winds its FU onto the spool.$(br2)One universal winder handles $(l)every tier$(): the spool's tier, not the winder, decides what it accepts."
     },
     {
       "type": "patchouli:crafting",
