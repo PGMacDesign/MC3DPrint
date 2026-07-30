@@ -36,7 +36,7 @@ Winding is also a sink for items you can't, or don't want to, print. Many treasu
 
 - **Wind-only treasure**: saddles, name tags, wither skulls, and the dragon egg recycle into FU but never print back. The dragon egg is a one-time 10,000-unit windfall at Tier 7, since you only ever get one.
 - **Mob heads**: creeper, zombie, skeleton, and piglin heads wind at Tier 4 (they still print only as decor from official blueprints, never as loose items).
-- **Bamboo** winds at its base tier now. Bones, by contrast, are printable but held back from winding (like other trivially-farmable outputs), so a skeleton farm can't launder them into filament.
+- **Bamboo** winds at its base tier now. Bones and **gunpowder**, by contrast, are printable but held back from winding (like other trivially-farmable outputs), so a skeleton or creeper farm can't launder them into filament.
 
 ## Reaching Tier 6
 
@@ -44,9 +44,11 @@ The T6 spool is the gate to printing netherite, and it costs a single netherite 
 
 The next step up, the T7 spool, now costs a single **nether star** (down from four), so beating one wither opens Tier 7. Its main winding input is the nether star itself, plus the dragon egg's one-time windfall.
 
+The **T8 spool** tops the ladder and is the one recipe that leaves vanilla behind: **4 Awakened Draconium ingots** and **4 Extrudium Crystals** around a T7 spool. Awakened draconium is also its winding input, at 500 FU a piece, and it is wind-only: it recycles into filament but a printer will never reproduce it, which is what keeps Fusion Crafting from being printed around.
+
 ## Finding every item of a tier
 
-MC3DPrint adds a line like `MC3DP: Tier-5 (50 FU)` to the tooltip of every item that has an FU value. Items that can't be freely printed also get a status line, so you can tell at a glance: **Wind-only (can't print)** for recycle-only treasure, **Trophy (prints in official builds only)** for mob heads, and **Print-only (can't wind)** for farmable outputs like bones. The JEI "3D Printing" panel shows the same status, color-coded. JEI indexes tooltips, so you can search that line to list a whole tier at once. Type this into JEI's search box:
+MC3DPrint adds a line like `MC3DP: Tier-5 (50 FU)` to the tooltip of every item that has an FU value. Items that can't be freely printed also get a status line, so you can tell at a glance: **Wind-only (can't print)** for recycle-only treasure, **Trophy (prints in official builds only)** for mob heads, and **Print-only (can't wind)** for farmable outputs like bones and gunpowder. The JEI "3D Printing" panel shows the same status, color-coded. JEI indexes tooltips, so you can search that line to list a whole tier at once. Type this into JEI's search box:
 
 ```text
 tier-5

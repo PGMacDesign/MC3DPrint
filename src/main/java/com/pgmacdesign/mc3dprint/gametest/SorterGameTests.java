@@ -24,7 +24,8 @@ import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
  * The Filament Tier Item Sorter: routes pooled items to the winder holding a spool of that item's
  * material tier. Covers routing by tier, permanent-reject at the door (blacklist + unvalued),
  * round-robin distribution across same-tier winders, stalled-winder skip, cable-reach parity with
- * direct-touch, the transient-hold-never-void guarantee, and the insert-only funnel.
+ * direct-touch, the transient-hold-never-void guarantee, the insert-only funnel, and that
+ * setStackInSlot is not a side door around the pool filter while rollback restores still are.
  *
  * <p>Winders are placed with NO energy on purpose, so a routed item accumulates visibly in the
  * input slot instead of being wound away before it can be asserted.
@@ -204,6 +205,61 @@ public class SorterGameTests {
     }
 
     // --- 7. Insert-only funnel: the external handler accepts inserts but never extracts ---
+
+    // --- 7b. setStackInSlot is NOT a side door around the pool filter ---
+
+    @GameTest(template = "empty5", timeoutTicks = 40)
+    public static void setStackInSlotHonoursThePoolFilter(GameTestHelper helper) {
+        SorterBlockEntity sorter = placeSorter(helper, new BlockPos(2, 1, 2));
+        var external = sorter.getItemHandler(Direction.UP);
+        if (!(external instanceof net.neoforged.neoforge.items.IItemHandlerModifiable m)) {
+            helper.fail("the external handler must stay IItemHandlerModifiable for the 1.21.9+ bridge");
+            return;
+        }
+        // Below 1.21.9 this exact object is what the item capability hands to other mods, so an
+        // unfiltered setStackInSlot let anything past isItemValid and into the routing pool.
+        m.setStackInSlot(0, new ItemStack(Items.STICK, 8));      // valued BUT winder-blacklisted
+        if (!sorter.pool().getStackInSlot(0).isEmpty()) {
+            helper.fail("blacklisted sticks must not enter the pool via setStackInSlot");
+            return;
+        }
+        m.setStackInSlot(1, new ItemStack(Items.BEDROCK, 4));    // no FU value
+        if (!sorter.pool().getStackInSlot(1).isEmpty()) {
+            helper.fail("unvalued bedrock must not enter the pool via setStackInSlot");
+            return;
+        }
+        m.setStackInSlot(2, new ItemStack(Items.COBBLESTONE, 4)); // valued + windable
+        if (sorter.pool().getStackInSlot(2).getCount() != 4) {
+            helper.fail("valid cobblestone must still be settable");
+            return;
+        }
+        // Clearing a slot must keep working: an empty stack is not "invalid".
+        m.setStackInSlot(2, ItemStack.EMPTY);
+        if (!sorter.pool().getStackInSlot(2).isEmpty()) {
+            helper.fail("setStackInSlot must still be able to clear a slot");
+            return;
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty5", timeoutTicks = 40)
+    public static void rollbackRestoreBypassesTheFilter(GameTestHelper helper) {
+        SorterBlockEntity sorter = placeSorter(helper, new BlockPos(2, 1, 2));
+        var external = sorter.getItemHandler(Direction.UP);
+        if (!(external instanceof com.pgmacdesign.mc3dprint.compat.SnapshotRestorable r)) {
+            helper.fail("the external handler must implement SnapshotRestorable for transaction revert");
+            return;
+        }
+        // The mirror of the test above: a transaction revert has to restore EXACTLY what it
+        // snapshotted, including stacks the filter would refuse today (an item's FU value or
+        // blacklist status can move between reloads). Filtering here would void player items.
+        r.restoreSlot(0, new ItemStack(Items.STICK, 8));
+        if (sorter.pool().getStackInSlot(0).getCount() != 8) {
+            helper.fail("restoreSlot must write through unfiltered so a revert cannot void items");
+            return;
+        }
+        helper.succeed();
+    }
 
     @GameTest(template = "empty5", timeoutTicks = 40)
     public static void poolInsertOnlyExternally(GameTestHelper helper) {

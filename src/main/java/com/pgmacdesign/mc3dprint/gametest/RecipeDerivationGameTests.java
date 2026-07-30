@@ -51,6 +51,25 @@ public class RecipeDerivationGameTests {
     }
 
     @GameTest(template = "empty5", timeoutTicks = 100)
+    public static void tntDerivesFromGunpowderTo54T3(GameTestHelper helper) {
+        // 5 x gunpowder (10@3) + 4 x sand (1@1) = 54, tier carried up to gunpowder's 3.
+        // Guards the whole reason gunpowder is valued at all: before it had a value, TNT
+        // was unpriced and strict mode refused to print it.
+        expect(helper, "tnt", Items.TNT, 54, 3);
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty5", timeoutTicks = 100)
+    public static void fireworkRocketDerivesTo4T3(GameTestHelper helper) {
+        // 1 gunpowder (10@3) + 1 paper (2@1) = 12, but the recipe yields THREE rockets and
+        // the valuator divides by output count -> 4@3. Deliberately asserted: rockets are the
+        // cheapest thing gunpowder unlocks, so a future gunpowder re-price should have to
+        // notice it moved this too.
+        expect(helper, "firework_rocket", Items.FIREWORK_ROCKET, 4, 3);
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty5", timeoutTicks = 100)
     public static void diamondBlockDerivesTo450T5(GameTestHelper helper) {
         // 9 x diamond (50@5) / 1 -> 450, tier carried up to 5. No explicit entry.
         expect(helper, "diamond_block", Items.DIAMOND_BLOCK, 450, 5);

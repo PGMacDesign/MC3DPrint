@@ -58,7 +58,7 @@ These add deep material trees and are the highest-value FU targets. Ranks are Mo
 | **Mekanism** | #602 | equipment, storage, technology | Osmium/refined obsidian/glowstone, steel, fissile/antimatter. Heavy resource-multiplication — value base leaves, leave the 5x-ore-processing chain unvalued. |
 | **Immersive Engineering** | #621 | equipment, technology | Steel, constantan, electrum, HOP graphite, treated wood. Some derive, alloy-kiln/arc leaves need values. |
 | **Thermal Series** | — | technology | DONE (base metals T2 / signalum+lumium T4 / enderium T5). On Modrinth as separate Thermal_* projects; ranks vary. |
-| **Draconic Evolution** | — | technology, magic | DONE (draconium base chain T8). CF-heavier. |
+| **Draconic Evolution** | — | technology, magic | DONE (draconium base chain T7 @40; awakened T8 wind-only). CF-heavier. |
 | **EnderIO** | — | technology | You named it. NOT in Modrinth top-1,000 (CF-centric). Alloy smelter outputs: dark steel, electrical steel, energetic/vibrant/redstone alloy, end steel, pulsating — all custom-recipe leaves. Strong FU target. |
 | **Forestry** | — | technology | You named it. NOT in Modrinth top-1,000 (CF-centric). Bronze, tin/copper, mostly derives; bee/genetics products are the interesting leaves. |
 

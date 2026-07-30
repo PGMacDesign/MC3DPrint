@@ -27,3 +27,5 @@ Lay the base flat, place the controller in the center cell, and `Right Click` th
 ## The T8 endgame
 
 The Tier 8 Fabricator is the top of the line and requires **Draconic Evolution** installed. Its four base corners must be Awakened Draconium blocks instead of casing. Without Draconic Evolution, it simply refuses to form.
+
+Draconic Evolution gates **both halves** of Tier 8, not just the structure. The controller crafts from **4 nether stars** and **4 Awakened Draconium ingots** around a Tier 7 Fabricator, so you need Fusion Crafting online before you can build one at all.

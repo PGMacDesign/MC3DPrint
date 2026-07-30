@@ -27,6 +27,11 @@
       "type": "patchouli:text",
       "title": "Finding a Tier in JEI",
       "text": "Every item with an FU value carries a tooltip line like $(l)MC3DP: Tier-5 (50 FU)$(). JEI indexes tooltips, so typing $(l)tier-5$() in its search box lists that whole tier at once: no prefix, no quotes. Any tier from 1 to 8 works.$(br2)The hyphen is deliberate: JEI splits tooltips on spaces, so $(l)tier 5$() would be read as two words and would also match every item whose FU $(o)cost$() contains a 5. One word keeps it exact."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Print-Only Drops",
+      "text": "A few farmable drops go the other way: they $(l)print$() but never $(l)wind$(). $(item)Gunpowder$() (Tier 3) and $(item)Bone$() (Tier 2) are printable so you can stop grinding creeper and skeleton farms, but a printer will not accept them back as filament.$(br2)That one-way rule is what stops an AFK mob farm from laundering its drops into filament. Valuing gunpowder also makes $(item)TNT$() and $(item)Firework Rocket$() printable, since both derive from it."
     }
   ]
 }
