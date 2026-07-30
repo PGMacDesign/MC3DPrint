@@ -22,7 +22,7 @@ Print footprints scale with tier: 9×9 (T5), 15×15 (T6), 33×33 (T7), and 51×5
 
 Lay the base flat, place the controller in the center cell, and `Right Click` the controller to form it. The casing lights up to confirm. See [the build walkthrough](/guide/build-walkthrough/) for exact per-tier layouts.
 
-> Break a formed controller and the whole machine collapses back into a single item. Re-place it and it re-forms, ready to run. You can relocate a Fabricator without rebuilding it.
+> Break a formed controller and the whole machine collapses back into a single item. Re-place it and it re-forms with its inventory, upgrades and stored RF intact. It always comes back in Print mode with a clean status (any armed deconstruct region is dropped), so break-and-replace doubles as a reset for a machine stuck in the wrong mode. You can relocate a Fabricator without rebuilding it.
 
 ## The T8 endgame
 
