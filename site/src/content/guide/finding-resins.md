@@ -2,10 +2,10 @@
 title: "Finding rare resins"
 category: "Resins"
 order: 3
-summary: "Rare-tier resins can't be crafted — they drop only from end-game loot, and two effects exist only at Rare."
+summary: "Rare-tier resins can't be crafted: they drop only from end-game loot, and two effects exist only at Rare."
 ---
 
-The strongest resins can't be crafted at all. **Rare**-tier resins are loot-only — and two effects, **Quartermaster** and **Ore Salting**, exist *only* at Rare, so exploring is the sole way to get them.
+The strongest resins can't be crafted at all. **Rare**-tier resins are loot-only, and two effects, **Quartermaster** and **Ore Salting**, exist *only* at Rare, so exploring is the sole way to get them.
 
 ## Where they hide
 

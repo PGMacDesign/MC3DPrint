@@ -6,7 +6,7 @@
   "pages": [
     {
       "type": "patchouli:text",
-      "text": "$(item)Filament Spools$() don't stack, so a drawer full of them clutters fast. The $(item)Filament Rack$() is a bookshelf-style shelf with $(l)8 slots$() (2×4) to store them.$(br2)Right-click the rack with a spool in hand to $(l)shelve$() it. Right-click with an empty hand to pop the $(l)last$() one back out — last in, first out."
+      "text": "$(item)Filament Spools$() don't stack, so a drawer full of them clutters fast. The $(item)Filament Rack$() is a bookshelf-style shelf with $(l)8 slots$() (2×4) to store them.$(br2)Right-click the rack with a spool in hand to $(l)shelve$() it. Right-click with an empty hand to pop the $(l)last$() one back out: last in, first out."
     },
     {
       "type": "patchouli:text",
@@ -16,7 +16,7 @@
     {
       "type": "patchouli:text",
       "title": "Filament Reservoir",
-      "text": "A rack is also a $(l)Filament Unit reservoir$(). When a printer or fabricator runs out of its own docked spools mid-print, it automatically pulls Filament Units from a rack that's $(l)touching$() it — or wired to it with an $(item)MC3D Cable$().$(br2)Docked spools always feed $(l)first$(); the rack is the reserve. Down-only tier rules apply — a higher-tier spool can pay lower-tier costs, never the reverse."
+      "text": "A rack is also a $(l)Filament Unit reservoir$(). When a printer or fabricator runs out of its own docked spools mid-print, it automatically pulls Filament Units from a rack that's $(l)touching$() it, or wired to it with an $(item)MC3D Cable$().$(br2)Docked spools always feed $(l)first$(); the rack is the reserve. Down-only tier rules apply: a higher-tier spool can pay lower-tier costs, never the reverse."
     },
     {
       "type": "patchouli:crafting",

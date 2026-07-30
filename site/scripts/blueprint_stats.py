@@ -3,7 +3,7 @@
 
 Used by the PR-preview workflow to annotate each changed blueprint. The input is
 UNTRUSTED (it comes from a fork PR), so this hardens against decompression bombs
-and absurd volumes before doing any allocation. It only ever parses *data* — it
+and absurd volumes before doing any allocation. It only ever parses *data*: it
 never executes anything from the PR.
 
     python3 blueprint_stats.py <file.blueprint>

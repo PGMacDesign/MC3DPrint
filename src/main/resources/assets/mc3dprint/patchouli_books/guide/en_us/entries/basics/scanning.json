@@ -6,7 +6,7 @@
   "pages": [
     {
       "type": "patchouli:text",
-      "text": "The $(item)Structure Scanner$() captures any build as a reusable blueprint.$(br2)$(li)Right-click the $(l)first corner$() block$(li)Right-click the $(l)opposite corner$() block$(li)Keep a $(item)Blank Blueprint Disc$() $(l)anywhere in your inventory$(), then right-click the air to scan$(br2)The result is a written $(item)Blueprint Disc$() — portable, tradeable, and printable on any machine of the right tier."
+      "text": "The $(item)Structure Scanner$() captures any build as a reusable blueprint.$(br2)$(li)Right-click the $(l)first corner$() block$(li)Right-click the $(l)opposite corner$() block$(li)Keep a $(item)Blank Blueprint Disc$() $(l)anywhere in your inventory$(), then right-click the air to scan$(br2)The result is a written $(item)Blueprint Disc$(): portable, tradeable, and printable on any machine of the right tier."
     },
     {
       "type": "patchouli:crafting",
@@ -21,7 +21,7 @@
     {
       "type": "patchouli:text",
       "title": "Print, Don't Replace",
-      "text": "The printer $(l)never overwrites existing blocks$() — it only fills empty space. Clear the print area first, or the printer will skip occupied positions and build the rest.$(br2)Server operators can import WorldEdit $(l).schem$() and Create / vanilla $(l).nbt$() files straight onto discs with $(o)/mc3dprint import$()."
+      "text": "The printer $(l)never overwrites existing blocks$(): it only fills empty space. Clear the print area first, or the printer will skip occupied positions and build the rest.$(br2)Server operators can import WorldEdit $(l).schem$() and Create / vanilla $(l).nbt$() files straight onto discs with $(o)/mc3dprint import$()."
     }
   ]
 }

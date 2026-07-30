@@ -3,10 +3,10 @@ import Base from "../../layouts/Base.astro";
 import { getCollection } from "astro:content";
 
 const CATEGORIES = [
-  { key: "Basics", blurb: "Scan, disc, print — and the Filament Unit economy that powers it all." },
+  { key: "Basics", blurb: "Scan, disc, print, plus the Filament Unit economy that turns any material into any other of its tier." },
   { key: "Machines", blurb: "Printer tiers, upgrade modules, the rack, the cable, and the repository." },
   { key: "Multiblocks", blurb: "Assemble and form the T5–T8 fabricators that print at scale." },
-  { key: "Resins", blurb: "One-shot additives that make a print come out finer — not just bigger." },
+  { key: "Resins", blurb: "One-shot additives that make a print come out finer, not just bigger." },
 ];
 
 const entries = await getCollection("guide");
@@ -14,8 +14,8 @@ const byCat = (key) =>
   entries.filter((e) => e.data.category === key).sort((a, b) => a.data.order - b.data.order);
 ---
 <Base
-  title="Guide — MC3DPrint"
-  description="Tutorials for every part of MC3DPrint: scanning, printing, the Filament Unit economy, printer tiers, upgrades, multiblock fabricators, and resins."
+  title="Guide · MC3DPrint"
+  description="Tutorials for every part of MC3DPrint: scanning, printing, converting materials in Item Mode, the Filament Unit economy, printer tiers, upgrades, multiblock fabricators, and resins."
 >
   <section class="section">
     <div class="wrap">

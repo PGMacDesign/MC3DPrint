@@ -1,7 +1,7 @@
 ---
 import Base from "../layouts/Base.astro";
 ---
-<Base title="Submit a Build — MC3DPrint" description="Share a build you made. Drag in your .blueprint file, preview it in 3D, and submit it for review — no GitHub account or coding required.">
+<Base title="Submit a Build · MC3DPrint" description="Share a build you made. Drag in your .blueprint file, preview it in 3D, and submit it for review. No GitHub account or coding required.">
   <!-- three.js for the live preview, same versions the viewer uses -->
   <script is:inline type="importmap">
   {
@@ -55,7 +55,7 @@ import Base from "../layouts/Base.astro";
           <label>Description <span class="muted">(optional)</span>
             <textarea id="desc" name="description" rows="3" maxlength="500" placeholder="What is it? Anything reviewers should know?"></textarea>
           </label>
-          <label>Screenshot URL <span class="muted">(optional — a direct image link, e.g. imgur)</span>
+          <label>Screenshot URL <span class="muted">(optional: a direct image link, e.g. imgur)</span>
             <input id="imageUrl" name="imageUrl" type="url" maxlength="1000" placeholder="https://i.imgur.com/abc123.png" />
           </label>
           <label class="check">
@@ -73,8 +73,8 @@ import Base from "../layouts/Base.astro";
         <h3>What happens next?</h3>
         <p class="muted">
           Your file and notes open a pull request on GitHub, where it's automatically
-          rendered and reviewed. Being submitted doesn't guarantee inclusion — accepted
-          builds need a little integration work before they ship — but every submission
+          rendered and reviewed. Being submitted doesn't guarantee inclusion (accepted
+          builds need a little integration work before they ship), but every submission
           is looked at. You'll be credited if it lands.
         </p>
       </div>
@@ -169,7 +169,7 @@ import Base from "../layouts/Base.astro";
     if (!SUBMIT_ENDPOINT) {
       msg.hidden = false;
       msg.className = "msg info";
-      msg.textContent = "Preview works! Submissions go live the moment the upload service is connected — check back soon.";
+      msg.textContent = "Preview works! Submissions go live the moment the upload service is connected. Check back soon.";
       return;
     }
 
@@ -199,7 +199,7 @@ import Base from "../layouts/Base.astro";
       const out = await res.json();
       msg.hidden = false;
       msg.className = "msg ok";
-      msg.innerHTML = out.url ? `Thanks! Your build was submitted — <a href="${out.url}" target="_blank" rel="noopener">track it here</a>.` : "Thanks! Your build was submitted for review.";
+      msg.innerHTML = out.url ? `Thanks! Your build was submitted, <a href="${out.url}" target="_blank" rel="noopener">track it here</a>.` : "Thanks! Your build was submitted for review.";
       $("form").reset();
       window.turnstile?.reset();
       turnstileToken = "";

@@ -3,75 +3,81 @@ import Base from "../layouts/Base.astro";
 
 const faqs = [
   {
+    q: "Can I turn one material into another?",
+    a: `<p>Yes, and it's one of the main things the mod is for. Filament is denominated by <strong>tier</strong>, not by item, so a spool doesn't remember what you wound into it. Anything of the <strong>same tier is interchangeable</strong>, and a spool also pays for anything <em>below</em> its tier.</p>
+        <p>Wind sculk (Tier 5) and print diamonds (also Tier 5). Wind your surplus copper (Tier 2) and print gold. Drop the target item into the printer's Smart Print Slot to put it in <a href="/guide/item-mode/">Item Mode</a>, and it prints copies paid for out of the spool.</p>
+        <p>The one thing you can't do is convert <em>upward</em>. Low-tier filament contributes nothing toward a higher-tier cost, so no amount of cobblestone will ever add up to a diamond.</p>`,
+  },
+  {
     q: "Why won't it print? (Not Printable)",
     a: `<p><strong>Not Printable</strong> means the machine will <em>never</em> print that item:</p>
         <ul>
-          <li>It has no Filament Unit value and you're in <strong>strict mode</strong> (the default) — un-priced items can't be printed.</li>
-          <li>It's a filament spool or a restricted trophy — the printer never duplicates those.</li>
-          <li>It's <strong>wind-only</strong> treasure — saddles, name tags, wither skulls, and the dragon egg recycle into Filament Units at the Winder but never print back.</li>
+          <li>It has no Filament Unit value and you're in <strong>strict mode</strong> (the default), so un-priced items can't be printed.</li>
+          <li>It's a filament spool or a restricted trophy: the printer never duplicates those.</li>
+          <li>It's <strong>wind-only</strong> treasure: saddles, name tags, wither skulls, and the dragon egg recycle into Filament Units at the Winder but never print back.</li>
         </ul>
-        <p>A material that's simply <strong>above the machine's tier</strong> — e.g. Tier 3 string in a Tier 2 printer — shows <strong>Requires a Tier N Printer</strong> instead; just use a higher-tier machine. To price unknown blocks, set <code>unknownBlocksPrintable=true</code> in the config.</p>`,
+        <p>A material that's simply <strong>above the machine's tier</strong> (e.g. Tier 3 string in a Tier 2 printer) shows <strong>Requires a Tier N Printer</strong> instead; just use a higher-tier machine. To price unknown blocks, set <code>unknownBlocksPrintable=true</code> in the config.</p>`,
   },
   {
     q: "My structure has a few blocks that won't print",
-    a: `<p>For a <strong>structure</strong> print, the machine doesn't refuse the whole job over a few bad blocks — it skips any block it can't print (too high a tier, or un-priced) and builds everything else.</p>
+    a: `<p>For a <strong>structure</strong> print, the machine doesn't refuse the whole job over a few bad blocks. It skips any block it can't print (too high a tier, or un-priced) and builds everything else.</p>
         <p>Only an <strong>item</strong> print, or a structure where <em>nothing</em> is printable, shows Not Printable outright.</p>`,
   },
   {
     q: "How do I move or rotate where it prints?",
-    a: `<p>Use the <strong>X / Y / Z offset</strong> steppers in the printer GUI. They shift the build area relative to its default position (centered directly above the printer). Each axis is capped at ±32 blocks — enough to place a build beside or above the machine without printing into the printer itself.</p>
-        <p>The <strong>Rotate</strong> button spins the whole print 90° clockwise per tap (0 → 90 → 180 → 270). Everything turns with it — a north-facing door comes out facing east. Rotation pivots around the build's center, so your offsets are never touched, and the ghost preview updates live so you can line it up before you print.</p>`,
+    a: `<p>Use the <strong>X / Y / Z offset</strong> steppers in the printer GUI. They shift the build area relative to its default position (centered directly above the printer). Each axis is capped at ±32 blocks, enough to place a build beside or above the machine without printing into the printer itself.</p>
+        <p>The <strong>Rotate</strong> button spins the whole print 90° clockwise per tap (0 → 90 → 180 → 270). Everything turns with it: a north-facing door comes out facing east. Rotation pivots around the build's center, so your offsets are never touched, and the ghost preview updates live so you can line it up before you print.</p>`,
   },
   {
-    q: "Auto vs Manual — why did it print immediately?",
-    a: `<p><strong>Auto defaults OFF.</strong> With Auto off, loading a disc only arms the printer (<em>Ready</em>) — press <strong>Start</strong> (or pulse redstone) to begin. A manual Start prints one item, or runs one structure job.</p>
+    q: "Auto vs Manual: why did it print immediately?",
+    a: `<p><strong>Auto defaults OFF.</strong> With Auto off, loading a disc only arms the printer (<em>Ready</em>). Press <strong>Start</strong> (or pulse redstone) to begin. A manual Start prints one item, or runs one structure job.</p>
         <p>Flip <strong>Auto ON</strong> and the printer starts the moment a printable disc or item lands, and keeps going. If a print began on its own, Auto is on.</p>`,
   },
   {
     q: "Can I change how the machines look?",
-    a: `<p>Yes — the mod ships two optional built-in styles: <strong>Blueprint Mode</strong> (every machine as its own schematic: blueprint blues and white line-work) and <strong>Dark Mode</strong> (matte near-black, glow and tier colors stay loud).</p>
+    a: `<p>Yes, the mod ships two optional built-in styles: <strong>Blueprint Mode</strong> (every machine as its own schematic: blueprint blues and white line-work) and <strong>Dark Mode</strong> (matte near-black, glow and tier colors stay loud).</p>
         <p>Enable one under <strong>Options → Resource Packs</strong>: move <em>MC3DPrint: Blueprint Mode</em> or <em>MC3DPrint: Dark Mode</em> to the Selected side and click Done. Move it back to return to the default art. Each release also attaches the styles as standalone resource-pack zips. Details in the <a href="/guide/alternate-styles/">Alternate styles</a> guide page.</p>`,
   },
   {
     q: "How do I get blueprints?",
     a: `<p>Two ways:</p>
         <ul>
-          <li><strong>Scan your own builds</strong> with the Structure Scanner — right-click two opposite corners, then scan with a Blank Blueprint Disc anywhere in your inventory.</li>
-          <li><strong>Find curated discs</strong> in village and exploration loot — print what you find, no scanning required.</li>
+          <li><strong>Scan your own builds</strong> with the Structure Scanner: right-click two opposite corners, then scan with a Blank Blueprint Disc anywhere in your inventory.</li>
+          <li><strong>Find curated discs</strong> in village and exploration loot: print what you find, no scanning required.</li>
         </ul>
         <p>Server operators can also import <code>.schem</code> / <code>.litematic</code> / <code>.nbt</code> files with <code>/mc3dprint import</code>. In Creative, a config toggle (<code>allowAllDiscsInCreative</code>) lists every curated disc the mod ships.</p>
         <p>A few curated builds are <strong>cross-mod</strong>: the six-ride <strong>Coppertide Park</strong> set is built from <a href="https://pgmacdesign.github.io/MCWaterSlides/">MC Waterslides</a> blocks and only shows up (creative and loot) when that mod is installed. Details on the <a href="/guide/blueprints/">Blueprint Discs</a> page.</p>`,
   },
   {
     q: "Can I raise the max print size?",
-    a: `<p>Yes. Every tier's print footprint is a config value — <code>maxFootprint</code> under each <code>[tierN]</code> section of <code>mc3dprint-common.toml</code>. The defaults run 3×3 (Tier 3) up to 51×51 (Tier 8), but you can raise any tier as high as 1000×1000 if you want a truly ludicrous print area. The same cap governs Deconstruct regions, and <em>Build Too Large</em> / <em>Requires a Higher Tier</em> statuses follow whatever you configure.</p>
+    a: `<p>Yes. Every tier's print footprint is a config value: <code>maxFootprint</code> under each <code>[tierN]</code> section of <code>mc3dprint-common.toml</code>. The defaults run 3×3 (Tier 3) up to 51×51 (Tier 8), but you can raise any tier as high as 1000×1000 if you want a truly ludicrous print area. The same cap governs Deconstruct regions, and <em>Build Too Large</em> / <em>Requires a Higher Tier</em> statuses follow whatever you configure.</p>
         <p>One caveat: a running print keeps its whole build area chunk-loaded until the job finishes, so giant footprints carry a matching server-performance cost.</p>`,
   },
   {
     q: "Can I add a screenshot of a build?",
-    a: `<p>Yes — it's an open bounty. Open any build in the <a href="/gallery">gallery</a> and use <strong>"Add a screenshot"</strong>: paste a direct image link (imgur, catbox, etc.), add your handle, and submit. No GitHub account needed.</p>
-        <p>Every submission is <strong>reviewed before it appears</strong> — appropriate, on-topic shots get published on the build's page, in submission order, and <strong>credited to your handle</strong> in the repo. Builds without a screenshot yet show a <em>"📷 Screenshot wanted"</em> badge. You can send up to two per build per day, so there's no need to race to be first.</p>`,
+    a: `<p>Yes, it's an open bounty. Open any build in the <a href="/gallery">gallery</a> and use <strong>"Add a screenshot"</strong>: paste a direct image link (imgur, catbox, etc.), add your handle, and submit. No GitHub account needed.</p>
+        <p>Every submission is <strong>reviewed before it appears</strong>: appropriate, on-topic shots get published on the build's page, in submission order, and <strong>credited to your handle</strong> in the repo. Builds without a screenshot yet show a <em>"📷 Screenshot wanted"</em> badge. You can send up to two per build per day, so there's no need to race to be first.</p>`,
   },
   {
     q: "How do upgrades work?",
     a: `<p>Each printer has upgrade slots that grow with its tier (Tier 3 has 3, topping out at 8 slots). Drop modules into those slots in the GUI, or Shift+Right Click them onto the machine.</p>
-        <p>Speed, Efficiency, RF Efficiency, and Buffer modules stack — Speed, RF, and Buffer multiplicatively (two Speed modules give 0.8 × 0.8 = 64% print time), Efficiency linearly (four modules reach exact 1:1 break-even). You can install at most 4 of any one type. See <a href="/guide/upgrades/">Upgrade modules</a> for the full breakdown.</p>`,
+        <p>Speed, Efficiency, RF Efficiency, and Buffer modules stack: Speed, RF, and Buffer multiplicatively (two Speed modules give 0.8 × 0.8 = 64% print time), Efficiency linearly (four modules reach exact 1:1 break-even). You can install at most 4 of any one type. See <a href="/guide/upgrades/">Upgrade modules</a> for the full breakdown.</p>`,
   },
   {
     q: "It stalled but doesn't say Not Printable",
-    a: `<p>Check the status line — every pause is recoverable, and the job resumes where it left off once you fix the cause:</p>
+    a: `<p>Check the status line. Every pause is recoverable, and the job resumes where it left off once you fix the cause:</p>
         <ul>
-          <li><strong>No Power</strong> — feed it more RF.</li>
-          <li><strong>No Filament</strong> — dock a fuller or higher-tier spool.</li>
-          <li><strong>Output Full</strong> — clear the bottom output slot.</li>
-          <li><strong>Obstructed</strong> — clear the build area. The printer never overwrites existing blocks; it only fills empty space.</li>
+          <li><strong>No Power</strong>: feed it more RF.</li>
+          <li><strong>No Filament</strong>: dock a fuller or higher-tier spool.</li>
+          <li><strong>Output Full</strong>: clear the bottom output slot.</li>
+          <li><strong>Obstructed</strong>: clear the build area. The printer never overwrites existing blocks; it only fills empty space.</li>
         </ul>`,
   },
 ];
 ---
 <Base
-  title="FAQ — MC3DPrint"
-  description="Answers to the common MC3DPrint questions: why a build won't print, moving and rotating the print area, auto vs manual, getting blueprints, upgrades, and recovering a stalled print."
+  title="FAQ · MC3DPrint"
+  description="Answers to the common MC3DPrint questions: converting one material into another, why a build won't print, moving and rotating the print area, auto vs manual, getting blueprints, upgrades, and recovering a stalled print."
 >
   <section class="section">
     <div class="wrap narrow">

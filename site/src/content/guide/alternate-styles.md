@@ -1,14 +1,14 @@
 ---
 title: "Alternate styles (texture packs)"
 category: "Basics"
-order: 6
-summary: "Two optional built-in looks — Blueprint Mode and Dark Mode — ship inside the mod and flip on from the Resource Packs screen."
+order: 7
+summary: "Two optional built-in looks (Blueprint Mode and Dark Mode) ship inside the mod and flip on from the Resource Packs screen."
 ---
 
-MC3DPrint ships two optional looks for every machine, item, and screen. They're built into the mod jar, so there's nothing extra to download, and they only restyle MC3DPrint's own content — your other resource packs are untouched.
+MC3DPrint ships two optional looks for every machine, item, and screen. They're built into the mod jar, so there's nothing extra to download, and they only restyle MC3DPrint's own content, so your other resource packs are untouched.
 
-- **Blueprint Mode** — every machine drawn as its own schematic: blueprint blues and white technical line-work. The mod's signature look.
-- **Dark Mode** — matte near-black chassis; the cyan glow and tier accent colors stay loud.
+- **Blueprint Mode**: every machine drawn as its own schematic: blueprint blues and white technical line-work. The mod's signature look.
+- **Dark Mode**: matte near-black chassis; the cyan glow and tier accent colors stay loud.
 
 Both styles keep gameplay information intact: tier colors stay distinguishable at a glance, silhouettes stay recognizable, and GUI layouts never move.
 

@@ -3,7 +3,7 @@ import Base from "../../layouts/Base.astro";
 import { readFileSync, existsSync } from "node:fs";
 
 // The gallery manifest is generated (not committed) and lives in publicDir, so
-// it can't be a Vite `import`. Read it from disk at build time — the Pages
+// it can't be a Vite `import`. Read it from disk at build time. The Pages
 // workflow regenerates it into public/viewer before `astro build` runs. Missing
 // manifest (a bare checkout) just yields no detail pages rather than failing.
 export function getStaticPaths() {
@@ -33,7 +33,7 @@ const blocks = b.blocks.toLocaleString();
 const hero = shots[0] || null;
 ---
 <Base
-  title={`${b.name} — MC3DPrint Blueprint`}
+  title={`${b.name} · MC3DPrint Blueprint`}
   description={`${b.name}: a Tier ${b.tier} curated blueprint (${b.sx}×${b.sy}×${b.sz}, ${blocks} blocks) that ships with MC3DPrint. Preview it in 3D or print it in survival.`}
 >
   <section class="section">
@@ -48,7 +48,7 @@ const hero = shots[0] || null;
             ) : (
               <div class="shot-fallback">
                 <span class="glyph" aria-hidden="true">▦</span>
-                <p class="muted">No screenshot yet — spin it in the 3D viewer, or add one below.</p>
+                <p class="muted">No screenshot yet. Spin it in the 3D viewer, or add one below.</p>
               </div>
             )}
           </div>
@@ -77,7 +77,7 @@ const hero = shots[0] || null;
             <a class="btn btn-ghost" href="/gallery">← Back to gallery</a>
           </div>
           <p class="muted small">
-            Ships with MC3DPrint and turns up as world loot — print it in survival once you've
+            Ships with MC3DPrint and turns up as world loot. Print it in survival once you've
             got a Tier {b.tier} machine. New to printing? Start with the <a href="/guide">guide</a>.
           </p>
         </div>
@@ -88,12 +88,12 @@ const hero = shots[0] || null;
         <summary>
           <span class="ss-cam" aria-hidden="true">📷</span>
           <span>{hero ? "Add another screenshot of this build" : "Add a screenshot of this build"}</span>
-          <span class="ss-hint muted">— get credited on the site</span>
+          <span class="ss-hint muted">· get credited on the site</span>
         </summary>
         <div class="ss-body">
           <p class="muted small">
             Built this in-game and got a good shot? Paste a direct image link (imgur, catbox, etc.).
-            It goes to review first — appropriate, on-topic screenshots get published here in
+            It goes to review first: appropriate, on-topic screenshots get published here in
             submission order and credited to your handle. No GitHub account needed.
           </p>
           <form id="ss-form" class="form" data-build={id}>
@@ -189,7 +189,7 @@ const hero = shots[0] || null;
       if (!res.ok) throw new Error(out.error || `server returned ${res.status}`);
       msg.hidden = false;
       msg.className = "msg ok";
-      msg.innerHTML = out.url ? `Thanks! Sent for review — <a href="${out.url}" target="_blank" rel="noopener">track it here</a>. It'll appear here once approved.` : "Thanks! Your screenshot was sent for review.";
+      msg.innerHTML = out.url ? `Thanks! Sent for review, <a href="${out.url}" target="_blank" rel="noopener">track it here</a>. It'll appear here once approved.` : "Thanks! Your screenshot was sent for review.";
       $("ss-form").reset();
       prev.hidden = true;
       window.turnstile?.reset();
