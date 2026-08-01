@@ -231,7 +231,29 @@ public class MultiblockGameTests {
                 helper.fail("relocate must restore ACTIVE casing at " + offset + ", got " + s);
                 return;
             }
+            // The formed LOOK must come back too, not just ACTIVE: every base cell
+            // carries a top-face part when formed (corner post / rail / bed). A
+            // re-placed fabricator once glowed with PART=NONE everywhere and looked
+            // unformed until manually broken and re-formed.
+            if (s.getValue(CasingBlock.PART) == CasingBlock.CasingPart.NONE) {
+                helper.fail("relocate must restore the formed-look PART at " + offset + ", got NONE");
+                return;
+            }
+        }
+        // Spot-check orientation: NW corner post, and a rail running along each edge.
+        if (partAt(helper, absController, -1, -1) != CasingBlock.CasingPart.CORNER_NW
+                || partAt(helper, absController, 0, -1) != CasingBlock.CasingPart.RAIL_EW
+                || partAt(helper, absController, -1, 0) != CasingBlock.CasingPart.RAIL_NS) {
+            helper.fail("relocate restored wrong PART orientation: NW="
+                    + partAt(helper, absController, -1, -1)
+                    + " N-edge=" + partAt(helper, absController, 0, -1)
+                    + " W-edge=" + partAt(helper, absController, -1, 0));
+            return;
         }
         helper.succeed();
+    }
+
+    private static CasingBlock.CasingPart partAt(GameTestHelper helper, BlockPos absController, int dx, int dz) {
+        return helper.getLevel().getBlockState(absController.offset(dx, 0, dz)).getValue(CasingBlock.PART);
     }
 }
