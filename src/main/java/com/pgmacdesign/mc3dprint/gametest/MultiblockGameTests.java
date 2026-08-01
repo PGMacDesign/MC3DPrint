@@ -213,4 +213,43 @@ public class MultiblockGameTests {
         }
         helper.succeed();
     }
+
+    @GameTest(template = "empty5", timeoutTicks = 100)
+    public static void relocateRestoresFormedLook(GameTestHelper helper) {
+        // Re-placing a collapsed fabricator must restore the FORMED look, not just
+        // ACTIVE casings: each base cell carries a top-face PART (corner post / rail
+        // / bed). A re-placed fabricator once glowed with PART=NONE everywhere and
+        // looked unformed until a casing was broken and the machine re-formed by hand.
+        BlockPos absController = helper.absolutePos(CONTROLLER_POS);
+        helper.setBlock(CONTROLLER_POS, ModBlocks.CONTROLLERS.get(0).get()); // T5 controller
+        com.pgmacdesign.mc3dprint.machine.multiblock.FabricatorBlockItem
+                .reformComponents(helper.getLevel(), absController, MachineTier.T5);
+
+        for (BlockPos offset : MultiblockPattern.componentOffsets(MachineTier.T5)) {
+            BlockState s = helper.getLevel().getBlockState(absController.offset(offset));
+            if (!(s.getBlock() instanceof CasingBlock) || !s.getValue(CasingBlock.ACTIVE)) {
+                helper.fail("relocate must restore ACTIVE casing at " + offset + ", got " + s);
+                return;
+            }
+            if (s.getValue(CasingBlock.PART) == CasingBlock.CasingPart.NONE) {
+                helper.fail("relocate must restore the formed-look PART at " + offset + ", got NONE");
+                return;
+            }
+        }
+        // Spot-check orientation: NW corner post, and a rail running along each edge.
+        if (partAt(helper, absController, -1, -1) != CasingBlock.CasingPart.CORNER_NW
+                || partAt(helper, absController, 0, -1) != CasingBlock.CasingPart.RAIL_EW
+                || partAt(helper, absController, -1, 0) != CasingBlock.CasingPart.RAIL_NS) {
+            helper.fail("relocate restored wrong PART orientation: NW="
+                    + partAt(helper, absController, -1, -1)
+                    + " N-edge=" + partAt(helper, absController, 0, -1)
+                    + " W-edge=" + partAt(helper, absController, -1, 0));
+            return;
+        }
+        helper.succeed();
+    }
+
+    private static CasingBlock.CasingPart partAt(GameTestHelper helper, BlockPos absController, int dx, int dz) {
+        return helper.getLevel().getBlockState(absController.offset(dx, 0, dz)).getValue(CasingBlock.PART);
+    }
 }

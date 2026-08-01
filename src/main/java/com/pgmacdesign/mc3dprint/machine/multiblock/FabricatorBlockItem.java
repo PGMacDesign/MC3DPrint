@@ -1,5 +1,6 @@
 package com.pgmacdesign.mc3dprint.machine.multiblock;
 
+import com.pgmacdesign.mc3dprint.machine.MachineTier;
 import com.pgmacdesign.mc3dprint.registry.ModBlocks;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
@@ -55,17 +56,33 @@ public class FabricatorBlockItem extends BlockItem {
 
         InteractionResult result = super.place(context); // also restores BlockEntityTag
         if (result.consumesAction() && !level.isClientSide) {
-            BlockState activeCasing = ModBlocks.PRINTER_CASING.get().defaultBlockState()
-                    .setValue(CasingBlock.ACTIVE, true);
-            for (BlockPos offset : MultiblockPattern.componentOffsets(controller.tier())) {
-                level.setBlock(pos.offset(offset), activeCasing, Block.UPDATE_ALL);
-            }
+            reformComponents(level, pos, controller.tier());
             BlockState placed = level.getBlockState(pos);
             if (placed.getBlock() instanceof ControllerBlock) {
                 level.setBlock(pos, placed.setValue(ControllerBlock.FORMED, true), Block.UPDATE_ALL);
             }
         }
         return result;
+    }
+
+    /**
+     * Re-places the base casings of a collapsed multiblock around {@code controllerPos}.
+     * Each casing must come back with its formed-look PART (rail / corner post / bed),
+     * not just ACTIVE: this path skips the right-click forming flow (which is where
+     * setComponentsActive assigns parts), so leaving PART at NONE re-placed a
+     * fabricator that glowed but looked unformed until a casing was broken and the
+     * machine re-formed by hand. Static + Level-only so the relocate round-trip is
+     * gametest-able without a {@code BlockPlaceContext}.
+     */
+    public static void reformComponents(Level level, BlockPos controllerPos, MachineTier tier) {
+        BlockState activeCasing = ModBlocks.PRINTER_CASING.get().defaultBlockState()
+                .setValue(CasingBlock.ACTIVE, true);
+        for (BlockPos offset : MultiblockPattern.componentOffsets(tier)) {
+            level.setBlock(controllerPos.offset(offset),
+                    activeCasing.setValue(CasingBlock.PART,
+                            ControllerBlock.partForOffset(offset.getX(), offset.getZ(), tier)),
+                    Block.UPDATE_ALL);
+        }
     }
 
     @Override
