@@ -61,7 +61,8 @@ const faqs = [
   {
     q: "How do upgrades work?",
     a: `<p>Each printer has upgrade slots that grow with its tier (Tier 3 has 3, topping out at 8 slots). Drop modules into those slots in the GUI, or Shift+Right Click them onto the machine.</p>
-        <p>Speed, Efficiency, RF Efficiency, and Buffer modules stack: Speed, RF, and Buffer multiplicatively (two Speed modules give 0.8 × 0.8 = 64% print time), Efficiency linearly (four modules reach exact 1:1 break-even). You can install at most 4 of any one type. See <a href="/guide/upgrades/">Upgrade modules</a> for the full breakdown.</p>`,
+        <p>Speed, Efficiency, RF Efficiency, and Buffer modules stack: Speed, RF, and Buffer multiplicatively (two Speed modules give 0.8 × 0.8 = 64% print time), Efficiency linearly (four modules reach exact 1:1 break-even). You can install at most 4 of any one type.</p>
+        <p>The Redstone Module is the exception at 1 per machine. It has no numeric effect at all: it emits a full-strength signal from all six faces while the machine is printing or deconstructing, and nothing when the machine is idle or paused, so an inverted signal makes a stall alarm. See <a href="/guide/upgrades/">Upgrade modules</a> for the full breakdown.</p>`,
   },
   {
     q: "It stalled but doesn't say Not Printable",

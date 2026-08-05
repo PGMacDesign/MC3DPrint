@@ -348,6 +348,10 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
 
     public static void serverTick(Level level, BlockPos pos, BlockState blockState, PrinterBlockEntity printer) {
         printer.tick();
+        // Outside tick() on purpose: every branch in there returns early (including the
+        // unformed-multiblock bail), and the Redstone Module output has to be reconciled
+        // on all of them.
+        printer.updateRedstoneOutput();
     }
 
     private void tick() {
@@ -1106,9 +1110,12 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         return count;
     }
 
-    /** True once this machine already holds the per-type module cap (config maxPerType). */
+    /**
+     * True once this machine already holds the cap for that module type: the config
+     * maxPerType for the four multiplier modules, and 1 for the binary Redstone Module.
+     */
     public boolean upgradeTypeAtCap(UpgradeItem.Type type) {
-        return upgradeCount(type) >= MC3DPrintConfig.UPGRADE_MAX_PER_TYPE.get();
+        return upgradeCount(type) >= type.maxPerMachine();
     }
 
     /**
@@ -2508,10 +2515,58 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
 
     /** Rising-edge redstone triggers a start, WorldEdit-machine style. */
     public void onNeighborSignal(boolean powered) {
-        if (powered && !lastRedstoneSignal) {
+        boolean rising = powered && !lastRedstoneSignal;
+        // Record first, act second. While a Redstone Module machine is broadcasting, a
+        // rising edge may well be its OWN output fed back through adjacent dust, so it
+        // never queues a start: the self-caused edge would set startRequested, that flag
+        // outlives the job, and the print would restart forever. The recording is never
+        // skipped, or the field would go stale-false and the first update after the
+        // emission drops would read as a fresh rising edge, rebuilding the loop through
+        // any held source. Cost: on such a machine a pulse arriving mid-job is ignored
+        // rather than queued as a re-run.
+        lastRedstoneSignal = powered;
+        if (rising && !shouldEmitRedstone()) {
             requestStart();
         }
-        lastRedstoneSignal = powered;
+    }
+
+    /**
+     * True while this machine is doing work its Redstone Module should broadcast: a
+     * module is installed, a multiblock is formed, and a print or deconstruct is
+     * actually advancing. Every paused, error and ready state reads false deliberately,
+     * so the signal answers "busy right now" rather than "a job is loaded" and a stall
+     * shows up as the signal dropping.
+     */
+    public boolean shouldEmitRedstone() {
+        if (upgradeCount(UpgradeItem.Type.REDSTONE) == 0) {
+            return false;
+        }
+        BlockState blockState = getBlockState();
+        if (blockState.hasProperty(com.pgmacdesign.mc3dprint.machine.multiblock.ControllerBlock.FORMED)
+                && !blockState.getValue(com.pgmacdesign.mc3dprint.machine.multiblock.ControllerBlock.FORMED)) {
+            return false;
+        }
+        return state == State.PRINTING || state == State.DECONSTRUCTING;
+    }
+
+    /**
+     * Writes {@link PrinterBlock#EMITTING} through to the world, but only when it
+     * actually changes. That setBlock IS the neighbor update, so gating it on a real
+     * transition is what stops a running machine from poking its six neighbours every
+     * single tick. A tick where the predicate is unchanged does zero world work.
+     */
+    private void updateRedstoneOutput() {
+        if (level == null || level.isClientSide()) {
+            return;
+        }
+        BlockState blockState = getBlockState();
+        if (!blockState.hasProperty(PrinterBlock.EMITTING)) {
+            return;
+        }
+        boolean emit = shouldEmitRedstone();
+        if (blockState.getValue(PrinterBlock.EMITTING) != emit) {
+            level.setBlock(worldPosition, blockState.setValue(PrinterBlock.EMITTING, emit), Block.UPDATE_ALL);
+        }
     }
 
     public int offset(int axis) {

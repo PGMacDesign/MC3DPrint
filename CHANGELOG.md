@@ -3,6 +3,15 @@
 All notable changes to **MC3DPrint** (Minecraft 1.20.1 / Forge). Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/). Versions before 0.3.0 predate this file.
 
+## [Unreleased]
+
+### Added
+- **Redstone Module**: a fifth printer upgrade, capped at 1 per machine (the other four cap at 4). The
+  machine emits a full-strength weak signal from all six faces while it is actively printing or
+  deconstructing, and nothing when idle or paused (no power, output full, obstructed, out of filament,
+  zone conflict), so an inverted signal makes a stall alarm. On a fabricator only the controller emits,
+  and the machine never restarts itself: while emitting, an incoming rising edge does not queue a start.
+
 ## [0.7.0] — 2026-06-20
 
 Spool storage + a unified transport cable, with a tier-smart filament economy pass.

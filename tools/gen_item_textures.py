@@ -4,8 +4,8 @@ Generate the MC3DPrint ITEM textures to the VISUAL-REVAMP-BRIEF.
 
 Hero (32x32): filament_spool_t1..t8, blank_blueprint_disc, blueprint_disc,
               scanner.
-Secondary (16x16): extrudium_crystal, speed/efficiency/rf_efficiency/buffer
-              upgrade, creative_filament_spool.
+Secondary (16x16): extrudium_crystal, speed/efficiency/rf_efficiency/buffer/
+              redstone upgrade, creative_filament_spool.
 
 Same filenames -> item/generated models still resolve. Run from repo root:
   python3 tools/gen_item_textures.py
@@ -388,6 +388,13 @@ def buffer_upgrade():
     return _upgrade_chip((0x9B, 0x6B, 0xE8), glyph)
 
 
+def redstone_upgrade():
+    # redstone red, a torch: lit head over a stem on a wide base (signal out)
+    glyph = [(1, 0), (2, 0), (1, 1), (2, 1), (1, 2), (2, 2),
+             (0, 3), (1, 3), (2, 3), (3, 3)]
+    return _upgrade_chip((0xE8, 0x4F, 0x4F), glyph)
+
+
 def creative_filament_spool():
     # 16x16 magenta spool + sheen (smaller cousin of the hero spool)
     S = 16
@@ -429,6 +436,7 @@ def main():
     written.append(save_item(efficiency_upgrade(), "efficiency_upgrade"))
     written.append(save_item(rf_efficiency_upgrade(), "rf_efficiency_upgrade"))
     written.append(save_item(buffer_upgrade(), "buffer_upgrade"))
+    written.append(save_item(redstone_upgrade(), "redstone_upgrade"))
     written.append(save_item(creative_filament_spool(), "creative_filament_spool"))
     for p in written:
         print("wrote", p)
