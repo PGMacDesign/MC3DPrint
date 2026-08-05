@@ -24,11 +24,34 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Containers;
 
 public class PrinterBlock extends BaseEntityBlock {
+
+    /**
+     * True while the machine is broadcasting its Redstone Module signal. Kept in the
+     * BLOCK STATE rather than read live off the block entity so that a machine without
+     * the module is not a signal source at all: dust never connects to it and existing
+     * worlds behave exactly as before. It also means the flag saves with the chunk (no
+     * new NBT) and that the one {@code setBlock} that flips it IS the neighbor update,
+     * so neighbors can only ever be poked on a real transition.
+     *
+     * <p>Deliberately absent from every blockstate JSON: the loader matches a variant on
+     * the properties its key lists and ignores the rest, the same way vanilla omits
+     * {@code waterlogged}. So this adds no model/blockstate churn.
+     */
+    public static final net.minecraft.world.level.block.state.properties.BooleanProperty EMITTING =
+            net.minecraft.world.level.block.state.properties.BooleanProperty.create("emitting");
+
     private final MachineTier tier;
 
     public PrinterBlock(MachineTier tier, Properties properties) {
         super(properties);
         this.tier = tier;
+        registerDefaultState(stateDefinition.any().setValue(EMITTING, false));
+    }
+
+    @Override
+    protected void createBlockStateDefinition(
+            net.minecraft.world.level.block.state.StateDefinition.Builder<Block, BlockState> builder) {
+        builder.add(EMITTING);
     }
 
     public MachineTier tier() {
@@ -38,6 +61,19 @@ public class PrinterBlock extends BaseEntityBlock {
     @Override
     public RenderShape getRenderShape(BlockState state) {
         return RenderShape.MODEL; // BaseEntityBlock defaults to INVISIBLE
+    }
+
+    // --- Redstone Module output: weak power 15 on all six faces while working ---
+
+    @Override
+    public boolean isSignalSource(BlockState state) {
+        return state.getValue(EMITTING);
+    }
+
+    @Override
+    public int getSignal(BlockState state, net.minecraft.world.level.BlockGetter level, BlockPos pos,
+                         net.minecraft.core.Direction direction) {
+        return state.getValue(EMITTING) ? 15 : 0;
     }
 
     @Nullable

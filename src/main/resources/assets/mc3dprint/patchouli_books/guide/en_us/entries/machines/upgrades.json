@@ -6,7 +6,7 @@
   "pages": [
     {
       "type": "patchouli:text",
-      "text": "Every printer has upgrade slots that grow with its tier (a Tier 3 printer has 3, topping out at 8). Shift+Right Click a module onto the machine to install it, or drop it into an upgrade slot in the GUI:$(br)$(li)$(item)Speed$(): faster printing$(li)$(item)Efficiency$(): less FU per print$(li)$(item)RF Efficiency$(): less RF power used per print$(li)$(item)Buffer$(): bigger RF tank$(br2)You can install at most $(l)4 of any one type$() per machine."
+      "text": "Every printer has upgrade slots that grow with its tier (a Tier 3 printer has 3, topping out at 8). Shift+Right Click a module onto the machine to install it, or drop it into an upgrade slot in the GUI:$(br)$(li)$(item)Speed$(): faster printing$(li)$(item)Efficiency$(): less FU per print$(li)$(item)RF Efficiency$(): less RF power used per print$(li)$(item)Buffer$(): bigger RF tank$(li)$(item)Redstone$(): signal out while working$(br2)At most $(l)4 of any one type$() per machine, and only $(l)1$() Redstone."
     },
     {
       "type": "patchouli:crafting",
@@ -29,9 +29,29 @@
       "text": "$(item)Buffer Upgrade$(): ×1.5 RF buffer per module."
     },
     {
+      "type": "patchouli:crafting",
+      "recipe": "mc3dprint:redstone_upgrade",
+      "text": "$(item)Redstone Module$(): the machine reports when it is busy. Max $(l)1$() per machine."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Redstone Output",
+      "text": "With a $(item)Redstone Module$() installed, the machine emits a $(l)full-strength$() weak signal from all six faces $(l)while it is working$() (printing or deconstructing), and nothing otherwise.$(br2)A $(l)paused$() machine reads 0: out of power, output full, obstructed, out of filament, zone conflict, waiting, or idle. The signal answers 'is this machine busy right now', so an $(l)inverted$() signal on a lamp lights the moment a print stalls."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Wiring It Up",
+      "text": "On a fabricator only the $(l)controller$() emits, never the casings, so run your dust $(l)above or below$() it (the horizontal faces are casing once formed). Same as the redstone start input.$(br2)It $(l)will not restart itself$(): while the machine is emitting, an incoming rising edge never queues a start, so feeding its own output back in cannot loop a reprint. The tradeoff: a pulse arriving mid-print is ignored, not queued as a re-run."
+    },
+    {
       "type": "patchouli:text",
       "title": "Stacking",
-      "text": "Speed, RF, and Buffer stack $(l)multiplicatively$(): two Speed Upgrades print at 0.8 × 0.8 = $(l)64%$() time. Efficiency is $(l)linear$(): each module shaves a quarter of the tier's print markup, so $(l)4$() reach exact break-even.$(br2)Only $(l)Tier 4+$() machines have 4 slots, so only they can hit 1:1, and a Tier 4 must spend all four on Efficiency. Max $(l)4 of each type$(). Rates are in the config for pack makers."
+      "text": "Speed, RF, and Buffer stack $(l)multiplicatively$(): two Speed Upgrades print at 0.8 × 0.8 = $(l)64%$() time. Efficiency is $(l)linear$(): each module shaves a quarter of the tier's print markup, so $(l)4$() reach exact break-even.$(br2)Only $(l)Tier 4+$() machines have 4 slots, so only they can hit 1:1, and a Tier 4 must spend all four on Efficiency."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Caps",
+      "text": "Max $(l)4 of each type$() per machine. The $(item)Redstone Module$() is the exception at $(l)1 per machine$(): a second copy is refused even with slots free.$(br2)It is also the only module with $(l)no numeric effect$(). The other four scale a rate; this one is a status output, so it changes nothing about how the print runs.$(br2)Rates are in the config for pack makers."
     }
   ]
 }

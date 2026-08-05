@@ -95,6 +95,7 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.EFFICIENCY_UPGRADE.get());
                         output.accept(ModItems.RF_EFFICIENCY_UPGRADE.get());
                         output.accept(ModItems.BUFFER_UPGRADE.get());
+                        output.accept(ModItems.REDSTONE_UPGRADE.get());
                         // Resins: the crafting base, then every effect×tier variant.
                         output.accept(ModItems.RESIN_BASE.get());
                         ModItems.RESINS.forEach(resin -> output.accept(resin.get()));
