@@ -16,7 +16,7 @@
     {
       "type": "patchouli:crafting",
       "recipe": "mc3dprint:efficiency_upgrade",
-      "text": "$(item)Efficiency Upgrade$(): trims the tier's print markup. $(l)4 of them = break-even$() (1:1): the print costs exactly what the matter is worth, and never less."
+      "text": "$(item)Efficiency Upgrade$(): trims the tier's print markup. $(l)4 of them = break-even$() (1:1) on a $(l)Tier 4+$() machine: the print costs exactly what the matter is worth, and never less."
     },
     {
       "type": "patchouli:crafting",
