@@ -2550,6 +2550,58 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
     }
 
     /**
+     * Comparator reading: 0 when nothing is running, otherwise 1 to 15 scaled by how
+     * far the current job has got. The 0-versus-1 split is the point: a comparator
+     * must be able to tell "idle" from "running but barely started", which a plain
+     * {@code round(15 * fraction)} cannot do.
+     *
+     * <p>Deliberately ungated: unlike the emitted busy signal this needs no Redstone
+     * Module, matching the Filament Rack's free fill reading.
+     *
+     * <p>A job is torn down in the same tick its last unit of work lands (a blueprint
+     * print calls tryFinishJob straight after the final placement, and itemProgress is
+     * reset the moment it reaches maxProgress), so {@code done == total} is never
+     * observable from outside. {@link #scaleProgress} scales over the range that IS
+     * observable, which is what makes 15 reachable at all.
+     */
+    public int comparatorProgress() {
+        BlockState blockState = getBlockState();
+        if (blockState.hasProperty(com.pgmacdesign.mc3dprint.machine.multiblock.ControllerBlock.FORMED)
+                && !blockState.getValue(com.pgmacdesign.mc3dprint.machine.multiblock.ControllerBlock.FORMED)) {
+            return 0;
+        }
+        if (deconstructJob != null) {
+            return scaleProgress(deconstructJob.progress(), deconstructJob.totalPositions());
+        }
+        if (activeJob != null) {
+            return scaleProgress(activeJob.placed(), activeJob.totalBlocks());
+        }
+        if (itemProgress > 0) {
+            return scaleProgress(itemProgress, maxProgress());
+        }
+        return 0;
+    }
+
+    /**
+     * Maps job progress onto 1..15, reserving 0 for "nothing is running".
+     *
+     * <p>Divides by {@code total - 1}, not {@code total}, and that is deliberate: a job
+     * is destroyed in the same tick it finishes its last unit of work, so the highest
+     * value anything outside this class can ever read is {@code total - 1}. Dividing by
+     * {@code total} would make 15 unreachable in every mode and silently waste the top
+     * of the comparator range. Scaling over the observable range instead means a machine
+     * on its final block reads 15.
+     */
+    private static int scaleProgress(int done, int total) {
+        if (total <= 0) {
+            return 0;
+        }
+        int lastObservable = Math.max(1, total - 1);
+        double fraction = Math.min(1.0, (double) Math.max(0, done) / lastObservable);
+        return Mth.clamp(1 + (int) Math.floor(14 * fraction), 1, 15);
+    }
+
+    /**
      * Writes {@link PrinterBlock#EMITTING} through to the world, but only when it
      * actually changes. That setBlock IS the neighbor update, so gating it on a real
      * transition is what stops a running machine from poking its six neighbours every
