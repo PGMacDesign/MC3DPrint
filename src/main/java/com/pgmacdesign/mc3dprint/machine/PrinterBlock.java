@@ -76,6 +76,30 @@ public class PrinterBlock extends BaseEntityBlock {
         return state.getValue(EMITTING) ? 15 : 0;
     }
 
+    // --- Comparator output: print progress, deliberately UNGATED ---
+    //
+    // No Redstone Module required, matching the Filament Rack: reading a machine is
+    // free, acting on it is what costs. Without this a player who has metered a rack
+    // puts a comparator on a printer, reads 0, and concludes the printer is broken.
+    //
+    // This adds no per-tick work. BlockEntity.setChanged already calls
+    // Level.updateNeighbourForOutputSignal for every non-air block, gated only on
+    // isAir() and never on hasAnalogOutputSignal (verified on all seven NeoForge node
+    // source sets and on the 1.20.1 bytecode). The sweep was already running; this
+    // only changes what a comparator reads when it asks.
+
+    @Override
+    public boolean hasAnalogOutputSignal(BlockState state) {
+        return true;
+    }
+
+    @Override
+    public int getAnalogOutputSignal(BlockState state, Level level, BlockPos pos) {
+        return level.getBlockEntity(pos) instanceof PrinterBlockEntity printer
+                ? printer.comparatorProgress()
+                : 0;
+    }
+
     @Nullable
     @Override
     public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {

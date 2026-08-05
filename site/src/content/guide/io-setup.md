@@ -30,4 +30,15 @@ Loading a disc arms the printer and shows `Ready`. From there:
 
 Use the X/Y/Z offsets in the GUI to move the build area. The default is centered directly above the printer.
 
+## Reading progress with a comparator
+
+Put a **comparator** against any printer or fabricator and it reads out the job's progress, exactly like one against a [Filament Rack](/guide/filament-rack/) reads its fill level. No upgrade needed: reading a machine is always free.
+
+- **0** means nothing is running, whether the machine is empty, armed and waiting, or paused.
+- **1 to 15** tracks the job, climbing to 15 as it places its final block.
+
+That split matters: 0 is reserved for "not running" so a comparator can tell an idle machine from one that has only just started. It works in all three modes (blueprint, item and deconstruct), and on a fabricator you read the **controller**, not the casings.
+
+If you want a plain busy signal instead of a progress bar, the [Redstone Module](/guide/upgrades/) makes the machine emit full power while it works and nothing while it is idle or stalled.
+
 If a print won't begin, check [the FAQ](/faq).
