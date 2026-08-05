@@ -253,6 +253,33 @@ public class MultiblockGameTests {
         helper.succeed();
     }
 
+    @GameTest(template = "empty5", timeoutTicks = 100)
+    public static void relocateRestoresHeatedBedInterior(GameTestHelper helper) {
+        // T5's 3x3 base is all corners and edges, so the test above never sees a BED
+        // cell, yet BED is the bulk of a large base (48 of the 80 cells on a T8 9x9).
+        // T6's 5x5 fills the empty5 template exactly and has an 8-cell interior ring.
+        BlockPos absController = helper.absolutePos(CONTROLLER_POS);
+        helper.setBlock(CONTROLLER_POS, ModBlocks.CONTROLLERS.get(1).get()); // T6
+        FabricatorBlockItem.reformComponents(helper.getLevel(), absController, MachineTier.T6);
+
+        int half = MultiblockPattern.baseEdge(MachineTier.T6) / 2;
+        for (BlockPos offset : MultiblockPattern.componentOffsets(MachineTier.T6)) {
+            BlockState s = helper.getLevel().getBlockState(absController.offset(offset));
+            if (!(s.getBlock() instanceof CasingBlock)) {
+                helper.fail("T6 base cell " + offset + " is not a casing: " + s.getBlock());
+                return;
+            }
+            boolean interior = Math.abs(offset.getX()) < half && Math.abs(offset.getZ()) < half;
+            CasingBlock.CasingPart part = s.getValue(CasingBlock.PART);
+            if (interior != (part == CasingBlock.CasingPart.BED)) {
+                helper.fail("T6 cell " + offset + (interior ? " (interior) should be BED" : " (perimeter) must not be BED")
+                        + ", got " + part);
+                return;
+            }
+        }
+        helper.succeed();
+    }
+
     private static CasingBlock.CasingPart partAt(GameTestHelper helper, BlockPos absController, int dx, int dz) {
         return helper.getLevel().getBlockState(absController.offset(dx, 0, dz)).getValue(CasingBlock.PART);
     }
