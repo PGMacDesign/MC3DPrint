@@ -200,6 +200,7 @@
   "tooltip.mc3dprint.fu": "%s / %s FU",
   "gui.mc3dprint.state.paused_no_filament": "No Filament",
   "gui.mc3dprint.state.not_printable": "Not Printable",
+  "gui.mc3dprint.state.no_region": "No Region Set",
   "gui.mc3dprint.cost": "%s FU",
   "message.mc3dprint.spool_slots_full": "All spool docks are occupied",
   "message.mc3dprint.spool_locked_printing": "Stop the print before removing spools",
