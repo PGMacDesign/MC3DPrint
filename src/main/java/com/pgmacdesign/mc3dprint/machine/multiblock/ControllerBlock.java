@@ -67,7 +67,10 @@ public class ControllerBlock extends PrinterBlock {
     public void playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player) {
         if (!level.isClientSide && state.getValue(FORMED)
                 && level.getBlockEntity(pos) instanceof PrinterBlockEntity printer) {
-            printer.cancelActiveJob();
+            // Collapse = relocate: snapshot a clean baseline (Print mode, idle, no
+            // region/trigger) so a stuck mode or status can never ride along in the
+            // item NBT. Inventory, upgrades and stored RF survive untouched.
+            printer.resetForRelocation();
             printer.markCollapsing();
 
             ItemStack collapsed = new ItemStack(this);

@@ -129,7 +129,8 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
     public enum State {
         IDLE, PRINTING, PAUSED_NO_POWER, PAUSED_OUTPUT_FULL, PAUSED_OBSTRUCTED, ZONE_CONFLICT,
         PAUSED_NO_FILAMENT, NOT_PRINTABLE, AREA_TOO_SMALL, NEEDS_HIGHER_TIER, READY,
-        DECONSTRUCTING; // appended last: State syncs/persists by ordinal
+        DECONSTRUCTING,
+        NO_REGION; // appended last: State syncs/persists by ordinal
 
         public static State byOrdinal(int ordinal) {
             return ordinal >= 0 && ordinal < values().length ? values()[ordinal] : IDLE;
@@ -1783,8 +1784,18 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             // region — see deconArmedRequiresStart.
             boolean autoAllowed = autoStart && !deconArmedRequiresStart;
             if (!autoAllowed && !startRequested) {
-                if (state == State.IDLE || state == State.DECONSTRUCTING) {
-                    state = deconstructMin != null ? State.READY : State.IDLE;
+                // Region-missing is a standing fact, not a job error: resolve it every
+                // tick to the self-explanatory NO_REGION instead of freezing the last
+                // error. Holding NOT_PRINTABLE here wedged the machine permanently
+                // (nothing in Deconstruct Mode looks at the inventory, and the state
+                // used to persist through relocation). Genuine trigger errors that
+                // point at a still-armed region (NEEDS_HIGHER_TIER, AREA_TOO_SMALL,
+                // ZONE_CONFLICT) stay visible until the next trigger attempt.
+                if (deconstructMin == null) {
+                    state = State.NO_REGION;
+                } else if (state == State.IDLE || state == State.DECONSTRUCTING
+                        || state == State.NOT_PRINTABLE || state == State.NO_REGION) {
+                    state = State.READY;
                 }
                 return;
             }
@@ -1870,9 +1881,10 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
 
     private void tryStartDeconstruct(ServerLevel serverLevel) {
         if (deconstructMin == null || deconstructSize == null) {
-            state = State.NOT_PRINTABLE;
-            notPrintableReason = "no deconstruct region set — sneak-click this machine "
-                    + "with a Structure Scanner holding a two-corner selection";
+            // Dedicated state, NOT NOT_PRINTABLE: the GUI names the actual problem
+            // ("No Region Set") and the idle branch above keeps re-resolving it, so
+            // this can never freeze into a dead-end status.
+            state = State.NO_REGION;
             return;
         }
         if (footprintTooLarge(deconstructSize)) {
@@ -2940,5 +2952,35 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
                 ? net.minecraft.nbt.NbtUtils.readBlockPos(tag.getCompound("DeconSize")) : null;
         deconstructJob = tag.contains("DeconJob", Tag.TAG_COMPOUND)
                 ? DeconstructJob.load(tag.getCompound("DeconJob")) : null;
+        // A persisted status only means something when it describes restored work.
+        // Everything else is a stale snapshot of a condition the tick re-derives;
+        // restoring it verbatim once wedged relocated fabricators in a dead error
+        // state until the first successful trigger. Start clean; the next tick
+        // resolves the real status.
+        if (activeJob == null && deconstructJob == null) {
+            state = State.IDLE;
+        }
+    }
+
+    /**
+     * Reset for relocation: breaking a formed controller collapses the machine to
+     * an item, and the rebuilt machine must come back in a predictable baseline:
+     * Print mode, idle, no queued trigger, no deconstruct region (the region is
+     * stored in absolute world coordinates, so it is meaningless at the new spot).
+     * Everything of value survives untouched: inventory, spools, upgrades, resins,
+     * stored RF, offsets/rotation, Auto, preview, owner and history. This is also
+     * the player-facing escape hatch: break and re-place the machine and any
+     * stuck mode/status is gone without losing the buffer.
+     */
+    public void resetForRelocation() {
+        cancelActiveJob();
+        deconstructMode = false;
+        deconstructMin = null;
+        deconstructSize = null;
+        deconArmedRequiresStart = false;
+        startRequested = false;
+        itemProgress = 0;
+        state = State.IDLE;
+        setChanged();
     }
 }

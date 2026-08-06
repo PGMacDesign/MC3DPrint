@@ -378,6 +378,7 @@ public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
             case NEEDS_HIGHER_TIER -> Component.translatable("gui.mc3dprint.state.needs_higher_tier", menu.requiredTier());
             case AREA_TOO_SMALL -> Component.translatable("gui.mc3dprint.state.area_too_small");
             case DECONSTRUCTING -> Component.translatable("gui.mc3dprint.state.deconstructing");
+            case NO_REGION -> Component.translatable("gui.mc3dprint.state.no_region");
         };
         // Status lights accent cyan when printing/ready, warm red for paused/error,
         // neutral light grey when idle.
