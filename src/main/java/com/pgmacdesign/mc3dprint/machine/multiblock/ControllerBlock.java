@@ -229,9 +229,11 @@ public class ControllerBlock extends PrinterBlock {
      * Maps a casing's base-plane offset to its top-face part. +X=east, +Z=south.
      * Corners take the four CORNER_* posts, perimeter edges take a rail oriented
      * along the edge (E-W bar on the N/S edges, N-S bar on the E/W edges), and the
-     * remaining interior tiles are the heated BED.
+     * remaining interior tiles are the heated BED. Package-visible: the re-place
+     * path ({@link FabricatorBlockItem#reformComponents}) restores the formed look
+     * directly instead of routing through the right-click forming flow.
      */
-    private static CasingBlock.CasingPart partForOffset(int x, int z, MachineTier tier) {
+    static CasingBlock.CasingPart partForOffset(int x, int z, MachineTier tier) {
         int half = MultiblockPattern.baseEdge(tier) / 2;
         if (Math.abs(x) == half && Math.abs(z) == half) {
             if (x < 0 && z < 0) return CasingBlock.CasingPart.CORNER_NW;
