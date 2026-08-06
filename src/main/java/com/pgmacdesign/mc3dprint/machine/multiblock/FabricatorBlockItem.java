@@ -86,8 +86,16 @@ public class FabricatorBlockItem extends BlockItem {
         Block cornerBlock = MultiblockPattern.cornerBlock(tier);
         for (BlockPos offset : MultiblockPattern.componentOffsets(tier)) {
             boolean corner = cornerBlock != null && MultiblockPattern.isCorner(offset, tier);
+            // Each casing must come back with its formed-look PART (rail / corner
+            // post / bed), not just ACTIVE: this path skips the right-click forming
+            // flow (which is where setComponentsActive assigns parts), so leaving
+            // PART at NONE re-placed a fabricator that glowed but looked unformed
+            // until a casing was broken and the machine re-formed by hand.
             level.setBlock(controllerPos.offset(offset),
-                    corner ? cornerBlock.defaultBlockState() : activeCasing, Block.UPDATE_ALL);
+                    corner ? cornerBlock.defaultBlockState()
+                            : activeCasing.setValue(CasingBlock.PART,
+                                    ControllerBlock.partForOffset(offset.getX(), offset.getZ(), tier)),
+                    Block.UPDATE_ALL);
         }
     }
 

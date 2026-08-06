@@ -231,7 +231,56 @@ public class MultiblockGameTests {
                 helper.fail("relocate must restore ACTIVE casing at " + offset + ", got " + s);
                 return;
             }
+            // The formed LOOK must come back too, not just ACTIVE: every base cell
+            // carries a top-face part when formed (corner post / rail / bed). A
+            // re-placed fabricator once glowed with PART=NONE everywhere and looked
+            // unformed until manually broken and re-formed.
+            if (s.getValue(CasingBlock.PART) == CasingBlock.CasingPart.NONE) {
+                helper.fail("relocate must restore the formed-look PART at " + offset + ", got NONE");
+                return;
+            }
+        }
+        // Spot-check orientation: NW corner post, and a rail running along each edge.
+        if (partAt(helper, absController, -1, -1) != CasingBlock.CasingPart.CORNER_NW
+                || partAt(helper, absController, 0, -1) != CasingBlock.CasingPart.RAIL_EW
+                || partAt(helper, absController, -1, 0) != CasingBlock.CasingPart.RAIL_NS) {
+            helper.fail("relocate restored wrong PART orientation: NW="
+                    + partAt(helper, absController, -1, -1)
+                    + " N-edge=" + partAt(helper, absController, 0, -1)
+                    + " W-edge=" + partAt(helper, absController, -1, 0));
+            return;
         }
         helper.succeed();
+    }
+
+    @GameTest(template = "empty5", timeoutTicks = 100)
+    public static void relocateRestoresHeatedBedInterior(GameTestHelper helper) {
+        // T5's 3x3 base is all corners and edges, so the test above never sees a BED
+        // cell, yet BED is the bulk of a large base (48 of the 80 cells on a T8 9x9).
+        // T6's 5x5 fills the empty5 template exactly and has an 8-cell interior ring.
+        BlockPos absController = helper.absolutePos(CONTROLLER_POS);
+        helper.setBlock(CONTROLLER_POS, ModBlocks.CONTROLLERS.get(1).get()); // T6
+        FabricatorBlockItem.reformComponents(helper.getLevel(), absController, MachineTier.T6);
+
+        int half = MultiblockPattern.baseEdge(MachineTier.T6) / 2;
+        for (BlockPos offset : MultiblockPattern.componentOffsets(MachineTier.T6)) {
+            BlockState s = helper.getLevel().getBlockState(absController.offset(offset));
+            if (!(s.getBlock() instanceof CasingBlock)) {
+                helper.fail("T6 base cell " + offset + " is not a casing: " + s.getBlock());
+                return;
+            }
+            boolean interior = Math.abs(offset.getX()) < half && Math.abs(offset.getZ()) < half;
+            CasingBlock.CasingPart part = s.getValue(CasingBlock.PART);
+            if (interior != (part == CasingBlock.CasingPart.BED)) {
+                helper.fail("T6 cell " + offset + (interior ? " (interior) should be BED" : " (perimeter) must not be BED")
+                        + ", got " + part);
+                return;
+            }
+        }
+        helper.succeed();
+    }
+
+    private static CasingBlock.CasingPart partAt(GameTestHelper helper, BlockPos absController, int dx, int dz) {
+        return helper.getLevel().getBlockState(absController.offset(dx, 0, dz)).getValue(CasingBlock.PART);
     }
 }
