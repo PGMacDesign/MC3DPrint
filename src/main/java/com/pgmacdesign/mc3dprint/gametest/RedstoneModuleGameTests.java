@@ -12,6 +12,7 @@ import com.pgmacdesign.mc3dprint.machine.multiblock.ControllerBlock;
 import com.pgmacdesign.mc3dprint.machine.multiblock.MultiblockPattern;
 import com.pgmacdesign.mc3dprint.machine.upgrade.UpgradeItem;
 import com.pgmacdesign.mc3dprint.registry.ModBlocks;
+import com.pgmacdesign.mc3dprint.fu.SpoolItem;
 import com.pgmacdesign.mc3dprint.registry.ModItems;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -140,6 +141,60 @@ public class RedstoneModuleGameTests {
                 throw new GameTestAssertException("Waiting for IDLE, got " + printer.state());
             }
             assertSignal(helper, PRINTER_POS, 0, "after the print finished");
+        });
+    }
+
+    /**
+     * Auto-repeat continuity. A machine on Auto chewing through a stack finishes one
+     * item and starts the next without ever leaving PRINTING, so the signal must stay
+     * solid rather than blinking once per item. A blink would be invisible to a human
+     * but would retrigger anything edge-driven wired to it, so this samples EVERY tick
+     * across three completed items instead of spot-checking.
+     */
+    @GameTest(template = "empty5", timeoutTicks = 600)
+    public static void signalStaysHighAcrossRepeatedItemPrints(GameTestHelper helper) {
+        PrinterBlockEntity printer = poweredT3(helper, PRINTER_POS);
+        installRedstoneModule(helper, printer);
+        ItemStack spool = new ItemStack(ModItems.SPOOLS.get(0).get());
+        SpoolItem.setFu(spool, 8_000); // deep enough that FU never becomes the limit
+        printer.spoolInventory().setStackInSlot(0, spool);
+        printer.setAutoStart(true);
+        printer.inventory().setStackInSlot(PrinterBlockEntity.SLOT_TEMPLATE,
+                new ItemStack(Items.STONE, 64));
+
+        int[] phase = {0};
+        boolean[] sawHigh = {false};
+        int[] dipAfterItems = {-1};
+
+        helper.succeedWhen(() -> {
+            int signal = signalAt(helper, PRINTER_POS, Direction.NORTH);
+            int produced = printer.inventory().getStackInSlot(PrinterBlockEntity.SLOT_OUTPUT).getCount();
+
+            if (phase[0] == 0) {
+                if (signal == 15) {
+                    sawHigh[0] = true;
+                }
+                // Once it is up, it must stay up for the whole run of items.
+                if (sawHigh[0] && signal != 15 && dipAfterItems[0] < 0) {
+                    dipAfterItems[0] = produced;
+                }
+                if (produced < 3) {
+                    throw new GameTestAssertException("waiting for 3 items, have " + produced);
+                }
+                if (dipAfterItems[0] >= 0) {
+                    throw new GameTestAssertException("Signal dipped off 15 between items (after item "
+                            + dipAfterItems[0] + "); auto-repeat must not blink at the item boundary");
+                }
+                // Now prove it does still fall when the run genuinely stops.
+                printer.inventory().setStackInSlot(PrinterBlockEntity.SLOT_TEMPLATE, ItemStack.EMPTY);
+                phase[0] = 1;
+                throw new GameTestAssertException("three items done with no dip; waiting for the signal to fall");
+            }
+
+            if (printer.state() != PrinterBlockEntity.State.IDLE) {
+                throw new GameTestAssertException("Waiting for IDLE, got " + printer.state());
+            }
+            assertSignal(helper, PRINTER_POS, 0, "once the auto-repeat run stops");
         });
     }
 

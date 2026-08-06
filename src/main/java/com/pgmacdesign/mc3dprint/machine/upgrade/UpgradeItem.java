@@ -109,6 +109,16 @@ public class UpgradeItem extends Item {
             case REDSTONE -> Component.translatable("tooltip.mc3dprint.upgrade.redstone");
         };
         tooltip.add(effect.withStyle(ChatFormatting.GRAY));
+        if (type == Type.REDSTONE) {
+            // Both surprises belong on the item, not just in the guide: the tooltip is
+            // where a player decides whether to craft and install this. Installing an
+            // OUTPUT module quietly changes the machine's redstone INPUT behaviour, which
+            // nobody would predict, and it is the one module that does not stack.
+            tooltip.add(Component.translatable("tooltip.mc3dprint.upgrade.redstone.pulses")
+                    .withStyle(ChatFormatting.GRAY));
+            tooltip.add(Component.translatable("tooltip.mc3dprint.upgrade.redstone.cap", maxPerType)
+                    .withStyle(ChatFormatting.GRAY));
+        }
         int cap = type.maxPerMachine();
         tooltip.add(cap == 1
                 ? Component.translatable("tooltip.mc3dprint.upgrade_help_single")

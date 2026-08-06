@@ -45,6 +45,16 @@
     },
     {
       "type": "patchouli:text",
+      "title": "Module or Comparator?",
+      "text": "Every printer already answers a $(l)comparator$() with its job progress, for $(l)free$(). The module earns its slot because the two disagree where it matters:$(br)$(li)$(l)Idle$(): both read 0$(li)$(l)Printing$(): module 15, comparator 1-15$(li)$(l)Stalled$(): module $(l)0$(), comparator $(l)holds$() its last value$(br2)A stalled machine still has a job loaded, so the comparator sits where it was. Use the comparator for a progress bar, the module to catch a stall."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Expected Blinking",
+      "text": "Printing on $(l)Auto$() into a hopper that drains slower than the machine fills the output will make the module's signal $(l)blink$(). That is accurate, not a bug: the machine really is alternating between printing and $(l)paused, output full$(), and the signal reports it faithfully.$(br2)Give the output somewhere faster to drain and it goes solid."
+    },
+    {
+      "type": "patchouli:text",
       "title": "Stacking",
       "text": "Speed, RF, and Buffer stack $(l)multiplicatively$(): two Speed Upgrades print at 0.8 × 0.8 = $(l)64%$() time. Efficiency is $(l)linear$(): each module shaves a quarter of the tier's print markup, so $(l)4$() reach exact break-even.$(br2)Only $(l)Tier 4+$() machines have 4 slots, so only they can hit 1:1, and a Tier 4 must spend all four on Efficiency."
     },

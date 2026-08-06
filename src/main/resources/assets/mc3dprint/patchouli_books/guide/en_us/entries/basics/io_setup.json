@@ -27,7 +27,7 @@
     {
       "type": "patchouli:text",
       "title": "Comparator Output",
-      "text": "Put a $(l)comparator$() against any printer or fabricator and it reads out the job's $(l)progress$(), the same way one against a $(item)Filament Rack$() reads its fill level. $(l)No upgrade needed$(): reading a machine is always free.$(br2)$(li)$(l)0$() means nothing is running: empty, armed and waiting, or paused.$(li)$(l)1 to 15$() tracks the job, reaching 15 on its final block.$(br2)0 is reserved for 'not running', so a comparator can tell an idle machine from one that has only just started. Works in all three modes; on a fabricator read the $(l)controller$(), not the casings."
+      "text": "Put a $(l)comparator$() against any printer or fabricator and it reads out the job's $(l)progress$(), the same way one against a $(item)Filament Rack$() reads its fill level. $(l)No upgrade needed$(): reading a machine is always free.$(br2)$(li)$(l)0$() means nothing is running: empty, armed and waiting, or paused.$(li)$(l)1 to 15$() tracks the job, reaching 15 on its final block.$(br2)0 is reserved for 'not running', so a comparator can tell an idle machine from one that has only just started. Works in all three modes; on a fabricator read the $(l)controller$(), not the casings.$(br2)It cannot tell you the machine is $(l)stalled$(): a job that is out of power, output-full or obstructed still exists, so the reading $(l)holds$(). The $(item)Redstone Module$() is the other half of that pair."
     }
   ]
 }
