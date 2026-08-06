@@ -167,15 +167,24 @@ public class ComparatorOutputGameTests {
         });
     }
 
-    @GameTest(template = "empty5", timeoutTicks = 400)
-    public static void comparatorTracksItemProgress(GameTestHelper helper) {
+    /**
+     * Spans at least two completed items, sampling every tick. Stopping at the first
+     * item cannot see the boundary, and the boundary is where this went wrong: the tick
+     * an item completes resets the progress counter while the machine is still PRINTING
+     * and writing the output slot, so a comparator really did observe a 0 between items
+     * and an edge-driven contraption saw a phantom pulse once per item.
+     */
+    @GameTest(template = "empty5", timeoutTicks = 600)
+    public static void comparatorNeverDropsToZeroBetweenItems(GameTestHelper helper) {
         PrinterBlockEntity printer = poweredT3(helper);
         printer.setAutoStart(true);
         printer.inventory().setStackInSlot(PrinterBlockEntity.SLOT_TEMPLATE,
                 new ItemStack(Items.STONE, 64));
 
         boolean[] sawOne = {false};
-        int[] peak = {0};
+        boolean[] sawFifteen = {false};
+        int[] zeroAfterItems = {-1};
+
         helper.runAfterDelay(2, () -> {
             if (comparator(helper, PRINTER_POS) != 1) {
                 helper.fail("An item print should read 1 just after it starts, got "
@@ -184,19 +193,58 @@ public class ComparatorOutputGameTests {
         });
         helper.succeedWhen(() -> {
             int now = comparator(helper, PRINTER_POS);
+            int produced = printer.inventory().getStackInSlot(PrinterBlockEntity.SLOT_OUTPUT).getCount();
             if (now == 1) {
                 sawOne[0] = true;
             }
-            peak[0] = Math.max(peak[0], now);
-            if (printer.inventory().getStackInSlot(PrinterBlockEntity.SLOT_OUTPUT).isEmpty()) {
-                throw new GameTestAssertException("waiting for the first item to finish");
+            if (now == 15) {
+                sawFifteen[0] = true;
+            }
+            // Only police 0 once the run is under way: the setup tick before the machine
+            // has ticked at all is legitimately idle, and that 0 is correct.
+            if (sawOne[0] && now == 0 && zeroAfterItems[0] < 0) {
+                zeroAfterItems[0] = produced;
+            }
+            if (produced < 2) {
+                throw new GameTestAssertException("waiting for 2 items, have " + produced);
+            }
+            if (zeroAfterItems[0] >= 0) {
+                throw new GameTestAssertException("Comparator dropped to 0 while still printing (after item "
+                        + zeroAfterItems[0] + "); 0 must mean nothing loaded, not an item boundary");
             }
             if (!sawOne[0]) {
                 throw new GameTestAssertException("Comparator never read 1 during the item print");
             }
-            if (peak[0] != 15) {
-                throw new GameTestAssertException("Item print should reach exactly 15 on its last tick, peaked at "
-                        + peak[0]);
+            if (!sawFifteen[0]) {
+                throw new GameTestAssertException("Item print should reach 15 on its last tick");
+            }
+        });
+    }
+
+    /**
+     * A machine paused with a full output still has work loaded, so it must read at
+     * least 1. It sits at progress 0 in that state, which is exactly the case a plain
+     * "progress > 0" reading gets wrong.
+     */
+    @GameTest(template = "empty5", timeoutTicks = 400)
+    public static void pausedOnFullOutputStillReadsAtLeastOne(GameTestHelper helper) {
+        PrinterBlockEntity printer = poweredT3(helper);
+        printer.setAutoStart(true);
+        printer.inventory().setStackInSlot(PrinterBlockEntity.SLOT_TEMPLATE,
+                new ItemStack(Items.STONE, 64));
+        // Pre-fill the output with a full stack of something else so the very first
+        // finished item has nowhere to go.
+        printer.inventory().setStackInSlot(PrinterBlockEntity.SLOT_OUTPUT,
+                new ItemStack(Items.DIRT, 64));
+
+        helper.succeedWhen(() -> {
+            if (printer.state() != PrinterBlockEntity.State.PAUSED_OUTPUT_FULL) {
+                throw new GameTestAssertException("Waiting for PAUSED_OUTPUT_FULL, got " + printer.state());
+            }
+            int now = comparator(helper, PRINTER_POS);
+            if (now < 1) {
+                throw new GameTestAssertException(
+                        "A machine paused with work loaded must read at least 1, got " + now);
             }
         });
     }
