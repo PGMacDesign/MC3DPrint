@@ -29,6 +29,22 @@ On a multiblock fabricator, **only the controller emits**, not the casings, so w
 
 It **will not restart itself**. Printers start on a redstone rising edge, so a machine that also emits redstone would otherwise be a loop waiting to happen. While the machine is emitting, an incoming rising edge never queues a start, so wiring its own output back into itself (or just running dust beside it) cannot cause an infinite reprint. The tradeoff worth knowing: on a machine with this module, a redstone pulse that arrives mid-print is ignored rather than queued as a re-run.
 
+### Module or comparator: which do I want?
+
+Every printer already answers a [comparator](/guide/io-setup/) with its job progress, for free. So why craft this module? Because the two deliberately disagree, and they disagree exactly where it matters:
+
+| Machine is | Module signal | Comparator |
+|---|---|---|
+| Idle | 0 | 0 |
+| Printing | 15 | 1 to 15 |
+| **Stalled** | **0** | **holds its last value** |
+
+The comparator answers "is a job loaded, and how far in is it". The module answers "is this machine actually moving right now". A machine that runs out of power, fills its output or gets obstructed still has a job loaded, so the comparator sits at whatever it last read, while the module's signal drops to 0.
+
+That makes the choice easy: use the **comparator** for a progress bar or a "job finished" trigger, and the **module** when you want to detect a stall. Inverted into a lamp, the module lights the moment a print stops moving, which is something the comparator cannot tell you.
+
+One consequence worth expecting rather than reporting as a bug: if you print on `Auto` into a hopper that drains slower than the machine fills the output slot, the module's signal will **blink**. That is accurate, not a glitch. The machine really is alternating between printing and being paused with a full output, and the signal is faithfully reporting it. Give the output somewhere faster to drain and it goes solid.
+
 ## How stacking works
 
 Speed, RF Efficiency, and Buffer stack **multiplicatively**: two Speed modules give 0.8 × 0.8 = 64% print time.

@@ -39,6 +39,6 @@ Put a **comparator** against any printer or fabricator and it reads out the job'
 
 That split matters: 0 is reserved for "not running" so a comparator can tell an idle machine from one that has only just started. It works in all three modes (blueprint, item and deconstruct), and on a fabricator you read the **controller**, not the casings.
 
-If you want a plain busy signal instead of a progress bar, the [Redstone Module](/guide/upgrades/) makes the machine emit full power while it works and nothing while it is idle or stalled.
+One thing a comparator cannot tell you: whether the machine is **stalled**. A job that runs out of power, fills its output or gets obstructed still exists, so the comparator holds its last reading. If you need to detect that, the [Redstone Module](/guide/upgrades/) is the other half of the pair: it emits full power only while the machine is genuinely moving and drops to 0 the moment it stops, stall included.
 
 If a print won't begin, check [the FAQ](/faq).
