@@ -37,9 +37,9 @@ Every printer already answers a [comparator](/guide/io-setup/) with its job prog
 |---|---|---|
 | Idle | 0 | 0 |
 | Printing | 15 | 1 to 15 |
-| **Stalled** | **0** | **holds its last value** |
+| **Stalled** | **0** | **stays non-zero** |
 
-The comparator answers "is a job loaded, and how far in is it". The module answers "is this machine actually moving right now". A machine that runs out of power, fills its output or gets obstructed still has a job loaded, so the comparator sits at whatever it last read, while the module's signal drops to 0.
+The comparator answers "is a job loaded, and how far in is it". The module answers "is this machine actually moving right now". A machine that runs out of power, fills its output or gets obstructed still has work loaded, so the comparator stays above 0, while the module's signal drops to 0.
 
 That makes the choice easy: use the **comparator** for a progress bar or a "job finished" trigger, and the **module** when you want to detect a stall. Inverted into a lamp, the module lights the moment a print stops moving, which is something the comparator cannot tell you.
 

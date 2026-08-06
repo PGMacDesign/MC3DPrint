@@ -34,11 +34,11 @@ Use the X/Y/Z offsets in the GUI to move the build area. The default is centered
 
 Put a **comparator** against any printer or fabricator and it reads out the job's progress, exactly like one against a [Filament Rack](/guide/filament-rack/) reads its fill level. No upgrade needed: reading a machine is always free.
 
-- **0** means nothing is running, whether the machine is empty, armed and waiting, or paused.
-- **1 to 15** tracks the job, climbing to 15 as it places its final block.
+- **0** means nothing is loaded and nothing is to do: the machine is empty, or it is holding something it has not been told to start.
+- **1 to 15** means there is work loaded, climbing to 15 as the job places its final block.
 
-That split matters: 0 is reserved for "not running" so a comparator can tell an idle machine from one that has only just started. It works in all three modes (blueprint, item and deconstruct), and on a fabricator you read the **controller**, not the casings.
+That split is the whole rule, and it holds in all three modes (blueprint, item and deconstruct): **0 is idle, anything above 0 means work is loaded**. A **stalled** machine still counts as loaded, so it keeps a non-zero reading rather than dropping to 0. On a fabricator you read the **controller**, not the casings.
 
-One thing a comparator cannot tell you: whether the machine is **stalled**. A job that runs out of power, fills its output or gets obstructed still exists, so the comparator holds its last reading. If you need to detect that, the [Redstone Module](/guide/upgrades/) is the other half of the pair: it emits full power only while the machine is genuinely moving and drops to 0 the moment it stops, stall included.
+Because a stall keeps the comparator non-zero, a comparator alone cannot tell you the machine has *stopped moving*. That is the other half of the pair: the [Redstone Module](/guide/upgrades/) emits full power only while the machine is genuinely working and drops to 0 the moment it stalls.
 
 If a print won't begin, check [the FAQ](/faq).

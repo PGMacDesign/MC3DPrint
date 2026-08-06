@@ -2485,16 +2485,43 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
                 && !blockState.getValue(com.pgmacdesign.mc3dprint.machine.multiblock.ControllerBlock.FORMED)) {
             return 0;
         }
+        // Every live-work branch floors at 1. 0 is reserved for "nothing loaded, nothing
+        // to do", so a contraption can treat 0 as idle in all three modes rather than
+        // mostly-idle. Keying Item Mode on itemProgress alone used to break that twice:
+        // the counter is reset inside the tick an item completes (while the machine is
+        // still PRINTING and writing the output slot, so a comparator really did observe
+        // the 0), and a machine paused on a full output sits at 0 with work still loaded.
         if (deconstructJob != null) {
-            return scaleProgress(deconstructJob.progress(), deconstructJob.totalPositions());
+            return Math.max(1, scaleProgress(deconstructJob.progress(), deconstructJob.totalPositions()));
         }
         if (activeJob != null) {
-            return scaleProgress(activeJob.placed(), activeJob.totalBlocks());
+            return Math.max(1, scaleProgress(activeJob.placed(), activeJob.totalBlocks()));
         }
-        if (itemProgress > 0) {
-            return scaleProgress(itemProgress, maxProgress());
+        if (hasItemWorkLoaded()) {
+            return Math.max(1, scaleProgress(itemProgress, maxProgress()));
         }
         return 0;
+    }
+
+    /**
+     * Item Mode has no job object, so "is there work loaded" has to be read off the
+     * machine state instead. PRINTING and the PAUSED_* states both mean an item is
+     * in flight or blocked with the template still in the slot.
+     *
+     * <p>IDLE and READY deliberately do NOT count: a machine holding a template it has
+     * not been told to print reads 0, same as an empty one. Blueprint and Deconstruct
+     * work is already covered by the job branches above, so this only answers for a
+     * plain item template.
+     */
+    private boolean hasItemWorkLoaded() {
+        ItemStack template = inventory.getStackInSlot(SLOT_TEMPLATE);
+        if (template.isEmpty() || deconstructMode || isLoadedDisc(template)) {
+            return false;
+        }
+        return switch (state) {
+            case PRINTING, PAUSED_NO_POWER, PAUSED_OUTPUT_FULL, PAUSED_OBSTRUCTED, PAUSED_NO_FILAMENT -> true;
+            default -> false;
+        };
     }
 
     /**
