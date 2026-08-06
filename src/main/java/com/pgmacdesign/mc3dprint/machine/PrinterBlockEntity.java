@@ -353,6 +353,10 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
 
     public static void serverTick(Level level, BlockPos pos, BlockState blockState, PrinterBlockEntity printer) {
         printer.tick();
+        // Outside tick() on purpose: every branch in there returns early (including the
+        // unformed-multiblock bail), and the Redstone Module output has to be reconciled
+        // on all of them.
+        printer.updateRedstoneOutput();
     }
 
     private void tick() {
@@ -1073,9 +1077,12 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         return count;
     }
 
-    /** True once this machine already holds the per-type module cap (config maxPerType). */
+    /**
+     * True once this machine already holds the cap for that module type: the config
+     * maxPerType for the four multiplier modules, and 1 for the binary Redstone Module.
+     */
     public boolean upgradeTypeAtCap(UpgradeItem.Type type) {
-        return upgradeCount(type) >= MC3DPrintConfig.UPGRADE_MAX_PER_TYPE.get();
+        return upgradeCount(type) >= type.maxPerMachine();
     }
 
     /**
@@ -2435,10 +2442,137 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
 
     /** Rising-edge redstone triggers a start, WorldEdit-machine style. */
     public void onNeighborSignal(boolean powered) {
-        if (powered && !lastRedstoneSignal) {
+        boolean rising = powered && !lastRedstoneSignal;
+        // Record first, act second. While a Redstone Module machine is broadcasting, a
+        // rising edge may well be its OWN output fed back through adjacent dust, so it
+        // never queues a start: the self-caused edge would set startRequested, that flag
+        // outlives the job, and the print would restart forever. The recording is never
+        // skipped, or the field would go stale-false and the first update after the
+        // emission drops would read as a fresh rising edge, rebuilding the loop through
+        // any held source. Cost: on such a machine a pulse arriving mid-job is ignored
+        // rather than queued as a re-run.
+        lastRedstoneSignal = powered;
+        if (rising && !shouldEmitRedstone()) {
             requestStart();
         }
-        lastRedstoneSignal = powered;
+    }
+
+    /**
+     * True while this machine is doing work its Redstone Module should broadcast: a
+     * module is installed, a multiblock is formed, and a print or deconstruct is
+     * actually advancing. Every paused, error and ready state reads false deliberately,
+     * so the signal answers "busy right now" rather than "a job is loaded" and a stall
+     * shows up as the signal dropping.
+     */
+    public boolean shouldEmitRedstone() {
+        if (upgradeCount(UpgradeItem.Type.REDSTONE) == 0) {
+            return false;
+        }
+        BlockState blockState = getBlockState();
+        if (blockState.hasProperty(com.pgmacdesign.mc3dprint.machine.multiblock.ControllerBlock.FORMED)
+                && !blockState.getValue(com.pgmacdesign.mc3dprint.machine.multiblock.ControllerBlock.FORMED)) {
+            return false;
+        }
+        return state == State.PRINTING || state == State.DECONSTRUCTING;
+    }
+
+    /**
+     * Comparator reading: 0 when nothing is running, otherwise 1 to 15 scaled by how
+     * far the current job has got. The 0-versus-1 split is the point: a comparator
+     * must be able to tell "idle" from "running but barely started", which a plain
+     * {@code round(15 * fraction)} cannot do.
+     *
+     * <p>Deliberately ungated: unlike the emitted busy signal this needs no Redstone
+     * Module, matching the Filament Rack's free fill reading.
+     *
+     * <p>A job is torn down in the same tick its last unit of work lands (a blueprint
+     * print calls tryFinishJob straight after the final placement, and itemProgress is
+     * reset the moment it reaches maxProgress), so {@code done == total} is never
+     * observable from outside. {@link #scaleProgress} scales over the range that IS
+     * observable, which is what makes 15 reachable at all.
+     */
+    public int comparatorProgress() {
+        BlockState blockState = getBlockState();
+        if (blockState.hasProperty(com.pgmacdesign.mc3dprint.machine.multiblock.ControllerBlock.FORMED)
+                && !blockState.getValue(com.pgmacdesign.mc3dprint.machine.multiblock.ControllerBlock.FORMED)) {
+            return 0;
+        }
+        // Every live-work branch floors at 1. 0 is reserved for "nothing loaded, nothing
+        // to do", so a contraption can treat 0 as idle in all three modes rather than
+        // mostly-idle. Keying Item Mode on itemProgress alone used to break that twice:
+        // the counter is reset inside the tick an item completes (while the machine is
+        // still PRINTING and writing the output slot, so a comparator really did observe
+        // the 0), and a machine paused on a full output sits at 0 with work still loaded.
+        if (deconstructJob != null) {
+            return Math.max(1, scaleProgress(deconstructJob.progress(), deconstructJob.totalPositions()));
+        }
+        if (activeJob != null) {
+            return Math.max(1, scaleProgress(activeJob.placed(), activeJob.totalBlocks()));
+        }
+        if (hasItemWorkLoaded()) {
+            return Math.max(1, scaleProgress(itemProgress, maxProgress()));
+        }
+        return 0;
+    }
+
+    /**
+     * Item Mode has no job object, so "is there work loaded" has to be read off the
+     * machine state instead. PRINTING and the PAUSED_* states both mean an item is
+     * in flight or blocked with the template still in the slot.
+     *
+     * <p>IDLE and READY deliberately do NOT count: a machine holding a template it has
+     * not been told to print reads 0, same as an empty one. Blueprint and Deconstruct
+     * work is already covered by the job branches above, so this only answers for a
+     * plain item template.
+     */
+    private boolean hasItemWorkLoaded() {
+        ItemStack template = inventory.getStackInSlot(SLOT_TEMPLATE);
+        if (template.isEmpty() || deconstructMode || isLoadedDisc(template)) {
+            return false;
+        }
+        return switch (state) {
+            case PRINTING, PAUSED_NO_POWER, PAUSED_OUTPUT_FULL, PAUSED_OBSTRUCTED, PAUSED_NO_FILAMENT -> true;
+            default -> false;
+        };
+    }
+
+    /**
+     * Maps job progress onto 1..15, reserving 0 for "nothing is running".
+     *
+     * <p>Divides by {@code total - 1}, not {@code total}, and that is deliberate: a job
+     * is destroyed in the same tick it finishes its last unit of work, so the highest
+     * value anything outside this class can ever read is {@code total - 1}. Dividing by
+     * {@code total} would make 15 unreachable in every mode and silently waste the top
+     * of the comparator range. Scaling over the observable range instead means a machine
+     * on its final block reads 15.
+     */
+    private static int scaleProgress(int done, int total) {
+        if (total <= 0) {
+            return 0;
+        }
+        int lastObservable = Math.max(1, total - 1);
+        double fraction = Math.min(1.0, (double) Math.max(0, done) / lastObservable);
+        return Mth.clamp(1 + (int) Math.floor(14 * fraction), 1, 15);
+    }
+
+    /**
+     * Writes {@link PrinterBlock#EMITTING} through to the world, but only when it
+     * actually changes. That setBlock IS the neighbor update, so gating it on a real
+     * transition is what stops a running machine from poking its six neighbours every
+     * single tick. A tick where the predicate is unchanged does zero world work.
+     */
+    private void updateRedstoneOutput() {
+        if (level == null || level.isClientSide()) {
+            return;
+        }
+        BlockState blockState = getBlockState();
+        if (!blockState.hasProperty(PrinterBlock.EMITTING)) {
+            return;
+        }
+        boolean emit = shouldEmitRedstone();
+        if (blockState.getValue(PrinterBlock.EMITTING) != emit) {
+            level.setBlock(worldPosition, blockState.setValue(PrinterBlock.EMITTING, emit), Block.UPDATE_ALL);
+        }
     }
 
     public int offset(int axis) {

@@ -97,6 +97,8 @@ public final class ModItems {
             () -> new UpgradeItem(UpgradeItem.Type.RF_EFFICIENCY, new Item.Properties().stacksTo(16)));
     public static final RegistryObject<Item> BUFFER_UPGRADE = ITEMS.register("buffer_upgrade",
             () -> new UpgradeItem(UpgradeItem.Type.BUFFER, new Item.Properties().stacksTo(16)));
+    public static final RegistryObject<Item> REDSTONE_UPGRADE = ITEMS.register("redstone_upgrade",
+            () -> new UpgradeItem(UpgradeItem.Type.REDSTONE, new Item.Properties().stacksTo(16)));
 
     /** Crafting intermediate for all craftable resins (extrudium crystal + slime). */
     public static final RegistryObject<Item> RESIN_BASE = ITEMS.register("resin_base",

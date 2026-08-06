@@ -30,4 +30,15 @@ Loading a disc arms the printer and shows `Ready`. From there:
 
 Use the X/Y/Z offsets in the GUI to move the build area. The default is centered directly above the printer.
 
+## Reading progress with a comparator
+
+Put a **comparator** against any printer or fabricator and it reads out the job's progress, exactly like one against a [Filament Rack](/guide/filament-rack/) reads its fill level. No upgrade needed: reading a machine is always free.
+
+- **0** means nothing is loaded and nothing is to do: the machine is empty, or it is holding something it has not been told to start.
+- **1 to 15** means there is work loaded, climbing to 15 as the job places its final block.
+
+That split is the whole rule, and it holds in all three modes (blueprint, item and deconstruct): **0 is idle, anything above 0 means work is loaded**. A **stalled** machine still counts as loaded, so it keeps a non-zero reading rather than dropping to 0. On a fabricator you read the **controller**, not the casings.
+
+Because a stall keeps the comparator non-zero, a comparator alone cannot tell you the machine has *stopped moving*. That is the other half of the pair: the [Redstone Module](/guide/upgrades/) emits full power only while the machine is genuinely working and drops to 0 the moment it stalls.
+
 If a print won't begin, check [the FAQ](/faq).
