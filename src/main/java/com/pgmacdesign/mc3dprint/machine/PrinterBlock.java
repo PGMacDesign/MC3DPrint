@@ -31,11 +31,33 @@ public class PrinterBlock extends BaseEntityBlock {
             propertiesCodec()
     ).apply(inst, PrinterBlock::new));
 
+    /**
+     * True while the machine is broadcasting its Redstone Module signal. Kept in the
+     * BLOCK STATE rather than read live off the block entity so that a machine without
+     * the module is not a signal source at all: dust never connects to it and existing
+     * worlds behave exactly as before. It also means the flag saves with the chunk (no
+     * new NBT) and that the one {@code setBlock} that flips it IS the neighbor update,
+     * so neighbors can only ever be poked on a real transition.
+     *
+     * <p>Deliberately absent from every blockstate JSON: the loader matches a variant on
+     * the properties its key lists and ignores the rest, the same way vanilla omits
+     * {@code waterlogged}. So this adds no model/blockstate churn.
+     */
+    public static final net.minecraft.world.level.block.state.properties.BooleanProperty EMITTING =
+            net.minecraft.world.level.block.state.properties.BooleanProperty.create("emitting");
+
     private final MachineTier tier;
 
     public PrinterBlock(MachineTier tier, Properties properties) {
         super(properties);
         this.tier = tier;
+        registerDefaultState(stateDefinition.any().setValue(EMITTING, false));
+    }
+
+    @Override
+    protected void createBlockStateDefinition(
+            net.minecraft.world.level.block.state.StateDefinition.Builder<Block, BlockState> builder) {
+        builder.add(EMITTING);
     }
 
     @Override
@@ -51,6 +73,55 @@ public class PrinterBlock extends BaseEntityBlock {
     public RenderShape getRenderShape(BlockState state) {
         return RenderShape.MODEL; // BaseEntityBlock defaults to INVISIBLE
     }
+
+    // --- Redstone Module output: weak power 15 on all six faces while working ---
+
+    @Override
+    public boolean isSignalSource(BlockState state) {
+        return state.getValue(EMITTING);
+    }
+
+    @Override
+    public int getSignal(BlockState state, net.minecraft.world.level.BlockGetter level, BlockPos pos,
+                         net.minecraft.core.Direction direction) {
+        return state.getValue(EMITTING) ? 15 : 0;
+    }
+
+    // --- Comparator output: print progress, deliberately UNGATED ---
+    //
+    // No Redstone Module required, matching the Filament Rack: reading a machine is
+    // free, acting on it is what costs. Without this a player who has metered a rack
+    // puts a comparator on a printer, reads 0, and concludes the printer is broken.
+    //
+    // This adds no per-tick work. BlockEntity.setChanged already calls
+    // Level.updateNeighbourForOutputSignal for every non-air block, gated only on
+    // isAir() and never on hasAnalogOutputSignal (verified on all seven NeoForge node
+    // source sets and on the 1.20.1 bytecode). The sweep was already running; this
+    // only changes what a comparator reads when it asks.
+
+    @Override
+    public boolean hasAnalogOutputSignal(BlockState state) {
+        return true;
+    }
+
+    // 1.21.9 added the querying Direction to getAnalogOutputSignal. We report the same
+    // progress on every face, so the parameter is ignored; only the signature differs.
+    //? if >=1.21.9 {
+    /*@Override
+    public int getAnalogOutputSignal(BlockState state, Level level, BlockPos pos,
+                                     net.minecraft.core.Direction direction) {
+        return level.getBlockEntity(pos) instanceof PrinterBlockEntity printer
+                ? printer.comparatorProgress()
+                : 0;
+    }
+    *///?} else {
+    @Override
+    public int getAnalogOutputSignal(BlockState state, Level level, BlockPos pos) {
+        return level.getBlockEntity(pos) instanceof PrinterBlockEntity printer
+                ? printer.comparatorProgress()
+                : 0;
+    }
+    //?}
 
     @Nullable
     @Override

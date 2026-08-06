@@ -23,6 +23,11 @@
       "type": "patchouli:text",
       "title": "Starting a Print",
       "text": "Loading a disc arms the printer ($(l)Ready$()). Press $(l)Start$() in the GUI or pulse $(l)redstone$() to begin, or flip $(l)Auto$() on to start the moment a disc lands.$(br2)Use the X / Y / Z offsets in the GUI to move the build area; the default is centered directly above the printer. See the $(l)FAQ$() if a print won't begin."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Comparator Output",
+      "text": "Put a $(l)comparator$() against any printer or fabricator and it reads out the job's $(l)progress$(), the same way one against a $(item)Filament Rack$() reads its fill level. $(l)No upgrade needed$(): reading a machine is always free.$(br2)$(li)$(l)0$(): nothing loaded, nothing to do (empty, or holding something it has not been told to start)$(li)$(l)1-15$(): work is loaded, reaching 15 on the final block$(br2)That rule holds in all three modes. A $(l)stalled$() machine still counts as loaded, so it stays above 0 rather than dropping. On a fabricator read the $(l)controller$(), not the casings."
     }
   ]
 }

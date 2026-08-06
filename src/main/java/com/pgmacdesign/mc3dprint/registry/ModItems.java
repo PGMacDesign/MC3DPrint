@@ -119,6 +119,8 @@ public final class ModItems {
             props -> new UpgradeItem(UpgradeItem.Type.RF_EFFICIENCY, props), new Item.Properties().stacksTo(16));
     public static final DeferredHolder<Item, Item> BUFFER_UPGRADE = com.pgmacdesign.mc3dprint.compat.RegistryCompat.registerItem(ITEMS, "buffer_upgrade",
             props -> new UpgradeItem(UpgradeItem.Type.BUFFER, props), new Item.Properties().stacksTo(16));
+    public static final DeferredHolder<Item, Item> REDSTONE_UPGRADE = com.pgmacdesign.mc3dprint.compat.RegistryCompat.registerItem(ITEMS, "redstone_upgrade",
+            props -> new UpgradeItem(UpgradeItem.Type.REDSTONE, props), new Item.Properties().stacksTo(16));
 
     /** Crafting intermediate for all craftable resins (extrudium crystal + slime). */
     public static final DeferredHolder<Item, Item> RESIN_BASE = com.pgmacdesign.mc3dprint.compat.RegistryCompat.registerItem(ITEMS, "resin_base",

@@ -38,11 +38,14 @@ public class ControllerBlock extends PrinterBlock {
 
     public ControllerBlock(MachineTier tier, Properties properties) {
         super(tier, properties);
-        registerDefaultState(stateDefinition.any().setValue(FORMED, false));
+        registerDefaultState(stateDefinition.any()
+                .setValue(FORMED, false)
+                .setValue(PrinterBlock.EMITTING, false));
     }
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
+        super.createBlockStateDefinition(builder); // EMITTING (Redstone Module output)
         builder.add(FORMED);
     }
 
@@ -141,7 +144,11 @@ public class ControllerBlock extends PrinterBlock {
             if (level.getBlockEntity(controllerPos) instanceof PrinterBlockEntity printer) {
                 printer.cancelActiveJob();
             }
-            level.setBlock(controllerPos, state.setValue(FORMED, false), Block.UPDATE_ALL);
+            // Clear the Redstone Module output in the same update: an unformed machine
+            // does no work, so it must never be left holding a stale 15 for a tick.
+            level.setBlock(controllerPos, state
+                    .setValue(FORMED, false)
+                    .setValue(PrinterBlock.EMITTING, false), Block.UPDATE_ALL);
             setComponentsActive(level, controllerPos, controller.tier(), false, excludePos);
             level.playSound(null, controllerPos, SoundEvents.BEACON_DEACTIVATE, SoundSource.BLOCKS, 0.6F, 1.0F);
         }

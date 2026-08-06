@@ -25,7 +25,8 @@ public class UpgradeItem extends Item {
         SPEED("speed"),
         EFFICIENCY("efficiency"),
         RF_EFFICIENCY("rf_efficiency"),
-        BUFFER("buffer");
+        BUFFER("buffer"),
+        REDSTONE("redstone");
 
         private final String id;
 
@@ -35,6 +36,17 @@ public class UpgradeItem extends Item {
 
         public String id() {
             return id;
+        }
+
+        /**
+         * How many of this module one machine accepts. The four multiplier modules
+         * read the config knob; REDSTONE is a binary status output, so a second copy
+         * would do literally nothing and is rejected instead of wasting a slot.
+         */
+        public int maxPerMachine() {
+            return this == REDSTONE
+                    ? 1
+                    : com.pgmacdesign.mc3dprint.config.MC3DPrintConfig.UPGRADE_MAX_PER_TYPE.get();
         }
     }
 
@@ -68,8 +80,8 @@ public class UpgradeItem extends Item {
             String key = printer.upgradeTypeAtCap(this.type)
                     ? "message.mc3dprint.upgrade_type_at_cap"
                     : "message.mc3dprint.upgrade_slots_full";
-            com.pgmacdesign.mc3dprint.compat.MsgCompat.actionBar(context.getPlayer(), Component.translatable(key,
-                    com.pgmacdesign.mc3dprint.config.MC3DPrintConfig.UPGRADE_MAX_PER_TYPE.get()));
+            com.pgmacdesign.mc3dprint.compat.MsgCompat.actionBar(context.getPlayer(),
+                    Component.translatable(key, this.type.maxPerMachine()));
         }
         return InteractionResult.CONSUME;
     }
@@ -93,9 +105,25 @@ public class UpgradeItem extends Item {
                     com.pgmacdesign.mc3dprint.config.MC3DPrintConfig.UPGRADE_BUFFER_FACTOR.get());
             // Efficiency is linear: maxPerType modules bring printing to exactly 1:1.
             case EFFICIENCY -> Component.translatable("tooltip.mc3dprint.upgrade.efficiency", maxPerType);
+            // Redstone is the one module with no numeric knob: a binary status output.
+            case REDSTONE -> Component.translatable("tooltip.mc3dprint.upgrade.redstone");
         };
         tooltip.add(effect.withStyle(ChatFormatting.GRAY));
-        tooltip.add(Component.translatable("tooltip.mc3dprint.upgrade_help", maxPerType)
-                .withStyle(ChatFormatting.DARK_GRAY));
+        if (type == Type.REDSTONE) {
+            // Both surprises belong on the item, not just in the guide: the tooltip is
+            // where a player decides whether to craft and install this. Installing an
+            // OUTPUT module quietly changes the machine's redstone INPUT behaviour, which
+            // nobody would predict, and it is the one module that does not stack.
+            tooltip.add(Component.translatable("tooltip.mc3dprint.upgrade.redstone.pulses")
+                    .withStyle(ChatFormatting.GRAY));
+            tooltip.add(Component.translatable("tooltip.mc3dprint.upgrade.redstone.cap", maxPerType)
+                    .withStyle(ChatFormatting.GRAY));
+        }
+        int cap = type.maxPerMachine();
+        tooltip.add(cap == 1
+                ? Component.translatable("tooltip.mc3dprint.upgrade_help_single")
+                        .withStyle(ChatFormatting.DARK_GRAY)
+                : Component.translatable("tooltip.mc3dprint.upgrade_help", cap)
+                        .withStyle(ChatFormatting.DARK_GRAY));
     }
 }

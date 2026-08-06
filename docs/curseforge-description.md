@@ -54,7 +54,8 @@ survival play.
 - **130+ curated builds** included: houses, towers, monuments, gardens, and working automatic farms (sugar cane, kelp, bamboo, pumpkin/melon, cactus, iron, mob-XP, and more).
 - **Blueprint Discs in world loot**: curated builds can drop as treasure.
 - **Resins**: one-shot print modifiers (grow crops on print, stock chests, bank XP, cheaper prints, and more).
-- **Upgrade modules**: tune print Speed, FU Efficiency, RF Efficiency, and RF buffer.
+- **Upgrade modules**: tune print Speed, FU Efficiency, RF Efficiency, and RF buffer, or add a Redstone Module so the machine emits a signal while it is working (invert it for a stall alarm).
+- **Comparator output**: every printer and fabricator reports job progress to a comparator, no upgrade needed. 0 when idle, 1-15 while running; on a fabricator read the controller.
 - **Blueprint Repository**: a block that catalogues your discs and re-burns copies on demand.
 - **In-game guide** via Patchouli, plus JEI recipe/cost integration.
 
