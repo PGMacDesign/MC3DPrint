@@ -10,7 +10,7 @@ The whole loop is simple: [scan a build](/guide/scanning/), save it to a disc, t
 ## Working with discs
 
 - `Shift+Right Click` a written disc to **lock** it against being overwritten.
-- Discs also turn up in **any structure chest** and in **archaeology** finds: print what you find, no scanning required. See [finding blueprints](#finding-blueprints-in-the-world) below.
+- Discs also turn up in **structure chests** and **archaeology** finds, modded ones included: print what you find, no scanning required. See [finding blueprints](#finding-blueprints-in-the-world) below.
 - To **rename** a disc, drop it in an Anvil and type a name (costs 1 level of XP).
 
 ## Tier and print cost
@@ -21,9 +21,9 @@ Each disc also shows a **Print Cost** in that top tier. Free structural blocks l
 
 ## Finding blueprints in the world
 
-Any chest a structure generates can hold a Blueprint Disc, vanilla or modded, plus the suspicious sand and gravel you brush at archaeology sites. Nothing is region-locked: a desert house is as likely to turn up in a taiga village as in a pyramid.
+Any loot table whose path starts with `chests/` or `archaeology/` can hold a Blueprint Disc, in any namespace. That covers every vanilla structure chest, the suspicious sand and gravel you brush at archaeology sites, and modded structures that follow the same convention. Nothing is region-locked: a desert house is as likely to turn up in a taiga village as in a pyramid. The prefixes are the modifier's `tables` field, so a datapack can retarget them.
 
-**Loot never repeats a build you already have.** Once found, a build is held out of the pool until every findable build has been found, at which point the catalogue resets and they can appear again. So each disc you dig up is one you have not seen.
+**With `noDuplicateBlueprints` on (the default), loot never repeats a build you already have.** Once found, a build is held out of the pool until every findable build has been found, at which point discovery starts a new cycle and they can appear again. So each disc you dig up is one you have not seen.
 
 Whether "found" is tracked per player or for the whole server follows your library setting. With the default shared Blueprint Repository the server works through one set together, which is coherent because anyone can re-burn anything anyone found. Set `blueprintRepositoryIsShared = false` and each player collects their own set.
 

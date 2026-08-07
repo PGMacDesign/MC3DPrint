@@ -11,7 +11,7 @@
   "tooltip.mc3dprint.resin_no_effect": "⚠ Slotted resin has no effect on this build",
   "tooltip.mc3dprint.disc_locked": "Locked",
   "message.mc3dprint.book_given": "You received a Fabricator's Handbook.",
-  "message.mc3dprint.blueprints.cycle_complete": "Every blueprint has been found. The catalogue resets: they can turn up in loot again.",
+  "message.mc3dprint.blueprints.cycle_complete": "Every blueprint has been found. Discovery starts a new cycle: they can turn up in loot again.",
   "message.mc3dprint.disc_locked": "Blueprint Disc locked",
   "message.mc3dprint.disc_unlocked": "Blueprint Disc unlocked",
   "container.mc3dprint.tier1_printer": "Tier 1 3D Printer",
