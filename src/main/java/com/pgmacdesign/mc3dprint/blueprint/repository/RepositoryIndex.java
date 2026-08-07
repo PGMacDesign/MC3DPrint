@@ -30,6 +30,8 @@ import java.util.UUID;
 public final class RepositoryIndex {
     private static final String PERSONAL_TAG = "mc3dprint:RepoEntries";
     private static final String PERSONAL_PRINTED_TAG = "mc3dprint:RepoPrinted";
+    private static final String PERSONAL_DISCOVERED_TAG = "mc3dprint:RepoDiscovered";
+    private static final String PERSONAL_DISCOVERY_SEEDED_TAG = "mc3dprint:RepoDiscoverySeeded";
 
     private RepositoryIndex() {}
 
@@ -108,6 +110,114 @@ public final class RepositoryIndex {
         Set<UUID> out = new HashSet<>();
         for (Tag element : NbtCompat.getList(persisted(viewer), PERSONAL_PRINTED_TAG, Tag.TAG_STRING)) {
             out.add(UUID.fromString(NbtCompat.tagAsString(element)));
+        }
+        return out;
+    }
+
+    // --- World-loot discovery ledger -------------------------------------------------
+    // Deliberately routed through the same shared() switch as the catalogue: discovery
+    // must never be shared more widely than the library it draws on. A personal library
+    // paired with a shared ledger would let one player's find make a build unobtainable
+    // for everyone else, with no shared library to re-burn it from.
+
+    /** Curated blueprint UUIDs already found this cycle. Empty when personal mode has no player. */
+    public static Set<UUID> discoveredIds(MinecraftServer server, @Nullable ServerPlayer viewer) {
+        if (shared()) {
+            return RepositoryData.get(server).discovered();
+        }
+        if (viewer == null) {
+            return Set.of();
+        }
+        Set<UUID> out = new HashSet<>();
+        for (Tag element : NbtCompat.getList(persisted(viewer), PERSONAL_DISCOVERED_TAG, Tag.TAG_STRING)) {
+            out.add(UUID.fromString(NbtCompat.tagAsString(element)));
+        }
+        return out;
+    }
+
+    /** Records a build as found in world loot. A personal-mode roll with no player is a no-op. */
+    public static void markDiscovered(MinecraftServer server, @Nullable ServerPlayer owner, UUID id) {
+        if (shared()) {
+            RepositoryData.get(server).markDiscovered(id);
+            return;
+        }
+        if (owner == null) {
+            return;
+        }
+        CompoundTag persisted = persisted(owner);
+        ListTag list = NbtCompat.getList(persisted, PERSONAL_DISCOVERED_TAG, Tag.TAG_STRING);
+        String idString = id.toString();
+        for (Tag element : list) {
+            if (NbtCompat.tagAsString(element).equals(idString)) {
+                return;
+            }
+        }
+        list.add(StringTag.valueOf(idString));
+        persisted.put(PERSONAL_DISCOVERED_TAG, list);
+    }
+
+    /** Ends the cycle at this scope, retaining only {@code keep} so the next roll can't repeat it. */
+    public static void resetDiscovered(MinecraftServer server, @Nullable ServerPlayer owner, @Nullable UUID keep) {
+        if (shared()) {
+            RepositoryData.get(server).resetDiscovered(keep);
+            return;
+        }
+        if (owner == null) {
+            return;
+        }
+        ListTag list = new ListTag();
+        if (keep != null) {
+            list.add(StringTag.valueOf(keep.toString()));
+        }
+        persisted(owner).put(PERSONAL_DISCOVERED_TAG, list);
+    }
+
+    /**
+     * Whether the one-time seed from the catalogue has run for this scope. Personal mode
+     * with no player reports seeded so a playerless roll never tries (and never could).
+     */
+    public static boolean isDiscoverySeeded(MinecraftServer server, @Nullable ServerPlayer viewer) {
+        if (shared()) {
+            return RepositoryData.get(server).isDiscoverySeeded();
+        }
+        return viewer == null || NbtCompat.getBoolean(persisted(viewer), PERSONAL_DISCOVERY_SEEDED_TAG);
+    }
+
+    public static void markDiscoverySeeded(MinecraftServer server, @Nullable ServerPlayer owner) {
+        if (shared()) {
+            RepositoryData.get(server).markDiscoverySeeded();
+            return;
+        }
+        if (owner != null) {
+            persisted(owner).putBoolean(PERSONAL_DISCOVERY_SEEDED_TAG, true);
+        }
+    }
+
+    /** Operator re-sync: lets the one-time catalogue seed run once more on the next roll. */
+    public static void clearDiscoverySeeded(MinecraftServer server, @Nullable ServerPlayer owner) {
+        if (shared()) {
+            RepositoryData.get(server).clearDiscoverySeeded();
+            return;
+        }
+        if (owner != null) {
+            persisted(owner).putBoolean(PERSONAL_DISCOVERY_SEEDED_TAG, false);
+        }
+    }
+
+    /** Catalogued blueprint UUIDs at this scope, the source for the one-time discovery seed. */
+    public static Set<UUID> cataloguedIds(MinecraftServer server, @Nullable ServerPlayer viewer) {
+        Set<UUID> out = new HashSet<>();
+        if (shared()) {
+            for (RepoEntry entry : RepositoryData.get(server).entries()) {
+                out.add(entry.id());
+            }
+            return out;
+        }
+        if (viewer == null) {
+            return out;
+        }
+        for (RepoEntry entry : personalEntries(viewer)) {
+            out.add(entry.id());
         }
         return out;
     }

@@ -63,6 +63,8 @@ public class MC3DPrint {
         net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(
                 com.pgmacdesign.mc3dprint.command.ImportCommand::register);
         net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(
+                com.pgmacdesign.mc3dprint.command.DiscoveryCommand::register);
+        net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(
                 com.pgmacdesign.mc3dprint.blueprint.CuratedBlueprints::onServerStarted);
         net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(
                 com.pgmacdesign.mc3dprint.integration.patchouli.GuidebookAutoGive::onItemCrafted);
