@@ -67,6 +67,8 @@ public final class MC3DPrintConfig {
     public static final ForgeConfigSpec.ConfigValue<List<? extends String>> FU_VALUES;
     public static final ForgeConfigSpec.BooleanValue BLUEPRINT_REPOSITORY_SHARED;
     public static final ForgeConfigSpec.IntValue SORTER_MAX_PER_TICK;
+    public static final ForgeConfigSpec.DoubleValue BLUEPRINT_CHANCE_MULTIPLIER;
+    public static final ForgeConfigSpec.BooleanValue NO_DUPLICATE_BLUEPRINTS;
 
     private static final int[] DEFAULT_ITEM_RF_PER_TICK = {40, 60, 80, 100, 120, 150, 200, 250};
 
@@ -250,6 +252,26 @@ public final class MC3DPrintConfig {
                         "        on any block (tied to the player, so nothing is lost on break/recraft).",
                         "Any value that isn't a valid boolean falls back to TRUE.")
                 .define("blueprintRepositoryIsShared", true);
+        builder.pop();
+
+        builder.comment("Blueprint world loot: where curated Blueprint Discs turn up while looting.",
+                        "Which tables carry them, and the base drop chance, live in the datapack file",
+                        "data/mc3dprint/loot_modifiers/world_blueprints.json so packs can retarget them.")
+                .push("loot");
+        BLUEPRINT_CHANCE_MULTIPLIER = builder
+                .comment("Scales the datapack's blueprint drop chance, then clamped to [0,1].",
+                        "1.0 (default) uses the shipped rate as-is; 0.0 disables blueprint loot",
+                        "entirely; 2.0 doubles it. Retune the drop rate without editing the datapack.")
+                .defineInRange("blueprintChanceMultiplier", 1.0D, 0.0D, 10.0D);
+        NO_DUPLICATE_BLUEPRINTS = builder
+                .comment("TRUE (default): a build already found is excluded from future loot until",
+                        "        every findable build has been found, at which point the cycle resets.",
+                        "        Scope follows repository.blueprintRepositoryIsShared, so a shared",
+                        "        library means one server-wide set and a personal library means one",
+                        "        set per player.",
+                        "FALSE - every roll draws from the full pool, so duplicates are possible.",
+                        "Finds are recorded either way, so turning this back on resumes where it left off.")
+                .define("noDuplicateBlueprints", true);
         builder.pop();
 
         builder.comment("Filament Tier Item Sorter: a passive, unpowered block that routes items to",

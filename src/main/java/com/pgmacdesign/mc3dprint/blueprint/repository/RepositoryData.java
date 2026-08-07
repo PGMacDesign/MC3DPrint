@@ -27,6 +27,14 @@ public class RepositoryData extends SavedData {
     private final Map<UUID, RepoEntry> entries = new LinkedHashMap<>();
     // Blueprint UUIDs that have been printed at least once (official builds only).
     private final Set<UUID> printed = new LinkedHashSet<>();
+    // Curated blueprint UUIDs found as world loot this cycle; cleared wholesale when the
+    // cycle completes. Kept apart from `entries` so depositing or burning a disc never
+    // moves a build in or out of the loot pool.
+    private final Set<UUID> discovered = new LinkedHashSet<>();
+    // Whether the one-time copy of `entries` into `discovered` has run. Re-running it
+    // after a cycle reset would immediately re-narrow the pool back down, so it is
+    // recorded permanently rather than inferred from either set being non-empty.
+    private boolean discoverySeeded;
 
     public static RepositoryData get(MinecraftServer server) {
         return server.overworld().getDataStorage().computeIfAbsent(
@@ -42,6 +50,10 @@ public class RepositoryData extends SavedData {
         for (Tag element : tag.getList("Printed", Tag.TAG_STRING)) {
             data.printed.add(UUID.fromString(element.getAsString()));
         }
+        for (Tag element : tag.getList("Discovered", Tag.TAG_STRING)) {
+            data.discovered.add(UUID.fromString(element.getAsString()));
+        }
+        data.discoverySeeded = tag.getBoolean("DiscoverySeeded");
         return data;
     }
 
@@ -57,6 +69,12 @@ public class RepositoryData extends SavedData {
             printedList.add(StringTag.valueOf(id.toString()));
         }
         tag.put("Printed", printedList);
+        ListTag discoveredList = new ListTag();
+        for (UUID id : discovered) {
+            discoveredList.add(StringTag.valueOf(id.toString()));
+        }
+        tag.put("Discovered", discoveredList);
+        tag.putBoolean("DiscoverySeeded", discoverySeeded);
         return tag;
     }
 
@@ -71,6 +89,56 @@ public class RepositoryData extends SavedData {
 
     public Set<UUID> printed() {
         return Set.copyOf(printed);
+    }
+
+    /** Flags a blueprint as found in world loot; returns true if it wasn't already. */
+    public boolean markDiscovered(UUID id) {
+        boolean isNew = discovered.add(id);
+        if (isNew) {
+            setDirty();
+        }
+        return isNew;
+    }
+
+    public Set<UUID> discovered() {
+        return Set.copyOf(discovered);
+    }
+
+    /**
+     * Ends the current discovery cycle: clears the ledger in one write, then re-seeds it
+     * with {@code keep} (the build that completed the cycle) so the very next roll cannot
+     * hand back the disc just granted.
+     */
+    public void resetDiscovered(UUID keep) {
+        discovered.clear();
+        if (keep != null) {
+            discovered.add(keep);
+        }
+        setDirty();
+    }
+
+    public boolean isDiscoverySeeded() {
+        return discoverySeeded;
+    }
+
+    public void markDiscoverySeeded() {
+        if (!discoverySeeded) {
+            discoverySeeded = true;
+            setDirty();
+        }
+    }
+
+    /**
+     * Arms the one-time catalogue seed to run again on the next loot roll. Never called
+     * by the loot path itself, which must seed at most once: this is the operator action
+     * behind {@code /mc3dprint discovered reseed}, for re-syncing after depositing a
+     * batch of discs the ledger has no record of.
+     */
+    public void clearDiscoverySeeded() {
+        if (discoverySeeded) {
+            discoverySeeded = false;
+            setDirty();
+        }
     }
 
     /** Adds (or refreshes) an entry; returns true if it was newly catalogued. */
