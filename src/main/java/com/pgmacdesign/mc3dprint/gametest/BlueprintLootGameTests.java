@@ -213,20 +213,21 @@ public class BlueprintLootGameTests {
     }
 
     @GameTest(template = "empty5", timeoutTicks = 100)
-    public static void modGatedBuildsAreNeverGranted(GameTestHelper helper) {
-        // Coppertide Park needs MC Waterslides, which the test server does not load, so
-        // those builds must be absent from the pool the roll draws from. Measuring cycle
-        // completion against the full curated list instead would stall it forever.
+    public static void poolTracksTheModGateExactly(GameTestHelper helper) {
+        // A build is in the pool if and only if its required mods are loaded. Cycle
+        // completion is measured against this same set: against the full curated list a
+        // server missing an optional mod (Coppertide Park needs MC Waterslides) could
+        // never finish a cycle, because those builds are permanently unfindable.
         List<String> available = availableBuilds();
-        for (String name : available) {
-            if (name.startsWith("water_park_")) {
-                helper.fail("mod-gated build " + name + " is in the loot pool without its mod");
+        for (String name : CuratedBlueprints.lootBlueprints()) {
+            boolean inPool = available.contains(name);
+            boolean allowed = CuratedBlueprints.modsAvailable(name);
+            if (inPool != allowed) {
+                helper.fail(name + (inPool
+                        ? " is in the loot pool without its required mods"
+                        : " is missing from the loot pool despite its mods being loaded"));
                 return;
             }
-        }
-        if (available.size() >= CuratedBlueprints.CURATED_NAMES.size()) {
-            helper.fail("expected the mod gate to shrink the pool below the full curated count");
-            return;
         }
         helper.succeed();
     }
