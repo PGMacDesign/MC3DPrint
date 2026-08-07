@@ -1,0 +1,333 @@
+package com.pgmacdesign.mc3dprint.gametest;
+
+import com.pgmacdesign.mc3dprint.MC3DPrint;
+import com.pgmacdesign.mc3dprint.blueprint.CuratedBlueprints;
+import com.pgmacdesign.mc3dprint.blueprint.repository.RepoEntry;
+import com.pgmacdesign.mc3dprint.blueprint.repository.RepositoryData;
+import com.pgmacdesign.mc3dprint.blueprint.repository.RepositoryIndex;
+import com.pgmacdesign.mc3dprint.item.BlueprintDiscItem;
+import com.pgmacdesign.mc3dprint.loot.BlueprintLootPool;
+import com.pgmacdesign.mc3dprint.registry.ModItems;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.gametest.framework.GameTest;
+import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.storage.loot.LootParams;
+import net.minecraft.world.level.storage.loot.LootTable;
+import net.minecraft.world.level.storage.loot.parameters.LootContextParamSets;
+import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
+import net.minecraft.world.phys.Vec3;
+import net.neoforged.neoforge.gametest.GameTestHolder;
+import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
+
+import javax.annotation.Nullable;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+
+/**
+ * World-loot behaviour for Blueprint Discs: that the modifier still fires now that
+ * table targeting is a path-prefix match rather than a list of conditions, that a
+ * build already found is held out of the pool, and that the cycle resets cleanly
+ * once everything findable has been found.
+ *
+ * <p>These drive the real loot pipeline ({@code LootTable#getRandomItems} runs the
+ * global loot modifiers), so they cover the wiring an isolated unit test cannot.
+ * The pure pool/matcher laws live in {@code BlueprintLootPoolTest}.
+ *
+ * <p>Scope here is the SHARED ledger, which is the default and needs no player, so
+ * these also exercise the playerless path (command loot, hopper pulls).
+ */
+@GameTestHolder(MC3DPrint.MOD_ID)
+@PrefixGameTestTemplate(false)
+public class BlueprintLootGameTests {
+
+    private static final ResourceLocation DUNGEON =
+            ResourceLocation.withDefaultNamespace("chests/simple_dungeon");
+    private static final ResourceLocation RESIN_TABLE =
+            ResourceLocation.fromNamespaceAndPath(MC3DPrint.MOD_ID, "resin/treasure_rare");
+
+    @GameTest(template = "empty5", timeoutTicks = 200)
+    public static void chestTablesStillYieldBlueprints(GameTestHelper helper) {
+        MinecraftServer server = helper.getLevel().getServer();
+        freshLedger(server);
+        // 200 rolls at the shipped rate; seeing none would mean the modifier stopped
+        // firing when its loot_table_id conditions were replaced by the prefix match.
+        int seen = 0;
+        for (int i = 0; i < 200 && seen == 0; i++) {
+            seen += discIds(roll(helper, DUNGEON)).size();
+        }
+        if (seen == 0) {
+            helper.fail("no Blueprint Disc in 200 simple_dungeon rolls; the loot modifier is not firing");
+            return;
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty5", timeoutTicks = 200)
+    public static void nonChestTablesNeverYieldBlueprints(GameTestHelper helper) {
+        MinecraftServer server = helper.getLevel().getServer();
+        freshLedger(server);
+        // resin/treasure_rare is a chest-param table whose path is NOT under chests/,
+        // so the prefix match must skip it however many times it is rolled.
+        for (int i = 0; i < 200; i++) {
+            if (!discIds(roll(helper, RESIN_TABLE)).isEmpty()) {
+                helper.fail("a table outside chests/ produced a Blueprint Disc; the prefix match is not anchored");
+                return;
+            }
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty5", timeoutTicks = 400)
+    public static void foundBuildsAreHeldOutUntilTheCycleCompletes(GameTestHelper helper) {
+        MinecraftServer server = helper.getLevel().getServer();
+        RepositoryData data = freshLedger(server);
+        List<String> available = availableBuilds();
+        if (available.size() < 4) {
+            helper.fail("expected a curated pool larger than 3, got " + available.size());
+            return;
+        }
+        // Leave exactly three findable so the cycle completes in a handful of rolls.
+        List<String> remaining = available.subList(available.size() - 3, available.size());
+        for (String name : available.subList(0, available.size() - 3)) {
+            data.markDiscovered(BlueprintLootPool.idFor(name));
+        }
+
+        Set<UUID> collected = new LinkedHashSet<>();
+        List<UUID> order = new ArrayList<>();
+        for (int i = 0; i < 400 && collected.size() < 3; i++) {
+            for (UUID id : discIds(roll(helper, DUNGEON))) {
+                order.add(id);
+                collected.add(id);
+                if (collected.size() == 3) {
+                    break;
+                }
+            }
+        }
+        if (collected.size() < 3) {
+            helper.fail("only drew " + collected.size() + " of the 3 remaining builds in 400 rolls");
+            return;
+        }
+        if (order.size() != collected.size()) {
+            helper.fail("a build repeated before the cycle completed: drew " + order.size()
+                    + " discs for " + collected.size() + " distinct builds");
+            return;
+        }
+        Set<UUID> expected = new LinkedHashSet<>(BlueprintLootPool.idsFor(remaining));
+        if (!collected.equals(expected)) {
+            helper.fail("drew builds outside the undiscovered set");
+            return;
+        }
+        // Completing the cycle clears the ledger but retains the build just granted,
+        // so the very next roll cannot hand back the same disc.
+        UUID completer = order.get(order.size() - 1);
+        Set<UUID> after = RepositoryIndex.discoveredIds(server, null);
+        if (!after.equals(Set.of(completer))) {
+            helper.fail("after completion the ledger held " + after.size()
+                    + " entries; expected only the build that completed the cycle");
+            return;
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty5", timeoutTicks = 100)
+    public static void cycleResetKeepsOnlyTheRetainedBuild(GameTestHelper helper) {
+        MinecraftServer server = helper.getLevel().getServer();
+        RepositoryData data = freshLedger(server);
+        List<String> available = availableBuilds();
+        UUID keep = BlueprintLootPool.idFor(available.get(0));
+        for (String name : available) {
+            data.markDiscovered(BlueprintLootPool.idFor(name));
+        }
+        data.resetDiscovered(keep);
+        if (!data.discovered().equals(Set.of(keep))) {
+            helper.fail("reset was not atomic: ledger held " + data.discovered().size() + " entries");
+            return;
+        }
+        // And a reset with nothing retained empties it outright.
+        data.resetDiscovered(null);
+        if (!data.discovered().isEmpty()) {
+            helper.fail("reset with no retained build left the ledger non-empty");
+            return;
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty5", timeoutTicks = 100)
+    public static void recordingTheSameBuildTwiceIsANoOp(GameTestHelper helper) {
+        MinecraftServer server = helper.getLevel().getServer();
+        RepositoryData data = freshLedger(server);
+        UUID id = BlueprintLootPool.idFor(availableBuilds().get(0));
+        if (!data.markDiscovered(id)) {
+            helper.fail("first record should report the build as newly discovered");
+            return;
+        }
+        if (data.markDiscovered(id)) {
+            helper.fail("re-recording reported the build as new; the ledger is not a set");
+            return;
+        }
+        if (data.discovered().size() != 1) {
+            helper.fail("re-recording duplicated the entry");
+            return;
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty5", timeoutTicks = 300)
+    public static void catalogueSeedsTheLedgerOnceAndNotAgainAfterAReset(GameTestHelper helper) {
+        MinecraftServer server = helper.getLevel().getServer();
+        RepositoryData data = freshLedger(server);
+        String catalogued = availableBuilds().get(0);
+        UUID cataloguedId = BlueprintLootPool.idFor(catalogued);
+        data.add(new RepoEntry(cataloguedId, catalogued, 3, 3, 3, 27, 1, 100, true));
+
+        // Arm the one-time copy so the next roll performs it.
+        data.clearDiscoverySeeded();
+        if (rollUntilDisc(helper, 400) == null) {
+            helper.fail("no disc drawn in 400 rolls, so the seed path never ran");
+            return;
+        }
+        if (!RepositoryIndex.discoveredIds(server, null).contains(cataloguedId)) {
+            helper.fail("the catalogued build was not seeded into the ledger on the first roll");
+            return;
+        }
+        if (!data.isDiscoverySeeded()) {
+            helper.fail("the seed did not record that it had run");
+            return;
+        }
+
+        // A completed cycle clears the ledger; the catalogue must NOT be re-applied,
+        // or a fully-catalogued library would leave the pool permanently empty.
+        data.resetDiscovered(null);
+        if (!data.isDiscoverySeeded()) {
+            helper.fail("the reset cleared the seeded flag, which would let the catalogue re-narrow the pool");
+            return;
+        }
+        UUID drawn = rollUntilDisc(helper, 400);
+        if (drawn == null) {
+            helper.fail("no disc drawn in 400 rolls after the reset, so the reseed path never ran");
+            return;
+        }
+        // Compared against exactly the build drawn rather than by size: a faulty reseed
+        // leaves the catalogued id AS WELL AS the drawn one, which a size check on its
+        // own would wave through. (The reset put the catalogued build back in the pool,
+        // so drawing it here is legitimate and this still holds.)
+        Set<UUID> after = RepositoryIndex.discoveredIds(server, null);
+        if (!after.equals(Set.of(drawn))) {
+            helper.fail("after a reset the ledger held " + after.size()
+                    + " entries instead of just the build drawn; the catalogue was re-seeded");
+            return;
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty5", timeoutTicks = 100)
+    public static void poolTracksTheModGateExactly(GameTestHelper helper) {
+        // A build is in the pool if and only if its required mods are loaded. Cycle
+        // completion is measured against this same set: against the full curated list a
+        // server missing an optional mod (Coppertide Park needs MC Waterslides) could
+        // never finish a cycle, because those builds are permanently unfindable.
+        //
+        // Deliberately reads the pool through BlueprintLootPool.availableFrom, the same
+        // call the loot roll makes, so dropping the filter there fails this test.
+        List<String> available = BlueprintLootPool.availableFrom(List.of());
+        for (String name : CuratedBlueprints.lootBlueprints()) {
+            boolean inPool = available.contains(name);
+            boolean allowed = CuratedBlueprints.modsAvailable(name);
+            if (inPool != allowed) {
+                helper.fail(name + (inPool
+                        ? " is in the loot pool without its required mods"
+                        : " is missing from the loot pool despite its mods being loaded"));
+                return;
+            }
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty5", timeoutTicks = 100)
+    public static void unloadableBuildsLeaveThePoolSoCyclesCanComplete(GameTestHelper helper) {
+        // CuratedBlueprints.install skips a file it can't read rather than aborting boot,
+        // so a build can pass the mod gate and still be missing from the world store. It
+        // can then never be granted, and a cycle measured by the pool emptying would stall
+        // on it forever. The roll marks it on the first failed load; here we mark it
+        // directly and check the pool honours that.
+        List<String> before = BlueprintLootPool.availableFrom(List.of());
+        String victim = before.get(0);
+        try {
+            BlueprintLootPool.markUnloadable(BlueprintLootPool.idFor(victim));
+            List<String> after = BlueprintLootPool.availableFrom(List.of());
+            if (after.contains(victim)) {
+                helper.fail(victim + " stayed in the pool after being marked unloadable");
+                return;
+            }
+            if (after.size() != before.size() - 1) {
+                helper.fail("expected exactly one build to drop out, pool went from "
+                        + before.size() + " to " + after.size());
+                return;
+            }
+        } finally {
+            // Reinstalling the curated set is what clears this in production; the other
+            // tests in this class share the pool, so never leave it narrowed.
+            BlueprintLootPool.resetUnloadable();
+        }
+        if (!BlueprintLootPool.availableFrom(List.of()).contains(victim)) {
+            helper.fail("resetUnloadable did not return the build to the pool");
+            return;
+        }
+        helper.succeed();
+    }
+
+    // ----------------------------------------------------------------- helpers
+
+    private static List<String> availableBuilds() {
+        return BlueprintLootPool.availableFrom(List.of());
+    }
+
+    /** Empties the shared ledger and marks it seeded, so each test starts from a known state. */
+    private static RepositoryData freshLedger(MinecraftServer server) {
+        RepositoryData data = RepositoryData.get(server);
+        data.resetDiscovered(null);
+        data.markDiscoverySeeded();
+        return data;
+    }
+
+    /** Rolls until a disc drops and returns its blueprint id, or null if none ever did. */
+    @Nullable
+    private static UUID rollUntilDisc(GameTestHelper helper, int attempts) {
+        for (int i = 0; i < attempts; i++) {
+            for (UUID id : discIds(roll(helper, DUNGEON))) {
+                return id;
+            }
+        }
+        return null;
+    }
+
+    private static Set<UUID> discIds(List<ItemStack> loot) {
+        Set<UUID> out = new LinkedHashSet<>();
+        for (ItemStack stack : loot) {
+            if (stack.is(ModItems.BLUEPRINT_DISC.get())) {
+                BlueprintDiscItem.getBlueprintId(stack).ifPresent(out::add);
+            }
+        }
+        return out;
+    }
+
+    private static List<ItemStack> roll(GameTestHelper helper, ResourceLocation table) {
+        ServerLevel level = helper.getLevel();
+        LootTable lootTable = level.getServer().reloadableRegistries()
+                .getLootTable(ResourceKey.create(Registries.LOOT_TABLE, table));
+        LootParams params = new LootParams.Builder(level)
+                .withParameter(LootContextParams.ORIGIN,
+                        Vec3.atCenterOf(helper.absolutePos(new BlockPos(1, 1, 1))))
+                .create(LootContextParamSets.CHEST);
+        return lootTable.getRandomItems(params);
+    }
+}
