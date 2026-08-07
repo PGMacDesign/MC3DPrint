@@ -70,7 +70,31 @@ public final class BlueprintLootPool {
      */
     public static List<String> availableFrom(List<String> configured) {
         List<String> names = configured.isEmpty() ? CuratedBlueprints.lootBlueprints() : configured;
-        return names.stream().filter(CuratedBlueprints::modsAvailable).toList();
+        return names.stream()
+                .filter(CuratedBlueprints::modsAvailable)
+                .filter(name -> !UNLOADABLE.contains(idFor(name)))
+                .toList();
+    }
+
+    // Curated files that failed to install into this world's store. CuratedBlueprints.install
+    // skips a blueprint it can't read rather than aborting server start, so a build can pass
+    // the mod gate and still be unloadable. Left in the pool it can never be granted, which
+    // both wastes rolls and stalls no-duplicate cycles forever, since completion is measured
+    // by the pool emptying. Discovered lazily on the first failed load.
+    private static final Set<UUID> UNLOADABLE = java.util.concurrent.ConcurrentHashMap.newKeySet();
+
+    /** Drops a build that isn't in the world store from the pool for the rest of this world. */
+    public static void markUnloadable(UUID id) {
+        UNLOADABLE.add(id);
+    }
+
+    /**
+     * Clears what we learned about unloadable builds. Called when the curated set is
+     * (re)installed, so a store that has just been repopulated, or a different world
+     * loaded in the same session, starts from a clean slate.
+     */
+    public static void resetUnloadable() {
+        UNLOADABLE.clear();
     }
 
     /**

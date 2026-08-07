@@ -252,6 +252,39 @@ public class BlueprintLootGameTests {
         helper.succeed();
     }
 
+    @GameTest(template = "empty5", timeoutTicks = 100)
+    public static void unloadableBuildsLeaveThePoolSoCyclesCanComplete(GameTestHelper helper) {
+        // CuratedBlueprints.install skips a file it can't read rather than aborting boot,
+        // so a build can pass the mod gate and still be missing from the world store. It
+        // can then never be granted, and a cycle measured by the pool emptying would stall
+        // on it forever. The roll marks it on the first failed load; here we mark it
+        // directly and check the pool honours that.
+        List<String> before = BlueprintLootPool.availableFrom(List.of());
+        String victim = before.get(0);
+        try {
+            BlueprintLootPool.markUnloadable(BlueprintLootPool.idFor(victim));
+            List<String> after = BlueprintLootPool.availableFrom(List.of());
+            if (after.contains(victim)) {
+                helper.fail(victim + " stayed in the pool after being marked unloadable");
+                return;
+            }
+            if (after.size() != before.size() - 1) {
+                helper.fail("expected exactly one build to drop out, pool went from "
+                        + before.size() + " to " + after.size());
+                return;
+            }
+        } finally {
+            // Reinstalling the curated set is what clears this in production; the other
+            // tests in this class share the pool, so never leave it narrowed.
+            BlueprintLootPool.resetUnloadable();
+        }
+        if (!BlueprintLootPool.availableFrom(List.of()).contains(victim)) {
+            helper.fail("resetUnloadable did not return the build to the pool");
+            return;
+        }
+        helper.succeed();
+    }
+
     // ----------------------------------------------------------------- helpers
 
     private static List<String> availableBuilds() {

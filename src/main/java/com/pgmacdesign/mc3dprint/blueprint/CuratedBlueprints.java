@@ -333,6 +333,10 @@ public final class CuratedBlueprints {
     }
 
     public static void install(MinecraftServer server) {
+        // The store is about to be (re)populated, so anything previously learned about
+        // unloadable builds is stale; this is also what stops one world's failures
+        // narrowing another world's loot pool in the same session.
+        com.pgmacdesign.mc3dprint.loot.BlueprintLootPool.resetUnloadable();
         BlueprintFileStore store = BlueprintFileStore.forServer(server);
         Map<ResourceLocation, net.minecraft.server.packs.resources.Resource> resources =
                 server.getResourceManager().listResources("blueprints",
