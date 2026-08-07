@@ -97,12 +97,7 @@ public class AddBlueprintDiscModifier extends LootModifier {
             return generatedLoot;
         }
 
-        // Empty list = the opt-out pool (all curated minus LOOT_EXCLUDED); a non-empty
-        // list is an explicit override. Never loot a build whose required mod(s) aren't
-        // installed, and measure cycle completion against this same filtered set: against
-        // the full curated list a server missing an optional mod could never finish.
-        List<String> available = (blueprintNames.isEmpty() ? CuratedBlueprints.lootBlueprints() : blueprintNames)
-                .stream().filter(CuratedBlueprints::modsAvailable).toList();
+        List<String> available = BlueprintLootPool.availableFrom(blueprintNames);
         if (available.isEmpty()) {
             return generatedLoot;
         }
@@ -112,15 +107,17 @@ public class AddBlueprintDiscModifier extends LootModifier {
         boolean noDuplicates = MC3DPrintConfig.NO_DUPLICATE_BLUEPRINTS.get();
 
         List<String> pool = available;
-        boolean didReset = false;
+        boolean exhausted = false;
         if (noDuplicates) {
             seedFromCatalogue(server, player, available);
             pool = BlueprintLootPool.candidates(available, RepositoryIndex.discoveredIds(server, player));
             if (pool.isEmpty()) {
                 // Ledger was already full on entry (the pool shrank, or duplicates were
-                // toggled off and back on). Reset once and draw; never loop.
-                completeCycle(server, player, null);
-                didReset = true;
+                // toggled off and back on). Draw from the whole pool, but do NOT clear the
+                // ledger here: the blueprint can still fail to load below, and a reset on
+                // that path would strand the ledger and announce a cycle that never
+                // completed. Deferred to the grant, like every other write.
+                exhausted = true;
                 pool = available;
             }
         }
@@ -144,9 +141,12 @@ public class AddBlueprintDiscModifier extends LootModifier {
         // FILTERING, not the bookkeeping, so switching it back on resumes from what has
         // already been found rather than starting the cycle over.
         RepositoryIndex.markDiscovered(server, player, id);
-        if (noDuplicates && !didReset
-                && BlueprintLootPool.candidates(available,
-                        RepositoryIndex.discoveredIds(server, player)).isEmpty()) {
+        // At most one reset per roll either way, so this can't loop. Retaining the build
+        // just drawn covers the exhausted-on-entry path too, which previously reset with
+        // nothing retained and so could repeat the same disc on the very next roll.
+        if (noDuplicates && (exhausted
+                || BlueprintLootPool.candidates(available,
+                        RepositoryIndex.discoveredIds(server, player)).isEmpty())) {
             completeCycle(server, player, id);
         }
         if (player != null) {

@@ -235,7 +235,10 @@ public class BlueprintLootGameTests {
         // completion is measured against this same set: against the full curated list a
         // server missing an optional mod (Coppertide Park needs MC Waterslides) could
         // never finish a cycle, because those builds are permanently unfindable.
-        List<String> available = availableBuilds();
+        //
+        // Deliberately reads the pool through BlueprintLootPool.availableFrom, the same
+        // call the loot roll makes, so dropping the filter there fails this test.
+        List<String> available = BlueprintLootPool.availableFrom(List.of());
         for (String name : CuratedBlueprints.lootBlueprints()) {
             boolean inPool = available.contains(name);
             boolean allowed = CuratedBlueprints.modsAvailable(name);
@@ -252,8 +255,7 @@ public class BlueprintLootGameTests {
     // ----------------------------------------------------------------- helpers
 
     private static List<String> availableBuilds() {
-        return CuratedBlueprints.lootBlueprints().stream()
-                .filter(CuratedBlueprints::modsAvailable).toList();
+        return BlueprintLootPool.availableFrom(List.of());
     }
 
     /** Empties the shared ledger and marks it seeded, so each test starts from a known state. */
