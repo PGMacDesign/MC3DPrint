@@ -58,6 +58,22 @@ public final class BlueprintLootPool {
     }
 
     /**
+     * The builds this world can actually hand out: the configured list, or the whole
+     * opt-out pool ({@link CuratedBlueprints#lootBlueprints()}, everything minus
+     * {@link CuratedBlueprints#LOOT_EXCLUDED}) when that list is empty, with any build
+     * whose required mods are missing removed.
+     *
+     * <p>The single definition of the candidate pool, shared by the loot roll, the
+     * {@code /mc3dprint discovered} command and the tests, so cycle completion is always
+     * measured against the same set the roll draws from. Measured against the full
+     * curated list instead, a server missing an optional mod could never finish a cycle.
+     */
+    public static List<String> availableFrom(List<String> configured) {
+        List<String> names = configured.isEmpty() ? CuratedBlueprints.lootBlueprints() : configured;
+        return names.stream().filter(CuratedBlueprints::modsAvailable).toList();
+    }
+
+    /**
      * The builds still findable this cycle: {@code available} minus anything already in
      * the discovery ledger. An empty result means the cycle is complete, which is why
      * {@code available} must already be mod-filtered by the caller: measured against the

@@ -116,8 +116,7 @@ public final class DiscoveryCommand {
 
     /** Builds the loot roll can actually draw, so counts here match what the pool sees. */
     private static List<String> availableBuilds() {
-        return CuratedBlueprints.lootBlueprints().stream()
-                .filter(CuratedBlueprints::modsAvailable).toList();
+        return BlueprintLootPool.availableFrom(List.of());
     }
 
     /** Null for console in shared mode (the world ledger needs no player) and an error otherwise. */
