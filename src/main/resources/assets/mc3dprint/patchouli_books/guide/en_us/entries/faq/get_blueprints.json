@@ -12,7 +12,7 @@
     {
       "type": "patchouli:text",
       "title": "Never the Same Twice",
-      "text": "With $(o)noDuplicateBlueprints$() on (the default), loot won't hand you a build you already have. Every chest that rolls a disc gives you one you've $(l)never found$(), until you've found them $(l)all$() - then discovery starts a new cycle and they can turn up again.$(br2)Whether that set is $(l)shared$() or $(l)per-player$() follows your library: with the default shared $(item)Blueprint Repository$() the whole server works through one set together (anyone can re-burn what anyone found). Set $(o)blueprintRepositoryIsShared = false$() and each player collects their own.$(br2)Turn it off with $(o)[loot]$() $(o)noDuplicateBlueprints$(), or retune the drop rate with $(o)blueprintChanceMultiplier$()."
+      "text": "With $(o)noDuplicateBlueprints$() on (the default), loot won't hand you a build you already have. Every chest that rolls a disc gives you one you've $(l)never found$(), until you've found them $(l)all$() - then discovery starts a new cycle and they can turn up again.$(br2)Whether that set is $(l)shared$() or $(l)per-player$() follows your library: with the default shared $(item)Blueprint Repository$() the whole server works through one set together (anyone can re-burn what anyone found). Set $(o)blueprintRepositoryIsShared = false$() and each player collects their own.$(br2)Blueprints drop from a qualifying container at a base $(l)40%$(). Scale that with $(o)[loot]$() $(o)blueprintChanceMultiplier$() (1.0 by default), or turn the no-repeat rule off with $(o)noDuplicateBlueprints$()."
     },
     {
       "type": "patchouli:text",

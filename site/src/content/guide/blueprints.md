@@ -29,7 +29,7 @@ Whether "found" is tracked per player or for the whole server follows your libra
 
 Two knobs live under `[loot]` in `mc3dprint-common.toml`:
 
-- `blueprintChanceMultiplier` scales the drop rate (`1.0` ships as the default).
+- `blueprintChanceMultiplier` scales the drop rate. The shipped base is **40%** per qualifying container, and the multiplier defaults to `1.0`.
 - `noDuplicateBlueprints` turns the no-repeat rule off. Finds are still recorded while it is off, so turning it back on resumes where you left off.
 
 ### Operator commands
