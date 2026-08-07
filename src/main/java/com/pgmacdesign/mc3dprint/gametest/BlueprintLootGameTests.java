@@ -23,6 +23,7 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.gametest.GameTestHolder;
 import net.minecraftforge.gametest.PrefixGameTestTemplate;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -188,7 +189,10 @@ public class BlueprintLootGameTests {
 
         // Arm the one-time copy so the next roll performs it.
         data.clearDiscoverySeeded();
-        rollUntilDisc(helper, 200);
+        if (rollUntilDisc(helper, 400) == null) {
+            helper.fail("no disc drawn in 400 rolls, so the seed path never ran");
+            return;
+        }
         if (!RepositoryIndex.discoveredIds(server, null).contains(cataloguedId)) {
             helper.fail("the catalogued build was not seeded into the ledger on the first roll");
             return;
@@ -201,10 +205,23 @@ public class BlueprintLootGameTests {
         // A completed cycle clears the ledger; the catalogue must NOT be re-applied,
         // or a fully-catalogued library would leave the pool permanently empty.
         data.resetDiscovered(null);
-        rollUntilDisc(helper, 200);
+        if (!data.isDiscoverySeeded()) {
+            helper.fail("the reset cleared the seeded flag, which would let the catalogue re-narrow the pool");
+            return;
+        }
+        UUID drawn = rollUntilDisc(helper, 400);
+        if (drawn == null) {
+            helper.fail("no disc drawn in 400 rolls after the reset, so the reseed path never ran");
+            return;
+        }
+        // Compared against exactly the build drawn rather than by size: a faulty reseed
+        // leaves the catalogued id AS WELL AS the drawn one, which a size check on its
+        // own would wave through. (The reset put the catalogued build back in the pool,
+        // so drawing it here is legitimate and this still holds.)
         Set<UUID> after = RepositoryIndex.discoveredIds(server, null);
-        if (after.contains(cataloguedId) && after.size() == 1) {
-            helper.fail("the catalogue was re-seeded after a reset; the pool would never refill");
+        if (!after.equals(Set.of(drawn))) {
+            helper.fail("after a reset the ledger held " + after.size()
+                    + " entries instead of just the build drawn; the catalogue was re-seeded");
             return;
         }
         helper.succeed();
@@ -245,12 +262,15 @@ public class BlueprintLootGameTests {
         return data;
     }
 
-    private static void rollUntilDisc(GameTestHelper helper, int attempts) {
+    /** Rolls until a disc drops and returns its blueprint id, or null if none ever did. */
+    @Nullable
+    private static UUID rollUntilDisc(GameTestHelper helper, int attempts) {
         for (int i = 0; i < attempts; i++) {
-            if (!discIds(roll(helper, DUNGEON)).isEmpty()) {
-                return;
+            for (UUID id : discIds(roll(helper, DUNGEON))) {
+                return id;
             }
         }
+        return null;
     }
 
     private static Set<UUID> discIds(List<ItemStack> loot) {

@@ -127,13 +127,15 @@ public class AddBlueprintDiscModifier extends LootModifier {
 
         // Only now that the disc is actually in the loot: recording earlier would burn a
         // build on any bail path above and put it permanently out of reach.
-        if (noDuplicates) {
-            RepositoryIndex.markDiscovered(server, player, id);
-            if (!didReset
-                    && BlueprintLootPool.candidates(available,
-                            RepositoryIndex.discoveredIds(server, player)).isEmpty()) {
-                completeCycle(server, player, id);
-            }
+        //
+        // Recorded whether or not duplicate suppression is on. The config gates the
+        // FILTERING, not the bookkeeping, so switching it back on resumes from what has
+        // already been found rather than starting the cycle over.
+        RepositoryIndex.markDiscovered(server, player, id);
+        if (noDuplicates && !didReset
+                && BlueprintLootPool.candidates(available,
+                        RepositoryIndex.discoveredIds(server, player)).isEmpty()) {
+            completeCycle(server, player, id);
         }
         if (player != null) {
             com.pgmacdesign.mc3dprint.advancement.ModCriteria.LOOT_DISC_FOUND.trigger(player);

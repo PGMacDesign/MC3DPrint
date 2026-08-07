@@ -7,7 +7,7 @@
     {
       "type": "patchouli:text",
       "title": "Scan, Disc, Print",
-      "text": "The whole loop: $(l)scan$() a build with the Structure Scanner, save it to a $(l)disc$(), then $(l)print$() it anywhere a printer can reach.$(br2)Scans are stored as $(l)blueprints$() in the world save; a $(item)Blueprint Disc$() is the key that references one. Shift+Right Click a written disc to $(l)lock$() it against being overwritten.$(br2)Discs also turn up in $(l)any structure chest$() and in $(l)archaeology$() finds: print what you find, no scanning required. Loot never repeats a build you already have, so every disc you dig up is a new one."
+      "text": "The whole loop: $(l)scan$() a build with the Structure Scanner, save it to a $(l)disc$(), then $(l)print$() it anywhere a printer can reach.$(br2)Scans are stored as $(l)blueprints$() in the world save; a $(item)Blueprint Disc$() is the key that references one. Shift+Right Click a written disc to $(l)lock$() it against being overwritten.$(br2)Discs also turn up in $(l)structure chests$() and $(l)archaeology$() finds, modded ones included: print what you find, no scanning required. By default loot won't repeat a build you already have, so every disc you dig up is a new one."
     },
     {
       "type": "patchouli:text",
