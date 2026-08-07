@@ -116,7 +116,11 @@ public class AddBlueprintDiscModifier extends LootModifier {
         BlueprintFileStore store = BlueprintFileStore.forServer(server);
         Optional<Blueprint> blueprint = store.load(id);
         if (blueprint.isEmpty()) {
-            return generatedLoot; // curated set not installed in this world; ledger untouched
+            // Never installed into this world (install() skips a file it can't read rather
+            // than aborting boot). Drop it from the pool: left in, it can never be granted,
+            // so a no-duplicate cycle measured by the pool emptying would never complete.
+            BlueprintLootPool.markUnloadable(id);
+            return generatedLoot; // ledger untouched
         }
         ItemStack disc = new ItemStack(ModItems.BLUEPRINT_DISC.get());
         BlueprintDiscItem.writeBlueprint(disc, id, blueprint.get());
