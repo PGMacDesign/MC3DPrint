@@ -7,7 +7,17 @@
     {
       "type": "patchouli:text",
       "title": "Getting Blueprints",
-      "text": "Two ways:$(br)$(li)$(l)Scan$() your own builds with the $(item)Structure Scanner$() (right-click two corners, scan with a $(item)Blank Blueprint Disc$() anywhere in your inventory)$(li)$(l)Find$() curated written $(item)Blueprint Discs$() in $(l)village and exploration loot$()$(br2)Server operators can also import $(l).schem$() / $(l).litematic$() / $(l).nbt$() files with $(o)/mc3dprint import$()."
+      "text": "Two ways:$(br)$(li)$(l)Scan$() your own builds with the $(item)Structure Scanner$() (right-click two corners, scan with a $(item)Blank Blueprint Disc$() anywhere in your inventory)$(li)$(l)Find$() curated written $(item)Blueprint Discs$() in $(l)any structure chest$(), plus $(l)archaeology$() brushing sites$(br2)Server operators can also import $(l).schem$() / $(l).litematic$() / $(l).nbt$() files with $(o)/mc3dprint import$()."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Never the Same Twice",
+      "text": "Loot won't hand you a build you already have. Every chest that rolls a disc gives you one you've $(l)never found$(), until you've found them $(l)all$() - then the catalogue resets and they can turn up again.$(br2)Whether that set is $(l)shared$() or $(l)per-player$() follows your library: with the default shared $(item)Blueprint Repository$() the whole server works through one set together (anyone can re-burn what anyone found). Set $(o)blueprintRepositoryIsShared = false$() and each player collects their own.$(br2)Turn it off with $(o)[loot]$() $(o)noDuplicateBlueprints$(), or retune the drop rate with $(o)blueprintChanceMultiplier$()."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Operator Tools",
+      "text": "$(o)/mc3dprint discovered list$() shows how many builds are found and how many are still out there.$(br2)$(o)/mc3dprint discovered add <build>$() marks one as already found - useful on a world that predates this system, where discs sitting in a chest were never catalogued.$(br2)$(o)/mc3dprint discovered reseed$() re-syncs from the $(item)Blueprint Repository$() after you deposit a batch.$(br2)$(o)/mc3dprint discovered reset$() clears the ledger so everything is findable again."
     },
     {
       "type": "patchouli:text",
