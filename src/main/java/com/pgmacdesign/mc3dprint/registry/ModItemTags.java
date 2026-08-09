@@ -9,6 +9,8 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Item {@link TagKey}s owned by MC3DPrint.
@@ -63,16 +65,65 @@ public final class ModItemTags {
      * tag can't wildcard. {@code rftoolsdim:dimensional_} covers RFTools Dimensions'
      * seven-plus {@code dimensional_*} blocks — trivially farmable, so windable-proxy
      * laundering vectors like {@code rftoolsbase:dimensionalshard} (which is an exact
-     * entry in the tag). Prefix-matched so new variants stay covered without a code change.
+     * entry in the tag). {@code mysticalagradditions:insanium_} covers all eleven insanium
+     * forms in one entry: insanium carries a derived value only because it sits four
+     * essences above supremium in a plain crafting recipe, and winding it would let a farm
+     * reach tier 5. Prefix-matched so new variants stay covered without a code change, and
+     * inert when the mod is absent, since nothing can match the namespace.
      */
     public static final List<String> WINDER_BLACKLIST_ID_PREFIXES = List.of(
-            "rftoolsdim:dimensional_");
+            "rftoolsdim:dimensional_",
+            "mysticalagradditions:insanium_");
+
+    /**
+     * Ids barred from winding at runtime rather than by data, because whether they should be
+     * barred depends on which OTHER mods are installed and a datapack tag cannot express that.
+     * Written by compat hooks during common setup, read on the server thread thereafter.
+     *
+     * <p>The case this exists for: Mystical Agradditions turns nether star and dragon egg into
+     * crops. Both are priced here as unfarmable trophies (the dragon egg's 10,000 FU is
+     * justified in {@code FuValueRegistry} by it dropping exactly once per world), so a crop
+     * that yields them turns a tier-7 spool into a faucet. They cannot go in the data tag,
+     * because that would punish every pack that does not run Agradditions.
+     */
+    private static final Set<String> RUNTIME_WINDER_BLOCKED = ConcurrentHashMap.newKeySet();
+
+    /**
+     * Bars {@code itemId} from ever being wound, converted or deconstructed into filament.
+     * Idempotent, and intended to be called from a mod-gated compat hook during common setup.
+     */
+    public static void blockWinding(ResourceLocation itemId) {
+        RUNTIME_WINDER_BLOCKED.add(itemId.toString());
+    }
+
+    /** Drops every runtime bar. Test support; nothing in the mod un-bars an item at runtime. */
+    public static void clearRuntimeWinderBlocks() {
+        RUNTIME_WINDER_BLOCKED.clear();
+    }
+
+    /**
+     * The id-only half of the winder gate: the runtime bars plus the prefix list. Split out
+     * from {@link #isWinderBlacklisted(ItemStack)} so it can be driven from JUnit without
+     * bootstrapping the item registry.
+     */
+    public static boolean isIdWinderBlocked(ResourceLocation itemId) {
+        String id = itemId.toString();
+        if (RUNTIME_WINDER_BLOCKED.contains(id)) {
+            return true;
+        }
+        for (String prefix : WINDER_BLACKLIST_ID_PREFIXES) {
+            if (id.startsWith(prefix)) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     /**
      * Whether {@code stack} must never be wound / converted / deconstructed back into
-     * filament — true if it is in the {@link #WINDER_BLACKLIST} tag OR its registry id
-     * starts with a {@link #WINDER_BLACKLIST_ID_PREFIXES} entry. Every anti-laundering
-     * gate calls this, so the tag and the prefixes are honored uniformly.
+     * filament: true if it is in the {@link #WINDER_BLACKLIST} tag, or its registry id is
+     * barred by {@link #isIdWinderBlocked(ResourceLocation)} (a prefix match or a runtime
+     * bar). Every anti-laundering gate calls this, so all three sources apply uniformly.
      */
     public static boolean isWinderBlacklisted(ItemStack stack) {
         if (stack.isEmpty()) {
@@ -81,13 +132,7 @@ public final class ModItemTags {
         if (stack.is(WINDER_BLACKLIST)) {
             return true;
         }
-        String id = BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
-        for (String prefix : WINDER_BLACKLIST_ID_PREFIXES) {
-            if (id.startsWith(prefix)) {
-                return true;
-            }
-        }
-        return false;
+        return isIdWinderBlocked(BuiltInRegistries.ITEM.getKey(stack.getItem()));
     }
 
     /**

@@ -5,8 +5,10 @@ import com.pgmacdesign.mc3dprint.fu.SpoolItem;
 import com.pgmacdesign.mc3dprint.machine.PrinterBlockEntity;
 import com.pgmacdesign.mc3dprint.machine.WinderBlockEntity;
 import com.pgmacdesign.mc3dprint.registry.ModBlocks;
+import com.pgmacdesign.mc3dprint.registry.ModItemTags;
 import com.pgmacdesign.mc3dprint.registry.ModItems;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestAssertException;
 import net.minecraft.gametest.framework.GameTestHelper;
@@ -74,6 +76,44 @@ public class FilamentGameTests {
             }
             helper.succeed();
         });
+    }
+
+    /**
+     * A compat hook can bar an item from winding at runtime, and the real winder gate honors
+     * it. Mystical Agradditions uses this for nether star and dragon egg, whose values assume
+     * they cannot be farmed; a data tag can't express "only when that mod is present".
+     */
+    @GameTest(template = "empty5", timeoutTicks = 60)
+    public static void winderHonorsRuntimeWindBar(GameTestHelper helper) {
+        BlockPos pos = new BlockPos(2, 1, 2);
+        helper.setBlock(pos, ModBlocks.FILAMENT_WINDER.get());
+        if (!(helper.getBlockEntity(pos) instanceof WinderBlockEntity winder)) {
+            throw new GameTestAssertException("Winder block entity missing");
+        }
+        // nether_star is 1500 FU @ T7, so a T7 spool is the matching spool: any refusal below
+        // is the bar, never a tier miss.
+        winder.inventory().setStackInSlot(WinderBlockEntity.SLOT_INPUT, new ItemStack(Items.NETHER_STAR));
+        winder.inventory().setStackInSlot(WinderBlockEntity.SLOT_SPOOL,
+                new ItemStack(ModItems.SPOOLS.get(6).get()));
+        try {
+            if (winder.winderStatus() != WinderBlockEntity.STATUS_OK) {
+                helper.fail("Expected OK before the bar, got " + winder.winderStatus());
+                return;
+            }
+            ModItemTags.blockWinding(BuiltInRegistries.ITEM.getKey(Items.NETHER_STAR));
+            if (winder.winderStatus() != WinderBlockEntity.STATUS_NOT_CONVERTIBLE) {
+                helper.fail("Expected NOT_CONVERTIBLE once barred, got " + winder.winderStatus());
+                return;
+            }
+        } finally {
+            // Bars are process-wide, so leaving one set would silently change later tests.
+            ModItemTags.clearRuntimeWinderBlocks();
+        }
+        if (winder.winderStatus() != WinderBlockEntity.STATUS_OK) {
+            helper.fail("Clearing the bar must restore winding, got " + winder.winderStatus());
+            return;
+        }
+        helper.succeed();
     }
 
     @GameTest(template = "empty5", timeoutTicks = 60)

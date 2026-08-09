@@ -52,3 +52,15 @@ Food has FU values too, so a printer in [Item Mode](/guide/item-mode/) can print
 Mob heads and skulls are **trophy items**: printers never duplicate them in item mode, and in blueprint mode they place only from an **official curated blueprint that specifically carries them** (like the Pig House's decorative heads). A scanned or imported build containing a head prints everything else and silently skips the trophy, the same anti-exploit gate as [resins](/guide/resins-overview/).
 
 Heads still **wind**, though. Creeper, zombie, skeleton, and piglin heads recycle into Tier 4 Filament Units, so charged-creeper trophies aren't a dead end. The **wither skeleton skull** is the exception: it winds for a Tier 4 payout but is **wind-only** (never printed, in any mode), so a wither-skeleton farm can't mint printable wither-spawn ingredients.
+
+## When a mod makes a trophy farmable
+
+Nether stars and dragon eggs are priced as one-off trophies: 1,500 and 10,000 Filament Units, at the top of the tier ladder. That only holds because you can't farm them.
+
+**Mystical Agradditions** adds crops for both, so when it's installed MC3DPrint stops accepting them at the winder. A Tier 7 spool prints everything at Tier 7 and below, and a renewable Tier 7 payout would make the whole ladder free.
+
+Only winding changes. The nether star is still an ordinary item you can craft with that mod, build beacons from, and print from a Tier 7 machine. The dragon egg is still a placeable trophy block, and it was already wind-only, so all it loses is the recycle payout. Install Mystical Agradditions and you get an infinite supply of nether stars for beacons, just not an infinite supply of filament.
+
+**Insanium** is handled separately: it can be neither wound nor printed. It sits one crafting step above supremium, which would hand a farm a Tier 5 payout for free. It stays a completely normal Mystical Agradditions item, MC3DPrint just doesn't participate. One consequence worth knowing: a scanned build containing insanium blocks prints everything else and leaves those spaces empty, the same way it handles any block it won't reproduce.
+
+Without Mystical Agradditions, none of this applies and both trophies wind exactly as before. This is the only place where an optional mod's presence changes how MC3DPrint treats a *vanilla* item.
