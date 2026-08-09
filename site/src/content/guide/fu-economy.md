@@ -46,3 +46,11 @@ Lower-tier machines pay a higher FU multiplier per block, and printing always co
 ## Printing food
 
 Food has FU values too, so a printer in [Item Mode](/guide/item-mode/) can print meals: bread is cheap, cooked and golden food cost more. But food **can't be wound back** into FU, so printing food is a one-way sink, not a loop.
+
+## When a mod makes a trophy farmable
+
+Nether stars and dragon eggs are priced as one-off trophies: 1,500 and 10,000 Filament Units, at the top of the tier ladder. That only holds because you can't farm them.
+
+**Mystical Agradditions** adds crops for both, so when it's installed MC3DPrint stops accepting them at the winder. A Tier 7 spool prints everything at Tier 7 and below, and a renewable Tier 7 payout would make the whole ladder free. Nothing else changes: both stay craftable, usable, and placeable, and the nether star still prints. Install that mod and you get an infinite supply of nether stars for beacons, just not an infinite supply of filament.
+
+This is the only case where another mod's presence changes what MC3DPrint accepts. Without Mystical Agradditions, both wind exactly as before.
