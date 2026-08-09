@@ -52,3 +52,11 @@ Food has FU values too, so a printer in [Item Mode](/guide/item-mode/) can print
 Mob heads and skulls are **trophy items**: printers never duplicate them in item mode, and in blueprint mode they place only from an **official curated blueprint that specifically carries them** (like the Pig House's decorative heads). A scanned or imported build containing a head prints everything else and silently skips the trophy, the same anti-exploit gate as [resins](/guide/resins-overview/).
 
 Heads still **wind**, though. Creeper, zombie, skeleton, and piglin heads recycle into Tier 4 Filament Units, so charged-creeper trophies aren't a dead end. The **wither skeleton skull** is the exception: it winds for a Tier 4 payout but is **wind-only** (never printed, in any mode), so a wither-skeleton farm can't mint printable wither-spawn ingredients.
+
+## When a mod makes a trophy farmable
+
+Nether stars and dragon eggs are priced as one-off trophies: 1,500 and 10,000 Filament Units, at the top of the tier ladder. That only holds because you can't farm them.
+
+**Mystical Agradditions** adds crops for both, so when it's installed MC3DPrint stops accepting them at the winder. A Tier 7 spool prints everything at Tier 7 and below, and a renewable Tier 7 payout would make the whole ladder free. Nothing else changes: both stay craftable, usable, and placeable, and the nether star still prints. Install that mod and you get an infinite supply of nether stars for beacons, just not an infinite supply of filament.
+
+This is the only case where another mod's presence changes what MC3DPrint accepts. Without Mystical Agradditions, both wind exactly as before.

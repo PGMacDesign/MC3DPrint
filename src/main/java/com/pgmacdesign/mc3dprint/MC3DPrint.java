@@ -55,6 +55,10 @@ public class MC3DPrint {
         modEventBus.addListener(com.pgmacdesign.mc3dprint.integration.create.CreateCompat::onCommonSetup);
         modEventBus.addListener(com.pgmacdesign.mc3dprint.integration.immersiveengineering.ImmersiveEngineeringCompat::onCommonSetup);
         modEventBus.addListener(com.pgmacdesign.mc3dprint.integration.enderio.EnderIOCompat::onCommonSetup);
+        modEventBus.addListener(com.pgmacdesign.mc3dprint.integration.mysticalagriculture
+                .MysticalAgricultureCompat::onCommonSetup);
+        modEventBus.addListener(com.pgmacdesign.mc3dprint.integration.mysticalagriculture
+                .MysticalAgradditionsCompat::onCommonSetup);
         net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(
                 com.pgmacdesign.mc3dprint.fu.FuEvents::onServerStarted);
         net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(
