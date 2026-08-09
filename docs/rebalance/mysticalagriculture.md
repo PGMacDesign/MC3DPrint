@@ -42,7 +42,7 @@ left to derive, against the usual "only value the leaves" rule.
 
 ## 1. Acquisition axis
 
-```
+```text
 T1  inferium essence, inferium ore, soulstone      = first crop, shallow ore, Nether stone
 T2  prosperity shard + ore, prudentium essence     = shallow ore, one infusion step up
 T3  tertium essence, soulium ore, witherproof      = mid ladder, Nether-gated ore
@@ -54,8 +54,10 @@ T5  supremium essence, every gemstone              = endgame ladder; gemstones c
 
 - The ladder tops out at **T5**, never T6. Netherite must stay above farm output, and Mystical
   Agriculture already has a netherite crop.
-- **All 138 crop essences are unvalued.** They are farm output and the input to Infusion Crafting;
-  pricing them would open a laundering seam and let a printer shortcut the mod's core mechanic.
+- **The per-crop essences are unvalued**, with one exception: `inferium_essence` is itself a crop
+  drop and is the base of the ladder, so it is anchored. The other 137 are farm output and the
+  input to Infusion Crafting; pricing them would open a laundering seam and let a printer
+  shortcut the mod's core mechanic.
 - **Everything awakened is unvalued.** `awakened_supremium_essence` comes only from the Awakening
   Altar, a custom recipe the valuator cannot read, so that gate holds by itself.
 - **`prosperity_gemstone` is pinned to the diamond inside it.** Derived it prices at 66 against a
@@ -96,8 +98,9 @@ at the same tier, exact break-even), `prosperity_ingot` (4 shards + iron, all ti
 bricks/stairs/slabs, witherproof bricks (4 blocks into 4 bricks), the machines, seed bases,
 infusion crystals.
 
-**Intentionally UNVALUED:** all 138 crop essences, all seeds, the entire awakened supremium line,
-and insanium.
+**Intentionally UNVALUED:** the per-crop essences other than `inferium_essence`, all seeds, and
+the entire awakened supremium line. **Insanium is not on this list.** It gets no anchor, but the
+valuator still derives one (see below), so it is barred at both gates instead.
 
 ## 3. The two guards
 
@@ -154,6 +157,5 @@ promotion rule is ever revisited, it is an economy-wide change, not a compat one
   recipes carry `mysticalagriculture:crop_enabled` conditions, so a pack can turn individual
   crops off, but not on beyond the registry.
 
-All numbers are **tunable**. Related: `docs/rebalance/{ae2,thermal,tconstruct}.md`,
-`.claude/skills/mc3dp-mod-filament-unit-compat/references/fu-model.md`, and the
-`modded-fu-compat` memory.
+All numbers are **tunable**. Related: `docs/rebalance/{ae2,thermal,tconstruct}.md` and
+`.claude/skills/mc3dp-mod-filament-unit-compat/references/fu-model.md`.

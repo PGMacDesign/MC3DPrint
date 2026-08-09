@@ -57,6 +57,10 @@ Heads still **wind**, though. Creeper, zombie, skeleton, and piglin heads recycl
 
 Nether stars and dragon eggs are priced as one-off trophies: 1,500 and 10,000 Filament Units, at the top of the tier ladder. That only holds because you can't farm them.
 
-**Mystical Agradditions** adds crops for both, so when it's installed MC3DPrint stops accepting them at the winder. A Tier 7 spool prints everything at Tier 7 and below, and a renewable Tier 7 payout would make the whole ladder free. Nothing else changes: both stay craftable, usable, and placeable, and the nether star still prints. Install that mod and you get an infinite supply of nether stars for beacons, just not an infinite supply of filament.
+**Mystical Agradditions** adds crops for both, so when it's installed MC3DPrint stops accepting them at the winder. A Tier 7 spool prints everything at Tier 7 and below, and a renewable Tier 7 payout would make the whole ladder free.
 
-This is the only case where another mod's presence changes what MC3DPrint accepts. Without Mystical Agradditions, both wind exactly as before.
+Only winding changes. The nether star is still an ordinary item you can craft with that mod, build beacons from, and print from a Tier 7 machine. The dragon egg is still a placeable trophy block, and it was already wind-only, so all it loses is the recycle payout. Install Mystical Agradditions and you get an infinite supply of nether stars for beacons, just not an infinite supply of filament.
+
+**Insanium** is handled separately: it can be neither wound nor printed. It sits one crafting step above supremium, which would hand a farm a Tier 5 payout for free. It stays a completely normal Mystical Agradditions item, MC3DPrint just doesn't participate. One consequence worth knowing: a scanned build containing insanium blocks prints everything else and leaves those spaces empty, the same way it handles any block it won't reproduce.
+
+Without Mystical Agradditions, none of this applies and both trophies wind exactly as before. This is the only place where an optional mod's presence changes how MC3DPrint treats a *vanilla* item.
