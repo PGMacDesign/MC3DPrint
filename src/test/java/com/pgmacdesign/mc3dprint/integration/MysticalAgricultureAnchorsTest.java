@@ -24,6 +24,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class MysticalAgricultureAnchorsTest {
 
     private static final int RATIO = 4;
+    /** The anchored ladder value. Change here and in MysticalAgricultureCompat together. */
+    private static final int LADDER_FU = 20;
     private static final List<String> LADDER =
             List.of("inferium", "prudentium", "tertium", "imperium", "supremium");
 
@@ -58,6 +60,9 @@ class MysticalAgricultureAnchorsTest {
     @Test
     void ladderFuIsFlatSoNoRungMints() {
         int base = anchor("inferium_essence").fu();
+        // Pinned as well as compared: flatness alone would still hold if the whole ladder moved,
+        // and the repo convention is that tier tests assert the value, not just the shape.
+        assertEquals(LADDER_FU, base, "the ladder base moved; rebalance the table and this literal together");
         for (String rung : LADDER) {
             assertEquals(base, anchor(rung + "_essence").fu(),
                     rung + " breaks the flat ladder. Four essences craft into one essence one "
