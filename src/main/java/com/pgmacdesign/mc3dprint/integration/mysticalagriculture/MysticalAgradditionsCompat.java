@@ -23,13 +23,14 @@ import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
  * and the nether star stays printable, which is safe because printing carries a markup and the
  * only routes to tier-7 filament are the two items now barred plus draconium.
  *
- * <p><b>Insanium is deliberately unvalued and barred both ways.</b> Its recipe is four
- * supremium essences plus an infusion crystal, all of which are priced, so the valuator would
- * otherwise reach it and hand it roughly 1,100 FU at tier 5, a number nobody chose, on an item
- * that is farm output. Winding is barred by the {@code mysticalagradditions:insanium_} prefix
- * in {@link ModItemTags#WINDER_BLACKLIST_ID_PREFIXES}; printing is barred by the
- * {@code no_print} tag. Anchoring it would have been one line instead, but an unpriced
- * insanium keeps the mod's own tier-6 progression the only way to reach it.
+ * <p><b>Insanium gets no anchor here, and is barred both ways instead.</b> Note what that does
+ * and does not mean: the valuator still <em>derives</em> a value for it, roughly 1,100 FU at
+ * tier 5, because its recipe is four supremium essences plus an infusion crystal and all of
+ * those are priced. Leaving an item out of a compat hook never makes it unvalued; only an
+ * explicit anchor stops the walk. So the derived number stands, and the two gates are what
+ * make it inert: winding is barred by the {@code mysticalagradditions:insanium_} prefix in
+ * {@link ModItemTags#WINDER_BLACKLIST_ID_PREFIXES}, printing by the {@code no_print} tag.
+ * <b>Both gates are load-bearing;</b> removing either exposes a tier-5 value on farm output.
  */
 public final class MysticalAgradditionsCompat {
     private static final String MAA = "mysticalagradditions";

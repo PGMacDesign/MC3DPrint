@@ -42,7 +42,7 @@ left to derive, against the usual "only value the leaves" rule.
 
 ## 1. Acquisition axis
 
-```
+```text
 T1  inferium essence, inferium ore, soulstone      = first crop, shallow ore, Nether stone
 T2  prosperity shard + ore, prudentium essence     = shallow ore, one infusion step up
 T3  tertium essence, soulium ore, witherproof      = mid ladder, Nether-gated ore
@@ -54,8 +54,10 @@ T5  supremium essence, every gemstone              = endgame ladder; gemstones c
 
 - The ladder tops out at **T5**, never T6. Netherite must stay above farm output, and Mystical
   Agriculture already has a netherite crop.
-- **All 138 crop essences are unvalued.** They are farm output and the input to Infusion Crafting;
-  pricing them would open a laundering seam and let a printer shortcut the mod's core mechanic.
+- **The per-crop essences are unvalued**, with one exception: `inferium_essence` is itself a crop
+  drop and is the base of the ladder, so it is anchored. The other 137 are farm output and the
+  input to Infusion Crafting; pricing them would open a laundering seam and let a printer
+  shortcut the mod's core mechanic.
 - **Everything awakened is unvalued.** `awakened_supremium_essence` comes only from the Awakening
   Altar, a custom recipe the valuator cannot read, so that gate holds by itself.
 - **`prosperity_gemstone` is pinned to the diamond inside it.** Derived it prices at 66 against a
@@ -82,7 +84,7 @@ T5  supremium essence, every gemstone              = endgame ladder; gemstones c
 | `inferium_ore`, `deepslate_inferium_ore` | 20 | 1 | worldgen leaf; matches what it smelts into |
 | `soulium_ore` | 10 | 3 | worldgen leaf; `soulium_dust` derives by smelting |
 | `soulstone_cobble` | 2 | 1 | worldgen leaf; soulstone and its brick/stair/slab family derive |
-| `witherproof_block`, `witherproof_glass` | 20 | 3 | built from unvalued wither skeleton essence, so they need anchors or any build containing them fails |
+| `witherproof_block`, `witherproof_glass` | 20 | 3 | built from unvalued wither skeleton essence; unanchored the printer skips them and leaves holes |
 
 `integration/mysticalagriculture/MysticalAgradditionsCompat.java`
 
@@ -91,13 +93,14 @@ T5  supremium essence, every gemstone              = endgame ladder; gemstones c
 | `nether_inferium_ore`, `end_inferium_ore` | 20 | 1 | dimension variants, same drop |
 | `nether_prosperity_ore`, `end_prosperity_ore` | 4 | 2 | dimension variants, same drop |
 
-**Derived automatically (not pinned):** the `<tier>_ingot` line (tier 2, numbers too small to
-launder), `<tier>_block` (nine essences at the same tier, exact break-even), `prosperity_ingot`,
-soulstone bricks/stairs/slabs, witherproof bricks (4 blocks into 4 bricks), the machines, seed
-bases, infusion crystals.
+**Derived automatically (not pinned):** `<tier>_block` and `<tier>_ingot_block` (nine of the base
+at the same tier, exact break-even), `prosperity_ingot` (4 shards + iron, all tier 2), soulstone
+bricks/stairs/slabs, witherproof bricks (4 blocks into 4 bricks), the machines, seed bases,
+infusion crystals.
 
-**Intentionally UNVALUED:** all 138 crop essences, all seeds, the entire awakened supremium line,
-and insanium.
+**Intentionally UNVALUED:** the per-crop essences other than `inferium_essence`, all seeds, and
+the entire awakened supremium line. **Insanium is not on this list.** It gets no anchor, but the
+valuator still derives one (see below), so it is barred at both gates instead.
 
 ## 3. The two guards
 
@@ -119,7 +122,8 @@ chose. Omitting an item does not make it unvalued; only an explicit anchor stops
 instead: winding via the `mysticalagradditions:insanium_` prefix in
 `ModItemTags.WINDER_BLACKLIST_ID_PREFIXES` (one entry covers all eleven forms), printing via
 eleven `required: false` entries in the `no_print` tag. The cost of the print bar is that a
-scanned base containing insanium blocks will not reproduce them.
+scanned base containing insanium blocks prints with holes where they were; unprintable blocks
+are skipped per block (`recordSkippedBlock`), not treated as a whole-blueprint failure.
 
 ## 4. What the anchors were checked against
 
@@ -153,6 +157,5 @@ promotion rule is ever revisited, it is an economy-wide change, not a compat one
   recipes carry `mysticalagriculture:crop_enabled` conditions, so a pack can turn individual
   crops off, but not on beyond the registry.
 
-All numbers are **tunable**. Related: `docs/rebalance/{ae2,thermal,tconstruct}.md`,
-`.claude/skills/mc3dp-mod-filament-unit-compat/references/fu-model.md`, and the
-`modded-fu-compat` memory.
+All numbers are **tunable**. Related: `docs/rebalance/{ae2,thermal,tconstruct}.md` and
+`.claude/skills/mc3dp-mod-filament-unit-compat/references/fu-model.md`.
