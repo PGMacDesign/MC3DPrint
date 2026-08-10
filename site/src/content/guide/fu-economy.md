@@ -46,3 +46,15 @@ Lower-tier machines pay a higher FU multiplier per block, and printing always co
 ## Printing food
 
 Food has FU values too, so a printer in [Item Mode](/guide/item-mode/) can print meals: bread is cheap, cooked and golden food cost more. But food **can't be wound back** into FU, so printing food is a one-way sink, not a loop.
+
+## When a mod makes a trophy farmable
+
+Nether stars and dragon eggs are priced as one-off trophies: 1,500 and 10,000 Filament Units, at the top of the tier ladder. That only holds because you can't farm them.
+
+**Mystical Agradditions** adds crops for both, so when it's installed MC3DPrint stops accepting them at the winder. A Tier 7 spool prints everything at Tier 7 and below, and a renewable Tier 7 payout would make the whole ladder free.
+
+Only winding changes. The nether star is still an ordinary item you can craft with that mod, build beacons from, and print from a Tier 7 machine. The dragon egg is still a placeable trophy block, and it was already wind-only, so all it loses is the recycle payout. Install Mystical Agradditions and you get an infinite supply of nether stars for beacons, just not an infinite supply of filament.
+
+**Insanium** is handled separately: it can be neither wound nor printed. It sits one crafting step above supremium, which would hand a farm a Tier 5 payout for free. It stays a completely normal Mystical Agradditions item, MC3DPrint just doesn't participate. One consequence worth knowing: a scanned build containing insanium blocks prints everything else and leaves those spaces empty, the same way it handles any block it won't reproduce.
+
+Without Mystical Agradditions, none of this applies and both trophies wind exactly as before. This is the only place where an optional mod's presence changes how MC3DPrint treats a *vanilla* item.
