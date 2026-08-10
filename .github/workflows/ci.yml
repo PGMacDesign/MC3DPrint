@@ -25,6 +25,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -47,6 +49,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -69,12 +73,20 @@ jobs:
             echo "::error::No server log at $log. The gametest server never started."
             exit 1
           fi
-          if ! grep -qE "All [0-9]+ required tests passed" "$log"; then
+          count=$(grep -oE "All [0-9]+ required tests passed" "$log" | tail -1 | grep -oE "^All [0-9]+" | grep -oE "[0-9]+" || true)
+          if [ -z "$count" ]; then
             echo "::error::Gradle succeeded but no test-pass line was logged. This is the false-green case."
             grep -iE "failed|error|lock" "$log" | tail -30
             exit 1
           fi
-          grep -oE "All [0-9]+ required tests passed" "$log" | tail -1
+          # "All 0 required tests passed" is the documented shape of a registration failure:
+          # with the gametest namespace unset, zero tests register and the run still exits 0.
+          # A floor also catches a partial de-registration, which a nonzero check would miss.
+          if [ "$count" -lt 140 ]; then
+            echo "::error::Only $count gametests ran, expected at least 140. Tests failed to register."
+            exit 1
+          fi
+          echo "All $count required tests passed"
 
       - name: Upload server log
         if: failure()
