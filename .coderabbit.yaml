@@ -3,6 +3,13 @@ early_access: false
 reviews:
   profile: "chill"
   request_changes_workflow: false
+  # Without this, CodeRabbit only accepts PRs targeting the default branch and answers
+  # "reviews are disabled for this base branch" to everything else, including an explicit
+  # @coderabbitai review. Every fix ships as a main + legacy pair, so the legacy half was
+  # silently unreviewable. Regex, so the dots are escaped.
+  base_branches:
+    - "main"
+    - "legacy/1\\.20\\.1"
   high_level_summary: true
   poem: false
   review_status: false
