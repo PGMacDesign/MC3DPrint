@@ -1,0 +1,85 @@
+name: CI
+
+# Build gate for pull requests against the Forge 1.20.1 legacy line. Before this existed the
+# only pull_request workflow was blueprint-preview.yml, a preview renderer, so nothing
+# verified that a PR compiled.
+#
+# This branch is a single-target Forge build, so the tasks are un-scoped (`test`, not
+# `:NODE:test`) and the toolchain is Java 17, unlike the Stonecutter tree on main.
+on:
+  pull_request:
+    branches: [legacy/1.20.1]
+  push:
+    branches: [legacy/1.20.1]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  junit:
+    name: JUnit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      - run: chmod +x ./gradlew
+      - run: ./gradlew test --no-daemon
+
+      - name: Upload failed test reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: junit-legacy
+          path: build/reports/tests/test
+          retention-days: 7
+
+  gametest:
+    name: GameTest oracle
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      - run: chmod +x ./gradlew
+      # Deliberately no --rerun: it fails on this branch with "Cannot fingerprint input
+      # property 'runConfig'" on the older ForgeGradle. A CI checkout is clean anyway, so
+      # there is no stale state for it to force past.
+      - run: ./gradlew runGameTestServer --no-daemon
+
+      # A green exit code does NOT mean the tests ran. runGameTestServer exits 0 having run
+      # nothing when the server dies at startup (a held world lock) or when Gradle marks the
+      # task UP-TO-DATE. The only proof of a real run is this line, so assert it explicitly.
+      - name: Assert the oracle actually ran
+        run: |
+          log=run/logs/latest.log
+          if [ ! -f "$log" ]; then
+            echo "::error::No server log at $log. The gametest server never started."
+            exit 1
+          fi
+          if ! grep -qE "All [0-9]+ required tests passed" "$log"; then
+            echo "::error::Gradle succeeded but no test-pass line was logged. This is the false-green case."
+            grep -iE "failed|error|lock" "$log" | tail -30
+            exit 1
+          fi
+          grep -oE "All [0-9]+ required tests passed" "$log" | tail -1
+
+      - name: Upload server log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gametest-log-legacy
+          path: run/logs/latest.log
+          retention-days: 7
