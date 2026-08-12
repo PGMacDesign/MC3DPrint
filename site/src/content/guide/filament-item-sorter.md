@@ -34,7 +34,7 @@ What it does with them instead depends on whether you have given it somewhere to
 
 **Put a chest against any face of the sorter.** Un-windable items are then accepted and pushed into that chest on the next tick, so you can point a completely unsorted item stream at the sorter and let it separate the windable from the rest.
 
-Anything that stores items works: a chest, a barrel, a hopper, or a pipe or conduit from another mod. The sorter checks all six faces and uses the first one that will take the item. There is nothing to configure and no direction to set.
+Anything that stores items works: a chest, a barrel, a hopper, or a pipe or conduit from another mod. The sorter checks all six faces and fills them in turn, splitting a stack across more than one container if the first runs out of room. There is nothing to configure and no direction to set.
 
 Two details worth knowing:
 
@@ -45,7 +45,7 @@ With **no** such container attached, un-windable items are turned away at the do
 
 > Avoid wiring a pipe that both feeds the sorter *and* pulls from the reject chest. The junk will loop between them forever. It is harmless (nothing is lost, no power is used, and real items keep routing throughout) but it is pointless traffic.
 
-You can turn the whole behaviour off with `[sorter] rejectRouting` in `mc3dprint-common.toml`.
+Reject routing is **on by default**. Turn it off with `[sorter] rejectRouting` in `mc3dprint-common.toml`.
 
 ## What it holds
 
