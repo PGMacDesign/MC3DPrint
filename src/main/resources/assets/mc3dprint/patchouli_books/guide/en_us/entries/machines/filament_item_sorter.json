@@ -26,7 +26,7 @@
     {
       "type": "patchouli:text",
       "title": "When It Fills",
-      "text": "Once the chest is full the sorter goes back to refusing. Nothing is voided and nothing drops on the floor: your hoppers just back up, the same signal as a full pool.$(br2)With $(l)no container attached$() nothing changes from before: un-windable items are turned away at the door, including shift-clicks by hand.$(br2)Don't wire one pipe to both feed the sorter and drain the reject chest, or the junk will loop between them forever. It's harmless, just pointless.$(br2)Reject routing is $(l)on by default$(). Turn it off with $(l)rejectRouting$() in the config."
+      "text": "Once the chest is full the sorter goes back to refusing. Nothing is voided and nothing drops on the floor: your hoppers just back up, the same signal as a full pool.$(br2)With $(l)no container attached$() nothing changes from before: un-windable items are turned away at the door, including shift-clicks by hand.$(br2)Don't wire one pipe to both feed the sorter and drain the reject chest, or the junk will loop between them. Nothing is lost, but it $(l)won't stop on its own$() while something keeps emptying that chest.$(br2)If a pooled item stops being windable later, it leaves the same way, as long as routing is on and a target has room.$(br2)Reject routing is $(l)on by default$(). $(l)rejectRouting$() in the config turns off only that, never the sorter."
     },
     {
       "type": "patchouli:text",

@@ -286,25 +286,44 @@ public class SorterBlockEntity extends BlockEntity implements MenuProvider {
     }
 
     /**
-     * Push every un-routable pool stack out to a reject target. Unbounded on purpose, unlike
-     * routing: this is capped at one insertion pass per pool slot, so nine per tick, and
-     * sharing {@code sorterMaxPerTick} with routing would let a flood of junk consume the
-     * routing budget and stall the sorter's actual job.
+     * Push un-routable pool stacks out to a reject target, at most {@code sorterMaxPerTick}
+     * stacks per tick.
+     *
+     * <p><b>The budget is not decorative.</b> One push is not one insertion call: it walks
+     * every reject face and every slot of each target, because {@link IItemHandler} offers no
+     * cheaper way to ask where a stack fits. Six double chests is ~324 {@code insertItem} calls
+     * for a single stack, so draining all nine pool slots unbounded would be thousands of calls
+     * per tick per sorter — the exact server-thread stall {@code sorterMaxPerTick} exists to
+     * prevent for routing. The counter is per attempt rather than per success, so a full target
+     * cannot be rescanned nine times a tick for nothing.
+     *
+     * <p>The budget is the only thing bounding this. Do <b>not</b> also hoist the handler
+     * lookups into a once-per-tick list here: that resolves capabilities on every tick of every
+     * sorter regardless of whether anything needs rejecting, and it stalled the gametest oracle
+     * hard enough to hang the run at 47 of 192 tests. {@link #pushToRejectTargets} resolves them
+     * lazily so a sorter with nothing to reject does no capability work at all.
+     *
+     * <p>The budget is deliberately <i>separate</i> from routing's rather than shared: a flood
+     * of junk must not be able to consume the routing budget and stall the sorter's actual job.
      *
      * <p>Also the recovery path for items stranded by a live rule change. {@code routeOneItem}
      * skips an item that entered valid and later lost its FU value or was blacklisted, and the
      * pool is not externally extractable, so before this existed only a player opening the GUI
-     * could clear one.
+     * could clear one. Recovery needs reject routing enabled and a target with room, like any
+     * other push.
      */
     private void drainRejects() {
         if (!MC3DPrintConfig.sorterRejectRouting() || rejectFaces.isEmpty()) {
             return;
         }
-        for (int slot = 0; slot < pool.getSlots(); slot++) {
+        int budget = MC3DPrintConfig.sorterMaxPerTick();
+        int attempts = 0;
+        for (int slot = 0; slot < pool.getSlots() && attempts < budget; slot++) {
             ItemStack stack = pool.getStackInSlot(slot);
             if (stack.isEmpty() || routable(stack)) {
                 continue;
             }
+            attempts++;
             // Insert first, then write back the remainder, so a partial push can never void
             // the part that was not accepted.
             ItemStack remainder = pushToRejectTargets(stack.copy());
@@ -315,7 +334,15 @@ public class SorterBlockEntity extends BlockEntity implements MenuProvider {
         }
     }
 
-    /** Inserts as much of {@code stack} as the reject targets accept; returns what is left. */
+    /**
+     * Inserts as much of {@code stack} as the reject targets accept; returns what is left.
+     *
+     * <p>Handlers are resolved here, inside the per-stack path, rather than hoisted into a
+     * once-per-tick list in {@link #drainRejects()}. Hoisting looks cheaper and is not: it
+     * resolves capabilities on <b>every</b> tick of <b>every</b> sorter, including the
+     * overwhelmingly common case of a sorter with nothing to reject, where this way does no
+     * capability work at all. Resolving lazily keeps an idle sorter genuinely idle.
+     */
     private ItemStack pushToRejectTargets(ItemStack stack) {
         for (Direction dir : rejectFaces) {
             if (stack.isEmpty()) {

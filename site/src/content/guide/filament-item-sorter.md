@@ -34,7 +34,7 @@ What it does with them instead depends on whether you have given it somewhere to
 
 **Put a chest against any face of the sorter.** Un-windable items are then accepted and pushed into that chest on the next tick, so you can point a completely unsorted item stream at the sorter and let it separate the windable from the rest.
 
-Anything that stores items works: a chest, a barrel, a hopper, or a pipe or conduit from another mod. The sorter checks all six faces and fills them in turn, splitting a stack across more than one container if the first runs out of room. There is nothing to configure and no direction to set.
+Most containers work: a chest, a barrel, a hopper, or a pipe or conduit from another mod. It has to be something other mods and pipes can insert into as well; a block that does not expose an item inventory is skipped. The sorter checks all six faces and fills them in turn, splitting a stack across more than one container if the first runs out of room. There is nothing to configure and no direction to set.
 
 Two details worth knowing:
 
@@ -43,7 +43,7 @@ Two details worth knowing:
 
 With **no** such container attached, un-windable items are turned away at the door and never enter the pool at all, including when you try to shift-click them in by hand. That was the only behaviour before this existed, so an existing build keeps working exactly as it did.
 
-> Avoid wiring a pipe that both feeds the sorter *and* pulls from the reject chest. The junk will loop between them forever. It is harmless (nothing is lost, no power is used, and real items keep routing throughout) but it is pointless traffic.
+> Avoid wiring a pipe that both feeds the sorter *and* pulls from the reject chest. The junk will loop between them indefinitely. Nothing is lost, no power is used, and real items keep routing throughout, so it will not break anything, but it does not stop on its own either: as long as something keeps emptying the reject container, the loop keeps running and burning item-transfer throughput.
 
 Reject routing is **on by default**. Turn it off with `[sorter] rejectRouting` in `mc3dprint-common.toml`.
 
@@ -59,7 +59,7 @@ Items are **never voided**. When the pool fills, your hoppers back up. That visi
 
 The pool is a one-way funnel: a hopper can feed it, but nothing can pull items back out. Open the GUI if you need to retrieve something by hand.
 
-If an item in the pool stops being windable while it is sitting there (its value changes, or it is added to the blacklist), it is treated as a reject from then on and leaves through the attached container like any other.
+If an item in the pool stops being windable while it is sitting there (its value changes, or it is added to the blacklist), it is treated as a reject from then on and leaves through the attached container, provided reject routing is on and that container has room. Otherwise it stays in the pool as before.
 
 ## Sharing the load
 

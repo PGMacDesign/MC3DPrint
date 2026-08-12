@@ -27,8 +27,10 @@ Consequences of adding no slots:
 - The external capability handler stays 9 slots and stays insert-only, so the one-way funnel
   holds literally rather than in spirit.
 - Save data is unchanged. The pool already persists, and nothing else needs to.
-- With no adjacent inventory the behaviour is byte-for-byte what it is today, so no existing
-  build changes behaviour on update.
+- With no adjacent item handler the behaviour is byte-for-byte what it is today. A build that
+  already has one against a sorter does change: junk it used to refuse is now accepted and
+  pushed into that container, since the toggle ships enabled. That is the only behavioural
+  change on update, and it is bounded by what the container will hold.
 
 ### Push on the tick, not inside the insert call
 
@@ -52,17 +54,26 @@ tick.
 
 ### Choosing a dump target
 
-Scan the six faces for an item handler via `TransferCompat.findItems(level, pos, side)`, which
-is already version-guarded for the 1.21.9+ handler change. Take the first that accepts the
-stack. No facing property, no orientation state, no configuration.
+Scan the six faces for a **compatible external item handler** via
+`TransferCompat.findItems(level, pos, side)`, which is already version-guarded for the 1.21.9+
+handler change. A block that exposes no item capability is simply not a candidate, so this is
+narrower than "any container". No facing property, no orientation state, no configuration.
+
+Faces are filled in order and a stack splits across them: each target takes what it can and
+the remainder moves to the next, with whatever is still left staying in the pool.
 
 Two exclusions matter:
 
 - **The mod's own machines are never dump targets.** `WinderBlockEntity`'s input slot accepts
   any item (`isItemValid` only filters the spool slot), so a sorter beside a winder, which is
-  the normal layout, would otherwise push bedrock straight into it and jam it. Exclude by block
-  entity type: printer, casing, converter, clock generator, redstone clock, rack, cable,
-  repository, sorter, winder.
+  the normal layout, would otherwise push bedrock straight into it and jam it.
+
+  Two different mechanisms do this work, and conflating them would be misleading. `isOwnMachine`
+  explicitly rejects the four block entities that actually expose an item capability: printer,
+  winder, clock generator, sorter. Everything else in the mod (casing, converter, redstone
+  clock, rack, repository, cable) is excluded only because it registers no item capability and
+  so is never returned in the first place. Adding an item capability to any of them means
+  adding it to `isOwnMachine` in the same change.
 - **The MC3D Cable needs no special case** beyond that exclusion. It is registered for energy,
   filament source and winder routing only, never for an item capability, so it can never be
   selected and never competes for a face.
@@ -73,9 +84,11 @@ A pipe configured to both pull from the dump target and insert into the sorter w
 junk forever. This is not guarded against, for the same reason the direction setting was
 dropped: `insertItem` carries no direction, so preventing it means recording an arrival face
 per stack and persisting it, and that only closes the tight case (out one face and back in
-another loops identically). The loop is benign: nothing is voided, the sorter draws no power,
-it is self-limiting once the target fills, and routable items keep moving throughout. Document
-it on both doc surfaces rather than carrying permanent state to half-prevent it.
+another loops identically). Nothing is voided, the sorter draws no power, and routable items
+keep moving throughout, so it is not destructive. It is **not** reliably self-limiting: it
+settles only if the target fills, and a pipe that keeps draining that target means the loop
+runs and consumes transfer work until the wiring changes. Document it on both doc surfaces
+rather than carrying permanent state to half-prevent it.
 
 ## Invariants
 
@@ -106,13 +119,15 @@ it on both doc surfaces rather than carrying permanent state to half-prevent it.
      empty.
 
 5. **Routing is never starved** — junk awaiting a push cannot stop routable items from moving.
-   - Guarded by: the tick drains junk before routing, so junk holds pool slots for at most one
-     tick while the target has room; once the target is full the door refuses further junk.
+   - Guarded by: the drain spends its own budget, not routing's, so routing always gets its
+     full `sorterMaxPerTick` regardless of how much junk is queued. Junk clears at the budget
+     rate rather than all in one tick, and once the target is full the door refuses more.
    - Test: fill eight pool slots with junk and one with cobblestone, tick once, assert the
      cobblestone reached its winder.
 
 6. **Stranded items recover** — an item that entered the pool valid and later became unroutable
-   is removed rather than held forever.
+   leaves via the reject path whenever reject routing is enabled and a target has room for it.
+   With routing off or no target, it stays pooled, exactly as it did before.
    - Guarded by: the tick's drain treats "in the pool but no longer acceptable" the same as
      newly arrived junk.
    - Test: insert cobblestone, block it at runtime via `ModItemTags.blockWinding`, tick, assert
@@ -140,10 +155,10 @@ a few lines.
 
 ### `config/MC3DPrintConfig.java`
 
-Optional. If added, one boolean under the existing `sorter` section next to
-`SORTER_MAX_PER_TICK`, defaulting to enabled, so the behaviour can be turned off without
-removing the block. Recommend including it: it is three lines and makes the one behavioural
-change on update revertible.
+One boolean, `rejectRouting`, under the existing `sorter` section next to
+`SORTER_MAX_PER_TICK`, **defaulting to enabled**. It scopes reject routing only; the sorter
+itself is never disabled by it. Three lines, and it makes the one behavioural change on update
+revertible without removing the block.
 
 ### Tests
 
@@ -178,7 +193,12 @@ PR.
 
 1. **The config toggle ships.** Three lines, and it makes the one behavioural change on update
    revertible without removing the block.
-2. **The drain is unbounded and separate from the routing budget.** It is capped implicitly at
-   nine pushes per tick, one per pool slot, each a single `insertItem` call, so there is nothing
-   to protect against. Sharing `sorterMaxPerTick` with routing would let a flood of junk consume
-   the routing budget, which is precisely what invariant 5 forbids.
+2. **The drain is bounded by `sorterMaxPerTick`, on its own counter separate from routing's.**
+   An earlier version of this plan called it unbounded on the grounds that it costs one
+   `insertItem` call per pool slot. That is wrong: a push walks every reject face and every slot
+   of each target, because `IItemHandler` offers no cheaper way to ask where a stack fits. Six
+   double chests is ~324 calls for one stack, so an unbounded drain of nine slots is thousands
+   of calls per tick per sorter — the server-thread stall `sorterMaxPerTick` exists to prevent.
+   The counter increments per attempt, not per success, so a full target cannot be rescanned
+   nine times a tick for nothing. It stays separate from routing's budget because a flood of
+   junk must not be able to consume it and stall the sorter's actual job.
