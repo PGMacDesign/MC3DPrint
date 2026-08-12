@@ -15,8 +15,11 @@ import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestAssertException;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.world.Container;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraftforge.gametest.GameTestHolder;
 import net.minecraftforge.gametest.PrefixGameTestTemplate;
 
@@ -73,6 +76,27 @@ public class SorterGameTests {
     private static int inputCount(WinderBlockEntity winder) {
         return winder.inventory().getStackInSlot(WinderBlockEntity.SLOT_INPUT).getCount();
     }
+
+    /** A vanilla chest, the stand-in for any non-MC3DPrint inventory used as a reject target. */
+    private static Container placeChest(GameTestHelper helper, BlockPos pos) {
+        helper.setBlock(pos, Blocks.CHEST);
+        if (!(helper.getBlockEntity(pos) instanceof Container container)) {
+            throw new GameTestAssertException("Chest container missing at " + pos);
+        }
+        return container;
+    }
+
+    private static int countIn(Container container, Item item) {
+        int total = 0;
+        for (int i = 0; i < container.getContainerSize(); i++) {
+            ItemStack stack = container.getItem(i);
+            if (stack.getItem() == item) {
+                total += stack.getCount();
+            }
+        }
+        return total;
+    }
+
 
     // --- 1. Route by tier, direct touch ---
 
@@ -258,6 +282,158 @@ public class SorterGameTests {
             return;
         }
         helper.succeed();
+    }
+
+    // --- 9. Reject routing: un-windable items out to an adjacent non-MC3DPrint inventory ---
+    //
+    // The negative half of the door is already covered by refusesBlacklistedAndUnvalued above,
+    // which places a bare sorter with no neighbours. It must keep passing untouched: with no
+    // reject target, junk is refused exactly as it was before this feature existed.
+
+    @GameTest(template = "empty5", timeoutTicks = 120)
+    public static void acceptsJunkWhenRejectTargetAdjacent(GameTestHelper helper) {
+        SorterBlockEntity sorter = placeSorter(helper, new BlockPos(2, 1, 2));
+        Container chest = placeChest(helper, new BlockPos(3, 1, 2));
+
+        // The door reads a face cache refreshed on tick, so let one tick populate it first.
+        helper.runAfterDelay(2, () -> {
+            if (!sorter.pool().insertItem(0, new ItemStack(Items.STICK, 8), false).isEmpty()) {
+                helper.fail("blacklisted sticks must be accepted when an adjacent chest can take them");
+            }
+        });
+        helper.succeedWhen(() -> {
+            int inChest = countIn(chest, Items.STICK);
+            if (inChest != 8) {
+                throw new GameTestAssertException("chest should hold the 8 rejected sticks, got " + inChest);
+            }
+            if (!sorter.pool().getStackInSlot(0).isEmpty()) {
+                throw new GameTestAssertException("the pool slot must be clear once the push lands");
+            }
+        });
+    }
+
+    @GameTest(template = "empty5", timeoutTicks = 120)
+    public static void rejectPushConservesItemsWhenTargetNearlyFull(GameTestHelper helper) {
+        SorterBlockEntity sorter = placeSorter(helper, new BlockPos(2, 1, 2));
+        Container chest = placeChest(helper, new BlockPos(3, 1, 2));
+
+        // Room for exactly 4 more sticks, and nowhere else for them to go.
+        chest.setItem(0, new ItemStack(Items.STICK, 60));
+        for (int i = 1; i < chest.getContainerSize(); i++) {
+            chest.setItem(i, new ItemStack(Items.STONE, 64));
+        }
+
+        helper.runAfterDelay(2, () -> sorter.pool().insertItem(0, new ItemStack(Items.STICK, 8), false));
+        helper.succeedWhen(() -> {
+            int inChest = countIn(chest, Items.STICK);
+            int inPool = sorter.pool().getStackInSlot(0).getCount();
+            if (inChest != 64) {
+                throw new GameTestAssertException("the chest stick slot should top out at 64, got " + inChest);
+            }
+            if (inPool != 4) {
+                throw new GameTestAssertException("the 4 sticks that did not fit must stay pooled, got " + inPool);
+            }
+            if ((inChest - 60) + inPool != 8) {
+                throw new GameTestAssertException("a partial push created or destroyed items");
+            }
+        });
+    }
+
+    @GameTest(template = "empty5", timeoutTicks = 80)
+    public static void simulatedInsertWritesNothing(GameTestHelper helper) {
+        SorterBlockEntity sorter = placeSorter(helper, new BlockPos(2, 1, 2));
+        Container chest = placeChest(helper, new BlockPos(3, 1, 2));
+
+        // Pipes call insertItem with simulate=true to plan a move. If the door pushed to the
+        // chest instead of merely asking whether it would fit, that plan would duplicate items.
+        helper.runAfterDelay(2, () -> {
+            ItemStack sticks = new ItemStack(Items.STICK, 8);
+            if (!sorter.getItemHandler(Direction.UP).insertItem(0, sticks, true).isEmpty()) {
+                helper.fail("a simulated insert of acceptable junk should report full acceptance");
+                return;
+            }
+            if (countIn(chest, Items.STICK) != 0) {
+                helper.fail("simulate must not push anything into the chest");
+                return;
+            }
+            if (!sorter.pool().getStackInSlot(0).isEmpty()) {
+                helper.fail("simulate must not write into the pool");
+                return;
+            }
+            if (sticks.getCount() != 8) {
+                helper.fail("simulate must not mutate the caller's stack");
+                return;
+            }
+            helper.succeed();
+        });
+    }
+
+    @GameTest(template = "empty5", timeoutTicks = 80)
+    public static void winderIsNeverARejectTarget(GameTestHelper helper) {
+        int tier = cobbleTier();
+        SorterBlockEntity sorter = placeSorter(helper, new BlockPos(2, 1, 2));
+        WinderBlockEntity winder = placeWinder(helper, new BlockPos(3, 1, 2), blankSpool(tier));
+
+        // A winder's input slot accepts ANY item — only its spool slot is filtered — so without
+        // the own-machine exclusion the sorter would push junk into the winder beside it and
+        // jam it. That layout is the normal one, not a corner case.
+        helper.runAfterDelay(2, () -> {
+            if (sorter.pool().insertItem(0, new ItemStack(Items.STICK, 8), false).getCount() != 8) {
+                helper.fail("a winder must not count as a reject target, so junk stays refused");
+                return;
+            }
+            if (inputCount(winder) != 0) {
+                helper.fail("junk must never be pushed into a winder's input slot");
+                return;
+            }
+            helper.succeed();
+        });
+    }
+
+    @GameTest(template = "empty5", timeoutTicks = 120)
+    public static void junkDoesNotStarveRouting(GameTestHelper helper) {
+        int tier = cobbleTier();
+        SorterBlockEntity sorter = placeSorter(helper, new BlockPos(2, 1, 2));
+        WinderBlockEntity winder = placeWinder(helper, new BlockPos(1, 1, 2), blankSpool(tier));
+        placeChest(helper, new BlockPos(3, 1, 2));
+
+        // Eight slots of junk against one routable item: the drain is unbounded precisely so it
+        // cannot spend the routing budget and leave the sorter's actual job undone.
+        for (int slot = 0; slot < 8; slot++) {
+            sorter.pool().setStackInSlot(slot, new ItemStack(Items.BEDROCK, 1));
+        }
+        sorter.pool().setStackInSlot(8, new ItemStack(Items.COBBLESTONE, 1));
+
+        helper.succeedWhen(() -> {
+            if (inputCount(winder) != 1) {
+                throw new GameTestAssertException(
+                        "the routable item must still reach its winder, got " + inputCount(winder));
+            }
+        });
+    }
+
+    @GameTest(template = "empty5", timeoutTicks = 120)
+    public static void strandedPoolItemRecoversToRejectTarget(GameTestHelper helper) {
+        SorterBlockEntity sorter = placeSorter(helper, new BlockPos(2, 1, 2));
+        Container chest = placeChest(helper, new BlockPos(3, 1, 2));
+
+        // Stands in for an item that entered the pool valid and later lost its FU value or was
+        // blacklisted. routeOneItem skips such an item and the pool is not externally
+        // extractable, so before reject routing only a player opening the GUI could clear it.
+        // Written straight into the pool rather than by mutating the live blacklist, which is
+        // shared state across concurrently running tests.
+        sorter.pool().setStackInSlot(0, new ItemStack(Items.BEDROCK, 3));
+
+        helper.succeedWhen(() -> {
+            int inChest = countIn(chest, Items.BEDROCK);
+            if (inChest != 3) {
+                throw new GameTestAssertException(
+                        "a stranded pool item must be pushed to the reject target, chest has " + inChest);
+            }
+            if (!sorter.pool().getStackInSlot(0).isEmpty()) {
+                throw new GameTestAssertException("the pool slot must be cleared once the item is pushed out");
+            }
+        });
     }
 
     // --- 8. The cable_connectable tag loads, and the cable renders an arm toward the sorter ---
