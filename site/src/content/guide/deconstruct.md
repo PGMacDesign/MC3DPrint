@@ -10,7 +10,7 @@ Every printer and fabricator can run **in reverse**. Select a region and the mac
 ## Arming a region
 
 1. Set **two corners** with the Structure Scanner, exactly like scanning.
-2. **Sneak-click the machine** with the scanner. That hands the selection over as its deconstruct region and flips the machine into Deconstruct Mode.
+2. **Sneak-click the machine** with the scanner. That hands the selection over as its deconstruct region and flips the machine into Deconstruct Mode. On a Tier 5+ fabricator, sneak-clicking **any casing** of the formed pad arms the controller buried in the middle, so you never have to find the controller block itself.
 
 A machine in Deconstruct Mode with **no armed region** shows **No Region Set** in the status line; it isn't broken, it's waiting for a selection. Hand it one, or toggle the GUI's **Mode** button back to Print.
 

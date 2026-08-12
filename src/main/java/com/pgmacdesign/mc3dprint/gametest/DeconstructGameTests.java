@@ -4,9 +4,14 @@ import com.pgmacdesign.mc3dprint.MC3DPrint;
 import com.pgmacdesign.mc3dprint.fu.FuValue;
 import com.pgmacdesign.mc3dprint.fu.FuValueRegistry;
 import com.pgmacdesign.mc3dprint.fu.SpoolItem;
+import com.pgmacdesign.mc3dprint.machine.MachineTier;
 import com.pgmacdesign.mc3dprint.machine.PrinterBlockEntity;
+import com.pgmacdesign.mc3dprint.machine.multiblock.ControllerBlock;
+import com.pgmacdesign.mc3dprint.machine.multiblock.MultiblockPattern;
 import com.pgmacdesign.mc3dprint.registry.ModBlocks;
+import com.pgmacdesign.mc3dprint.registry.ModDataComponents;
 import com.pgmacdesign.mc3dprint.registry.ModItems;
+import com.pgmacdesign.mc3dprint.scanner.ScanData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestAssertException;
@@ -206,5 +211,104 @@ public class DeconstructGameTests {
             }
             helper.succeed();
         });
+    }
+
+    // --- Scanner region hand-off onto a multiblock ---
+
+    private static final BlockPos T5_CONTROLLER = new BlockPos(2, 1, 2);
+
+    /** A formed T5 pad (all Printer Casing) centred on {@link #T5_CONTROLLER}. */
+    private static PrinterBlockEntity formedT5(GameTestHelper helper) {
+        for (BlockPos offset : MultiblockPattern.componentOffsets(MachineTier.T5)) {
+            helper.setBlock(T5_CONTROLLER.offset(offset), ModBlocks.PRINTER_CASING.get());
+        }
+        helper.setBlock(T5_CONTROLLER, ModBlocks.CONTROLLERS.get(0).get());
+        BlockPos abs = helper.absolutePos(T5_CONTROLLER);
+        if (MultiblockPattern.validate(helper.getLevel(), abs, MachineTier.T5) != null) {
+            throw new GameTestAssertException("T5 pattern should validate");
+        }
+        helper.getLevel().setBlock(abs,
+                helper.getLevel().getBlockState(abs).setValue(ControllerBlock.FORMED, true),
+                net.minecraft.world.level.block.Block.UPDATE_ALL);
+        if (!(helper.getBlockEntity(T5_CONTROLLER) instanceof PrinterBlockEntity printer)) {
+            throw new GameTestAssertException("Controller block entity missing");
+        }
+        return printer;
+    }
+
+    /** Sneak-right-click {@code target} with a scanner holding corners {@code a}/{@code b}. */
+    private static ItemStack sneakClickWithScanner(GameTestHelper helper, BlockPos target,
+            BlockPos a, BlockPos b) {
+        ItemStack scanner = new ItemStack(ModItems.SCANNER.get());
+        scanner.set(ModDataComponents.SCAN.get(), new ScanData(
+                Optional.of(helper.absolutePos(a)), Optional.of(helper.absolutePos(b)), false));
+
+        net.minecraft.world.entity.player.Player player =
+                helper.makeMockPlayer(net.minecraft.world.level.GameType.SURVIVAL);
+        player.setShiftKeyDown(true); // the hand-off is the SNEAK-click branch
+        player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, scanner);
+
+        BlockPos absTarget = helper.absolutePos(target);
+        scanner.useOn(new net.minecraft.world.item.context.UseOnContext(
+                player, net.minecraft.world.InteractionHand.MAIN_HAND,
+                new net.minecraft.world.phys.BlockHitResult(
+                        net.minecraft.world.phys.Vec3.atCenterOf(absTarget),
+                        net.minecraft.core.Direction.UP, absTarget, false)));
+        return scanner;
+    }
+
+    /**
+     * A sneak-click on ANY casing arms the buried controller. Regression: the hand-off used to
+     * require the controller block itself, so on an N×N pad every other click fell through to
+     * the corner-setting path and silently overwrote the selection being handed over.
+     */
+    @GameTest(template = "empty5", timeoutTicks = 40)
+    public static void scannerArmsDeconstructRegionFromAnyCasing(GameTestHelper helper) {
+        PrinterBlockEntity printer = formedT5(helper);
+        BlockPos a = new BlockPos(1, 3, 1);
+        BlockPos b = new BlockPos(2, 3, 2);
+        BlockPos casing = T5_CONTROLLER.offset(1, 0, 0); // an edge casing, NOT the controller
+
+        ItemStack scanner = sneakClickWithScanner(helper, casing, a, b);
+
+        if (!printer.deconstructMode()) {
+            helper.fail("clicking a casing left the controller in Print mode");
+            return;
+        }
+        BlockPos min = printer.deconstructRegionMin();
+        BlockPos size = printer.deconstructRegionSize();
+        if (min == null || !min.equals(helper.absolutePos(a))) {
+            helper.fail("region min was " + min + ", expected " + helper.absolutePos(a));
+            return;
+        }
+        if (size == null || !size.equals(new BlockPos(2, 1, 2))) {
+            helper.fail("region size was " + size + ", expected 2x1x2");
+            return;
+        }
+        // The selection is handed over, never consumed or clobbered by a stray corner write.
+        ScanData after = scanner.getOrDefault(ModDataComponents.SCAN.get(), ScanData.EMPTY);
+        if (!after.cornerA().equals(Optional.of(helper.absolutePos(a)))
+                || !after.cornerB().equals(Optional.of(helper.absolutePos(b)))) {
+            helper.fail("scanner corners were modified by the hand-off: " + after);
+            return;
+        }
+        helper.succeed();
+    }
+
+    /** An UNformed casing belongs to no machine, so it stays a plain corner-setting click. */
+    @GameTest(template = "empty5", timeoutTicks = 40)
+    public static void unformedCasingStillSetsAScannerCorner(GameTestHelper helper) {
+        BlockPos casing = new BlockPos(1, 1, 1);
+        helper.setBlock(casing, ModBlocks.PRINTER_CASING.get());
+
+        ItemStack scanner = sneakClickWithScanner(helper, casing,
+                new BlockPos(1, 3, 1), new BlockPos(2, 3, 2));
+
+        ScanData after = scanner.getOrDefault(ModDataComponents.SCAN.get(), ScanData.EMPTY);
+        if (!after.cornerA().equals(Optional.of(helper.absolutePos(casing)))) {
+            helper.fail("expected corner A at the clicked casing, got " + after.cornerA());
+            return;
+        }
+        helper.succeed();
     }
 }
