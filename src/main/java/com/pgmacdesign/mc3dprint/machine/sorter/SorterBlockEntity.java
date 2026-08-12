@@ -1,6 +1,7 @@
 package com.pgmacdesign.mc3dprint.machine.sorter;
 
 import com.pgmacdesign.mc3dprint.compat.BeData;
+import com.pgmacdesign.mc3dprint.compat.TransferCompat;
 import com.pgmacdesign.mc3dprint.config.MC3DPrintConfig;
 import com.pgmacdesign.mc3dprint.fu.FuValue;
 import com.pgmacdesign.mc3dprint.fu.FuValueRegistry;
@@ -52,15 +53,27 @@ import java.util.Set;
  * pool and retried; nothing is ever voided. The pool is <b>insert-only</b> to the outside
  * world — {@link #getItemHandler} hands back a wrapper whose {@code extractItem} is a no-op —
  * so a hopper/pipe funnels in but can never pull back out.
+ *
+ * <p><b>Reject routing</b> softens that door rather than replacing it. When a non-MC3DPrint
+ * inventory sits on any face, un-windable items are accepted and pushed into it by
+ * {@link #drainRejects()} on the next tick, so a mixed stream can be pointed straight at the
+ * sorter. With no such inventory, or with the feature configured off, they are refused exactly
+ * as before, which is why no existing build changes behaviour.
+ *
+ * <p>The decision and the action are deliberately split. The door ({@code isItemValid}) only
+ * answers the read-only question "would a target take this", because it runs inside
+ * {@code insertItem} — where a write would corrupt a caller's {@code simulate} pass, and where
+ * pushing to a neighbouring sorter could recurse without bound. The write happens on the tick,
+ * where this block already mutates neighbours to feed winders.
  */
 public class SorterBlockEntity extends BlockEntity implements MenuProvider {
     public static final int POOL_SLOTS = 9;
     public static final int MAX_TIER = 8;
 
     /**
-     * The general routing pool. {@code isItemValid} is the permanent-reject door: an unvalued
-     * or winder-blacklisted item never enters, for BOTH capability insertion (hoppers/pipes)
-     * and menu shift-click (menu slots honour {@code isItemValid}).
+     * The general routing pool. {@code isItemValid} is the door: a routable item always enters,
+     * an un-windable one only when a reject target would take it. Applies to BOTH capability
+     * insertion (hoppers/pipes) and menu shift-click (menu slots honour {@code isItemValid}).
      */
     private final ItemStackHandler pool = new ItemStackHandler(POOL_SLOTS) {
         @Override
@@ -87,6 +100,15 @@ public class SorterBlockEntity extends BlockEntity implements MenuProvider {
     /** Per-tier reachable-winder counts, refreshed each tick for the GUI readout only. */
     private int[] winderCountByTier = new int[MAX_TIER + 1];
 
+    /**
+     * Faces currently holding a usable reject target, refreshed each tick. Cached because the
+     * door consults it on every insertion attempt, and a hopper retries against all nine pool
+     * slots each time; re-scanning six faces per slot per attempt is not worth the precision.
+     * Handlers are resolved live from these faces rather than cached themselves, so a target
+     * removed mid-tick is simply not found.
+     */
+    private List<Direction> rejectFaces = List.of();
+
     public SorterBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.FILAMENT_ITEM_SORTER.get(), pos, state);
     }
@@ -95,18 +117,30 @@ public class SorterBlockEntity extends BlockEntity implements MenuProvider {
         sorter.tick();
     }
 
-    /** True if the stack is allowed into the pool (has an FU value AND is not winder-blacklisted). */
-    private static boolean acceptable(ItemStack stack) {
+    /** True if the stack can be wound, i.e. has an FU value AND is not winder-blacklisted. */
+    private static boolean routable(ItemStack stack) {
+        return FuValueRegistry.valueOf(stack).isPresent() && !ModItemTags.isWinderBlacklisted(stack);
+    }
+
+    /**
+     * The door. A routable item always enters; an un-windable one only when a reject target
+     * would take it, so that it can be pushed straight back out on the next tick. Read-only by
+     * construction — this runs inside {@code insertItem}, including a caller's {@code simulate}
+     * pass, and must never write.
+     */
+    private boolean acceptable(ItemStack stack) {
         if (stack.isEmpty()) {
             return true; // allow clearing a slot
         }
-        return FuValueRegistry.valueOf(stack).isPresent() && !ModItemTags.isWinderBlacklisted(stack);
+        return routable(stack) || rejectTargetWouldAccept(stack);
     }
 
     private void tick() {
         if (level == null || level.isClientSide()) {
             return;
         }
+        refreshRejectFaces();
+        drainRejects();
         List<WinderBlockEntity> winders = reachableWinders();
         recountWinders(winders); // keep the GUI readout fresh even while idle
         if (isPoolEmpty()) {
@@ -185,6 +219,117 @@ public class SorterBlockEntity extends BlockEntity implements MenuProvider {
             return true;
         }
         return false;
+    }
+
+    // --- Reject routing: un-windable items out to an adjacent inventory ---
+
+    /**
+     * The mod's own machines are never reject targets. Only four of them expose an item
+     * capability at all, and the winder is the one that makes this mandatory rather than
+     * tidy: its input slot accepts <i>any</i> item (only the spool slot is filtered), so a
+     * sorter beside a winder — the normal layout — would otherwise push bedrock straight into
+     * it and jam it. The MC3D Cable needs no mention: it exposes no item capability, so it can
+     * never be found here and never competes for a face.
+     */
+    private static boolean isOwnMachine(@Nullable BlockEntity be) {
+        return be instanceof SorterBlockEntity
+                || be instanceof WinderBlockEntity
+                || be instanceof com.pgmacdesign.mc3dprint.machine.PrinterBlockEntity
+                || be instanceof com.pgmacdesign.mc3dprint.machine.ClockGeneratorBlockEntity;
+    }
+
+    /** The item handler on {@code dir}, or null if absent or one of the mod's own machines. */
+    @Nullable
+    private IItemHandler rejectHandler(Direction dir) {
+        if (level == null) {
+            return null;
+        }
+        BlockPos neighbour = worldPosition.relative(dir);
+        if (isOwnMachine(level.getBlockEntity(neighbour))) {
+            return null;
+        }
+        return TransferCompat.findItems(level, neighbour, dir.getOpposite());
+    }
+
+    private void refreshRejectFaces() {
+        if (level == null || !MC3DPrintConfig.sorterRejectRouting()) {
+            rejectFaces = List.of();
+            return;
+        }
+        List<Direction> faces = new ArrayList<>();
+        for (Direction dir : Direction.values()) {
+            if (rejectHandler(dir) != null) {
+                faces.add(dir);
+            }
+        }
+        rejectFaces = faces;
+    }
+
+    /** Simulate-only: would any reject target take at least one of these? */
+    private boolean rejectTargetWouldAccept(ItemStack stack) {
+        if (!MC3DPrintConfig.sorterRejectRouting() || rejectFaces.isEmpty()) {
+            return false;
+        }
+        ItemStack one = stack.copyWithCount(1);
+        for (Direction dir : rejectFaces) {
+            IItemHandler target = rejectHandler(dir);
+            if (target == null) {
+                continue;
+            }
+            for (int slot = 0; slot < target.getSlots(); slot++) {
+                if (target.insertItem(slot, one, true).isEmpty()) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Push every un-routable pool stack out to a reject target. Unbounded on purpose, unlike
+     * routing: this is capped at one insertion pass per pool slot, so nine per tick, and
+     * sharing {@code sorterMaxPerTick} with routing would let a flood of junk consume the
+     * routing budget and stall the sorter's actual job.
+     *
+     * <p>Also the recovery path for items stranded by a live rule change. {@code routeOneItem}
+     * skips an item that entered valid and later lost its FU value or was blacklisted, and the
+     * pool is not externally extractable, so before this existed only a player opening the GUI
+     * could clear one.
+     */
+    private void drainRejects() {
+        if (!MC3DPrintConfig.sorterRejectRouting() || rejectFaces.isEmpty()) {
+            return;
+        }
+        for (int slot = 0; slot < pool.getSlots(); slot++) {
+            ItemStack stack = pool.getStackInSlot(slot);
+            if (stack.isEmpty() || routable(stack)) {
+                continue;
+            }
+            // Insert first, then write back the remainder, so a partial push can never void
+            // the part that was not accepted.
+            ItemStack remainder = pushToRejectTargets(stack.copy());
+            if (remainder.getCount() != stack.getCount()) {
+                pool.setStackInSlot(slot, remainder.isEmpty() ? ItemStack.EMPTY : remainder);
+                setChanged();
+            }
+        }
+    }
+
+    /** Inserts as much of {@code stack} as the reject targets accept; returns what is left. */
+    private ItemStack pushToRejectTargets(ItemStack stack) {
+        for (Direction dir : rejectFaces) {
+            if (stack.isEmpty()) {
+                return ItemStack.EMPTY;
+            }
+            IItemHandler target = rejectHandler(dir);
+            if (target == null) {
+                continue;
+            }
+            for (int slot = 0; slot < target.getSlots() && !stack.isEmpty(); slot++) {
+                stack = target.insertItem(slot, stack, false);
+            }
+        }
+        return stack;
     }
 
     private boolean isPoolEmpty() {

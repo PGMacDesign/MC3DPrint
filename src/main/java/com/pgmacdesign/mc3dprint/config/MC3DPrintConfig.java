@@ -67,6 +67,7 @@ public final class MC3DPrintConfig {
     public static final ModConfigSpec.ConfigValue<List<? extends String>> FU_VALUES;
     public static final ModConfigSpec.BooleanValue BLUEPRINT_REPOSITORY_SHARED;
     public static final ModConfigSpec.IntValue SORTER_MAX_PER_TICK;
+    public static final ModConfigSpec.BooleanValue SORTER_REJECT_ROUTING;
     public static final ModConfigSpec.DoubleValue BLUEPRINT_CHANCE_MULTIPLIER;
     public static final ModConfigSpec.BooleanValue NO_DUPLICATE_BLUEPRINTS;
 
@@ -282,6 +283,14 @@ public final class MC3DPrintConfig {
                         "value would let one sorter starve the server thread. Per-sorter, not a global",
                         "budget, so cost scales with how many sorters you place. No RF cost.")
                 .defineInRange("maxRoutedPerTick", 4, 1, 64);
+        SORTER_REJECT_ROUTING = builder
+                .comment("TRUE - the sorter accepts un-windable items when a non-MC3DPrint inventory",
+                        "sits on any face, and pushes them into it on the next tick, so a mixed item",
+                        "stream can be pointed straight at the sorter.",
+                        "FALSE - un-windable items are refused at insertion, as they were before this",
+                        "existed. That is also the behaviour when no such inventory is adjacent, so",
+                        "turning this off only matters to builds that already have one.")
+                .define("rejectRouting", true);
         builder.pop();
 
         builder.comment("Resin: consumed-per-print blueprint modifiers. All effects apply only",
@@ -383,6 +392,11 @@ public final class MC3DPrintConfig {
 
     public static int cableTransferRate() {
         return CABLE_TRANSFER_RATE.get();
+    }
+
+    /** Whether the sorter pushes un-windable items into an adjacent non-MC3DPrint inventory. */
+    public static boolean sorterRejectRouting() {
+        return SORTER_REJECT_ROUTING.get();
     }
 
     /** Items routed per sorter per tick, defensively clamped to [1,64] at read. */
