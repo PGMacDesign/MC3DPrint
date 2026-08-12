@@ -82,7 +82,11 @@ public class StructurePrintGameTests {
         });
     }
 
-    @GameTest(template = "empty5", timeoutTicks = 200)
+    // 360 rather than 200: this test spends its first 60 ticks proving the printer does NOT
+    // start on its own, so a 200 budget left only 140 for the print itself, less than half
+    // what the siblings printing this same blueprint get. On a CPU-starved runner that ran
+    // out and reported the standing succeedWhen assertion as the failure.
+    @GameTest(template = "empty5", timeoutTicks = 360)
     public static void manualModeWaitsForStartTrigger(GameTestHelper helper) {
         BlockPos printerPos = new BlockPos(2, 1, 2);
         PrinterBlockEntity printer = poweredPrinter(helper, printerPos);
