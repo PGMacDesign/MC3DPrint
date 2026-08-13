@@ -78,6 +78,16 @@ public final class Blueprint {
         this.entities = List.copyOf(entities);
     }
 
+    /**
+     * The same blueprint under a different display name. Everything else is shared by
+     * reference: the fields are immutable, so the copy is cheap even for a large build.
+     * Used when a player renames a scan in the Blueprint Repository, so a re-burned disc
+     * carries the new name too.
+     */
+    public Blueprint withName(String newName) {
+        return new Blueprint(newName, sizeX, sizeY, sizeZ, palette, blocks, blockEntities, entities);
+    }
+
     public static Builder builder(String name, int sizeX, int sizeY, int sizeZ) {
         return new Builder(name, sizeX, sizeY, sizeZ);
     }
