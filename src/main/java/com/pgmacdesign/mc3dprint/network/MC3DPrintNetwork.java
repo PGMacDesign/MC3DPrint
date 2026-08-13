@@ -18,10 +18,33 @@ public final class MC3DPrintNetwork {
 
     /** Mod-bus listener (wired in the {@code @Mod} constructor). */
     public static void register(RegisterPayloadHandlersEvent event) {
-        event.registrar(PROTOCOL).playToClient(
-                RepositoryListingPacket.TYPE,
-                RepositoryListingPacket.STREAM_CODEC,
-                MC3DPrintNetwork::handleListing);
+        event.registrar(PROTOCOL)
+                .playToClient(
+                        RepositoryListingPacket.TYPE,
+                        RepositoryListingPacket.STREAM_CODEC,
+                        MC3DPrintNetwork::handleListing)
+                .playToServer(
+                        RepositoryRenamePacket.TYPE,
+                        RepositoryRenamePacket.STREAM_CODEC,
+                        MC3DPrintNetwork::handleRename);
+    }
+
+    /**
+     * Retitle a catalogued blueprint. Everything is re-checked here: the client is only
+     * asking. The open-menu check is the authorization — it proves the player is standing at
+     * a repository rather than replaying a packet from anywhere in the world.
+     */
+    private static void handleRename(RepositoryRenamePacket payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            if (!(context.player() instanceof ServerPlayer player)) {
+                return;
+            }
+            if (!(player.containerMenu
+                    instanceof com.pgmacdesign.mc3dprint.machine.repository.BlueprintRepositoryMenu menu)) {
+                return;
+            }
+            menu.renameFromClient(player, payload.id(), payload.name());
+        });
     }
 
     // Runs client-side only (playToClient), so ClientRepositoryHandler is loaded
@@ -31,7 +54,20 @@ public final class MC3DPrintNetwork {
                 payload.entries(), payload.printed()));
     }
 
+    /**
+     * Sends to a player only if their connection actually negotiated this payload. Without the
+     * check, NeoForge throws "may not be sent to the client" and takes the whole server-side
+     * action down with it — a GUI listing refresh is not worth that. It fires for any player
+     * that isn't a real modded client on the other end: fake players from automation mods, and
+     * the mock players gametests run actions as.
+     */
     public static void sendTo(ServerPlayer player, CustomPacketPayload packet) {
+        // isConnected() first: a fake player's listener has a Connection with a NULL channel,
+        // and hasChannel dereferences it. Order matters, not just the pair of checks.
+        if (!player.connection.getConnection().isConnected()
+                || !player.connection.hasChannel(packet.type())) {
+            return;
+        }
         PacketDistributor.sendToPlayer(player, packet);
     }
 }

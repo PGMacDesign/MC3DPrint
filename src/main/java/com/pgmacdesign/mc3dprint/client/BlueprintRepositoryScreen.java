@@ -5,6 +5,7 @@ import com.pgmacdesign.mc3dprint.compat.RenderCompat;
 import com.pgmacdesign.mc3dprint.blueprint.CuratedBlueprints;
 import com.pgmacdesign.mc3dprint.blueprint.repository.RepoEntry;
 import com.pgmacdesign.mc3dprint.machine.repository.BlueprintRepositoryMenu;
+import com.pgmacdesign.mc3dprint.network.RepositoryRenamePacket;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
@@ -18,6 +19,7 @@ import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 
 /**
  * Library Browser (R-A): a searchable list of catalogued blueprints (left), a
@@ -32,6 +34,9 @@ public class BlueprintRepositoryScreen extends AbstractContainerScreen<Blueprint
     private static final int DETAIL_X = 131, DETAIL_W = 110;
     private static final int PREVIEW_X = 135, PREVIEW_Y = 22, PREVIEW_W = 102, PREVIEW_H = 30;
     private static final int ACTION_Y = 132;
+    // Detail-column rename row. Shares the y the print-status line uses for official
+    // builds; a scan never draws that line, and only scans can be renamed.
+    private static final int RENAME_Y = 116;
 
     private static final int LABEL = 0xFFC0C0C8;
     private static final int LABEL_DIM = 0xFF7D8597;
@@ -47,6 +52,11 @@ public class BlueprintRepositoryScreen extends AbstractContainerScreen<Blueprint
 
     private EditBox search;
     private Button filterButton;
+    private EditBox renameBox;
+    private Button renameButton;
+    /** The entry the rename box is currently editing, so typing isn't clobbered every frame. */
+    @Nullable
+    private UUID renameTarget;
     private int printFilter = FILTER_ALL;
     private int scroll;
 
@@ -96,6 +106,76 @@ public class BlueprintRepositoryScreen extends AbstractContainerScreen<Blueprint
                         Component.translatable("gui.mc3dprint.repository.burn"),
                         b -> clickButton(BlueprintRepositoryMenu.BUTTON_BURN))
                 .bounds(leftPos + 156, topPos + ACTION_Y, 84, 18).build());
+
+        // Rename, for player scans only. Sits in the detail column on the row the
+        // print-status line uses for official builds, which a scan never draws.
+        renameBox = new EditBox(font, leftPos + DETAIL_X + 2, topPos + RENAME_Y, 76, 12,
+                Component.translatable("gui.mc3dprint.repository.rename"));
+        renameBox.setMaxLength(RepositoryRenamePacket.MAX_NAME_LENGTH);
+        renameBox.setHint(Component.translatable("gui.mc3dprint.repository.rename"));
+        addRenderableWidget(renameBox);
+        renameButton = Button.builder(Component.translatable("gui.mc3dprint.repository.rename_set"),
+                        b -> submitRename())
+                .bounds(leftPos + DETAIL_X + 80, topPos + RENAME_Y, 28, 12)
+                .tooltip(Tooltip.create(Component.translatable("gui.mc3dprint.repository.rename_tip")))
+                .build();
+        addRenderableWidget(renameButton);
+        syncRenameWidgets();
+    }
+
+    /**
+     * Shows the rename row only for a selected player scan, and refills it when the selection
+     * moves. Refilling is gated on the target actually changing so it never overwrites what
+     * the player is mid-way through typing.
+     */
+    private void syncRenameWidgets() {
+        RepoEntry entry = selected();
+        boolean renameable = entry != null && !entry.official();
+        if (renameBox == null || renameButton == null) {
+            return;
+        }
+        renameBox.visible = renameable;
+        renameBox.active = renameable;
+        renameButton.visible = renameable;
+        renameButton.active = renameable;
+        if (!renameable) {
+            renameTarget = null;
+            return;
+        }
+        if (!entry.id().equals(renameTarget)) {
+            renameTarget = entry.id();
+            renameBox.setValue(entry.name());
+            renameBox.setCursorPosition(0);
+            renameBox.setHighlightPos(0);
+        }
+    }
+
+    private void submitRename() {
+        RepoEntry entry = selected();
+        if (entry == null || entry.official() || renameBox == null) {
+            return;
+        }
+        String name = RepositoryRenamePacket.sanitize(renameBox.getValue());
+        if (name.isEmpty() || name.equals(entry.name())) {
+            return; // nothing to do; the server would reject a blank anyway
+        }
+        sendRename(new RepositoryRenamePacket(entry.id(), name));
+        renameBox.setFocused(false);
+    }
+
+    /** 1.21.2 split the client send out of PacketDistributor into ClientPacketDistributor. */
+    private static void sendRename(RepositoryRenamePacket packet) {
+        //? if >=1.21.8 {
+        /*net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(packet);
+        *///?} else {
+        net.neoforged.neoforge.network.PacketDistributor.sendToServer(packet);
+        //?}
+    }
+
+    @Override
+    protected void containerTick() {
+        super.containerTick();
+        syncRenameWidgets();
     }
 
     private void clickButton(int id) {
@@ -317,39 +397,57 @@ public class BlueprintRepositoryScreen extends AbstractContainerScreen<Blueprint
         return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
     }
 
+    /** Whichever text field currently has focus (search or rename), or null. */
+    @Nullable
+    private EditBox focusedBox() {
+        if (search != null && search.isFocused()) {
+            return search;
+        }
+        if (renameBox != null && renameBox.visible && renameBox.isFocused()) {
+            return renameBox;
+        }
+        return null;
+    }
+
     //? if >=1.21.9 {
     /*@Override
     public boolean keyPressed(net.minecraft.client.input.KeyEvent event) {
-        // Let the focused search box consume typing (incl. 'e') instead of closing the GUI.
-        if (search != null && search.isFocused() && event.key() != 256) {
-            return search.keyPressed(event) || search.canConsumeInput();
+        // Let a focused text field consume typing (incl. 'e') instead of closing the GUI.
+        EditBox box = focusedBox();
+        if (box != null && event.key() != 256) {
+            if (box == renameBox && (event.key() == 257 || event.key() == 335)) {
+                submitRename(); // Enter commits, same as the button
+                return true;
+            }
+            return box.keyPressed(event) || box.canConsumeInput();
         }
         return super.keyPressed(event);
     }
 
     @Override
     public boolean charTyped(net.minecraft.client.input.CharacterEvent event) {
-        if (search != null && search.isFocused()) {
-            return search.charTyped(event);
-        }
-        return super.charTyped(event);
+        EditBox box = focusedBox();
+        return box != null ? box.charTyped(event) : super.charTyped(event);
     }
     *///?} else {
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        // Let the focused search box consume typing (incl. 'e') instead of closing the GUI.
-        if (search != null && search.isFocused() && keyCode != 256) {
-            return search.keyPressed(keyCode, scanCode, modifiers) || search.canConsumeInput();
+        // Let a focused text field consume typing (incl. 'e') instead of closing the GUI.
+        EditBox box = focusedBox();
+        if (box != null && keyCode != 256) {
+            if (box == renameBox && (keyCode == 257 || keyCode == 335)) {
+                submitRename(); // Enter commits, same as the button
+                return true;
+            }
+            return box.keyPressed(keyCode, scanCode, modifiers) || box.canConsumeInput();
         }
         return super.keyPressed(keyCode, scanCode, modifiers);
     }
 
     @Override
     public boolean charTyped(char c, int modifiers) {
-        if (search != null && search.isFocused()) {
-            return search.charTyped(c, modifiers);
-        }
-        return super.charTyped(c, modifiers);
+        EditBox box = focusedBox();
+        return box != null ? box.charTyped(c, modifiers) : super.charTyped(c, modifiers);
     }
     //?}
 

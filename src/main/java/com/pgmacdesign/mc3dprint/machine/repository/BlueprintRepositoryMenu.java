@@ -138,6 +138,16 @@ public class BlueprintRepositoryMenu extends AbstractContainerMenu {
         return false;
     }
 
+    /**
+     * Applies a rename request from this menu's viewer. Called only from the network handler,
+     * which has already established that this menu is the player's open container.
+     */
+    public void renameFromClient(ServerPlayer player, UUID id, String rawName) {
+        if (repository != null) {
+            repository.rename(player, id, rawName);
+        }
+    }
+
     @Override
     public ItemStack quickMoveStack(Player player, int slotIndex) {
         Slot slot = slots.get(slotIndex);

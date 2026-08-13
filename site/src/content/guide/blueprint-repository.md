@@ -17,6 +17,16 @@ Drop a written Blueprint Disc into the input slot and press `Deposit Disc`. The 
 
 To burn a copy: select a build, drop a `Blank Blueprint Disc` into the input slot, and press `STL to GCODE` for a fresh written disc. Burned copies keep the original's official or player-scan status, so the [Resin](/guide/resins-overview/) anti-dupe rule still holds.
 
+## Renaming your scans
+
+The Structure Scanner names what it captures after where it was standing: `Scan @ 307,70,10`. Fine for one scan, useless once you've deposited a handful.
+
+Select a scan in the library and a **rename** field appears under its details. Type a real name, press `Set` (or Enter), done. The new title sticks in the library **and** in the stored blueprint, so a disc you burn later carries it too.
+
+Only **player scans** can be renamed. Official curated builds keep their shipped names: they're content, and on a shared library one player's edit would retitle the build for everyone on the server.
+
+Names are capped at 48 characters, and formatting codes and line breaks are stripped.
+
 ## Shared or personal
 
 By default a repository is a **shared, world-level** library: everyone's deposits pool, every repository block sees the same catalogue, and breaking a block never loses it.

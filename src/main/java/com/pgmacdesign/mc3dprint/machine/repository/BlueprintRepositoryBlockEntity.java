@@ -9,6 +9,7 @@ import com.pgmacdesign.mc3dprint.blueprint.repository.RepositoryIndex;
 import com.pgmacdesign.mc3dprint.item.BlueprintDiscItem;
 import com.pgmacdesign.mc3dprint.network.MC3DPrintNetwork;
 import com.pgmacdesign.mc3dprint.network.RepositoryListingPacket;
+import com.pgmacdesign.mc3dprint.network.RepositoryRenamePacket;
 import com.pgmacdesign.mc3dprint.registry.ModBlockEntities;
 import com.pgmacdesign.mc3dprint.registry.ModItems;
 import net.minecraft.core.HolderLookup;
@@ -151,6 +152,47 @@ public class BlueprintRepositoryBlockEntity extends BlockEntity implements MenuP
         inventory.setStackInSlot(SLOT_IN, in);
         level.playSound(null, getBlockPos(), SoundEvents.UI_LOOM_TAKE_RESULT, SoundSource.BLOCKS, 0.7F, 1.1F);
         feedback(player, "burn_ok");
+    }
+
+    /**
+     * Retitles a catalogued scan, in the index AND in the stored blueprint, so a disc re-burned
+     * later carries the new name too.
+     *
+     * <p>Official builds are refused: curated names are shipped content, and in shared mode one
+     * player's edit would retitle the build for the entire server. Player scans are the whole
+     * point — "Scan @ 307,70,10" stops being useful the moment a library holds two of them.
+     */
+    public void rename(ServerPlayer player, UUID id, String rawName) {
+        if (level == null || level.getServer() == null) {
+            return;
+        }
+        String name = RepositoryRenamePacket.sanitize(rawName);
+        if (name.isEmpty()) {
+            feedback(player, "rename_blank");
+            return;
+        }
+        RepoEntry entry = RepositoryIndex.find(player, id);
+        if (entry == null) {
+            feedback(player, "rename_missing");
+            return;
+        }
+        if (entry.official()) {
+            feedback(player, "rename_official");
+            return;
+        }
+        if (!RepositoryIndex.rename(player, id, name)) {
+            feedback(player, "rename_missing");
+            return;
+        }
+        // Best effort on the file: the catalogue is what the GUI lists, so a rename still
+        // "worked" for the player even if the blueprint itself can't be rewritten. Only the
+        // name a future re-burn stamps on a disc would lag.
+        BlueprintFileStore store = BlueprintFileStore.forServer(level.getServer());
+        store.load(id).ifPresent(blueprint -> store.save(id, blueprint.withName(name)));
+
+        level.playSound(null, getBlockPos(), SoundEvents.BOOK_PAGE_TURN, SoundSource.BLOCKS, 0.6F, 1.2F);
+        feedback(player, "rename_ok");
+        sendListing(player);
     }
 
     private static RepoEntry entryFromDisc(ItemStack disc, UUID id) {

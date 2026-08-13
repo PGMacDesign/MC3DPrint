@@ -25,6 +25,11 @@
     },
     {
       "type": "patchouli:text",
+      "title": "Renaming Scans",
+      "text": "The $(item)Structure Scanner$() names a capture after where you stood: $(o)Scan @ 307,70,10$(). Useless once you've deposited a few.$(br2)Select a scan and a $(l)rename$() field appears under its details. Type a name, press $(l)Set$() (or Enter). The new title sticks in the library $(l)and$() in the stored blueprint, so a disc you burn later carries it too.$(br2)$(l)Player scans only$(). Official builds keep their shipped names - they are content, and on a shared library one edit would retitle the build for the whole server."
+    },
+    {
+      "type": "patchouli:text",
       "title": "Shared or Personal",
       "text": "By default a repository is a $(l)shared, world-level$() library: everyone's deposits pool together, every repository block sees the same catalogue, and breaking a block never loses it.$(br2)Server admins can flip $(l)blueprintRepositoryIsShared$() to $(l)false$() in the config for $(l)personal$() per-player libraries instead."
     },
