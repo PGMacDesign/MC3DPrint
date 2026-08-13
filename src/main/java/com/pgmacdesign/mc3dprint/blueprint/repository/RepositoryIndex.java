@@ -101,10 +101,30 @@ public final class RepositoryIndex {
         for (int i = 0; i < list.size(); i++) {
             CompoundTag element = list.getCompound(i);
             if (element.getUUID("Id").equals(id)) {
-                RepoEntry existing = RepoEntry.fromNbt(element);
-                list.set(i, new RepoEntry(existing.id(), name, existing.sizeX(), existing.sizeY(),
-                        existing.sizeZ(), existing.blockCount(), existing.tier(), existing.cost(),
-                        existing.official()).toNbt());
+                list.set(i, RepoEntry.fromNbt(element).withName(name).toNbt());
+                persisted.put(PERSONAL_TAG, list);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Drops an entry from the catalogue. Returns false when it isn't catalogued at this scope.
+     *
+     * <p>Only the catalogue entry goes; the blueprint FILE stays. A written disc burned before
+     * the removal still prints, and re-depositing that disc puts the entry back, so a misclick
+     * is recoverable as long as a copy exists somewhere.
+     */
+    public static boolean remove(ServerPlayer player, UUID id) {
+        if (shared()) {
+            return RepositoryData.get(player.level().getServer()).remove(id);
+        }
+        CompoundTag persisted = persisted(player);
+        ListTag list = persisted.getList(PERSONAL_TAG, Tag.TAG_COMPOUND);
+        for (int i = 0; i < list.size(); i++) {
+            if (list.getCompound(i).getUUID("Id").equals(id)) {
+                list.remove(i);
                 persisted.put(PERSONAL_TAG, list);
                 return true;
             }

@@ -24,6 +24,7 @@ import java.util.UUID;
 public class BlueprintRepositoryMenu extends AbstractContainerMenu {
     public static final int BUTTON_DEPOSIT = 0;
     public static final int BUTTON_BURN = 1;
+    public static final int BUTTON_DELETE = 2;
     public static final int SELECT_BASE = 100; // row select buttons are SELECT_BASE + rowIndex
 
     // Layout (lockstep with BlueprintRepositoryScreen + the painted texture).
@@ -150,6 +151,12 @@ public class BlueprintRepositoryMenu extends AbstractContainerMenu {
         }
         if (id == BUTTON_BURN) {
             repository.burn(sp, selectedId);
+            return true;
+        }
+        if (id == BUTTON_DELETE) {
+            // selectedId is resolved server-side on the select click, so the removal target
+            // never depends on a client-supplied id.
+            repository.delete(sp, selectedId);
             return true;
         }
         if (id >= SELECT_BASE) {

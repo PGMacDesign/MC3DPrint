@@ -3,6 +3,7 @@ package com.pgmacdesign.mc3dprint.blueprint.repository;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
 
+import javax.annotation.Nullable;
 import java.util.UUID;
 
 /**
@@ -10,9 +11,32 @@ import java.util.UUID;
  * denormalized metadata a Blueprint Disc caches (name/size/count/tier/cost +
  * official flag) so the repository GUI never has to load full blueprints just to
  * list them — only burning re-loads the actual blueprint by {@link #id}.
+ *
+ * <p>{@link #depositor} is who put it in the library, and is what lets a player remove
+ * their own mistake from a SHARED catalogue without being able to touch anyone else's
+ * contribution. Null for a curated build, and for anything catalogued before the field
+ * existed; those are operator-only to remove.
  */
 public record RepoEntry(UUID id, String name, int sizeX, int sizeY, int sizeZ,
-                        int blockCount, int tier, int cost, boolean official) {
+                        int blockCount, int tier, int cost, boolean official,
+                        @Nullable UUID depositor) {
+
+    /** A catalogue entry with no recorded depositor (curated builds, and pre-existing data). */
+    public RepoEntry(UUID id, String name, int sizeX, int sizeY, int sizeZ,
+                     int blockCount, int tier, int cost, boolean official) {
+        this(id, name, sizeX, sizeY, sizeZ, blockCount, tier, cost, official, null);
+    }
+
+    /** The same entry under a different display name. */
+    public RepoEntry withName(String newName) {
+        return new RepoEntry(id, newName, sizeX, sizeY, sizeZ, blockCount, tier, cost,
+                official, depositor);
+    }
+
+    /** True when {@code player} deposited this entry (never true for an unattributed one). */
+    public boolean depositedBy(UUID player) {
+        return depositor != null && depositor.equals(player);
+    }
 
     public CompoundTag toNbt() {
         CompoundTag tag = new CompoundTag();
@@ -23,6 +47,9 @@ public record RepoEntry(UUID id, String name, int sizeX, int sizeY, int sizeZ,
         tag.putInt("Tier", tier);
         tag.putInt("Cost", cost);
         tag.putBoolean("Official", official);
+        if (depositor != null) {
+            tag.putUUID("Depositor", depositor);
+        }
         return tag;
     }
 
@@ -32,7 +59,11 @@ public record RepoEntry(UUID id, String name, int sizeX, int sizeY, int sizeZ,
         int sy = size.length == 3 ? size[1] : 0;
         int sz = size.length == 3 ? size[2] : 0;
         return new RepoEntry(tag.getUUID("Id"), tag.getString("Name"), sx, sy, sz,
-                tag.getInt("Count"), tag.getInt("Tier"), tag.getInt("Cost"), tag.getBoolean("Official"));
+                tag.getInt("Count"), tag.getInt("Tier"), tag.getInt("Cost"),
+                tag.getBoolean("Official"),
+                // Absent on every entry catalogued before depositors were tracked. Those load
+                // unattributed rather than failing, and stay operator-only to remove.
+                tag.hasUUID("Depositor") ? tag.getUUID("Depositor") : null);
     }
 
     public void toBuf(FriendlyByteBuf buf) {
@@ -45,10 +76,17 @@ public record RepoEntry(UUID id, String name, int sizeX, int sizeY, int sizeZ,
         buf.writeVarInt(tier);
         buf.writeVarInt(cost);
         buf.writeBoolean(official);
+        // Explicit presence flag rather than writeOptional, which needs a Writer<T> whose
+        // inference differs across versions; this reads the same on every branch.
+        buf.writeBoolean(depositor != null);
+        if (depositor != null) {
+            buf.writeUUID(depositor);
+        }
     }
 
     public static RepoEntry fromBuf(FriendlyByteBuf buf) {
         return new RepoEntry(buf.readUUID(), buf.readUtf(), buf.readVarInt(), buf.readVarInt(),
-                buf.readVarInt(), buf.readVarInt(), buf.readVarInt(), buf.readVarInt(), buf.readBoolean());
+                buf.readVarInt(), buf.readVarInt(), buf.readVarInt(), buf.readVarInt(), buf.readBoolean(),
+                buf.readBoolean() ? buf.readUUID() : null);
     }
 }
