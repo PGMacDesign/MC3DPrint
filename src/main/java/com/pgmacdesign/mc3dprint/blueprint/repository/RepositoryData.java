@@ -190,9 +190,16 @@ public class RepositoryData extends SavedData {
         if (existing == null) {
             return false;
         }
-        entries.put(id, new RepoEntry(existing.id(), name, existing.sizeX(), existing.sizeY(),
-                existing.sizeZ(), existing.blockCount(), existing.tier(), existing.cost(),
-                existing.official()));
+        entries.put(id, existing.withName(name));
+        setDirty();
+        return true;
+    }
+
+    /** Drops an entry from the catalogue. False when it wasn't catalogued here. */
+    public boolean remove(UUID id) {
+        if (entries.remove(id) == null) {
+            return false;
+        }
         setDirty();
         return true;
     }

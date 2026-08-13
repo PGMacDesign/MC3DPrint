@@ -98,7 +98,7 @@ public class BlueprintRepositoryBlockEntity extends BlockEntity implements MenuP
             feedback(player, "deposit_missing"); // disc from another world; can't be re-burned here
             return;
         }
-        if (RepositoryIndex.add(player, entryFromDisc(in, id.get()))) {
+        if (RepositoryIndex.add(player, entryFromDisc(in, id.get(), player.getUUID()))) {
             in.shrink(1); // consumed into the library
             inventory.setStackInSlot(SLOT_IN, in);
             level.playSound(null, getBlockPos(), SoundEvents.ITEM_FRAME_ADD_ITEM, SoundSource.BLOCKS, 0.7F, 1.3F);
@@ -195,14 +195,72 @@ public class BlueprintRepositoryBlockEntity extends BlockEntity implements MenuP
         sendListing(player);
     }
 
-    private static RepoEntry entryFromDisc(ItemStack disc, UUID id) {
+    /**
+     * Removes a catalogued scan from the library.
+     *
+     * <p>Gated on who put it there: the depositor can remove their own, an operator can remove
+     * anything. The default library is SHARED and world-level, so an ungated button would let
+     * any player wipe builds other people contributed; an operator-only one would leave the
+     * common case (clearing your own mis-scan on a no-cheats world) impossible. Official builds
+     * are refused outright, the same as renaming them.
+     *
+     * <p>Only the catalogue entry goes. The blueprint file stays, so a disc burned earlier still
+     * prints and re-depositing it restores the entry.
+     */
+    public void delete(ServerPlayer player, @Nullable UUID selectedId) {
+        if (level == null || level.getServer() == null) {
+            return;
+        }
+        if (selectedId == null) {
+            feedback(player, "delete_no_selection");
+            return;
+        }
+        RepoEntry entry = RepositoryIndex.find(player, selectedId);
+        if (entry == null) {
+            feedback(player, "rename_missing");
+            return;
+        }
+        if (entry.official()) {
+            feedback(player, "delete_official");
+            return;
+        }
+        if (!mayRemove(player, entry)) {
+            feedback(player, "delete_not_yours");
+            return;
+        }
+        if (!RepositoryIndex.remove(player, selectedId)) {
+            feedback(player, "rename_missing");
+            return;
+        }
+        level.playSound(null, getBlockPos(), SoundEvents.GRINDSTONE_USE, SoundSource.BLOCKS, 0.5F, 0.8F);
+        feedback(player, "delete_ok");
+        sendListing(player);
+    }
+
+    /** The depositor, or an operator. An unattributed entry (pre-existing data) is op-only. */
+    public static boolean mayRemove(ServerPlayer player, RepoEntry entry) {
+        return entry.depositedBy(player.getUUID()) || isOperator(player);
+    }
+
+    private static boolean isOperator(ServerPlayer player) {
+        // 1.21.11 replaced the numeric permission level with a PermissionSet, the same split
+        // the commands already carry (see DiscoveryCommand's requires clause).
+        //? if >=1.21.11 {
+        /*return player.permissions().hasPermission(
+                net.minecraft.server.permissions.Permissions.COMMANDS_GAMEMASTER);
+        *///?} else {
+        return player.hasPermissions(2);
+        //?}
+    }
+
+    private static RepoEntry entryFromDisc(ItemStack disc, UUID id, UUID depositor) {
         int[] size = BlueprintDiscItem.getSize(disc);
         int sx = size.length == 3 ? size[0] : 0;
         int sy = size.length == 3 ? size[1] : 0;
         int sz = size.length == 3 ? size[2] : 0;
         return new RepoEntry(id, BlueprintDiscItem.getBlueprintName(disc), sx, sy, sz,
                 BlueprintDiscItem.getBlockCount(disc), BlueprintDiscItem.getTier(disc),
-                BlueprintDiscItem.getPrintCost(disc), BlueprintDiscItem.isOfficial(disc));
+                BlueprintDiscItem.getPrintCost(disc), BlueprintDiscItem.isOfficial(disc), depositor);
     }
 
     private void feedback(ServerPlayer player, String key) {

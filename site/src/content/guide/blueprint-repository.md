@@ -27,6 +27,22 @@ Only **player scans** can be renamed. Official curated builds keep their shipped
 
 Names are capped at 48 characters, and formatting codes and line breaks are stripped.
 
+## Removing a scan
+
+Deposited something by mistake? Select it and press **Del** twice. The button arms on the first click and reads **Sure?** for five seconds, so a stray click can't clear a build.
+
+Who can remove what:
+
+- **Whoever deposited it** can remove it.
+- **Operators** can remove anything.
+- **Official curated builds can't be removed** at all, by anyone.
+
+That split exists because the default library is shared and world-level. An open Delete button would let any player wipe builds other people contributed, while an operators-only one would leave you unable to clear your own mis-scan on an ordinary server.
+
+Removal takes the **catalogue entry only**, never the blueprint file. A disc you burned before removing still prints, and re-depositing it puts the entry back, so a mistake is recoverable as long as a copy exists somewhere.
+
+> Entries catalogued before this shipped have no recorded depositor, so they're operator-only to remove.
+
 ## Shared or personal
 
 By default a repository is a **shared, world-level** library: everyone's deposits pool, every repository block sees the same catalogue, and breaking a block never loses it.

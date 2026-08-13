@@ -30,6 +30,11 @@
     },
     {
       "type": "patchouli:text",
+      "title": "Removing a Scan",
+      "text": "Deposited something by mistake? Select it and press $(l)Del$() $(o)twice$() - the button arms on the first click and reads $(l)Sure?$() for five seconds.$(br2)$(li)Whoever $(l)deposited$() it can remove it$(li)$(l)Operators$() can remove anything$(li)$(l)Official$() builds can't be removed at all$(br2)The default library is shared, so an open button would let anyone wipe other players' contributions.$(br2)Removal takes the $(l)catalogue entry only$(), never the blueprint file: a disc burned earlier still prints, and re-depositing it restores the entry."
+    },
+    {
+      "type": "patchouli:text",
       "title": "Shared or Personal",
       "text": "By default a repository is a $(l)shared, world-level$() library: everyone's deposits pool together, every repository block sees the same catalogue, and breaking a block never loses it.$(br2)Server admins can flip $(l)blueprintRepositoryIsShared$() to $(l)false$() in the config for $(l)personal$() per-player libraries instead."
     },

@@ -20,12 +20,13 @@ import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 import java.util.UUID;
 
 /**
- * Renaming a catalogued blueprint: scans are retitled through to both the catalogue and the
- * stored blueprint, official builds are refused, and hostile names never reach storage.
+ * Editing a catalogued blueprint: renaming writes through to both the catalogue and the stored
+ * blueprint, removal is limited to the depositor (or an operator), official builds are refused
+ * for both, and hostile names never reach storage.
  */
 @GameTestHolder(MC3DPrint.MOD_ID)
 @PrefixGameTestTemplate(false)
-public class RepositoryRenameGameTests {
+public class RepositoryEntryGameTests {
 
     private static final BlockPos REPO_POS = new BlockPos(1, 1, 1);
 
@@ -54,8 +55,88 @@ public class RepositoryRenameGameTests {
                 .set(0, 0, 0, BlueprintBlockState.parse("minecraft:stone"))
                 .build();
         UUID id = BlueprintFileStore.forServer(helper.getLevel().getServer()).save(blueprint);
-        RepositoryIndex.add(player, new RepoEntry(id, name, 1, 1, 1, 1, 1, 10, official));
+        RepositoryIndex.add(player, new RepoEntry(id, name, 1, 1, 1, 1, 1, 10, official,
+                official ? null : player.getUUID()));
         return id;
+    }
+
+    /** Catalogues a scan attributed to somebody else, for the not-your-entry gate. */
+    private static UUID catalogueForStranger(GameTestHelper helper, ServerPlayer player, String name) {
+        Blueprint blueprint = Blueprint.builder(name, 1, 1, 1)
+                .set(0, 0, 0, BlueprintBlockState.parse("minecraft:stone"))
+                .build();
+        UUID id = BlueprintFileStore.forServer(helper.getLevel().getServer()).save(blueprint);
+        RepositoryIndex.add(player, new RepoEntry(id, name, 1, 1, 1, 1, 1, 10, false,
+                UUID.fromString("00000000-0000-0000-0000-00000000beef")));
+        return id;
+    }
+
+    @GameTest(template = "empty5", timeoutTicks = 40)
+    public static void depositorCanRemoveTheirOwnScan(GameTestHelper helper) {
+        BlueprintRepositoryBlockEntity repo = repository(helper);
+        ServerPlayer player = fakePlayer(helper);
+        UUID id = catalogue(helper, player, "Scan @ 4,5,6", false);
+
+        repo.delete(player, id);
+
+        if (RepositoryIndex.find(player, id) != null) {
+            throw new GameTestAssertException("the depositor could not remove their own scan");
+        }
+        // The blueprint FILE survives, so a disc burned earlier still prints and a
+        // re-deposit restores the entry. Removal is recoverable, not destructive.
+        if (!BlueprintFileStore.forServer(helper.getLevel().getServer()).exists(id)) {
+            throw new GameTestAssertException("removing an entry must not delete the blueprint file");
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty5", timeoutTicks = 40)
+    public static void someoneElsesScanIsRefused(GameTestHelper helper) {
+        BlueprintRepositoryBlockEntity repo = repository(helper);
+        ServerPlayer player = fakePlayer(helper);
+        UUID id = catalogueForStranger(helper, player, "Someone else's tower");
+
+        // A FakePlayer has no permissions, so this is the plain non-depositor case.
+        repo.delete(player, id);
+
+        if (RepositoryIndex.find(player, id) == null) {
+            throw new GameTestAssertException("a non-depositor removed someone else's entry");
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty5", timeoutTicks = 40)
+    public static void officialBuildsRefuseToBeRemoved(GameTestHelper helper) {
+        BlueprintRepositoryBlockEntity repo = repository(helper);
+        ServerPlayer player = fakePlayer(helper);
+        UUID id = catalogue(helper, player, "Grand Library", true);
+
+        repo.delete(player, id);
+
+        if (RepositoryIndex.find(player, id) == null) {
+            throw new GameTestAssertException("an official build was removed from the library");
+        }
+        helper.succeed();
+    }
+
+    /** An entry catalogued before depositors were tracked has no owner: operator-only. */
+    @GameTest(template = "empty5", timeoutTicks = 40)
+    public static void unattributedLegacyEntryIsNotRemovableByAPlayer(GameTestHelper helper) {
+        BlueprintRepositoryBlockEntity repo = repository(helper);
+        ServerPlayer player = fakePlayer(helper);
+        Blueprint blueprint = Blueprint.builder("legacy scan", 1, 1, 1)
+                .set(0, 0, 0, BlueprintBlockState.parse("minecraft:stone"))
+                .build();
+        UUID id = BlueprintFileStore.forServer(helper.getLevel().getServer()).save(blueprint);
+        // The 9-arg constructor is exactly what pre-existing NBT loads as.
+        RepositoryIndex.add(player, new RepoEntry(id, "legacy scan", 1, 1, 1, 1, 1, 10, false));
+
+        repo.delete(player, id);
+
+        if (RepositoryIndex.find(player, id) == null) {
+            throw new GameTestAssertException("an unattributed entry was removed by a non-operator");
+        }
+        helper.succeed();
     }
 
     @GameTest(template = "empty5", timeoutTicks = 40)
