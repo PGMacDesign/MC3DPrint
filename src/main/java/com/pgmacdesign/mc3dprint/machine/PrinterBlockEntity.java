@@ -1469,9 +1469,6 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         skippedThisJob = 0;
         skippedTypesLogged.clear();
         activeJob = new PrintJob(blueprintId, blueprint.name(), origin, orientation, size, blueprint.blockCount());
-        // Recorded at START, not on completion: a cancelled half-print is still something
-        // the player will want to undo, and the placement is fully known right here.
-        lastPrint = PrintPlacement.of(activeJob);
         cachedBlueprint = blueprint;
         armResin(disc); // catalyze this job iff a resin is slotted and the disc is official
         if (armedResinEffect != null && !resinWouldBenefit(armedResinEffect, armedResinTier, blueprint)) {
@@ -1481,6 +1478,11 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         if (armedResinEffect == ResinItem.Effect.QUARTERMASTER) {
             initQuartermasterBudget(blueprint); // pre-count furnaces/chests to split the shared kit
         }
+        // Recorded at START, not on completion: a cancelled half-print is still something the
+        // player will want to undo, and the placement is fully known here. Must come AFTER the
+        // resin arming settles — Ore Salting changes which blocks actually land, and the
+        // un-print mask has to know the roll happened.
+        lastPrint = PrintPlacement.of(activeJob, armedResinEffect == ResinItem.Effect.ORE_SALTING);
         placementOrder = buildPlacementOrder(blueprint);
         placementCooldown = 0;
         forceChunks(serverLevel, box, true);
@@ -1939,7 +1941,12 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             return;
         }
         if (!ensureUnprintMask(serverLevel)) {
-            deconstructJob = null; // reload of an un-print whose blueprint file vanished
+            // Reload of an un-print whose blueprint file vanished. onLoad re-claimed the
+            // print zone and force-loaded the region for this restored job, so the teardown
+            // has to go through cancelActiveJob: dropping the reference alone would leave the
+            // zone claimed and the chunks pinned for the rest of the session. cancelActiveJob
+            // doesn't touch state, so the NO_REGION that ensureUnprintMask set survives.
+            cancelActiveJob();
             return;
         }
 

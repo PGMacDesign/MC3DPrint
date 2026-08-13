@@ -8,6 +8,8 @@ import com.pgmacdesign.mc3dprint.fu.FuValue;
 import com.pgmacdesign.mc3dprint.fu.FuValueRegistry;
 import com.pgmacdesign.mc3dprint.fu.SpoolItem;
 import com.pgmacdesign.mc3dprint.machine.MachineTier;
+import com.pgmacdesign.mc3dprint.machine.DeconstructJob;
+import com.pgmacdesign.mc3dprint.machine.PrintPlacement;
 import com.pgmacdesign.mc3dprint.machine.PrinterBlockEntity;
 import com.pgmacdesign.mc3dprint.machine.multiblock.ControllerBlock;
 import com.pgmacdesign.mc3dprint.machine.multiblock.MultiblockPattern;
@@ -418,6 +420,62 @@ public class DeconstructGameTests {
                     if (printer.deconstructRegionMin() != null || printer.deconstructRegionSize() != null) {
                         throw new GameTestAssertException(
                                 "region stayed armed after the un-print completed");
+                    }
+                })
+                .thenSucceed();
+    }
+
+    /**
+     * Ore Salting swaps stone hosts for random ore at print time, so the placed block can't be
+     * recomputed from the blueprint. A salted print's mask must still recognise its own ore, or
+     * un-printing a salted build leaves the ores standing.
+     */
+    @GameTest(template = "empty5", timeoutTicks = 600)
+    public static void unprintClaimsItsOwnSaltedOre(GameTestHelper helper) {
+        PrinterBlockEntity printer = printIronPad(helper, UNPRINT_PRINTER);
+        BlockPos[] marks = new BlockPos[2]; // 0 = origin, 1 = the stand-in for a salted cell
+
+        helper.startSequence()
+                .thenWaitUntil(() -> requirePrintFinished(printer))
+                .thenExecute(() -> {
+                    marks[0] = printer.lastPrint().origin();
+                    marks[1] = marks[0];
+                    printer.setDeconstructMode(true);
+                    printer.requestStart();
+                })
+                .thenWaitUntil(() -> {
+                    if (printer.deconstructJob() == null) {
+                        throw new GameTestAssertException("un-print has not started");
+                    }
+                })
+                .thenExecute(() -> {
+                    // The mask was built from an unsalted blueprint, so ask it directly whether
+                    // it would claim an ore standing where a saltable host was printed. Driving a
+                    // real salted print isn't reproducible: the roll is random and rate-limited.
+                    DeconstructJob job = printer.deconstructJob();
+                    boolean claimsForeignOre = job.allows(marks[1],
+                            Blocks.DIAMOND_ORE.defaultBlockState());
+                    if (claimsForeignOre) {
+                        throw new GameTestAssertException(
+                                "an UNSALTED print must not claim ore it never placed");
+                    }
+                    DeconstructJob salted = new DeconstructJob(job.min(), job.size(),
+                            new PrintPlacement(printer.lastPrint().blueprintId(),
+                                    printer.lastPrint().origin(),
+                                    printer.lastPrint().orientation(),
+                                    printer.lastPrint().size(), true));
+                    salted.setMask(java.util.Map.of(marks[1], Blocks.STONE));
+                    if (!salted.allows(marks[1], Blocks.DIAMOND_ORE.defaultBlockState())) {
+                        throw new GameTestAssertException(
+                                "a salted print must claim the ore salting put on its stone");
+                    }
+                    if (salted.allows(marks[1], Blocks.GOLD_BLOCK.defaultBlockState())) {
+                        throw new GameTestAssertException(
+                                "salting widens the match to ORE only, not to any block");
+                    }
+                    if (salted.allows(marks[1], Blocks.DEEPSLATE_DIAMOND_ORE.defaultBlockState())) {
+                        throw new GameTestAssertException(
+                                "a stone host can only yield the stone-family ores");
                     }
                 })
                 .thenSucceed();

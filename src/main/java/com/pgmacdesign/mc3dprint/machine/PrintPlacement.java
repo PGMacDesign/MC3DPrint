@@ -22,10 +22,11 @@ import java.util.UUID;
  * halfway still leaves something to undo.
  */
 public record PrintPlacement(UUID blueprintId, BlockPos origin, PrintOrientation orientation,
-                             BlockPos size) {
+                             BlockPos size, boolean oreSalted) {
 
-    public static PrintPlacement of(PrintJob job) {
-        return new PrintPlacement(job.blueprintId(), job.origin(), job.orientation(), job.size());
+    public static PrintPlacement of(PrintJob job, boolean oreSalted) {
+        return new PrintPlacement(job.blueprintId(), job.origin(), job.orientation(), job.size(),
+                oreSalted);
     }
 
     public BoundingBox box() {
@@ -40,6 +41,7 @@ public record PrintPlacement(UUID blueprintId, BlockPos origin, PrintOrientation
         tag.putByte("Rotation", (byte) orientation.rotation().ordinal());
         tag.putByte("Mirror", (byte) orientation.mirror().ordinal());
         NbtCompat.putBlockPos(tag, "PlacementSize", size);
+        tag.putBoolean("OreSalted", oreSalted);
         return tag;
     }
 
@@ -56,6 +58,6 @@ public record PrintPlacement(UUID blueprintId, BlockPos origin, PrintOrientation
                                 Rotation.values().length)],
                         Mirror.values()[Math.floorMod(NbtCompat.getByte(tag, "Mirror"),
                                 Mirror.values().length)]),
-                size.get()));
+                size.get(), NbtCompat.getBoolean(tag, "OreSalted")));
     }
 }

@@ -1,6 +1,7 @@
 package com.pgmacdesign.mc3dprint.machine;
 
 import com.pgmacdesign.mc3dprint.compat.NbtCompat;
+import com.pgmacdesign.mc3dprint.machine.resin.ResinEffects;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
@@ -76,7 +77,18 @@ public final class DeconstructJob {
             return placement == null; // masked job with no mask yet: consume nothing
         }
         Block expected = mask.get(pos);
-        return expected != null && state.getBlock() == expected;
+        if (expected == null) {
+            return false;
+        }
+        if (state.getBlock() == expected) {
+            return true;
+        }
+        // Ore Salting swapped some stone hosts for random ore at print time, and the roll
+        // isn't reproducible from the blueprint. Only a print that actually ran the resin
+        // widens the match, and only to the ores pickOre could have produced for THAT host,
+        // so a player-placed ore in an unsalted build is still out of scope.
+        return placement != null && placement.oreSalted()
+                && ResinEffects.isSaltOutputFor(expected, state);
     }
 
     public BlockPos min() {
@@ -140,13 +152,26 @@ public final class DeconstructJob {
         return tag;
     }
 
+    /**
+     * Restores a job, or null when this tag describes an un-print we can't reconstruct.
+     *
+     * <p>Dropping an unreadable placement and carrying on would silently downgrade the job to a
+     * whole-box deconstruct, which is the one outcome the mask exists to prevent. Refusing the
+     * restore matches what the machine does when the blueprint file itself is gone.
+     */
+    @Nullable
     public static DeconstructJob load(CompoundTag tag) {
+        PrintPlacement placement = null;
+        if (NbtCompat.contains(tag, "Unprint")) {
+            placement = PrintPlacement.load(NbtCompat.getCompound(tag, "Unprint")).orElse(null);
+            if (placement == null) {
+                return null;
+            }
+        }
         DeconstructJob job = new DeconstructJob(
                 NbtCompat.getBlockPos(tag, "Min").orElse(BlockPos.ZERO),
                 NbtCompat.getBlockPos(tag, "RegionSize").orElse(new BlockPos(1, 1, 1)),
-                NbtCompat.contains(tag, "Unprint")
-                        ? PrintPlacement.load(NbtCompat.getCompound(tag, "Unprint")).orElse(null)
-                        : null);
+                placement);
         job.progress = Math.max(0, NbtCompat.getInt(tag, "Progress"));
         job.removed = NbtCompat.getInt(tag, "Removed");
         job.creditedFu = NbtCompat.getLong(tag, "CreditedFu");
