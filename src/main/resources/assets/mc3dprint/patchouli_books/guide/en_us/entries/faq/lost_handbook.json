@@ -1,0 +1,23 @@
+{
+  "name": "Lost the Handbook?",
+  "category": "mc3dprint:faq",
+  "icon": "patchouli:guide_book",
+  "sortnum": 7,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "title": "Getting Another Copy",
+      "text": "Run $(o)/mc3dprint guide$(). It hands out a fresh, working Handbook, and $(l)any player$() can run it - this is documentation, not loot.$(br2)The book arrives automatically the first time you craft a printer or pick up a $(item)Blueprint Disc$(), but only $(l)once per player$(), so losing it used to be permanent.$(br2)Operators can hand copies to other players with $(o)/mc3dprint guide <players>$()."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "mc3dprint:guide_book",
+      "text": "Or just craft another: an $(item)Extrudium Crystal$() and a $(item)Book$(), shapeless."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Why /give Doesn't Work",
+      "text": "This Handbook is a $(l)Patchouli$() book, so its item id is $(o)patchouli:guide_book$() - there is no $(o)mc3dprint:$() id to give.$(br2)A plain $(o)/give$() of that item produces an $(l)unbound$() copy: it reads $(c:red)Invalid book: no ID defined$() and won't open, because the book a stack points at lives in tag data the command doesn't set.$(br2)$(o)/mc3dprint guide$() sets it correctly. Use that instead."
+    }
+  ]
+}

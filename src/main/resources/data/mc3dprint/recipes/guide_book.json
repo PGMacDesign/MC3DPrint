@@ -1,0 +1,31 @@
+{
+  "type": "forge:conditional",
+  "recipes": [
+    {
+      "conditions": [
+        {
+          "type": "forge:mod_loaded",
+          "modid": "patchouli"
+        }
+      ],
+      "recipe": {
+        "type": "minecraft:crafting_shapeless",
+        "ingredients": [
+          {
+            "item": "mc3dprint:extrudium_crystal"
+          },
+          {
+            "item": "minecraft:book"
+          }
+        ],
+        "result": {
+          "item": "patchouli:guide_book",
+          "count": 1,
+          "nbt": {
+            "patchouli:book": "mc3dprint:guide"
+          }
+        }
+      }
+    }
+  ]
+}
