@@ -35,9 +35,16 @@ public final class GuidebookAutoGive {
 
     /** Trigger 1: crafting the first printer. */
     public static void onItemCrafted(PlayerEvent.ItemCraftedEvent event) {
-        if (event.getEntity() instanceof ServerPlayer player
-                && eligible(player)
-                && event.getCrafting().getItem() instanceof BlockItem blockItem
+        if (!(event.getEntity() instanceof ServerPlayer player) || !eligible(player)) {
+            return;
+        }
+        // Crafting the Handbook itself satisfies the hand-out: mark the player and give
+        // nothing, or the auto-give would hand them a second copy on their next trigger.
+        if (PatchouliCompat.isGuideBook(event.getCrafting())) {
+            markGiven(player);
+            return;
+        }
+        if (event.getCrafting().getItem() instanceof BlockItem blockItem
                 && blockItem.getBlock() instanceof PrinterBlock) {
             give(player);
         }
@@ -69,14 +76,35 @@ public final class GuidebookAutoGive {
     /** Give the book once and set the persisted flag. Server events are sequential, so the
      * flag set here makes any second trigger in the same tick a no-op via {@link #eligible}. */
     private static void give(ServerPlayer player) {
+        if (grant(player)) {
+            player.sendSystemMessage(Component.translatable("message.mc3dprint.book_given"));
+        }
+    }
+
+    /**
+     * Hands {@code player} a bound Handbook and marks them as having received it, whatever the
+     * flag said before. Returns false only when Patchouli isn't providing a usable book stack.
+     *
+     * <p>Public because the auto-give is a ONE-shot per player: lose the book and no trigger
+     * ever fires again, and the item belongs to Patchouli so it can't be given by a
+     * {@code mc3dprint:} id. Recovery is either the crafting recipe (Extrudium Crystal + Book)
+     * or {@code /mc3dprint guide}, which routes through here so a manual hand-out also disarms
+     * the pending auto-give.
+     */
+    public static boolean grant(ServerPlayer player) {
         ItemStack book = PatchouliCompat.guideBookStack();
         if (book.isEmpty()) {
-            return; // Patchouli book item / component not available
+            return false; // Patchouli book item / component not available
         }
         if (!player.getInventory().add(book)) {
             player.drop(book, false);
         }
-        player.sendSystemMessage(Component.translatable("message.mc3dprint.book_given"));
+        markGiven(player);
+        return true;
+    }
+
+    /** Records that this player has their Handbook, however they came by it. */
+    private static void markGiven(ServerPlayer player) {
         CompoundTag root = player.getPersistentData();
         CompoundTag persisted = NbtCompat.getCompound(root, Player.PERSISTED_NBT_TAG);
         persisted.putBoolean(TAG_BOOK_GIVEN, true);
