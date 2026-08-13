@@ -222,6 +222,8 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
      */
     @Nullable
     private PrintPlacement lastPrint;
+    /** Cells {@link #lastPrint} found already correct and skipped; folded in when arming. */
+    private final java.util.Set<BlockPos> lastPrintPreexisting = new java.util.HashSet<>();
     /**
      * The armed region is an un-print of {@link #lastPrint} rather than a raw box. Held
      * separately from the job so the arming survives until Start (and so the GUI can say
@@ -1284,10 +1286,16 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             // matching (repair mode), ones we can't resolve (modded world), and
             // ones this machine can't print (skipped — see canPrintBlock).
             boolean unprintable = resolvedOpt.isPresent() && !canPrintBlock(resolvedOpt.get());
+            BlockPos skipWorldPos = target == null ? null : worldPosFor(skipCandidate.local(), blueprint);
             boolean alreadyPlaced = target != null
-                    && serverLevel.getBlockState(worldPosFor(skipCandidate.local(), blueprint)) == target;
+                    && serverLevel.getBlockState(skipWorldPos) == target;
             if (target != null && !alreadyPlaced && !unprintable) {
                 break; // a printable block that still needs placing
+            }
+            if (alreadyPlaced) {
+                // The world already held this block, so the machine never placed it. Remember
+                // that: an un-print must not claim blocks it merely found (see PrintPlacement).
+                lastPrintPreexisting.add(skipWorldPos.immutable());
             }
             if (unprintable) {
                 recordSkippedBlock(resolvedOpt.get());
@@ -1482,6 +1490,7 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         // player will want to undo, and the placement is fully known here. Must come AFTER the
         // resin arming settles — Ore Salting changes which blocks actually land, and the
         // un-print mask has to know the roll happened.
+        lastPrintPreexisting.clear();
         lastPrint = PrintPlacement.of(activeJob, armedResinEffect == ResinItem.Effect.ORE_SALTING);
         placementOrder = buildPlacementOrder(blueprint);
         placementCooldown = 0;
@@ -1832,7 +1841,7 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         startRequested = false;
         deconstructMin = lastPrint.origin();
         deconstructSize = lastPrint.size();
-        armedUnprint = lastPrint;
+        armedUnprint = lastPrint.withPreexisting(lastPrintPreexisting);
         deconstructMode = true;
         deconArmedRequiresStart = true;
         state = State.IDLE;
@@ -2080,6 +2089,9 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
                                 blueprint.sizeX(), blueprint.sizeY(), blueprint.sizeZ())),
                         resolved.mirror(orientation.mirror())
                                 .rotate(orientation.rotation()).getBlock())));
+        // Cells the print found already correct were never its work; drop them so the
+        // un-print leaves the terrain (or earlier build) it happened to coincide with.
+        placement.preexisting().forEach(mask::remove);
         deconstructJob.setMask(mask);
         return true;
     }
@@ -3276,7 +3288,8 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             w.store("DeconJob", CompoundTag.CODEC, deconstructJob.save());
         }
         if (lastPrint != null) {
-            w.store("LastPrint", CompoundTag.CODEC, lastPrint.save());
+            w.store("LastPrint", CompoundTag.CODEC,
+                    lastPrint.withPreexisting(lastPrintPreexisting).save());
         }
         if (armedUnprint != null) {
             w.store("ArmedUnprint", CompoundTag.CODEC, armedUnprint.save());
@@ -3315,6 +3328,10 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         deconstructSize = r.read("DeconSize", BlockPos.CODEC).orElse(null);
         deconstructJob = r.read("DeconJob", CompoundTag.CODEC).map(DeconstructJob::load).orElse(null);
         lastPrint = r.read("LastPrint", CompoundTag.CODEC).flatMap(PrintPlacement::load).orElse(null);
+        lastPrintPreexisting.clear();
+        if (lastPrint != null) {
+            lastPrintPreexisting.addAll(lastPrint.preexisting());
+        }
         armedUnprint = r.read("ArmedUnprint", CompoundTag.CODEC)
                 .flatMap(PrintPlacement::load).orElse(null);
         // A persisted status only means something when it describes restored work.

@@ -426,6 +426,44 @@ public class DeconstructGameTests {
     }
 
     /**
+     * A cell the print found ALREADY correct was never the machine's work: repair mode
+     * fast-forwards it at zero cost. The un-print must leave it, or printing a build into
+     * ground that already matches lets the un-print eat the ground.
+     */
+    @GameTest(template = "empty5", timeoutTicks = 600)
+    public static void unprintLeavesCellsThePrintFoundAlreadyCorrect(GameTestHelper helper) {
+        // Pre-place one of the four iron cells the pad will print, so repair mode skips it.
+        // Origin for a 2x2x2 build under a printer at (2,1,2) is (1,2,1).
+        BlockPos preexisting = new BlockPos(1, 2, 1);
+        helper.setBlock(preexisting, Blocks.IRON_BLOCK);
+
+        PrinterBlockEntity printer = printIronPad(helper, UNPRINT_PRINTER);
+
+        helper.startSequence()
+                .thenWaitUntil(() -> requirePrintFinished(printer))
+                .thenExecute(() -> {
+                    printer.setDeconstructMode(true);
+                    printer.requestStart();
+                })
+                .thenWaitUntil(() -> {
+                    if (printer.unprintArmed()) {
+                        throw new GameTestAssertException("un-print has not finished");
+                    }
+                })
+                .thenExecute(() -> {
+                    if (!helper.getBlockState(preexisting).is(Blocks.IRON_BLOCK)) {
+                        throw new GameTestAssertException(
+                                "un-print removed a block it only found, never placed");
+                    }
+                    // ...while a cell the print really did place is gone.
+                    if (!helper.getBlockState(new BlockPos(2, 2, 2)).isAir()) {
+                        throw new GameTestAssertException("a genuinely printed cell survived");
+                    }
+                })
+                .thenSucceed();
+    }
+
+    /**
      * Ore Salting swaps stone hosts for random ore at print time, so the placed block can't be
      * recomputed from the blueprint. A salted print's mask must still recognise its own ore, or
      * un-printing a salted build leaves the ores standing.
@@ -463,7 +501,7 @@ public class DeconstructGameTests {
                             new PrintPlacement(printer.lastPrint().blueprintId(),
                                     printer.lastPrint().origin(),
                                     printer.lastPrint().orientation(),
-                                    printer.lastPrint().size(), true));
+                                    printer.lastPrint().size(), true, java.util.Set.of()));
                     salted.setMask(java.util.Map.of(marks[1], Blocks.STONE));
                     if (!salted.allows(marks[1], Blocks.DIAMOND_ORE.defaultBlockState())) {
                         throw new GameTestAssertException(

@@ -76,7 +76,7 @@ class DeconstructJobTest {
         return new PrintPlacement(UUID.fromString("00000000-0000-0000-0000-0000000000ff"),
                 new BlockPos(1, 2, 3),
                 new PrintOrientation(Rotation.CLOCKWISE_90, Mirror.NONE),
-                new BlockPos(2, 2, 2), oreSalted);
+                new BlockPos(2, 2, 2), oreSalted, Set.of(new BlockPos(9, 9, 9)));
     }
 
     @Test

@@ -9,7 +9,9 @@ import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -22,11 +24,27 @@ import java.util.UUID;
  * halfway still leaves something to undo.
  */
 public record PrintPlacement(UUID blueprintId, BlockPos origin, PrintOrientation orientation,
-                             BlockPos size, boolean oreSalted) {
+                             BlockPos size, boolean oreSalted, Set<BlockPos> preexisting) {
+
+    public PrintPlacement {
+        preexisting = Set.copyOf(preexisting);
+    }
 
     public static PrintPlacement of(PrintJob job, boolean oreSalted) {
         return new PrintPlacement(job.blueprintId(), job.origin(), job.orientation(), job.size(),
-                oreSalted);
+                oreSalted, Set.of());
+    }
+
+    /**
+     * The same placement, plus the cells the print FOUND already correct and therefore never
+     * placed (repair mode fast-forwards those at zero cost). They're the blueprint's blocks by
+     * coincidence, not this machine's work, so an un-print has to leave them: printing a stone
+     * build into a stone hillside must not let the un-print eat the hill.
+     *
+     * <p>Empty for the normal case of printing into air, so the usual cost is nothing.
+     */
+    public PrintPlacement withPreexisting(Set<BlockPos> cells) {
+        return new PrintPlacement(blueprintId, origin, orientation, size, oreSalted, cells);
     }
 
     public BoundingBox box() {
@@ -42,6 +60,14 @@ public record PrintPlacement(UUID blueprintId, BlockPos origin, PrintOrientation
         tag.putByte("Mirror", (byte) orientation.mirror().ordinal());
         NbtCompat.putBlockPos(tag, "PlacementSize", size);
         tag.putBoolean("OreSalted", oreSalted);
+        if (!preexisting.isEmpty()) {
+            long[] packed = new long[preexisting.size()];
+            int i = 0;
+            for (BlockPos pos : preexisting) {
+                packed[i++] = pos.asLong();
+            }
+            tag.putLongArray("Preexisting", packed);
+        }
         return tag;
     }
 
@@ -58,6 +84,18 @@ public record PrintPlacement(UUID blueprintId, BlockPos origin, PrintOrientation
                                 Rotation.values().length)],
                         Mirror.values()[Math.floorMod(NbtCompat.getByte(tag, "Mirror"),
                                 Mirror.values().length)]),
-                size.get(), NbtCompat.getBoolean(tag, "OreSalted")));
+                size.get(), NbtCompat.getBoolean(tag, "OreSalted"), unpack(tag)));
+    }
+
+    private static Set<BlockPos> unpack(CompoundTag tag) {
+        long[] packed = NbtCompat.getLongArray(tag, "Preexisting");
+        if (packed.length == 0) {
+            return Set.of();
+        }
+        Set<BlockPos> out = new HashSet<>(packed.length);
+        for (long value : packed) {
+            out.add(BlockPos.of(value));
+        }
+        return out;
     }
 }

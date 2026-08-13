@@ -17,6 +17,7 @@ Three things worth knowing:
 
 - It is **one-shot**. When the job finishes the machine disarms itself, because the build it targeted no longer exists.
 - A **cancelled or partial print counts**. The placement is recorded when the job starts, so a print you stopped halfway is still un-printable.
+- Cells the print found **already correct** are left alone. Printing repairs matching blocks for free rather than replacing them, so those blocks were never the machine's work: print a stone build into a stone hillside and the un-print takes the build, not the hill.
 - Handing over a **scanner selection replaces it** with a plain region, which consumes everything in the box. The wireframe is the same either way; the status line is what tells you which kind of region is armed.
 
 If the blueprint file behind the print is gone (the disc was from another world), the machine refuses to arm rather than falling back to eating the whole box.
