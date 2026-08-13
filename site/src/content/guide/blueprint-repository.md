@@ -9,9 +9,9 @@ The Blueprint Repository is your blueprint library. It starts empty. You fill it
 
 ## Depositing discs
 
-Drop a written Blueprint Disc into the input slot and press `Deposit Disc`. The build is catalogued and the disc consumed. Once catalogued, a build stays forever and you can re-burn as many copies as you like.
+Drop a written Blueprint Disc into the input slot and press `Deposit Disc`. The build is catalogued and the disc consumed. Once catalogued you can re-burn as many copies as you like, and it stays until somebody [removes it](#removing-a-scan) on purpose.
 
-**Duplicates recycle.** Deposit a disc the library already has and it's wiped and handed back as a `Blank Blueprint Disc`, except locked discs, which are protected and left untouched.
+**Duplicates recycle.** Deposit a disc the library already has and it's wiped and handed back as a `Blank Blueprint Disc`, except locked discs, which are protected and left untouched. The catalogued entry itself is never touched by a re-deposit: it keeps its name and its original depositor.
 
 ## STL to GCODE
 
@@ -26,6 +26,22 @@ Select a scan in the library and a **rename** field appears under its details. T
 Only **player scans** can be renamed. Official curated builds keep their shipped names: they're content, and on a shared library one player's edit would retitle the build for everyone on the server.
 
 Names are capped at 48 characters, and formatting codes and line breaks are stripped.
+
+## Removing a scan
+
+Deposited something by mistake? Select it and press **Del** twice. The button arms on the first click and reads **Sure?** for five seconds, so a stray click can't clear a build.
+
+Who can remove what:
+
+- **Whoever deposited it** can remove it.
+- **Operators** can remove anything.
+- **Official curated builds can't be removed** at all, by anyone.
+
+That split exists because the default library is shared and world-level. An open Delete button would let any player wipe builds other people contributed, while an operators-only one would leave you unable to clear your own mis-scan on an ordinary server.
+
+Removal takes the **catalogue entry only**, never the blueprint file. A disc you burned before removing still prints, and re-depositing it puts the entry back, so a mistake is recoverable as long as a copy exists somewhere.
+
+> Entries catalogued before this shipped have no recorded depositor, so they're operator-only to remove.
 
 ## Shared or personal
 

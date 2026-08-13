@@ -10,6 +10,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class RepositoryDataTest {
@@ -30,6 +31,52 @@ class RepositoryDataTest {
         FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
         original.toBuf(buf);
         assertEquals(original, RepoEntry.fromBuf(buf));
+    }
+
+    @Test
+    void depositorSurvivesBothRoundTrips() {
+        UUID depositor = UUID.randomUUID();
+        RepoEntry original = new RepoEntry(UUID.randomUUID(), "my scan", 1, 2, 3, 9, 2, 80, false,
+                depositor);
+
+        assertEquals(original, RepoEntry.fromNbt(original.toNbt()));
+        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+        original.toBuf(buf);
+        assertEquals(original, RepoEntry.fromBuf(buf));
+
+        assertTrue(original.depositedBy(depositor));
+        assertFalse(original.depositedBy(UUID.randomUUID()));
+    }
+
+    /**
+     * Entries catalogued before depositors were tracked have no Depositor tag. They must load
+     * as unattributed rather than throwing, and must never look like anyone's to remove.
+     */
+    @Test
+    void entryWithoutADepositorLoadsUnattributed() {
+        RepoEntry legacy = new RepoEntry(UUID.randomUUID(), "old scan", 1, 1, 1, 1, 1, 10, false);
+        CompoundTag tag = legacy.toNbt();
+        assertFalse(tag.contains("Depositor"), "an unattributed entry writes no Depositor tag");
+
+        RepoEntry loaded = RepoEntry.fromNbt(tag);
+        assertEquals(legacy, loaded);
+        assertNull(loaded.depositor());
+        assertFalse(loaded.depositedBy(UUID.randomUUID()));
+
+        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+        legacy.toBuf(buf);
+        assertEquals(legacy, RepoEntry.fromBuf(buf));
+    }
+
+    @Test
+    void removeDropsTheEntryAndReportsWhetherItWasThere() {
+        RepositoryData data = new RepositoryData();
+        RepoEntry entry = sample("shed");
+        data.add(entry);
+
+        assertTrue(data.remove(entry.id()), "removing a catalogued entry reports true");
+        assertFalse(data.contains(entry.id()));
+        assertFalse(data.remove(entry.id()), "removing it again is a no-op");
     }
 
     @Test

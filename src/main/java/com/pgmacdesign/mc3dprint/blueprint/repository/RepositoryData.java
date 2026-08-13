@@ -172,12 +172,22 @@ public class RepositoryData extends SavedData {
         }
     }
 
-    /** Adds (or refreshes) an entry; returns true if it was newly catalogued. */
+    /**
+     * Catalogues an entry; returns true if it was newly catalogued.
+     *
+     * <p>An already-catalogued id is left EXACTLY as it is. This used to overwrite before
+     * reporting false, which let a re-deposit rewrite the stored entry: burning a copy of
+     * someone else's scan and depositing it reassigned the depositor (and so the right to
+     * remove it), and a disc burned before a rename reverted the name. It also disagreed with
+     * the personal-mode path in RepositoryIndex, which has always refused without overwriting.
+     */
     public boolean add(RepoEntry entry) {
-        boolean isNew = !entries.containsKey(entry.id());
+        if (entries.containsKey(entry.id())) {
+            return false;
+        }
         entries.put(entry.id(), entry);
         setDirty();
-        return isNew;
+        return true;
     }
 
     public boolean contains(UUID id) {
@@ -190,9 +200,16 @@ public class RepositoryData extends SavedData {
         if (existing == null) {
             return false;
         }
-        entries.put(id, new RepoEntry(existing.id(), name, existing.sizeX(), existing.sizeY(),
-                existing.sizeZ(), existing.blockCount(), existing.tier(), existing.cost(),
-                existing.official()));
+        entries.put(id, existing.withName(name));
+        setDirty();
+        return true;
+    }
+
+    /** Drops an entry from the catalogue. False when it wasn't catalogued here. */
+    public boolean remove(UUID id) {
+        if (entries.remove(id) == null) {
+            return false;
+        }
         setDirty();
         return true;
     }
