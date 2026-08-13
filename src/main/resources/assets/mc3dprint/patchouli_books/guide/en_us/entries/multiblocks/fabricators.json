@@ -21,7 +21,7 @@
     {
       "type": "patchouli:text",
       "title": "Forming & Collapsing",
-      "text": "Lay the base, place the controller in the center, and $(l)right-click the controller$() to form the machine. The casing lights up. See the $(l)Build Walkthrough$() for the layouts.$(br2)Breaking a $(l)formed$() controller collapses the whole machine back into a $(l)single item$() that re-forms when re-placed with its inventory, upgrades and $(l)stored RF intact$(). It always comes back in $(l)Print mode$() with a clean status (any armed deconstruct region is dropped), so break-and-replace also works as a $(l)reset$() for a machine stuck in the wrong mode.$(br2)Move a Fabricator without rebuilding it."
+      "text": "Lay the base, place the controller in the center, and $(l)right-click the controller$() to form the machine. The casing lights up. See the $(l)Build Walkthrough$() for the layouts.$(br2)Breaking a $(l)formed$() controller collapses the whole machine back into a $(l)single item$() that re-forms when re-placed with its inventory, upgrades and $(l)stored RF intact$(). It always comes back in $(l)Print mode$() with a clean status (any armed deconstruct region is dropped), so break-and-replace also works as a $(l)reset$() for a machine stuck in the wrong mode.$(br2)Move a Fabricator without rebuilding it.$(br2)Once formed, $(l)any casing$() stands in for the machine: power pushed into a casing feeds the controller, and sneak-clicking a casing with the $(item)Structure Scanner$() arms the controller's deconstruct region."
     },
     {
       "type": "patchouli:spotlight",

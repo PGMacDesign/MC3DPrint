@@ -30,6 +30,18 @@ public class CasingBlockEntity extends BlockEntity {
         super(ModBlockEntities.CASING.get(), pos, state);
     }
 
+    /**
+     * The formed controller this casing belongs to, or {@code null} when it isn't part of a
+     * formed multiblock. Public because a casing has to stand in for the controller for any
+     * interaction aimed at "the machine": on a T8 pad the controller is 1 block of 81, so
+     * requiring a click on it exactly is not a usable interface (see the scanner's Deconstruct
+     * region hand-off, which used to fall through to setting a scanner corner instead).
+     */
+    @Nullable
+    public PrinterBlockEntity printerController() {
+        return controller() instanceof PrinterBlockEntity printer ? printer : null;
+    }
+
     @Nullable
     private BlockEntity controller() {
         if (level == null) {
@@ -76,8 +88,7 @@ public class CasingBlockEntity extends BlockEntity {
      */
     @Nullable
     public IEnergyStorage getEnergyStorage(@Nullable Direction side) {
-        return controller() instanceof PrinterBlockEntity controller
-                ? controller.getEnergyStorage()
-                : null;
+        PrinterBlockEntity controller = printerController();
+        return controller != null ? controller.getEnergyStorage() : null;
     }
 }
