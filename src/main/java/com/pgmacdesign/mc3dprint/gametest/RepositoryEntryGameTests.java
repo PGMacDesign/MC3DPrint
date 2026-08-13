@@ -90,6 +90,40 @@ public class RepositoryEntryGameTests {
         helper.succeed();
     }
 
+    /**
+     * Re-depositing a copy of someone else's scan must not transfer the right to remove it.
+     * The shared store used to overwrite the entry before reporting "already catalogued", so
+     * burning a copy and depositing it reassigned the depositor.
+     */
+    @GameTest(template = "empty5", timeoutTicks = 40)
+    public static void reDepositingCannotStealAnEntry(GameTestHelper helper) {
+        BlueprintRepositoryBlockEntity repo = repository(helper);
+        ServerPlayer thief = fakePlayer(helper);
+        UUID owner = UUID.fromString("00000000-0000-0000-0000-00000000beef");
+
+        Blueprint blueprint = Blueprint.builder("someone's tower", 1, 1, 1)
+                .set(0, 0, 0, BlueprintBlockState.parse("minecraft:stone"))
+                .build();
+        UUID id = BlueprintFileStore.forServer(helper.getLevel().getServer()).save(blueprint);
+        RepositoryIndex.add(thief, new RepoEntry(id, "someone's tower", 1, 1, 1, 1, 1, 10, false, owner));
+
+        // The thief deposits their own copy of the same blueprint...
+        RepositoryIndex.add(thief, new RepoEntry(id, "someone's tower", 1, 1, 1, 1, 1, 10, false,
+                thief.getUUID()));
+
+        RepoEntry after = RepositoryIndex.find(thief, id);
+        if (after == null || !owner.equals(after.depositor())) {
+            throw new GameTestAssertException("re-deposit reassigned the depositor to "
+                    + (after == null ? "<missing>" : String.valueOf(after.depositor())));
+        }
+        // ...and therefore still can't remove it.
+        repo.delete(thief, id);
+        if (RepositoryIndex.find(thief, id) == null) {
+            throw new GameTestAssertException("a re-deposit bought the right to remove the entry");
+        }
+        helper.succeed();
+    }
+
     @GameTest(template = "empty5", timeoutTicks = 40)
     public static void someoneElsesScanIsRefused(GameTestHelper helper) {
         BlueprintRepositoryBlockEntity repo = repository(helper);

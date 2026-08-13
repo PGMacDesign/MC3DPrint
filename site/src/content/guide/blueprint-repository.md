@@ -9,9 +9,9 @@ The Blueprint Repository is your blueprint library. It starts empty. You fill it
 
 ## Depositing discs
 
-Drop a written Blueprint Disc into the input slot and press `Deposit Disc`. The build is catalogued and the disc consumed. Once catalogued, a build stays forever and you can re-burn as many copies as you like.
+Drop a written Blueprint Disc into the input slot and press `Deposit Disc`. The build is catalogued and the disc consumed. Once catalogued you can re-burn as many copies as you like, and it stays until somebody [removes it](#removing-a-scan) on purpose.
 
-**Duplicates recycle.** Deposit a disc the library already has and it's wiped and handed back as a `Blank Blueprint Disc`, except locked discs, which are protected and left untouched.
+**Duplicates recycle.** Deposit a disc the library already has and it's wiped and handed back as a `Blank Blueprint Disc`, except locked discs, which are protected and left untouched. The catalogued entry itself is never touched by a re-deposit: it keeps its name and its original depositor.
 
 ## STL to GCODE
 
