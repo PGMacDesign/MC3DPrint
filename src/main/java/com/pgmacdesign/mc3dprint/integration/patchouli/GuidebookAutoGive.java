@@ -35,9 +35,16 @@ public final class GuidebookAutoGive {
 
     /** Trigger 1: crafting the first printer. */
     public static void onItemCrafted(PlayerEvent.ItemCraftedEvent event) {
-        if (event.getEntity() instanceof ServerPlayer player
-                && eligible(player)
-                && event.getCrafting().getItem() instanceof BlockItem blockItem
+        if (!(event.getEntity() instanceof ServerPlayer player) || !eligible(player)) {
+            return;
+        }
+        // Crafting the Handbook itself satisfies the hand-out: mark the player and give
+        // nothing, or the auto-give would hand them a second copy on their next trigger.
+        if (PatchouliCompat.isGuideBook(event.getCrafting())) {
+            markGiven(player);
+            return;
+        }
+        if (event.getCrafting().getItem() instanceof BlockItem blockItem
                 && blockItem.getBlock() instanceof PrinterBlock) {
             give(player);
         }
@@ -91,11 +98,16 @@ public final class GuidebookAutoGive {
         if (!player.getInventory().add(book)) {
             player.drop(book, false);
         }
+        markGiven(player);
+        return true;
+    }
+
+    /** Records that this player has their Handbook, however they came by it. */
+    private static void markGiven(ServerPlayer player) {
         CompoundTag root = player.getPersistentData();
         CompoundTag persisted = NbtCompat.getCompound(root, Player.PERSISTED_NBT_TAG);
         persisted.putBoolean(TAG_BOOK_GIVEN, true);
         root.put(Player.PERSISTED_NBT_TAG, persisted);
-        return true;
     }
 
     private static boolean hasBlueprintDisc(Player player) {

@@ -48,6 +48,24 @@ public final class PatchouliCompat {
     }
 
     /**
+     * Whether {@code stack} is a Patchouli book already bound to THIS mod's guide. Reads the
+     * live {@code patchouli:book} component the same registry-lookup way {@link #stampBook}
+     * writes it, so no Patchouli import is needed.
+     */
+    public static boolean isGuideBook(ItemStack stack) {
+        var bookItem = RegistryCompat.item(BOOK_ITEM_ID);
+        if (bookItem == null || !stack.is(bookItem)) {
+            return false;
+        }
+        DataComponentType<?> type = RegistryCompat.dataComponentType(BOOK_COMPONENT_ID);
+        if (type == null) {
+            return false;
+        }
+        Object bound = stack.get(type);
+        return bound instanceof ResourceLocation book && book.toString().equals(GUIDE_BOOK_ID);
+    }
+
+    /**
      * Bind {@code bookId} ("ns:bookname") onto a Patchouli book stack via the live {@code
      * patchouli:book} component, looked up from the registry so we need no Patchouli import. The
      * component is {@code DataComponentType<ResourceLocation>} — the unchecked cast matches
