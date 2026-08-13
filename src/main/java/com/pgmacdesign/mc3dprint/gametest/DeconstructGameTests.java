@@ -1,13 +1,19 @@
 package com.pgmacdesign.mc3dprint.gametest;
 
 import com.pgmacdesign.mc3dprint.MC3DPrint;
+import com.pgmacdesign.mc3dprint.blueprint.Blueprint;
+import com.pgmacdesign.mc3dprint.blueprint.BlueprintBlockState;
+import com.pgmacdesign.mc3dprint.blueprint.BlueprintFileStore;
 import com.pgmacdesign.mc3dprint.fu.FuValue;
 import com.pgmacdesign.mc3dprint.fu.FuValueRegistry;
 import com.pgmacdesign.mc3dprint.fu.SpoolItem;
 import com.pgmacdesign.mc3dprint.machine.MachineTier;
+import com.pgmacdesign.mc3dprint.machine.DeconstructJob;
+import com.pgmacdesign.mc3dprint.machine.PrintPlacement;
 import com.pgmacdesign.mc3dprint.machine.PrinterBlockEntity;
 import com.pgmacdesign.mc3dprint.machine.multiblock.ControllerBlock;
 import com.pgmacdesign.mc3dprint.machine.multiblock.MultiblockPattern;
+import com.pgmacdesign.mc3dprint.item.BlueprintDiscItem;
 import com.pgmacdesign.mc3dprint.registry.ModBlocks;
 import com.pgmacdesign.mc3dprint.registry.ModItems;
 import com.pgmacdesign.mc3dprint.scanner.ScannerItem;
@@ -25,6 +31,7 @@ import net.minecraftforge.gametest.GameTestHolder;
 import net.minecraftforge.gametest.PrefixGameTestTemplate;
 
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Deconstruct Mode invariants: exact lossy yield, zero-yield classes, skip-in-place
@@ -302,6 +309,245 @@ public class DeconstructGameTests {
         return tag != null && tag.contains(key)
                 ? Optional.of(NbtUtils.readBlockPos(tag.getCompound(key)))
                 : Optional.empty();
+    }
+
+    // --- Un-print: Deconstruct masked to what the machine actually printed ---
+
+    /**
+     * Prints a 2x1x2 iron pad from a one-block-tall blueprint and returns the printer, with
+     * the print already finished so {@code lastPrint} is recorded.
+     */
+    private static final BlockPos UNPRINT_PRINTER = new BlockPos(2, 1, 2);
+
+    /**
+     * A 2x2x2 blueprint whose BOTTOM layer is solid iron and whose top layer is empty. The
+     * empty upper half is the point: those cells sit inside the deconstruct box but outside
+     * the mask, which is exactly where an un-print must keep its hands off.
+     */
+    private static PrinterBlockEntity printIronPad(GameTestHelper helper, BlockPos printerPos) {
+        Blueprint blueprint = Blueprint.builder("unprint-test", 2, 2, 2)
+                .set(0, 0, 0, BlueprintBlockState.parse("minecraft:iron_block"))
+                .set(1, 0, 0, BlueprintBlockState.parse("minecraft:iron_block"))
+                .set(0, 0, 1, BlueprintBlockState.parse("minecraft:iron_block"))
+                .set(1, 0, 1, BlueprintBlockState.parse("minecraft:iron_block"))
+                .build();
+        UUID id = BlueprintFileStore.forServer(helper.getLevel().getServer()).save(blueprint);
+
+        PrinterBlockEntity printer = poweredPrinter(helper, printerPos);
+        ItemStack disc = new ItemStack(ModItems.BLUEPRINT_DISC.get());
+        BlueprintDiscItem.writeBlueprint(disc, id, blueprint);
+        printer.inventory().setStackInSlot(PrinterBlockEntity.SLOT_TEMPLATE, disc);
+
+        ItemStack spool = new ItemStack(ModItems.SPOOLS.get(valueOf(Items.IRON_BLOCK).tier() - 1).get());
+        SpoolItem.setFu(spool, 100_000);
+        printer.spoolInventory().setStackInSlot(0, spool);
+        return printer;
+    }
+
+    /** Fails the sequence step unless the pad print has fully landed. */
+    private static void requirePrintFinished(PrinterBlockEntity printer) {
+        if (printer.activeJob() != null) {
+            throw new GameTestAssertException("print still running");
+        }
+        if (printer.lastPrint() == null) {
+            throw new GameTestAssertException("print did not record a placement");
+        }
+    }
+
+    /**
+     * The core un-print promise: Start on a machine flipped to Decon after a print consumes
+     * the printed blocks and NOTHING else. The terrain the build sits on and a block the
+     * player put inside the footprint afterwards both survive.
+     */
+    @GameTest(template = "empty5", timeoutTicks = 600)
+    public static void unprintRemovesOnlyThePrintedBlocks(GameTestHelper helper) {
+        PrinterBlockEntity printer = printIronPad(helper, UNPRINT_PRINTER);
+        // Resolved once the print lands: 0 = origin, 1 = a player block INSIDE the box but
+        // outside the mask (the empty upper half), 2 = the ground beneath the build.
+        BlockPos[] marks = new BlockPos[3];
+
+        helper.startSequence()
+                .thenWaitUntil(() -> requirePrintFinished(printer))
+                .thenExecute(() -> {
+                    marks[0] = printer.lastPrint().origin();
+                    marks[1] = marks[0].above();
+                    marks[2] = marks[0].below();
+                    helper.getLevel().setBlockAndUpdate(marks[1], Blocks.GOLD_BLOCK.defaultBlockState());
+                    helper.getLevel().setBlockAndUpdate(marks[2], Blocks.DIRT.defaultBlockState());
+                    printer.setDeconstructMode(true);
+                    if (!printer.unprintArmed()) {
+                        throw new GameTestAssertException(
+                                "flipping to Decon after a print did not arm an un-print");
+                    }
+                    printer.requestStart();
+                })
+                // Wait on the one-shot disarm, not on a null job: the job is also null in
+                // the ticks BEFORE it starts, which would let the assertions run too early.
+                .thenWaitUntil(() -> {
+                    if (printer.unprintArmed()) {
+                        throw new GameTestAssertException("un-print has not finished");
+                    }
+                })
+                .thenExecute(() -> {
+                    for (int dx = 0; dx < 2; dx++) {
+                        for (int dz = 0; dz < 2; dz++) {
+                            BlockPos printed = marks[0].offset(dx, 0, dz);
+                            if (!helper.getLevel().getBlockState(printed).isAir()) {
+                                throw new GameTestAssertException(
+                                        "printed block at " + printed + " survived the un-print");
+                            }
+                        }
+                    }
+                    if (!helper.getLevel().getBlockState(marks[1]).is(Blocks.GOLD_BLOCK)) {
+                        throw new GameTestAssertException(
+                                "un-print ate a block the player added inside the region");
+                    }
+                    if (!helper.getLevel().getBlockState(marks[2]).is(Blocks.DIRT)) {
+                        throw new GameTestAssertException("un-print ate the terrain under the build");
+                    }
+                })
+                .thenSucceed();
+    }
+
+    /** The un-print is one-shot: finishing it disarms, so Auto can't re-run it forever. */
+    @GameTest(template = "empty5", timeoutTicks = 600)
+    public static void completedUnprintDisarmsTheRegion(GameTestHelper helper) {
+        PrinterBlockEntity printer = printIronPad(helper, UNPRINT_PRINTER);
+
+        helper.startSequence()
+                .thenWaitUntil(() -> requirePrintFinished(printer))
+                .thenExecute(() -> {
+                    printer.setDeconstructMode(true);
+                    printer.requestStart();
+                })
+                .thenWaitUntil(() -> {
+                    if (printer.unprintArmed()) {
+                        throw new GameTestAssertException("un-print has not finished");
+                    }
+                })
+                .thenExecute(() -> {
+                    if (printer.deconstructRegionMin() != null || printer.deconstructRegionSize() != null) {
+                        throw new GameTestAssertException(
+                                "region stayed armed after the un-print completed");
+                    }
+                })
+                .thenSucceed();
+    }
+
+    /**
+     * A cell the print found ALREADY correct was never the machine's work: repair mode
+     * fast-forwards it at zero cost. The un-print must leave it, or printing a build into
+     * ground that already matches lets the un-print eat the ground.
+     */
+    @GameTest(template = "empty5", timeoutTicks = 600)
+    public static void unprintLeavesCellsThePrintFoundAlreadyCorrect(GameTestHelper helper) {
+        // Pre-place one of the four iron cells the pad will print, so repair mode skips it.
+        // Origin for a 2x2x2 build under a printer at (2,1,2) is (1,2,1).
+        BlockPos preexisting = new BlockPos(1, 2, 1);
+        helper.setBlock(preexisting, Blocks.IRON_BLOCK);
+
+        PrinterBlockEntity printer = printIronPad(helper, UNPRINT_PRINTER);
+
+        helper.startSequence()
+                .thenWaitUntil(() -> requirePrintFinished(printer))
+                .thenExecute(() -> {
+                    printer.setDeconstructMode(true);
+                    printer.requestStart();
+                })
+                .thenWaitUntil(() -> {
+                    if (printer.unprintArmed()) {
+                        throw new GameTestAssertException("un-print has not finished");
+                    }
+                })
+                .thenExecute(() -> {
+                    if (!helper.getBlockState(preexisting).is(Blocks.IRON_BLOCK)) {
+                        throw new GameTestAssertException(
+                                "un-print removed a block it only found, never placed");
+                    }
+                    // ...while a cell the print really did place is gone.
+                    if (!helper.getBlockState(new BlockPos(2, 2, 2)).isAir()) {
+                        throw new GameTestAssertException("a genuinely printed cell survived");
+                    }
+                })
+                .thenSucceed();
+    }
+
+    /**
+     * Ore Salting swaps stone hosts for random ore at print time, so the placed block can't be
+     * recomputed from the blueprint. A salted print's mask must still recognise its own ore, or
+     * un-printing a salted build leaves the ores standing.
+     */
+    @GameTest(template = "empty5", timeoutTicks = 600)
+    public static void unprintClaimsItsOwnSaltedOre(GameTestHelper helper) {
+        PrinterBlockEntity printer = printIronPad(helper, UNPRINT_PRINTER);
+        BlockPos[] marks = new BlockPos[2]; // 0 = origin, 1 = the stand-in for a salted cell
+
+        helper.startSequence()
+                .thenWaitUntil(() -> requirePrintFinished(printer))
+                .thenExecute(() -> {
+                    marks[0] = printer.lastPrint().origin();
+                    marks[1] = marks[0];
+                    printer.setDeconstructMode(true);
+                    printer.requestStart();
+                })
+                .thenWaitUntil(() -> {
+                    if (printer.deconstructJob() == null) {
+                        throw new GameTestAssertException("un-print has not started");
+                    }
+                })
+                .thenExecute(() -> {
+                    // The mask was built from an unsalted blueprint, so ask it directly whether
+                    // it would claim an ore standing where a saltable host was printed. Driving a
+                    // real salted print isn't reproducible: the roll is random and rate-limited.
+                    DeconstructJob job = printer.deconstructJob();
+                    boolean claimsForeignOre = job.allows(marks[1],
+                            Blocks.DIAMOND_ORE.defaultBlockState());
+                    if (claimsForeignOre) {
+                        throw new GameTestAssertException(
+                                "an UNSALTED print must not claim ore it never placed");
+                    }
+                    DeconstructJob salted = new DeconstructJob(job.min(), job.size(),
+                            new PrintPlacement(printer.lastPrint().blueprintId(),
+                                    printer.lastPrint().origin(),
+                                    printer.lastPrint().orientation(),
+                                    printer.lastPrint().size(), true, java.util.Set.of()));
+                    salted.setMask(java.util.Map.of(marks[1], Blocks.STONE));
+                    if (!salted.allows(marks[1], Blocks.DIAMOND_ORE.defaultBlockState())) {
+                        throw new GameTestAssertException(
+                                "a salted print must claim the ore salting put on its stone");
+                    }
+                    if (salted.allows(marks[1], Blocks.GOLD_BLOCK.defaultBlockState())) {
+                        throw new GameTestAssertException(
+                                "salting widens the match to ORE only, not to any block");
+                    }
+                    if (salted.allows(marks[1], Blocks.DEEPSLATE_DIAMOND_ORE.defaultBlockState())) {
+                        throw new GameTestAssertException(
+                                "a stone host can only yield the stone-family ores");
+                    }
+                })
+                .thenSucceed();
+    }
+
+    /** A scanner-painted region is a raw box: it clears any un-print arming, mask included. */
+    @GameTest(template = "empty5", timeoutTicks = 600)
+    public static void scannerRegionOverridesTheUnprintMask(GameTestHelper helper) {
+        PrinterBlockEntity printer = printIronPad(helper, UNPRINT_PRINTER);
+
+        helper.startSequence()
+                .thenWaitUntil(() -> requirePrintFinished(printer))
+                .thenExecute(() -> {
+                    printer.setDeconstructMode(true);
+                    if (!printer.unprintArmed()) {
+                        throw new GameTestAssertException("expected an armed un-print to override");
+                    }
+                    BlockPos corner = helper.absolutePos(new BlockPos(4, 3, 4));
+                    printer.setDeconstructRegion(corner, corner);
+                    if (printer.unprintArmed()) {
+                        throw new GameTestAssertException(
+                                "a hand-painted region must clear the un-print mask");
+                    }
+                })
+                .thenSucceed();
     }
 
     /** An UNformed casing belongs to no machine, so it stays a plain corner-setting click. */

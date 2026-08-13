@@ -20,6 +20,11 @@
     },
     {
       "type": "patchouli:text",
+      "title": "Un-printing",
+      "text": "Printed something you didn't want? Just flip the machine to $(l)Decon$(). With no region of its own it arms an $(l)un-print$() of the last build it printed and the status reads $(l)Ready: Un-print$(). Press $(l)Start$() and the build dissolves.$(br2)An un-print is $(l)masked$(): only the blocks that print actually laid down, still unchanged, are taken. The ground underneath and anything you added inside the footprint are left alone. Cells the print found $(l)already correct$() are left too - repair-mode blocks were never the machine's work. It's $(l)one-shot$(): once it finishes, the machine disarms.$(br2)Handing over a scanner selection replaces this with a plain region, which takes $(o)everything$() in the box."
+    },
+    {
+      "type": "patchouli:text",
       "title": "Wind-Only Isn't Safe",
       "text": "Skipping keys off $(l)FU value alone$(). Wind-only treasure like the $(item)Dragon Egg$() $(o)is$() valued, it just never prints back, so it is $(l)not$() skipped: one inside an armed region is consumed like any other block, crediting half its winding value.$(br2)Move anything you care about outside the region before you press Start."
     }
