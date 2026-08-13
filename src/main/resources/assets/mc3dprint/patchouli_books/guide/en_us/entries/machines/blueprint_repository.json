@@ -26,7 +26,7 @@
     {
       "type": "patchouli:text",
       "title": "Renaming Scans",
-      "text": "The $(item)Structure Scanner$() names a capture after where you stood: $(o)Scan @ 307,70,10$(). Useless once you've deposited a few.$(br2)Select a scan and a $(l)rename$() field appears under its details. Type a name, press $(l)Set$() (or Enter). The new title sticks in the library $(l)and$() in the stored blueprint, so a disc you burn later carries it too.$(br2)$(l)Player scans only$(). Official builds keep their shipped names - they are content, and on a shared library one edit would retitle the build for the whole server."
+      "text": "The $(item)Structure Scanner$() names a capture after where you stood: $(o)Scan @ 307,70,10$(). Useless once you've deposited a few.$(br2)Select a scan and a $(l)rename$() field appears under its details. Type a name, press $(l)Set$() (or Enter). The new title sticks in the library $(l)and$() in the stored blueprint, so a disc you burn later carries it too.$(br2)$(l)Player scans only$(). Official builds keep their shipped names - they are content, and on a shared library one edit would retitle the build for the whole server.$(br2)Names cap at $(l)48$() characters; formatting codes and line breaks are stripped."
     },
     {
       "type": "patchouli:text",

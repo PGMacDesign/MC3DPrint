@@ -152,14 +152,20 @@ public class BlueprintRepositoryScreen extends AbstractContainerScreen<Blueprint
 
     private void submitRename() {
         RepoEntry entry = selected();
-        if (entry == null || entry.official() || renameBox == null) {
+        if (entry == null || entry.official() || renameBox == null || renameTarget == null) {
+            return;
+        }
+        // Send the id the BOX was filled for, and only if it's still the selected build. The
+        // listing is name-sorted, so a rename re-sorts it; keying the send off the selection
+        // alone could retitle whichever build slid into that row.
+        if (!renameTarget.equals(entry.id())) {
             return;
         }
         String name = RepositoryRenamePacket.sanitize(renameBox.getValue());
         if (name.isEmpty() || name.equals(entry.name())) {
             return; // nothing to do; the server would reject a blank anyway
         }
-        sendRename(new RepositoryRenamePacket(entry.id(), name));
+        sendRename(new RepositoryRenamePacket(renameTarget, name));
         renameBox.setFocused(false);
     }
 

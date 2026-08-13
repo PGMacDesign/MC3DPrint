@@ -41,6 +41,12 @@ public class BlueprintRepositoryMenu extends AbstractContainerMenu {
     private List<RepoEntry> entries = new ArrayList<>();
     private Set<UUID> printed = Set.of();
     private int selectedIndex = -1;
+    /**
+     * The client's selection by identity. The listing is sorted by NAME, so a rename re-sorts
+     * it and a bare index would silently start pointing at a different build.
+     */
+    @Nullable
+    private UUID selectedClientId;
     // Server-side selection, resolved to a concrete blueprint id.
     @Nullable
     private UUID selectedId;
@@ -90,8 +96,18 @@ public class BlueprintRepositoryMenu extends AbstractContainerMenu {
     public void setEntries(List<RepoEntry> entries, Set<UUID> printed) {
         this.entries = entries;
         this.printed = printed;
-        if (selectedIndex >= entries.size()) {
-            selectedIndex = -1;
+        // Follow the selected build to its new row rather than keeping a stale index.
+        selectedIndex = -1;
+        if (selectedClientId != null) {
+            for (int i = 0; i < entries.size(); i++) {
+                if (entries.get(i).id().equals(selectedClientId)) {
+                    selectedIndex = i;
+                    break;
+                }
+            }
+            if (selectedIndex < 0) {
+                selectedClientId = null;
+            }
         }
     }
 
@@ -109,6 +125,13 @@ public class BlueprintRepositoryMenu extends AbstractContainerMenu {
 
     public void setSelectedIndex(int index) {
         this.selectedIndex = index;
+        this.selectedClientId = index >= 0 && index < entries.size() ? entries.get(index).id() : null;
+    }
+
+    /** The selected build's id on the client, stable across a re-sorted listing. */
+    @Nullable
+    public UUID selectedClientId() {
+        return selectedClientId;
     }
 
     public ItemStack inputStack() {
