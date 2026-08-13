@@ -86,9 +86,10 @@ public final class GuidebookAutoGive {
      * flag said before. Returns false only when Patchouli isn't providing a usable book stack.
      *
      * <p>Public because the auto-give is a ONE-shot per player: lose the book and no trigger
-     * ever fires again, there's no recipe, and the item belongs to Patchouli so it can't be
-     * given by a {@code mc3dprint:} id. {@code /mc3dprint guide} is the way back, and it routes
-     * through here so a manual hand-out also disarms the pending auto-give.
+     * ever fires again, and the item belongs to Patchouli so it can't be given by a
+     * {@code mc3dprint:} id. Recovery is either the crafting recipe (Extrudium Crystal + Book)
+     * or {@code /mc3dprint guide}, which routes through here so a manual hand-out also disarms
+     * the pending auto-give.
      */
     public static boolean grant(ServerPlayer player) {
         ItemStack book = PatchouliCompat.guideBookStack();

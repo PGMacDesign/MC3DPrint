@@ -129,6 +129,9 @@ class ForeignRecipeIngredientsAreGatedTest {
 
         JsonArray ingredients = recipe.getAsJsonArray("ingredients");
         Set<String> items = itemIds(ingredients);
+        // Count first: itemIds returns a Set, so two Books would collapse to one entry here.
+        assertTrue(ingredients.size() == 2,
+                "expected exactly two ingredient entries, got " + ingredients);
         assertTrue(items.equals(Set.of("mc3dprint:extrudium_crystal", "minecraft:book")),
                 "expected an Extrudium Crystal + a Book, got " + items);
     }
