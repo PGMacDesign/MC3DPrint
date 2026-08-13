@@ -61,11 +61,13 @@ public class ScannerItem extends Item {
 
         // Sneak-click a printer/fabricator: hand the two-corner selection off as its
         // Deconstruct region (arms Deconstruct Mode) instead of setting a corner.
-        if (player != null && player.isSecondaryUseActive()
-                && level.getBlockEntity(clicked)
-                        instanceof com.pgmacdesign.mc3dprint.machine.PrinterBlockEntity printer) {
-            handOffDeconstructRegion(level, player, stack, clicked, printer);
-            return InteractionResult.CONSUME;
+        if (player != null && player.isSecondaryUseActive()) {
+            com.pgmacdesign.mc3dprint.machine.PrinterBlockEntity printer =
+                    machineAt(level, clicked);
+            if (printer != null) {
+                handOffDeconstructRegion(level, player, stack, clicked, printer);
+                return InteractionResult.CONSUME;
+            }
         }
 
         boolean settingB = tag.getBoolean(TAG_NEXT_IS_B);
@@ -172,6 +174,25 @@ public class ScannerItem extends Item {
                 blueprint.blockCount()), true);
         level.playSound(null, player.blockPosition(), SoundEvents.PLAYER_LEVELUP, SoundSource.PLAYERS, 0.5F, 1.5F);
         return InteractionResultHolder.consume(stack);
+    }
+
+    /**
+     * The machine a click at {@code pos} addresses: a printer/controller directly, or the
+     * controller a multiblock casing belongs to. Casings must resolve here, otherwise the
+     * region hand-off only worked on the single controller block of an N×N pad and every
+     * other click silently overwrote a scanner corner instead.
+     */
+    @javax.annotation.Nullable
+    private static com.pgmacdesign.mc3dprint.machine.PrinterBlockEntity machineAt(
+            Level level, BlockPos pos) {
+        net.minecraft.world.level.block.entity.BlockEntity be = level.getBlockEntity(pos);
+        if (be instanceof com.pgmacdesign.mc3dprint.machine.PrinterBlockEntity printer) {
+            return printer;
+        }
+        if (be instanceof com.pgmacdesign.mc3dprint.machine.multiblock.CasingBlockEntity casing) {
+            return casing.printerController();
+        }
+        return null;
     }
 
     private static void handOffDeconstructRegion(Level level, Player player, ItemStack stack,

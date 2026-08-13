@@ -1,6 +1,7 @@
 package com.pgmacdesign.mc3dprint.machine.multiblock;
 
 import com.pgmacdesign.mc3dprint.machine.MachineTier;
+import com.pgmacdesign.mc3dprint.machine.PrinterBlockEntity;
 import com.pgmacdesign.mc3dprint.registry.ModBlockEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -30,6 +31,18 @@ public class CasingBlockEntity extends BlockEntity {
 
     public CasingBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.CASING.get(), pos, state);
+    }
+
+    /**
+     * The formed controller this casing belongs to, or {@code null} when it isn't part of a
+     * formed multiblock. Public because a casing has to stand in for the controller for any
+     * interaction aimed at "the machine": on a T8 pad the controller is 1 block of 81, so
+     * requiring a click on it exactly is not a usable interface (see the scanner's Deconstruct
+     * region hand-off, which used to fall through to setting a scanner corner instead).
+     */
+    @Nullable
+    public PrinterBlockEntity printerController() {
+        return controller() instanceof PrinterBlockEntity printer ? printer : null;
     }
 
     @Nullable

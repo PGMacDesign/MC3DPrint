@@ -6,7 +6,7 @@
   "pages": [
     {
       "type": "patchouli:text",
-      "text": "Every printer and fabricator can run $(l)in reverse$(): select a region and the machine consumes it block by block, banking $(l)Filament Units$() into its docked spools (then any racks on the cable network).$(br2)To arm it: set $(l)two corners$() with the $(item)Structure Scanner$(), then $(o)sneak-click the machine$(). The region can't be wider than the machine's print footprint, and must be within $(l)64 blocks$()."
+      "text": "Every printer and fabricator can run $(l)in reverse$(): select a region and the machine consumes it block by block, banking $(l)Filament Units$() into its docked spools (then any racks on the cable network).$(br2)To arm it: set $(l)two corners$() with the $(item)Structure Scanner$(), then $(o)sneak-click the machine$() - on a fabricator, $(o)any casing$() of the formed pad works, not just the controller. The region can't be wider than the machine's print footprint, and must be within $(l)64 blocks$()."
     },
     {
       "type": "patchouli:text",
