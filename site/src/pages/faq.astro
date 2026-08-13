@@ -35,6 +35,12 @@ const faqs = [
         <p>Flip <strong>Auto ON</strong> and the printer starts the moment a printable disc or item lands, and keeps going. If a print began on its own, Auto is on.</p>`,
   },
   {
+    q: "I lost the Fabricator's Handbook, how do I get another?",
+    a: `<p>Run <code>/mc3dprint guide</code>. It hands you a fresh, working copy, and any player can run it: the Handbook is documentation, not loot.</p>
+        <p>The mod gives you the book automatically the first time you craft a printer or pick up a Blueprint Disc, but only <strong>once per player</strong>, so losing it used to leave you stuck. Operators can hand copies to other players with <code>/mc3dprint guide &lt;players&gt;</code>.</p>
+        <p>What does <em>not</em> work is <code>/give</code>-ing the book directly. The Handbook is a <a href="https://www.curseforge.com/minecraft/mc-mods/patchouli">Patchouli</a> book, so its item id is <code>patchouli:guide_book</code>, not an <code>mc3dprint:</code> one, and a plain give produces an unbound copy that reads <em>"Invalid book: no ID defined"</em>. Without Patchouli installed there is no book at all; the mod works fine, you just read the guide <a href="/guide/">here on the site</a> instead.</p>`,
+  },
+  {
     q: "Can I change how the machines look?",
     a: `<p>Yes, the mod ships two optional built-in styles: <strong>Blueprint Mode</strong> (every machine as its own schematic: blueprint blues and white line-work) and <strong>Dark Mode</strong> (matte near-black, glow and tier colors stay loud).</p>
         <p>Enable one under <strong>Options → Resource Packs</strong>: move <em>MC3DPrint: Blueprint Mode</em> or <em>MC3DPrint: Dark Mode</em> to the Selected side and click Done. Move it back to return to the default art. Each release also attaches the styles as standalone resource-pack zips. Details in the <a href="/guide/alternate-styles/">Alternate styles</a> guide page.</p>`,
