@@ -392,7 +392,10 @@ public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
 
         Component status = switch (menu.state()) {
             case IDLE -> Component.translatable("gui.mc3dprint.state.idle");
-            case READY -> Component.translatable("gui.mc3dprint.state.ready");
+            // An armed un-print says so: the player needs to know Start will undo the last
+            // build, not consume the whole boxed region.
+            case READY -> Component.translatable(menu.unprintArmed()
+                    ? "gui.mc3dprint.state.ready_unprint" : "gui.mc3dprint.state.ready");
             case PRINTING -> Component.translatable("gui.mc3dprint.state.printing");
             case PAUSED_NO_POWER -> Component.translatable("gui.mc3dprint.state.paused_no_power");
             case PAUSED_OUTPUT_FULL -> Component.translatable("gui.mc3dprint.state.paused_output_full");

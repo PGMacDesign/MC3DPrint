@@ -118,7 +118,8 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
     public static final int DATA_AVAIL_TIER_BASE = 30;// +0..7 — exact-tier FU available, docked + network
     public static final int DATA_JOB_ACTIVE = 38;      // 1 while a print OR deconstruct job exists
     public static final int DATA_FU_NETWORK = 39;      // rack/cable FU toward the display tier (docked shows on the gauge)
-    public static final int DATA_COUNT = 40;
+    public static final int DATA_DECON_UNPRINT = 40;   // 1 when the armed region is a masked un-print
+    public static final int DATA_COUNT = 41;
 
     /** Newest history entries mirrored to clients for the GUI tooltip. */
     public static final int HISTORY_SYNC_CAP = 8;
@@ -215,6 +216,21 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
     private BlockPos deconstructSize;
     @Nullable
     private DeconstructJob deconstructJob;
+    /**
+     * The placement of the most recent print, kept after the job ends so Deconstruct can
+     * offer an un-print of it. Cleared once that un-print completes: the build is gone.
+     */
+    @Nullable
+    private PrintPlacement lastPrint;
+    /** Cells {@link #lastPrint} found already correct and skipped; folded in when arming. */
+    private final java.util.Set<BlockPos> lastPrintPreexisting = new java.util.HashSet<>();
+    /**
+     * The armed region is an un-print of {@link #lastPrint} rather than a raw box. Held
+     * separately from the job so the arming survives until Start (and so the GUI can say
+     * which kind of region is armed).
+     */
+    @Nullable
+    private PrintPlacement armedUnprint;
     /**
      * Safety arm-gate: true from the moment a region is handed over (or the machine
      * is switched into Deconstruct) until the player presses Start once. While set,
@@ -1270,10 +1286,16 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             // matching (repair mode), ones we can't resolve (modded world), and
             // ones this machine can't print (skipped — see canPrintBlock).
             boolean unprintable = resolvedOpt.isPresent() && !canPrintBlock(resolvedOpt.get());
+            BlockPos skipWorldPos = target == null ? null : worldPosFor(skipCandidate.local(), blueprint);
             boolean alreadyPlaced = target != null
-                    && serverLevel.getBlockState(worldPosFor(skipCandidate.local(), blueprint)) == target;
+                    && serverLevel.getBlockState(skipWorldPos) == target;
             if (target != null && !alreadyPlaced && !unprintable) {
                 break; // a printable block that still needs placing
+            }
+            if (alreadyPlaced) {
+                // The world already held this block, so the machine never placed it. Remember
+                // that: an un-print must not claim blocks it merely found (see PrintPlacement).
+                lastPrintPreexisting.add(skipWorldPos.immutable());
             }
             if (unprintable) {
                 recordSkippedBlock(resolvedOpt.get());
@@ -1464,6 +1486,12 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         if (armedResinEffect == ResinItem.Effect.QUARTERMASTER) {
             initQuartermasterBudget(blueprint); // pre-count furnaces/chests to split the shared kit
         }
+        // Recorded at START, not on completion: a cancelled half-print is still something the
+        // player will want to undo, and the placement is fully known here. Must come AFTER the
+        // resin arming settles — Ore Salting changes which blocks actually land, and the
+        // un-print mask has to know the roll happened.
+        lastPrintPreexisting.clear();
+        lastPrint = PrintPlacement.of(activeJob, armedResinEffect == ResinItem.Effect.ORE_SALTING);
         placementOrder = buildPlacementOrder(blueprint);
         placementCooldown = 0;
         forceChunks(serverLevel, box, true);
@@ -1790,12 +1818,46 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         startRequested = false; // ...and neither does a pending Start trigger
         deconstructMin = min;
         deconstructSize = size;
+        armedUnprint = null; // a hand-painted region is a raw box, never a masked un-print
         deconstructMode = true;
         deconArmedRequiresStart = true; // fresh region: first job is manual-start only
         state = State.IDLE;
         setChanged();
         syncToClients();
         return RegionResult.SET;
+    }
+
+    /**
+     * Arms an <b>un-print</b> of the last build this machine printed: same box, but masked
+     * to the cells that print actually filled, so the terrain under the build and anything
+     * added inside its footprint afterwards survive. Returns false when there's no print to
+     * undo. The manual-Start gate applies exactly as it does to a scanner region.
+     */
+    public boolean armLastPrintRegion() {
+        if (lastPrint == null) {
+            return false;
+        }
+        cancelActiveJob();
+        startRequested = false;
+        deconstructMin = lastPrint.origin();
+        deconstructSize = lastPrint.size();
+        armedUnprint = lastPrint.withPreexisting(lastPrintPreexisting);
+        deconstructMode = true;
+        deconArmedRequiresStart = true;
+        state = State.IDLE;
+        setChanged();
+        syncToClients();
+        return true;
+    }
+
+    /** True while the armed region is a masked un-print rather than a raw box. */
+    public boolean unprintArmed() {
+        return armedUnprint != null;
+    }
+
+    @Nullable
+    public PrintPlacement lastPrint() {
+        return lastPrint;
     }
 
     @Nullable
@@ -1829,6 +1891,14 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         startRequested = false; // a pending Start never crosses a mode switch
         cancelActiveJob();
         state = State.IDLE;
+        // Flipping to Decon on a machine that has printed and has no region of its own
+        // arms an un-print of that build: "undo what I just printed" without a scanner.
+        // Only ever a default — an armed scanner region always wins, and the manual-Start
+        // gate above means nothing dissolves until the player asks for it.
+        if (value && deconstructMin == null && lastPrint != null) {
+            armLastPrintRegion();
+            return;
+        }
         setChanged();
         syncToClients();
     }
@@ -1879,6 +1949,15 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             finishDeconstruct(serverLevel);
             return;
         }
+        if (!ensureUnprintMask(serverLevel)) {
+            // Reload of an un-print whose blueprint file vanished. onLoad re-claimed the
+            // print zone and force-loaded the region for this restored job, so the teardown
+            // has to go through cancelActiveJob: dropping the reference alone would leave the
+            // zone claimed and the chunks pinned for the rest of the session. cancelActiveJob
+            // doesn't touch state, so the NO_REGION that ensureUnprintMask set survives.
+            cancelActiveJob();
+            return;
+        }
 
         placementCooldown++;
         if (placementCooldown < speedAdjusted(MC3DPrintConfig.ticksPerBlock(tier))) {
@@ -1899,8 +1978,12 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         DeconstructYield yield = null;
         while (!deconstructJob.isComplete()) {
             BlockPos candidate = deconstructJob.posFor(deconstructJob.progress());
-            DeconstructYield classified = classifyForDeconstruct(serverLevel, candidate,
-                    serverLevel.getBlockState(candidate));
+            BlockState candidateState = serverLevel.getBlockState(candidate);
+            // An un-print's mask decides scope first: out-of-mask positions are the terrain
+            // and the player's own additions, and are skipped exactly like an unbreakable.
+            DeconstructYield classified = deconstructJob.allows(candidate, candidateState)
+                    ? classifyForDeconstruct(serverLevel, candidate, candidateState)
+                    : DeconstructYield.SKIP;
             if (classified.removable()) {
                 pos = candidate;
                 yield = classified;
@@ -1958,12 +2041,59 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             state = State.ZONE_CONFLICT;
             return;
         }
-        deconstructJob = new DeconstructJob(deconstructMin, deconstructSize);
+        deconstructJob = new DeconstructJob(deconstructMin, deconstructSize, armedUnprint);
+        if (!ensureUnprintMask(serverLevel)) {
+            deconstructJob = null;
+            PrintZoneManager.release(serverLevel, worldPosition);
+            return; // blueprint file gone; state set by ensureUnprintMask
+        }
         placementCooldown = 0;
         forceChunks(serverLevel, box, true);
         state = State.DECONSTRUCTING;
         setChanged();
         syncToClients();
+    }
+
+    /**
+     * Resolves an un-print job's mask: every world position the recorded print filled, mapped
+     * to the block it put there. Built by replaying the blueprint through the same orientation
+     * transform the print used, so there's no inverse-rotation to get wrong. Also runs on
+     * resume, since the mask is transient. No-op for a plain box job.
+     */
+    private boolean ensureUnprintMask(ServerLevel serverLevel) {
+        if (deconstructJob == null || !deconstructJob.needsMask()) {
+            return true;
+        }
+        PrintPlacement placement = deconstructJob.placement();
+        Optional<Blueprint> loaded = BlueprintFileStore.forServer(serverLevel.getServer())
+                .load(placement.blueprintId());
+        if (loaded.isEmpty()) {
+            // The disc's blueprint file is gone, so we can't prove which blocks were ours.
+            // Refuse rather than fall back to eating the whole box.
+            state = State.NO_REGION;
+            deconstructMin = null;
+            deconstructSize = null;
+            armedUnprint = null;
+            setChanged();
+            syncToClients();
+            return false;
+        }
+        Blueprint blueprint = loaded.get();
+        PrintOrientation orientation = placement.orientation();
+        java.util.Map<BlockPos, net.minecraft.world.level.block.Block> mask =
+                new java.util.HashMap<>(blueprint.blockCount());
+        blueprint.forEachBlock((local, paletteIndex) -> blueprint.palette().get(paletteIndex)
+                .resolve()
+                .ifPresent(resolved -> mask.put(
+                        placement.origin().offset(orientation.transform(local,
+                                blueprint.sizeX(), blueprint.sizeY(), blueprint.sizeZ())),
+                        resolved.mirror(orientation.mirror())
+                                .rotate(orientation.rotation()).getBlock())));
+        // Cells the print found already correct were never its work; drop them so the
+        // un-print leaves the terrain (or earlier build) it happened to coincide with.
+        placement.preexisting().forEach(mask::remove);
+        deconstructJob.setMask(mask);
+        return true;
     }
 
     private void finishDeconstruct(ServerLevel serverLevel) {
@@ -1972,9 +2102,19 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         recordDeconstructHistory(deconstructJob);
         serverLevel.playSound(null, worldPosition, net.minecraft.sounds.SoundEvents.PLAYER_LEVELUP,
                 net.minecraft.sounds.SoundSource.BLOCKS, 0.5F, 0.8F);
+        boolean wasUnprint = deconstructJob.placement() != null;
         deconstructJob = null;
         lastPlacedPos = null;
         state = State.IDLE;
+        // An un-print is one-shot: the build it targeted no longer exists, so leaving the
+        // region armed would only draw a wireframe around nothing and let Auto re-run a
+        // job that can never match again. A hand-painted box keeps standing-recycler duty.
+        if (wasUnprint) {
+            deconstructMin = null;
+            deconstructSize = null;
+            armedUnprint = null;
+            lastPrint = null;
+        }
         setChanged();
         syncToClients();
     }
@@ -3008,6 +3148,7 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             case DATA_BP_SHORTFALL -> shortfallTier();
             case DATA_JOB_ACTIVE -> activeJob != null || deconstructJob != null ? 1 : 0;
             case DATA_FU_NETWORK -> networkFu(displayTier());
+            case DATA_DECON_UNPRINT -> armedUnprint != null ? 1 : 0;
             default -> {
                 if (index >= DATA_COST_TIER_BASE && index < DATA_COST_TIER_BASE + 8) {
                     ensureCostReport();
@@ -3146,6 +3287,13 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         if (deconstructJob != null) {
             w.store("DeconJob", CompoundTag.CODEC, deconstructJob.save());
         }
+        if (lastPrint != null) {
+            w.store("LastPrint", CompoundTag.CODEC,
+                    lastPrint.withPreexisting(lastPrintPreexisting).save());
+        }
+        if (armedUnprint != null) {
+            w.store("ArmedUnprint", CompoundTag.CODEC, armedUnprint.save());
+        }
     }
 
     private void readData(BeData.Reader r) {
@@ -3179,6 +3327,13 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         deconstructMin = r.read("DeconMin", BlockPos.CODEC).orElse(null);
         deconstructSize = r.read("DeconSize", BlockPos.CODEC).orElse(null);
         deconstructJob = r.read("DeconJob", CompoundTag.CODEC).map(DeconstructJob::load).orElse(null);
+        lastPrint = r.read("LastPrint", CompoundTag.CODEC).flatMap(PrintPlacement::load).orElse(null);
+        lastPrintPreexisting.clear();
+        if (lastPrint != null) {
+            lastPrintPreexisting.addAll(lastPrint.preexisting());
+        }
+        armedUnprint = r.read("ArmedUnprint", CompoundTag.CODEC)
+                .flatMap(PrintPlacement::load).orElse(null);
         // A persisted status only means something when it describes restored work.
         // Everything else is a stale snapshot of a condition the tick re-derives;
         // restoring it verbatim once wedged relocated fabricators in a dead error

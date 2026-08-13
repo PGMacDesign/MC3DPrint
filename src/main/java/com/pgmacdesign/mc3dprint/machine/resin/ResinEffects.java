@@ -154,6 +154,34 @@ public final class ResinEffects {
         return SALT_STONE.contains(b) || SALT_DEEPSLATE.contains(b) || SALT_NETHER.contains(b);
     }
 
+    /**
+     * Could {@code state} be something {@link #pickOre} produced for {@code host}?
+     *
+     * <p>Salting is random, so a salted print's actual output can't be recomputed from the
+     * blueprint afterwards. Deconstruct's un-print mask uses this to recognise its own salted
+     * ores: it's the exact set {@code pickOre} can return for that host's stone family, so it
+     * stays narrow rather than matching any ore a player might have placed.
+     */
+    public static boolean isSaltOutputFor(Block host, BlockState state) {
+        Block b = state.getBlock();
+        if (SALT_NETHER.contains(host)) {
+            return b == Blocks.NETHER_GOLD_ORE || b == Blocks.NETHER_QUARTZ_ORE;
+        }
+        if (SALT_DEEPSLATE.contains(host)) {
+            return b == Blocks.DEEPSLATE_DIAMOND_ORE || b == Blocks.DEEPSLATE_EMERALD_ORE
+                    || b == Blocks.DEEPSLATE_COAL_ORE || b == Blocks.DEEPSLATE_COPPER_ORE
+                    || b == Blocks.DEEPSLATE_IRON_ORE || b == Blocks.DEEPSLATE_GOLD_ORE
+                    || b == Blocks.DEEPSLATE_REDSTONE_ORE || b == Blocks.DEEPSLATE_LAPIS_ORE;
+        }
+        if (SALT_STONE.contains(host)) {
+            return b == Blocks.DIAMOND_ORE || b == Blocks.EMERALD_ORE
+                    || b == Blocks.COAL_ORE || b == Blocks.COPPER_ORE
+                    || b == Blocks.IRON_ORE || b == Blocks.GOLD_ORE
+                    || b == Blocks.REDSTONE_ORE || b == Blocks.LAPIS_ORE;
+        }
+        return false;
+    }
+
     /** Pick the ore variant matching the host's stone family. gemShare is the chance the
      *  (overworld/deepslate) result is diamond/emerald rather than a common ore; nether
      *  hosts always yield nether gold/quartz ore. */

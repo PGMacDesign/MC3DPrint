@@ -242,6 +242,7 @@
   "tooltip.mc3dprint.fu_no_spools": "Shift+Click a spool here to dock it (or sneak-use the printer with one)",
   "tooltip.mc3dprint.spool_worth": "1 FU here = %s Tier 1 FU",
   "gui.mc3dprint.state.ready": "Ready",
+  "gui.mc3dprint.state.ready_unprint": "Ready: Un-print",
   "gui.mc3dprint.start": "Start",
   "gui.mc3dprint.auto_on": "Auto: On",
   "gui.mc3dprint.auto_off": "Auto: Off",

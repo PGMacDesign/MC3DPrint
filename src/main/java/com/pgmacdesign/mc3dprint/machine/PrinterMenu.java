@@ -323,6 +323,11 @@ public class PrinterMenu extends AbstractContainerMenu {
         return SplitContainerData.combine(data, PrinterBlockEntity.DATA_DECON_MODE) != 0;
     }
 
+    /** The armed region is an un-print of the last build, not a hand-painted box. */
+    public boolean unprintArmed() {
+        return SplitContainerData.combine(data, PrinterBlockEntity.DATA_DECON_UNPRINT) != 0;
+    }
+
     // --- Matter Calculator readout (0s when no disc is loaded) ---
 
     public int blueprintFuTotal() {
