@@ -153,6 +153,19 @@ public class RepositoryData extends SavedData {
         return entries.containsKey(id);
     }
 
+    /** Retitles a catalogued entry in place. False when it isn't catalogued here. */
+    public boolean rename(UUID id, String name) {
+        RepoEntry existing = entries.get(id);
+        if (existing == null) {
+            return false;
+        }
+        entries.put(id, new RepoEntry(existing.id(), name, existing.sizeX(), existing.sizeY(),
+                existing.sizeZ(), existing.blockCount(), existing.tier(), existing.cost(),
+                existing.official()));
+        setDirty();
+        return true;
+    }
+
     public List<RepoEntry> entries() {
         return List.copyOf(entries.values());
     }

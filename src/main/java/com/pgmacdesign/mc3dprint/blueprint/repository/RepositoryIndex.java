@@ -75,6 +75,43 @@ public final class RepositoryIndex {
         return true;
     }
 
+    /** The catalogued entry with this id at the viewer's scope, or null. */
+    @Nullable
+    public static RepoEntry find(ServerPlayer player, UUID id) {
+        for (RepoEntry entry : entries(player)) {
+            if (entry.id().equals(id)) {
+                return entry;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Retitles a catalogued entry. Returns false when it isn't catalogued at this scope.
+     *
+     * <p>Callers are responsible for refusing official builds: curated names are content, and
+     * in shared mode one player's edit would rewrite the title for the whole server.
+     */
+    public static boolean rename(ServerPlayer player, UUID id, String name) {
+        if (shared()) {
+            return RepositoryData.get(player.level().getServer()).rename(id, name);
+        }
+        CompoundTag persisted = persisted(player);
+        ListTag list = persisted.getList(PERSONAL_TAG, Tag.TAG_COMPOUND);
+        for (int i = 0; i < list.size(); i++) {
+            CompoundTag element = list.getCompound(i);
+            if (element.getUUID("Id").equals(id)) {
+                RepoEntry existing = RepoEntry.fromNbt(element);
+                list.set(i, new RepoEntry(existing.id(), name, existing.sizeX(), existing.sizeY(),
+                        existing.sizeZ(), existing.blockCount(), existing.tier(), existing.cost(),
+                        existing.official()).toNbt());
+                persisted.put(PERSONAL_TAG, list);
+                return true;
+            }
+        }
+        return false;
+    }
+
     /**
      * Records that an (official) blueprint has been printed. Shared mode writes the
      * world store and never needs a player; personal mode needs the owner online —
