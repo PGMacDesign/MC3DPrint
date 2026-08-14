@@ -126,29 +126,29 @@ public class BlueprintRepositoryScreen extends AbstractContainerScreen<Blueprint
     }
 
     /**
-     * Shows the rename row only for a selected player scan, and refills it when the selection
-     * moves. Refilling is gated on the target actually changing so it never overwrites what
-     * the player is mid-way through typing.
+     * Shows the rename row and Delete only for a selected player scan this player may edit,
+     * and refills the box when the selection moves. Refilling is gated on the target actually
+     * changing so it never overwrites what the player is mid-way through typing.
      */
     private void syncRenameWidgets() {
         RepoEntry entry = selected();
-        boolean renameable = entry != null && !entry.official();
+        // Both actions share one gate (see BlueprintRepositoryBlockEntity.mayModify). The
+        // server re-checks; hiding the widgets just avoids offering controls that would
+        // always refuse.
+        boolean editable = entry != null && !entry.official() && mayModify(entry);
         if (renameBox == null || renameButton == null || deleteButton == null) {
             return;
         }
-        renameBox.visible = renameable;
-        renameBox.active = renameable;
-        renameButton.visible = renameable;
-        renameButton.active = renameable;
-        // Delete shows only when this player could actually use it. The server re-checks;
-        // hiding it just avoids offering a button that would always refuse.
-        boolean deletable = renameable && mayDelete(entry);
-        deleteButton.visible = deletable;
-        deleteButton.active = deletable;
-        if (!deletable && deleteConfirmTicks > 0) {
-            resetDeleteConfirm();
-        }
-        if (!renameable) {
+        renameBox.visible = editable;
+        renameBox.active = editable;
+        renameButton.visible = editable;
+        renameButton.active = editable;
+        deleteButton.visible = editable;
+        deleteButton.active = editable;
+        if (!editable) {
+            if (deleteConfirmTicks > 0) {
+                resetDeleteConfirm();
+            }
             renameTarget = null;
             return;
         }
@@ -163,7 +163,8 @@ public class BlueprintRepositoryScreen extends AbstractContainerScreen<Blueprint
 
     private void submitRename() {
         RepoEntry entry = selected();
-        if (entry == null || entry.official() || renameBox == null || renameTarget == null) {
+        if (entry == null || entry.official() || !mayModify(entry)
+                || renameBox == null || renameTarget == null) {
             return;
         }
         // Send the id the BOX was filled for, and only if it's still the selected build. The
@@ -180,15 +181,17 @@ public class BlueprintRepositoryScreen extends AbstractContainerScreen<Blueprint
         renameBox.setFocused(false);
     }
 
-    /** The depositor, or an operator — mirrors the server's gate in the repository block. */
-    private boolean mayDelete(RepoEntry entry) {
+    /** The depositor, or an operator: mirrors BlueprintRepositoryBlockEntity.mayModify. */
+    private boolean mayModify(RepoEntry entry) {
         if (minecraft == null || minecraft.player == null) {
             return false;
         }
-        // canUseGameMasterBlocks() is "permission level >= 2" as the client knows it; the
-        // server re-checks, so this only decides whether to offer the button.
+        // The level-2 check the server does, against the permission level the server told
+        // this client. NOT canUseGameMasterBlocks(): that is instabuild AND level 2, so it is
+        // false for an operator in Survival, which would hide the controls from exactly the
+        // operator the gate exists to serve.
         return entry.depositedBy(minecraft.player.getUUID())
-                || minecraft.player.canUseGameMasterBlocks();
+                || minecraft.player.hasPermissions(2);
     }
 
     /**

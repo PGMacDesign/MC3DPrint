@@ -157,6 +157,7 @@
   "message.mc3dprint.repository.rename_blank": "A blueprint needs a name",
   "message.mc3dprint.repository.rename_missing": "That blueprint isn't in this library",
   "message.mc3dprint.repository.rename_official": "Official builds keep their shipped names",
+  "message.mc3dprint.repository.rename_not_yours": "Only whoever deposited this (or an operator) can rename it",
   "gui.mc3dprint.repository.empty": "Library empty — deposit a disc",
   "gui.mc3dprint.repository.select_hint": "Select a blueprint",
   "gui.mc3dprint.repository.search": "Search…",
