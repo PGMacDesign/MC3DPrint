@@ -557,4 +557,60 @@ public class DeconstructGameTests {
         }
         helper.succeed();
     }
+
+    /**
+     * An arming we can't read must take the region with it. Dropping only the placement would
+     * leave the box armed with nothing masking it, and the next Start would run a plain
+     * whole-box deconstruct over a region the player armed as an un-print, eating the terrain
+     * the build sits on. Reachable only through corrupted or hand-edited NBT, since
+     * PrintPlacement.save always writes its three required keys together, so the corruption
+     * is injected rather than printed: an ArmedUnprint tag that is present but unreadable.
+     */
+    @GameTest(template = "empty5", timeoutTicks = 100)
+    public static void unreadableArmedUnprintClearsTheRegion(GameTestHelper helper) {
+        BlockPos printerPos = new BlockPos(2, 1, 2);
+        PrinterBlockEntity printer = poweredPrinter(helper, printerPos);
+        BlockPos corner = helper.absolutePos(new BlockPos(1, 2, 1));
+        printer.setDeconstructRegion(corner, corner);
+
+        //? if >=1.21.5 {
+        /*net.minecraft.world.level.storage.TagValueOutput out =
+                net.minecraft.world.level.storage.TagValueOutput.createWithContext(
+                        net.minecraft.util.ProblemReporter.DISCARDING,
+                        helper.getLevel().registryAccess());
+        printer.saveWithoutMetadata(out);
+        net.minecraft.nbt.CompoundTag saved = out.buildResult();
+        *///?} else {
+        net.minecraft.nbt.CompoundTag saved =
+                printer.saveWithoutMetadata(helper.getLevel().registryAccess());
+        //?}
+        // An empty compound is present-but-unreadable: PrintPlacement.load needs Blueprint,
+        // Origin and PlacementSize, so it returns empty exactly as damaged data would.
+        saved.put("ArmedUnprint", new net.minecraft.nbt.CompoundTag());
+
+        helper.setBlock(printerPos, Blocks.AIR);
+        helper.setBlock(printerPos, ModBlocks.PRINTERS.get(2).get());
+        if (!(helper.getBlockEntity(printerPos) instanceof PrinterBlockEntity fresh)) {
+            helper.fail("fresh printer BE missing");
+            return;
+        }
+        //? if >=1.21.5 {
+        /*fresh.loadWithComponents(net.minecraft.world.level.storage.TagValueInput.create(
+                net.minecraft.util.ProblemReporter.DISCARDING,
+                helper.getLevel().registryAccess(), saved));
+        *///?} else {
+        fresh.loadWithComponents(saved, helper.getLevel().registryAccess());
+        //?}
+
+        if (fresh.unprintArmed()) {
+            helper.fail("an unreadable arming survived the load");
+            return;
+        }
+        if (fresh.deconstructRegionMin() != null || fresh.deconstructRegionSize() != null) {
+            helper.fail("the region outlived the arming that defined it, so Start would run a "
+                    + "raw-box deconstruct over it");
+            return;
+        }
+        helper.succeed();
+    }
 }
