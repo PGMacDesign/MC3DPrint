@@ -1,9 +1,12 @@
 # Changelog
 
-All notable changes to **MC3DPrint** (Minecraft 1.20.1 / Forge). Format loosely follows
+All notable changes to **MC3DPrint**. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/). Versions before 0.3.0 predate this file.
 
-## [Unreleased]
+## [1.3.0] - 2026-08-14
+
+Playtest hardening: an un-print for Deconstruct Mode, a library you can curate, and two
+duplication holes closed.
 
 ### Added
 - **Redstone Module**: a fifth printer upgrade, capped at 1 per machine (the other four cap at 4). The
@@ -15,6 +18,61 @@ All notable changes to **MC3DPrint** (Minecraft 1.20.1 / Forge). Format loosely 
   the job's progress. `0` means nothing loaded and nothing to do, `1-15` means work is loaded and
   climbs to 15 on the final block. No upgrade needed, matching the Filament Rack: reading a machine is
   free. On a fabricator read the controller, not the casings.
+- **Un-print the last build**: flip a machine that has just printed into **Decon** with no region of
+  its own and it arms an un-print of that build. The status line reads *Ready: Un-print*, and Start
+  takes the build back as filament. It is **masked** to the print itself, so only positions that
+  print filled, and which still hold the block it put there, are eligible: the terrain underneath, a
+  chest you put inside it, a wall you extended, all left alone. One-shot, and a cancelled or partial
+  print still counts.
+- **`/mc3dprint guide`**: hands out the Fabricator's Handbook. Ungated for yourself, since the book
+  is documentation rather than loot; level 2 to hand it to other players.
+- **Handbook recipe**: an `Extrudium Crystal` plus a `Book`, shapeless. The auto-give was one-shot per
+  player, and the book belongs to Patchouli so `/give` produces an unbound copy, which left anyone who
+  lost theirs with no way back.
+- **Rename player scans** from the Blueprint Repository. `Scan @ 307,70,10` stops telling builds apart
+  the moment a library holds two. The new title sticks in the library and in the stored blueprint, so a
+  disc burned later carries it. Official builds keep their shipped names.
+- **Remove a deposited scan** from the repository, with a two-click confirm. Whoever deposited it can
+  remove it, operators can remove anything, official builds never. Only the catalogue entry goes: the
+  blueprint file stays, so a disc burned earlier still prints and re-depositing restores the entry.
+- **Filament Item Sorter** pushes un-windable items to an adjacent inventory instead of jamming.
+- **Blueprint loot**: plentiful, location-agnostic drops that never hand you a build you already have.
+- **Filament Unit values** for Mystical Agriculture and Agradditions, Tinkers' necrotic bone
+  (15 @ T2, wind-only), and gunpowder (10 @ T3, print-only).
+
+### Changed
+- **Scaffolding is scan-only.** It is how you reach the top corners of a build, so it lands in most
+  hand scans. It is still captured, but it adds no cost, never raises the blueprint's tier, and is
+  never built. Previously a Tier 1 cottage scanned from a scaffold tower came back as a Tier 3
+  blueprint, demanding a machine it never called for. Applied when quoting and printing rather than
+  when scanning, so discs scanned before this update are quoted correctly too.
+- Base draconium drops from 250 FU to 40, still Tier 7.
+- The Tier 8 fabricator and spool take **awakened draconium**, not dragon eggs.
+
+### Fixed
+- **Duplication via a placed item.** Captured block-entity contents were only cleared through
+  `Clearable`, which modded block entities need not implement. An item placed on a wall with Draconic
+  Evolution's `placed_item` survived the clear and printed back at no cost, once per print. The clear
+  is now verified rather than trusted: if item data survives it, the whole payload is dropped and the
+  block prints bare.
+- **Duplication via itemless blocks.** Any block with no item form printed free as "structural
+  matter", and that check ran ahead of the strict-mode gate, so it bypassed it entirely. Itemless
+  blocks that own a block entity are now never printable, whatever `unknownBlocksPrintable` says.
+- A cell the print **skips** no longer has to be clear, so a block standing where scaffolding was
+  captured cannot pause the whole job as *Obstructed*.
+- The scanner arms a fabricator's Deconstruct region from **any casing**. On a Tier 8 pad the
+  controller is 1 block of 81, so every other click silently overwrote a scanner corner instead.
+- Re-depositing a copy of someone else's scan no longer takes over the entry, which would have handed
+  over the right to remove it.
+- Renaming a scan needs the same depositor-or-operator permission as removing one. On a shared library
+  any player could previously retitle anyone's build, and the rename rewrites the stored blueprint.
+- The client's operator check uses the real permission level, so the rename and delete controls are
+  offered to an operator in Survival.
+- An unreadable un-print arming clears its region instead of degrading into a whole-box deconstruct.
+- The Filament Item Sorter's `setStackInSlot` was an unfiltered side door into the routing pool.
+- A re-placed fabricator restores the formed look rather than only its active casings.
+- Deconstruct Mode with no region no longer wedges on a permanent *Not Printable*.
+- A comparator no longer pulses `0` between items in Item Mode.
 
 ## [0.7.0] — 2026-06-20
 
