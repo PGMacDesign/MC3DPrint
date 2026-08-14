@@ -195,6 +195,56 @@ public class RepositoryEntryGameTests {
         helper.succeed();
     }
 
+    /**
+     * A rename is not display-only: it rewrites the stored blueprint, so on the default shared
+     * library an ungated one would let any player retitle a build somebody else contributed and
+     * lose the original name. Same depositor-or-operator gate as removal.
+     */
+    @GameTest(template = "empty5", timeoutTicks = 40)
+    public static void someoneElsesScanRefusesToBeRenamed(GameTestHelper helper) {
+        BlueprintRepositoryBlockEntity repo = repository(helper);
+        ServerPlayer player = fakePlayer(helper);
+        UUID id = catalogueForStranger(helper, player, "Someone else's tower");
+
+        // A FakePlayer has no permissions, so this is the plain non-depositor case.
+        repo.rename(player, id, "mine now");
+
+        RepoEntry entry = RepositoryIndex.find(player, id);
+        if (entry == null || !"Someone else's tower".equals(entry.name())) {
+            throw new GameTestAssertException("a non-depositor renamed someone else's entry to "
+                    + (entry == null ? "<missing>" : entry.name()));
+        }
+        // The stored blueprint is what a re-burn stamps on a disc; it must be untouched too.
+        String stored = BlueprintFileStore.forServer(helper.getLevel().getServer())
+                .load(id).map(Blueprint::name).orElse("<missing>");
+        if (!"Someone else's tower".equals(stored)) {
+            throw new GameTestAssertException("a refused rename still rewrote the blueprint: " + stored);
+        }
+        helper.succeed();
+    }
+
+    /** An entry catalogued before depositors were tracked has no owner: operator-only. */
+    @GameTest(template = "empty5", timeoutTicks = 40)
+    public static void unattributedLegacyEntryIsNotRenamableByAPlayer(GameTestHelper helper) {
+        BlueprintRepositoryBlockEntity repo = repository(helper);
+        ServerPlayer player = fakePlayer(helper);
+        Blueprint blueprint = Blueprint.builder("legacy scan", 1, 1, 1)
+                .set(0, 0, 0, BlueprintBlockState.parse("minecraft:stone"))
+                .build();
+        UUID id = BlueprintFileStore.forServer(helper.getLevel().getServer()).save(blueprint);
+        // The 9-arg constructor is exactly what pre-existing NBT loads as.
+        RepositoryIndex.add(player, new RepoEntry(id, "legacy scan", 1, 1, 1, 1, 1, 10, false));
+
+        repo.rename(player, id, "mine now");
+
+        RepoEntry entry = RepositoryIndex.find(player, id);
+        if (entry == null || !"legacy scan".equals(entry.name())) {
+            throw new GameTestAssertException("an unattributed entry was renamed to "
+                    + (entry == null ? "<missing>" : entry.name()));
+        }
+        helper.succeed();
+    }
+
     @GameTest(template = "empty5", timeoutTicks = 40)
     public static void officialBuildsRefuseToBeRenamed(GameTestHelper helper) {
         BlueprintRepositoryBlockEntity repo = repository(helper);

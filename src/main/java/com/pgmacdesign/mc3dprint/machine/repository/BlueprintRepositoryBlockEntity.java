@@ -178,6 +178,10 @@ public class BlueprintRepositoryBlockEntity extends BlockEntity implements MenuP
             feedback(player, "rename_official");
             return;
         }
+        if (!mayModify(player, entry)) {
+            feedback(player, "rename_not_yours");
+            return;
+        }
         if (!RepositoryIndex.rename(player, id, name)) {
             feedback(player, "rename_missing");
             return;
@@ -222,7 +226,7 @@ public class BlueprintRepositoryBlockEntity extends BlockEntity implements MenuP
             feedback(player, "delete_official");
             return;
         }
-        if (!mayRemove(player, entry)) {
+        if (!mayModify(player, entry)) {
             feedback(player, "delete_not_yours");
             return;
         }
@@ -235,8 +239,16 @@ public class BlueprintRepositoryBlockEntity extends BlockEntity implements MenuP
         sendListing(player);
     }
 
-    /** The depositor, or an operator. An unattributed entry (pre-existing data) is op-only. */
-    public static boolean mayRemove(ServerPlayer player, RepoEntry entry) {
+    /**
+     * Who may edit a catalogued entry at all: the depositor, or an operator. An unattributed
+     * entry (curated builds, and anything catalogued before depositors were tracked) is
+     * operator-only.
+     *
+     * <p>One gate for both renaming and removing. A rename is not display-only, it rewrites
+     * the stored blueprint, so on the default SHARED library an ungated rename would let any
+     * player retitle a build somebody else contributed and lose the original name.
+     */
+    public static boolean mayModify(ServerPlayer player, RepoEntry entry) {
         return entry.depositedBy(player.getUUID()) || isOperator(player);
     }
 
