@@ -23,7 +23,7 @@ The Structure Scanner names what it captures after where it was standing: `Scan 
 
 Select a scan in the library and a **rename** field appears under its details. Type a real name, press `Set` (or Enter), done. The new title sticks in the library **and** in the stored blueprint, so a disc you burn later carries it too.
 
-Only **player scans** can be renamed. Official curated builds keep their shipped names: they're content, and on a shared library one player's edit would retitle the build for everyone on the server.
+Only **player scans** can be renamed, and only by **whoever deposited them** (or an operator). Official curated builds keep their shipped names: they're content, and on a shared library one player's edit would retitle the build for everyone on the server. Renaming rewrites the stored blueprint, not just the row, so the same ownership rule that governs removal applies here. Entries catalogued before depositors were tracked have no recorded owner, which makes them operator-only.
 
 Names are capped at 48 characters, and formatting codes and line breaks are stripped.
 
