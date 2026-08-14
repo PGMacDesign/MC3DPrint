@@ -11,6 +11,8 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 
+import javax.annotation.Nullable;
+
 /**
  * Captures a world region into a blueprint. Air imports as empty (the printer
  * never places air; print areas must be pre-cleared per the design doc).
@@ -51,7 +53,9 @@ public final class ScanOperation {
                 // so printing a player-scanned disc can't restore (dupe) the items for the price
                 // of the container block alone.
                 CompoundTag data = strippedOfContents(pos, state, blockEntity.saveWithId());
-                builder.blockEntity(localX, localY, localZ, data);
+                if (data != null) { // null = contents survived the clear; carry no payload at all
+                    builder.blockEntity(localX, localY, localZ, data);
+                }
             }
         }
 
@@ -87,11 +91,15 @@ public final class ScanOperation {
     }
 
     /**
-     * Returns {@code data} with any stored contents removed. Rebuilds a throwaway block entity
-     * from the state, loads the captured tag, clears it via {@link net.minecraft.world.Clearable}
-     * (vanilla containers + most modded storage implement it), and re-saves. Structural/cosmetic
-     * NBT (sign text, banners, note blocks, skulls) survives the round-trip untouched.
+     * Returns {@code data} with any stored contents removed, or {@code null} when they could
+     * not be proven gone and the whole payload has to be dropped.
+     *
+     * <p>Rebuilds a throwaway block entity from the state, loads the captured tag, clears it via
+     * {@link net.minecraft.world.Clearable} (vanilla containers + most modded storage implement
+     * it), and re-saves. Structural/cosmetic NBT (sign text, banners, note blocks, skulls)
+     * survives the round-trip untouched.
      */
+    @Nullable
     private static CompoundTag strippedOfContents(BlockPos pos, BlockState state, CompoundTag data) {
         if (!(state.getBlock() instanceof net.minecraft.world.level.block.EntityBlock entityBlock)) {
             return data;
@@ -104,7 +112,53 @@ public final class ScanOperation {
         if (temp instanceof net.minecraft.world.Clearable clearable) {
             clearable.clearContent();
         }
-        return temp.saveWithId();
+        CompoundTag cleared = temp.saveWithId();
+        // Clearable is a courtesy, not a guarantee: a modded block entity that stores items
+        // without implementing it keeps them right through the clear. Draconic Evolution's
+        // placed_item is one (TilePlacedItem implements IInteractTile only), and it holds
+        // several stacks of whatever was placed on the wall — printing that back reproduced
+        // the items for free, as many times as the build was printed.
+        //
+        // So the clear is verified rather than trusted: if serialized item data survives it,
+        // the whole block-entity payload is dropped and the block prints bare. Losing a
+        // decoration's cosmetic NBT is a far smaller cost than a duplication loop, and we
+        // cannot tell a modded "display" payload from a modded "storage" one.
+        return holdsItemData(cleared) ? null : cleared;
+    }
+
+    /**
+     * Whether {@code tag} still contains anything shaped like a serialized {@link ItemStack}
+     * at any depth: a compound carrying both an {@code id} string and a stack count. Block
+     * entities carry their own {@code id} (the BE type) with no count, so the root never
+     * matches on that alone.
+     */
+    static boolean holdsItemData(CompoundTag tag) { // package-private for ScanOperationContentsTest
+        return holdsItemData((net.minecraft.nbt.Tag) tag);
+    }
+
+    private static boolean holdsItemData(net.minecraft.nbt.Tag tag) {
+        if (tag instanceof CompoundTag compound) {
+            boolean looksLikeStack = compound.contains("id")
+                    && (compound.contains("Count") || compound.contains("count"));
+            if (looksLikeStack) {
+                return true;
+            }
+            for (String key : compound.getAllKeys()) {
+                net.minecraft.nbt.Tag child = compound.get(key);
+                if (child != null && holdsItemData(child)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        if (tag instanceof net.minecraft.nbt.ListTag list) {
+            for (net.minecraft.nbt.Tag child : list) {
+                if (holdsItemData(child)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     /**

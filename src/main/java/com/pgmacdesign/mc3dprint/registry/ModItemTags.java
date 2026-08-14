@@ -167,5 +167,23 @@ public final class ModItemTags {
     public static final TagKey<Item> NO_PRINT =
             TagKey.create(Registries.ITEM, new ResourceLocation(MC3DPrint.MOD_ID, "no_print"));
 
+    /**
+     * "Scaffolding rule" — captured by a scan so the build reads correctly in the blueprint, but
+     * invisible to the print in every way: it never places, never costs FU, and never counts
+     * toward the blueprint's tier.
+     *
+     * <p>Scaffolding is the case this exists for. It is how you reach the far corners of a build
+     * to scan it, so it lands in almost every hand scan by accident, and it is not part of the
+     * build. Charging for it inflates the quote, and letting it set the tier can push an
+     * otherwise Tier 1 build up to the tier of the scaffolding itself, demanding a machine the
+     * build never needed.
+     *
+     * <p>Distinct from {@link #NO_PRINT}, which is about items that must never be reproduced
+     * (they still cost and still count). Backed by
+     * {@code data/mc3dprint/tags/item/print_ignored.json}.
+     */
+    public static final TagKey<Item> PRINT_IGNORED =
+            TagKey.create(Registries.ITEM, new ResourceLocation(MC3DPrint.MOD_ID, "print_ignored"));
+
     private ModItemTags() {}
 }
