@@ -619,6 +619,10 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         //?}
             return false;
         }
+        // Scan-only scaffolding: captured so the blueprint reads right, never built.
+        if (BlueprintDiscItem.isPrintIgnored(resolvedState)) {
+            return false;
+        }
         // No-print (wind-only) blocks are valued but must never print, even from an official disc,
         // so this precedes the trophy allowance below (wither_skeleton_skull is on both tags).
         if (isNoPrintBlock(resolvedState)) {
@@ -667,7 +671,12 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             return false;
         }
         if (state.getBlock().asItem() == Items.AIR) {
-            return true; // water, fire, wall torches, redstone wire, …
+            // ...but only when it can't be carrying anything. An itemless block with a block
+            // entity can still hold and drop items (and free + itemless bypasses strict mode
+            // entirely, since this check runs ahead of it), which is a duplication vector
+            // rather than structural matter. The families this branch is actually for (water,
+            // lava, fire) have no block entity, so none of them are affected.
+            return !(state.getBlock() instanceof net.minecraft.world.level.block.EntityBlock);
         }
         Block block = state.getBlock();
         return block instanceof net.minecraft.world.level.block.BushBlock     // crops/stems/saplings/flowers/wart

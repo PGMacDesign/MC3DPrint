@@ -15,6 +15,12 @@ The Structure Scanner turns any build you've made into a reusable blueprint. Cra
 
 The result is a written [Blueprint Disc](/guide/blueprints/): portable, tradeable, and printable on any machine of the right [tier](/guide/printer-tiers/). Blank discs craft two at a time, and each disc holds exactly one scan.
 
+## Scaffolding is free to scan
+
+Scaffolding is how you get to the top corners of a build to set them, so it ends up inside almost every hand-scanned region. The scanner captures it, but the printer treats it as if it weren't there: it **doesn't add to the print cost, doesn't raise the blueprint's tier, and never gets built**. Put it up, scan, tear it down, and the disc quotes the building you actually made.
+
+Without that rule a Tier 1 cottage scanned from a scaffold tower comes back as a Tier 3 blueprint, needing a machine the build never called for.
+
 ## Clear the area first
 
 > The printer never overwrites existing blocks: it only fills empty space.
