@@ -186,10 +186,12 @@ public class BlueprintRepositoryScreen extends AbstractContainerScreen<Blueprint
         if (minecraft == null || minecraft.player == null) {
             return false;
         }
-        // canUseGameMasterBlocks() is "permission level >= 2" as the client knows it; the
-        // server re-checks, so this only decides whether to offer the button.
+        // The level-2 check the server does, against the permission level the server told
+        // this client. NOT canUseGameMasterBlocks(): that is instabuild AND level 2, so it is
+        // false for an operator in Survival, which would hide the controls from exactly the
+        // operator the gate exists to serve.
         return entry.depositedBy(minecraft.player.getUUID())
-                || minecraft.player.canUseGameMasterBlocks();
+                || minecraft.player.hasPermissions(2);
     }
 
     /**
