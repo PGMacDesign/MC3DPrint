@@ -1,12 +1,19 @@
 package com.pgmacdesign.mc3dprint.machine;
 
+import com.pgmacdesign.mc3dprint.blueprint.PrintOrientation;
 import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.level.block.Mirror;
+import net.minecraft.world.level.block.Rotation;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class DeconstructJobTest {
@@ -63,5 +70,50 @@ class DeconstructJobTest {
             job.advance();
         }
         assertTrue(job.isComplete());
+    }
+
+    private static PrintPlacement placement(boolean oreSalted) {
+        return new PrintPlacement(UUID.fromString("00000000-0000-0000-0000-0000000000ff"),
+                new BlockPos(1, 2, 3),
+                new PrintOrientation(Rotation.CLOCKWISE_90, Mirror.NONE),
+                new BlockPos(2, 2, 2), oreSalted, Set.of(new BlockPos(9, 9, 9)));
+    }
+
+    @Test
+    void unprintPlacementSurvivesTheRoundTrip() {
+        DeconstructJob job = new DeconstructJob(new BlockPos(1, 2, 3), new BlockPos(2, 2, 2),
+                placement(true));
+        DeconstructJob loaded = DeconstructJob.load(job.save());
+
+        assertNotNull(loaded);
+        assertNotNull(loaded.placement());
+        assertEquals(placement(true), loaded.placement());
+        // Still an un-print, so it consumes nothing until the machine supplies a mask.
+        // (What a supplied mask then admits is world behaviour, covered in DeconstructGameTests.)
+        assertTrue(loaded.needsMask());
+    }
+
+    /**
+     * A present-but-unreadable Unprint tag must fail the whole restore. Silently dropping the
+     * placement would turn a masked un-print into a whole-box deconstruct, which is the exact
+     * outcome the mask exists to prevent.
+     */
+    @Test
+    void malformedUnprintTagRefusesToRestore() {
+        CompoundTag tag = new DeconstructJob(new BlockPos(1, 2, 3), new BlockPos(2, 2, 2),
+                placement(false)).save();
+        tag.put("Unprint", new CompoundTag()); // corrupted: no Blueprint/Origin/PlacementSize
+
+        assertNull(DeconstructJob.load(tag));
+    }
+
+    @Test
+    void aPlainBoxJobStillLoadsWithoutAPlacement() {
+        DeconstructJob loaded = DeconstructJob.load(
+                new DeconstructJob(new BlockPos(1, 2, 3), new BlockPos(2, 2, 2)).save());
+
+        assertNotNull(loaded);
+        assertNull(loaded.placement());
+        assertTrue(!loaded.needsMask(), "a plain box job never waits on a mask");
     }
 }

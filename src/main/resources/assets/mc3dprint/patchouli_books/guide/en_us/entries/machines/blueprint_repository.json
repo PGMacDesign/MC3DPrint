@@ -11,17 +11,27 @@
     {
       "type": "patchouli:text",
       "title": "Depositing Discs",
-      "text": "Drop a $(l)written$() Blueprint Disc into the input slot and press $(l)Deposit Disc$(). The build is catalogued into the library and the disc is consumed.$(br2)Nothing is lost: once catalogued, a build stays forever and you can re-burn as many copies as you like."
+      "text": "Drop a $(l)written$() Blueprint Disc into the input slot and press $(l)Deposit Disc$(). The build is catalogued into the library and the disc is consumed.$(br2)Once catalogued you can re-burn as many copies as you like, and it stays until somebody $(l)removes$() it on purpose."
     },
     {
       "type": "patchouli:text",
       "title": "Duplicates Recycle",
-      "text": "Deposit a disc the library $(l)already has$() and it won't be wasted: the disc is wiped and handed back as a $(item)Blank Blueprint Disc$() you can reuse.$(br2)$(l)Locked$() discs are protected: a duplicate locked disc is left untouched instead of being recycled."
+      "text": "Deposit a disc the library $(l)already has$() and it won't be wasted: the disc is wiped and handed back as a $(item)Blank Blueprint Disc$() you can reuse.$(br2)$(l)Locked$() discs are protected: a duplicate locked disc is left untouched instead of being recycled.$(br2)A re-deposit never rewrites the catalogued entry: it keeps its name and its original depositor."
     },
     {
       "type": "patchouli:text",
       "title": "STL to GCODE",
       "text": "Select a build in the list, drop a $(item)Blank Blueprint Disc$() into the input slot, and press $(l)STL to GCODE$() to burn a fresh written disc.$(br2)Burned copies keep the original's $(l)official$() or $(l)player-scan$() status, so the Resin anti-dupe rule still holds."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Renaming Scans",
+      "text": "The $(item)Structure Scanner$() names a capture after where you stood: $(o)Scan @ 307,70,10$(). Useless once you've deposited a few.$(br2)Select a scan and a $(l)rename$() field appears under its details. Type a name, press $(l)Set$() (or Enter). The new title sticks in the library $(l)and$() in the stored blueprint, so a disc you burn later carries it too.$(br2)$(l)Player scans only$(). Official builds keep their shipped names - they are content, and on a shared library one edit would retitle the build for the whole server.$(br2)Names cap at $(l)48$() characters; formatting codes and line breaks are stripped."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Removing a Scan",
+      "text": "Deposited something by mistake? Select it and press $(l)Del$() $(o)twice$() - the button arms on the first click and reads $(l)Sure?$() for five seconds.$(br2)$(li)Whoever $(l)deposited$() it can remove it$(li)$(l)Operators$() can remove anything$(li)$(l)Official$() builds can't be removed at all$(br2)The default library is shared, so an open button would let anyone wipe other players' contributions.$(br2)Removal takes the $(l)catalogue entry only$(), never the blueprint file: a disc burned earlier still prints, and re-depositing it restores the entry.$(br2)Entries catalogued before removal existed have no recorded depositor, so those are $(l)operator-only$()."
     },
     {
       "type": "patchouli:text",

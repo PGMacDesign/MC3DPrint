@@ -6,7 +6,7 @@
   "pages": [
     {
       "type": "patchouli:text",
-      "text": "Every printer and fabricator can run $(l)in reverse$(): select a region and the machine consumes it block by block, banking $(l)Filament Units$() into its docked spools (then any racks on the cable network).$(br2)To arm it: set $(l)two corners$() with the $(item)Structure Scanner$(), then $(o)sneak-click the machine$(). The region can't be wider than the machine's print footprint, and must be within $(l)64 blocks$()."
+      "text": "Every printer and fabricator can run $(l)in reverse$(): select a region and the machine consumes it block by block, banking $(l)Filament Units$() into its docked spools (then any racks on the cable network).$(br2)To arm it: set $(l)two corners$() with the $(item)Structure Scanner$(), then $(o)sneak-click the machine$() - on a fabricator, $(o)any casing$() of the formed pad works, not just the controller. The region can't be wider than the machine's print footprint, and must be within $(l)64 blocks$()."
     },
     {
       "type": "patchouli:text",
@@ -17,6 +17,11 @@
       "type": "patchouli:text",
       "title": "Running a Job",
       "text": "Toggle $(l)Print / Decon$() in the machine GUI (handing a region to a machine arms Decon automatically). A machine in Decon with $(l)no armed region$() reads $(l)No Region Set$(): hand it a scanner selection, or toggle back to $(l)Print$(). The armed region shows as a $(c:red)red wireframe$() in the world, and the $(l)first$() job after arming ALWAYS needs the $(l)Start button$(): $(l)Auto$() never fires on a fresh region, so nothing dissolves by surprise. After that first Start, Auto resumes as a standing recycler for the region.$(br2)Jobs work $(l)top-down$(), pause on power loss without losing progress, and pause $(l)before$() removing a block when every spool is full: filament is never voided. Changing the region or mode cancels the job cleanly and re-arms the Start gate."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Un-printing",
+      "text": "Printed something you didn't want? Just flip the machine to $(l)Decon$(). With no region of its own it arms an $(l)un-print$() of the last build it printed and the status reads $(l)Ready: Un-print$(). Press $(l)Start$() and the build dissolves.$(br2)An un-print is $(l)masked$(): only the blocks that print actually laid down, still unchanged, are taken. The ground underneath and anything you added inside the footprint are left alone. Cells the print found $(l)already correct$() are left too - repair-mode blocks were never the machine's work. It's $(l)one-shot$(): once it finishes, the machine disarms.$(br2)Handing over a scanner selection replaces this with a plain region, which takes $(o)everything$() in the box."
     },
     {
       "type": "patchouli:text",

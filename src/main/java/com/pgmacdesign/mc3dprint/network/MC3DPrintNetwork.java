@@ -8,9 +8,9 @@ import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.network.simple.SimpleChannel;
 
 /**
- * The mod's single SimpleChannel. Currently carries one S2C message: the
- * Blueprint Repository listing (which can't ride a {@code ContainerData} since
- * it's variable-length text, and is per-player in personal mode).
+ * The mod's single SimpleChannel. Carries the Blueprint Repository listing S2C
+ * (which can't ride a {@code ContainerData} since it's variable-length text, and is
+ * per-player in personal mode) and the rename request C2S.
  */
 public final class MC3DPrintNetwork {
     private static final String PROTOCOL = "1";
@@ -25,9 +25,20 @@ public final class MC3DPrintNetwork {
         CHANNEL.registerMessage(id++, RepositoryListingPacket.class,
                 RepositoryListingPacket::encode, RepositoryListingPacket::decode,
                 RepositoryListingPacket::handle);
+        CHANNEL.registerMessage(id++, RepositoryRenamePacket.class,
+                RepositoryRenamePacket::encode, RepositoryRenamePacket::decode,
+                RepositoryRenamePacket::handle);
     }
 
+    /**
+     * Sends to a player only when there's a live connection behind them. Fake players from
+     * automation mods, and the mock players gametests act as, have no real client on the other
+     * end; a GUI listing refresh is not worth taking the whole server-side action down over.
+     */
     public static void sendTo(ServerPlayer player, Object packet) {
+        if (player.connection == null || !player.connection.connection.isConnected()) {
+            return;
+        }
         CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), packet);
     }
 }
