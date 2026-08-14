@@ -222,8 +222,8 @@ public class BlueprintDiscItem extends Item {
                     continue;
                 }
                 Item item = resolved.get().getBlock().asItem();
-                if (item == Items.AIR) {
-                    continue;
+                if (item == Items.AIR || isPrintIgnored(resolved.get())) {
+                    continue; // never built, so it never sets the tier
                 }
                 int tier = FuValueRegistry.valueOf(new ItemStack(item)).map(FuValue::tier).orElse(1);
                 if (tier > max) {
@@ -271,6 +271,9 @@ public class BlueprintDiscItem extends Item {
                 BlockState state = resolved.get();
                 if (isStructuralMatter(state)) {
                     continue; // itemless / crops / farmland — prints free
+                }
+                if (isPrintIgnored(state)) {
+                    continue; // never built, so it never costs
                 }
                 Item item = state.getBlock().asItem();
                 if (item == Items.AIR) {
@@ -368,6 +371,28 @@ public class BlueprintDiscItem extends Item {
     }
 
     /**
+     * Blocks a print pretends aren't there: they never place, never cost, and never raise the
+     * blueprint's tier. Two families, both of which would otherwise price a build for matter it
+     * will never produce:
+     * <ul>
+     *   <li>{@code #print_ignored} — the scaffolding rule (scanned as scenery, never built);</li>
+     *   <li>{@code #no_print} — valued but unprintable, so charging for it quotes a build the
+     *       machine is going to skip anyway.</li>
+     * </ul>
+     * Shared by the printer's gate and both costing loops so a quote can never disagree with
+     * what actually gets built.
+     */
+    public static boolean isPrintIgnored(BlockState state) {
+        Item item = state.getBlock().asItem();
+        if (item == Items.AIR) {
+            return false;
+        }
+        ItemStack stack = new ItemStack(item);
+        return stack.is(com.pgmacdesign.mc3dprint.registry.ModItemTags.PRINT_IGNORED)
+                || stack.is(com.pgmacdesign.mc3dprint.registry.ModItemTags.NO_PRINT);
+    }
+
+    /**
      * Mirrors {@code PrinterBlockEntity.isStructuralMatter}: blocks that print
      * free — itemless blocks (water/fire/wall-torches, {@code asItem()==AIR})
      * and tilled/planted growth (crops, stems, saplings, farmland, dirt path).
@@ -377,7 +402,8 @@ public class BlueprintDiscItem extends Item {
             return false;
         }
         if (state.getBlock().asItem() == Items.AIR) {
-            return true;
+            // Mirrors the printer: itemless AND no block entity. See PrinterBlockEntity.
+            return !(state.getBlock() instanceof net.minecraft.world.level.block.EntityBlock);
         }
         Block block = state.getBlock();
         return block instanceof net.minecraft.world.level.block.BushBlock     // crops/stems/saplings/flowers/wart

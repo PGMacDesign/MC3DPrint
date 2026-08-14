@@ -22,6 +22,11 @@
       "type": "patchouli:text",
       "title": "Print, Don't Replace",
       "text": "The printer $(l)never overwrites existing blocks$(): it only fills empty space. Clear the print area first, or the printer will skip occupied positions and build the rest.$(br2)Server operators can import WorldEdit $(l).schem$() and Create / vanilla $(l).nbt$() files straight onto discs with $(o)/mc3dprint import$()."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Scaffolding",
+      "text": "$(item)Scaffolding$() is how you reach the top corners of a build, so it lands inside most hand scans. The scanner captures it, but the printer acts as if it were not there: it adds $(l)no cost$(), it does $(l)not$() raise the blueprint's tier, and it is $(l)never built$().$(br2)Put it up, scan, tear it down. Without the rule a Tier 1 cottage scanned from a scaffold tower comes back as a $(l)Tier 3$() blueprint needing a machine it never called for."
     }
   ]
 }

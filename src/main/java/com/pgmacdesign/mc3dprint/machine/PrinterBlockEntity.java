@@ -619,6 +619,10 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         //?}
             return false;
         }
+        // Scan-only scaffolding: captured so the blueprint reads right, never built.
+        if (BlueprintDiscItem.isPrintIgnored(resolvedState)) {
+            return false;
+        }
         // No-print (wind-only) blocks are valued but must never print, even from an official disc,
         // so this precedes the trophy allowance below (wither_skeleton_skull is on both tags).
         if (isNoPrintBlock(resolvedState)) {
@@ -641,6 +645,14 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         // respects strict mode (the scan-expensive / print-cheap guard).
         if (isStructuralMatter(resolvedState)) {
             return true;
+        }
+        // Itemless, yet not structural matter: a block entity that can be holding something.
+        // Refused outright rather than left to the unknown-blocks escape hatch, because the
+        // hatch would price it at unknownBlockFu and print it anyway — which is the exact
+        // duplication this rule exists to stop. Refusing unconditionally also keeps the disc's
+        // cached quote honest: never printed, so the zero it stores is the true cost.
+        if (resolvedState.getBlock().asItem() == Items.AIR) {
+            return false;
         }
         return MC3DPrintConfig.UNKNOWN_BLOCKS_PRINTABLE.get();
     }
@@ -667,7 +679,12 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             return false;
         }
         if (state.getBlock().asItem() == Items.AIR) {
-            return true; // water, fire, wall torches, redstone wire, …
+            // ...but only when it can't be carrying anything. An itemless block with a block
+            // entity can still hold and drop items (and free + itemless bypasses strict mode
+            // entirely, since this check runs ahead of it), which is a duplication vector
+            // rather than structural matter. The families this branch is actually for (water,
+            // lava, fire) have no block entity, so none of them are affected.
+            return !(state.getBlock() instanceof net.minecraft.world.level.block.EntityBlock);
         }
         Block block = state.getBlock();
         return block instanceof net.minecraft.world.level.block.BushBlock     // crops/stems/saplings/flowers/wart
@@ -1510,6 +1527,14 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         boolean[] clear = {true};
         blueprint.forEachBlock((local, paletteIndex) -> {
             if (clear[0]) {
+                // Only cells we will actually fill have to be clear. A cell the print skips
+                // (scan-only scaffolding, no-print, above this machine's tier) is never placed,
+                // so demanding empty space there would refuse the whole job over a block the
+                // printer was never going to touch.
+                Optional<BlockState> resolvedTarget = blueprint.palette().get(paletteIndex).resolve();
+                if (resolvedTarget.isPresent() && !canPrintBlock(resolvedTarget.get())) {
+                    return;
+                }
                 BlockPos world = origin.offset(orientation.transform(local,
                         blueprint.sizeX(), blueprint.sizeY(), blueprint.sizeZ()));
                 BlockState existing = serverLevel.getBlockState(world);
