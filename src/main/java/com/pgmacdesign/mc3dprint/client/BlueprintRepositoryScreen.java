@@ -203,10 +203,22 @@ public class BlueprintRepositoryScreen extends AbstractContainerScreen<Blueprint
         if (minecraft == null || minecraft.player == null) {
             return false;
         }
-        // canUseGameMasterBlocks() is "permission level >= 2" and lives on Player in every
-        // node, unlike hasPermissions(int), which 1.21.11 replaced with a PermissionSet.
-        return entry.depositedBy(minecraft.player.getUUID())
-                || minecraft.player.canUseGameMasterBlocks();
+        return entry.depositedBy(minecraft.player.getUUID()) || isOperator(minecraft.player);
+    }
+
+    /**
+     * The level-2 check the server does, against the permission level the server told this
+     * client. NOT {@code canUseGameMasterBlocks()}: that is instabuild AND level 2, so it is
+     * false for an operator in Survival, which would hide the controls from exactly the
+     * operator the gate exists to serve.
+     */
+    private static boolean isOperator(net.minecraft.world.entity.player.Player player) {
+        //? if >=1.21.11 {
+        /*return player.permissions().hasPermission(
+                net.minecraft.server.permissions.Permissions.COMMANDS_GAMEMASTER);
+        *///?} else {
+        return player.hasPermissions(2);
+        //?}
     }
 
     /**
