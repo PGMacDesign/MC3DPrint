@@ -95,4 +95,71 @@ public class ScanOnlyBlockGameTests {
         }
         helper.succeed();
     }
+
+    /**
+     * A block sitting where scaffolding was captured must not obstruct the job. The printer will
+     * never place there, so requiring empty space would refuse the whole build over a cell it
+     * was never going to touch.
+     */
+    @GameTest(template = "empty5", timeoutTicks = 400)
+    public static void aBlockedScaffoldCellDoesNotObstructThePrint(GameTestHelper helper) {
+        // A 2x2x2 capture: stone floor, scaffolding above it. A build of this size printed by a
+        // printer at (2,1,2) lands at origin (1,2,1) — the same geometry the un-print tests use.
+        for (int dx = 0; dx < 2; dx++) {
+            for (int dz = 0; dz < 2; dz++) {
+                helper.setBlock(new BlockPos(1 + dx, 2, 1 + dz), Blocks.STONE);
+                helper.setBlock(new BlockPos(1 + dx, 3, 1 + dz), Blocks.SCAFFOLDING);
+            }
+        }
+        Blueprint blueprint = ScanOperation.capture(helper.getLevel(),
+                helper.absolutePos(new BlockPos(1, 2, 1)),
+                helper.absolutePos(new BlockPos(2, 3, 2)), "scaffold-obstruction-test");
+
+        for (int dx = 0; dx < 2; dx++) {
+            for (int dz = 0; dz < 2; dz++) {
+                helper.setBlock(new BlockPos(1 + dx, 2, 1 + dz), Blocks.AIR);
+                helper.setBlock(new BlockPos(1 + dx, 3, 1 + dz), Blocks.AIR);
+            }
+        }
+
+        java.util.UUID id = com.pgmacdesign.mc3dprint.blueprint.BlueprintFileStore
+                .forServer(helper.getLevel().getServer()).save(blueprint);
+
+        BlockPos printerPos = new BlockPos(2, 1, 2);
+        helper.setBlock(printerPos, com.pgmacdesign.mc3dprint.registry.ModBlocks.PRINTERS.get(2).get());
+        if (!(helper.getBlockEntity(printerPos) instanceof PrinterBlockEntity printer)) {
+            throw new GameTestAssertException("printer block entity missing");
+        }
+        net.minecraft.world.item.ItemStack spool = new net.minecraft.world.item.ItemStack(
+                com.pgmacdesign.mc3dprint.registry.ModItems.SPOOLS.get(0).get());
+        com.pgmacdesign.mc3dprint.fu.SpoolItem.setFu(spool, 100_000);
+        printer.spoolInventory().setStackInSlot(0, spool);
+        printer.getCapability(net.minecraftforge.common.capabilities.ForgeCapabilities.ENERGY)
+                .ifPresent(energy -> {
+                    for (int i = 0; i < 60; i++) {
+                        energy.receiveEnergy(1_000, false);
+                    }
+                });
+        net.minecraft.world.item.ItemStack disc = new net.minecraft.world.item.ItemStack(
+                com.pgmacdesign.mc3dprint.registry.ModItems.BLUEPRINT_DISC.get());
+        BlueprintDiscItem.writeBlueprint(disc, id, blueprint);
+        printer.inventory().setStackInSlot(PrinterBlockEntity.SLOT_TEMPLATE, disc);
+
+        BlockPos origin = new BlockPos(1, 2, 1);
+        BlockPos blockedScaffoldCell = origin.above(); // captured scaffolding, never printed
+        helper.setBlock(blockedScaffoldCell, Blocks.COBBLESTONE);
+
+        printer.setAutoStart(true);
+        printer.requestStart();
+
+        helper.succeedWhen(() -> {
+            if (printer.state() == PrinterBlockEntity.State.PAUSED_OBSTRUCTED) {
+                throw new GameTestAssertException(
+                        "a captured scaffolding cell obstructed a print that never fills it");
+            }
+            helper.assertBlockPresent(Blocks.STONE, origin);
+            // ...and the block occupying the scaffolding cell is left alone.
+            helper.assertBlockPresent(Blocks.COBBLESTONE, blockedScaffoldCell);
+        });
+    }
 }

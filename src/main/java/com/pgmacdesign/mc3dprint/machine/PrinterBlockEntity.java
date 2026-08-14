@@ -1477,6 +1477,14 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         boolean[] clear = {true};
         blueprint.forEachBlock((local, paletteIndex) -> {
             if (clear[0]) {
+                // Only cells we will actually fill have to be clear. A cell the print skips
+                // (scan-only scaffolding, no-print, above this machine's tier) is never placed,
+                // so demanding empty space there would refuse the whole job over a block the
+                // printer was never going to touch.
+                Optional<BlockState> resolvedTarget = blueprint.palette().get(paletteIndex).resolve();
+                if (resolvedTarget.isPresent() && !canPrintBlock(resolvedTarget.get())) {
+                    return;
+                }
                 BlockPos world = origin.offset(orientation.transform(local,
                         blueprint.sizeX(), blueprint.sizeY(), blueprint.sizeZ()));
                 BlockState existing = serverLevel.getBlockState(world);
