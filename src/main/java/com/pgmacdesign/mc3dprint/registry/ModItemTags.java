@@ -183,7 +183,7 @@ public final class ModItemTags {
      * {@code data/mc3dprint/tags/item/print_ignored.json}.
      */
     public static final TagKey<Item> PRINT_IGNORED =
-            TagKey.create(Registries.ITEM, ResourceLocation.fromNamespaceAndPath(MC3DPrint.MOD_ID, "print_ignored"));
+            TagKey.create(Registries.ITEM, new ResourceLocation(MC3DPrint.MOD_ID, "print_ignored"));
 
     private ModItemTags() {}
 }

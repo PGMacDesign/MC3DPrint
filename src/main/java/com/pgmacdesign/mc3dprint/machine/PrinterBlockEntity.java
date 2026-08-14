@@ -638,6 +638,14 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         if (isStructuralMatter(resolvedState)) {
             return true;
         }
+        // Itemless, yet not structural matter: a block entity that can be holding something.
+        // Refused outright rather than left to the unknown-blocks escape hatch, because the
+        // hatch would price it at unknownBlockFu and print it anyway — which is the exact
+        // duplication this rule exists to stop. Refusing unconditionally also keeps the disc's
+        // cached quote honest: never printed, so the zero it stores is the true cost.
+        if (resolvedState.getBlock().asItem() == Items.AIR) {
+            return false;
+        }
         return MC3DPrintConfig.UNKNOWN_BLOCKS_PRINTABLE.get();
     }
 
