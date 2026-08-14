@@ -3239,8 +3239,19 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         if (lastPrint != null) {
             lastPrintPreexisting.addAll(lastPrint.preexisting());
         }
-        armedUnprint = tag.contains("ArmedUnprint", Tag.TAG_COMPOUND)
+        boolean hadArming = tag.contains("ArmedUnprint", Tag.TAG_COMPOUND);
+        armedUnprint = hadArming
                 ? PrintPlacement.load(tag.getCompound("ArmedUnprint")).orElse(null) : null;
+        // An arming we can't read must take the region with it. Dropping only the placement
+        // would leave the box armed with nothing masking it, and the next Start would build a
+        // plain whole-box job over a region the player armed as an un-print: the machine would
+        // eat the terrain the build sits on. DeconstructJob.load refuses the same degradation
+        // for an in-flight job. Needs corrupted or hand-edited NBT to reach, since
+        // PrintPlacement.save always writes its three required keys together.
+        if (hadArming && armedUnprint == null) {
+            deconstructMin = null;
+            deconstructSize = null;
+        }
         // A persisted status only means something when it describes restored work.
         // Everything else is a stale snapshot of a condition the tick re-derives;
         // restoring it verbatim once wedged relocated fabricators in a dead error
