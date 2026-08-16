@@ -170,13 +170,23 @@ public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
     protected void containerTick() {
         super.containerTick();
         autoButton.setMessage(autoLabel());
+        // Doubles as the mode indicator. The Print/Decon button names the mode you are IN,
+        // but a button that says "Decon" reads just as easily as one that switches you to
+        // Decon, and there is nothing else on the panel to break the tie. Auto only ever
+        // shows in Print mode, so its presence answers the question with no label to parse.
+        // (Auto still governs deconstructs; toggling it means flipping back to Print first.)
+        autoButton.visible = !menu.deconstructMode();
         previewButton.setMessage(previewLabel());
         rotateButton.setMessage(rotateLabel());
         modeButton.setMessage(modeLabel());
         boolean jobActive = menu.jobActive();
         startButton.setMessage(Component.translatable(jobActive
                 ? "gui.mc3dprint.cancel" : "gui.mc3dprint.start"));
-        startButton.active = jobActive || !menu.autoStart();
+        // Auto normally owns Start, so the button greys out while it is on. Deconstruct is the
+        // exception: a freshly armed region ALWAYS waits for one explicit Start (arming a
+        // machine must never dissolve blocks on its own), and with Auto both on and hidden here
+        // there would be no way to give it — the machine would sit armed and unstartable.
+        startButton.active = jobActive || !menu.autoStart() || menu.deconstructMode();
     }
 
     @Override
@@ -373,7 +383,12 @@ public class PrinterScreen extends AbstractContainerScreen<PrinterMenu> {
                     ? "gui.mc3dprint.state.ready_unprint" : "gui.mc3dprint.state.ready");
             case PRINTING -> Component.translatable("gui.mc3dprint.state.printing");
             case PAUSED_NO_POWER -> Component.translatable("gui.mc3dprint.state.paused_no_power");
-            case PAUSED_OUTPUT_FULL -> Component.translatable("gui.mc3dprint.state.paused_output_full");
+            // One state, two causes. Printing, it means the output slot is occupied; a
+            // deconstruct has no output slot, and the only thing that raises it there is
+            // filament with nowhere to go. "Output Full" sent players hunting for a
+            // blocked pipe or a missing chest, so name the actual blocker per mode.
+            case PAUSED_OUTPUT_FULL -> Component.translatable(menu.deconstructMode()
+                    ? "gui.mc3dprint.state.paused_spool_full" : "gui.mc3dprint.state.paused_output_full");
             case PAUSED_OBSTRUCTED -> Component.translatable("gui.mc3dprint.state.paused_obstructed");
             case ZONE_CONFLICT -> Component.translatable("gui.mc3dprint.state.zone_conflict");
             case PAUSED_NO_FILAMENT -> Component.translatable("gui.mc3dprint.state.paused_no_filament");

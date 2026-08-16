@@ -16,7 +16,12 @@
     {
       "type": "patchouli:text",
       "title": "Running a Job",
-      "text": "Toggle $(l)Print / Decon$() in the machine GUI (handing a region to a machine arms Decon automatically). A machine in Decon with $(l)no armed region$() reads $(l)No Region Set$(): hand it a scanner selection, or toggle back to $(l)Print$(). The armed region shows as a $(c:red)red wireframe$() in the world, and the $(l)first$() job after arming ALWAYS needs the $(l)Start button$(): $(l)Auto$() never fires on a fresh region, so nothing dissolves by surprise. After that first Start, Auto resumes as a standing recycler for the region.$(br2)Jobs work $(l)top-down$(), pause on power loss without losing progress, and pause $(l)before$() removing a block when every spool is full: filament is never voided. Changing the region or mode cancels the job cleanly and re-arms the Start gate."
+      "text": "Toggle $(l)Print / Decon$() in the machine GUI (handing a region to a machine arms Decon automatically). A machine in Decon with $(l)no armed region$() reads $(l)No Region Set$(): hand it a scanner selection, or toggle back to $(l)Print$(). The armed region shows as a $(c:red)red wireframe$() in the world, and the $(l)first$() job after arming ALWAYS needs the $(l)Start button$(): $(l)Auto$() never fires on a fresh region, so nothing dissolves by surprise. After that first Start, Auto resumes as a standing recycler for the region.$(br2)Jobs work $(l)top-down$(), pause on power loss without losing progress, and pause $(l)before$() removing a block whose filament has nowhere to go, reading $(l)Spool Missing or Full$(): dock a spool with room at that tier and it resumes. Filament is never voided. Changing the region or mode cancels the job cleanly and re-arms the Start gate."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Which Mode Am I In?",
+      "text": "The $(l)Print / Decon$() button names the mode you are $(o)in$(), not the one it switches you to - but a button reading $(l)Decon$() is easy to read the other way round, and the two modes do very different things to the blocks in front of you.$(br2)So the $(l)Auto$() button only exists in $(l)Print$() mode. $(l)See Auto, you are printing. No Auto, you are deconstructing.$() Auto still governs a deconstruct once its first Start is given; toggling it means flipping back to Print for a moment."
     },
     {
       "type": "patchouli:text",
