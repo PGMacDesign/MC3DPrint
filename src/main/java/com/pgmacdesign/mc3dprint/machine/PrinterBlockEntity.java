@@ -1305,7 +1305,8 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             boolean unprintable = resolvedOpt.isPresent() && !canPrintBlock(resolvedOpt.get());
             BlockPos skipWorldPos = target == null ? null : worldPosFor(skipCandidate.local(), blueprint);
             boolean alreadyPlaced = target != null
-                    && serverLevel.getBlockState(skipWorldPos) == target;
+                    && com.pgmacdesign.mc3dprint.blueprint.BlockStateMatch.satisfies(
+                            serverLevel.getBlockState(skipWorldPos), target);
             if (target != null && !alreadyPlaced && !unprintable) {
                 break; // a printable block that still needs placing
             }
@@ -1518,9 +1519,11 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
     }
 
     /**
-     * A position is printable when it's replaceable OR already holds exactly
-     * the block the blueprint wants there (repair/fill-in: never destructive,
-     * matching blocks are simply skipped at zero cost).
+     * A position is printable when it's replaceable OR already holds the block the
+     * blueprint wants there (repair/fill-in: never destructive, matching blocks are
+     * simply skipped at zero cost). "Already holds" is
+     * {@link com.pgmacdesign.mc3dprint.blueprint.BlockStateMatch}, not identity — see
+     * there for why a correct build otherwise reads as obstructed.
      */
     private boolean isAreaClear(ServerLevel serverLevel, Blueprint blueprint,
                                 PrintOrientation orientation, BlockPos origin) {
@@ -1544,7 +1547,7 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
                                     .mirror(orientation.mirror())
                                     .rotate(orientation.rotation()))
                             .orElse(null);
-                    if (existing != target) {
+                    if (!com.pgmacdesign.mc3dprint.blueprint.BlockStateMatch.satisfies(existing, target)) {
                         clear[0] = false;
                     }
                 }
