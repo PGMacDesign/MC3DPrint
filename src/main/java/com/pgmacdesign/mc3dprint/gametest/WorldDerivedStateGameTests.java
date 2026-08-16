@@ -58,6 +58,14 @@ public class WorldDerivedStateGameTests {
         BlockState fence = Blocks.OAK_FENCE.defaultBlockState();
         expect(true, fence.setValue(BlockStateProperties.NORTH, true), fence, "fence connections are derived");
 
+        // A gate drops three pixels when a wall turns up beside it, recomputed from the
+        // neighbourhood exactly like a stair's shape.
+        BlockState gate = Blocks.OAK_FENCE_GATE.defaultBlockState();
+        expect(true, gate.setValue(BlockStateProperties.IN_WALL, true), gate,
+                "a gate lowered by the wall next to it is the same gate");
+        expect(false, gate.setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.EAST), gate,
+                "gate facing is authored, not derived");
+
         BlockState lamp = Blocks.REDSTONE_LAMP.defaultBlockState();
         expect(true, lamp.setValue(BlockStateProperties.LIT, true), lamp, "lit follows the redstone around it");
         helper.succeed();

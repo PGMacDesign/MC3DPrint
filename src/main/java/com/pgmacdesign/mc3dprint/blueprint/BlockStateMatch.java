@@ -33,6 +33,12 @@ import java.util.Set;
  * a cosmetic touch-up on a block that already exists is a far smaller loss than wedging the
  * whole job, and none of it affects a first print into clear space, which places the
  * blueprint's state verbatim.
+ *
+ * <p><b>Deliberately NOT here: contents flags.</b> {@code has_record}, {@code has_book} and the
+ * brewing stand's {@code has_bottle_*} describe what is inside a block rather than how the world
+ * shaped it. A scan strips container contents, so those flags are legitimately false on anything
+ * this mod prints, and a world block that has them set really is different from the blueprint's.
+ * Widening the rule to cover them is a separate decision from this one.
  */
 public final class BlockStateMatch {
 
@@ -59,16 +65,21 @@ public final class BlockStateMatch {
             BlockStateProperties.SOUTH_REDSTONE,
             BlockStateProperties.WEST_REDSTONE,
             BlockStateProperties.CHEST_TYPE,
+            BlockStateProperties.IN_WALL,
             // redstone-derived
             BlockStateProperties.POWER,
             BlockStateProperties.POWERED,
             BlockStateProperties.LIT,
+            BlockStateProperties.EXTENDED,
+            BlockStateProperties.TRIGGERED,
             // player-toggled by using the block
             BlockStateProperties.OPEN,
-            // recomputed from support / cover
+            // recomputed from support / cover / surroundings
             BlockStateProperties.SNOWY,
             BlockStateProperties.ATTACHED,
-            BlockStateProperties.DISTANCE);
+            BlockStateProperties.DISTANCE,
+            BlockStateProperties.SIGNAL_FIRE,
+            BlockStateProperties.MOISTURE);
 
     private BlockStateMatch() {}
 
