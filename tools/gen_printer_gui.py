@@ -278,7 +278,7 @@ def build_repository():
     """Server Blueprint Repository sheet (248x186). A wide library browser: a tall
     recessed list well (left), a detail well with a preview sub-channel (right),
     then an action bar — Deposit button (left) | disc in/out slots (centre) | STL
-    to GCODE button (right) — and only the hotbar (the 3 main inventory rows are
+    to Disc button (right) — and only the hotbar (the 3 main inventory rows are
     hidden to free space). Buttons are vanilla widgets the screen draws, not painted
     here. Lockstep with BlueprintRepositoryScreen/Menu."""
     img = Image.new("RGBA", (W, H), (0, 0, 0, 0))

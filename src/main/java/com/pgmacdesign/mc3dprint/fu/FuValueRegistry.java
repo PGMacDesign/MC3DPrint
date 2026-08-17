@@ -530,6 +530,12 @@ public final class FuValueRegistry {
                 "minecraft:gunpowder=10@3",
                 "minecraft:obsidian=10@3", "minecraft:crying_obsidian=15@3", "minecraft:shroomlight=10@3",
                 "minecraft:glowstone=20@3", "minecraft:slime_ball=30@3", "#minecraft:wool=30@3",
+                // Phantom membrane sits with slime rather than up at blaze_rod: the insomnia
+                // mechanic makes it tedious, but a phantom farm is AFK-automatable, and the
+                // abundance rule keys off farmability, not player patience. At T3 the dearest
+                // thing its spool can reach is a hopper, which an iron farm out-produces by a
+                // wide margin, so there is no laundering edge. Fully windable and printable.
+                "minecraft:phantom_membrane=30@3",
                 // treasure, uncraftable loot — WIND-ONLY (on #no_print): recyclable into FU but
                 // never printed. ~3x leather (8@2); at T3 a spool tops out at glowstone-tier prints,
                 // so abundance-safe even though saddles/name tags are slowly villager-renewable.
