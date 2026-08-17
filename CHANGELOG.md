@@ -46,6 +46,11 @@ duplication holes closed.
   never built. Previously a Tier 1 cottage scanned from a scaffold tower came back as a Tier 3
   blueprint, demanding a machine it never called for. Applied when quoting and printing rather than
   when scanning, so discs scanned before this update are quoted correctly too.
+- **The Auto button now doubles as the mode indicator**: it is hidden in Deconstruct Mode and shown in
+  Print Mode. The Print/Decon toggle names the mode you are in, which reads just as easily as the mode
+  it switches you to, and nothing else on the panel broke the tie.
+- A deconstruct that stalls with nowhere to put its filament says **Spool Missing or Full** instead of
+  *Output Full*, which sent players looking for a blocked output slot that deconstruct does not have.
 - Base draconium drops from 250 FU to 40, still Tier 7.
 - The Tier 8 fabricator and spool take **awakened draconium**, not dragon eggs.
 
@@ -60,6 +65,11 @@ duplication holes closed.
   blocks that own a block entity are now never printable, whatever `unknownBlocksPrintable` says.
 - A cell the print **skips** no longer has to be clear, so a block standing where scaffolding was
   captured cannot pause the whole job as *Obstructed*.
+- **Blocks the game reshapes no longer read as wrong.** Minecraft owns part of every placed state:
+  stair shape, fence and wall connections, redstone-driven flags, and whether a door was left open.
+  Those were compared against the blueprint exactly, so on any build with stairs the ghost preview lit
+  the corner pieces red and a re-print refused to start as *Obstructed*, over blocks that were already
+  correct and that no re-print could change. Placement (facing, half, hinge, axis) still has to match.
 - The scanner arms a fabricator's Deconstruct region from **any casing**. On a Tier 8 pad the
   controller is 1 block of 81, so every other click silently overwrote a scanner corner instead.
 - Re-depositing a copy of someone else's scan no longer takes over the entry, which would have handed
