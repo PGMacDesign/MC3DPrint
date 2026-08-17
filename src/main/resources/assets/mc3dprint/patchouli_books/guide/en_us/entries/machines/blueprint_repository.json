@@ -20,8 +20,8 @@
     },
     {
       "type": "patchouli:text",
-      "title": "STL to GCODE",
-      "text": "Select a build in the list, drop a $(item)Blank Blueprint Disc$() into the input slot, and press $(l)STL to GCODE$() to burn a fresh written disc.$(br2)Burned copies keep the original's $(l)official$() or $(l)player-scan$() status, so the Resin anti-dupe rule still holds."
+      "title": "STL to Disc",
+      "text": "Select a build in the list, drop a $(item)Blank Blueprint Disc$() into the input slot, and press $(l)STL to Disc$() to burn a fresh written disc.$(br2)Burned copies keep the original's $(l)official$() or $(l)player-scan$() status, so the Resin anti-dupe rule still holds."
     },
     {
       "type": "patchouli:text",

@@ -39,6 +39,9 @@ duplication holes closed.
 - **Blueprint loot**: plentiful, location-agnostic drops that never hand you a build you already have.
 - **Filament Unit values** for Mystical Agriculture and Agradditions, Tinkers' necrotic bone
   (15 @ T2, wind-only), and gunpowder (10 @ T3, print-only).
+- **Phantom membrane** is valued at 30 @ T3, level with slime, and is both windable and printable.
+  It sits with slime rather than up at blaze rod because a phantom farm is AFK-automatable and the
+  abundance rule keys off farmability, not how tedious the insomnia mechanic feels.
 
 ### Changed
 - **Scaffolding is scan-only.** It is how you reach the top corners of a build, so it lands in most
@@ -51,6 +54,7 @@ duplication holes closed.
   it switches you to, and nothing else on the panel broke the tie.
 - A deconstruct that stalls with nowhere to put its filament says **Spool Missing or Full** instead of
   *Output Full*, which sent players looking for a blocked output slot that deconstruct does not have.
+- The Blueprint Repository's burn button reads **STL to Disc** instead of *STL to GCODE*.
 - Base draconium drops from 250 FU to 40, still Tier 7.
 - The Tier 8 fabricator and spool take **awakened draconium**, not dragon eggs.
 
