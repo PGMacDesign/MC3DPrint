@@ -2279,24 +2279,19 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
                 activeJob.origin().offset(size.getX() - 1, size.getY() - 1, size.getZ() - 1));
     }
 
+    /**
+     * Holds (or drops) the chunks this job needs, through {@link PrintChunkLoader} so the claim is
+     * reference-counted. Calling {@code setChunkForced} directly was a bug: it is one boolean per
+     * chunk with no owner, so a neighbouring machine finishing its job unforced the chunk out from
+     * under this one and the job hung. The loader also covers the machine's own chunk, since an
+     * offset build or a distant deconstruct region can sit in different chunks than the machine.
+     */
     private void forceChunks(ServerLevel serverLevel, BoundingBox box, boolean add) {
-        int minChunkX = box.minX() >> 4;
-        int maxChunkX = box.maxX() >> 4;
-        int minChunkZ = box.minZ() >> 4;
-        int maxChunkZ = box.maxZ() >> 4;
-        for (int cx = minChunkX; cx <= maxChunkX; cx++) {
-            for (int cz = minChunkZ; cz <= maxChunkZ; cz++) {
-                // NeoForge dropped Forge's ticket-owner force API; vanilla setChunkForced
-                // keeps the print zone loaded for the same job duration.
-                serverLevel.setChunkForced(cx, cz, add);
-            }
+        if (add) {
+            PrintChunkLoader.acquire(serverLevel, worldPosition, box);
+        } else {
+            PrintChunkLoader.release(serverLevel, worldPosition);
         }
-        // The MACHINE's own chunk too: build offsets (±32) or a deconstruct region
-        // (up to 64 away) can put the job box in different chunks than the machine —
-        // a region kept loaded while the machine that works it unloads would stall
-        // the job (and never self-recover after a restart). Idempotent when the
-        // machine already sits inside the box footprint.
-        serverLevel.setChunkForced(worldPosition.getX() >> 4, worldPosition.getZ() >> 4, add);
     }
 
     private boolean ensureBlueprintLoaded(ServerLevel serverLevel) {

@@ -21,7 +21,11 @@ import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 @PrefixGameTestTemplate(false)
 public class ConverterGameTests {
 
-    @GameTest(template = "empty5", timeoutTicks = 200)
+    // 8 items at winder.ticksPerItem (20) is 160 ticks of work, and the converter burns a whole
+    // cycle on any tick it cannot convert, so a single missed cycle used to blow a 200-tick budget.
+    // The budget is a failure deadline, not a schedule: succeedWhen exits the moment the condition
+    // holds, so headroom here costs nothing on the passing path.
+    @GameTest(template = "empty5", timeoutTicks = 600)
     public static void converterFeedsAdjacentPrinterSpool(GameTestHelper helper) {
         // chest (1,1,2) <- converter (2,1,2) -> printer (3,1,2)
         helper.setBlock(new BlockPos(1, 1, 2), Blocks.CHEST);
