@@ -22,7 +22,7 @@
       "type": "patchouli:spotlight",
       "item": "mc3dprint:filament_converter",
       "title": "Filament Converter",
-      "text": "With $(l)Applied Energistics 2$() installed, the $(item)Filament Converter$() automates winding from an ME network and keeps docked spools topped up. Set its filter by right-clicking it with an item."
+      "text": "The $(item)Filament Converter$() automates winding: set a filter by right-clicking it with an item, and it pulls that item one at a time from $(l)any adjacent inventory$() - a chest, a pipe, a hopper, an AE2 $(l)ME Interface$() - converts it, and tops up spools docked on adjacent machines.$(br2)It only converts when a docked spool can take the whole yield, so filament is never stranded, and it honours the winder blacklist."
     }
   ]
 }
