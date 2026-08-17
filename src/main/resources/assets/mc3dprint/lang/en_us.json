@@ -143,7 +143,7 @@
   "gui.mc3dprint.sorter.sorting": "Sorting",
   "gui.mc3dprint.sorter.no_route": "No winder in range",
   "gui.mc3dprint.repository.deposit": "Deposit Disc",
-  "gui.mc3dprint.repository.burn": "STL to GCODE",
+  "gui.mc3dprint.repository.burn": "STL to Disc",
   "gui.mc3dprint.repository.rename": "Rename scan",
   "gui.mc3dprint.repository.rename_set": "Set",
   "gui.mc3dprint.repository.rename_tip": "Retitle this scan. Official builds keep their shipped names.",

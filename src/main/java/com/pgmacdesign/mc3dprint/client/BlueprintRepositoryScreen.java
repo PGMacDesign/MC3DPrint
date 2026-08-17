@@ -25,7 +25,7 @@ import java.util.UUID;
 /**
  * Library Browser (R-A): a searchable list of catalogued blueprints (left), a
  * detail pane (right), and an action bar — Deposit Disc (left), disc in/out slots
- * (centre), STL to GCODE (right). Lockstep with {@code gen_printer_gui.py:build_repository}.
+ * (centre), STL to Disc (right). Lockstep with {@code gen_printer_gui.py:build_repository}.
  */
 public class BlueprintRepositoryScreen extends AbstractContainerScreen<BlueprintRepositoryMenu> {
     private static final ResourceLocation TEXTURE = Objects.requireNonNull(

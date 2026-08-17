@@ -28,7 +28,7 @@ public class BlueprintRepositoryMenu extends AbstractContainerMenu {
     public static final int SELECT_BASE = 100; // row select buttons are SELECT_BASE + rowIndex
 
     // Layout (lockstep with BlueprintRepositoryScreen + the painted texture).
-    // The IN/OUT slots sit centred between the Deposit (left) and STL-to-GCODE
+    // The IN/OUT slots sit centred between the Deposit (left) and STL-to-Disc
     // (right) buttons. Only the hotbar is shown — the 3 main inventory rows are
     // hidden to free vertical space (so they aren't accessible from this GUI).
     public static final int SLOT_IN_X = 106, SLOT_IN_Y = 133;
