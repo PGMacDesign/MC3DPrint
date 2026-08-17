@@ -64,7 +64,7 @@ Combine it with the mod filter to narrow further: `@mc3dprint tier-3` lists only
 
 ## Automation
 
-The **Filament Converter** automates winding. Right-click it with an item to set its filter, and it pulls that item one at a time from **any adjacent inventory**, converts it, and tops up spools docked on adjacent machines. A chest, a hopper, a pipe, or an Applied Energistics 2 **ME Interface** all work; it asks the neighbour for an item handler and does not care what is behind it.
+The **Filament Converter** automates winding. Right-click it with an item to set its filter, and it pulls that item one at a time from an **adjacent input inventory**, converts it, and tops up spools docked on adjacent machines. Printers and other converters are skipped, so it never raids a machine's output. A chest, a hopper, a pipe, or an Applied Energistics 2 **ME Interface** all work; it asks the neighbour for an item handler and does not care what is behind it.
 
 It only converts when a docked spool can take the whole yield, so filament is never stranded, and it honours the [winder blacklist](/guide/fu-economy/) exactly as the Winder does.
 
