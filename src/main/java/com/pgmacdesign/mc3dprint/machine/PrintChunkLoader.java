@@ -2,7 +2,6 @@ package com.pgmacdesign.mc3dprint.machine;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 
 import java.util.HashMap;
@@ -31,7 +30,7 @@ import java.util.WeakHashMap;
  */
 public final class PrintChunkLoader {
 
-    private static final Map<ServerLevel, Map<Long, Set<BlockPos>>> HOLDERS = new WeakHashMap<>();
+    private static final Map<ServerLevel, Map<ChunkKey, Set<BlockPos>>> HOLDERS = new WeakHashMap<>();
 
     private PrintChunkLoader() {}
 
@@ -42,17 +41,17 @@ public final class PrintChunkLoader {
      * Replaces any previous claim by the same owner.
      */
     public static void acquire(ServerLevel level, BlockPos owner, BoundingBox box) {
-        Set<Long> wanted = chunksFor(owner, box);
-        Map<Long, Set<BlockPos>> holders = HOLDERS.computeIfAbsent(level, l -> new HashMap<>());
+        Set<ChunkKey> wanted = chunksFor(owner, box);
+        Map<ChunkKey, Set<BlockPos>> holders = HOLDERS.computeIfAbsent(level, l -> new HashMap<>());
         BlockPos key = owner.immutable();
 
         // Drop chunks this owner held but no longer needs (a re-claim with a different box).
         release(level, key, wanted);
 
-        for (long chunk : wanted) {
+        for (ChunkKey chunk : wanted) {
             Set<BlockPos> set = holders.computeIfAbsent(chunk, c -> new HashSet<>());
             if (set.add(key) && set.size() == 1) {
-                level.setChunkForced(ChunkPos.getX(chunk), ChunkPos.getZ(chunk), true);
+                level.setChunkForced(chunk.x(), chunk.z(), true);
             }
         }
     }
@@ -62,8 +61,8 @@ public final class PrintChunkLoader {
         release(level, owner, Set.of());
     }
 
-    private static void release(ServerLevel level, BlockPos owner, Set<Long> keep) {
-        Map<Long, Set<BlockPos>> holders = HOLDERS.get(level);
+    private static void release(ServerLevel level, BlockPos owner, Set<ChunkKey> keep) {
+        Map<ChunkKey, Set<BlockPos>> holders = HOLDERS.get(level);
         if (holders == null) {
             return;
         }
@@ -72,21 +71,27 @@ public final class PrintChunkLoader {
                 return false;
             }
             if (entry.getValue().isEmpty()) {
-                level.setChunkForced(ChunkPos.getX(entry.getKey()), ChunkPos.getZ(entry.getKey()), false);
+                level.setChunkForced(entry.getKey().x(), entry.getKey().z(), false);
                 return true;
             }
             return false;
         });
     }
 
-    private static Set<Long> chunksFor(BlockPos owner, BoundingBox box) {
-        Set<Long> chunks = new HashSet<>();
+    /**
+     * Chunk coordinates as a plain value key. Neither vanilla spelling survives every node this
+     * mod ships on: the packed-long factory is gone from the 26.x line and the coordinate fields
+     * are private there, so a two-int record keeps this map off that moving surface entirely.
+     */
+    private record ChunkKey(int x, int z) {}
+    private static Set<ChunkKey> chunksFor(BlockPos owner, BoundingBox box) {
+        Set<ChunkKey> chunks = new HashSet<>();
         for (int cx = box.minX() >> 4; cx <= box.maxX() >> 4; cx++) {
             for (int cz = box.minZ() >> 4; cz <= box.maxZ() >> 4; cz++) {
-                chunks.add(ChunkPos.asLong(cx, cz));
+                chunks.add(new ChunkKey(cx, cz));
             }
         }
-        chunks.add(ChunkPos.asLong(owner.getX() >> 4, owner.getZ() >> 4));
+        chunks.add(new ChunkKey(owner.getX() >> 4, owner.getZ() >> 4));
         return chunks;
     }
 }
