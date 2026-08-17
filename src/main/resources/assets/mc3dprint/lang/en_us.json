@@ -20,6 +20,7 @@
   "gui.mc3dprint.state.printing": "Printing…",
   "gui.mc3dprint.state.paused_no_power": "No Power",
   "gui.mc3dprint.state.paused_output_full": "Output Full",
+  "gui.mc3dprint.state.paused_spool_full": "Spool Missing or Full",
   "gui.mc3dprint.state.paused_obstructed": "Obstructed",
   "gui.mc3dprint.state.zone_conflict": "Zone Conflict",
   "item.mc3dprint.scanner": "Structure Scanner",

@@ -29,6 +29,10 @@ If the blueprint file behind the print is gone (the disc was from another world)
 
 A machine in Deconstruct Mode with **no armed region** and no print to undo shows **No Region Set** in the status line; it isn't broken, it's waiting for a selection. Hand it one, or toggle the GUI's **Mode** button back to Print.
 
+### Telling the two modes apart
+
+The mode button names the mode you are **in**, not the one it switches you to, which is easy to read backwards on a panel where the two modes do very different things to the blocks in front of you. So the **Auto** button only appears in Print mode: **see Auto, you are printing; no Auto, you are deconstructing.** Auto still governs deconstructs once the first Start has been given, so changing it means flipping back to Print for a moment.
+
 The region obeys the machine's own print footprint (by default a Tier 3 printer deconstructs at most 3×3, a Tier 8 fabricator up to 51×51; each tier's cap is configurable via `maxFootprint`) and must be within 64 blocks of the machine. Once armed, the region is outlined in the world as a **red wireframe** so the hazard zone is always visible.
 
 Two safety rules keep accidents out:
@@ -52,4 +56,4 @@ Deconstructing credits a **fraction of each block's winding value** (config `dec
 
 ## Job behavior
 
-Jobs run **top-down** (supported blocks come off before their supports), consume RF per block at the machine's normal rate, and benefit from Speed and RF Efficiency upgrades, but Efficiency modules and resins never boost the yield. Power loss pauses the job without losing progress. When every reachable spool is full, the machine pauses **before** removing the next block, so recovered filament is never voided. Changing the region or flipping back to Print mode cancels the job cleanly. Blocks already recycled stay recycled.
+Jobs run **top-down** (supported blocks come off before their supports), consume RF per block at the machine's normal rate, and benefit from Speed and RF Efficiency upgrades, but Efficiency modules and resins never boost the yield. Power loss pauses the job without losing progress. When the filament coming out of the next block has nowhere to go, the machine pauses **before** removing it and the status line reads **Spool Missing or Full**: give it room at that tier, in a docked spool or a [Filament Rack](/guide/filament-rack/) on the cable network, and the job resumes. Recovered filament is never voided. Changing the region or flipping back to Print mode cancels the job cleanly. Blocks already recycled stay recycled.

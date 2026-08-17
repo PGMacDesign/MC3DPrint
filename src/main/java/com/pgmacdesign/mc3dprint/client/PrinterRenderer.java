@@ -291,7 +291,7 @@ public class PrinterRenderer implements BlockEntityRenderer<PrinterBlockEntity> 
                 continue;
             }
             net.minecraft.world.level.block.state.BlockState existing = level.getBlockState(pos);
-            if (existing == ghost.state()) {
+            if (com.pgmacdesign.mc3dprint.blueprint.BlockStateMatch.satisfies(existing, ghost.state())) {
                 continue; // already correct — repair mode will skip it too
             }
             boolean blocked = !existing.canBeReplaced();
@@ -550,7 +550,7 @@ public class PrinterRenderer implements BlockEntityRenderer<PrinterBlockEntity> 
                 continue;
             }
             net.minecraft.world.level.block.state.BlockState existing = level.getBlockState(pos);
-            if (existing == ghost.state()) {
+            if (com.pgmacdesign.mc3dprint.blueprint.BlockStateMatch.satisfies(existing, ghost.state())) {
                 continue; // already correct — repair mode will skip it too
             }
             boolean blocked = !existing.canBeReplaced();
