@@ -278,11 +278,12 @@ public class FuTierEconomyGameTests {
     }
 
     /**
-     * Phantom membrane is BOTH windable and printable, unlike the wind-only trophies above it in
-     * this file. Pins both halves, because a value alone would still be inert behind either tag.
+     * Phantom membrane sits on none of the three blocking tags. Cheap companion to the two
+     * behavioural tests below: those prove the machines work, this one names the reason if they
+     * ever stop, since a value alone is inert behind any of these.
      */
     @GameTest(template = "empty5", timeoutTicks = 40)
-    public static void phantomMembraneWindsAndPrints(GameTestHelper helper) {
+    public static void phantomMembraneIsOnNoBlockingTag(GameTestHelper helper) {
         ItemStack membrane = new ItemStack(Items.PHANTOM_MEMBRANE);
         if (com.pgmacdesign.mc3dprint.registry.ModItemTags.isWinderBlacklisted(membrane)) {
             helper.fail("phantom_membrane must be windable (not on the winder blacklist)");
@@ -293,6 +294,54 @@ public class FuTierEconomyGameTests {
         } else {
             helper.succeed();
         }
+    }
+
+    /** Winding for real: one membrane into a matching T3 spool deposits its 30 FU, 1:1. */
+    @GameTest(template = "empty5", timeoutTicks = 150)
+    public static void phantomMembraneWindsIntoAMatchingSpool(GameTestHelper helper) {
+        WinderBlockEntity winder = placePoweredWinder(helper, new BlockPos(2, 1, 2));
+        winder.inventory().setStackInSlot(WinderBlockEntity.SLOT_SPOOL, spoolWithFu(3, 0));
+        winder.inventory().setStackInSlot(WinderBlockEntity.SLOT_INPUT,
+                new ItemStack(Items.PHANTOM_MEMBRANE, 1));
+
+        helper.succeedWhen(() -> {
+            if (!winder.inventory().getStackInSlot(WinderBlockEntity.SLOT_INPUT).isEmpty()) {
+                throw new GameTestAssertException("Membrane not wound yet");
+            }
+            int fu = SpoolItem.getFu(winder.inventory().getStackInSlot(WinderBlockEntity.SLOT_SPOOL));
+            if (fu != 30) {
+                helper.fail("Expected 30 T3 FU from one membrane into a T3 spool, got " + fu);
+            }
+        });
+    }
+
+    /** Printing for real: item mode on a T3 printer produces a membrane and pays for it. */
+    @GameTest(template = "empty5", timeoutTicks = 200)
+    public static void phantomMembranePrintsInItemMode(GameTestHelper helper) {
+        PrinterBlockEntity printer = placePrinter(helper, new BlockPos(2, 1, 2), 2); // T3
+        // No getEnergyStorage() on 1.20.1: reach the storage through the capability.
+        printer.getCapability(ForgeCapabilities.ENERGY).ifPresent(energy -> {
+            for (int i = 0; i < 60; i++) {
+                energy.receiveEnergy(4_000, false);
+            }
+        });
+        // Well clear of the 30 FU base plus the T3 markup, so this pins "prints and is charged"
+        // rather than the exact markup arithmetic, which printingDrainsAtTheExchangeRate owns.
+        printer.spoolInventory().setStackInSlot(0, spoolWithFu(3, 1_000));
+        printer.setAutoStart(true); // item mode gates on Auto
+        printer.inventory().setStackInSlot(PrinterBlockEntity.SLOT_TEMPLATE,
+                new ItemStack(Items.PHANTOM_MEMBRANE));
+
+        helper.succeedWhen(() -> {
+            ItemStack output = printer.inventory().getStackInSlot(PrinterBlockEntity.SLOT_OUTPUT);
+            if (output.isEmpty() || !output.is(Items.PHANTOM_MEMBRANE)) {
+                throw new GameTestAssertException("No membrane printed yet");
+            }
+            int fu = SpoolItem.getFu(printer.spoolInventory().getStackInSlot(0));
+            if (fu >= 1_000) {
+                helper.fail("A printed membrane must be paid for; spool still holds " + fu);
+            }
+        });
     }
 
     /**
