@@ -126,7 +126,12 @@ dependencies {
     // compileOnly, not implementation: nothing here may become a hard runtime requirement.
     if (findProperty('ae2_version')) {
         compileOnly "maven.modrinth:ae2:${ae2_version}"
-        runtimeOnly "maven.modrinth:ae2:${ae2_version}"
+        // NOT runtimeOnly yet, deliberately. AE2 19.2.17 refuses to load against this node's
+        // neo_version (it wants NeoForge 21.1.169+, we pin 21.1.92) and also needs GuideME, which
+        // AE2 split out of its own jar. Putting it on the dev runtime today just breaks
+        // runGameTestServer for every unrelated test. Compiling against it needs neither.
+        // Turning the dev runtime on means choosing: bump this node's neo_version, or pin an
+        // older AE2 that predates both requirements. That is a real decision, not a detail.
     }
 
     testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
