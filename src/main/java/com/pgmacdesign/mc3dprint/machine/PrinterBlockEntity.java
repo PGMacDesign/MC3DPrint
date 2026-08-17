@@ -1512,7 +1512,7 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         lastPrint = PrintPlacement.of(activeJob, armedResinEffect == ResinItem.Effect.ORE_SALTING);
         placementOrder = buildPlacementOrder(blueprint);
         placementCooldown = 0;
-        forceChunks(serverLevel, box, true);
+        acquireChunks(serverLevel, box);
         state = State.PRINTING;
         setChanged();
         syncToClients();
@@ -2076,7 +2076,7 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             return; // blueprint file gone; state set by ensureUnprintMask
         }
         placementCooldown = 0;
-        forceChunks(serverLevel, box, true);
+        acquireChunks(serverLevel, box);
         state = State.DECONSTRUCTING;
         setChanged();
         syncToClients();
@@ -2126,7 +2126,7 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
 
     private void finishDeconstruct(ServerLevel serverLevel) {
         PrintZoneManager.release(serverLevel, worldPosition);
-        forceChunks(serverLevel, deconstructBox(deconstructJob.min(), deconstructJob.size()), false);
+        releaseChunks(serverLevel);
         recordDeconstructHistory(deconstructJob);
         serverLevel.playSound(null, worldPosition, net.minecraft.sounds.SoundEvents.PLAYER_LEVELUP,
                 net.minecraft.sounds.SoundSource.BLOCKS, 0.5F, 0.8F);
@@ -2265,12 +2265,11 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
 
     private void releaseJobResources(ServerLevel serverLevel) {
         PrintZoneManager.release(serverLevel, worldPosition);
-        if (activeJob != null && cachedBlueprint != null) {
-            forceChunks(serverLevel, jobBox(), false);
-        }
-        if (deconstructJob != null) {
-            forceChunks(serverLevel, deconstructBox(deconstructJob.min(), deconstructJob.size()), false);
-        }
+        // Unconditional: the claim is owner-keyed, so releasing is idempotent whether or not a job
+        // is live. The old guards demanded a job AND a cached blueprint, which silently skipped the
+        // release for a restored job whose blueprint file had gone missing, and vanilla records
+        // forced chunks in saved level data, so that leak outlived the session.
+        releaseChunks(serverLevel);
     }
 
     private BoundingBox jobBox() {
@@ -2280,18 +2279,19 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
     }
 
     /**
-     * Holds (or drops) the chunks this job needs, through {@link PrintChunkLoader} so the claim is
+     * Holds the chunks this job needs, through {@link PrintChunkLoader} so the claim is
      * reference-counted. Calling {@code setChunkForced} directly was a bug: it is one boolean per
      * chunk with no owner, so a neighbouring machine finishing its job unforced the chunk out from
      * under this one and the job hung. The loader also covers the machine's own chunk, since an
      * offset build or a distant deconstruct region can sit in different chunks than the machine.
      */
-    private void forceChunks(ServerLevel serverLevel, BoundingBox box, boolean add) {
-        if (add) {
-            PrintChunkLoader.acquire(serverLevel, worldPosition, box);
-        } else {
-            PrintChunkLoader.release(serverLevel, worldPosition);
-        }
+    private void acquireChunks(ServerLevel serverLevel, BoundingBox box) {
+        PrintChunkLoader.acquire(serverLevel, worldPosition, box);
+    }
+
+    /** Drops every chunk this machine holds. Owner-keyed, so it needs no box and is idempotent. */
+    private void releaseChunks(ServerLevel serverLevel) {
+        PrintChunkLoader.release(serverLevel, worldPosition);
     }
 
     private boolean ensureBlueprintLoaded(ServerLevel serverLevel) {
@@ -2374,12 +2374,12 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         // re-claim zone + chunk tickets for a job restored from disk
         if (activeJob != null && level instanceof ServerLevel serverLevel) {
             PrintZoneManager.claim(serverLevel, worldPosition, jobBox());
-            forceChunks(serverLevel, jobBox(), true);
+            acquireChunks(serverLevel, jobBox());
         }
         if (deconstructJob != null && level instanceof ServerLevel serverLevel) {
             BoundingBox box = deconstructBox(deconstructJob.min(), deconstructJob.size());
             PrintZoneManager.claim(serverLevel, worldPosition, box);
-            forceChunks(serverLevel, box, true);
+            acquireChunks(serverLevel, box);
         }
     }
 

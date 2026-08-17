@@ -69,11 +69,11 @@ duplication holes closed.
   blocks that own a block entity are now never printable, whatever `unknownBlocksPrintable` says.
 - A cell the print **skips** no longer has to be clear, so a block standing where scaffolding was
   captured cannot pause the whole job as *Obstructed*.
-- **A finishing machine no longer strands its neighbour's job.** Print and deconstruct jobs keep
-  their chunks loaded with vanilla's `setChunkForced`, which is one boolean per chunk with no record
-  of who asked for it, so two machines whose job areas shared a chunk fought over it: the first to
-  finish unforced the chunk out from under the one still working, whose block entity then stopped
-  ticking and hung with no error and no way to recover. A chunk is 16 blocks while build offsets
+- **A finishing machine no longer strands its neighbour's job.** Jobs used to hold their chunks with
+  vanilla's `setChunkForced`, which was one boolean per chunk with no record of who asked for it, so
+  two machines whose job areas shared a chunk fought over it: the first to finish unforced the chunk
+  out from under the one still working, whose block entity then stopped ticking and hung with no
+  error and no way to recover. A chunk is 16 blocks while build offsets
   reach 32 and deconstruct regions reach 64, so any print farm could hit it. Claims are now
   reference-counted per machine and a chunk is released only when the last job using it is done.
   (1.20.1 was never affected: Forge's chunk manager tracks an owner, and only the NeoForge port
