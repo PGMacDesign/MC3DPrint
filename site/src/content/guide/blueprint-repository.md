@@ -13,9 +13,9 @@ Drop a written Blueprint Disc into the input slot and press `Deposit Disc`. The 
 
 **Duplicates recycle.** Deposit a disc the library already has and it's wiped and handed back as a `Blank Blueprint Disc`, except locked discs, which are protected and left untouched. The catalogued entry itself is never touched by a re-deposit: it keeps its name and its original depositor.
 
-## STL to GCODE
+## STL to Disc
 
-To burn a copy: select a build, drop a `Blank Blueprint Disc` into the input slot, and press `STL to GCODE` for a fresh written disc. Burned copies keep the original's official or player-scan status, so the [Resin](/guide/resins-overview/) anti-dupe rule still holds.
+To burn a copy: select a build, drop a `Blank Blueprint Disc` into the input slot, and press `STL to Disc` for a fresh written disc. Burned copies keep the original's official or player-scan status, so the [Resin](/guide/resins-overview/) anti-dupe rule still holds.
 
 ## Renaming your scans
 

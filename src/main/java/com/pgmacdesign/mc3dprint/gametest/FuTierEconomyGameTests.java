@@ -326,6 +326,26 @@ public class FuTierEconomyGameTests {
         } else if (!valued(Items.DRAGON_EGG, 10000, 7)) {
             // unfarmable 1-per-world trophy: a big wind-only payout, pump-safe at any tier
             helper.fail("dragon_egg should be a 10000@7 wind-only trophy");
+        } else if (!valued(Items.PHANTOM_MEMBRANE, 30, 3)) {
+            helper.fail("phantom_membrane should be 30@3, level with slime_ball");
+        } else {
+            helper.succeed();
+        }
+    }
+
+    /**
+     * Phantom membrane is BOTH windable and printable, unlike the wind-only trophies above it in
+     * this file. Pins both halves, because a value alone would still be inert behind either tag.
+     */
+    @GameTest(template = "empty5", timeoutTicks = 40)
+    public static void phantomMembraneWindsAndPrints(GameTestHelper helper) {
+        ItemStack membrane = new ItemStack(Items.PHANTOM_MEMBRANE);
+        if (com.pgmacdesign.mc3dprint.registry.ModItemTags.isWinderBlacklisted(membrane)) {
+            helper.fail("phantom_membrane must be windable (not on the winder blacklist)");
+        } else if (membrane.is(com.pgmacdesign.mc3dprint.registry.ModItemTags.NO_PRINT)) {
+            helper.fail("phantom_membrane must be printable (not on #no_print)");
+        } else if (membrane.is(com.pgmacdesign.mc3dprint.registry.ModItemTags.PRINT_RESTRICTED)) {
+            helper.fail("phantom_membrane must not be gated to official discs");
         } else {
             helper.succeed();
         }
