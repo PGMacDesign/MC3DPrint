@@ -22,11 +22,5 @@
   "result": {
     "count": 1,
     "id": "mc3dprint:filament_converter"
-  },
-  "neoforge:conditions": [
-    {
-      "type": "neoforge:mod_loaded",
-      "modid": "ae2"
-    }
-  ]
+  }
 }
