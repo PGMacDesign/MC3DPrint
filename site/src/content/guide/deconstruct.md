@@ -47,7 +47,8 @@ Deconstruct works on **any blocks in the region**: it doesn't matter whether the
 Deconstructing credits a **fraction of each block's winding value** (config `deconstruct.yieldFactor`, default **50%**) at its exact tier. That's always strictly worse than mining the block and winding it yourself. Recycling is a convenience, not a filament source:
 
 - **Winder-blacklisted** blocks (planks, cactus, bamboo…) are removed at **zero** credit: the anti-laundering tag holds in both directions.
-- **Itemless blocks** (water, crops, fire) clear for free, mirroring how printing places them for free.
+- **Free structural blocks** (water, fire, farmland, dirt paths) clear for free, mirroring how printing places them for free.
+- **Crops** recycle at zero. They cost seeds to print, but they are winder-blacklisted, so a farm cannot launder itself into filament.
 - **Unvalued blocks** (spawners, budding amethyst, strict-mode unknowns) are **skipped in place**: the machine never destroys something for nothing.
 - **Containers with items** are skipped in place. Empty them first; the machine never deletes or ejects stored items.
 - Unbreakable blocks (bedrock) are skipped.

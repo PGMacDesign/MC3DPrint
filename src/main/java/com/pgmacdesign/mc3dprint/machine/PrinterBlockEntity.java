@@ -658,21 +658,32 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
     }
 
     /**
-     * Whether a (resolved) block is "structural matter" — an in-world-only state that
-     * isn't survival-obtainable as the depicted block, so it carries no FU and prints
-     * free (like /paste). Three families:
+     * Whether a (resolved) block is "structural matter": an in-world-only state with no item
+     * that could be charged for, so it carries no FU and prints free (like /paste). Two families:
      * <ul>
-     *   <li><b>itemless</b> blocks whose {@code asItem()} is AIR (water, fire, …);</li>
-     *   <li><b>planted growth</b> — {@link BushBlock} descendants (crops, stems, nether
-     *       wart, saplings, flowers): their item is a seed/sapling, never the depicted
-     *       grown {@code age=N} block;</li>
-     *   <li><b>tilled ground</b> — farmland / dirt-path: their {@code asItem()} exists
-     *       but no loot ever drops it (you get dirt), so it's not really obtainable.</li>
+     *   <li><b>itemless</b> blocks whose {@code asItem()} is AIR (water, fire, …), and only when
+     *       they own no block entity that could be holding something;</li>
+     *   <li><b>tilled ground</b>, farmland / dirt-path: their {@code asItem()} exists but no loot
+     *       ever drops it (you get dirt), and neither is a faucet for anything.</li>
      * </ul>
-     * Crucially this keys on block <i>type</i>, not on the seed/food item's price, so it
-     * stays correct once recipe derivation values {@code carrot}/{@code potato}/etc. The
-     * anti-exploit gate is untouched: an unpriced <i>itemed solid</i> (a modded ore a pack
-     * forgot to value) is none of these families, so strict mode still refuses it.
+     *
+     * <p><b>Planted growth used to be a third family and must never be again.</b> Every crop in
+     * the game descends from {@link net.minecraft.world.level.block.BushBlock}, so keying the free
+     * pass on that type handed out every mod's crops for nothing: scan a field of Mystical
+     * Agriculture essence crops, print it, break them, and you have unlimited seeds. The rule asked
+     * what KIND of block it was when the only safe question is what it is WORTH.
+     *
+     * <p>The justification for it was also simply untrue. It claimed a crop's item "is a seed,
+     * never the depicted grown block", so there was nothing honest to charge. In fact
+     * {@code asItem()} already returns the planting item, because seeds are
+     * {@code ItemNameBlockItem} and register themselves against their block:
+     * {@code wheat -> wheat_seeds}, {@code carrots -> carrot}, {@code sweet_berry_bush ->
+     * sweet_berries}. Ordinary pricing was always able to charge the right thing; this method was
+     * the only reason it did not. A crop now costs its seed, which is also the honest number, since
+     * player-scanned crops are normalised to age 0 and what you receive really is a fresh planting.
+     *
+     * <p>Anything whose seed carries no value is refused by strict mode instead, which is the
+     * correct outcome for a mod's progression currency and needs no per-mod blocklist.
      */
     private static boolean isStructuralMatter(BlockState state) {
         if (state.isAir()) {
@@ -687,8 +698,9 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             return !(state.getBlock() instanceof net.minecraft.world.level.block.EntityBlock);
         }
         Block block = state.getBlock();
-        return block instanceof net.minecraft.world.level.block.BushBlock     // crops/stems/saplings/flowers/wart
-                || block instanceof net.minecraft.world.level.block.FarmBlock      // farmland
+        // NO BushBlock here, deliberately: see the javadoc. Crops price off asItem(), which is
+        // their seed, so a valuable modded crop costs what its seed costs or is refused outright.
+        return block instanceof net.minecraft.world.level.block.FarmBlock      // farmland
                 || block instanceof net.minecraft.world.level.block.DirtPathBlock; // grass/dirt path
     }
 

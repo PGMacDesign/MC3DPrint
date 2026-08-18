@@ -449,6 +449,32 @@ public final class FuValueRegistry {
                 // unvalued leaf. Valued at the floor (like kelp/cactus) so scanned builds using it
                 // print; winder-blacklisted so the renewable supply can't launder back to FU.
                 "minecraft:twisting_vines=2@1",
+                // ===== planted growth =====
+                // These exist so CROP AND PLANT BLOCKS CAN BE PRICED. A planted block resolves
+                // through asItem() to the thing you would plant (wheat -> wheat_seeds, carrots ->
+                // carrot, pumpkin_stem -> pumpkin_seeds), so valuing that item is what lets the
+                // block print at all. Until 1.3.x every BushBlock descendant printed FREE instead,
+                // which handed out any mod's valuable crops for nothing: scan a field of Mystical
+                // Agriculture essence crops, print it, break them, unlimited seeds. Removing that
+                // free pass is what makes these values load-bearing rather than cosmetic.
+                //
+                // All at the T1 floor and all winder-blacklisted, exactly like cactus/kelp/bamboo
+                // above: every one of them is farmable, so a value without the blacklist would let
+                // a farm launder itself into filament. A modded crop whose seed carries no value
+                // stays unprintable under strict mode, which is the correct answer and needs no
+                // per-mod list.
+                "minecraft:wheat_seeds=2@1", "minecraft:beetroot_seeds=2@1",
+                "minecraft:melon_seeds=2@1", "minecraft:pumpkin_seeds=2@1",
+                "minecraft:carrot=2@1", "minecraft:potato=2@1",
+                "minecraft:nether_wart=2@1",
+                "minecraft:brown_mushroom=2@1", "minecraft:red_mushroom=2@1",
+                "minecraft:dead_bush=2@1", "minecraft:pink_petals=2@1",
+                "#minecraft:saplings=2@1", "#minecraft:flowers=2@1",
+                // Ferns and grasses are BushBlock too but sit in no flower tag, and the
+                // two-block ones only surfaced via the fidelity oracle rather than the
+                // printability audit, since a double plant fails on its upper half.
+                "minecraft:short_grass=2@1", "minecraft:fern=2@1",
+                "minecraft:tall_grass=2@1", "minecraft:large_fern=2@1",
                 "minecraft:soul_soil=1@1", "minecraft:clay_ball=1@1", "minecraft:netherrack=1@1",
                 "minecraft:deepslate=1@1", "minecraft:cobbled_deepslate=1@1", "minecraft:tuff=1@1",
                 "minecraft:dripstone_block=1@1", "minecraft:pointed_dripstone=1@1", "minecraft:mud=1@1",
