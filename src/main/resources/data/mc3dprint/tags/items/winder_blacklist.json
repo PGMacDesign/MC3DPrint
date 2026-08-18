@@ -28,6 +28,26 @@
     "minecraft:rabbit_stew",
     "minecraft:suspicious_stew",
     "minecraft:golden_apple",
-    { "id": "rftoolsbase:dimensionalshard", "required": false }
+    "minecraft:wheat_seeds",
+    "minecraft:beetroot_seeds",
+    "minecraft:melon_seeds",
+    "minecraft:pumpkin_seeds",
+    "minecraft:carrot",
+    "minecraft:potato",
+    "minecraft:nether_wart",
+    "minecraft:brown_mushroom",
+    "minecraft:red_mushroom",
+    "minecraft:dead_bush",
+    "minecraft:pink_petals",
+    "#minecraft:saplings",
+    "#minecraft:flowers",
+    "minecraft:grass",
+    "minecraft:fern",
+    "minecraft:tall_grass",
+    "minecraft:large_fern",
+    {
+      "id": "rftoolsbase:dimensionalshard",
+      "required": false
+    }
   ]
 }

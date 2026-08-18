@@ -17,7 +17,7 @@ The whole loop is simple: [scan a build](/guide/scanning/), save it to a disc, t
 
 Every written disc shows its **tier**: the highest material tier among its blocks. One diamond block in a pile of stone still reads as that tier, and that's the lowest [machine tier](/guide/printer-tiers/) that can print all of it.
 
-Each disc also shows a **Print Cost** in that top tier. Free structural blocks like water and crops cost nothing toward it. See [the FU economy](/guide/fu-economy/) for how costs are derived.
+Each disc also shows a **Print Cost** in that top tier. Free structural blocks cost nothing toward it: water, fire, farmland and dirt paths. Crops are not free; a planted block costs whatever you would have planted, so a field of wheat costs seeds and a crop whose seed carries no value is refused outright in the default strict mode (permissive packs that set `unknownBlocksPrintable` print it at the unknown-block rate instead). See [the FU economy](/guide/fu-economy/) for how costs are derived.
 
 ## Import & export (operators)
 

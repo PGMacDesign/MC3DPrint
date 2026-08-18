@@ -42,7 +42,9 @@ import java.util.concurrent.ConcurrentHashMap;
  * that JSON file. For a modded <em>family</em> a vanilla tag can't wildcard (e.g.
  * RFTools Dimensions' {@code rftoolsdim:dimensional_*} blocks — seven-plus
  * trivially-farmable variants, laundering vectors like the dimensional shard),
- * add an id prefix to {@link #WINDER_BLACKLIST_ID_PREFIXES}. The winding /
+ * add an id prefix to {@link #WINDER_BLACKLIST_ID_PREFIXES}. Planting items need
+ * neither: they are matched by block type, so a mod's seeds are covered before
+ * anyone has heard of the mod. The winding /
  * conversion / deconstruct gates all test membership through
  * {@link #isWinderBlacklisted(ItemStack)} — call that, never a bare
  * {@code stack.is(WINDER_BLACKLIST)}, so both the tag and the prefixes apply
@@ -132,11 +134,36 @@ public final class ModItemTags {
         if (stack.is(WINDER_BLACKLIST)) {
             return true;
         }
+        if (isPlantingItem(stack)) {
+            return true;
+        }
         ResourceLocation key = ForgeRegistries.ITEMS.getKey(stack.getItem());
         if (key == null) {
             return false;
         }
         return isIdWinderBlocked(key);
+    }
+
+    /**
+     * Whether {@code stack} is the item you plant to grow something: a block item whose block is
+     * a {@link net.minecraft.world.level.block.BushBlock}. Seeds, saplings, flowers, nether wart
+     * and every modded equivalent land here, because a crop block registers its planting item
+     * against itself ({@code wheat -> wheat_seeds}) and every crop in the game descends from
+     * {@code BushBlock}.
+     *
+     * <p>This is a rule rather than a list on purpose. The tag names vanilla's planting items, but
+     * FU values reach modded items too, through the config's {@code fuValues} overrides, through
+     * recipe derivation, and through the compat API. A valued modded seed with no tag entry would
+     * otherwise be windable, and a seed is the one thing a farm produces without limit, so that is
+     * a renewable filament faucet: the exact laundering this class exists to stop. Enumerating
+     * every mod's seeds cannot work, since the next mod is not installed yet.
+     *
+     * <p>Printing is unaffected. A planted block still costs its planting item, and this only bars
+     * the return trip.
+     */
+    private static boolean isPlantingItem(ItemStack stack) {
+        return stack.getItem() instanceof net.minecraft.world.item.BlockItem blockItem
+                && blockItem.getBlock() instanceof net.minecraft.world.level.block.BushBlock;
     }
 
     /**
