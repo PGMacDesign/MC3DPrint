@@ -444,7 +444,8 @@ public final class FuValueRegistry {
                 // Ferns and grasses are BushBlock too but sit in no flower tag, and the
                 // two-block ones only surfaced via the fidelity oracle rather than the
                 // printability audit, since a double plant fails on its upper half.
-                "minecraft:short_grass=2@1", "minecraft:fern=2@1",
+                // 1.20.1 spells short grass "grass"; it was renamed in 1.20.3.
+                "minecraft:grass=2@1", "minecraft:fern=2@1",
                 "minecraft:tall_grass=2@1", "minecraft:large_fern=2@1",
                 "minecraft:soul_soil=1@1", "minecraft:clay_ball=1@1", "minecraft:netherrack=1@1",
                 "minecraft:deepslate=1@1", "minecraft:cobbled_deepslate=1@1", "minecraft:tuff=1@1",
