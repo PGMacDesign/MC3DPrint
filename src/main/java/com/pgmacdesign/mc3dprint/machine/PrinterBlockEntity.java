@@ -1349,7 +1349,9 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         Optional<BlockState> resolved = blueprint.palette().get(entry.paletteIndex()).resolve();
         // unknown block (e.g. blueprint from a modded world) — skip it, never stall the job
         if (resolved.isPresent()) {
-            int fuCost = blockFuCost(resolved.get());
+            int fuCost = isPairedSecondaryHalf(blueprint, entry.local(), resolved.get())
+                    ? 0 // the other half of this piece already paid for it
+                    : blockFuCost(resolved.get());
             if (armedResinEffect == ResinItem.Effect.OVERDRIVE) {
                 int baseFu = blockFuValue(resolved.get()).map(FuValue::fu).orElse(0);
                 if (baseFu > 0) {
@@ -2185,6 +2187,70 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         return state.hasProperty(net.minecraft.world.level.block.state.properties.BlockStateProperties.BED_PART)
                 && state.getValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.BED_PART)
                         == net.minecraft.world.level.block.state.properties.BedPart.HEAD;
+    }
+
+    /**
+     * Whether {@code state} is the second half of a two-block piece whose FIRST half is part of
+     * this same print. Both halves are separate placement entries holding the same block, and both
+     * resolve through {@code asItem()} to the same item, so charging each of them bills the player
+     * twice for one door, one bed, one sunflower. Charging the paired second half zero is what
+     * makes a two-block piece cost what its item costs, which is what every other block already
+     * does and what the Efficiency break-even assumes.
+     *
+     * <p><b>Paired is the whole point, and it is not a detail.</b> A scan can contain a secondary
+     * half whose partner sits outside the region, and breaking either half of a bed or a double
+     * plant yields the item, so a free unpaired half is a free item: print a field of bed heads,
+     * break them, collect beds. An unpaired half therefore keeps paying full price, which is the
+     * honest number for something the player is about to receive whole.
+     *
+     * <p>This is why the symmetry with {@code classifyForDeconstruct} is only partial. Zero YIELD
+     * on any secondary half is safe, because the player gains nothing by it. Zero COST is safe only
+     * when the piece is really being printed once.
+     */
+    private static boolean isPairedSecondaryHalf(Blueprint blueprint, BlockPos local, BlockState state) {
+        if (!isSecondaryDoubleHalf(state)) {
+            return false;
+        }
+        BlockPos primary;
+        String primaryProperty;
+        String primaryValue;
+        if (state.hasProperty(net.minecraft.world.level.block.state.properties.BlockStateProperties.DOUBLE_BLOCK_HALF)) {
+            primary = local.below(); // doors and double plants: the lower half
+            primaryProperty = "half";
+            primaryValue = "lower";
+        } else if (state.hasProperty(net.minecraft.world.level.block.state.properties.BlockStateProperties.HORIZONTAL_FACING)) {
+            // A bed's FACING points foot -> head, so from the head the foot is behind it. The
+            // blueprint stores unrotated states and unrotated local positions, and the job's
+            // rotation is applied at placement, so both sides of this comparison are in the
+            // same frame.
+            primary = local.relative(state.getValue(
+                    net.minecraft.world.level.block.state.properties.BlockStateProperties.HORIZONTAL_FACING)
+                    .getOpposite());
+            primaryProperty = "part";
+            primaryValue = "foot";
+        } else {
+            return false; // a bed head with no facing is malformed; charge it rather than gift it
+        }
+        if (primary.getX() < 0 || primary.getY() < 0 || primary.getZ() < 0
+                || primary.getX() >= blueprint.sizeX() || primary.getY() >= blueprint.sizeY()
+                || primary.getZ() >= blueprint.sizeZ()) {
+            return false;
+        }
+        com.pgmacdesign.mc3dprint.blueprint.BlueprintBlockState partner =
+                blueprint.get(primary.getX(), primary.getY(), primary.getZ());
+        if (partner == null || !partner.blockId().equals(
+                com.pgmacdesign.mc3dprint.blueprint.BlueprintBlockState.fromBlockState(state).blockId())) {
+            return false;
+        }
+        // The partner has to be the PRIMARY half, not just the same block. Two upper halves
+        // stacked directly on each other would otherwise pair with one another and both print
+        // free, which is the free-item hole this method exists to avoid.
+        return primaryValue.equals(partner.properties().get(primaryProperty));
+    }
+
+    /** Test hook for {@link #isPairedSecondaryHalf}. */
+    public static boolean isPairedSecondaryHalfForTest(Blueprint blueprint, BlockPos local, BlockState state) {
+        return isPairedSecondaryHalf(blueprint, local, state);
     }
 
     private DeconstructYield classifyForDeconstruct(ServerLevel serverLevel, BlockPos pos, BlockState existing) {
@@ -3043,9 +3109,24 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
                 && BlueprintDiscItem.isOfficial(template);
         int overdriveTier = overdrive && resin.getItem() instanceof ResinItem ri ? ri.tier() : 0;
 
-        // per-palette-index block counts, then one cost resolve per palette entry
+        // Per-palette-index block counts, then one cost resolve per palette entry. Paired
+        // secondary halves are counted separately because they are the one case where two
+        // positions sharing a palette entry do NOT cost the same: the second half of a door,
+        // bed or double plant is free when its partner is in the same print, and pairing is a
+        // property of the position, not of the palette entry.
         int[] counts = new int[blueprint.palette().size()];
-        blueprint.forEachBlock((local, paletteIndex) -> counts[paletteIndex]++);
+        int[] freeHalves = new int[blueprint.palette().size()];
+        BlockState[] resolvedByIndex = new BlockState[blueprint.palette().size()];
+        for (int i = 0; i < resolvedByIndex.length; i++) {
+            resolvedByIndex[i] = blueprint.palette().get(i).resolve().orElse(null);
+        }
+        blueprint.forEachBlock((local, paletteIndex) -> {
+            counts[paletteIndex]++;
+            BlockState at = resolvedByIndex[paletteIndex];
+            if (at != null && isPairedSecondaryHalf(blueprint, local, at)) {
+                freeHalves[paletteIndex]++;
+            }
+        });
 
         int[] perTier = new int[SpoolItem.CAPACITY_BY_TIER.length];
         int blocks = 0;
@@ -3066,8 +3147,8 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
                 }
             }
             int costTier = blockFuTier(resolved.get());
-            perTier[costTier - 1] += fuCost * counts[i];
-            blocks += counts[i];
+            perTier[costTier - 1] += fuCost * (counts[i] - freeHalves[i]);
+            blocks += counts[i]; // a free half is still placed, still ticks, still counts
         }
         reportPerTier = perTier;
         reportBlocks = blocks;
