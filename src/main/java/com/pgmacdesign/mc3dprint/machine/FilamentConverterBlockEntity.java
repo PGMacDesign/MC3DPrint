@@ -26,9 +26,14 @@ import java.util.Optional;
 
 /**
  * Filament Converter: end-game spool automation. Pulls the configured item
- * from adjacent inventories (chests, pipes, AE2/RS interfaces — anything with
- * an item handler), converts it to FU, and tops off spools docked on adjacent
- * printers. "The spool never runs out as long as the network has stock."
+ * from adjacent inventories, converts it to FU, and tops off spools docked on
+ * adjacent printers. "The spool never runs out as long as you have stock."
+ *
+ * <p>It asks each eligible neighbour for an {@code IItemHandler} and does not care what is
+ * behind it (printers and other converters are skipped, since printer faces expose outputs):
+ * a chest, a hopper, a pipe and an AE2 ME Interface are all the same to it. There is no AE2
+ * dependency here, and the recipe is no longer gated on AE2 either. The docs used to claim
+ * this block read an ME network, which it never did.
  *
  * Right-click with an item to set the filter; sneak+empty hand clears it.
  * Only converts when a docked spool can hold the full yield — no FU is ever

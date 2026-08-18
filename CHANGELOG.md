@@ -54,6 +54,11 @@ duplication holes closed.
   it switches you to, and nothing else on the panel broke the tie.
 - A deconstruct that stalls with nowhere to put its filament says **Spool Missing or Full** instead of
   *Output Full*, which sent players looking for a blocked output slot that deconstruct does not have.
+- **The Filament Converter is no longer gated on Applied Energistics 2.** Its recipe required AE2
+  while its behaviour never used it: it asks each neighbouring block for an item handler, which a
+  chest, hopper or pipe answers just as well as an ME Interface. The gate cost non-AE2 packs a
+  useful automation block for no mechanical reason. Both doc surfaces said it read an ME network,
+  which it never did, and now describe what it actually does.
 - The Blueprint Repository's burn button reads **STL to Disc** instead of *STL to GCODE*.
 - Base draconium drops from 250 FU to 40, still Tier 7.
 - The Tier 8 fabricator and spool take **awakened draconium**, not dragon eggs.
