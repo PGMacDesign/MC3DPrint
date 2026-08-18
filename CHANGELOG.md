@@ -59,6 +59,18 @@ duplication holes closed.
 - The Tier 8 fabricator and spool take **awakened draconium**, not dragon eggs.
 
 ### Fixed
+- **Crops and seeds no longer print for free.** Any planted block, in any mod, printed at zero cost
+  because the free-print rule keyed on the `BushBlock` type that every crop in the game descends from.
+  Scanning a field of a mod's valuable crops and printing it therefore handed them over for nothing:
+  Mystical Agriculture essence crops were the report, but the hole was general. The rule asked what
+  kind of block it was when the only safe question is what it is worth, and its stated reason (that a
+  crop's item is a seed, "never the depicted grown block") was not true to begin with. A crop block's
+  `asItem()` already returns its planting item, so ordinary pricing always had the right thing to
+  charge. Planted growth now costs its seed, vanilla plants and saplings are valued at the Tier 1 floor
+  and winder-blacklisted so a farm cannot launder itself into filament, and a modded crop whose seed
+  carries no value is refused by strict mode instead of being given away. No per-mod blocklist is
+  involved, and none should be. Only genuinely itemless blocks (water, fire) and tilled ground
+  (farmland, dirt paths) stay free.
 - **Duplication via a placed item.** Captured block-entity contents were only cleared through
   `Clearable`, which modded block entities need not implement. An item placed on a wall with Draconic
   Evolution's `placed_item` survived the clear and printed back at no cost, once per print. The clear

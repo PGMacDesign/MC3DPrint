@@ -11,7 +11,7 @@
     {
       "type": "patchouli:text",
       "title": "Lossy By Design",
-      "text": "Deconstructing credits a $(l)fraction$() of each block's winding value ($(o)deconstruct.yieldFactor$(), default $(l)50%$()) at its exact tier, always less than winding the item yourself, so there's no free filament loop.$(br)$(li)Winder-blacklisted blocks (planks, cactus…) recycle at $(l)zero$()$(li)Water, crops and other itemless blocks clear for free$(li)$(l)Unvalued$() blocks and $(l)non-empty containers$() are skipped in place: the machine never destroys what it can't value, and never touches stored items."
+      "text": "Deconstructing credits a $(l)fraction$() of each block's winding value ($(o)deconstruct.yieldFactor$(), default $(l)50%$()) at its exact tier, always less than winding the item yourself, so there's no free filament loop.$(br)$(li)Winder-blacklisted blocks (planks, cactus…) recycle at $(l)zero$()$(li)Water, fire, farmland and other free structural blocks clear for free$(li)Crops recycle at $(l)zero$(): they cost seeds to print, but they are winder-blacklisted so a farm cannot launder itself into filament$(li)$(l)Unvalued$() blocks and $(l)non-empty containers$() are skipped in place: the machine never destroys what it can't value, and never touches stored items."
     },
     {
       "type": "patchouli:text",
