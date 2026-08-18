@@ -15,8 +15,8 @@ import net.minecraft.gametest.framework.GameTestAssertException;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.neoforged.neoforge.gametest.GameTestHolder;
-import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
+import net.minecraftforge.gametest.GameTestHolder;
+import net.minecraftforge.gametest.PrefixGameTestTemplate;
 
 /**
  * A two-block piece costs what its item costs, once.
@@ -38,7 +38,7 @@ public class TwoBlockPieceCostGameTests {
         if (!(helper.getBlockEntity(PRINTER) instanceof PrinterBlockEntity printer)) {
             throw new GameTestAssertException("Printer block entity missing");
         }
-        java.util.Optional.ofNullable(printer.getEnergyStorage()).ifPresent(energy -> {
+        printer.getCapability(net.minecraftforge.common.capabilities.ForgeCapabilities.ENERGY).ifPresent(energy -> {
             for (int i = 0; i < 60; i++) {
                 energy.receiveEnergy(1_000, false);
             }
