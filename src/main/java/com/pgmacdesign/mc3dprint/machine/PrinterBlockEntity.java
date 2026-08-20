@@ -21,6 +21,7 @@ import com.pgmacdesign.mc3dprint.fu.SpoolItem;
 import com.pgmacdesign.mc3dprint.item.BlueprintDiscItem;
 import com.pgmacdesign.mc3dprint.item.ResinItem;
 import com.pgmacdesign.mc3dprint.machine.resin.ResinEffects;
+import com.pgmacdesign.mc3dprint.machine.terminal.PrintEligibility;
 import com.pgmacdesign.mc3dprint.machine.upgrade.UpgradeItem;
 import com.pgmacdesign.mc3dprint.registry.ModBlockEntities;
 import net.minecraft.core.BlockPos;
@@ -477,56 +478,27 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             itemProgress = 0;
             return;
         }
-        // A spool must never be printable: it carries stored FU, so copying it would launder
-        // filament for a derived cost. Defense-in-depth choke point behind the handler guard.
-        if (template.getItem() instanceof SpoolItem) {
-            state = State.NOT_PRINTABLE;
+        // Every "may this print at all" rule lives in PrintEligibility, which the MC3DPrint
+        // Terminal's catalog also asks. Two copies of this chain would drift, and the terminal
+        // is the copy that would be wrong in the worse direction: it would offer the player
+        // something this tick then refuses, and they would only find out after ordering it.
+        PrintEligibility.Result eligibility = PrintEligibility.of(template, tier.number());
+        if (!eligibility.printable()) {
             itemProgress = 0;
-            notPrintableReason = idOf(template) + " is a filament spool; printers never duplicate stored filament";
-            return;
-        }
-        // NO_PRINT is the "can wind, can't print" gate: the item is valued (so it winds for a
-        // recycle payout) but the printer must never reproduce it. Checked FIRST, ahead of the
-        // trophy gate and the FU/tier branch, so an item on BOTH #no_print and #print_restricted
-        // (wither_skeleton_skull) reports the wind-only status and NO_PRINT keeps its precedence.
-        if (template.is(com.pgmacdesign.mc3dprint.registry.ModItemTags.NO_PRINT)) {
-            state = State.NOT_PRINTABLE;
-            itemProgress = 0;
-            notPrintableReason = idOf(template)
-                    + " is recyclable but not printable (wind-only)";
-            return;
-        }
-        // Item mode with a restricted trophy would be straight duplication — refuse
-        // regardless of FU value (blueprint mode has the official-allowance gate).
-        if (template.is(com.pgmacdesign.mc3dprint.registry.ModItemTags.PRINT_RESTRICTED)) {
-            state = State.NOT_PRINTABLE;
-            itemProgress = 0;
-            notPrintableReason = idOf(template)
-                    + " is a restricted trophy item — printers never duplicate it";
+            notPrintableReason = eligibility.reason();
+            if (eligibility.verdict() == PrintEligibility.Verdict.NEEDS_HIGHER_TIER) {
+                // A bigger printer WOULD print it, so point the player at the tier they need
+                // rather than a dead-end "Not Printable".
+                requiredTier = eligibility.requiredTier();
+                state = State.NEEDS_HIGHER_TIER;
+            } else {
+                state = State.NOT_PRINTABLE;
+            }
             return;
         }
         int fuCost = itemFuCost(template);
         int costTier = itemFuTier(template);
-        if (fuCost < 0) {
-            itemProgress = 0;
-            Optional<FuValue> value = FuValueRegistry.valueOf(template);
-            if (value.isEmpty()) {
-                state = State.NOT_PRINTABLE;
-                notPrintableReason = String.format(
-                        "%s has no FU value (unpriced/unknown item — register one via the API/config)",
-                        idOf(template));
-            } else {
-                // Valued but above this machine's tier: a bigger printer WOULD print it, so
-                // point the player at the tier they need rather than a dead-end "Not Printable".
-                // (itemFuCost only returns <0 for unvalued or tier-too-high, so value present
-                // here always means the latter.)
-                requiredTier = value.get().tier();
-                state = State.NEEDS_HIGHER_TIER;
-                notPrintableReason = String.format(
-                        "%s is Tier %d, which exceeds this machine's Tier %d",
-                        idOf(template), value.get().tier(), tier.number());
-            }
-        } else if (!canEmitCopy(template)) {
+        if (!canEmitCopy(template)) {
             state = State.PAUSED_OUTPUT_FULL;
         } else if (affordableFu(costTier) < fuCost) {
             state = State.PAUSED_NO_FILAMENT;
