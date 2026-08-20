@@ -64,6 +64,13 @@ duplication holes closed.
 - The Tier 8 fabricator and spool take **awakened draconium**, not dragon eggs.
 
 ### Fixed
+- **A door, bed or double plant is charged once instead of twice.** Both halves of a two-block piece
+  are separate placements holding the same block, and both resolve to the same item, so every door
+  and bed in a build has always cost two. That put the Efficiency break-even out of reach for those
+  pieces no matter how many modules were installed. The second half is now free, but only when its
+  partner is really in the same print: a scan can clip a piece in half, and breaking a lone bed head
+  still yields a whole bed, so an unpaired half keeps paying full price. The Matter Calculator's
+  quote and what the job spends are computed the same way, so they still agree exactly.
 - **Crops and seeds no longer print for free.** Any planted block, in any mod, printed at zero cost
   because the free-print rule keyed on the `BushBlock` type that every crop in the game descends from.
   Scanning a field of a mod's valuable crops and printing it therefore handed them over for nothing:
