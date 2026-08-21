@@ -87,6 +87,16 @@ public final class TerminalDispatcher {
             return;
         }
         PrinterBlockEntity printer = machine.get();
+        // The player has taken this machine back (a disc, or their own Item Mode template). Give
+        // up the lease entirely rather than re-installing the order: the machine drops it every
+        // tick while manual work is loaded, so re-handing it just ping-pongs, and the request
+        // stays pinned to a machine that will never run it instead of moving to one that would.
+        if (hasManualWork(printer)) {
+            queue.hold(request, "the machine is busy with the player's own work");
+            queue.release(request);
+            printer.releaseTerminalOrder();
+            return;
+        }
         PrinterBlockEntity.TerminalOrder current = printer.terminalOrder();
         if (current == null || !current.id().equals(request.id())) {
             // The machine lost the order (chunk reload, block entity rebuilt) but the lease
@@ -111,8 +121,7 @@ public final class TerminalDispatcher {
             PrinterBlockEntity printer = found.get();
             // A machine the player is already using is not available. A terminal order must never
             // preempt a print somebody started at the machine itself.
-            if (printer.hasTerminalOrder() || printer.activeJob() != null
-                    || !printer.inventory().getStackInSlot(PrinterBlockEntity.SLOT_TEMPLATE).isEmpty()) {
+            if (printer.hasTerminalOrder() || hasManualWork(printer)) {
                 continue;
             }
             // Refuse a machine that cannot do this job at all, so the order does not bind to a
@@ -170,6 +179,16 @@ public final class TerminalDispatcher {
     /** Releases a machine that is no longer wanted, so it does not sit holding a dead order. */
     public static void clear(ServerLevel level, BlockPos machine) {
         printerAt(level, machine).ifPresent(p -> p.setTerminalOrder(null));
+    }
+
+    /**
+     * Whether the player has claimed this machine for work of their own: anything in the template
+     * slot (an Item Mode item or a blueprint disc) or a running job. Asked in both directions, so
+     * an order neither binds to an occupied machine nor stays bound to one that becomes occupied.
+     */
+    private static boolean hasManualWork(PrinterBlockEntity printer) {
+        return printer.activeJob() != null
+                || !printer.inventory().getStackInSlot(PrinterBlockEntity.SLOT_TEMPLATE).isEmpty();
     }
 
     private static Optional<PrinterBlockEntity> printerAt(ServerLevel level, BlockPos pos) {

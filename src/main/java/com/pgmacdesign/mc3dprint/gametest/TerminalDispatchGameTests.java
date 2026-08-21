@@ -338,6 +338,65 @@ public class TerminalDispatchGameTests {
                 .thenSucceed();
     }
 
+    /**
+     * Loading a blueprint disc hands the machine back to the player, lease and all.
+     *
+     * <p>A disc takes the blueprint-mode branch before any terminal handling, so an order could
+     * stay leased to a machine running somebody's build, with the dispatcher reading that build's
+     * status as the order's. Releasing only machine-side was not enough either: the dispatcher
+     * re-installed the order every tick while the machine dropped it every tick, so the order
+     * ping-ponged and stayed pinned to a machine that would never run it.
+     */
+    @GameTest(template = "empty5", timeoutTicks = 200)
+    public static void aLoadedDiscHandsTheMachineBack(GameTestHelper helper) {
+        PrinterBlockEntity printer = poweredPrinter(helper, 2, 100_000);
+        PrintRequestQueue queue = new PrintRequestQueue();
+        CountingSink sink = new CountingSink();
+        PrintRequest req = queue.enqueue(UUID.randomUUID(), Items.IRON_INGOT, 16).orElseThrow();
+
+        helper.startSequence()
+                .thenExecuteFor(10, () ->
+                        TerminalDispatcher.tick(helper.getLevel(), queue, machines(helper), sink))
+                .thenExecute(() -> {
+                    if (req.machine() == null) {
+                        throw new GameTestAssertException("the order never bound");
+                    }
+                    // The player loads a build into the machine the order is running on.
+                    com.pgmacdesign.mc3dprint.blueprint.Blueprint blueprint =
+                            com.pgmacdesign.mc3dprint.blueprint.Blueprint.builder("gt-claim", 1, 1, 1)
+                                    .set(0, 0, 0, com.pgmacdesign.mc3dprint.blueprint
+                                            .BlueprintBlockState.parse("minecraft:stone"))
+                                    .build();
+                    var store = com.pgmacdesign.mc3dprint.blueprint.BlueprintFileStore
+                            .forServer(helper.getLevel().getServer());
+                    ItemStack disc = new ItemStack(ModItems.BLUEPRINT_DISC.get());
+                    com.pgmacdesign.mc3dprint.item.BlueprintDiscItem.writeBlueprint(
+                            disc, store.save(blueprint), blueprint);
+                    printer.inventory().setStackInSlot(PrinterBlockEntity.SLOT_TEMPLATE, disc);
+                })
+                .thenExecuteFor(20, () ->
+                        TerminalDispatcher.tick(helper.getLevel(), queue, machines(helper), sink))
+                .thenExecute(() -> {
+                    if (printer.hasTerminalOrder()) {
+                        throw new GameTestAssertException("the machine kept the terminal order"
+                                + " while running the player's blueprint");
+                    }
+                    if (queue.isLeased(helper.absolutePos(PRINTER))) {
+                        throw new GameTestAssertException("the order stayed leased to a machine"
+                                + " the player had taken back, so it can never run elsewhere");
+                    }
+                    if (req.machine() != null) {
+                        throw new GameTestAssertException("the order is still pinned to "
+                                + req.machine());
+                    }
+                    if (req.status().isTerminal()) {
+                        throw new GameTestAssertException("loading a disc must not end the order,"
+                                + " it was " + req.status());
+                    }
+                })
+                .thenSucceed();
+    }
+
     /** Running out of filament holds the order rather than cancelling or delivering unpaid. */
     @GameTest(template = "empty5", timeoutTicks = 400)
     public static void runningOutOfFilamentHoldsTheOrder(GameTestHelper helper) {

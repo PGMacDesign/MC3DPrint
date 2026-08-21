@@ -401,11 +401,15 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         ItemStack template = inventory.getStackInSlot(SLOT_TEMPLATE);
 
         if (isLoadedDisc(template)) {
+            // Loading a disc is the player claiming this machine. Winning the branch is not
+            // enough: holding the order while running a blueprint leaves it leased here, and the
+            // dispatcher reads this machine's blueprint-mode status and attributes it to that
+            // order. Let go so it can be given to a machine that will actually run it.
+            releaseTerminalOrder();
             tickBlueprintMode(template);
         } else if (terminalOrder != null) {
-            // A terminal order never preempts work the player loaded here themselves: a disc in
-            // the slot wins the branch above, and a manual Item Mode template wins below by the
-            // order only running when the slot is empty.
+            // A terminal order never preempts work the player loaded here themselves. Both ways
+            // that can happen release the order rather than running underneath it.
             if (activeJob != null) {
                 cancelActiveJob();
             }
