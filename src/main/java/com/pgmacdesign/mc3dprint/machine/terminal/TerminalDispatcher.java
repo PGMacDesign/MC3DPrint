@@ -52,6 +52,26 @@ public final class TerminalDispatcher {
             }
             bindToFreeMachine(level, queue, request, machines, sink);
         }
+
+        // Take finished and cancelled orders off their machines. A completed order releases its
+        // lease and leaves the open list, so nothing above would ever visit it again, and the
+        // machine would sit holding a dead order: blocked from new work, and (without the
+        // machine's own liveness check) printing and paying forever. The machine defends itself
+        // too, but only this sweep frees it promptly for the next order.
+        for (BlockPos pos : machines) {
+            printerAt(level, pos).ifPresent(printer -> {
+                PrinterBlockEntity.TerminalOrder held = printer.terminalOrder();
+                if (held == null) {
+                    return;
+                }
+                boolean stillOpen = queue.byId(held.id())
+                        .map(r -> !r.status().isTerminal() && pos.equals(r.machine()))
+                        .orElse(false);
+                if (!stillOpen) {
+                    printer.setTerminalOrder(null);
+                }
+            });
+        }
     }
 
     /** Keeps a bound order and its machine agreeing about what is being worked on. */
@@ -117,7 +137,16 @@ public final class TerminalDispatcher {
             case PAUSED_NO_POWER -> queue.hold(request, "waiting for power");
             case PAUSED_OUTPUT_FULL -> queue.hold(request, "nowhere to put the output");
             case NEEDS_HIGHER_TIER -> queue.hold(request, "needs a higher-tier machine");
-            case NOT_PRINTABLE -> queue.cancel(request, "this machine will not print that");
+            // Eligibility was checked before binding, so reaching NOT_PRINTABLE means the rules
+            // moved under a running order (a datapack reload retagging an item, say). Let go of
+            // the machine and requeue rather than cancelling: the order may well be printable on
+            // another machine, and cancelling would throw away the remainder of an order that has
+            // already delivered and billed part of itself.
+            case NOT_PRINTABLE -> {
+                queue.hold(request, "this machine will not print that; looking for another");
+                queue.release(request);
+                printer.releaseTerminalOrder();
+            }
             default -> queue.resume(request);
         }
     }
@@ -129,7 +158,13 @@ public final class TerminalDispatcher {
                 // Credit through the queue, never the request: the queue re-checks that this
                 // machine still holds the lease for this id, which is what makes a completion
                 // arriving after a cancel a no-op instead of a delivery.
-                (id, count) -> queue.credit(id, machine, count));
+                (id, count) -> queue.credit(id, machine, count),
+                // Asked before every item, so the machine stops the moment the order ends even if
+                // nothing ever comes back to take the order off it.
+                () -> queue.byId(request.id())
+                        .filter(r -> !r.status().isTerminal())
+                        .map(PrintRequest::remaining)
+                        .orElse(0));
     }
 
     /** Releases a machine that is no longer wanted, so it does not sit holding a dead order. */

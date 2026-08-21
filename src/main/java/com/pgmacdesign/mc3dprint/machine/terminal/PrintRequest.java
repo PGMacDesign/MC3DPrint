@@ -218,6 +218,16 @@ public final class PrintRequest {
         req.status = Status.byName(NbtCompat.getString(tag, "Status"));
         req.machine = NbtCompat.getBlockPos(tag, "Machine").orElse(null);
         req.reason = NbtCompat.contains(tag, "Reason") ? NbtCompat.getString(tag, "Reason") : null;
+        // A saved order whose delivered count already covers its quantity is finished, whatever
+        // the saved status says. Left as QUEUED or RUNNING it would be unfinishable: credit()
+        // clamps to remaining(), which is already zero, so it never reaches the COMPLETE branch,
+        // and the order would sit in the open list holding a lease and a slot forever. A
+        // truncated Qty tag reaches the same state, since the constructor floors quantity at 1.
+        if (req.remaining() == 0 && !req.status.isTerminal()) {
+            req.status = Status.COMPLETE;
+            req.machine = null;
+            req.reason = null;
+        }
         return Optional.of(req);
     }
 

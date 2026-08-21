@@ -412,6 +412,13 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             if (template.isEmpty()) {
                 tickTerminalOrder(terminalOrder);
             } else {
+                // The player (or a hopper) put their own template in while an order was running.
+                // Hand the order back rather than running Item Mode underneath it: the dispatcher
+                // reads this machine's status and attributes it to whatever order it thinks is
+                // bound here, so a manual unvalued item would report NOT_PRINTABLE and cancel a
+                // terminal order that had nothing to do with it. Releasing also resets
+                // itemProgress, which both paths share.
+                releaseTerminalOrder();
                 tickItemMode(template);
             }
         } else {
@@ -502,10 +509,29 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
      * @param item     what to print
      * @param sink     where each finished item goes
      * @param onDeliver told how many landed, so the queue (the single writer) can credit them
+     * @param remaining how many items this order still wants, and 0 once it is finished or dead.
+     *                  The machine asks BEFORE printing, so it stops on its own the moment the
+     *                  order ends. Relying on the dispatcher to come and take the order away
+     *                  instead leaves the machine printing and paying forever if the dispatcher
+     *                  ever stops visiting it, which is exactly what happens once an order leaves
+     *                  the open list.
      */
     public record TerminalOrder(java.util.UUID id, Item item,
                                 com.pgmacdesign.mc3dprint.machine.terminal.OrderSink sink,
-                                java.util.function.ObjIntConsumer<java.util.UUID> onDeliver) {}
+                                java.util.function.ObjIntConsumer<java.util.UUID> onDeliver,
+                                java.util.function.IntSupplier remaining) {}
+
+    /**
+     * Drops the current order without finishing it, so the queue can give it to another machine.
+     * The order itself is untouched: the queue is the only thing that may change its state.
+     */
+    public void releaseTerminalOrder() {
+        if (terminalOrder != null) {
+            terminalOrder = null;
+            itemProgress = 0;
+            setChanged();
+        }
+    }
 
     /** Hands this machine an order, replacing any it already had. Server-side only. */
     public void setTerminalOrder(@Nullable TerminalOrder order) {
@@ -535,6 +561,15 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
      */
     private void tickTerminalOrder(TerminalOrder order) {
         requiredTier = 0;
+        // A finished or cancelled order stops here, and the machine lets go of it itself. The
+        // queue releases the lease the moment an order completes, so it disappears from the
+        // dispatcher's open list and nothing would ever come back to clear it: the machine would
+        // keep printing and keep paying, forever, into a sink that no longer credits anything.
+        if (order.remaining().getAsInt() <= 0) {
+            setTerminalOrder(null);
+            state = State.IDLE;
+            return;
+        }
         ItemStack template = new ItemStack(order.item());
 
         PrintEligibility.Result eligibility = PrintEligibility.of(template, tier.number());
@@ -560,6 +595,14 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             state = State.PAUSED_NO_POWER;
             return;
         }
+        // Room is checked BEFORE any RF is burned, matching Item Mode, which tests canEmitCopy
+        // ahead of consuming. Otherwise a held order sits at PAUSED_OUTPUT_FULL re-entering this
+        // path every tick and quietly drawing full power while producing nothing.
+        ItemStack wanted = new ItemStack(order.item());
+        if (order.sink().simulate(wanted) <= 0 && !canEmitCopy(wanted)) {
+            state = State.PAUSED_OUTPUT_FULL;
+            return;
+        }
 
         state = State.PRINTING;
         energy.consume(rfAdjusted(MC3DPrintConfig.itemRfPerTick(tier)));
@@ -573,12 +616,11 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         // bare item, never a copy of anything the player supplied.
         ItemStack produced = new ItemStack(order.item());
 
-        // Find somewhere for it BEFORE paying for it. Charging first and then discovering the
-        // network is full spends filament and produces nothing, which is the one outcome the
-        // economy must never have: the terminal would quietly be a filament shredder for anyone
-        // whose ME system filled up overnight.
-        boolean sinkHasRoom = order.sink().simulate(produced) > 0;
-        if (!sinkHasRoom && !canEmitCopy(produced)) {
+        // Re-check room right before paying, since the last check was a full item's worth of ticks
+        // ago. Charging and then discovering the network is full spends filament and produces
+        // nothing, which is the one outcome the economy must never have: the terminal would
+        // quietly be a filament shredder for anyone whose ME system filled up overnight.
+        if (order.sink().simulate(produced) <= 0 && !canEmitCopy(produced)) {
             itemProgress = maxProgress(); // hold at done, so it finishes the instant room appears
             state = State.PAUSED_OUTPUT_FULL;
             return;
@@ -596,18 +638,20 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         }
         int accepted = order.sink().accept(produced);
         if (accepted <= 0) {
-            // The sink took less than it said it would. Bank it in the output slot, which the
-            // check above already confirmed is possible when the sink had no room; if the sink
-            // claimed room and then refused, that is the sink lying and the bank is the safety net.
+            // The sink said it had room and then took nothing. A real ME network can genuinely
+            // change between the two calls, so this is a race rather than a liar, but either way
+            // the charge has already happened and there is no item.
             if (canEmitCopy(produced)) {
                 emitCopy(produced);
                 order.onDeliver().accept(order.id(), 1);
-            } else {
-                LOGGER.warn("[MC3DP] Tier {} machine at {} paid for {} with nowhere to put it",
-                        tier.number(), worldPosition,
-                        net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(order.item()));
-                state = State.PAUSED_OUTPUT_FULL;
+                return;
             }
+            // Nowhere to bank it either, so give the filament back. Paying for nothing is the
+            // one outcome the economy must never have, and a refund makes the tick a no-op
+            // instead of a loss. itemProgress stays at done so it retries next tick.
+            creditFu(fuCost, costTier);
+            itemProgress = maxProgress();
+            state = State.PAUSED_OUTPUT_FULL;
             return;
         }
         order.onDeliver().accept(order.id(), accepted);

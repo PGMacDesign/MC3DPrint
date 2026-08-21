@@ -4,7 +4,7 @@ import com.pgmacdesign.mc3dprint.MC3DPrint;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.neoforged.fml.event.lifecycle.FMLConstructModEvent;
 import net.neoforged.neoforge.registries.RegisterEvent;
 
 /**
@@ -42,10 +42,20 @@ public final class Ae2Registry {
         }
     }
 
+    /**
+     * Part models must be declared during PRE-INIT. AE2's {@code PartModels} freezes its set once
+     * that phase ends and then throws {@code IllegalStateException: Cannot register models after
+     * the pre-initialization phase!}, so doing this from common setup crashes startup for every
+     * player who has AE2 installed.
+     *
+     * <p>Worth knowing why the gametests did not catch it: part models are client-side and the
+     * oracle is a dedicated server, so the freeze is never reached there. A green suite says
+     * nothing about this particular failure.
+     */
     @SubscribeEvent
-    public static void onCommonSetup(FMLCommonSetupEvent event) {
+    public static void onConstructMod(FMLConstructModEvent event) {
         if (ae2Present()) {
-            Ae2Parts.registerModels();
+            event.enqueueWork(Ae2Parts::registerModels);
         }
     }
 }

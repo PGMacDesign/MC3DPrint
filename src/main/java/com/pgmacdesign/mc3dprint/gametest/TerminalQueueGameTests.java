@@ -256,6 +256,16 @@ public class TerminalQueueGameTests {
             throw new GameTestAssertException("after reload " + bound
                     + " orders claim the same machine; exactly one may");
         }
+        // The loser must be UNBOUND, not lost. Counting alone would also pass if reload simply
+        // dropped the second order, which would silently delete something a player paid attention
+        // to; it has to come back as ordinary queued work that can bind elsewhere.
+        PrintRequest loser = reloaded.byId(second.id()).orElseThrow(
+                () -> new GameTestAssertException("the second order was dropped by reload rather"
+                        + " than unbound"));
+        if (loser.status() != PrintRequest.Status.QUEUED || loser.machine() != null) {
+            throw new GameTestAssertException("the loser must return to QUEUED with no machine,"
+                    + " was " + loser.status() + " on " + loser.machine());
+        }
         helper.succeed();
     }
 

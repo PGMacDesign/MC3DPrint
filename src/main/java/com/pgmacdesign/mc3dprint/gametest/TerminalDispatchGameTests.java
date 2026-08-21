@@ -253,6 +253,91 @@ public class TerminalDispatchGameTests {
                 .thenSucceed();
     }
 
+    /**
+     * A finished order is taken off its machine, and the machine stops printing.
+     *
+     * <p>The regression this pins: a completed order releases its lease and leaves the open list,
+     * so nothing revisits it. Without both the sweep and the machine's own liveness check, the
+     * printer kept its dead order, kept draining filament every cycle, and pushed uncredited items
+     * into the sink forever, while being permanently unavailable for new work. The earlier
+     * completion test missed it by asserting on the very tick the order completed, before any
+     * extra spend had accumulated.
+     */
+    @GameTest(template = "empty5", timeoutTicks = 400)
+    public static void afinishedOrderStopsCostingAnything(GameTestHelper helper) {
+        PrinterBlockEntity printer = poweredPrinter(helper, 2, 100_000);
+        PrintRequestQueue queue = new PrintRequestQueue();
+        CountingSink sink = new CountingSink();
+        PrintRequest req = queue.enqueue(UUID.randomUUID(), Items.IRON_INGOT, 1).orElseThrow();
+        int[] fuAtCompletion = {-1};
+
+        helper.startSequence()
+                .thenExecuteFor(200, () -> {
+                    TerminalDispatcher.tick(helper.getLevel(), queue, machines(helper), sink);
+                    if (fuAtCompletion[0] < 0 && req.status() == PrintRequest.Status.COMPLETE) {
+                        fuAtCompletion[0] =
+                                SpoolItem.getFu(printer.spoolInventory().getStackInSlot(0));
+                    }
+                })
+                .thenExecute(() -> {
+                    if (fuAtCompletion[0] < 0) {
+                        throw new GameTestAssertException("the order never completed");
+                    }
+                    int now = SpoolItem.getFu(printer.spoolInventory().getStackInSlot(0));
+                    if (now != fuAtCompletion[0]) {
+                        throw new GameTestAssertException("filament kept draining after the order"
+                                + " finished: " + (fuAtCompletion[0] - now) + " more FU spent");
+                    }
+                    if (sink.total() != 1) {
+                        throw new GameTestAssertException("a 1-item order delivered "
+                                + sink.total() + " items");
+                    }
+                    if (printer.hasTerminalOrder()) {
+                        throw new GameTestAssertException("the machine is still holding a finished"
+                                + " order, so it can never take another");
+                    }
+                })
+                .thenSucceed();
+    }
+
+    /**
+     * A manual template inserted mid-order does not destroy the order. The machine hands it back
+     * so the order can run elsewhere, rather than reporting the manual item's status as if it were
+     * the order's.
+     */
+    @GameTest(template = "empty5", timeoutTicks = 200)
+    public static void aManualTemplateReleasesRatherThanCancels(GameTestHelper helper) {
+        PrinterBlockEntity printer = poweredPrinter(helper, 2, 100_000);
+        PrintRequestQueue queue = new PrintRequestQueue();
+        CountingSink sink = new CountingSink();
+        PrintRequest req = queue.enqueue(UUID.randomUUID(), Items.IRON_INGOT, 16).orElseThrow();
+
+        helper.startSequence()
+                .thenExecuteFor(10, () ->
+                        TerminalDispatcher.tick(helper.getLevel(), queue, machines(helper), sink))
+                .thenExecute(() -> {
+                    if (req.machine() == null) {
+                        throw new GameTestAssertException("the order never bound");
+                    }
+                    // A hopper drops an UNVALUED item in: Item Mode reports NOT_PRINTABLE for it.
+                    printer.inventory().setStackInSlot(PrinterBlockEntity.SLOT_TEMPLATE,
+                            new ItemStack(Items.BEDROCK));
+                })
+                .thenExecuteFor(20, () ->
+                        TerminalDispatcher.tick(helper.getLevel(), queue, machines(helper), sink))
+                .thenExecute(() -> {
+                    if (req.status() == PrintRequest.Status.CANCELLED) {
+                        throw new GameTestAssertException("an unrelated manual template cancelled"
+                                + " the terminal order");
+                    }
+                    if (printer.hasTerminalOrder()) {
+                        throw new GameTestAssertException("the machine kept the order while running"
+                                + " the player's own template");
+                    }
+                })
+                .thenSucceed();
+    }
+
     /** Running out of filament holds the order rather than cancelling or delivering unpaid. */
     @GameTest(template = "empty5", timeoutTicks = 400)
     public static void runningOutOfFilamentHoldsTheOrder(GameTestHelper helper) {
