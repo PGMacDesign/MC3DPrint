@@ -402,6 +402,18 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
 
         if (isLoadedDisc(template)) {
             tickBlueprintMode(template);
+        } else if (terminalOrder != null) {
+            // A terminal order never preempts work the player loaded here themselves: a disc in
+            // the slot wins the branch above, and a manual Item Mode template wins below by the
+            // order only running when the slot is empty.
+            if (activeJob != null) {
+                cancelActiveJob();
+            }
+            if (template.isEmpty()) {
+                tickTerminalOrder(terminalOrder);
+            } else {
+                tickItemMode(template);
+            }
         } else {
             if (activeJob != null) {
                 cancelActiveJob(); // disc removed mid-print
@@ -465,6 +477,140 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
                 .restrictedAllowance(id)
                 .contains(net.minecraft.core.registries.BuiltInRegistries.ITEM
                         .getKey(state.getBlock().asItem()).toString());
+    }
+
+    // --- Terminal orders ---
+    //
+    // A terminal-dispatched order runs through the SAME Item Mode economics as a player standing
+    // at the machine: same FU cost, same efficiency, same tier gate, same RF per tick, same ticks
+    // per item. Nothing here is a second pricing path, because a second pricing path is how a
+    // remote interface quietly becomes cheaper than the machine it drives.
+    //
+    // What differs is only where the item goes and who is told about it: an OrderSink instead of
+    // the output slot, and a delivered count instead of a growing stack.
+
+    /** The order this machine is currently executing, or null. Never persisted here: the */
+    /** terminal owns the queue, and re-binds on load after revalidating this position. */
+    @Nullable
+    private transient TerminalOrder terminalOrder;
+
+    /**
+     * An order handed to this machine by a terminal, together with where its output goes.
+     *
+     * @param id       the request id, echoed back on every delivery so a completion arriving after
+     *                 the order was cancelled or the machine re-leased is refused by the queue
+     * @param item     what to print
+     * @param sink     where each finished item goes
+     * @param onDeliver told how many landed, so the queue (the single writer) can credit them
+     */
+    public record TerminalOrder(java.util.UUID id, Item item,
+                                com.pgmacdesign.mc3dprint.machine.terminal.OrderSink sink,
+                                java.util.function.ObjIntConsumer<java.util.UUID> onDeliver) {}
+
+    /** Hands this machine an order, replacing any it already had. Server-side only. */
+    public void setTerminalOrder(@Nullable TerminalOrder order) {
+        this.terminalOrder = order;
+        this.itemProgress = 0;
+        setChanged();
+    }
+
+    @Nullable
+    public TerminalOrder terminalOrder() {
+        return terminalOrder;
+    }
+
+    public boolean hasTerminalOrder() {
+        return terminalOrder != null;
+    }
+
+    /**
+     * Runs one tick of a terminal order. Mirrors {@link #tickItemMode} and deliberately reuses its
+     * primitives rather than paraphrasing them.
+     *
+     * <p><b>Charging and emitting are one step.</b> The cost is drained first and the item is only
+     * handed to the sink when the drain came back fully paid, so there is no ordering in which an
+     * item exists without having been paid for. The sink is asked before the drain only to the
+     * extent of knowing it has room, and a sink that then takes fewer than it promised credits only
+     * what it took.
+     */
+    private void tickTerminalOrder(TerminalOrder order) {
+        requiredTier = 0;
+        ItemStack template = new ItemStack(order.item());
+
+        PrintEligibility.Result eligibility = PrintEligibility.of(template, tier.number());
+        if (!eligibility.printable()) {
+            itemProgress = 0;
+            notPrintableReason = eligibility.reason();
+            if (eligibility.verdict() == PrintEligibility.Verdict.NEEDS_HIGHER_TIER) {
+                requiredTier = eligibility.requiredTier();
+                state = State.NEEDS_HIGHER_TIER;
+            } else {
+                state = State.NOT_PRINTABLE;
+            }
+            return;
+        }
+
+        int fuCost = itemFuCost(template);
+        int costTier = itemFuTier(template);
+        if (affordableFu(costTier) < fuCost) {
+            state = State.PAUSED_NO_FILAMENT;
+            return;
+        }
+        if (!energy.hasAtLeast(rfAdjusted(MC3DPrintConfig.itemRfPerTick(tier)))) {
+            state = State.PAUSED_NO_POWER;
+            return;
+        }
+
+        state = State.PRINTING;
+        energy.consume(rfAdjusted(MC3DPrintConfig.itemRfPerTick(tier)));
+        itemProgress++;
+        if (itemProgress < maxProgress()) {
+            return;
+        }
+        itemProgress = 0;
+
+        // Emit matter, not stored history: same anti-dupe rule as emitCopy. A fresh stack of the
+        // bare item, never a copy of anything the player supplied.
+        ItemStack produced = new ItemStack(order.item());
+
+        // Find somewhere for it BEFORE paying for it. Charging first and then discovering the
+        // network is full spends filament and produces nothing, which is the one outcome the
+        // economy must never have: the terminal would quietly be a filament shredder for anyone
+        // whose ME system filled up overnight.
+        boolean sinkHasRoom = order.sink().simulate(produced) > 0;
+        if (!sinkHasRoom && !canEmitCopy(produced)) {
+            itemProgress = maxProgress(); // hold at done, so it finishes the instant room appears
+            state = State.PAUSED_OUTPUT_FULL;
+            return;
+        }
+
+        long unpaid = drainFu(fuCost, costTier);
+        if (unpaid > 0) {
+            // The affordability check above and the drain disagreed, which should be unreachable
+            // within one tick. Hold rather than deliver: the player is out the filament that WAS
+            // taken, which is the safe direction to fail, since the alternative is a free item.
+            LOGGER.warn("[MC3DP] Tier {} machine at {} short {} base FU mid-order; holding",
+                    tier.number(), worldPosition, unpaid);
+            state = State.PAUSED_NO_FILAMENT;
+            return;
+        }
+        int accepted = order.sink().accept(produced);
+        if (accepted <= 0) {
+            // The sink took less than it said it would. Bank it in the output slot, which the
+            // check above already confirmed is possible when the sink had no room; if the sink
+            // claimed room and then refused, that is the sink lying and the bank is the safety net.
+            if (canEmitCopy(produced)) {
+                emitCopy(produced);
+                order.onDeliver().accept(order.id(), 1);
+            } else {
+                LOGGER.warn("[MC3DP] Tier {} machine at {} paid for {} with nowhere to put it",
+                        tier.number(), worldPosition,
+                        net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(order.item()));
+                state = State.PAUSED_OUTPUT_FULL;
+            }
+            return;
+        }
+        order.onDeliver().accept(order.id(), accepted);
     }
 
     // --- Item Mode ---
@@ -875,8 +1021,15 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
      * (tiers below the cost never contribute), with at most one ceil unit of
      * overshoot on the covering spool. The source gather is lazy: a printer that
      * covers the cost from its own docked spools never touches the network.
+     *
+     * <p>Returns the base-FU it could NOT cover, which is normally zero: callers check
+     * {@link #affordableFu} first and nothing interleaves between that check and this drain within
+     * a tick. It is returned rather than swallowed because the one caller that emits an item
+     * afterwards must not emit when the charge fell short, and a void return made that
+     * unrepresentable. A non-zero result means the affordability check and the drain disagreed,
+     * which is a bug in one of them, not a game state a player can reach.
      */
-    private void drainFu(int amount, int costTier) {
+    private long drainFu(int amount, int costTier) {
         int ratio = FuConversion.ratio();
         long remainingBase = FuConversion.toBase(amount, costTier, ratio);
         List<IFilamentSource> sources = null;
@@ -895,6 +1048,7 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
                 remainingBase -= src.drainExactTier(tier, remainingBase);
             }
         }
+        return Math.max(0, remainingBase);
     }
 
     /** Spool contents changed externally (e.g. Filament Converter top-off). */
