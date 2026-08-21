@@ -311,6 +311,75 @@ public class TerminalQueueGameTests {
         helper.succeed();
     }
 
+    /**
+     * The catalog offers priced items, keeps the ones you cannot order yet, and explains them.
+     * A row that vanishes when you cannot afford it teaches nothing and reshuffles the grid under
+     * the cursor; a greyed row reading "Tier 6" is where most of the economy is visible in game.
+     */
+    @GameTest(template = "empty5", timeoutTicks = 100)
+    public static void theCatalogKeepsAndExplainsUnorderableRows(GameTestHelper helper) {
+        // A tier-1 machine with no filament at all: everything priced should still be listed.
+        var poor = com.pgmacdesign.mc3dprint.machine.terminal.TerminalCatalog.build(1, tier -> 0);
+        if (poor.isEmpty()) {
+            throw new GameTestAssertException("the catalog is empty; nothing is priced");
+        }
+        boolean anyOverTier = poor.stream().anyMatch(
+                e -> e.verdict() == PrintEligibility.Verdict.NEEDS_HIGHER_TIER);
+        if (!anyOverTier) {
+            throw new GameTestAssertException("a Tier 1 machine should report higher-tier items as"
+                    + " NEEDS_HIGHER_TIER rather than hiding them");
+        }
+        if (poor.stream().anyMatch(com.pgmacdesign.mc3dprint.machine.terminal.CatalogEntry::orderable)) {
+            throw new GameTestAssertException("nothing is orderable with zero filament");
+        }
+
+        // Same machine tier, filament now unlimited: the list must be the SAME LENGTH, only the
+        // affordability changes. A catalog that grows and shrinks would reshuffle mid-click.
+        var rich = com.pgmacdesign.mc3dprint.machine.terminal.TerminalCatalog.build(
+                1, tier -> Integer.MAX_VALUE);
+        if (rich.size() != poor.size()) {
+            throw new GameTestAssertException("catalog changed size with filament: "
+                    + poor.size() + " -> " + rich.size());
+        }
+        if (rich.stream().noneMatch(com.pgmacdesign.mc3dprint.machine.terminal.CatalogEntry::orderable)) {
+            throw new GameTestAssertException("nothing is orderable even with unlimited filament");
+        }
+
+        // Wind-only items are priced, so they are listed, but never orderable at any tier.
+        var top = com.pgmacdesign.mc3dprint.machine.terminal.TerminalCatalog.build(
+                8, tier -> Integer.MAX_VALUE);
+        var skull = top.stream()
+                .filter(e -> e.item() == Items.WITHER_SKELETON_SKULL)
+                .findFirst().orElse(null);
+        if (skull == null) {
+            throw new GameTestAssertException("a priced wind-only item should still be catalogued");
+        }
+        if (skull.orderable() || skull.verdict() != PrintEligibility.Verdict.WIND_ONLY) {
+            throw new GameTestAssertException("wither skeleton skull must be listed as wind-only"
+                    + " and never orderable, got " + skull.verdict());
+        }
+        helper.succeed();
+    }
+
+    /** Search matches display name and registry id, so a modid narrows an ambiguous name. */
+    @GameTest(template = "empty5", timeoutTicks = 100)
+    public static void searchMatchesNameAndId(GameTestHelper helper) {
+        var all = com.pgmacdesign.mc3dprint.machine.terminal.TerminalCatalog.build(
+                8, tier -> Integer.MAX_VALUE);
+        var byName = com.pgmacdesign.mc3dprint.machine.terminal.TerminalCatalog.search(all, "Iron Ingot");
+        if (byName.stream().noneMatch(e -> e.item() == Items.IRON_INGOT)) {
+            throw new GameTestAssertException("search by display name missed iron ingot");
+        }
+        var byId = com.pgmacdesign.mc3dprint.machine.terminal.TerminalCatalog.search(all, "minecraft:iron_ing");
+        if (byId.stream().noneMatch(e -> e.item() == Items.IRON_INGOT)) {
+            throw new GameTestAssertException("search by registry id missed iron ingot");
+        }
+        if (com.pgmacdesign.mc3dprint.machine.terminal.TerminalCatalog.search(all, "   ").size() != all.size()) {
+            throw new GameTestAssertException("a blank query must not filter anything");
+        }
+        helper.succeed();
+    }
+
     private static void expect(PrintEligibility.Result actual, PrintEligibility.Verdict want) {
         if (actual.verdict() != want) {
             throw new GameTestAssertException("expected " + want + " but got " + actual.verdict()

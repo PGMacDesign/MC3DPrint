@@ -971,7 +971,7 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
      * racks) can supply. Mirrors the docked-first/reserve drain so a printer with
      * empty docked spools but a stocked rack still prints.
      */
-    private int affordableFu(int costTier) {
+    public int affordableFu(int costTier) {
         int ratio = FuConversion.ratio();
         List<IFilamentSource> sources = reachableSources();
         long base = 0;
