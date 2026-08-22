@@ -403,6 +403,64 @@ public class TerminalQueueGameTests {
         helper.succeed();
     }
 
+    /**
+     * An order belongs to whoever placed it. The sync hands every order id to every viewer, so
+     * without this any player could cancel any other player's work with an ordinary packet.
+     */
+    @GameTest(template = "empty5", timeoutTicks = 40)
+    public static void onlyTheOwnerCanCancelAnOrder(GameTestHelper helper) {
+        PrintRequestQueue queue = new PrintRequestQueue();
+        UUID alice = UUID.randomUUID();
+        UUID bob = UUID.randomUUID();
+        PrintRequest req = queue.enqueue(UUID.randomUUID(), Items.IRON_INGOT, 8, alice)
+                .orElseThrow(() -> new GameTestAssertException("queue refused a valid order"));
+
+        if (queue.cancelFor(req.id(), bob, "bob tried")) {
+            throw new GameTestAssertException("another player cancelled an order they did not"
+                    + " place");
+        }
+        if (req.status().isTerminal()) {
+            throw new GameTestAssertException("the order died anyway, status " + req.status());
+        }
+        if (!queue.cancelFor(req.id(), alice, "alice cancelled")) {
+            throw new GameTestAssertException("the placer could not cancel their own order");
+        }
+        if (req.status() != PrintRequest.Status.CANCELLED) {
+            throw new GameTestAssertException("expected CANCELLED, got " + req.status());
+        }
+        // An unowned order (restored from a save written before owners existed) stays cancellable
+        // by anyone, since refusing it would leave it stuck forever.
+        PrintRequest legacy = queue.enqueue(UUID.randomUUID(), Items.IRON_INGOT, 1).orElseThrow();
+        if (!queue.cancelFor(legacy.id(), bob, "anyone")) {
+            throw new GameTestAssertException("an order with no owner must stay cancellable, or it"
+                    + " can never be cleared");
+        }
+        helper.succeed();
+    }
+
+    /** The owner survives a save and reload, or the ownership check silently stops applying. */
+    @GameTest(template = "empty5", timeoutTicks = 40)
+    public static void ownershipSurvivesReload(GameTestHelper helper) {
+        PrintRequestQueue queue = new PrintRequestQueue();
+        UUID alice = UUID.randomUUID();
+        UUID bob = UUID.randomUUID();
+        PrintRequest req = queue.enqueue(UUID.randomUUID(), Items.IRON_INGOT, 4, alice).orElseThrow();
+        UUID id = req.id();
+
+        PrintRequestQueue reloaded = new PrintRequestQueue();
+        reloaded.load(queue.save());
+
+        if (reloaded.cancelFor(id, bob, "bob after reload")) {
+            throw new GameTestAssertException("ownership was lost across reload, so anyone can"
+                    + " cancel");
+        }
+        if (!reloaded.cancelFor(id, alice, "alice after reload")) {
+            throw new GameTestAssertException("the placer lost the ability to cancel their own"
+                    + " order across reload");
+        }
+        helper.succeed();
+    }
+
     private static void expect(PrintEligibility.Result actual, PrintEligibility.Verdict want) {
         if (actual.verdict() != want) {
             throw new GameTestAssertException("expected " + want + " but got " + actual.verdict()

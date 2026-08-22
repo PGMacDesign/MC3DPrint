@@ -187,8 +187,13 @@ public class MC3DPrintTerminalMenu extends AbstractContainerMenu {
 
     @Override
     public boolean stillValid(Player player) {
-        // Reach is enforced by the part that opened this, which knows where it is on the grid.
-        // The menu itself has no position, and inventing one here would disagree with it.
-        return true;
+        // The host knows where it is and whether it still exists; the menu has no position of its
+        // own. Returning a flat true left the screen usable after the part was broken and from any
+        // distance, which matters because cancelling does not pass through the eligibility checks
+        // that happen to refuse a stale order.
+        //
+        // Client-side there is no host, and vanilla calls this on both sides, so a null host means
+        // "not our business to judge" rather than "invalid".
+        return host == null || host.stillValidFor(player);
     }
 }

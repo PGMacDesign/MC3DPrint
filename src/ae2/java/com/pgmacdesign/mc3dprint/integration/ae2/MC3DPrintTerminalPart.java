@@ -21,6 +21,9 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.phys.Vec3;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * The MC3DPrint Terminal: an AE2 cable part that lists what the network's printers and
  * fabricators can print and orders it, paid in Filament Units rather than ingredients.
@@ -33,6 +36,12 @@ import net.minecraft.world.phys.Vec3;
 public class MC3DPrintTerminalPart extends AEBasePart implements IGridTickable {
 
     private final Ae2TerminalHost host = new Ae2TerminalHost(this);
+    /**
+     * Fingerprint of the last state pushed to viewers. Without it, ticking pushed a full catalog
+     * rebuild and resend to every viewer on every active tick, which is the same amplification the
+     * cancel path was just fixed for, only self-inflicted and on a timer.
+     */
+    private int lastSyncStamp = Integer.MIN_VALUE;
 
     public MC3DPrintTerminalPart(IPartItem<?> partItem) {
         super(partItem);
@@ -111,10 +120,23 @@ public class MC3DPrintTerminalPart extends AEBasePart implements IGridTickable {
         if (!(getLevel() instanceof ServerLevel level)) {
             return;
         }
+        List<ServerPlayer> viewers = new ArrayList<>();
         for (ServerPlayer viewer : level.players()) {
             if (viewer.containerMenu instanceof MC3DPrintTerminalMenu menu && menu.host() == host) {
-                TerminalRequests.sync(viewer, menu, host, level);
+                viewers.add(viewer);
             }
+        }
+        if (viewers.isEmpty()) {
+            return; // nobody is looking; do not walk the grid at all
+        }
+        int stamp = TerminalRequests.stampOf(host.snapshot(level), host.queue());
+        if (stamp == lastSyncStamp) {
+            return; // nothing a viewer can see has moved
+        }
+        lastSyncStamp = stamp;
+        for (ServerPlayer viewer : viewers) {
+            TerminalRequests.sync(viewer,
+                    (MC3DPrintTerminalMenu) viewer.containerMenu, host, level);
         }
     }
 

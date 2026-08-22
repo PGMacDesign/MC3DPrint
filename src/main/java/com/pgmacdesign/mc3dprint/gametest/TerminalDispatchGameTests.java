@@ -436,6 +436,12 @@ public class TerminalDispatchGameTests {
                         throw new GameTestAssertException("flipping to Decon must not end the"
                                 + " order, it was " + req.status());
                     }
+                    // The lease going away is not enough: a stale machine pointer would leave the
+                    // order pinned and unbindable elsewhere, which is the failure being prevented.
+                    if (req.machine() != null) {
+                        throw new GameTestAssertException("the order still points at "
+                                + req.machine() + " after the machine was taken back");
+                    }
                 })
                 .thenSucceed();
     }
@@ -459,6 +465,12 @@ public class TerminalDispatchGameTests {
                     if (req.machine() != null || printer.hasTerminalOrder()) {
                         throw new GameTestAssertException("an order bound to a deconstructing"
                                 + " machine");
+                    }
+                    // It must still be waiting for a machine, not quietly cancelled: skipping is
+                    // not the same as giving up, and only the status distinguishes them.
+                    if (req.status() != PrintRequest.Status.QUEUED) {
+                        throw new GameTestAssertException("a skipped order must stay QUEUED, was "
+                                + req.status());
                     }
                 })
                 .thenSucceed();

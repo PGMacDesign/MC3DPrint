@@ -5,7 +5,7 @@ order: 9
 summary: "An Applied Energistics 2 cable part that lists everything your printers can make and orders it, paid in Filament Units instead of ingredients."
 ---
 
-The MC3DPrint Terminal is a catalog you order from. It attaches to an ME cable like any AE2 terminal, lists what your network's printers and fabricators can produce, and takes orders paid in Filament Units.
+The MC3DPrint Terminal is a catalog you order from. It attaches to an ME cable like any AE2 terminal, lists what your network's printers and formed Fabricators (T5-T8) can produce, and takes orders paid in Filament Units.
 
 It requires **Applied Energistics 2**. Without AE2 installed the terminal does not exist, and nothing else in the mod changes.
 
@@ -41,6 +41,8 @@ Each row counts its own tier **and every tier above it**, because spending is do
 ## Orders
 
 Click an item to order one, shift-click for a stack. Orders appear at the bottom with their progress.
+
+Click one of your own orders to cancel it. Orders belong to whoever placed them, so you cannot cancel someone else's.
 
 An order binds to one machine and that machine runs one order at a time, so two orders never spend from the same spools at once. If something interrupts it, the order **holds** rather than failing:
 

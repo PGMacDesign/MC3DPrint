@@ -41,12 +41,21 @@ public final class TerminalRequests {
         if (host == null || !(player.level() instanceof ServerLevel level)) {
             return;
         }
+        // Re-check here as well as in stillValid. A menu can outlive its part by a tick, and the
+        // packet is the thing that actually changes state, so this is the check that matters.
+        if (!host.stillValidFor(player)) {
+            player.closeContainer();
+            return;
+        }
         if (cancelId.isPresent()) {
             // Only resync when something actually changed. A cancel for an id the book has never
             // heard of is free to send and used to cost a full catalog rebuild plus ten grid
             // sweeps, which made this packet an amplification vector for anyone with the terminal
             // open.
-            if (host.queue().cancel(cancelId.get(), "cancelled by " + player.getName().getString())) {
+            // Owner-scoped: sync hands every order id to every viewer, so an unscoped cancel lets
+            // any player kill any other player's work with an ordinary packet.
+            if (host.queue().cancelFor(cancelId.get(), player.getUUID(),
+                    "cancelled by " + player.getName().getString())) {
                 sync(player, menu, host, level);
             }
             return;
@@ -67,12 +76,30 @@ public final class TerminalRequests {
                     Component.literal("Cannot print: " + eligibility.reason()));
             return;
         }
-        if (host.queue().enqueue(UUID.randomUUID(), item, qty).isEmpty()) {
+        if (host.queue().enqueue(UUID.randomUUID(), item, qty, player.getUUID()).isEmpty()) {
             com.pgmacdesign.mc3dprint.compat.MsgCompat.actionBar(player, Component.literal(
                     "The terminal's order book is full (" + PrintRequestQueue.MAX_OPEN_REQUESTS
                             + " open orders)"));
         }
         sync(player, menu, host, level);
+    }
+
+    /**
+     * A cheap fingerprint of everything a sync would show. Compared against the last one sent so a
+     * per-tick push costs a grid walk and nothing else when nothing has moved, instead of rebuilding
+     * and resending the whole item catalog sixty times a second to every viewer.
+     */
+    public static int stampOf(MachineSnapshot snapshot, PrintRequestQueue queue) {
+        int stamp = snapshot.machineCount() * 31 + snapshot.bestTier();
+        for (int fu : snapshot.fuByTier()) {
+            stamp = stamp * 31 + fu;
+        }
+        for (PrintRequest r : queue.all()) {
+            stamp = stamp * 31 + r.id().hashCode();
+            stamp = stamp * 31 + r.delivered();
+            stamp = stamp * 31 + r.status().ordinal();
+        }
+        return stamp;
     }
 
     /**

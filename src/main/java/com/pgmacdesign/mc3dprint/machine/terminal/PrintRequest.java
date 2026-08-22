@@ -65,6 +65,13 @@ public final class PrintRequest {
     private final UUID id;
     private final Item item;
     private final int quantity;
+    /**
+     * Who placed this. The queue is shared by everyone on the network and {@code sync} hands every
+     * order id to every viewer, so without an owner any player can cancel any other player's work
+     * with an ordinary packet.
+     */
+    @Nullable
+    private final UUID owner;
 
     private int delivered;
     private Status status;
@@ -75,11 +82,30 @@ public final class PrintRequest {
     private String reason;
 
     public PrintRequest(UUID id, Item item, int quantity) {
+        this(id, item, quantity, null);
+    }
+
+    public PrintRequest(UUID id, Item item, int quantity, @Nullable UUID owner) {
         this.id = id;
         this.item = item;
         this.quantity = Math.max(1, quantity);
+        this.owner = owner;
         this.delivered = 0;
         this.status = Status.QUEUED;
+    }
+
+    @Nullable
+    public UUID owner() {
+        return owner;
+    }
+
+    /**
+     * Whether {@code player} may cancel this. The placer always may; an order with no recorded
+     * owner (placed before this existed, or by something that is not a player) is treated as
+     * everyone's, since refusing it would leave it uncancellable forever.
+     */
+    public boolean mayCancel(UUID player) {
+        return owner == null || owner.equals(player);
     }
 
     public UUID id() {
@@ -186,6 +212,9 @@ public final class PrintRequest {
         tag.putInt("Qty", quantity);
         tag.putInt("Delivered", delivered);
         tag.putString("Status", status.name());
+        if (owner != null) {
+            NbtCompat.putUUID(tag, "Owner", owner);
+        }
         if (machine != null) {
             NbtCompat.putBlockPos(tag, "Machine", machine);
         }
@@ -213,7 +242,8 @@ public final class PrintRequest {
         if (item == null || item == Items.AIR) {
             return Optional.empty();
         }
-        PrintRequest req = new PrintRequest(savedId.get(), item, NbtCompat.getInt(tag, "Qty"));
+        PrintRequest req = new PrintRequest(savedId.get(), item, NbtCompat.getInt(tag, "Qty"),
+                NbtCompat.getUUID(tag, "Owner").orElse(null));
         req.delivered = Math.min(NbtCompat.getInt(tag, "Delivered"), req.quantity);
         req.status = Status.byName(NbtCompat.getString(tag, "Status"));
         req.machine = NbtCompat.getBlockPos(tag, "Machine").orElse(null);

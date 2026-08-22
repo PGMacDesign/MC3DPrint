@@ -76,13 +76,18 @@ public final class PrintRequestQueue {
      * handler can generate it server-side; nothing client-sent is trusted here.
      */
     public Optional<PrintRequest> enqueue(UUID id, Item item, int quantity) {
+        return enqueue(id, item, quantity, null);
+    }
+
+    /** Takes an order on behalf of {@code owner}, who is the only player who may cancel it. */
+    public Optional<PrintRequest> enqueue(UUID id, Item item, int quantity, @Nullable UUID owner) {
         if (openCount() >= MAX_OPEN_REQUESTS || quantity <= 0) {
             return Optional.empty();
         }
         if (byId(id).isPresent()) {
             return Optional.empty(); // an id is used once, ever
         }
-        PrintRequest req = new PrintRequest(id, item, quantity);
+        PrintRequest req = new PrintRequest(id, item, quantity, owner);
         requests.add(req);
         return Optional.of(req);
     }
@@ -172,6 +177,17 @@ public final class PrintRequestQueue {
      * resync rebuilds the catalog and walks the grid, so "the id exists" is the wrong question:
      * repeating a cancel is free to send and must not be free to amplify.
      */
+    /** Cancels only if {@code player} is allowed to. Returns false when they are not. */
+    public boolean cancelFor(UUID id, UUID player, @Nullable String why) {
+        return byId(id).filter(r -> r.mayCancel(player)).map(r -> {
+            if (r.status().isTerminal()) {
+                return false;
+            }
+            cancel(r, why);
+            return true;
+        }).orElse(false);
+    }
+
     public boolean cancel(UUID id, @Nullable String why) {
         return byId(id).map(r -> {
             if (r.status().isTerminal()) {
