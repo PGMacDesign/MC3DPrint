@@ -83,6 +83,15 @@ public final class RenderCompat {
         //?}
     }
 
+    /** Draws an item icon; 26.1 renamed the {@code render*} family to nouns, so this is {@code item}. */
+    public static void item(GuiGraphics g, net.minecraft.world.item.ItemStack stack, int x, int y) {
+        //? if >=26.1 {
+        /*g.item(stack, x, y);
+        *///?} else {
+        g.renderItem(stack, x, y);
+        //?}
+    }
+
     /** Shadow-controlled string draw; 26.1 renamed the {@code drawString} family to {@code text}. */
     public static void drawString(GuiGraphics g, Font font, Component text, int x, int y, int color, boolean shadow) {
         //? if >=26.1 {

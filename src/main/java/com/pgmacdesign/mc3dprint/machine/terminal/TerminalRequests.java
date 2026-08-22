@@ -42,7 +42,7 @@ public final class TerminalRequests {
             return;
         }
         if (cancelId.isPresent()) {
-            host.queue().cancel(cancelId.get(), "cancelled by " + player.getGameProfile().getName());
+            host.queue().cancel(cancelId.get(), "cancelled by " + player.getName().getString());
             sync(player, menu, host, level);
             return;
         }
@@ -58,14 +58,14 @@ public final class TerminalRequests {
         int bestTier = host.bestMachineTier(level);
         PrintEligibility.Result eligibility = PrintEligibility.of(new ItemStack(item), bestTier);
         if (!eligibility.printable()) {
-            player.displayClientMessage(
-                    Component.literal("Cannot print: " + eligibility.reason()), true);
+            com.pgmacdesign.mc3dprint.compat.MsgCompat.actionBar(player,
+                    Component.literal("Cannot print: " + eligibility.reason()));
             return;
         }
         if (host.queue().enqueue(UUID.randomUUID(), item, qty).isEmpty()) {
-            player.displayClientMessage(Component.literal(
+            com.pgmacdesign.mc3dprint.compat.MsgCompat.actionBar(player, Component.literal(
                     "The terminal's order book is full (" + PrintRequestQueue.MAX_OPEN_REQUESTS
-                            + " open orders)"), true);
+                            + " open orders)"));
         }
         sync(player, menu, host, level);
     }

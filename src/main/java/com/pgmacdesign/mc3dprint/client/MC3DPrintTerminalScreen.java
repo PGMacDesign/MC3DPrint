@@ -84,7 +84,12 @@ public class MC3DPrintTerminalScreen extends AbstractContainerScreen<MC3DPrintTe
     }
 
     @Override
+    //? if >=26.1 {
+    /*public void extractBackground(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+        super.extractBackground(g, mouseX, mouseY, partialTick);
+    *///?} else {
     protected void renderBg(GuiGraphics g, float partialTick, int mouseX, int mouseY) {
+    //?}
         int x = leftPos;
         int y = topPos;
         g.fill(x, y, x + WIDTH, y + HEIGHT, PANEL);
@@ -121,8 +126,8 @@ public class MC3DPrintTerminalScreen extends AbstractContainerScreen<MC3DPrintTe
             // coordinate before, which stacked them on top of each other.
             String label = "T" + tier;
             String amount = abbreviate(fu);
-            g.drawString(font, label, x + RAIL_X + 2, ry + 2, colour, false);
-            g.drawString(font, amount, x + RAIL_X + RAIL_W - 2 - font.width(amount), ry + 2,
+            com.pgmacdesign.mc3dprint.compat.RenderCompat.drawString(g, font, label, x + RAIL_X + 2, ry + 2, colour, false);
+            com.pgmacdesign.mc3dprint.compat.RenderCompat.drawString(g, font, amount, x + RAIL_X + RAIL_W - 2 - font.width(amount), ry + 2,
                     colour, false);
         }
     }
@@ -138,7 +143,7 @@ public class MC3DPrintTerminalScreen extends AbstractContainerScreen<MC3DPrintTe
                 int cx = x + GRID_X + col * CELL;
                 int cy = y + GRID_Y + row * CELL;
                 ItemStack stack = entry.stack();
-                g.renderItem(stack, cx + 1, cy + 1);
+                com.pgmacdesign.mc3dprint.compat.RenderCompat.item(g, stack, cx + 1, cy + 1);
                 if (!entry.orderable()) {
                     // Wash rather than skip: the row stays where it is so the grid does not
                     // reshuffle as filament moves, and the tooltip still explains why.
@@ -151,7 +156,7 @@ public class MC3DPrintTerminalScreen extends AbstractContainerScreen<MC3DPrintTe
     private void drawOrders(GuiGraphics g, int x, int y) {
         List<MC3DPrintTerminalMenu.OrderView> orders = menu.orders();
         if (orders.isEmpty()) {
-            g.drawString(font, Component.translatable("gui.mc3dprint.terminal.no_orders"),
+            com.pgmacdesign.mc3dprint.compat.RenderCompat.drawString(g, font, Component.translatable("gui.mc3dprint.terminal.no_orders"),
                     x + ORDERS_X + 2, y + ORDERS_Y + 2, LABEL_DIM, false);
             return;
         }
@@ -166,28 +171,37 @@ public class MC3DPrintTerminalScreen extends AbstractContainerScreen<MC3DPrintTe
                 default -> LABEL;
             };
             String line = o.delivered() + "/" + o.quantity() + " "
-                    + o.item().getDescription().getString();
+                    + new ItemStack(o.item()).getHoverName().getString();
             if (o.status() == PrintRequest.Status.HELD && o.reason() != null) {
                 line += " (" + o.reason() + ")";
             }
-            g.drawString(font, trim(line, WIDTH - ORDERS_X - 16), x + ORDERS_X + 2, oy, colour, false);
+            com.pgmacdesign.mc3dprint.compat.RenderCompat.drawString(g, font, trim(line, WIDTH - ORDERS_X - 16), x + ORDERS_X + 2, oy, colour, false);
         }
     }
 
     @Override
+    //? if >=26.1 {
+    /*protected void extractLabels(GuiGraphics g, int mouseX, int mouseY) {
+    *///?} else {
     protected void renderLabels(GuiGraphics g, int mouseX, int mouseY) {
-        g.drawString(font, title, 8, 7, LABEL, false);
+    //?}
+        com.pgmacdesign.mc3dprint.compat.RenderCompat.drawString(g, font, title, 8, 7, LABEL, false);
         String machines = menu.machineCount() == 0
                 ? Component.translatable("gui.mc3dprint.terminal.no_machines").getString()
                 : menu.machineCount() + " machines, best T" + menu.bestMachineTier();
-        g.drawString(font, machines, WIDTH - 8 - font.width(machines), 7,
+        com.pgmacdesign.mc3dprint.compat.RenderCompat.drawString(g, font, machines, WIDTH - 8 - font.width(machines), 7,
                 menu.machineCount() == 0 ? WARN : LABEL_DIM, false);
     }
 
     @Override
+    //? if >=26.1 {
+    /*public void extractRenderState(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+        super.extractRenderState(g, mouseX, mouseY, partialTick);
+    *///?} else {
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         renderBackground(g, mouseX, mouseY, partialTick);
         super.render(g, mouseX, mouseY, partialTick);
+    //?}
         renderCatalogTooltip(g, mouseX, mouseY);
     }
 
@@ -195,15 +209,16 @@ public class MC3DPrintTerminalScreen extends AbstractContainerScreen<MC3DPrintTe
     private void renderCatalogTooltip(GuiGraphics g, int mouseX, int mouseY) {
         int railTier = tierUnder(mouseX, mouseY);
         if (railTier > 0) {
-            g.renderComponentTooltip(font, java.util.List.of(
-                    Component.literal("Tier " + railTier),
-                    Component.literal(menu.fuAtTier(railTier) + " FU available")
-                            .withStyle(st -> st.withColor(ACCENT)),
-                    Component.literal(railTier <= menu.bestMachineTier()
-                            ? "Within reach of your best machine"
-                            : "No machine on this network can print Tier " + railTier)
-                            .withStyle(st -> st.withColor(
-                                    railTier <= menu.bestMachineTier() ? LABEL_DIM : WARN))),
+            com.pgmacdesign.mc3dprint.compat.RenderCompat.tooltipComponents(g, font,
+                    java.util.List.of(
+                            Component.literal("Tier " + railTier),
+                            Component.literal(menu.fuAtTier(railTier) + " FU available")
+                                    .withStyle(st -> st.withColor(ACCENT)),
+                            Component.literal(railTier <= menu.bestMachineTier()
+                                    ? "Within reach of your best machine"
+                                    : "No machine on this network can print Tier " + railTier)
+                                    .withStyle(st -> st.withColor(
+                                            railTier <= menu.bestMachineTier() ? LABEL_DIM : WARN))),
                     mouseX, mouseY);
             return;
         }
@@ -225,7 +240,7 @@ public class MC3DPrintTerminalScreen extends AbstractContainerScreen<MC3DPrintTe
             lines.add(Component.translatable("gui.mc3dprint.terminal.click_to_order")
                     .withStyle(s -> s.withColor(LABEL_DIM)));
         }
-        g.renderComponentTooltip(font, lines, mouseX, mouseY);
+        com.pgmacdesign.mc3dprint.compat.RenderCompat.tooltipComponents(g, font, lines, mouseX, mouseY);
     }
 
     private static String describe(PrintEligibility.Verdict verdict) {
@@ -239,15 +254,36 @@ public class MC3DPrintTerminalScreen extends AbstractContainerScreen<MC3DPrintTe
         };
     }
 
+    // 1.21.9 replaced the mouse callback with an event object, and moved hasShiftDown onto it.
+    // Reading shift off the event is also the more correct of the two: it is the modifier state of
+    // THIS click rather than whatever the keyboard happens to hold when the handler runs.
+    //? if >=1.21.9 {
+    /*@Override
+    public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent event, boolean doubleClick) {
+        if (orderAt(event.x(), event.y(), event.hasShiftDown())) {
+            return true;
+        }
+        return super.mouseClicked(event, doubleClick);
+    }
+    *///?} else {
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        CatalogEntry entry = entryUnder((int) mouseX, (int) mouseY);
-        if (entry != null && entry.orderable()) {
-            int qty = hasShiftDown() ? entry.stack().getMaxStackSize() : 1;
-            sendOrder(TerminalOrderPacket.order(BuiltInRegistries.ITEM.getKey(entry.item()), qty));
+        if (orderAt(mouseX, mouseY, hasShiftDown())) {
             return true;
         }
         return super.mouseClicked(mouseX, mouseY, button);
+    }
+    //?}
+
+    /** Shared by both mouseClicked shapes, so the ordering rule exists once. */
+    private boolean orderAt(double mouseX, double mouseY, boolean shift) {
+        CatalogEntry entry = entryUnder((int) mouseX, (int) mouseY);
+        if (entry == null || !entry.orderable()) {
+            return false;
+        }
+        int qty = shift ? entry.stack().getMaxStackSize() : 1;
+        sendOrder(TerminalOrderPacket.order(BuiltInRegistries.ITEM.getKey(entry.item()), qty));
+        return true;
     }
 
     @Override
@@ -259,12 +295,30 @@ public class MC3DPrintTerminalScreen extends AbstractContainerScreen<MC3DPrintTe
         return super.mouseScrolled(mouseX, mouseY, dx, dy);
     }
 
+    // While the search box has focus it must consume normal typing. Without this, E closes the
+    // screen mid-word, which is the single most irritating bug a search field can have. 1.21.9
+    // replaced the key/char callbacks with event objects, so both shapes are carried.
+    //? if >=1.21.9 {
+    /*@Override
+    public boolean keyPressed(net.minecraft.client.input.KeyEvent event) {
+        if (searchBox != null && searchBox.isFocused() && event.key() != 256) {
+            return searchBox.keyPressed(event) || searchBox.canConsumeInput();
+        }
+        return super.keyPressed(event);
+    }
+
+    @Override
+    public boolean charTyped(net.minecraft.client.input.CharacterEvent event) {
+        if (searchBox != null && searchBox.isFocused()) {
+            return searchBox.charTyped(event);
+        }
+        return super.charTyped(event);
+    }
+    *///?} else {
     @Override
     public boolean keyPressed(int key, int scan, int mods) {
-        // While the search box has focus, let it consume normal typing. Without this, E closes
-        // the screen mid-word, which is the single most irritating bug a search field can have.
         if (searchBox != null && searchBox.isFocused() && key != 256) {
-            return searchBox.keyPressed(key, scan, mods) || super.keyPressed(key, scan, mods);
+            return searchBox.keyPressed(key, scan, mods) || searchBox.canConsumeInput();
         }
         return super.keyPressed(key, scan, mods);
     }
@@ -276,6 +330,7 @@ public class MC3DPrintTerminalScreen extends AbstractContainerScreen<MC3DPrintTe
         }
         return super.charTyped(c, mods);
     }
+    //?}
 
     /** The rail tier under the cursor (1-based), or 0. The rail abbreviates, so hover gives exact. */
     private int tierUnder(int mouseX, int mouseY) {
