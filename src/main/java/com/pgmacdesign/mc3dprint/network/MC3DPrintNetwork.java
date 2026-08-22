@@ -28,6 +28,12 @@ public final class MC3DPrintNetwork {
         CHANNEL.registerMessage(id++, RepositoryRenamePacket.class,
                 RepositoryRenamePacket::encode, RepositoryRenamePacket::decode,
                 RepositoryRenamePacket::handle);
+        CHANNEL.registerMessage(id++, TerminalSyncPacket.class,
+                TerminalSyncPacket::encode, TerminalSyncPacket::decode,
+                TerminalSyncPacket::handle);
+        CHANNEL.registerMessage(id++, TerminalOrderPacket.class,
+                TerminalOrderPacket::encode, TerminalOrderPacket::decode,
+                TerminalOrderPacket::handle);
     }
 
     /**

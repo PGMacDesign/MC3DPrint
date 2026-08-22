@@ -1,0 +1,32 @@
+{
+  "type": "forge:conditional",
+  "recipes": [
+    {
+      "conditions": [
+        {
+          "type": "forge:mod_loaded",
+          "modid": "ae2"
+        }
+      ],
+      "recipe": {
+        "type": "minecraft:crafting_shaped",
+        "pattern": [
+          "EEE",
+          "ETE",
+          "EEE"
+        ],
+        "key": {
+          "E": {
+            "item": "mc3dprint:extrudium_crystal"
+          },
+          "T": {
+            "item": "ae2:crafting_terminal"
+          }
+        },
+        "result": {
+          "item": "mc3dprint:me_print_terminal"
+        }
+      }
+    }
+  ]
+}
