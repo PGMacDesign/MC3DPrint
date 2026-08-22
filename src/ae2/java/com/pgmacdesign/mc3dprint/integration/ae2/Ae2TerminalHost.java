@@ -3,6 +3,7 @@ package com.pgmacdesign.mc3dprint.integration.ae2;
 import appeng.api.networking.IGrid;
 import appeng.api.networking.IGridNode;
 import com.pgmacdesign.mc3dprint.machine.PrinterBlockEntity;
+import com.pgmacdesign.mc3dprint.machine.terminal.MachineSnapshot;
 import com.pgmacdesign.mc3dprint.machine.terminal.OrderSink;
 import com.pgmacdesign.mc3dprint.machine.terminal.PrintRequestQueue;
 import com.pgmacdesign.mc3dprint.machine.terminal.TerminalHost;
@@ -74,35 +75,40 @@ final class Ae2TerminalHost implements TerminalHost {
         return part.sink();
     }
 
-    @Override
-    public int bestMachineTier(ServerLevel level) {
-        int best = 0;
-        for (BlockPos pos : machines(level)) {
-            best = Math.max(best, tierAt(level, pos));
-        }
-        return best;
-    }
-
     /**
-     * Filament across the network that could pay a cost at {@code tier}. Down-only spending means
-     * this counts that tier and everything above it, which is exactly what
-     * {@code affordableFu(costTier)} already computes for a single machine.
-     *
-     * <p>Summed across machines, which slightly overstates a network whose machines share racks
-     * over cable: the same rack is counted once per machine that can reach it. It is a display
-     * figure only, and the authoritative check happens per machine at dispatch, so the worst case
-     * is an order that binds and then holds rather than one that prints unpaid.
+     * One walk of the grid answers everything a sync asks. Previously each question walked it
+     * again: ten walks per sync, every node in six directions with a block-entity lookup, and a
+     * sort doing two more per comparison. A client packet could trigger that without limit.
      */
     @Override
-    public int fuAtTier(ServerLevel level, int tier) {
-        long total = 0;
-        for (BlockPos pos : machines(level)) {
+    public MachineSnapshot snapshot(ServerLevel level) {
+        List<BlockPos> found = machines(level);
+        if (found.isEmpty()) {
+            return MachineSnapshot.empty(com.pgmacdesign.mc3dprint.machine.terminal
+                    .MC3DPrintTerminalMenu.MAX_TIER);
+        }
+        int tiers = com.pgmacdesign.mc3dprint.machine.terminal.MC3DPrintTerminalMenu.MAX_TIER;
+        int best = 0;
+        long[] totals = new long[tiers];
+        for (BlockPos pos : found) {
             PrinterBlockEntity printer = printerAt(level, pos);
-            if (printer != null) {
-                total += printer.affordableFu(tier);
+            if (printer == null) {
+                continue;
+            }
+            best = Math.max(best, printer.tier().number());
+            for (int t = 1; t <= tiers; t++) {
+                totals[t - 1] += printer.affordableFu(t);
             }
         }
-        return (int) Math.min(Integer.MAX_VALUE, total);
+        int[] fu = new int[tiers];
+        for (int i = 0; i < tiers; i++) {
+            // Summed across machines, which overstates a network whose machines share racks over
+            // cable: the same rack counts once per machine that can reach it. Display only; the
+            // authoritative check is per machine at dispatch, so the worst case is an order that
+            // binds and then holds, never one that prints unpaid.
+            fu[i] = (int) Math.min(Integer.MAX_VALUE, totals[i]);
+        }
+        return new MachineSnapshot(found.size(), best, fu);
     }
 
     /**
@@ -116,19 +122,13 @@ final class Ae2TerminalHost implements TerminalHost {
         if (owner instanceof net.minecraft.world.level.block.entity.BlockEntity be) {
             return be.getBlockPos();
         }
-        if (owner instanceof appeng.api.parts.IPart part) {
-            appeng.api.parts.IPartItem<?> ignored = part.getPartItem();
-            net.minecraft.world.level.block.entity.BlockEntity host = hostOf(part);
+        // AEBasePart tracks its own host; anything else implementing IPart is not ours to
+        // introspect, so it simply does not contribute machines.
+        if (owner instanceof appeng.parts.AEBasePart base) {
+            net.minecraft.world.level.block.entity.BlockEntity host = base.getBlockEntity();
             return host == null ? null : host.getBlockPos();
         }
         return null;
-    }
-
-    @Nullable
-    private static net.minecraft.world.level.block.entity.BlockEntity hostOf(
-            appeng.api.parts.IPart part) {
-        // AEBasePart tracks its host; anything else implementing IPart is not ours to introspect.
-        return part instanceof appeng.parts.AEBasePart base ? base.getBlockEntity() : null;
     }
 
     private static int tierAt(ServerLevel level, BlockPos pos) {

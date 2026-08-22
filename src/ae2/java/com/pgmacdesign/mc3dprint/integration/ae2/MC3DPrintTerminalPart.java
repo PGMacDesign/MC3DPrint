@@ -1,5 +1,10 @@
 package com.pgmacdesign.mc3dprint.integration.ae2;
 
+import appeng.api.networking.GridFlags;
+import appeng.api.networking.IGridNode;
+import appeng.api.networking.ticking.IGridTickable;
+import appeng.api.networking.ticking.TickRateModulation;
+import appeng.api.networking.ticking.TickingRequest;
 import appeng.api.parts.IPartCollisionHelper;
 import appeng.api.parts.IPartItem;
 import appeng.api.parts.IPartModel;
@@ -25,13 +30,38 @@ import net.minecraft.world.phys.Vec3;
  * for addons, but it does couple this class to AE2's internals, so it is the first thing to check
  * when moving between AE2 majors.
  */
-public class MC3DPrintTerminalPart extends AEBasePart {
+public class MC3DPrintTerminalPart extends AEBasePart implements IGridTickable {
 
     private final Ae2TerminalHost host = new Ae2TerminalHost(this);
 
     public MC3DPrintTerminalPart(IPartItem<?> partItem) {
         super(partItem);
-        getMainNode().setIdlePowerUsage(0.5);
+        getMainNode()
+                .setIdlePowerUsage(0.5)
+                .addService(IGridTickable.class, this);
+    }
+
+    /**
+     * Ask AE2 to tick us. Without this the dispatcher is never driven: orders would enqueue, sit
+     * in QUEUED forever, and nothing would ever bind to a machine or print. The gametests call
+     * TerminalDispatcher.tick directly, so they cannot catch its absence, which is exactly how
+     * this shipped green the first time.
+     *
+     * <p>Range rather than a fixed rate so AE2 can back a quiet terminal off: an order book with
+     * nothing in it has no reason to be looked at twenty times a second.
+     */
+    @Override
+    public TickingRequest getTickingRequest(IGridNode node) {
+        return new TickingRequest(5, 40, false);
+    }
+
+    @Override
+    public TickRateModulation tickingRequest(IGridNode node, int ticksSinceLastCall) {
+        boolean hadWork = !host.queue().open().isEmpty();
+        tickTerminal();
+        pushSyncToViewers();
+        // Busy books get looked at often; an empty one is allowed to idle down.
+        return hadWork ? TickRateModulation.URGENT : TickRateModulation.SLOWER;
     }
 
     Ae2TerminalHost host() {
@@ -70,6 +100,22 @@ public class MC3DPrintTerminalPart extends AEBasePart {
             TerminalRequests.sync(serverPlayer, menu, host, level);
         }
         return true;
+    }
+
+    /**
+     * Pushes fresh state to anyone with this terminal open, so order progress actually moves in
+     * the GUI. Sync used to happen only on open and on a click, which left the orders panel
+     * frozen at 0/N while the work was really happening.
+     */
+    private void pushSyncToViewers() {
+        if (!(getLevel() instanceof ServerLevel level)) {
+            return;
+        }
+        for (ServerPlayer viewer : level.players()) {
+            if (viewer.containerMenu instanceof MC3DPrintTerminalMenu menu && menu.host() == host) {
+                TerminalRequests.sync(viewer, menu, host, level);
+            }
+        }
     }
 
     /**

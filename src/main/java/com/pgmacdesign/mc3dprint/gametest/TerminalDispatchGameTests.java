@@ -397,6 +397,73 @@ public class TerminalDispatchGameTests {
                 .thenSucceed();
     }
 
+    /**
+     * Flipping to Deconstruct hands the machine back, lease and all.
+     *
+     * <p>Third member of one class, after Item Mode templates and blueprint discs. Deconstruct
+     * returns from tick() before any terminal handling runs, so an order left bound here could
+     * never progress, would never move to a machine that could run it, and would report itself as
+     * RUNNING the whole time because the dispatcher read DECONSTRUCTING and fell through to resume.
+     */
+    @GameTest(template = "empty5", timeoutTicks = 200)
+    public static void deconstructModeHandsTheMachineBack(GameTestHelper helper) {
+        PrinterBlockEntity printer = poweredPrinter(helper, 2, 100_000);
+        PrintRequestQueue queue = new PrintRequestQueue();
+        CountingSink sink = new CountingSink();
+        PrintRequest req = queue.enqueue(UUID.randomUUID(), Items.IRON_INGOT, 16).orElseThrow();
+
+        helper.startSequence()
+                .thenExecuteFor(10, () ->
+                        TerminalDispatcher.tick(helper.getLevel(), queue, machines(helper), sink))
+                .thenExecute(() -> {
+                    if (req.machine() == null) {
+                        throw new GameTestAssertException("the order never bound");
+                    }
+                    printer.setDeconstructMode(true);
+                })
+                .thenExecuteFor(20, () ->
+                        TerminalDispatcher.tick(helper.getLevel(), queue, machines(helper), sink))
+                .thenExecute(() -> {
+                    if (printer.hasTerminalOrder()) {
+                        throw new GameTestAssertException("the machine kept the order while"
+                                + " deconstructing");
+                    }
+                    if (queue.isLeased(helper.absolutePos(PRINTER))) {
+                        throw new GameTestAssertException("the order stayed leased to a machine"
+                                + " that will never run it");
+                    }
+                    if (req.status().isTerminal()) {
+                        throw new GameTestAssertException("flipping to Decon must not end the"
+                                + " order, it was " + req.status());
+                    }
+                })
+                .thenSucceed();
+    }
+
+    /**
+     * A machine already in Deconstruct Mode is not available to bind in the first place.
+     * The release above covers losing it; this covers never taking it.
+     */
+    @GameTest(template = "empty5", timeoutTicks = 120)
+    public static void anOrderWillNotBindToADeconstructingMachine(GameTestHelper helper) {
+        PrinterBlockEntity printer = poweredPrinter(helper, 2, 100_000);
+        printer.setDeconstructMode(true);
+        PrintRequestQueue queue = new PrintRequestQueue();
+        CountingSink sink = new CountingSink();
+        PrintRequest req = queue.enqueue(UUID.randomUUID(), Items.IRON_INGOT, 1).orElseThrow();
+
+        helper.startSequence()
+                .thenExecuteFor(40, () ->
+                        TerminalDispatcher.tick(helper.getLevel(), queue, machines(helper), sink))
+                .thenExecute(() -> {
+                    if (req.machine() != null || printer.hasTerminalOrder()) {
+                        throw new GameTestAssertException("an order bound to a deconstructing"
+                                + " machine");
+                    }
+                })
+                .thenSucceed();
+    }
+
     /** Running out of filament holds the order rather than cancelling or delivering unpaid. */
     @GameTest(template = "empty5", timeoutTicks = 400)
     public static void runningOutOfFilamentHoldsTheOrder(GameTestHelper helper) {

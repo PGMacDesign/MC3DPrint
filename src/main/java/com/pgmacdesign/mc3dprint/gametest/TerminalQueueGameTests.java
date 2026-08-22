@@ -380,6 +380,29 @@ public class TerminalQueueGameTests {
         helper.succeed();
     }
 
+    /**
+     * Cancelling an id the book never had reports no change, so callers can skip the expensive
+     * resync. That resync rebuilds the whole catalog and walks the grid, and this packet is free
+     * for a client to send, which made it an amplification vector.
+     */
+    @GameTest(template = "empty5", timeoutTicks = 40)
+    public static void cancellingAnUnknownIdReportsNoChange(GameTestHelper helper) {
+        PrintRequestQueue queue = new PrintRequestQueue();
+        if (queue.cancel(UUID.randomUUID(), "never existed")) {
+            throw new GameTestAssertException("cancelling an unknown id claimed it changed"
+                    + " something; the caller resyncs on that and it is free to spam");
+        }
+        PrintRequest real = enqueue(queue, 1);
+        if (!queue.cancel(real.id(), "real")) {
+            throw new GameTestAssertException("cancelling a real order must report the change");
+        }
+        if (queue.cancel(real.id(), "again")) {
+            throw new GameTestAssertException("cancelling an already-cancelled order must report"
+                    + " no change");
+        }
+        helper.succeed();
+    }
+
     private static void expect(PrintEligibility.Result actual, PrintEligibility.Verdict want) {
         if (actual.verdict() != want) {
             throw new GameTestAssertException("expected " + want + " but got " + actual.verdict()

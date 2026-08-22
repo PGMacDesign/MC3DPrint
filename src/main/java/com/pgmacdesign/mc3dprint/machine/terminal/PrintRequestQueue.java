@@ -165,8 +165,18 @@ public final class PrintRequestQueue {
         request.cancel(why);
     }
 
+    /**
+     * Cancels by id and reports whether anything actually changed.
+     *
+     * <p>An already-terminal order returns false, not true. Callers resync on a true, and that
+     * resync rebuilds the catalog and walks the grid, so "the id exists" is the wrong question:
+     * repeating a cancel is free to send and must not be free to amplify.
+     */
     public boolean cancel(UUID id, @Nullable String why) {
         return byId(id).map(r -> {
+            if (r.status().isTerminal()) {
+                return false;
+            }
             cancel(r, why);
             return true;
         }).orElse(false);

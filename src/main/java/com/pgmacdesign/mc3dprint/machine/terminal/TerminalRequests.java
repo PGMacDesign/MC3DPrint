@@ -42,8 +42,13 @@ public final class TerminalRequests {
             return;
         }
         if (cancelId.isPresent()) {
-            host.queue().cancel(cancelId.get(), "cancelled by " + player.getName().getString());
-            sync(player, menu, host, level);
+            // Only resync when something actually changed. A cancel for an id the book has never
+            // heard of is free to send and used to cost a full catalog rebuild plus ten grid
+            // sweeps, which made this packet an amplification vector for anyone with the terminal
+            // open.
+            if (host.queue().cancel(cancelId.get(), "cancelled by " + player.getName().getString())) {
+                sync(player, menu, host, level);
+            }
             return;
         }
 
@@ -55,7 +60,7 @@ public final class TerminalRequests {
 
         // Re-decide eligibility here rather than believing the row the client drew. The catalog it
         // is looking at may be a tick stale, or may not have come from us at all.
-        int bestTier = host.bestMachineTier(level);
+        int bestTier = host.snapshot(level).bestTier();
         PrintEligibility.Result eligibility = PrintEligibility.of(new ItemStack(item), bestTier);
         if (!eligibility.printable()) {
             com.pgmacdesign.mc3dprint.compat.MsgCompat.actionBar(player,
@@ -70,14 +75,19 @@ public final class TerminalRequests {
         sync(player, menu, host, level);
     }
 
-    /** Rebuilds this player's view and pushes it. Called on change, not every tick. */
+    /**
+     * Rebuilds this player's view and pushes it.
+     *
+     * <p>The machine list is resolved ONCE and reused. Asking the host for it per question meant
+     * ten full grid sweeps per sync, each walking every node in six directions with a block-entity
+     * lookup, plus a sort whose comparator did two more lookups per comparison. That is a lot of
+     * work to repeat for a list that cannot change inside a single call.
+     */
     public static void sync(ServerPlayer player, MC3DPrintTerminalMenu menu,
                             TerminalHost host, ServerLevel level) {
-        int bestTier = host.bestMachineTier(level);
-        int[] fu = new int[MC3DPrintTerminalMenu.MAX_TIER];
-        for (int t = 1; t <= MC3DPrintTerminalMenu.MAX_TIER; t++) {
-            fu[t - 1] = host.fuAtTier(level, t);
-        }
+        MachineSnapshot snapshot = host.snapshot(level);
+        int bestTier = snapshot.bestTier();
+        int[] fu = snapshot.fuByTier();
         List<CatalogEntry> catalog = TerminalCatalog.build(bestTier,
                 tier -> tier >= 1 && tier <= fu.length ? fu[tier - 1] : 0);
 
@@ -87,6 +97,6 @@ public final class TerminalRequests {
                     r.id(), r.item(), r.delivered(), r.quantity(), r.status(), r.reason()));
         }
         MC3DPrintNetwork.sendTo(player, new TerminalSyncPacket(
-                catalog, orders, fu, bestTier, host.machines(level).size()));
+                catalog, orders, fu, bestTier, snapshot.machineCount()));
     }
 }

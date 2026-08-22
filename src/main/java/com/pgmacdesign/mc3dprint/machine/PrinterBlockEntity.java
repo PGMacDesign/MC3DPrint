@@ -388,6 +388,10 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             if (activeJob != null) {
                 cancelActiveJob(); // mode epoch: a print job never survives the switch
             }
+            // Flipping to Decon is the player claiming this machine, exactly like loading a disc.
+            // This branch returns before any terminal handling, so an order left bound here would
+            // never progress and never move to a machine that could run it.
+            releaseTerminalOrder();
             tickDeconstructMode();
             if (state != previous) {
                 setChanged();
@@ -535,6 +539,25 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             itemProgress = 0;
             setChanged();
         }
+    }
+
+    /**
+     * Whether the player has claimed this machine for work of their own, so a terminal order must
+     * neither bind to it nor stay bound to it.
+     *
+     * <p><b>This lives here, on the machine, deliberately.</b> The dispatcher used to answer this
+     * itself from a checklist, and that checklist kept missing members: Item Mode templates were
+     * handled first, then blueprint discs turned out to reach the same state through a different
+     * branch, then Deconstruct Mode turned out to return from tick() before any terminal handling
+     * ran at all. Three fixes for one question. The machine is the only thing that actually knows
+     * what it is busy with, so it is the only place that can answer without going stale the next
+     * time a mode is added.
+     */
+    public boolean hasPlayerOwnedWork() {
+        return deconstructMode
+                || activeJob != null
+                || deconstructJob != null
+                || !inventory.getStackInSlot(SLOT_TEMPLATE).isEmpty();
     }
 
     /** Hands this machine an order, replacing any it already had. Server-side only. */

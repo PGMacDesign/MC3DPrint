@@ -25,16 +25,16 @@ public interface TerminalHost {
     /** Where finished items go. */
     OrderSink sink();
 
-    /** The highest machine tier reachable, which is what the catalog is sized against. */
-    int bestMachineTier(ServerLevel level);
+    // Note on the filament figures inside MachineSnapshot: spending is DOWN-only, so each tier's
+    // number counts that tier and every tier above it. A Tier 3 spool pays a Tier 1 cost (lossily);
+    // a Tier 1 spool never pays a Tier 3 one. That asymmetry is why the rail is per-tier at all,
+    // since one grand total would be the number that lies.
 
     /**
-     * Tier-unit FU that could pay a cost denominated at {@code tier}.
+     * Everything a sync needs, resolved in a single pass over the machines.
      *
-     * <p>Spending is DOWN-only, so this includes filament at {@code tier} and every tier above it:
-     * a Tier 3 spool pays a Tier 1 cost (lossily), while a Tier 1 spool can never pay a Tier 3 one.
-     * That asymmetry is why the rail is per-tier at all. A single grand total would be the number
-     * that lies, since most of it may sit below the tier the player is looking at.
+     * <p>One call rather than one per question: the per-question shape cost ten grid walks per
+     * sync, and a client packet could trigger those without limit.
      */
-    int fuAtTier(ServerLevel level, int tier);
+    MachineSnapshot snapshot(ServerLevel level);
 }
