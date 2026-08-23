@@ -115,7 +115,18 @@ public final class TerminalRequests {
      */
     public static void sync(ServerPlayer player, MC3DPrintTerminalMenu menu,
                             TerminalHost host, ServerLevel level) {
-        MachineSnapshot snapshot = host.snapshot(level);
+        MC3DPrintNetwork.sendTo(player, buildSync(host, host.snapshot(level)));
+    }
+
+    /**
+     * The payload for a given state, built once.
+     *
+     * <p>Nothing in it is per-player: the catalog's affordability comes from the network's
+     * filament, not from anything the viewer owns. Building it inside the per-viewer loop meant a
+     * second grid walk and a full catalog rebuild for every extra person with the screen open, on
+     * top of the walk the change fingerprint already did.
+     */
+    public static TerminalSyncPacket buildSync(TerminalHost host, MachineSnapshot snapshot) {
         int bestTier = snapshot.bestTier();
         int[] fu = snapshot.fuByTier();
         List<CatalogEntry> catalog = TerminalCatalog.build(bestTier,
@@ -126,7 +137,6 @@ public final class TerminalRequests {
             orders.add(new MC3DPrintTerminalMenu.OrderView(
                     r.id(), r.item(), r.delivered(), r.quantity(), r.status(), r.reason()));
         }
-        MC3DPrintNetwork.sendTo(player, new TerminalSyncPacket(
-                catalog, orders, fu, bestTier, snapshot.machineCount()));
+        return new TerminalSyncPacket(catalog, orders, fu, bestTier, snapshot.machineCount());
     }
 }
