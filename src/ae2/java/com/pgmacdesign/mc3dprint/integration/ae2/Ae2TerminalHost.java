@@ -70,6 +70,23 @@ final class Ae2TerminalHost implements TerminalHost {
         return found;
     }
 
+    /**
+     * The part must still exist, be on a live grid, and be within reach. Vanilla's container reach
+     * is 8 blocks; squared here to avoid the sqrt, and generous enough that standing at the cable
+     * works while walking away does not.
+     */
+    @Override
+    public boolean stillValidFor(net.minecraft.world.entity.player.Player player) {
+        if (!part.getMainNode().isActive()) {
+            return false;
+        }
+        net.minecraft.world.level.block.entity.BlockEntity be = part.getBlockEntity();
+        if (be == null || be.isRemoved() || be.getLevel() != player.level()) {
+            return false;
+        }
+        return be.getBlockPos().distToCenterSqr(player.position()) <= 64.0D;
+    }
+
     @Override
     public OrderSink sink() {
         return part.sink();

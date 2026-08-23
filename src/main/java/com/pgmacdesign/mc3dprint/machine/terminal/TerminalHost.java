@@ -25,6 +25,16 @@ public interface TerminalHost {
     /** Where finished items go. */
     OrderSink sink();
 
+    /**
+     * Whether this terminal is still a thing {@code player} may act through: the part still exists,
+     * its node is live, and they are close enough to reach it.
+     *
+     * <p>Asked by both the menu's stillValid and every state-changing packet. The menu alone is not
+     * enough authorization, because a screen can stay open after the part is broken or after the
+     * player has walked into another dimension.
+     */
+    boolean stillValidFor(net.minecraft.world.entity.player.Player player);
+
     // Note on the filament figures inside MachineSnapshot: spending is DOWN-only, so each tier's
     // number counts that tier and every tier above it. A Tier 3 spool pays a Tier 1 cost (lossily);
     // a Tier 1 spool never pays a Tier 3 one. That asymmetry is why the rail is per-tier at all,

@@ -65,6 +65,13 @@ public final class PrintRequest {
     private final UUID id;
     private final Item item;
     private final int quantity;
+    /**
+     * Who placed this. The queue is shared by everyone on the network and {@code sync} hands every
+     * order id to every viewer, so without an owner any player can cancel any other player's work
+     * with an ordinary packet.
+     */
+    @Nullable
+    private final UUID owner;
 
     private int delivered;
     private Status status;
@@ -75,11 +82,30 @@ public final class PrintRequest {
     private String reason;
 
     public PrintRequest(UUID id, Item item, int quantity) {
+        this(id, item, quantity, null);
+    }
+
+    public PrintRequest(UUID id, Item item, int quantity, @Nullable UUID owner) {
         this.id = id;
         this.item = item;
         this.quantity = Math.max(1, quantity);
+        this.owner = owner;
         this.delivered = 0;
         this.status = Status.QUEUED;
+    }
+
+    @Nullable
+    public UUID owner() {
+        return owner;
+    }
+
+    /**
+     * Whether {@code player} may cancel this. The placer always may; an order with no recorded
+     * owner (placed before this existed, or by something that is not a player) is treated as
+     * everyone's, since refusing it would leave it uncancellable forever.
+     */
+    public boolean mayCancel(UUID player) {
+        return owner == null || owner.equals(player);
     }
 
     public UUID id() {
@@ -186,6 +212,9 @@ public final class PrintRequest {
         tag.putInt("Qty", quantity);
         tag.putInt("Delivered", delivered);
         tag.putString("Status", status.name());
+        if (owner != null) {
+            tag.putUUID("Owner", owner);
+        }
         if (machine != null) {
             tag.put("Machine", NbtUtils.writeBlockPos(machine));
         }
@@ -213,8 +242,12 @@ public final class PrintRequest {
         if (item == null || item == Items.AIR) {
             return Optional.empty();
         }
-        PrintRequest req = new PrintRequest(savedId, item, tag.getInt("Qty"));
-        req.delivered = Math.min(tag.getInt("Delivered"), req.quantity);
+        PrintRequest req = new PrintRequest(savedId, item, tag.getInt("Qty"),
+                tag.hasUUID("Owner") ? tag.getUUID("Owner") : null);
+        // Clamped at BOTH ends. Math.min alone preserves a negative persisted value, and a
+        // negative delivered count makes remaining() larger than the order, so the dispatcher
+        // would print and charge for items nobody asked for after a reload.
+        req.delivered = Math.max(0, Math.min(tag.getInt("Delivered"), req.quantity));
         req.status = Status.byName(tag.getString("Status"));
         req.machine = tag.contains("Machine") ? NbtUtils.readBlockPos(tag.getCompound("Machine")) : null;
         req.reason = tag.contains("Reason") ? tag.getString("Reason") : null;

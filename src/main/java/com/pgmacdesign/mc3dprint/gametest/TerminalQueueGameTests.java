@@ -403,6 +403,95 @@ public class TerminalQueueGameTests {
         helper.succeed();
     }
 
+    /**
+     * An order belongs to whoever placed it. The sync hands every order id to every viewer, so
+     * without this any player could cancel any other player's work with an ordinary packet.
+     */
+    @GameTest(template = "empty5", timeoutTicks = 40)
+    public static void onlyTheOwnerCanCancelAnOrder(GameTestHelper helper) {
+        PrintRequestQueue queue = new PrintRequestQueue();
+        UUID alice = UUID.randomUUID();
+        UUID bob = UUID.randomUUID();
+        PrintRequest req = queue.enqueue(UUID.randomUUID(), Items.IRON_INGOT, 8, alice)
+                .orElseThrow(() -> new GameTestAssertException("queue refused a valid order"));
+
+        if (queue.cancelFor(req.id(), bob, "bob tried")) {
+            throw new GameTestAssertException("another player cancelled an order they did not"
+                    + " place");
+        }
+        if (req.status().isTerminal()) {
+            throw new GameTestAssertException("the order died anyway, status " + req.status());
+        }
+        if (!queue.cancelFor(req.id(), alice, "alice cancelled")) {
+            throw new GameTestAssertException("the placer could not cancel their own order");
+        }
+        if (req.status() != PrintRequest.Status.CANCELLED) {
+            throw new GameTestAssertException("expected CANCELLED, got " + req.status());
+        }
+        // An unowned order (restored from a save written before owners existed) stays cancellable
+        // by anyone, since refusing it would leave it stuck forever.
+        PrintRequest legacy = queue.enqueue(UUID.randomUUID(), Items.IRON_INGOT, 1).orElseThrow();
+        if (!queue.cancelFor(legacy.id(), bob, "anyone")) {
+            throw new GameTestAssertException("an order with no owner must stay cancellable, or it"
+                    + " can never be cleared");
+        }
+        helper.succeed();
+    }
+
+    /** The owner survives a save and reload, or the ownership check silently stops applying. */
+    @GameTest(template = "empty5", timeoutTicks = 40)
+    public static void ownershipSurvivesReload(GameTestHelper helper) {
+        PrintRequestQueue queue = new PrintRequestQueue();
+        UUID alice = UUID.randomUUID();
+        UUID bob = UUID.randomUUID();
+        PrintRequest req = queue.enqueue(UUID.randomUUID(), Items.IRON_INGOT, 4, alice).orElseThrow();
+        UUID id = req.id();
+
+        PrintRequestQueue reloaded = new PrintRequestQueue();
+        reloaded.load(queue.save());
+
+        if (reloaded.cancelFor(id, bob, "bob after reload")) {
+            throw new GameTestAssertException("ownership was lost across reload, so anyone can"
+                    + " cancel");
+        }
+        if (!reloaded.cancelFor(id, alice, "alice after reload")) {
+            throw new GameTestAssertException("the placer lost the ability to cancel their own"
+                    + " order across reload");
+        }
+        helper.succeed();
+    }
+
+    /**
+     * A corrupt save cannot make an order owe more than it asked for. A negative persisted
+     * delivered count would make remaining() exceed the quantity, and the dispatcher would print
+     * and charge for items nobody ordered.
+     */
+    @GameTest(template = "empty5", timeoutTicks = 40)
+    public static void aNegativeDeliveredCountCannotSurviveReload(GameTestHelper helper) {
+        PrintRequestQueue queue = new PrintRequestQueue();
+        PrintRequest req = enqueue(queue, 4);
+        CompoundTag saved = queue.save();
+
+        // Hand-corrupt the save the way a bad edit or a truncated write would.
+        net.minecraft.nbt.ListTag list =
+                saved.getList("Requests", net.minecraft.nbt.Tag.TAG_COMPOUND);
+        list.getCompound(0).putInt("Delivered", -100);
+
+        PrintRequestQueue reloaded = new PrintRequestQueue();
+        reloaded.load(saved);
+        PrintRequest back = reloaded.byId(req.id()).orElseThrow(
+                () -> new GameTestAssertException("the order vanished on reload"));
+        if (back.delivered() < 0) {
+            throw new GameTestAssertException("delivered survived as " + back.delivered());
+        }
+        if (back.remaining() > back.quantity()) {
+            throw new GameTestAssertException("remaining " + back.remaining()
+                    + " exceeds the order of " + back.quantity()
+                    + "; the machine would print and bill for the difference");
+        }
+        helper.succeed();
+    }
+
     private static void expect(PrintEligibility.Result actual, PrintEligibility.Verdict want) {
         if (actual.verdict() != want) {
             throw new GameTestAssertException("expected " + want + " but got " + actual.verdict()

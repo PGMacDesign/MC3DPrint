@@ -13,6 +13,8 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 
+import javax.annotation.Nullable;
+
 import java.util.List;
 
 /**
@@ -170,7 +172,9 @@ public class MC3DPrintTerminalScreen extends AbstractContainerScreen<MC3DPrintTe
                 case HELD -> LABEL_DIM;
                 default -> LABEL;
             };
-            String line = o.delivered() + "/" + o.quantity() + " "
+            // The x is the affordance: without it nothing tells the player a row is clickable.
+            String line = (o.status().isTerminal() ? "  " : "x ")
+                    + o.delivered() + "/" + o.quantity() + " "
                     + new ItemStack(o.item()).getHoverName().getString();
             if (o.status() == PrintRequest.Status.HELD && o.reason() != null) {
                 line += " (" + o.reason() + ")";
@@ -275,8 +279,28 @@ public class MC3DPrintTerminalScreen extends AbstractContainerScreen<MC3DPrintTe
     }
     //?}
 
+    /** The order row under the cursor, or null. Clicking one cancels it. */
+    @Nullable
+    private MC3DPrintTerminalMenu.OrderView orderRowUnder(double mouseX, double mouseY) {
+        int ox = leftPos + ORDERS_X;
+        int oy = topPos + ORDERS_Y + 2;
+        if (mouseX < ox || mouseX >= leftPos + WIDTH - 8 || mouseY < oy) {
+            return null;
+        }
+        int row = (int) ((mouseY - oy) / ORDER_LINE);
+        List<MC3DPrintTerminalMenu.OrderView> orders = menu.orders();
+        return row >= 0 && row < orders.size() ? orders.get(row) : null;
+    }
+
     /** Shared by both mouseClicked shapes, so the ordering rule exists once. */
     private boolean orderAt(double mouseX, double mouseY, boolean shift) {
+        // An order row cancels; only the placer's own orders are cancellable, and the server
+        // enforces that, so a refused click simply does nothing visible.
+        MC3DPrintTerminalMenu.OrderView row = orderRowUnder(mouseX, mouseY);
+        if (row != null && !row.status().isTerminal()) {
+            sendOrder(TerminalOrderPacket.cancel(row.id()));
+            return true;
+        }
         CatalogEntry entry = entryUnder((int) mouseX, (int) mouseY);
         if (entry == null || !entry.orderable()) {
             return false;

@@ -28,10 +28,13 @@ public record TerminalSyncPacket(List<CatalogEntry> catalog,
     private static final Logger LOGGER = LogUtils.getLogger();
 
     /**
-     * Both sides bound to the SAME limit. A hostile or corrupt varint length would otherwise let a
-     * reader pre-allocate an enormous list, and a genuinely oversized catalog would write a count
-     * the reader then rejects, which breaks the whole GUI rather than truncating it. Modded packs
-     * push the item registry well past this, so truncation is a real path, not a theoretical one.
+     * Both sides bound to the SAME limit, which is what makes rejecting safe on the read side.
+     *
+     * <p>The writer truncates and logs, so a legitimate server never emits a count above this even
+     * on a modded pack that pushes the item registry past it. The reader therefore treats an
+     * over-limit count as corrupt rather than as something to clamp: clamping left the omitted
+     * entries in the buffer and the next field read them as structure, which desynced the whole
+     * payload instead of shortening it.
      */
     private static final int MAX_CATALOG = 8192;
     private static final int MAX_ORDERS = 256;
@@ -65,13 +68,31 @@ public record TerminalSyncPacket(List<CatalogEntry> catalog,
         buf.writeVarInt(msg.machineCount());
     }
 
+    /**
+     * Rejects a count instead of clamping it.
+     *
+     * <p>Clamping was worse than useless here: truncating the row count did not skip the rows that
+     * were still in the buffer, so the very next read picked up a catalog entry and called it the
+     * order count, and everything after that was garbage decoded as structure. A negative count
+     * reached {@code new ArrayList<>(n)} and threw. Since the writer caps at the same limit, a
+     * count outside it means the payload is corrupt or hostile, and refusing it is the only honest
+     * answer.
+     */
+    private static int count(int raw, int limit, String what) {
+        if (raw < 0 || raw > limit) {
+            throw new io.netty.handler.codec.DecoderException(
+                    "Terminal sync declared " + raw + " " + what + "; limit is " + limit);
+        }
+        return raw;
+    }
+
     public static TerminalSyncPacket decode(FriendlyByteBuf buf) {
-        int rows = Math.min(buf.readVarInt(), MAX_CATALOG);
+        int rows = count(buf.readVarInt(), MAX_CATALOG, "catalog rows");
         List<CatalogEntry> catalog = new ArrayList<>(Math.min(rows, 1024));
         for (int i = 0; i < rows; i++) {
             catalog.add(CatalogEntry.read(buf));
         }
-        int orderCount = Math.min(buf.readVarInt(), MAX_ORDERS);
+        int orderCount = count(buf.readVarInt(), MAX_ORDERS, "orders");
         List<MC3DPrintTerminalMenu.OrderView> orders = new ArrayList<>(Math.min(orderCount, 256));
         PrintRequest.Status[] statuses = PrintRequest.Status.values();
         for (int i = 0; i < orderCount; i++) {
@@ -89,7 +110,7 @@ public record TerminalSyncPacket(List<CatalogEntry> catalog,
             orders.add(new MC3DPrintTerminalMenu.OrderView(id, item, delivered, quantity, status,
                     reason.isEmpty() ? null : reason));
         }
-        int tiers = Math.min(buf.readByte(), MC3DPrintTerminalMenu.MAX_TIER);
+        int tiers = count(buf.readByte(), MC3DPrintTerminalMenu.MAX_TIER, "tiers");
         int[] fu = new int[MC3DPrintTerminalMenu.MAX_TIER];
         for (int i = 0; i < tiers; i++) {
             fu[i] = buf.readVarInt();
