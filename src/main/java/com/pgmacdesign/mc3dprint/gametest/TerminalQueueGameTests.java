@@ -461,6 +461,38 @@ public class TerminalQueueGameTests {
         helper.succeed();
     }
 
+    /**
+     * A corrupt save cannot make an order owe more than it asked for. A negative persisted
+     * delivered count would make remaining() exceed the quantity, and the dispatcher would print
+     * and charge for items nobody ordered.
+     */
+    @GameTest(template = "empty5", timeoutTicks = 40)
+    public static void aNegativeDeliveredCountCannotSurviveReload(GameTestHelper helper) {
+        PrintRequestQueue queue = new PrintRequestQueue();
+        PrintRequest req = enqueue(queue, 4);
+        CompoundTag saved = queue.save();
+
+        // Hand-corrupt the save the way a bad edit or a truncated write would.
+        net.minecraft.nbt.ListTag list = com.pgmacdesign.mc3dprint.compat.NbtCompat
+                .getList(saved, "Requests", net.minecraft.nbt.Tag.TAG_COMPOUND);
+        com.pgmacdesign.mc3dprint.compat.NbtCompat.listGetCompound(list, 0)
+                .putInt("Delivered", -100);
+
+        PrintRequestQueue reloaded = new PrintRequestQueue();
+        reloaded.load(saved);
+        PrintRequest back = reloaded.byId(req.id()).orElseThrow(
+                () -> new GameTestAssertException("the order vanished on reload"));
+        if (back.delivered() < 0) {
+            throw new GameTestAssertException("delivered survived as " + back.delivered());
+        }
+        if (back.remaining() > back.quantity()) {
+            throw new GameTestAssertException("remaining " + back.remaining()
+                    + " exceeds the order of " + back.quantity()
+                    + "; the machine would print and bill for the difference");
+        }
+        helper.succeed();
+    }
+
     private static void expect(PrintEligibility.Result actual, PrintEligibility.Verdict want) {
         if (actual.verdict() != want) {
             throw new GameTestAssertException("expected " + want + " but got " + actual.verdict()

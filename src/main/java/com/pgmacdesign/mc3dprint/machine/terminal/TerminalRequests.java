@@ -98,6 +98,10 @@ public final class TerminalRequests {
             stamp = stamp * 31 + r.id().hashCode();
             stamp = stamp * 31 + r.delivered();
             stamp = stamp * 31 + r.status().ordinal();
+            // The reason is drawn next to a held order, so it is part of what a viewer sees. Left
+            // out, a hold that changes from "waiting for filament" to "waiting for power" would
+            // keep showing the old text until some other field happened to move.
+            stamp = stamp * 31 + (r.reason() == null ? 0 : r.reason().hashCode());
         }
         return stamp;
     }

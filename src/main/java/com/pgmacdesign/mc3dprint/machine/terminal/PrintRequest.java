@@ -244,7 +244,10 @@ public final class PrintRequest {
         }
         PrintRequest req = new PrintRequest(savedId.get(), item, NbtCompat.getInt(tag, "Qty"),
                 NbtCompat.getUUID(tag, "Owner").orElse(null));
-        req.delivered = Math.min(NbtCompat.getInt(tag, "Delivered"), req.quantity);
+        // Clamped at BOTH ends. Math.min alone preserves a negative persisted value, and a
+        // negative delivered count makes remaining() larger than the order, so the dispatcher
+        // would print and charge for items nobody asked for after a reload.
+        req.delivered = Math.max(0, Math.min(NbtCompat.getInt(tag, "Delivered"), req.quantity));
         req.status = Status.byName(NbtCompat.getString(tag, "Status"));
         req.machine = NbtCompat.getBlockPos(tag, "Machine").orElse(null);
         req.reason = NbtCompat.contains(tag, "Reason") ? NbtCompat.getString(tag, "Reason") : null;
