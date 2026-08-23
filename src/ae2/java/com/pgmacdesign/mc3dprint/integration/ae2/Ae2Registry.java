@@ -12,12 +12,12 @@ import net.minecraftforge.registries.RegisterEvent;
  *
  * <p>It registers <em>itself</em> rather than being called from {@code MC3DPrint}: this whole
  * source directory is compiled only on nodes that can ship AE2, so the always-present core cannot
- * name any class in it without failing to compile on the nodes where AE2 does not exist. NeoForge
- * discovers {@link Mod.EventBusSubscriber} by scanning, which needs no reference from the core.
+ * name any class in it without failing to compile where AE2 does not exist. Forge discovers
+ * {@link Mod.EventBusSubscriber} by scanning, which needs no reference from the core.
  *
  * <p><b>Two different absences, and this class handles the second one.</b> Compiling on a node
  * without AE2 is handled by the build, which leaves this directory out entirely. But a node that
- * <em>can</em> have AE2 still runs for players who have not installed it, and NeoForge loads this
+ * <em>can</em> have AE2 still runs for players who have not installed it, and Forge loads this
  * annotated class either way. Every {@code appeng} reference therefore lives in
  * {@link Ae2Parts}, which is only touched after the {@link ModList} check below: the JVM loads a
  * class on first use, so an un-taken branch never resolves it. Putting the registration inline

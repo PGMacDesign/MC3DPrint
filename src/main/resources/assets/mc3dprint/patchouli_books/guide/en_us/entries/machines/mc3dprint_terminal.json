@@ -22,7 +22,7 @@
     {
       "type": "patchouli:text",
       "title": "Orders",
-      "text": "Click to order one, Shift-click for a stack.$(br2)Click one of your own orders in the list to $(l)cancel$() it. Other players' orders are theirs to cancel.$(br2)An order binds to $(l)one$() machine, and a machine runs one order at a time, so two orders never spend the same spools.$(br2)Interruptions $(l)hold$() rather than fail: no filament, no power, or nowhere to put the output all pause and resume. While held with nowhere to deliver, it spends $(l)nothing$().$(br2)Filament is spent if and only if an item is delivered."
+      "text": "Click to order one, Shift-click for a stack.$(br2)Click one of your own orders in the list to $(l)cancel$() it. Other players' orders are theirs to cancel.$(br2)An order binds to $(l)one$() machine, and a machine runs one order at a time, so two orders never spend the same spools.$(br2)Interruptions $(l)hold$() rather than fail: no filament, no power, or nowhere to put the output all pause and resume.$(br2)If a machine loses its channel or leaves the network, the order is $(l)released$() and looks for another machine. While held with nowhere to deliver, it spends $(l)nothing$().$(br2)Filament is spent if and only if an item is delivered."
     },
     {
       "type": "patchouli:text",

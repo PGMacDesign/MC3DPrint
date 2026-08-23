@@ -162,7 +162,7 @@ public class MC3DPrintTerminalScreen extends AbstractContainerScreen<MC3DPrintTe
                     x + ORDERS_X + 2, y + ORDERS_Y + 2, LABEL_DIM, false);
             return;
         }
-        int shown = Math.min(orders.size(), (HEIGHT - 8 - ORDERS_Y) / ORDER_LINE);
+        int shown = Math.min(orders.size(), visibleOrderRows());
         for (int i = 0; i < shown; i++) {
             MC3DPrintTerminalMenu.OrderView o = orders.get(i);
             int oy = y + ORDERS_Y + 2 + i * ORDER_LINE;
@@ -281,6 +281,11 @@ public class MC3DPrintTerminalScreen extends AbstractContainerScreen<MC3DPrintTe
     }
     //?}
 
+    /** How many order rows the panel has room to draw. Drawing and hit testing share it. */
+    private static int visibleOrderRows() {
+        return (HEIGHT - 8 - ORDERS_Y) / ORDER_LINE;
+    }
+
     /** The order row under the cursor, or null. Clicking one cancels it. */
     @Nullable
     private MC3DPrintTerminalMenu.OrderView orderRowUnder(double mouseX, double mouseY) {
@@ -291,7 +296,11 @@ public class MC3DPrintTerminalScreen extends AbstractContainerScreen<MC3DPrintTe
         }
         int row = (int) ((mouseY - oy) / ORDER_LINE);
         List<MC3DPrintTerminalMenu.OrderView> orders = menu.orders();
-        return row >= 0 && row < orders.size() ? orders.get(row) : null;
+        // Bounded by what is DRAWN, not by how many orders exist. The panel shows a fixed number
+        // of rows, so indexing the whole list let a click on blank space below the last drawn row
+        // cancel an order the player could not see.
+        int shown = Math.min(orders.size(), visibleOrderRows());
+        return row >= 0 && row < shown ? orders.get(row) : null;
     }
 
     /** Shared by both mouseClicked shapes, so the ordering rule exists once. */

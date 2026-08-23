@@ -69,8 +69,9 @@ public final class TerminalRequests {
 
         // Re-decide eligibility here rather than believing the row the client drew. The catalog it
         // is looking at may be a tick stale, or may not have come from us at all.
-        int bestTier = host.snapshot(level).bestTier();
-        PrintEligibility.Result eligibility = PrintEligibility.of(new ItemStack(item), bestTier);
+        MachineSnapshot snapshot = host.snapshot(level);
+        PrintEligibility.Result eligibility =
+                PrintEligibility.of(new ItemStack(item), snapshot.bestTier());
         if (!eligibility.printable()) {
             player.displayClientMessage(Component.literal("Cannot print: " + eligibility.reason()), true);
             return;
@@ -79,8 +80,16 @@ public final class TerminalRequests {
             player.displayClientMessage(Component.literal(
                     "The terminal's order book is full (" + PrintRequestQueue.MAX_OPEN_REQUESTS
                             + " open orders)"), true);
+            // Refused, so nothing a viewer can see changed. Resyncing here would rebuild the whole
+            // catalog for a packet that did nothing, which is the amplification the cancel path
+            // already refuses: with the book full, every further order request would buy a grid
+            // walk and a full catalog send.
+            return;
         }
-        sync(player, menu, host, level);
+        // Reuses the snapshot taken for the eligibility check. Enqueuing changes the order book,
+        // which buildSync reads fresh, but not the machines or the filament, so a second grid walk
+        // would answer the identical question.
+        MC3DPrintNetwork.sendTo(player, buildSync(host, snapshot));
     }
 
     /**
