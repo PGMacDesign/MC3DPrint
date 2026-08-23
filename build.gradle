@@ -100,6 +100,14 @@ repositories {
         name = 'BlameJared (JEI, Patchouli)'
         url = 'https://maven.blamejared.com/'
     }
+    // AE2 publishes nothing newer than 19.2.0-beta to modmaven, and nothing at all for the
+    // 26.x line, so its jars come from Modrinth's maven mirror instead. Scoped to that one
+    // group so an unrelated dependency can never silently resolve from here.
+    maven {
+        name = 'Modrinth (Applied Energistics 2)'
+        url = 'https://api.modrinth.com/maven'
+        content { includeGroup 'maven.modrinth' }
+    }
 }
 
 dependencies {
@@ -112,8 +120,34 @@ dependencies {
     compileOnly "mezz.jei:jei-${jeiMc}-neoforge-api:${jei_version}"
     runtimeOnly "mezz.jei:jei-${jeiMc}-neoforge:${jei_version}"
 
+    // Applied Energistics 2, on the nodes where it exists at all. AE2 skipped the entire
+    // 1.21.2-1.21.11 range (its releases go 1.21.1 straight to 26.1), so `ae2_version` is
+    // declared only by the nodes that can have it and everything below is inert elsewhere.
+    // compileOnly, not implementation: nothing here may become a hard runtime requirement.
+    if (findProperty('ae2_version')) {
+        compileOnly "maven.modrinth:ae2:${ae2_version}"
+        // On the dev runtime too, so the integration can actually be gametested rather than
+        // only compiled. This needs the node's neo_version to satisfy AE2 (19.2.17 wants
+        // NeoForge 21.1.169+) and GuideME alongside it, which AE2 split out of its own jar and
+        // declares as required: without it AE2 aborts mod loading and takes every unrelated
+        // gametest with it. runtimeOnly, never implementation, so none of this can become a
+        // hard requirement of the shipped jar.
+        runtimeOnly "maven.modrinth:ae2:${ae2_version}"
+        runtimeOnly "maven.modrinth:guideme:${guideme_version}"
+    }
+
     testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+// AE2-only sources live apart from the shared tree rather than behind Stonecutter guards:
+// the guards comment out a region, but a file that imports appeng.* cannot even be parsed on a
+// node with no AE2 on the classpath. Adding the directory only where the dependency exists keeps
+// those nodes from ever seeing the source. The code inside self-registers on the mod bus, so the
+// always-present core never names a class that may not be there.
+if (findProperty('ae2_version')) {
+    sourceSets.main.java.srcDir 'src/ae2/java'
+    sourceSets.main.resources.srcDir 'src/ae2/resources'
 }
 
 tasks.named('test', Test).configure {

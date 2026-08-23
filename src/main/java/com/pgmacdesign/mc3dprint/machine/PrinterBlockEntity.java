@@ -21,6 +21,7 @@ import com.pgmacdesign.mc3dprint.fu.SpoolItem;
 import com.pgmacdesign.mc3dprint.item.BlueprintDiscItem;
 import com.pgmacdesign.mc3dprint.item.ResinItem;
 import com.pgmacdesign.mc3dprint.machine.resin.ResinEffects;
+import com.pgmacdesign.mc3dprint.machine.terminal.PrintEligibility;
 import com.pgmacdesign.mc3dprint.machine.upgrade.UpgradeItem;
 import com.pgmacdesign.mc3dprint.registry.ModBlockEntities;
 import net.minecraft.core.BlockPos;
@@ -387,6 +388,10 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             if (activeJob != null) {
                 cancelActiveJob(); // mode epoch: a print job never survives the switch
             }
+            // Flipping to Decon is the player claiming this machine, exactly like loading a disc.
+            // This branch returns before any terminal handling, so an order left bound here would
+            // never progress and never move to a machine that could run it.
+            releaseTerminalOrder();
             tickDeconstructMode();
             if (state != previous) {
                 setChanged();
@@ -400,7 +405,30 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         ItemStack template = inventory.getStackInSlot(SLOT_TEMPLATE);
 
         if (isLoadedDisc(template)) {
+            // Loading a disc is the player claiming this machine. Winning the branch is not
+            // enough: holding the order while running a blueprint leaves it leased here, and the
+            // dispatcher reads this machine's blueprint-mode status and attributes it to that
+            // order. Let go so it can be given to a machine that will actually run it.
+            releaseTerminalOrder();
             tickBlueprintMode(template);
+        } else if (terminalOrder != null) {
+            // A terminal order never preempts work the player loaded here themselves. Both ways
+            // that can happen release the order rather than running underneath it.
+            if (activeJob != null) {
+                cancelActiveJob();
+            }
+            if (template.isEmpty()) {
+                tickTerminalOrder(terminalOrder);
+            } else {
+                // The player (or a hopper) put their own template in while an order was running.
+                // Hand the order back rather than running Item Mode underneath it: the dispatcher
+                // reads this machine's status and attributes it to whatever order it thinks is
+                // bound here, so a manual unvalued item would report NOT_PRINTABLE and cancel a
+                // terminal order that had nothing to do with it. Releasing also resets
+                // itemProgress, which both paths share.
+                releaseTerminalOrder();
+                tickItemMode(template);
+            }
         } else {
             if (activeJob != null) {
                 cancelActiveJob(); // disc removed mid-print
@@ -466,6 +494,196 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
                         .getKey(state.getBlock().asItem()).toString());
     }
 
+    // --- Terminal orders ---
+    //
+    // A terminal-dispatched order runs through the SAME Item Mode economics as a player standing
+    // at the machine: same FU cost, same efficiency, same tier gate, same RF per tick, same ticks
+    // per item. Nothing here is a second pricing path, because a second pricing path is how a
+    // remote interface quietly becomes cheaper than the machine it drives.
+    //
+    // What differs is only where the item goes and who is told about it: an OrderSink instead of
+    // the output slot, and a delivered count instead of a growing stack.
+
+    /** The order this machine is currently executing, or null. Never persisted here: the */
+    /** terminal owns the queue, and re-binds on load after revalidating this position. */
+    @Nullable
+    private transient TerminalOrder terminalOrder;
+
+    /**
+     * An order handed to this machine by a terminal, together with where its output goes.
+     *
+     * @param id       the request id, echoed back on every delivery so a completion arriving after
+     *                 the order was cancelled or the machine re-leased is refused by the queue
+     * @param item     what to print
+     * @param sink     where each finished item goes
+     * @param onDeliver told how many landed, so the queue (the single writer) can credit them
+     * @param remaining how many items this order still wants, and 0 once it is finished or dead.
+     *                  The machine asks BEFORE printing, so it stops on its own the moment the
+     *                  order ends. Relying on the dispatcher to come and take the order away
+     *                  instead leaves the machine printing and paying forever if the dispatcher
+     *                  ever stops visiting it, which is exactly what happens once an order leaves
+     *                  the open list.
+     */
+    public record TerminalOrder(java.util.UUID id, Item item,
+                                com.pgmacdesign.mc3dprint.machine.terminal.OrderSink sink,
+                                java.util.function.ObjIntConsumer<java.util.UUID> onDeliver,
+                                java.util.function.IntSupplier remaining) {}
+
+    /**
+     * Drops the current order without finishing it, so the queue can give it to another machine.
+     * The order itself is untouched: the queue is the only thing that may change its state.
+     */
+    public void releaseTerminalOrder() {
+        if (terminalOrder != null) {
+            terminalOrder = null;
+            itemProgress = 0;
+            setChanged();
+        }
+    }
+
+    /**
+     * Whether the player has claimed this machine for work of their own, so a terminal order must
+     * neither bind to it nor stay bound to it.
+     *
+     * <p><b>This lives here, on the machine, deliberately.</b> The dispatcher used to answer this
+     * itself from a checklist, and that checklist kept missing members: Item Mode templates were
+     * handled first, then blueprint discs turned out to reach the same state through a different
+     * branch, then Deconstruct Mode turned out to return from tick() before any terminal handling
+     * ran at all. Three fixes for one question. The machine is the only thing that actually knows
+     * what it is busy with, so it is the only place that can answer without going stale the next
+     * time a mode is added.
+     */
+    public boolean hasPlayerOwnedWork() {
+        return deconstructMode
+                || activeJob != null
+                || deconstructJob != null
+                || !inventory.getStackInSlot(SLOT_TEMPLATE).isEmpty();
+    }
+
+    /** Hands this machine an order, replacing any it already had. Server-side only. */
+    public void setTerminalOrder(@Nullable TerminalOrder order) {
+        this.terminalOrder = order;
+        this.itemProgress = 0;
+        setChanged();
+    }
+
+    @Nullable
+    public TerminalOrder terminalOrder() {
+        return terminalOrder;
+    }
+
+    public boolean hasTerminalOrder() {
+        return terminalOrder != null;
+    }
+
+    /**
+     * Runs one tick of a terminal order. Mirrors {@link #tickItemMode} and deliberately reuses its
+     * primitives rather than paraphrasing them.
+     *
+     * <p><b>Charging and emitting are one step.</b> The cost is drained first and the item is only
+     * handed to the sink when the drain came back fully paid, so there is no ordering in which an
+     * item exists without having been paid for. The sink is asked before the drain only to the
+     * extent of knowing it has room, and a sink that then takes fewer than it promised credits only
+     * what it took.
+     */
+    private void tickTerminalOrder(TerminalOrder order) {
+        requiredTier = 0;
+        // A finished or cancelled order stops here, and the machine lets go of it itself. The
+        // queue releases the lease the moment an order completes, so it disappears from the
+        // dispatcher's open list and nothing would ever come back to clear it: the machine would
+        // keep printing and keep paying, forever, into a sink that no longer credits anything.
+        if (order.remaining().getAsInt() <= 0) {
+            setTerminalOrder(null);
+            state = State.IDLE;
+            return;
+        }
+        ItemStack template = new ItemStack(order.item());
+
+        PrintEligibility.Result eligibility = PrintEligibility.of(template, tier.number());
+        if (!eligibility.printable()) {
+            itemProgress = 0;
+            notPrintableReason = eligibility.reason();
+            if (eligibility.verdict() == PrintEligibility.Verdict.NEEDS_HIGHER_TIER) {
+                requiredTier = eligibility.requiredTier();
+                state = State.NEEDS_HIGHER_TIER;
+            } else {
+                state = State.NOT_PRINTABLE;
+            }
+            return;
+        }
+
+        int fuCost = itemFuCost(template);
+        int costTier = itemFuTier(template);
+        if (affordableFu(costTier) < fuCost) {
+            state = State.PAUSED_NO_FILAMENT;
+            return;
+        }
+        if (!energy.hasAtLeast(rfAdjusted(MC3DPrintConfig.itemRfPerTick(tier)))) {
+            state = State.PAUSED_NO_POWER;
+            return;
+        }
+        // Room is checked BEFORE any RF is burned, matching Item Mode, which tests canEmitCopy
+        // ahead of consuming. Otherwise a held order sits at PAUSED_OUTPUT_FULL re-entering this
+        // path every tick and quietly drawing full power while producing nothing.
+        ItemStack wanted = new ItemStack(order.item());
+        if (order.sink().simulate(wanted) <= 0 && !canEmitCopy(wanted)) {
+            state = State.PAUSED_OUTPUT_FULL;
+            return;
+        }
+
+        state = State.PRINTING;
+        energy.consume(rfAdjusted(MC3DPrintConfig.itemRfPerTick(tier)));
+        itemProgress++;
+        if (itemProgress < maxProgress()) {
+            return;
+        }
+        itemProgress = 0;
+
+        // Emit matter, not stored history: same anti-dupe rule as emitCopy. A fresh stack of the
+        // bare item, never a copy of anything the player supplied.
+        ItemStack produced = new ItemStack(order.item());
+
+        // Re-check room right before paying, since the last check was a full item's worth of ticks
+        // ago. Charging and then discovering the network is full spends filament and produces
+        // nothing, which is the one outcome the economy must never have: the terminal would
+        // quietly be a filament shredder for anyone whose ME system filled up overnight.
+        if (order.sink().simulate(produced) <= 0 && !canEmitCopy(produced)) {
+            itemProgress = maxProgress(); // hold at done, so it finishes the instant room appears
+            state = State.PAUSED_OUTPUT_FULL;
+            return;
+        }
+
+        long unpaid = drainFu(fuCost, costTier);
+        if (unpaid > 0) {
+            // The affordability check above and the drain disagreed, which should be unreachable
+            // within one tick. Hold rather than deliver: the player is out the filament that WAS
+            // taken, which is the safe direction to fail, since the alternative is a free item.
+            LOGGER.warn("[MC3DP] Tier {} machine at {} short {} base FU mid-order; holding",
+                    tier.number(), worldPosition, unpaid);
+            state = State.PAUSED_NO_FILAMENT;
+            return;
+        }
+        int accepted = order.sink().accept(produced);
+        if (accepted <= 0) {
+            // The sink said it had room and then took nothing. A real ME network can genuinely
+            // change between the two calls, so this is a race rather than a liar, but either way
+            // the charge has already happened and there is no item.
+            if (canEmitCopy(produced)) {
+                emitCopy(produced);
+                order.onDeliver().accept(order.id(), 1);
+                return;
+            }
+            // Nowhere to bank it either, so give the filament back. Paying for nothing is the
+            // one outcome the economy must never have, and a refund makes the tick a no-op
+            // instead of a loss. itemProgress stays at done so it retries next tick.
+            creditFu(fuCost, costTier);
+            itemProgress = maxProgress();
+            state = State.PAUSED_OUTPUT_FULL;
+            return;
+        }
+        order.onDeliver().accept(order.id(), accepted);
+    }
+
     // --- Item Mode ---
 
     private void tickItemMode(ItemStack template) {
@@ -477,56 +695,27 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             itemProgress = 0;
             return;
         }
-        // A spool must never be printable: it carries stored FU, so copying it would launder
-        // filament for a derived cost. Defense-in-depth choke point behind the handler guard.
-        if (template.getItem() instanceof SpoolItem) {
-            state = State.NOT_PRINTABLE;
+        // Every "may this print at all" rule lives in PrintEligibility, which the MC3DPrint
+        // Terminal's catalog also asks. Two copies of this chain would drift, and the terminal
+        // is the copy that would be wrong in the worse direction: it would offer the player
+        // something this tick then refuses, and they would only find out after ordering it.
+        PrintEligibility.Result eligibility = PrintEligibility.of(template, tier.number());
+        if (!eligibility.printable()) {
             itemProgress = 0;
-            notPrintableReason = idOf(template) + " is a filament spool; printers never duplicate stored filament";
-            return;
-        }
-        // NO_PRINT is the "can wind, can't print" gate: the item is valued (so it winds for a
-        // recycle payout) but the printer must never reproduce it. Checked FIRST, ahead of the
-        // trophy gate and the FU/tier branch, so an item on BOTH #no_print and #print_restricted
-        // (wither_skeleton_skull) reports the wind-only status and NO_PRINT keeps its precedence.
-        if (template.is(com.pgmacdesign.mc3dprint.registry.ModItemTags.NO_PRINT)) {
-            state = State.NOT_PRINTABLE;
-            itemProgress = 0;
-            notPrintableReason = idOf(template)
-                    + " is recyclable but not printable (wind-only)";
-            return;
-        }
-        // Item mode with a restricted trophy would be straight duplication — refuse
-        // regardless of FU value (blueprint mode has the official-allowance gate).
-        if (template.is(com.pgmacdesign.mc3dprint.registry.ModItemTags.PRINT_RESTRICTED)) {
-            state = State.NOT_PRINTABLE;
-            itemProgress = 0;
-            notPrintableReason = idOf(template)
-                    + " is a restricted trophy item — printers never duplicate it";
+            notPrintableReason = eligibility.reason();
+            if (eligibility.verdict() == PrintEligibility.Verdict.NEEDS_HIGHER_TIER) {
+                // A bigger printer WOULD print it, so point the player at the tier they need
+                // rather than a dead-end "Not Printable".
+                requiredTier = eligibility.requiredTier();
+                state = State.NEEDS_HIGHER_TIER;
+            } else {
+                state = State.NOT_PRINTABLE;
+            }
             return;
         }
         int fuCost = itemFuCost(template);
         int costTier = itemFuTier(template);
-        if (fuCost < 0) {
-            itemProgress = 0;
-            Optional<FuValue> value = FuValueRegistry.valueOf(template);
-            if (value.isEmpty()) {
-                state = State.NOT_PRINTABLE;
-                notPrintableReason = String.format(
-                        "%s has no FU value (unpriced/unknown item — register one via the API/config)",
-                        idOf(template));
-            } else {
-                // Valued but above this machine's tier: a bigger printer WOULD print it, so
-                // point the player at the tier they need rather than a dead-end "Not Printable".
-                // (itemFuCost only returns <0 for unvalued or tier-too-high, so value present
-                // here always means the latter.)
-                requiredTier = value.get().tier();
-                state = State.NEEDS_HIGHER_TIER;
-                notPrintableReason = String.format(
-                        "%s is Tier %d, which exceeds this machine's Tier %d",
-                        idOf(template), value.get().tier(), tier.number());
-            }
-        } else if (!canEmitCopy(template)) {
+        if (!canEmitCopy(template)) {
             state = State.PAUSED_OUTPUT_FULL;
         } else if (affordableFu(costTier) < fuCost) {
             state = State.PAUSED_NO_FILAMENT;
@@ -805,7 +994,7 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
      * racks) can supply. Mirrors the docked-first/reserve drain so a printer with
      * empty docked spools but a stocked rack still prints.
      */
-    private int affordableFu(int costTier) {
+    public int affordableFu(int costTier) {
         int ratio = FuConversion.ratio();
         List<IFilamentSource> sources = reachableSources();
         long base = 0;
@@ -903,8 +1092,15 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
      * (tiers below the cost never contribute), with at most one ceil unit of
      * overshoot on the covering spool. The source gather is lazy: a printer that
      * covers the cost from its own docked spools never touches the network.
+     *
+     * <p>Returns the base-FU it could NOT cover, which is normally zero: callers check
+     * {@link #affordableFu} first and nothing interleaves between that check and this drain within
+     * a tick. It is returned rather than swallowed because the one caller that emits an item
+     * afterwards must not emit when the charge fell short, and a void return made that
+     * unrepresentable. A non-zero result means the affordability check and the drain disagreed,
+     * which is a bug in one of them, not a game state a player can reach.
      */
-    private void drainFu(int amount, int costTier) {
+    private long drainFu(int amount, int costTier) {
         int ratio = FuConversion.ratio();
         long remainingBase = FuConversion.toBase(amount, costTier, ratio);
         List<IFilamentSource> sources = null;
@@ -923,6 +1119,7 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
                 remainingBase -= src.drainExactTier(tier, remainingBase);
             }
         }
+        return Math.max(0, remainingBase);
     }
 
     /** Spool contents changed externally (e.g. Filament Converter top-off). */

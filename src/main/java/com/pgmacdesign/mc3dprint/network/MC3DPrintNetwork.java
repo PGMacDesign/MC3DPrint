@@ -26,7 +26,15 @@ public final class MC3DPrintNetwork {
                 .playToServer(
                         RepositoryRenamePacket.TYPE,
                         RepositoryRenamePacket.STREAM_CODEC,
-                        MC3DPrintNetwork::handleRename);
+                        MC3DPrintNetwork::handleRename)
+                .playToClient(
+                        TerminalSyncPacket.TYPE,
+                        TerminalSyncPacket.STREAM_CODEC,
+                        MC3DPrintNetwork::handleTerminalSync)
+                .playToServer(
+                        TerminalOrderPacket.TYPE,
+                        TerminalOrderPacket.STREAM_CODEC,
+                        MC3DPrintNetwork::handleTerminalOrder);
     }
 
     /**
@@ -45,6 +53,33 @@ public final class MC3DPrintNetwork {
             }
             menu.renameFromClient(player, payload.id(), payload.name());
         });
+    }
+
+    /**
+     * Place or cancel an order. Nothing the client sent is trusted beyond "which item, how many":
+     * the item is re-resolved from the registry, eligibility and cost are recomputed against the
+     * network's own best machine, and the quantity is clamped. Holding the terminal menu open is
+     * the authorization, exactly as with the repository rename above: it proves the player is
+     * actually at a terminal rather than replaying a packet from anywhere in the world.
+     */
+    private static void handleTerminalOrder(TerminalOrderPacket payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            if (!(context.player() instanceof ServerPlayer player)) {
+                return;
+            }
+            if (!(player.containerMenu
+                    instanceof com.pgmacdesign.mc3dprint.machine.terminal.MC3DPrintTerminalMenu)) {
+                return;
+            }
+            com.pgmacdesign.mc3dprint.machine.terminal.TerminalRequests
+                    .handle(player, payload.itemId(), payload.quantity(), payload.cancelId());
+        });
+    }
+
+    // Runs client-side only (playToClient), so the client handler is loaded lazily on the
+    // client and never reaches a dedicated server's classpath.
+    private static void handleTerminalSync(TerminalSyncPacket payload, IPayloadContext context) {
+        context.enqueueWork(() -> com.pgmacdesign.mc3dprint.client.ClientTerminalHandler.apply(payload));
     }
 
     // Runs client-side only (playToClient), so ClientRepositoryHandler is loaded

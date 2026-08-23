@@ -1,0 +1,26 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "ae2"
+    }
+  ],
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "EEE",
+    "ETE",
+    "EEE"
+  ],
+  "key": {
+    "E": {
+      "item": "mc3dprint:extrudium_crystal"
+    },
+    "T": {
+      "item": "ae2:crafting_terminal"
+    }
+  },
+  "result": {
+    "count": 1,
+    "id": "mc3dprint:me_print_terminal"
+  }
+}
