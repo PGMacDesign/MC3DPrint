@@ -670,10 +670,18 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
                 order.onDeliver().accept(order.id(), 1);
                 return;
             }
-            // Nowhere to bank it either, so give the filament back. Paying for nothing is the
-            // one outcome the economy must never have, and a refund makes the tick a no-op
-            // instead of a loss. itemProgress stays at done so it retries next tick.
-            creditFu(fuCost, costTier);
+            // Nowhere to bank it either, so give the filament back. Paying for nothing is the one
+            // outcome the economy must never have. The refund is exact-tier while the drain was
+            // down-only, so it can come up short when nothing at costTier has room; that is a real
+            // loss to the player and is logged rather than swallowed, because a silent one is
+            // indistinguishable from the machine working. itemProgress stays at done so it retries
+            // next tick.
+            long unrefunded = creditFu(fuCost, costTier);
+            if (unrefunded > 0) {
+                LOGGER.warn("[MC3DP] Machine at {} could not refund {} base FU at tier {} after a"
+                        + " failed delivery; that filament is lost", worldPosition, unrefunded,
+                        costTier);
+            }
             itemProgress = maxProgress();
             state = State.PAUSED_OUTPUT_FULL;
             return;
@@ -2444,8 +2452,16 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         return new DeconstructYield(true, fu, value.get().tier());
     }
 
-    /** Reverse of {@link #drainFu}: banks tier-unit FU docked-spools-first, then the network. */
-    private void creditFu(int amount, int tier) {
+    /**
+     * Reverse of {@link #drainFu}: banks tier-unit FU docked-spools-first, then the network.
+     *
+     * <p>Returns the base-unit remainder it could NOT bank. That return matters on the refund
+     * paths: {@code drainFu} is down-only and may take tier-N filament to pay a tier-M cost, but a
+     * credit is exact-tier, so a refund can find no room at {@code tier} even though the drain just
+     * freed space further up. Discarding that remainder silently turns a refund into a loss, so
+     * callers that are refunding must look at it rather than assume the books balanced.
+     */
+    private long creditFu(int amount, int tier) {
         int ratio = FuConversion.ratio();
         long remainingBase = FuConversion.toBase(amount, tier, ratio);
         remainingBase -= FilamentDrain.fillTier(spools, remainingBase, tier, ratio);
@@ -2457,6 +2473,7 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
                 remainingBase -= src.insertExactTier(tier, remainingBase);
             }
         }
+        return Math.max(0, remainingBase);
     }
 
     /** Tier-unit FU of free exact-tier capacity across docked spools + the network. */

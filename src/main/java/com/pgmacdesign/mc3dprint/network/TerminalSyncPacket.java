@@ -60,9 +60,13 @@ public record TerminalSyncPacket(List<CatalogEntry> catalog,
             buf.writeByte(o.status().ordinal());
             buf.writeUtf(o.reason() == null ? "" : o.reason(), 128);
         }
-        buf.writeByte(msg.fuByTier().length);
-        for (int fu : msg.fuByTier()) {
-            buf.writeVarInt(Math.max(0, fu));
+        // Clamped to the same bound the reader enforces. The reader rejects an over-limit count
+        // rather than clamping it, so writing more tiers than MAX_TIER would not shorten the rail,
+        // it would throw in the decoder and drop the connection.
+        int tiers = Math.min(msg.fuByTier().length, MC3DPrintTerminalMenu.MAX_TIER);
+        buf.writeByte(tiers);
+        for (int i = 0; i < tiers; i++) {
+            buf.writeVarInt(Math.max(0, msg.fuByTier()[i]));
         }
         buf.writeByte(msg.bestMachineTier());
         buf.writeVarInt(msg.machineCount());

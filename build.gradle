@@ -118,7 +118,8 @@ repositories {
     maven {
         name = 'BlameJared (JEI, Patchouli)'
         url = 'https://maven.blamejared.com/'
-    
+    }
+
     // AE2's Forge builds are not on modmaven at the versions this needs, so they come from
     // Modrinth's maven mirror. Scoped to that one group so nothing else can silently resolve here.
     maven {
@@ -126,7 +127,6 @@ repositories {
         url = 'https://api.modrinth.com/maven'
         content { includeGroup 'maven.modrinth' }
     }
-}
 }
 
 dependencies {

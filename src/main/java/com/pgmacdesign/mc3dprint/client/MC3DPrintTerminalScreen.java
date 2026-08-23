@@ -272,7 +272,9 @@ public class MC3DPrintTerminalScreen extends AbstractContainerScreen<MC3DPrintTe
     *///?} else {
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (orderAt(mouseX, mouseY, hasShiftDown())) {
+        // Left button only. Right- and middle-clicks used to place orders too, which spends
+        // filament on a gesture every other inventory screen treats as something else.
+        if (button == 0 && orderAt(mouseX, mouseY, hasShiftDown())) {
             return true;
         }
         return super.mouseClicked(mouseX, mouseY, button);
