@@ -119,9 +119,35 @@ repositories {
         name = 'BlameJared (JEI, Patchouli)'
         url = 'https://maven.blamejared.com/'
     }
+
+    // AE2's Forge builds are not on modmaven at the versions this needs, so they come from
+    // Modrinth's maven mirror. Scoped to that one group so nothing else can silently resolve here.
+    maven {
+        name = 'Modrinth (Applied Energistics 2)'
+        url = 'https://api.modrinth.com/maven'
+        content { includeGroup 'maven.modrinth' }
+    }
 }
 
 dependencies {
+    // Applied Energistics 2, present on this line as 15.4.x. compileOnly plus runtimeOnly, never
+    // implementation: none of this may become a hard requirement of the shipped jar. GuideME is
+    // required by AE2 itself, so the dev runtime needs it or AE2 aborts mod loading.
+    if (findProperty('ae2_version')) {
+        compileOnly "maven.modrinth:ae2:${ae2_version}"
+        // NOT runtimeOnly on this line, unlike the NeoForge tree. AE2's Forge 1.20.1 jar ships
+        // mixins with an SRG refmap, and this dev runtime uses official Mojang mappings, so it
+        // aborts at startup with "@Shadow field f_129762_ was not located in the target class
+        // MinecraftServer". That is a mapping mismatch in the dev environment, not a defect in
+        // either mod: the same jar loads fine in a real 1.20.1 instance.
+        //
+        // The consequence is scoped and worth stating: the AE2-facing half cannot be gametested
+        // here, so it is compile-verified only and needs an in-world check. Everything that
+        // decides what gets billed lives in machine/terminal, which names no AE2 API and is
+        // covered by the oracle either way. Running without AE2 also exercises the mod-absent
+        // path, which is the one that used to crash startup for players who do not have it.
+    }
+
     // Specify the version of Minecraft to use.
     // Any artifact can be supplied so long as it has a "userdev" classifier artifact and is a compatible patcher artifact.
     // The "userdev" classifier will be requested and setup by ForgeGradle.
@@ -233,4 +259,13 @@ publishing {
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8' // Use the UTF-8 charset for Java compilation
+}
+
+// AE2-facing sources live apart from the shared tree rather than behind a flag: a file importing
+// appeng.* cannot be parsed at all without AE2 on the classpath, so commenting it out would not
+// help. The code inside self-registers on the mod bus, so the always-present core never names a
+// class that may not be there.
+if (findProperty('ae2_version')) {
+    sourceSets.main.java.srcDir 'src/ae2/java'
+    sourceSets.main.resources.srcDir 'src/ae2/resources'
 }

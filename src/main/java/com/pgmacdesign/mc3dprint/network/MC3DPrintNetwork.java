@@ -3,6 +3,7 @@ package com.pgmacdesign.mc3dprint.network;
 import com.pgmacdesign.mc3dprint.MC3DPrint;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraftforge.network.NetworkDirection;
 import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.network.simple.SimpleChannel;
@@ -28,6 +29,20 @@ public final class MC3DPrintNetwork {
         CHANNEL.registerMessage(id++, RepositoryRenamePacket.class,
                 RepositoryRenamePacket::encode, RepositoryRenamePacket::decode,
                 RepositoryRenamePacket::handle);
+        // Direction-constrained, unlike the two above. The sync handler reaches
+        // ClientTerminalHandler, so an unconstrained registration lets a client send this packet
+        // TO a dedicated server, where touching that class loads client-only code and takes the
+        // server down. The NeoForge line gets this for free from playToClient/playToServer.
+        CHANNEL.messageBuilder(TerminalSyncPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(TerminalSyncPacket::encode)
+                .decoder(TerminalSyncPacket::decode)
+                .consumerNetworkThread(TerminalSyncPacket::handle)
+                .add();
+        CHANNEL.messageBuilder(TerminalOrderPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(TerminalOrderPacket::encode)
+                .decoder(TerminalOrderPacket::decode)
+                .consumerNetworkThread(TerminalOrderPacket::handle)
+                .add();
     }
 
     /**

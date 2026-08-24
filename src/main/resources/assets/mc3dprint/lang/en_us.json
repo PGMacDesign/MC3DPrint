@@ -303,5 +303,13 @@
   "tooltip.mc3dprint.resin.rarity.rare": "Rare",
   "tooltip.mc3dprint.resin.footer": "Drop into the Resin slot to refine a print. Works only on found blueprints; consumable.",
   "gui.mc3dprint.resin": "Resin",
-  "gui.mc3dprint.resin.needs_official": "Resin needs a found blueprint"
+  "gui.mc3dprint.resin.needs_official": "Resin needs a found blueprint",
+  "gui.mc3dprint.terminal.search": "Search",
+  "gui.mc3dprint.terminal.no_orders": "No orders",
+  "gui.mc3dprint.terminal.no_machines": "No machines on this network",
+  "gui.mc3dprint.terminal.not_enough_filament": "Not enough filament at this tier",
+  "gui.mc3dprint.terminal.click_to_order": "Click to order 1, Shift-click for a stack",
+  "block.mc3dprint.me_print_terminal": "MC3DPrint Terminal",
+  "item.mc3dprint.me_print_terminal": "MC3DPrint Terminal",
+  "gui.mc3dprint.terminal.offline": "Terminal offline: no channel or no power"
 }

@@ -23,6 +23,7 @@ public final class ClientSetup {
             MenuScreens.register(ModMenuTypes.REDSTONE_CLOCK.get(), RedstoneClockScreen::new);
             MenuScreens.register(ModMenuTypes.BLUEPRINT_REPOSITORY.get(), BlueprintRepositoryScreen::new);
             MenuScreens.register(ModMenuTypes.FILAMENT_ITEM_SORTER.get(), SorterScreen::new);
+            MenuScreens.register(ModMenuTypes.MC3DPRINT_TERMINAL.get(), MC3DPrintTerminalScreen::new);
         });
     }
 
