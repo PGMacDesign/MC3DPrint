@@ -34,6 +34,19 @@ Nothing is hidden. A greyed row tells you what to go build, and the catalog does
 
 Search matches both the display name and the registry id, so typing a mod id narrows things down when two mods ship an item with the same name.
 
+## The catalog mirrors your network
+
+The terminal lists **what your ME network is already holding**, not the whole item registry. It is a way to reprint what you own, so if the network has no cobblestone in it, cobblestone is not on offer.
+
+Two things follow, and the second one matters more:
+
+- Stock decides what gets **listed**. It never decides what can be **ordered**.
+- Every print rule still applies on top. A wind-only item, a restricted trophy or something needing a bigger machine stays greyed and refused even when a drive full of it is plugged in. Blacklisted means blacklisted, whether or not you own one.
+
+The server re-checks stock when the order arrives, not just when the catalog is drawn, so a hand-crafted packet cannot order something the network never had.
+
+Stock is re-read about once a second rather than every tick, so a very large network does not pay for a full contents walk sixty times a second.
+
 ## Connecting your printers
 
 A printer or Fabricator joins the terminal's network by **touching it**. Put the machine directly against any AE2 cable or device that belongs to the same network, on any of its six sides, and it is connected. That is the whole rule.

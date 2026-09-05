@@ -92,6 +92,71 @@ final class Ae2TerminalHost implements TerminalHost {
         return be.getBlockPos().distToCenterSqr(player.position()) <= 64.0D;
     }
 
+    // --- network stock -------------------------------------------------------------------
+
+    /**
+     * Recompute interval for the stocked set, in ticks. Walking a large network's contents is not
+     * free and the catalog is rebuilt from a fingerprint anyway, so a second of staleness buys a
+     * bounded cost per tick instead of an unbounded one.
+     */
+    private static final long STOCK_TTL_TICKS = 20L;
+
+    @Nullable
+    private java.util.Set<net.minecraft.world.item.Item> stockedCache;
+    private int stockedFingerprint;
+    private long stockedAtTick = Long.MIN_VALUE;
+
+    @Override
+    @Nullable
+    public java.util.Set<net.minecraft.world.item.Item> stockedItems() {
+        refreshStock();
+        return stockedCache;
+    }
+
+    @Override
+    public int stockedStamp() {
+        refreshStock();
+        return stockedFingerprint;
+    }
+
+    private void refreshStock() {
+        if (!(part.getLevel() instanceof ServerLevel level)) {
+            return;
+        }
+        long now = level.getGameTime();
+        if (stockedCache != null && now - stockedAtTick < STOCK_TTL_TICKS) {
+            return;
+        }
+        stockedAtTick = now;
+        IGrid grid = part.getMainNode().getGrid();
+        if (grid == null || !part.getMainNode().isActive()) {
+            // Offline: hold an EMPTY set rather than null. Null means "no restriction", and a
+            // terminal with no channel must not answer that by offering the whole item registry.
+            stockedCache = java.util.Set.of();
+            stockedFingerprint = 0;
+            return;
+        }
+        appeng.api.networking.storage.IStorageService service =
+                grid.getService(appeng.api.networking.storage.IStorageService.class);
+        if (service == null) {
+            stockedCache = java.util.Set.of();
+            stockedFingerprint = 0;
+            return;
+        }
+        java.util.Set<net.minecraft.world.item.Item> items = new java.util.HashSet<>();
+        int fingerprint = 0;
+        for (appeng.api.stacks.AEKey key : service.getInventory().getAvailableStacks().keySet()) {
+            if (key instanceof appeng.api.stacks.AEItemKey itemKey
+                    && items.add(itemKey.getItem())) {
+                // Order-independent on purpose: the set has no order and the walk need not be
+                // stable between ticks.
+                fingerprint += itemKey.getItem().hashCode();
+            }
+        }
+        stockedCache = items;
+        stockedFingerprint = fingerprint * 31 + items.size();
+    }
+
     @Override
     public OrderSink sink() {
         return part.sink();

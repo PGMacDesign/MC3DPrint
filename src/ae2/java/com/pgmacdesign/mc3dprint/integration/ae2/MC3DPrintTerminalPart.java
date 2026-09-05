@@ -145,7 +145,8 @@ public class MC3DPrintTerminalPart extends AEBasePart implements IGridTickable {
         // One snapshot for the whole tick: the fingerprint and the payload are built from the
         // same walk, and the payload is built once for everyone rather than once per viewer.
         com.pgmacdesign.mc3dprint.machine.terminal.MachineSnapshot snapshot = host.snapshot(level);
-        int stamp = TerminalRequests.stampOf(snapshot, host.queue());
+        int stamp = TerminalRequests.stampOf(snapshot, host.queue(),
+                host.stockedStamp());
         if (stamp == lastSyncStamp) {
             return; // nothing a viewer can see has moved
         }

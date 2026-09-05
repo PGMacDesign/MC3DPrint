@@ -26,6 +26,31 @@ public interface TerminalHost {
     OrderSink sink();
 
     /**
+     * The items the network actually holds, or {@code null} when this host has no notion of stock.
+     *
+     * <p>The terminal offers what the network already has rather than the whole item registry: it
+     * reprints what you own, so the catalog is a mirror of your storage instead of a wish list of
+     * everything the game can make. Null means "no restriction", which is what a test host with no
+     * ME network behind it wants.
+     *
+     * <p>This does NOT relax any print rule. Being in stock gets an item listed; it still has to
+     * pass every eligibility check to be orderable, so a blacklisted item sitting in a drive stays
+     * exactly as unprintable as it was.
+     */
+    @javax.annotation.Nullable
+    default java.util.Set<net.minecraft.world.item.Item> stockedItems() {
+        return null;
+    }
+
+    /**
+     * A cheap fingerprint of {@link #stockedItems()}, so a per-tick sync can notice stock moving
+     * without walking the network's contents every time.
+     */
+    default int stockedStamp() {
+        return 0;
+    }
+
+    /**
      * Whether this terminal is still a thing {@code player} may act through: the part still exists,
      * its node is live, and they are close enough to reach it.
      *

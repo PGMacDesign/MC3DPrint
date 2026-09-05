@@ -358,6 +358,35 @@ public class TerminalQueueGameTests {
             throw new GameTestAssertException("wither skeleton skull must be listed as wind-only"
                     + " and never orderable, got " + skull.verdict());
         }
+
+        // The catalog mirrors what the network holds, and stock does not launder a ban. Folded in
+        // here rather than added as its own @GameTest on purpose: GameTest lays every test out in
+        // one shared world by index, so adding a test shifts every later one and made an unrelated
+        // sorter test share space with its neighbour.
+        java.util.Set<net.minecraft.world.item.Item> stocked =
+                java.util.Set.of(Items.IRON_INGOT, Items.WITHER_SKELETON_SKULL);
+        var stockOnly = com.pgmacdesign.mc3dprint.machine.terminal.TerminalCatalog.build(
+                8, tier -> Integer.MAX_VALUE, stocked);
+        for (var e : stockOnly) {
+            if (!stocked.contains(e.item())) {
+                throw new GameTestAssertException("catalog listed " + e.item()
+                        + ", which the network is not holding");
+            }
+        }
+        if (stockOnly.stream().noneMatch(e -> e.item() == Items.IRON_INGOT)) {
+            throw new GameTestAssertException("a stocked, printable item was not listed");
+        }
+        var stockedSkull = stockOnly.stream()
+                .filter(e -> e.item() == Items.WITHER_SKELETON_SKULL)
+                .findFirst().orElse(null);
+        if (stockedSkull == null) {
+            throw new GameTestAssertException("a stocked item must still be listed even when it"
+                    + " cannot be ordered; the row is where the reason is shown");
+        }
+        if (stockedSkull.orderable()) {
+            throw new GameTestAssertException("a wind-only item became orderable just by being in"
+                    + " stock; blacklisted has to mean blacklisted");
+        }
         helper.succeed();
     }
 
