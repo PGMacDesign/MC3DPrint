@@ -6,32 +6,40 @@
   "pages": [
     {
       "type": "patchouli:text",
-      "text": "Every Fabricator is built the same way:$(br)$(li)Lay a flat $(l)N×N square$() of $(item)Printer Casing$() on one level$(li)Place the $(l)controller$() in the $(l)center$() cell$(li)$(l)Right-click$() the controller to form$(br2)All base blocks sit on the controller's own Y level. The diagrams below show the four sizes, corner blocks are highlighted."
+      "text": "Every Fabricator is built the same way:$(li)Lay a flat $(l)NxN square$() of $(item)Printer Casing$()$(li)Put the $(l)controller$() in the $(l)center$() cell$(li)$(l)Right-click$() the controller to form$(br2)All base blocks sit on the controller's own Y level."
     },
     {
       "type": "patchouli:image",
-      "images": ["mc3dprint:textures/patchouli/layout_3x3.png"],
+      "images": [
+        "mc3dprint:textures/patchouli/layout_3x3.png"
+      ],
       "title": "Tier 5 · 3×3",
       "border": true,
       "text": "$(l)8$() Printer Casing + $(item)Tier 5 Fabricator$() in the middle. The smallest Fabricator."
     },
     {
       "type": "patchouli:image",
-      "images": ["mc3dprint:textures/patchouli/layout_5x5.png"],
+      "images": [
+        "mc3dprint:textures/patchouli/layout_5x5.png"
+      ],
       "title": "Tier 6 · 5×5",
       "border": true,
       "text": "$(l)24$() Printer Casing + $(item)Tier 6 Fabricator$() in the center cell."
     },
     {
       "type": "patchouli:image",
-      "images": ["mc3dprint:textures/patchouli/layout_7x7.png"],
+      "images": [
+        "mc3dprint:textures/patchouli/layout_7x7.png"
+      ],
       "title": "Tier 7 · 7×7",
       "border": true,
       "text": "$(l)48$() Printer Casing + $(item)Tier 7 Fabricator$(). Clear a big flat platform first."
     },
     {
       "type": "patchouli:image",
-      "images": ["mc3dprint:textures/patchouli/layout_9x9.png"],
+      "images": [
+        "mc3dprint:textures/patchouli/layout_9x9.png"
+      ],
       "title": "Tier 8 · 9×9",
       "border": true,
       "text": "$(l)76$() Printer Casing + $(l)4$() corner $(l)Awakened Draconium$() blocks + $(item)Tier 8 Fabricator$(). Requires Draconic Evolution."

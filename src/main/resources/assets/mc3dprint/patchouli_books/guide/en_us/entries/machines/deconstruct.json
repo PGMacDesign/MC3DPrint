@@ -6,27 +6,27 @@
   "pages": [
     {
       "type": "patchouli:text",
-      "text": "Every printer and fabricator can run $(l)in reverse$(): select a region and the machine consumes it block by block, banking $(l)Filament Units$() into its docked spools (then any racks on the cable network).$(br2)To arm it: set $(l)two corners$() with the $(item)Structure Scanner$(), then $(o)sneak-click the machine$() - on a fabricator, $(o)any casing$() of the formed pad works, not just the controller. The region can't be wider than the machine's print footprint, and must be within $(l)64 blocks$()."
+      "text": "Every machine can run $(l)in reverse$(): it consumes a region block by block and banks $(l)Filament Units$() into its docked spools.$(br2)Set $(l)two corners$() with the $(item)Structure Scanner$(), then $(o)sneak-click the machine$(). The region cannot exceed the machine's footprint, or 64 blocks away."
     },
     {
       "type": "patchouli:text",
       "title": "Lossy By Design",
-      "text": "Deconstructing credits a $(l)fraction$() of each block's winding value ($(o)deconstruct.yieldFactor$(), default $(l)50%$()) at its exact tier, always less than winding the item yourself, so there's no free filament loop.$(br)$(li)Winder-blacklisted blocks (planks, cactus…) recycle at $(l)zero$()$(li)Water, fire, farmland and other free structural blocks clear for free$(li)Crops recycle at $(l)zero$(): they cost seeds to print, but they are winder-blacklisted so a farm cannot launder itself into filament$(li)$(l)Unvalued$() blocks and $(l)non-empty containers$() are skipped in place: the machine never destroys what it can't value, and never touches stored items."
+      "text": "Deconstructing credits a $(l)fraction$() of each block's value ($(o)yieldFactor$(), default $(l)50%$()), always less than winding it yourself, so there is no free loop.$(li)Blacklisted blocks recycle at $(l)zero$()$(li)Free structural blocks clear for free$(li)$(l)Unvalued$() blocks and full containers are skipped in place"
     },
     {
       "type": "patchouli:text",
       "title": "Running a Job",
-      "text": "Toggle $(l)Print / Decon$() in the machine GUI (handing a region to a machine arms Decon automatically). A machine in Decon with $(l)no armed region$() reads $(l)No Region Set$(): hand it a scanner selection, or toggle back to $(l)Print$(). The armed region shows as a $(c:red)red wireframe$() in the world, and the $(l)first$() job after arming ALWAYS needs the $(l)Start button$(): $(l)Auto$() never fires on a fresh region, so nothing dissolves by surprise. After that first Start, Auto resumes as a standing recycler for the region.$(br2)Jobs work $(l)top-down$(), pause on power loss without losing progress, and pause $(l)before$() removing a block whose filament has nowhere to go, reading $(l)Spool Missing or Full$(): give it room at that tier, in a spool or a cable rack. Filament is never voided. Changing the region or mode cancels the job cleanly and re-arms the Start gate."
+      "text": "Toggle $(l)Print / Decon$() in the GUI. With no armed region it reads $(l)No Region Set$(). The region shows as a $(c:red)red wireframe$().$(br2)The $(l)first$() job after arming always needs $(l)Start$(): Auto never fires on a fresh region, so nothing dissolves by surprise.$(br2)Jobs work top-down and pause $(l)before$() a block whose filament has nowhere to go. Filament is never voided."
     },
     {
       "type": "patchouli:text",
       "title": "Which Mode Am I In?",
-      "text": "The $(l)Print / Decon$() button names the mode you are $(o)in$(), not the one it switches you to - but a button reading $(l)Decon$() is easy to read the other way round, and the two modes do very different things to the blocks in front of you.$(br2)So the $(l)Auto$() button only exists in $(l)Print$() mode. $(l)See Auto, you are printing. No Auto, you are deconstructing.$() Auto still governs a deconstruct once its first Start is given; toggling it means flipping back to Print for a moment."
+      "text": "The $(l)Print / Decon$() button names the mode you are $(o)in$(), not the one it switches to, which is easy to read backwards.$(br2)So the $(l)Auto$() button only exists in Print mode. $(l)See Auto, you are printing. No Auto, you are deconstructing.$()"
     },
     {
       "type": "patchouli:text",
       "title": "Un-printing",
-      "text": "Printed something you didn't want? Just flip the machine to $(l)Decon$(). With no region of its own it arms an $(l)un-print$() of the last build it printed and the status reads $(l)Ready: Un-print$(). Press $(l)Start$() and the build dissolves.$(br2)An un-print is $(l)masked$(): only the blocks that print actually laid down, still unchanged, are taken. The ground underneath and anything you added inside the footprint are left alone. Cells the print found $(l)already correct$() are left too - repair-mode blocks were never the machine's work. It's $(l)one-shot$(): once it finishes, the machine disarms.$(br2)Handing over a scanner selection replaces this with a plain region, which takes $(o)everything$() in the box."
+      "text": "Printed something you did not want? Flip to $(l)Decon$(). With no region of its own it arms an $(l)un-print$() of the last build; press $(l)Start$() and it dissolves.$(br2)An un-print is $(l)masked$(): only blocks the print actually laid down, still unchanged, are taken. Anything you added is left alone.$(br2)It is one-shot. The machine disarms when it finishes."
     },
     {
       "type": "patchouli:text",

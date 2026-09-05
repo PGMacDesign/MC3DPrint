@@ -6,7 +6,7 @@
   "pages": [
     {
       "type": "patchouli:text",
-      "text": "Every printer has upgrade slots that grow with its tier (a Tier 3 printer has 3, topping out at 8). Shift+Right Click a module onto the machine to install it, or drop it into an upgrade slot in the GUI:$(br)$(li)$(item)Speed$(): faster printing$(li)$(item)Efficiency$(): less FU per print$(li)$(item)RF Efficiency$(): less RF power used per print$(li)$(item)Buffer$(): bigger RF tank$(li)$(item)Redstone$(): signal out while working$(br2)At most $(l)4 of any one type$() per machine, and only $(l)1$() Redstone."
+      "text": "Upgrade slots grow with tier, from 3 to 8. Shift+Right Click a module onto the machine, or drop it into a slot:$(li)$(item)Speed$(): faster printing$(li)$(item)Efficiency$(): less FU per print$(li)$(item)RF Efficiency$(): less power$(li)$(item)Buffer$(): bigger RF tank$(li)$(item)Redstone$(): signal while working$(br2)Max $(l)4$() of a type, and only $(l)1$() Redstone."
     },
     {
       "type": "patchouli:crafting",
@@ -36,17 +36,17 @@
     {
       "type": "patchouli:text",
       "title": "Redstone Output",
-      "text": "With a $(item)Redstone Module$() installed, the machine emits a $(l)full-strength$() weak signal from all six faces $(l)while it is working$() (printing or deconstructing), and nothing otherwise.$(br2)A $(l)paused$() machine reads 0: out of power, output full, obstructed, out of filament, zone conflict, waiting, or idle. The signal answers 'is this machine busy right now', so an $(l)inverted$() signal on a lamp lights the moment a print stalls."
+      "text": "With a $(item)Redstone Module$() the machine emits a $(l)full-strength$() signal from all six faces $(l)while working$(), and nothing otherwise.$(br2)A $(l)paused$() machine reads 0, whatever the reason. So an $(l)inverted$() signal on a lamp lights the moment a print stalls."
     },
     {
       "type": "patchouli:text",
       "title": "Wiring It Up",
-      "text": "On a fabricator only the $(l)controller$() emits, never the casings, so run your dust $(l)above or below$() it (the horizontal faces are casing once formed). Same as the redstone start input.$(br2)It $(l)will not restart itself$(): while the machine is emitting, an incoming rising edge never queues a start, so feeding its own output back in cannot loop a reprint. The tradeoff: a pulse arriving mid-print is ignored, not queued as a re-run."
+      "text": "On a fabricator only the $(l)controller$() emits, so run dust $(l)above or below$() it. Same as the redstone start input.$(br2)It $(l)will not restart itself$(): while emitting, a rising edge never queues a start, so feeding its output back in cannot loop."
     },
     {
       "type": "patchouli:text",
       "title": "Module Or Comparator",
-      "text": "Every printer already answers a $(l)comparator$() with its job progress, for $(l)free$(). The module earns its slot because the two disagree where it matters:$(br)$(li)$(l)Idle$(): both read 0$(li)$(l)Printing$(): module 15, comparator 1-15$(li)$(l)Stalled$(): module $(l)0$(), comparator $(l)stays non-zero$()$(br2)A stalled machine still has work loaded, so the comparator stays up. Use the comparator for a progress bar, the module to catch a stall."
+      "text": "A comparator already reads job progress for free. The module earns its slot where the two disagree:$(li)$(l)Idle$(): both 0$(li)$(l)Printing$(): module 15, comparator 1-15$(li)$(l)Stalled$(): module $(l)0$(), comparator non-zero$(br2)Comparator for a progress bar, module to catch a stall."
     },
     {
       "type": "patchouli:text",

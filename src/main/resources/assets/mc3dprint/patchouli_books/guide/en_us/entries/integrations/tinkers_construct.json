@@ -6,7 +6,7 @@
   "pages": [
     {
       "type": "patchouli:text",
-      "text": "$(l)Tinkers' Construct$() is about building your own tools. You cast and assemble them from separate parts, each of a different material, then keep modifying them instead of crafting a replacement.$(br2)Its $(l)Smeltery$() melts and alloys metals, and that is the part MC3DPrint has to care about: a Smeltery alloy is not a crafting recipe, so its value cannot be derived."
+      "text": "$(l)Tinkers' Construct$() is about building your own tools: cast and assemble them from parts, then keep modifying them.$(br2)Its $(l)Smeltery$() alloys metals, and that is the part MC3DPrint cares about: an alloy is not a crafting recipe, so its value cannot derive."
     },
     {
       "type": "patchouli:text",

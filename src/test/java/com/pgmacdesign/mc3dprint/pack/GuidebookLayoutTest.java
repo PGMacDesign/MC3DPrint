@@ -70,4 +70,76 @@ class GuidebookLayoutTest {
                 "page titles longer than " + MAX_TITLE + " characters clip on the page: "
                         + String.join("; ", tooLong));
     }
+
+    /** Characters that fit on one rendered line, measured off a screenshot at the default font. */
+    private static final int CHARS_PER_LINE = 30;
+    /** Lines a page body gets: first page loses room to the entry title and its registry-id subtitle. */
+    private static final int LINES_FIRST = 12, LINES_TITLED = 15, LINES_PLAIN = 17;
+
+    /**
+     * Patchouli does not scroll or paginate a text page: a body too long for the box is shrunk and
+     * then simply cut off mid-sentence, which is how a whole guide chapter shipped ending in
+     * "does not exist." with the rest of the sentence gone.
+     *
+     * <p>Counted in estimated rendered lines rather than characters because the formatting macros
+     * ({@code $(l)}, {@code $(br2)}, {@code $(li)}) are directives, not glyphs: a raw character
+     * count measures the markup as if the reader could see it.
+     */
+    @Test
+    void noPageBodyOverflowsTheBox() throws IOException {
+        Path entries = repoRoot().resolve(
+                "src/main/resources/assets/mc3dprint/patchouli_books/guide/en_us/entries");
+        assertTrue(Files.isDirectory(entries), "guide entries directory is missing: " + entries);
+        List<String> tooLong = new ArrayList<>();
+        try (Stream<Path> files = Files.walk(entries)) {
+            for (Path f : files.filter(p -> p.toString().endsWith(".json")).toList()) {
+                JsonObject entry = JsonParser.parseString(Files.readString(f)).getAsJsonObject();
+                if (!entry.has("pages")) {
+                    continue;
+                }
+                var pages = entry.getAsJsonArray("pages");
+                for (int i = 0; i < pages.size(); i++) {
+                    JsonObject obj = pages.get(i).getAsJsonObject();
+                    if (!obj.has("text")) {
+                        continue;
+                    }
+                    int budget = i == 0 ? LINES_FIRST
+                            : (obj.has("title") ? LINES_TITLED : LINES_PLAIN);
+                    int used = renderedLines(obj.get("text").getAsString());
+                    if (used > budget) {
+                        tooLong.add(f.getFileName() + " page " + i + " needs " + used
+                                + " lines but has " + budget);
+                    }
+                }
+            }
+        }
+        assertTrue(tooLong.isEmpty(),
+                "page bodies that run off the page: " + String.join("; ", tooLong));
+    }
+
+    /** Estimated rendered line count: macros stripped, breaks honoured, greedy word wrap. */
+    private static int renderedLines(String text) {
+        String body = text.replace("$(br2)", "\n\n").replace("$(br)", "\n")
+                .replace("$(li)", "\n").replaceAll("\\$\\([^)]*\\)", "");
+        int total = 0;
+        for (String para : body.split("\n", -1)) {
+            if (para.isBlank()) {
+                total++;
+                continue;
+            }
+            int used = 0;
+            int wrapped = 0;
+            for (String word : para.trim().split("\\s+")) {
+                int add = word.length() + (used > 0 ? 1 : 0);
+                if (used + add > CHARS_PER_LINE) {
+                    wrapped++;
+                    used = word.length();
+                } else {
+                    used += add;
+                }
+            }
+            total += wrapped + 1;
+        }
+        return total;
+    }
 }

@@ -6,7 +6,7 @@
   "pages": [
     {
       "type": "patchouli:text",
-      "text": "Winding is $(l)exact-tier$(): cobblestone only winds into a T1 spool, netherite only into a T6. Feed eight winders from one chest and you normally need a hand-built sort line per tier.$(br2)The $(item)Filament Tier Item Sorter$() does it for you. Drop items into its $(l)9-slot pool$() and each one is delivered to the winder holding a spool of $(l)that item's tier$()."
+      "text": "Winding is $(l)exact-tier$(), so feeding eight winders from one chest normally needs a hand-built sort line per tier.$(br2)The $(item)Filament Tier Item Sorter$() does it for you: drop items into its $(l)9-slot pool$() and each goes to the winder holding a spool of that tier."
     },
     {
       "type": "patchouli:text",
@@ -21,17 +21,17 @@
     {
       "type": "patchouli:text",
       "title": "Catching Rejects",
-      "text": "Put a $(item)chest$() against $(l)any face$() of the sorter and un-windable items are pushed into it instead of refused, so you can aim a completely unsorted stream at the sorter.$(br2)Any container works: chest, barrel, hopper, or another mod's pipe. Attach several and it fills them in turn, $(l)splitting a stack$() if the first runs out of room, so there's $(l)nothing to configure$().$(br2)MC3DPrint machines are $(l)never$() used as the target, so an adjacent winder won't get handed junk."
+      "text": "Put a $(item)chest$() against $(l)any face$() and un-windable items are pushed into it instead of refused, so you can aim an unsorted stream at the sorter.$(br2)Any container works. Attach several and it fills them in turn, $(l)splitting a stack$() if one runs out of room.$(br2)MC3DPrint machines are never used as the target."
     },
     {
       "type": "patchouli:text",
       "title": "When It Fills",
-      "text": "Once the chest is full the sorter goes back to refusing. Nothing is voided and nothing drops on the floor: your hoppers just back up, the same signal as a full pool.$(br2)With $(l)no container attached$() nothing changes from before: un-windable items are turned away at the door, including shift-clicks by hand.$(br2)Don't wire one pipe to both feed the sorter and drain the reject chest, or the junk will loop between them. Nothing is lost, but it $(l)won't stop on its own$() while something keeps emptying that chest.$(br2)If a pooled item stops being windable later, it leaves the same way, as long as routing is on and a target has room.$(br2)Reject routing is $(l)on by default$(). $(l)rejectRouting$() in the config turns off only that, never the sorter."
+      "text": "Once the chest is full the sorter refuses again. Nothing is voided: your hoppers back up, the same signal as a full pool.$(br2)Do not wire one pipe to both feed the sorter and drain the reject chest, or the junk will loop between them.$(br2)Reject routing is $(l)on by default$(); $(l)rejectRouting$() turns off only that, never the sorter."
     },
     {
       "type": "patchouli:text",
       "title": "What It Holds",
-      "text": "Everything else is kept and retried: no winder of that tier yet, the winder's input slot is busy, or its spool has no room.$(br2)Items are $(l)never voided$(). When the pool fills up, your hoppers back up. That's the signal. The GUI shows a per-tier readout ($(l)how many are waiting$() and $(l)how many winders$() it can see) so you know which tier is stuck.$(br2)The pool is a $(l)one-way funnel$(): a hopper can feed it, but nothing can pull items back out."
+      "text": "Everything else is kept and retried: no winder of that tier yet, its input slot busy, or its spool full.$(br2)Items are $(l)never voided$(). The GUI shows a per-tier readout of how many wait and how many winders it can see, so you know which tier is stuck.$(br2)The pool is a $(l)one-way funnel$()."
     },
     {
       "type": "patchouli:text",

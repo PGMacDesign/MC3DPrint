@@ -6,7 +6,7 @@
   "pages": [
     {
       "type": "patchouli:text",
-      "text": "The deepest integration in the mod. AE2 adds the $(l)MC3DPrint Terminal$(): a cable part that lists everything your networked printers and formed Fabricators can make, and orders it paid in $(l)Filament Units$() instead of ingredients.$(br2)It $(l)dispatches$() rather than crafts. An order queues a job on a real machine, which does the work at its normal speed, RF draw and filament cost."
+      "text": "The deepest integration in the mod. AE2 adds the $(l)MC3DPrint Terminal$(): a cable part that lists what your networked machines can make and orders it, paid in $(l)Filament Units$().$(br2)It $(l)dispatches$() rather than crafts: an order queues a job on a real machine."
     },
     {
       "type": "patchouli:text",

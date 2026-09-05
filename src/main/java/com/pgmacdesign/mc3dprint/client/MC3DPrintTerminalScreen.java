@@ -48,14 +48,16 @@ public class MC3DPrintTerminalScreen extends AbstractContainerScreen<MC3DPrintTe
     private static final int GREY_WASH = 0xB0121620;
 
     private static final int WIDTH = 258, HEIGHT = 222;
-    private static final int GRID_X = 46, GRID_Y = 36, CELL = 18;
-    private static final int RAIL_X = 8, RAIL_Y = 36, RAIL_W = 34, RAIL_ROW = 13;
+    private static final int GRID_X = 58, GRID_Y = 36, CELL = 18;
+    // RAIL_W fits "T8" plus a four-character amount plus padding. At 34 the two strings
+    // overlapped, which read as a single garbled token rather than a tier and a total.
+    private static final int RAIL_X = 8, RAIL_Y = 36, RAIL_W = 46, RAIL_ROW = 13;
     /** Selection + quantity + Print, in the gap between the grid and the order list. */
     private static final int ACTION_Y = 146, ACTION_H = 13;
     private static final int MINUS_X = 158, QTY_X = 170, QTY_W = 26, PLUS_X = 196,
             STEP_W = 12, PRINT_X = 224, PRINT_W = 26;
     /** Draggable scrollbar down the right edge of the catalog grid. */
-    private static final int SCROLL_X = 210, SCROLL_W = 8, SCROLL_MIN_THUMB = 12;
+    private static final int SCROLL_X = 222, SCROLL_W = 8, SCROLL_MIN_THUMB = 12;
     private static final int ORDERS_X = 8, ORDERS_Y = 160, ORDER_LINE = 10;
 
     /**
@@ -74,9 +76,11 @@ public class MC3DPrintTerminalScreen extends AbstractContainerScreen<MC3DPrintTe
     private int orderQty = 1;
     /** True while the left button is held on the scrollbar. */
     private boolean draggingScroll;
-    private static final int SEARCH_X = 46, SEARCH_Y = 20, SEARCH_W = 136, SEARCH_H = 12;
+    private static final int SEARCH_X = 58, SEARCH_Y = 20, SEARCH_W = 162, SEARCH_H = 12;
 
     private EditBox searchBox;
+    /** Typable order quantity. The -/+ buttons write into it so there is one source of truth. */
+    private EditBox qtyBox;
 
     public MC3DPrintTerminalScreen(MC3DPrintTerminalMenu menu, Inventory playerInventory,
                                    Component title) {
@@ -105,6 +109,24 @@ public class MC3DPrintTerminalScreen extends AbstractContainerScreen<MC3DPrintTe
         searchBox.setValue(menu.search());
         searchBox.setResponder(menu::setSearch);
         addRenderableWidget(searchBox);
+
+        qtyBox = new EditBox(this.font, leftPos + QTY_X, topPos + ACTION_Y + 2,
+                QTY_W, ACTION_H - 3, Component.translatable("gui.mc3dprint.terminal.quantity"));
+        qtyBox.setMaxLength(4);
+        qtyBox.setBordered(false);
+        qtyBox.setTextColor(LABEL);
+        // Digits only. Without the filter a pasted "12a" would parse to 12 and silently discard
+        // what was typed, which reads as the field eating input.
+        qtyBox.setFilter(v -> v.chars().allMatch(Character::isDigit));
+        qtyBox.setValue(Integer.toString(orderQty));
+        // An empty box is a legal thing to be mid-edit, so it holds the last valid quantity
+        // rather than snapping to 1 the moment the last digit is deleted.
+        qtyBox.setResponder(v -> {
+            if (!v.isEmpty()) {
+                orderQty = clampQty(Integer.parseInt(v));
+            }
+        });
+        addRenderableWidget(qtyBox);
         setInitialFocus(searchBox);
     }
 
@@ -207,7 +229,14 @@ public class MC3DPrintTerminalScreen extends AbstractContainerScreen<MC3DPrintTe
     }
 
     private void setQty(int qty) {
-        orderQty = Math.max(1, Math.min(qty,
+        orderQty = clampQty(qty);
+        if (qtyBox != null) {
+            qtyBox.setValue(Integer.toString(orderQty));
+        }
+    }
+
+    private static int clampQty(int qty) {
+        return Math.max(1, Math.min(qty,
                 com.pgmacdesign.mc3dprint.machine.terminal.TerminalRequests.MAX_ORDER_QUANTITY));
     }
 
@@ -297,8 +326,8 @@ public class MC3DPrintTerminalScreen extends AbstractContainerScreen<MC3DPrintTe
                 x + ORDERS_X + 3, y + ACTION_Y + 3, sel.orderable() ? LABEL : LABEL_DIM);
 
         drawButton(g, x, y, MINUS_X, STEP_W, "-", true);
-        String qty = Integer.toString(orderQty);
-        str(g, qty, x + QTY_X + (QTY_W - font.width(qty)) / 2, y + ACTION_Y + 3, LABEL);
+        // Well behind the quantity field, so it reads as typable rather than as a label.
+        g.fill(x + QTY_X - 1, y + ACTION_Y, x + QTY_X + QTY_W + 1, y + ACTION_Y + ACTION_H, WELL);
         drawButton(g, x, y, PLUS_X, STEP_W, "+", true);
         drawButton(g, x, y, PRINT_X, PRINT_W, "Print", sel.orderable());
     }
@@ -514,6 +543,9 @@ public class MC3DPrintTerminalScreen extends AbstractContainerScreen<MC3DPrintTe
             return true;
         }
         if (inBar(mouseX, mouseY, PRINT_X, PRINT_W)) {
+            // Normalise what is on screen before ordering. Typing "0" leaves a legal-looking box
+            // showing a quantity the order would never use.
+            setQty(orderQty);
             CatalogEntry sel = selectedEntry();
             if (sel != null && sel.orderable()) {
                 sendOrder(TerminalOrderPacket.order(
