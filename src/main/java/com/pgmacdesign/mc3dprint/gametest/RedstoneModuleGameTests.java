@@ -266,8 +266,25 @@ public class RedstoneModuleGameTests {
                 }
             });
         });
-        helper.runAfterDelay(80, () -> {
+        // Checked 8 ticks after the refill rather than 30, because the nine-block print can
+        // finish inside a 30-tick window and a finished job reads 0 for the right reason. CI hit
+        // exactly that and reported it as "expected 15 but read 0", which describes the symptom
+        // and hides the cause.
+        helper.runAfterDelay(58, () -> {
+            if (printer.activeJob() == null) {
+                helper.fail("The job finished before the resume could be observed; this test needs"
+                        + " a blueprint big enough to still be printing here");
+                return;
+            }
             assertSignal(helper, PRINTER_POS, 15, "after the stall cleared");
+        });
+        // Kept so the later window is still covered: whichever way the job went by now, the
+        // signal has to agree with it. Dropping this check would let a signal that returns and
+        // then dies again pass.
+        helper.runAfterDelay(80, () -> {
+            boolean running = printer.activeJob() != null;
+            assertSignal(helper, PRINTER_POS, running ? 15 : 0,
+                    running ? "still printing after the stall cleared" : "once the print finished");
             helper.succeed();
         });
     }
