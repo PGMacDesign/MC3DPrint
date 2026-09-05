@@ -7,7 +7,7 @@
     {
       "type": "patchouli:text",
       "title": "Getting Blueprints",
-      "text": "Two ways:$(li)$(l)Scan$() your own builds with the $(item)Structure Scanner$()$(li)$(l)Find$() curated discs in any structure chest, or by brushing archaeology sites$(br2)Operators can also import $(l).schem$(), $(l).litematic$() and $(l).nbt$() files with $(o)/mc3dprint import$()."
+      "text": "Two ways for players:$(li)$(l)Scan$() your own builds with the $(item)Structure Scanner$()$(li)$(l)Find$() curated discs in any structure chest, or by brushing archaeology sites$(br2)Operators can also import $(l).schem$(), $(l).litematic$() and $(l).nbt$() files with $(o)/mc3dprint import$()."
     },
     {
       "type": "patchouli:text",

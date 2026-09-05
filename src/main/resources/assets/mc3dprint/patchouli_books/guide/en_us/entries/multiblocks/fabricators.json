@@ -6,7 +6,7 @@
   "pages": [
     {
       "type": "patchouli:text",
-      "text": "Tiers 5-8 are $(l)Fabricators$(): a square base of $(item)Printer Casing$() with a controller in the center. They print bigger, faster and cheaper.$(li)$(l)T5$(): 3x3$(li)$(l)T6$(): 5x5$(li)$(l)T7$(): 7x7$(li)$(l)T8$(): 9x9"
+      "text": "Tiers 5-8 are $(l)Fabricators$(): a square base of $(item)Printer Casing$() with a controller in the center. They print bigger, faster and cheaper.$(li)$(l)T5$(): 3x3$(li)$(l)T6$(): 5x5$(li)$(l)T7$(): 7x7$(li)$(l)T8$(): 9x9, with $(item)Awakened Draconium$() corners"
     },
     {
       "type": "patchouli:crafting",

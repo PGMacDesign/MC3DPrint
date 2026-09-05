@@ -16,7 +16,7 @@
     {
       "type": "patchouli:text",
       "title": "What It Accepts",
-      "text": "Winding is $(l)exact-tier$(): a material only winds into a spool of its own tier, or the GUI reads $(l)Requires Tier X Spool$().$(br2)Unpriced items read $(l)Can't be converted$(). Trivially farmable drops are held back so they cannot be laundered.$(br2)With $(l)Mystical Agradditions$() the $(item)Nether Star$() and $(item)Dragon Egg$() join that list, since it farms both."
+      "text": "Winding is $(l)exact-tier$(): a material only winds into a spool of its own tier, or the GUI reads $(l)Requires Tier X Spool$().$(br2)Unpriced items read $(l)Can't be converted$(). Trivially farmable drops are held back so they cannot be laundered.$(br2)With $(l)Mystical Agradditions$() the $(item)Nether Star$() and $(item)Dragon Egg$() stop winding. $(l)Without$() it, they wind as always."
     },
     {
       "type": "patchouli:spotlight",

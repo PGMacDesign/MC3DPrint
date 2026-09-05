@@ -21,7 +21,7 @@
     {
       "type": "patchouli:text",
       "title": "Matter Calculator",
-      "text": "With a disc loaded the GUI shows the whole bill: total FU and time, and the gauge tooltip breaks it down per tier against what is on hand.$(br2)If a tier cannot be covered the line turns red and names it, so you fix the spools $(l)before$() committing filament.$(br2)$(l)Cancel$() is always safe: restarting $(l)repairs$(), and placed blocks re-cover at zero cost."
+      "text": "With a disc loaded the GUI shows the whole bill: total FU and time, and the gauge tooltip breaks it down per tier against what is on hand.$(br2)If a tier cannot be covered the line turns red and names it, so you fix the spools $(l)before$() committing filament.$(br2)$(l)Cancel$() keeps your progress: placed blocks and spent FU stand, and restarting re-covers them at zero cost."
     },
     {
       "type": "patchouli:spotlight",

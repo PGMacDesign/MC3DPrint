@@ -2722,6 +2722,7 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
     @Override
     public void onLoad() {
         super.onLoad();
+        MachineAttachments.load(this);
         // re-claim zone + chunk tickets for a job restored from disk
         if (activeJob != null && level instanceof ServerLevel serverLevel) {
             PrintZoneManager.claim(serverLevel, worldPosition, jobBox());
@@ -2732,6 +2733,18 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             PrintZoneManager.claim(serverLevel, worldPosition, box);
             forceChunks(serverLevel, box, true);
         }
+    }
+
+    @Override
+    public void setRemoved() {
+        super.setRemoved();
+        MachineAttachments.unload(this);
+    }
+
+    @Override
+    public void onChunkUnloaded() {
+        super.onChunkUnloaded();
+        MachineAttachments.unload(this);
     }
 
     // --- Client sync (renderer needs the active job + last placement) ---
