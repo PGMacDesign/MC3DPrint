@@ -30,7 +30,7 @@ Items you cannot order stay in the list, greyed, with the reason in the tooltip:
 - **Restricted trophy**, for items only ever placed by an official blueprint
 - **Not enough filament at this tier**
 
-Nothing stocked is hidden. A greyed row tells you what to go build, and the catalog does not reshuffle under your cursor as your filament rises and falls.
+Nothing stocked with a Filament Unit value is hidden. A greyed row tells you what to go build, and the catalog does not reshuffle under your cursor as your filament rises and falls.
 
 Search matches both the display name and the registry id, so typing a mod id narrows things down when two mods ship an item with the same name.
 
