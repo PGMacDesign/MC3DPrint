@@ -28,7 +28,7 @@
     {
       "type": "patchouli:text",
       "title": "The Catalog",
-      "text": "Every stocked item that carries a price appears, sorted by tier then cost.$(br2)Things you $(l)cannot$() order stay listed and greyed, with the reason: needs a higher tier, wind-only, restricted trophy, or not enough filament.$(br2)Nothing stocked is hidden, so a greyed row tells you what to go build, and the grid does not reshuffle under your cursor as filament moves.$(br2)Search matches the item name $(l)and$() its registry id."
+      "text": "Every stocked item that carries a price appears, sorted by tier then cost.$(br2)Things you $(l)cannot$() order stay listed and greyed, with the reason: needs a higher tier, wind-only, restricted trophy, or not enough filament.$(br2)Nothing stocked and priced is hidden, so a greyed row tells you what to go build, and the grid does not reshuffle under your cursor as filament moves.$(br2)Scroll with the wheel, or drag the bar down the right edge. Search matches the item name $(l)and$() its registry id."
     },
     {
       "type": "patchouli:text",
