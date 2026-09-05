@@ -1,0 +1,17 @@
+{
+  "name": "JEI and Patchouli",
+  "category": "mc3dprint:integrations",
+  "icon": "minecraft:writable_book",
+  "sortnum": 4,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "$(l)Just Enough Items$() gets two extra recipe categories from MC3DPrint.$(br2)The first shows what any item costs to $(l)print$(): its Filament Unit price and the machine tier it needs.$(br2)The second shows what is $(l)inside$() a Blueprint Disc, so you can check a build's contents before printing it."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "$(l)Patchouli$() is what you are reading. The Fabricator's Handbook is craftable from an $(item)Extrudium Crystal$() and a $(item)Book$(), or handed out with $(l)/mc3dprint guide$().$(br2)Both are optional. Without JEI you lose the lookup, not the mechanic; without Patchouli there is no book, and nothing else changes.",
+      "title": "The Handbook"
+    }
+  ]
+}

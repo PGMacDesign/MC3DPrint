@@ -1,0 +1,27 @@
+{
+  "name": "Applied Energistics 2",
+  "category": "mc3dprint:integrations",
+  "icon": "mc3dprint:filament_converter",
+  "sortnum": 1,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "The deepest integration in the mod. AE2 adds the $(l)MC3DPrint Terminal$(): a cable part that lists everything your networked printers and formed Fabricators can make, and orders it paid in $(l)Filament Units$() instead of ingredients.$(br2)It $(l)dispatches$() rather than crafts. An order queues a job on a real machine, which does the work at its normal speed, RF draw and filament cost."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "The terminal uses a $(l)channel$(), like AE2's own terminals, so a busy network wants a dense cable or a controller.$(br2)Finished items go into ME storage. Orders belong to whoever placed them, and only the placer can cancel one.$(br2)See the Terminal entry under Machines for the full rules.",
+      "title": "Ordering"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "The $(l)Filament Converter$() is often assumed to be an AE2 block. It is not, and never was: it asks each neighbouring block for an item handler, which an ME Interface answers just as well as a chest, hopper or pipe.$(br2)It works in a pack with no AE2 at all.",
+      "title": "The Converter Is Not AE2"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "Ten AE2 materials carry pinned values: certus quartz and its dust sit at $(l)Tier 2$(), capped to amethyst because certus is auto-farmable; the network backbone and the Inscriber processors sit at $(l)Tier 3$(); and the engineering processor sits at $(l)Tier 5$(), which pulls the controller, drives and quantum ring up with it.",
+      "title": "Values"
+    }
+  ]
+}

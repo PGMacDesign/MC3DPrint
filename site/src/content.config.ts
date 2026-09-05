@@ -9,7 +9,7 @@ const guide = defineCollection({
   loader: glob({ pattern: "**/*.md", base: "./src/content/guide" }),
   schema: z.object({
     title: z.string(),
-    category: z.enum(["Basics", "Machines", "Multiblocks", "Resins"]),
+    category: z.enum(["Basics", "Machines", "Multiblocks", "Resins", "Integrations"]),
     order: z.number(),
     summary: z.string(),
   }),

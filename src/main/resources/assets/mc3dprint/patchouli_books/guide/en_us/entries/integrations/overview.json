@@ -1,0 +1,27 @@
+{
+  "name": "How Integration Works",
+  "category": "mc3dprint:integrations",
+  "icon": "mc3dprint:mc3dcable",
+  "sortnum": 0,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "MC3DPrint has no required dependencies. Every mod below is a $(l)soft$() dependency: if you have it, MC3DPrint knows about it; if you do not, nothing happens at all.$(br2)\"Nothing\" means nothing: no crash, no missing-item warnings, no stray config entries, and nothing extra in the creative tab. A mod that is absent is invisible."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "Most modded items get a $(l)Filament Unit$() value for free. MC3DPrint reads ordinary crafting and smelting recipes and works the value out from the ingredients, so a mod's whole tree usually prices itself from a handful of raw materials.$(br2)What it $(l)cannot$() read is a custom machine: a Smeltery alloy, an Inscriber press, a reagent chamber. Those are dead ends, so MC3DPrint pins them by hand.",
+      "title": "Values Come For Free"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "Pinned values follow the same $(l)abundance rule$() as everything else: a material cannot sit at a tier whose spool could print something rarer than the material itself.$(br2)That is why a farmable alloy lands near iron and a Nether-mined one lands near blaze rods, regardless of how expensive its own mod considers it.",
+      "title": "The Abundance Rule"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "Two mods change what MC3DPrint can $(l)do$(), not just what things cost:$(br2)$(l)Applied Energistics 2$() adds the MC3DPrint Terminal.$(br2)$(l)Draconic Evolution$() unlocks the Tier 8 Fabricator.$(br2)Everything else contributes material values.",
+      "title": "Two Are Different"
+    }
+  ]
+}
