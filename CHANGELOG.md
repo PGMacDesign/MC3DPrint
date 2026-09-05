@@ -16,8 +16,9 @@ Terminal lets an ME network order prints paid in Filament Units.
   does the work at its normal speed, RF draw and filament cost, so an order costs exactly what
   printing the same item by hand costs. An order binds to one machine and a machine runs one order at
   a time, so two orders never spend the same spools. Interruptions **hold** rather than fail: no
-  filament, no power, nowhere to put the output, or the machine losing its channel all pause and
-  resume, and an order held with nowhere to deliver spends nothing. Filament is spent if and only if
+  filament, no power, nowhere to put the output, or the terminal losing its channel all pause and
+  resume, and an order held with nowhere to deliver spends nothing. A machine that leaves the
+  network releases its order, which then looks for another machine. Filament is spent if and only if
   an item is delivered. Orders record who placed them and only the placer may cancel one, since the
   order book is shared by everyone on the network. Finished items go to ME storage. It **uses a
   channel**, like AE2's own terminals, so a busy network wants a dense cable or a controller; with

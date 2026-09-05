@@ -8,7 +8,7 @@
     {
       "type": "patchouli:text",
       "title": "MC3DPrint Terminal",
-      "text": "An $(l)Applied Energistics 2$() cable part that lists what your printers and formed Fabricators (T5-T8) can make and orders it, paid in $(l)Filament Units$() instead of ingredients.$(br2)It $(l)dispatches$(), it does not craft: ordering queues a job on a real machine, which does the work at its normal speed, RF draw and filament cost. An order costs exactly what printing it by hand would.$(br2)It uses a $(l)channel$(), like AE2's own terminals, so it needs a dense cable or a controller once your network is busy. No channel means the screen goes dark and orders wait.$(br2)Needs AE2 installed. Without it, the terminal does not exist."
+      "text": "An $(l)Applied Energistics 2$() cable part that lists what your printers and formed Fabricators (T5-T8) can make and orders it, paid in $(l)Filament Units$() instead of ingredients.$(br2)It $(l)dispatches$(), it does not craft: ordering queues a job on a real machine, which does the work at its normal speed, RF draw and filament cost. An order costs exactly what printing it by hand would.$(br2)It uses a $(l)channel$(), like AE2's own terminals, so it needs a dense cable or a controller once your network is busy. With no channel it goes $(l)offline$(): an open screen closes, nothing new is dispatched, and a running order holds until the network is back. It spends nothing while it holds.$(br2)Needs AE2 installed. Without it, the terminal does not exist."
     },
     {
       "type": "patchouli:text",
