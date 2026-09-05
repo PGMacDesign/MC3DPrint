@@ -10,7 +10,7 @@
     },
     {
       "type": "patchouli:text",
-      "text": "The Tier 8 spool and the Tier 8 Fabricator both take awakened draconium to craft.$(br2)Draconic materials are priced by hand across $(l)Tier 7$() and $(l)Tier 8$(). Base draconium sits at Tier 7; awakened draconium is the only Tier 8 material in the game.",
+      "text": "The Tier 8 spool and the Tier 8 Fabricator both take awakened draconium to craft.$(br2)Draconic materials are priced by hand across $(l)Tier 7$() and $(l)Tier 8$(). Base draconium sits at Tier 7; awakened draconium is the mod's only $(l)Tier 8$() material, and one of very few at that tier anywhere.",
       "title": "Tier 7 and 8"
     }
   ]
