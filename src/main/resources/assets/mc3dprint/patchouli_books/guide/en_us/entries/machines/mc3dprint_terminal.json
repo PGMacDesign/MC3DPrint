@@ -17,7 +17,7 @@
     },
     {
       "type": "patchouli:text",
-      "title": "Why A Tier Is Greyed",
+      "title": "Why A Tier Greys",
       "text": "A tier is orderable when your $(l)best machine's tier$() is at least that tier. A Tier 4 printer prints Tier 1 to Tier 4 and nothing above, however much filament you have.$(br2)So $(o)Needs a T6 machine; your best is T4$() means build or connect a bigger machine. It is not a filament problem and not a wiring problem.$(br2)Distance never matters: a machine is either touching the network or it is not."
     },
     {
@@ -37,7 +37,7 @@
     },
     {
       "type": "patchouli:text",
-      "title": "Taking a Machine Back",
+      "title": "Taking It Back",
       "text": "Load a disc, or drop an item in a printer's template slot, and that machine is yours again at once.$(br2)Any terminal order it was running is handed back to the queue and finds somewhere else to run. A terminal order $(l)never$() interrupts work you started by hand."
     },
     {

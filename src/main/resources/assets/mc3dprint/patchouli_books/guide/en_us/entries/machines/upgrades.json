@@ -45,7 +45,7 @@
     },
     {
       "type": "patchouli:text",
-      "title": "Module or Comparator?",
+      "title": "Module Or Comparator",
       "text": "Every printer already answers a $(l)comparator$() with its job progress, for $(l)free$(). The module earns its slot because the two disagree where it matters:$(br)$(li)$(l)Idle$(): both read 0$(li)$(l)Printing$(): module 15, comparator 1-15$(li)$(l)Stalled$(): module $(l)0$(), comparator $(l)stays non-zero$()$(br2)A stalled machine still has work loaded, so the comparator stays up. Use the comparator for a progress bar, the module to catch a stall."
     },
     {

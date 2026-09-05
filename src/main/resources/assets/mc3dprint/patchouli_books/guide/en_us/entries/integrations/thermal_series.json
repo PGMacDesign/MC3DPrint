@@ -1,0 +1,17 @@
+{
+  "name": "Thermal Series",
+  "category": "mc3dprint:integrations",
+  "icon": "minecraft:blaze_powder",
+  "sortnum": 10,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "$(l)Thermal Series$() (Thermal Expansion and friends) is the classic Redstone Flux tech set: dynamos make power, machines spend it, and Servos and Ducts move everything between them.$(br2)Its signature alloys come from the Induction Smelter."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "$(l)Tier 4$(): signalum 35 FU, lumium 40.$(br2)$(l)Tier 5$(): enderium at 90.$(br2)Only three, because everything else Thermal makes is an ordinary furnace or crafting recipe that MC3DPrint already derives on its own. A short list means the derivation is working, not that the mod is unsupported.",
+      "title": "3 pinned values"
+    }
+  ]
+}

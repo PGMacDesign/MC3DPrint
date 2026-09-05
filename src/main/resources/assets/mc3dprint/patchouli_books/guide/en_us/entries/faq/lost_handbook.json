@@ -16,7 +16,7 @@
     },
     {
       "type": "patchouli:text",
-      "title": "Why /give Doesn't Work",
+      "title": "Why /give Fails",
       "text": "This Handbook is a $(l)Patchouli$() book, so its item id is $(o)patchouli:guide_book$() - there is no $(o)mc3dprint:$() id to give.$(br2)A plain $(o)/give$() of that item produces an $(l)unbound$() copy: it reads $(c:red)Invalid book: no ID defined$() and won't open, because the book a stack points at lives in tag data the command doesn't set.$(br2)$(o)/mc3dprint guide$() sets it correctly. Use that instead."
     }
   ]

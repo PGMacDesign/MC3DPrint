@@ -1,0 +1,22 @@
+{
+  "name": "Mystical Agriculture",
+  "category": "mc3dprint:integrations",
+  "icon": "minecraft:wheat_seeds",
+  "sortnum": 9,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "$(l)Mystical Agriculture$() lets you $(l)farm your resources$(). Essence crops grown from special seeds yield iron, diamonds and most modded metals, turning mining into farming.$(br2)That makes it the mod most likely to break an economy, so its pricing is the most conservative here."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "$(l)Tier 1$(): inferium ore in the Nether and the End, 20 FU.$(br2)$(l)Tier 2$(): prosperity ore in both, 4 FU.",
+      "title": "4 pinned values"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "The crops themselves are not pinned; the general rule covers them. A planted crop costs its $(l)seed$(), and seeds cannot be wound back into filament.$(br2)A farm that made its own seeds would otherwise print money, which is exactly the hole this mod would have found first.",
+      "title": "The Crops"
+    }
+  ]
+}

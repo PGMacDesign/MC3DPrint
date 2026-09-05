@@ -1,0 +1,17 @@
+{
+  "name": "Ender IO",
+  "category": "mc3dprint:integrations",
+  "icon": "minecraft:ender_pearl",
+  "sortnum": 6,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "$(l)Ender IO$() is a compact tech mod best known for its $(l)conduits$(): power, items, fluids and redstone all run through one block instead of four parallel pipe runs.$(br2)Its machines run on a ladder of alloys made in the Alloy Smelter, which is why they need pinning."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "$(l)Tier 3$(): redstone alloy 8 FU, copper alloy 12, conductive alloy 18.$(br2)$(l)Tier 4$(): pulsating alloy and soularium 30, energetic alloy 35, dark steel 40.$(br2)$(l)Tier 5$(): vibrant alloy at 55.$(br2)$(l)Tier 6$(): end steel at 90.",
+      "title": "9 pinned values"
+    }
+  ]
+}

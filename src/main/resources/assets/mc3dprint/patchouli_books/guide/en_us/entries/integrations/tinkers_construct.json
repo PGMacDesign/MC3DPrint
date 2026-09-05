@@ -1,0 +1,22 @@
+{
+  "name": "Tinkers' Construct",
+  "category": "mc3dprint:integrations",
+  "icon": "minecraft:anvil",
+  "sortnum": 3,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "$(l)Tinkers' Construct$() is about building your own tools. You cast and assemble them from separate parts, each of a different material, then keep modifying them instead of crafting a replacement.$(br2)Its $(l)Smeltery$() melts and alloys metals, and that is the part MC3DPrint has to care about: a Smeltery alloy is not a crafting recipe, so its value cannot be derived."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "The alloys, plus cobalt because it is $(l)mined$() rather than crafted.$(br2)$(l)Tier 3$(): steel and slimesteel 25-30 FU, amethyst bronze and rose gold 22, pig iron 24, knightslime and knightmetal 30.$(br2)$(l)Tier 4$(): cobalt 30, queen's slime, cinderslime and soulsteel 45.",
+      "title": "16 pinned values"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "$(l)Tier 5$(): hepatizon at 70 FU.$(br2)$(l)Tier 6$(): manyullyn at 130. It alloys cobalt with netherite scrap, so it gates behind netherite-tier filament or down-only printing would launder diamond-tier filament into a debris metal.$(br2)$(l)Tier 2$(): necrotic bone at 15, $(l)wind-only$(). A wither-skeleton farm makes them in bulk, so it is a filament sink and never printable.",
+      "title": "The Top, And A Sink"
+    }
+  ]
+}

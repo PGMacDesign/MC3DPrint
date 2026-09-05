@@ -6,7 +6,7 @@
   "pages": [
     {
       "type": "patchouli:text",
-      "title": "Why did it print immediately?",
+      "title": "Why Print At Once?",
       "text": "$(l)Auto$() defaults $(l)OFF$(). With Auto off, loading a disc only arms the printer ($(l)Ready$()). Press $(l)Start$() (or pulse redstone) to begin. A manual Start prints $(l)one$() item, or runs one structure job.$(br2)Flip $(l)Auto ON$() and the printer starts the moment a printable disc or item lands, and keeps going. If a print began on its own, Auto is on."
     }
   ]

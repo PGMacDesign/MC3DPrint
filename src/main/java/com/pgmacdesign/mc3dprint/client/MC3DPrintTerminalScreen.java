@@ -48,8 +48,14 @@ public class MC3DPrintTerminalScreen extends AbstractContainerScreen<MC3DPrintTe
     private static final int GREY_WASH = 0xB0121620;
 
     private static final int WIDTH = 258, HEIGHT = 222;
-    private static final int GRID_X = 42, GRID_Y = 36, CELL = 18;
-    private static final int RAIL_X = 8, RAIL_Y = 36, RAIL_W = 30, RAIL_ROW = 13;
+    private static final int GRID_X = 46, GRID_Y = 36, CELL = 18;
+    private static final int RAIL_X = 8, RAIL_Y = 36, RAIL_W = 34, RAIL_ROW = 13;
+    /** Selection + quantity + Print, in the gap between the grid and the order list. */
+    private static final int ACTION_Y = 146, ACTION_H = 13;
+    private static final int MINUS_X = 158, QTY_X = 170, QTY_W = 26, PLUS_X = 196,
+            STEP_W = 12, PRINT_X = 224, PRINT_W = 26;
+    /** Draggable scrollbar down the right edge of the catalog grid. */
+    private static final int SCROLL_X = 210, SCROLL_W = 8, SCROLL_MIN_THUMB = 12;
     private static final int ORDERS_X = 8, ORDERS_Y = 160, ORDER_LINE = 10;
 
     /**
@@ -58,7 +64,17 @@ public class MC3DPrintTerminalScreen extends AbstractContainerScreen<MC3DPrintTe
      * cancelled. Client-only: which rows you are looking at is nobody else's business.
      */
     private int orderScroll;
-    private static final int SEARCH_X = 42, SEARCH_Y = 20, SEARCH_W = 140, SEARCH_H = 12;
+
+    /**
+     * What the next Print will order, held as the Item rather than a CatalogEntry because
+     * every sync replaces the entry objects. Null means nothing is selected.
+     */
+    @Nullable
+    private net.minecraft.world.item.Item selectedItem;
+    private int orderQty = 1;
+    /** True while the left button is held on the scrollbar. */
+    private boolean draggingScroll;
+    private static final int SEARCH_X = 46, SEARCH_Y = 20, SEARCH_W = 136, SEARCH_H = 12;
 
     private EditBox searchBox;
 
@@ -122,6 +138,8 @@ public class MC3DPrintTerminalScreen extends AbstractContainerScreen<MC3DPrintTe
 
         drawTierRail(g, x, y);
         drawGrid(g, x, y);
+        drawScrollBar(g, x, y);
+        drawActionBar(g, x, y);
         drawOrders(g, x, y);
     }
 
@@ -134,7 +152,7 @@ public class MC3DPrintTerminalScreen extends AbstractContainerScreen<MC3DPrintTe
             // Tier left, amount right-aligned inside the rail. Both were drawn at the same
             // coordinate before, which stacked them on top of each other.
             String label = "T" + tier;
-            String amount = abbreviate(fu);
+            String amount = com.pgmacdesign.mc3dprint.machine.terminal.FuFormat.abbreviate(fu);
             g.drawString(font, label, x + RAIL_X + 2, ry + 2, colour, false);
             g.drawString(font, amount, x + RAIL_X + RAIL_W - 2 - font.width(amount), ry + 2,
                     colour, false);
@@ -153,6 +171,13 @@ public class MC3DPrintTerminalScreen extends AbstractContainerScreen<MC3DPrintTe
                 int cy = y + GRID_Y + row * CELL;
                 ItemStack stack = entry.stack();
                 g.renderItem(stack, cx + 1, cy + 1);
+                if (selectedItem == entry.item()) {
+                    // Outline rather than fill: the item has to stay readable.
+                    g.fill(cx, cy, cx + CELL, cy + 1, ACCENT);
+                    g.fill(cx, cy + CELL - 1, cx + CELL, cy + CELL, ACCENT);
+                    g.fill(cx, cy, cx + 1, cy + CELL, ACCENT);
+                    g.fill(cx + CELL - 1, cy, cx + CELL, cy + CELL, ACCENT);
+                }
                 if (!entry.orderable()) {
                     // Wash rather than skip: the row stays where it is so the grid does not
                     // reshuffle as filament moves, and the tooltip still explains why.
@@ -160,6 +185,130 @@ public class MC3DPrintTerminalScreen extends AbstractContainerScreen<MC3DPrintTe
                 }
             }
         }
+    }
+
+    /** One branch-specific draw call, so everything above it can be identical on both lines. */
+    private void str(GuiGraphics g, String s, int sx, int sy, int colour) {
+        g.drawString(font, s, sx, sy, colour, false);
+    }
+
+    /** The catalog row for the current selection, re-resolved because sync replaces the entries. */
+    @Nullable
+    private CatalogEntry selectedEntry() {
+        if (selectedItem == null) {
+            return null;
+        }
+        for (CatalogEntry e : menu.catalog()) {
+            if (e.item() == selectedItem) {
+                return e;
+            }
+        }
+        return null;
+    }
+
+    private void setQty(int qty) {
+        orderQty = Math.max(1, Math.min(qty,
+                com.pgmacdesign.mc3dprint.machine.terminal.TerminalRequests.MAX_ORDER_QUANTITY));
+    }
+
+    private boolean inBar(double mouseX, double mouseY, int bx, int bw) {
+        return mouseX >= leftPos + bx && mouseX < leftPos + bx + bw
+                && mouseY >= topPos + ACTION_Y && mouseY < topPos + ACTION_Y + ACTION_H;
+    }
+
+    /**
+     * Select, choose a count, then Print.
+     *
+     * <p>Clicking a cell used to order it on the spot, which spends filament on a single misclick
+     * and gives no way to ask for eleven of something. The click now only selects; nothing is
+     * ordered until Print is pressed.
+     */
+    private int scrollTrackTop() {
+        return topPos + GRID_Y;
+    }
+
+    private int scrollTrackHeight() {
+        return MC3DPrintTerminalMenu.VISIBLE_ROWS * CELL;
+    }
+
+    private int scrollThumbHeight() {
+        int rows = menu.maxScrollRow() + MC3DPrintTerminalMenu.VISIBLE_ROWS;
+        int track = scrollTrackHeight();
+        if (rows <= MC3DPrintTerminalMenu.VISIBLE_ROWS) {
+            return track;
+        }
+        return Math.max(SCROLL_MIN_THUMB, track * MC3DPrintTerminalMenu.VISIBLE_ROWS / rows);
+    }
+
+    private boolean overScrollBar(double mouseX, double mouseY) {
+        return mouseX >= leftPos + SCROLL_X && mouseX < leftPos + SCROLL_X + SCROLL_W
+                && mouseY >= scrollTrackTop() && mouseY < scrollTrackTop() + scrollTrackHeight();
+    }
+
+    /** Maps a pointer position on the track onto a scroll row, thumb-centred. */
+    private void scrollFromMouse(double mouseY) {
+        int max = menu.maxScrollRow();
+        if (max <= 0) {
+            return;
+        }
+        int thumb = scrollThumbHeight();
+        int span = Math.max(1, scrollTrackHeight() - thumb);
+        double pos = mouseY - scrollTrackTop() - thumb / 2.0D;
+        menu.setScrollRow((int) Math.round(pos / span * max));
+    }
+
+    /**
+     * Keeps a drag alive between clicks without overriding mouseDragged or mouseReleased, whose
+     * signatures moved in 1.21.9 the same way mouseClicked's did. Polling the button state here is
+     * one behaviour on every version this ships to.
+     */
+    private void updateScrollDrag(int mouseY) {
+        if (!draggingScroll) {
+            return;
+        }
+        if (net.minecraft.client.Minecraft.getInstance().mouseHandler.isLeftPressed()) {
+            scrollFromMouse(mouseY);
+        } else {
+            draggingScroll = false;
+        }
+    }
+
+    private void drawScrollBar(GuiGraphics g, int x, int y) {
+        int trackX = x + SCROLL_X;
+        int trackY = y + GRID_Y;
+        int track = scrollTrackHeight();
+        g.fill(trackX, trackY, trackX + SCROLL_W, trackY + track, WELL);
+        int max = menu.maxScrollRow();
+        int thumb = scrollThumbHeight();
+        int offset = max <= 0 ? 0 : (track - thumb) * menu.scrollRow() / max;
+        g.fill(trackX + 1, trackY + offset + 1, trackX + SCROLL_W - 1,
+                trackY + offset + thumb - 1, max <= 0 ? LABEL_DIM : ACCENT);
+    }
+
+    private void drawActionBar(GuiGraphics g, int x, int y) {
+        g.fill(x + ORDERS_X - 1, y + ACTION_Y - 1, x + WIDTH - 8, y + ACTION_Y + ACTION_H, WELL);
+        CatalogEntry sel = selectedEntry();
+        if (sel == null) {
+            str(g, "Click an item to select it", x + ORDERS_X + 3, y + ACTION_Y + 3, LABEL_DIM);
+            return;
+        }
+        String name = sel.stack().getHoverName().getString();
+        str(g, trim(name + "  " + sel.fuCost() + " FU @ T" + sel.tier(), MINUS_X - ORDERS_X - 8),
+                x + ORDERS_X + 3, y + ACTION_Y + 3, sel.orderable() ? LABEL : LABEL_DIM);
+
+        drawButton(g, x, y, MINUS_X, STEP_W, "-", true);
+        String qty = Integer.toString(orderQty);
+        str(g, qty, x + QTY_X + (QTY_W - font.width(qty)) / 2, y + ACTION_Y + 3, LABEL);
+        drawButton(g, x, y, PLUS_X, STEP_W, "+", true);
+        drawButton(g, x, y, PRINT_X, PRINT_W, "Print", sel.orderable());
+    }
+
+    private void drawButton(GuiGraphics g, int x, int y, int bx, int bw, String label,
+                            boolean enabled) {
+        g.fill(x + bx, y + ACTION_Y, x + bx + bw, y + ACTION_Y + ACTION_H,
+                enabled ? 0xFF2A3340 : 0xFF1B212A);
+        str(g, label, x + bx + (bw - font.width(label)) / 2, y + ACTION_Y + 3,
+                enabled ? ACCENT : LABEL_DIM);
     }
 
     private void drawOrders(GuiGraphics g, int x, int y) {
@@ -231,6 +380,7 @@ public class MC3DPrintTerminalScreen extends AbstractContainerScreen<MC3DPrintTe
         renderBackground(g);
         super.render(g, mouseX, mouseY, partialTick);
     //?}
+        updateScrollDrag(mouseY);
         renderCatalogTooltip(g, mouseX, mouseY);
     }
 
@@ -349,12 +499,36 @@ public class MC3DPrintTerminalScreen extends AbstractContainerScreen<MC3DPrintTe
             sendOrder(TerminalOrderPacket.cancel(row.id()));
             return true;
         }
+        if (overScrollBar(mouseX, mouseY)) {
+            draggingScroll = true;
+            scrollFromMouse(mouseY);
+            return true;
+        }
+        int step = shift ? 10 : 1;
+        if (inBar(mouseX, mouseY, MINUS_X, STEP_W)) {
+            setQty(orderQty - step);
+            return true;
+        }
+        if (inBar(mouseX, mouseY, PLUS_X, STEP_W)) {
+            setQty(orderQty + step);
+            return true;
+        }
+        if (inBar(mouseX, mouseY, PRINT_X, PRINT_W)) {
+            CatalogEntry sel = selectedEntry();
+            if (sel != null && sel.orderable()) {
+                sendOrder(TerminalOrderPacket.order(
+                        BuiltInRegistries.ITEM.getKey(sel.item()), orderQty));
+            }
+            return true;
+        }
+
         CatalogEntry entry = entryUnder((int) mouseX, (int) mouseY);
-        if (entry == null || !entry.orderable()) {
+        if (entry == null) {
             return false;
         }
-        int qty = shift ? entry.stack().getMaxStackSize() : 1;
-        sendOrder(TerminalOrderPacket.order(BuiltInRegistries.ITEM.getKey(entry.item()), qty));
+        // Selecting an unorderable row is allowed on purpose: its tooltip is where the reason
+        // lives, so refusing the click would hide the explanation.
+        selectedItem = entry.item();
         return true;
     }
 
@@ -447,16 +621,6 @@ public class MC3DPrintTerminalScreen extends AbstractContainerScreen<MC3DPrintTe
     }
 
     /** Compact FU for the rail, which is 18px wide and cannot show six digits. */
-    private static String abbreviate(int fu) {
-        if (fu >= 1_000_000) {
-            return (fu / 1_000_000) + "M";
-        }
-        if (fu >= 1_000) {
-            return (fu / 1_000) + "k";
-        }
-        return Integer.toString(fu);
-    }
-
     private String trim(String text, int maxWidth) {
         if (font.width(text) <= maxWidth) {
             return text;

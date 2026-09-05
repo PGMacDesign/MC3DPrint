@@ -2,7 +2,7 @@
   "name": "JEI and Patchouli",
   "category": "mc3dprint:integrations",
   "icon": "minecraft:writable_book",
-  "sortnum": 4,
+  "sortnum": 11,
   "pages": [
     {
       "type": "patchouli:text",

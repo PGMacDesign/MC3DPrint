@@ -1,0 +1,17 @@
+{
+  "name": "Botania",
+  "category": "mc3dprint:integrations",
+  "icon": "minecraft:poppy",
+  "sortnum": 5,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "$(l)Botania$() is a magic mod with no power system: flowers turn things into $(l)mana$(), and mana runs everything else. Nearly all of it is built from blocks and flowers rather than machines with GUIs.$(br2)Its materials come from mana infusion and ritual altars, neither of which is a crafting recipe."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "$(l)Tier 3$(): manasteel 12 FU, mana pearl 14, mana diamond 16, mana quartz 10, mana powder and mana string 8.$(br2)$(l)Tier 4$(): elementium and dragonstone 30, pixie dust 35.$(br2)$(l)Tier 5$(): terrasteel at 60.$(br2)$(l)Tier 6$(): life essence at 130, which the Gaia ritual gates.",
+      "title": "11 pinned values"
+    }
+  ]
+}
