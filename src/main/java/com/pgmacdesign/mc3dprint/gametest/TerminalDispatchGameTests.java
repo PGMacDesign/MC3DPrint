@@ -171,6 +171,67 @@ public class TerminalDispatchGameTests {
                 .thenSucceed();
     }
 
+    /**
+     * A refund goes back to the tier the drain actually took from.
+     *
+     * <p>Spending is down-only, so a Tier N cost can be paid by a Tier N+1 spool, but a credit is
+     * exact-tier. Refunding the cost tier therefore had nowhere to land whenever the drain had
+     * reached further up, and the filament simply vanished: the player paid and got no item. The
+     * only spool here is above the cost tier, so a cost-tier refund loses the whole charge.
+     */
+    @GameTest(template = "empty5", timeoutTicks = 300)
+    public static void aFailedDeliveryRefundsTheTierItDrained(GameTestHelper helper) {
+        int costTier = spoolTierFor(Items.IRON_INGOT);
+        int payingTier = costTier + 1;
+        if (payingTier > com.pgmacdesign.mc3dprint.fu.SpoolItem.CAPACITY_BY_TIER.length) {
+            throw new GameTestAssertException("test needs a tier above " + costTier);
+        }
+        PrinterBlockEntity printer = poweredPrinter(helper, 2, 0);
+        ItemStack spool = new ItemStack(ModItems.SPOOLS.get(payingTier - 1).get());
+        SpoolItem.setFu(spool, 100_000);
+        printer.spoolInventory().setStackInSlot(0, spool);
+        int fuBefore = SpoolItem.getFu(printer.spoolInventory().getStackInSlot(0));
+
+        // Output slot full, so the emit-a-copy fallback cannot rescue the item either.
+        printer.inventory().setStackInSlot(PrinterBlockEntity.SLOT_OUTPUT,
+                new ItemStack(Items.DIAMOND, 64));
+
+        PrintRequestQueue queue = new PrintRequestQueue();
+        PrintRequest req = queue.enqueue(UUID.randomUUID(), Items.IRON_INGOT, 1).orElseThrow();
+
+        // Says it has room and then takes nothing: the sink race the refund path exists for. The
+        // up-front simulate check passes, so the machine really does charge before it finds out.
+        OrderSink lying = new OrderSink() {
+            @Override
+            public int accept(ItemStack stack) {
+                return 0;
+            }
+
+            @Override
+            public int simulate(ItemStack stack) {
+                return stack.getCount();
+            }
+        };
+
+        helper.startSequence()
+                .thenExecuteFor(200, () ->
+                        TerminalDispatcher.tick(helper.getLevel(), queue, machines(helper), lying))
+                .thenExecute(() -> {
+                    if (req.delivered() != 0) {
+                        throw new GameTestAssertException("a refused delivery was credited: "
+                                + req.delivered());
+                    }
+                    int now = SpoolItem.getFu(printer.spoolInventory().getStackInSlot(0));
+                    if (now != fuBefore) {
+                        throw new GameTestAssertException("Tier " + payingTier + " spool paid a"
+                                + " Tier " + costTier + " cost and was short " + (fuBefore - now)
+                                + " FU after the refund; the refund must return to the tier it"
+                                + " drained, not to the cost tier");
+                    }
+                })
+                .thenSucceed();
+    }
+
     /** An order never takes a machine the player is already using. */
     @GameTest(template = "empty5", timeoutTicks = 120)
     public static void anOrderWillNotPreemptAManualPrint(GameTestHelper helper) {

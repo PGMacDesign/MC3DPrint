@@ -19,8 +19,10 @@ Terminal lets an ME network order prints paid in Filament Units.
   filament, no power, nowhere to put the output, or the machine losing its channel all pause and
   resume, and an order held with nowhere to deliver spends nothing. Filament is spent if and only if
   an item is delivered. Orders record who placed them and only the placer may cancel one, since the
-  order book is shared by everyone on the network. Finished items go to ME storage. Needs AE2
-  installed; without it the terminal does not exist and nothing else in the mod changes.
+  order book is shared by everyone on the network. Finished items go to ME storage. It **uses a
+  channel**, like AE2's own terminals, so a busy network wants a dense cable or a controller; with
+  no channel the screen goes dark and orders wait. Needs AE2 installed; without it the terminal does
+  not exist and nothing else in the mod changes.
 - **Redstone Module**: a fifth printer upgrade, capped at 1 per machine (the other four cap at 4). The
   machine emits a full-strength weak signal from all six faces while it is actively printing or
   deconstructing, and nothing when idle or paused (no power, output full, obstructed, out of filament,

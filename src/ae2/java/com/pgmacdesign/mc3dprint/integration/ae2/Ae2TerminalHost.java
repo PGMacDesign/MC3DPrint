@@ -50,7 +50,9 @@ final class Ae2TerminalHost implements TerminalHost {
         if (grid == null) {
             return List.of();
         }
-        List<BlockPos> found = new ArrayList<>();
+        // Set-backed rather than List.contains: the membership test runs once per grid node per
+        // direction, so on a large network the linear scan was the dominant cost of a sync.
+        java.util.Map<BlockPos, Integer> tiers = new java.util.LinkedHashMap<>();
         for (IGridNode node : grid.getNodes()) {
             BlockPos host = positionOf(node);
             if (host == null) {
@@ -58,15 +60,18 @@ final class Ae2TerminalHost implements TerminalHost {
             }
             for (net.minecraft.core.Direction dir : net.minecraft.core.Direction.values()) {
                 BlockPos at = host.relative(dir);
-                if (found.contains(at) || !level.isLoaded(at)) {
+                if (tiers.containsKey(at) || !level.isLoaded(at)) {
                     continue;
                 }
-                if (level.getBlockEntity(at) instanceof PrinterBlockEntity) {
-                    found.add(at);
+                if (level.getBlockEntity(at) instanceof PrinterBlockEntity printer) {
+                    // Tier resolved once, here. The comparator used to look it up on both sides of
+                    // every comparison, so sorting cost O(n log n) block-entity lookups on top.
+                    tiers.put(at.immutable(), printer.tier().number());
                 }
             }
         }
-        found.sort((a, b) -> Integer.compare(tierAt(level, b), tierAt(level, a)));
+        List<BlockPos> found = new ArrayList<>(tiers.keySet());
+        found.sort((a, b) -> Integer.compare(tiers.get(b), tiers.get(a)));
         return found;
     }
 
@@ -107,14 +112,18 @@ final class Ae2TerminalHost implements TerminalHost {
         int tiers = com.pgmacdesign.mc3dprint.machine.terminal.MC3DPrintTerminalMenu.MAX_TIER;
         int best = 0;
         long[] totals = new long[tiers];
+        int[] perTier = new int[tiers];
         for (BlockPos pos : found) {
             PrinterBlockEntity printer = printerAt(level, pos);
             if (printer == null) {
                 continue;
             }
             best = Math.max(best, printer.tier().number());
-            for (int t = 1; t <= tiers; t++) {
-                totals[t - 1] += printer.affordableFu(t);
+            // One pass for the whole rail rather than one call per tier, each of which re-walked
+            // the cable network to gather its filament sources.
+            printer.affordableFuByTier(perTier);
+            for (int t = 0; t < tiers; t++) {
+                totals[t] += perTier[t];
             }
         }
         int[] fu = new int[tiers];
@@ -148,10 +157,6 @@ final class Ae2TerminalHost implements TerminalHost {
         return null;
     }
 
-    private static int tierAt(ServerLevel level, BlockPos pos) {
-        PrinterBlockEntity printer = printerAt(level, pos);
-        return printer == null ? 0 : printer.tier().number();
-    }
 
     @Nullable
     private static PrinterBlockEntity printerAt(ServerLevel level, BlockPos pos) {

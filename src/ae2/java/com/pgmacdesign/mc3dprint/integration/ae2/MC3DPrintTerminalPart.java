@@ -46,6 +46,7 @@ public class MC3DPrintTerminalPart extends AEBasePart implements IGridTickable {
     public MC3DPrintTerminalPart(IPartItem<?> partItem) {
         super(partItem);
         getMainNode()
+                .setFlags(GridFlags.REQUIRE_CHANNEL)
                 .setIdlePowerUsage(0.5)
                 .addService(IGridTickable.class, this);
     }
