@@ -1,0 +1,22 @@
+{
+  "name": "Mekanism",
+  "category": "mc3dprint:integrations",
+  "icon": "minecraft:redstone",
+  "sortnum": 4,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "$(l)Mekanism$() is a large tech mod built around multiplying your ores: each processing tier adds machines and chemicals that turn one ore into more ingots, up to five.$(br2)It also brings its own alloys, reactors and antimatter, most made in custom machines no crafting recipe describes."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "$(l)Tier 2$(): fluorite and its ores at 10 FU.$(br2)$(l)Tier 3$(): uranium 25, steel 25, bronze 22, infused alloy 12.$(br2)$(l)Tier 4$(): refined glowstone 35.$(br2)$(l)Tier 5$(): refined obsidian 60, reinforced alloy 70.",
+      "title": "14 pinned values"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "$(l)Tier 6$(): atomic alloy at 130 FU.$(br2)$(l)Tier 8$(): an $(l)antimatter pellet$() at 600, one of only two Tier 8 materials MC3DPrint knows about. It needs an antimatter plant, which is roughly where the mod ends, so it is priced to match.",
+      "title": "The Far End"
+    }
+  ]
+}

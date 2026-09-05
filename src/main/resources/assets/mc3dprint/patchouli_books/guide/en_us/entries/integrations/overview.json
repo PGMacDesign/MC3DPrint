@@ -22,6 +22,11 @@
       "type": "patchouli:text",
       "text": "Two mods change what MC3DPrint can $(l)do$(), not just what things cost:$(br2)$(l)Applied Energistics 2$() adds the MC3DPrint Terminal.$(br2)$(l)Draconic Evolution$() unlocks the Tier 8 Fabricator.$(br2)Everything else contributes material values.",
       "title": "Two Are Different"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "Cross-mod materials are kept $(l)level$(). Steel is steel whether Tinkers', Ender IO or Immersive Engineering made it, so the same material cannot be arbitraged from one mod into another.$(br2)Anything left $(l)unvalued$() is refused by strict mode rather than printed for free.",
+      "title": "No Arbitrage"
     }
   ]
 }

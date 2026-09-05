@@ -16,7 +16,7 @@
     {
       "type": "patchouli:text",
       "text": "The $(l)Filament Converter$() is often assumed to be an AE2 block. It is not, and never was: it asks each neighbouring block for an item handler, which an ME Interface answers just as well as a chest, hopper or pipe.$(br2)It works in a pack with no AE2 at all.",
-      "title": "The Converter Is Not AE2"
+      "title": "Not An AE2 Block"
     },
     {
       "type": "patchouli:text",

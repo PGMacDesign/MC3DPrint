@@ -15,7 +15,7 @@
     },
     {
       "type": "patchouli:text",
-      "title": "Turning Matter Into Matter",
+      "title": "Matter Into Matter",
       "text": "Filament is denominated by $(l)tier$(), not by item, and a spool does not remember what you wound into it.$(br2)Winding is exact-tier and spending is down-only, so within a tier $(l)matter is interchangeable$(). Sculk and diamond are both Tier 5, so a spool wound from sculk prints diamonds. Copper and gold are both Tier 2."
     },
     {
@@ -25,7 +25,7 @@
     },
     {
       "type": "patchouli:text",
-      "title": "Only Sideways And Down",
+      "title": "Sideways And Down",
       "text": "A high-tier spool also pays for anything beneath it, so a Tier 6 spool prints gold, redstone and stone all day.$(br2)Converting $(o)upward$() is impossible. Low-tier filament contributes nothing toward a higher-tier cost, so no amount of cobblestone will ever add up to a diamond. That asymmetry is what keeps printing from becoming a duplication exploit."
     },
     {

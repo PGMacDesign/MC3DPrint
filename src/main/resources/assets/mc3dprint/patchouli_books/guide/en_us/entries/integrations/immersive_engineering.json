@@ -1,0 +1,17 @@
+{
+  "name": "Immersive Engineering",
+  "category": "mc3dprint:integrations",
+  "icon": "minecraft:copper_ingot",
+  "sortnum": 7,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "$(l)Immersive Engineering$() is tech with a retro-industrial look: big multiblock machines wired together by $(l)overhead power lines$() on transformers and posts, rather than cables buried in a wall.$(br2)Its metals come out of the Arc Furnace and the Crusher."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "All at $(l)Tier 3$(), and deliberately flat: uranium and its ores 25 FU, steel 25, hop graphite 25, constantan and electrum 20.$(br2)Steel matches Tinkers' and Mekanism's steel exactly. Same material, same price, so no pack can arbitrage one mod's steel into another's.",
+      "title": "7 pinned values"
+    }
+  ]
+}
