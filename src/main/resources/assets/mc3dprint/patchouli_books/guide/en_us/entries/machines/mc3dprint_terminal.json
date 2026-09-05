@@ -22,6 +22,11 @@
     },
     {
       "type": "patchouli:text",
+      "title": "What It Lists",
+      "text": "The terminal lists what your network is $(l)already holding$(), not every item in the game. It reprints what you own.$(br2)Stock decides what is $(l)listed$(). It never decides what can be $(l)ordered$(): a wind-only item or a restricted trophy stays greyed and refused even with a drive full of it plugged in.$(br2)Blacklisted means blacklisted, whether or not you own one."
+    },
+    {
+      "type": "patchouli:text",
       "title": "The Catalog",
       "text": "Every priced item appears, sorted by tier then cost.$(br2)Things you $(l)cannot$() order stay listed and greyed, with the reason: needs a higher tier, wind-only, restricted trophy, or not enough filament.$(br2)Nothing is hidden, so a greyed row tells you what to go build, and the grid does not reshuffle under your cursor as filament moves.$(br2)Search matches the item name $(l)and$() its registry id."
     },

@@ -358,6 +358,35 @@ public class TerminalQueueGameTests {
             throw new GameTestAssertException("wither skeleton skull must be listed as wind-only"
                     + " and never orderable, got " + skull.verdict());
         }
+
+        // The catalog mirrors what the network holds, and stock does not launder a ban. Folded in
+        // here rather than added as its own @GameTest on purpose: GameTest lays every test out in
+        // one shared world by index, so adding a test shifts every later one and made an unrelated
+        // sorter test share space with its neighbour.
+        java.util.Set<net.minecraft.world.item.Item> stocked =
+                java.util.Set.of(Items.IRON_INGOT, Items.WITHER_SKELETON_SKULL);
+        var stockOnly = com.pgmacdesign.mc3dprint.machine.terminal.TerminalCatalog.build(
+                8, tier -> Integer.MAX_VALUE, stocked);
+        for (var e : stockOnly) {
+            if (!stocked.contains(e.item())) {
+                throw new GameTestAssertException("catalog listed " + e.item()
+                        + ", which the network is not holding");
+            }
+        }
+        if (stockOnly.stream().noneMatch(e -> e.item() == Items.IRON_INGOT)) {
+            throw new GameTestAssertException("a stocked, printable item was not listed");
+        }
+        var stockedSkull = stockOnly.stream()
+                .filter(e -> e.item() == Items.WITHER_SKELETON_SKULL)
+                .findFirst().orElse(null);
+        if (stockedSkull == null) {
+            throw new GameTestAssertException("a stocked item must still be listed even when it"
+                    + " cannot be ordered; the row is where the reason is shown");
+        }
+        if (stockedSkull.orderable()) {
+            throw new GameTestAssertException("a wind-only item became orderable just by being in"
+                    + " stock; blacklisted has to mean blacklisted");
+        }
         helper.succeed();
     }
 
@@ -489,6 +518,50 @@ public class TerminalQueueGameTests {
             throw new GameTestAssertException("remaining " + back.remaining()
                     + " exceeds the order of " + back.quantity()
                     + "; the machine would print and bill for the difference");
+        }
+        helper.succeed();
+    }
+
+    /**
+     * The catalog mirrors the network's contents, and being in stock does not launder a ban.
+     *
+     * <p>Two halves, and the second is the one that matters: stock decides what is LISTED, never
+     * what is orderable. A wind-only item sitting in a drive has to stay refused, or "blacklisted"
+     * would quietly mean "blacklisted unless you own one".
+     */
+    @GameTest(template = "empty5", timeoutTicks = 40)
+    public static void theCatalogShowsStockWithoutLaunderingABan(GameTestHelper helper) {
+        java.util.Set<net.minecraft.world.item.Item> stocked =
+                java.util.Set.of(Items.IRON_INGOT, Items.DRAGON_EGG);
+        var listed = com.pgmacdesign.mc3dprint.machine.terminal.TerminalCatalog.build(
+                8, tier -> 1_000_000, stocked);
+
+        for (var e : listed) {
+            if (!stocked.contains(e.item())) {
+                throw new GameTestAssertException("catalog listed " + e.item()
+                        + ", which the network is not holding");
+            }
+        }
+        if (listed.stream().noneMatch(e -> e.item() == Items.IRON_INGOT)) {
+            throw new GameTestAssertException("a stocked, printable item was not listed");
+        }
+
+        var egg = listed.stream().filter(e -> e.item() == Items.DRAGON_EGG).findFirst()
+                .orElseThrow(() -> new GameTestAssertException(
+                        "a stocked item must still be listed even when it cannot be ordered,"
+                                + " because the row is where the reason is shown"));
+        if (egg.orderable()) {
+            throw new GameTestAssertException("a wind-only item became orderable just by being in"
+                    + " stock; blacklisted has to mean blacklisted");
+        }
+
+        // Deliberately NOT compared against an unrestricted build. That sweep prices every item
+        // in the registry, and doing it inside a gametest tick starved a neighbouring test of
+        // ticks badly enough to fail it. The loop above already proves nothing unstocked is
+        // listed, which is the same claim for none of the cost.
+        if (listed.size() > stocked.size()) {
+            throw new GameTestAssertException("catalog listed " + listed.size()
+                    + " rows for " + stocked.size() + " stocked items");
         }
         helper.succeed();
     }
