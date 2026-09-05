@@ -7,7 +7,7 @@
     {
       "type": "patchouli:text",
       "title": "Upgrade Slots",
-      "text": "Each printer has $(l)upgrade slots that grow with its tier$() (T3 = 3, T7 = 8). Drop modules into those slots in the GUI, or Shift+Right Click them onto the machine.$(br2)$(item)Speed$(), $(item)RF Efficiency$() and $(item)Buffer$() stack $(l)multiplicatively$(): two Speed modules give 0.8 × 0.8 = 64% print time. $(item)Efficiency$() is $(l)linear$(): $(l)4$() reach break-even, so only a $(l)Tier 4+$() machine has the slots for it. Max 4 of a type.$(br2)The $(item)Redstone$() module is the exception at $(l)1 per machine$(): it emits a signal while the machine is working instead of scaling a rate. See $(l)Upgrade Modules$()."
+      "text": "Upgrade slots grow with tier (T3 = 3, T7 = 8). Drop modules in through the GUI, or Shift+Right Click them onto the machine.$(br2)$(item)Speed$(), $(item)RF Efficiency$() and $(item)Buffer$() stack $(l)multiplicatively$(). $(item)Efficiency$() is $(l)linear$(), and $(l)4$() of them reach break-even. Max 4 of a type."
     }
   ]
 }

@@ -27,7 +27,7 @@ import java.util.UUID;
 public final class TerminalRequests {
 
     /** Ceiling on a single order. Large enough for a stack run, small enough to stay watchable. */
-    public static final int MAX_ORDER_QUANTITY = 1024;
+    public static final int MAX_ORDER_QUANTITY = 9999;
 
     private TerminalRequests() {}
 

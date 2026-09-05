@@ -16,12 +16,12 @@
     {
       "type": "patchouli:text",
       "title": "Higher Tiers",
-      "text": "Higher tiers print $(l)faster$(), cost $(l)less FU$() per block, and accept $(l)more upgrades$() (more slots at higher tiers, up to 8). They also unlock higher material tiers: a Tier 3 machine can't print a Tier 6 (netherite) block.$(br2)Tiers 5-8 are multiblock $(item)Fabricators$(), see the Multiblocks category.$(br2)Every tier's print footprint is a config default ($(o)maxFootprint$())."
+      "text": "Higher tiers print $(l)faster$(), cost $(l)less$() per block, and take $(l)more upgrades$() (up to 8 slots). They also unlock higher material tiers.$(br2)Tiers 5-8 are multiblock $(item)Fabricators$(); see Multiblocks."
     },
     {
       "type": "patchouli:text",
       "title": "Matter Calculator",
-      "text": "With a disc loaded, the GUI shows the full pre-print bill: $(l)total FU and time$() on the cost line, and the $(l)FU gauge tooltip$() breaks it down: FU needed per tier vs. what's on hand (docked + rack network), total RF, and ETA at your current upgrades.$(br2)If a tier can't be covered the line turns red and names the missing tier: fix the spools $(l)before$() committing filament. Numbers track Efficiency modules and a slotted Overdrive resin exactly.$(br2)While a job runs, $(l)Start$() becomes $(l)Cancel$(). Cancelling is always safe: placed blocks and spent FU stand, the disc stays loaded, and restarting $(l)repairs$(): already-placed blocks re-cover at zero cost.$(br2)Hover the $(l)output slot$() for the machine's recent jobs."
+      "text": "With a disc loaded the GUI shows the whole bill: total FU and time, and the gauge tooltip breaks it down per tier against what is on hand.$(br2)If a tier cannot be covered the line turns red and names it, so you fix the spools $(l)before$() committing filament.$(br2)$(l)Cancel$() is always safe: restarting $(l)repairs$(), and placed blocks re-cover at zero cost."
     },
     {
       "type": "patchouli:spotlight",

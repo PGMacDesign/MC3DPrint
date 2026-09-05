@@ -7,7 +7,7 @@
     {
       "type": "patchouli:text",
       "title": "Getting Another Copy",
-      "text": "Run $(o)/mc3dprint guide$(). It hands out a fresh, working Handbook, and $(l)any player$() can run it - this is documentation, not loot.$(br2)The book arrives automatically the first time you craft a printer or pick up a $(item)Blueprint Disc$(), but only $(l)once per player$(), so losing it used to be permanent.$(br2)Operators can hand copies to other players with $(o)/mc3dprint guide <players>$()."
+      "text": "Run $(o)/mc3dprint guide$(). It hands out a fresh working Handbook, and $(l)any player$() can run it.$(br2)The book arrives automatically the first time you craft a printer or pick up a disc, but only $(l)once per player$()."
     },
     {
       "type": "patchouli:crafting",
@@ -17,7 +17,7 @@
     {
       "type": "patchouli:text",
       "title": "Why /give Fails",
-      "text": "This Handbook is a $(l)Patchouli$() book, so its item id is $(o)patchouli:guide_book$() - there is no $(o)mc3dprint:$() id to give.$(br2)A plain $(o)/give$() of that item produces an $(l)unbound$() copy: it reads $(c:red)Invalid book: no ID defined$() and won't open, because the book a stack points at lives in a data component the command doesn't set.$(br2)$(o)/mc3dprint guide$() sets it correctly. Use that instead."
+      "text": "This is a $(l)Patchouli$() book, so its item id is $(o)patchouli:guide_book$(). There is no $(o)mc3dprint:$() id to give.$(br2)A plain $(o)/give$() produces an $(l)unbound$() copy that will not open, because the command never sets the component naming the book.$(br2)$(o)/mc3dprint guide$() sets it correctly."
     }
   ]
 }

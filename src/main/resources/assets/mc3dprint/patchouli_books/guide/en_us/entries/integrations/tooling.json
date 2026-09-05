@@ -6,7 +6,7 @@
   "pages": [
     {
       "type": "patchouli:text",
-      "text": "$(l)Just Enough Items$() gets two extra recipe categories from MC3DPrint.$(br2)The first shows what any item costs to $(l)print$(): its Filament Unit price and the machine tier it needs.$(br2)The second shows what is $(l)inside$() a Blueprint Disc, so you can check a build's contents before printing it."
+      "text": "$(l)Just Enough Items$() gets two extra recipe categories.$(br2)The first shows what an item costs to $(l)print$(): its price and the tier it needs.$(br2)The second shows what is $(l)inside$() a Blueprint Disc."
     },
     {
       "type": "patchouli:text",

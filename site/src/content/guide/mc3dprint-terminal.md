@@ -73,7 +73,7 @@ A tier is **orderable** when your best machine's tier is at least that tier. A T
 
 ## Orders
 
-Click an item to **select** it. The action bar under the grid shows what you picked and what it costs; set a quantity with the `-` and `+` buttons, holding Shift to step by ten, then press **Print** to queue it. One order can be up to 1024 items.
+Click an item to **select** it. The action bar under the grid shows what you picked and what it costs. Set a quantity by clicking the number field and typing one, or with the `-` and `+` buttons, holding Shift to step by ten. Then press **Print** to queue it. One order can be up to 9999 items.
 
 Orders appear at the bottom with their progress.
 

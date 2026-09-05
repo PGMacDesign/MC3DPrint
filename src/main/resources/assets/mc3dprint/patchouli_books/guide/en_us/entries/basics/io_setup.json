@@ -27,7 +27,7 @@
     {
       "type": "patchouli:text",
       "title": "Comparator Output",
-      "text": "Put a $(l)comparator$() against any printer or fabricator and it reads out the job's $(l)progress$(), the same way one against a $(item)Filament Rack$() reads its fill level. $(l)No upgrade needed$(): reading a machine is always free.$(br2)$(li)$(l)0$(): nothing loaded, nothing to do (empty, or holding something it has not been told to start)$(li)$(l)1-15$(): work is loaded, reaching 15 on the final block$(br2)That rule holds in all three modes. A $(l)stalled$() machine still counts as loaded, so it stays above 0 rather than dropping. On a fabricator read the $(l)controller$(), not the casings."
+      "text": "A $(l)comparator$() against any printer or fabricator reads the job's $(l)progress$(). No upgrade needed.$(li)$(l)0$(): nothing loaded$(li)$(l)1-15$(): work loaded, 15 on the last block$(br2)A $(l)stalled$() machine still counts as loaded, so it stays above 0. On a fabricator, read the $(l)controller$()."
     }
   ]
 }
