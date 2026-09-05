@@ -308,7 +308,7 @@
   "gui.mc3dprint.terminal.no_orders": "No orders",
   "gui.mc3dprint.terminal.no_machines": "No machines on this network",
   "gui.mc3dprint.terminal.not_enough_filament": "Not enough filament at this tier",
-  "gui.mc3dprint.terminal.click_to_order": "Click to order 1, Shift-click for a stack",
+  "gui.mc3dprint.terminal.click_to_order": "Click to select, then set a count and press Print",
   "block.mc3dprint.me_print_terminal": "MC3DPrint Terminal",
   "item.mc3dprint.me_print_terminal": "MC3DPrint Terminal",
   "gui.mc3dprint.terminal.offline": "Terminal offline: no channel or no power"

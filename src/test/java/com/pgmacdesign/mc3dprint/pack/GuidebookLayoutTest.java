@@ -42,9 +42,10 @@ class GuidebookLayoutTest {
     void noPageTitleRunsOffThePage() throws IOException {
         Path entries = repoRoot().resolve(
                 "src/main/resources/assets/mc3dprint/patchouli_books/guide/en_us/entries");
-        if (!Files.isDirectory(entries)) {
-            return;
-        }
+        // Asserted, not skipped. repoRoot() only looks for src/main/resources/assets, which other
+        // tracked assets keep satisfying, so a missing guide directory used to make this test pass
+        // while validating nothing at all.
+        assertTrue(Files.isDirectory(entries), "guide entries directory is missing: " + entries);
         List<String> tooLong = new ArrayList<>();
         try (Stream<Path> files = Files.walk(entries)) {
             for (Path f : files.filter(p -> p.toString().endsWith(".json")).toList()) {

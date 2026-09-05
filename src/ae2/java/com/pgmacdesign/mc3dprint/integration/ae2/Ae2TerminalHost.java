@@ -157,6 +157,36 @@ final class Ae2TerminalHost implements TerminalHost {
         stockedFingerprint = fingerprint * 31 + items.size();
     }
 
+    /**
+     * Asks the network directly whether it still holds {@code item}, bypassing the stock cache.
+     *
+     * <p>A simulated extract of one is an exact, targeted question: it neither walks the whole
+     * inventory nor trusts a snapshot that may be up to a second stale. The cached set decides what
+     * the catalog DRAWS; this decides what may be ORDERED, and only this is authoritative.
+     */
+    @Override
+    public boolean stocksNow(net.minecraft.world.item.Item item) {
+        if (!(part.getLevel() instanceof ServerLevel)) {
+            return false;
+        }
+        IGrid grid = part.getMainNode().getGrid();
+        if (grid == null || !part.getMainNode().isActive()) {
+            return false;
+        }
+        appeng.api.networking.storage.IStorageService service =
+                grid.getService(appeng.api.networking.storage.IStorageService.class);
+        if (service == null) {
+            return false;
+        }
+        appeng.api.stacks.AEItemKey key =
+                appeng.api.stacks.AEItemKey.of(new net.minecraft.world.item.ItemStack(item));
+        if (key == null) {
+            return false;
+        }
+        return service.getInventory().extract(key, 1L, appeng.api.config.Actionable.SIMULATE,
+                appeng.api.networking.security.IActionSource.ofMachine(part)) > 0L;
+    }
+
     @Override
     public OrderSink sink() {
         return part.sink();

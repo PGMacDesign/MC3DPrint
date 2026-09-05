@@ -10,7 +10,10 @@ import java.util.Locale;
  */
 public final class FuFormat {
 
-    private static final String[] UNITS = {"k", "M", "B", "T", "Q"};
+    // Runs to quintillions on purpose: a long tops out around 9.22e18, so without the last unit
+    // Long.MAX_VALUE rendered as "9223Q", five characters wide, which is the exact overflow this
+    // class exists to prevent.
+    private static final String[] UNITS = {"k", "M", "B", "T", "Q", "E"};
 
     private FuFormat() {}
 

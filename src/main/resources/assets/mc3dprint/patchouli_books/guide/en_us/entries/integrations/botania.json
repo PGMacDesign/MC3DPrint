@@ -10,8 +10,8 @@
     },
     {
       "type": "patchouli:text",
-      "text": "$(l)Tier 3$(): manasteel 12 FU, mana pearl 14, mana diamond 16, mana quartz 10, mana powder and mana string 8.$(br2)$(l)Tier 4$(): elementium and dragonstone 30, pixie dust 35.$(br2)$(l)Tier 5$(): terrasteel at 60.$(br2)$(l)Tier 6$(): life essence at 130, which the Gaia ritual gates.",
-      "title": "11 pinned values"
+      "text": "Mana infusion and the ritual altars are not crafting recipes, so Botania's materials are priced by hand. They run $(l)Tier 3$() to $(l)Tier 6$(), from manasteel up to life essence behind the Gaia ritual.$(br2)Mana diamond is deliberately held below the vanilla diamond's tier, so infusing one is never a route to cheaper diamond-tier filament.",
+      "title": "Values"
     }
   ]
 }

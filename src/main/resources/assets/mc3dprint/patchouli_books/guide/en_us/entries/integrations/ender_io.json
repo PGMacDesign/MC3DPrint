@@ -10,8 +10,8 @@
     },
     {
       "type": "patchouli:text",
-      "text": "$(l)Tier 3$(): redstone alloy 8 FU, copper alloy 12, conductive alloy 18.$(br2)$(l)Tier 4$(): pulsating alloy and soularium 30, energetic alloy 35, dark steel 40.$(br2)$(l)Tier 5$(): vibrant alloy at 55.$(br2)$(l)Tier 6$(): end steel at 90.",
-      "title": "9 pinned values"
+      "text": "The Alloy Smelter is not a crafting recipe, so Ender IO's alloy ladder is priced by hand. It runs $(l)Tier 3$() to $(l)Tier 6$(), redstone alloy at the bottom and end steel at the top.$(br2)Its steel matches Tinkers' and Mekanism's exactly: same material, same price.",
+      "title": "Values"
     }
   ]
 }

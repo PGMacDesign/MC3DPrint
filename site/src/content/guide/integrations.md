@@ -33,20 +33,20 @@ Draconic Evolution unlocks the **Tier 8 Fabricator**, the largest machine in the
 
 ## Material values
 
-Ten mods contribute pinned values. These are the items MC3DPrint could not work out on its own, almost always because a custom machine makes them.
+Ten mods contribute pinned values: the items MC3DPrint cannot work out on its own, because a custom machine makes them or they are mined and have no recipe to read.
 
-| Mod | Pinned values | Tiers |
+| Mod | Tier band | What it adds |
 |---|---|---|
-| Tinkers' Construct | 16 | 2-6 |
-| Mekanism | 14 | 2-6, 8 |
-| Botania | 11 | 3-6 |
-| Applied Energistics 2 | 10 | 2-5 |
-| Ender IO | 9 | 3-6 |
-| Immersive Engineering | 7 | 3 |
-| Create | 6 | 2-3 |
-| Draconic Evolution | 6 | 7-8 |
-| Mystical Agriculture | 4 | 1-2 |
-| Thermal Series | 3 | 4-5 |
+| Applied Energistics 2 | 2-5 | The MC3DPrint Terminal, plus certus, the backbone and Inscriber processors |
+| Botania | 3-6 | Mana infusion and ritual altar materials |
+| Create | 2-3 | Zinc, andesite alloy, brass, rose quartz |
+| Draconic Evolution | 7-8 | The Tier 8 Fabricator, plus draconium and awakened draconium |
+| Ender IO | 3-6 | The Alloy Smelter ladder |
+| Immersive Engineering | 2-3 | Mined metals and the Arc Furnace line |
+| Mekanism | 2-6, 8 | Mined ores, alloys, and the antimatter pellet at the top |
+| Mystical Agriculture | 1-5 | The essence ladder, with Agradditions' ores alongside it |
+| Thermal Series | 2, 4-5 | Mined metals and the Induction Smelter alloys |
+| Tinkers' Construct | 3-6 | Smeltery alloys, plus cobalt |
 
 Cross-mod materials are deliberately kept level. Steel is steel whether Tinkers', Ender IO or Immersive Engineering made it, so the same material cannot be arbitraged from one mod into another. Anything left unvalued is refused by strict mode rather than printed for free.
 

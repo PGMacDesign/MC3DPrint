@@ -10,8 +10,8 @@
     },
     {
       "type": "patchouli:text",
-      "text": "All at $(l)Tier 3$(), and deliberately flat: uranium and its ores 25 FU, steel 25, hop graphite 25, constantan and electrum 20.$(br2)Steel matches Tinkers' and Mekanism's steel exactly. Same material, same price, so no pack can arbitrage one mod's steel into another's.",
-      "title": "7 pinned values"
+      "text": "The Arc Furnace and the Crusher are not crafting recipes, and IE's metals are mined, so both are priced by hand at $(l)Tier 2$() and $(l)Tier 3$().$(br2)Tier 3 is deliberately flat. Steel matches Tinkers' and Mekanism's steel exactly, so no pack can arbitrage one mod's steel into another's.",
+      "title": "Values"
     }
   ]
 }

@@ -10,8 +10,8 @@
     },
     {
       "type": "patchouli:text",
-      "text": "$(l)Tier 4$(): signalum 35 FU, lumium 40.$(br2)$(l)Tier 5$(): enderium at 90.$(br2)Only three, because everything else Thermal makes is an ordinary furnace or crafting recipe that MC3DPrint already derives on its own. A short list means the derivation is working, not that the mod is unsupported.",
-      "title": "3 pinned values"
+      "text": "The Induction Smelter is not a crafting recipe, so signalum, lumium and enderium are priced by hand at $(l)Tier 4$() and $(l)Tier 5$(). Thermal's mined metals sit at $(l)Tier 2$().$(br2)Everything else Thermal makes is an ordinary furnace or crafting recipe MC3DPrint already derives on its own.",
+      "title": "Values"
     }
   ]
 }

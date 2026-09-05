@@ -373,8 +373,16 @@ public class TerminalQueueGameTests {
                         + ", which the network is not holding");
             }
         }
-        if (stockOnly.stream().noneMatch(e -> e.item() == Items.IRON_INGOT)) {
+        var stockedIron = stockOnly.stream().filter(e -> e.item() == Items.IRON_INGOT)
+                .findFirst().orElse(null);
+        if (stockedIron == null) {
             throw new GameTestAssertException("a stocked, printable item was not listed");
+        }
+        // Listed is not the same claim as orderable: without this, a regression that greyed every
+        // stocked row would still pass the loop above.
+        if (!stockedIron.orderable()) {
+            throw new GameTestAssertException("stocked iron at tier 8 with unlimited filament must"
+                    + " be orderable, got " + stockedIron.verdict());
         }
         var stockedSkull = stockOnly.stream()
                 .filter(e -> e.item() == Items.WITHER_SKELETON_SKULL)
@@ -386,6 +394,13 @@ public class TerminalQueueGameTests {
         if (stockedSkull.orderable()) {
             throw new GameTestAssertException("a wind-only item became orderable just by being in"
                     + " stock; blacklisted has to mean blacklisted");
+        }
+        // The loop above proves nothing unstocked is listed, so an excess row can only be a
+        // duplicate. Checked this way rather than against an unrestricted build, which prices the
+        // whole registry inside one tick and starved a neighbouring test.
+        if (stockOnly.size() > stocked.size()) {
+            throw new GameTestAssertException("catalog listed " + stockOnly.size()
+                    + " rows for " + stocked.size() + " stocked items");
         }
         helper.succeed();
     }
