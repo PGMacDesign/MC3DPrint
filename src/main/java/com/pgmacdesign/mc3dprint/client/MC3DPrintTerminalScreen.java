@@ -172,6 +172,13 @@ public class MC3DPrintTerminalScreen extends AbstractContainerScreen<MC3DPrintTe
         int rows = visibleOrderRows();
         orderScroll = clampOrderScroll(orderScroll, orders.size());
         int shown = Math.min(orders.size() - orderScroll, rows);
+        // The indicator sits on the first row's baseline, so the rows have to give up that width
+        // or a long item name draws straight through it. Reserved for every row, not just the
+        // first, because a ragged right edge reads worse than a uniformly shorter one.
+        String more = orders.size() > rows
+                ? (orderScroll + shown) + "/" + orders.size()
+                : null;
+        int reserve = more == null ? 0 : font.width(more) + 4;
         for (int i = 0; i < shown; i++) {
             MC3DPrintTerminalMenu.OrderView o = orders.get(orderScroll + i);
             int oy = y + ORDERS_Y + 2 + i * ORDER_LINE;
@@ -188,11 +195,10 @@ public class MC3DPrintTerminalScreen extends AbstractContainerScreen<MC3DPrintTe
             if (o.status() == PrintRequest.Status.HELD && o.reason() != null) {
                 line += " (" + o.reason() + ")";
             }
-            com.pgmacdesign.mc3dprint.compat.RenderCompat.drawString(g, font, trim(line, WIDTH - ORDERS_X - 16), x + ORDERS_X + 2, oy, colour, false);
+            com.pgmacdesign.mc3dprint.compat.RenderCompat.drawString(g, font, trim(line, WIDTH - ORDERS_X - 16 - reserve), x + ORDERS_X + 2, oy, colour, false);
         }
         // Say so when the list runs past the panel, or a full book looks like a five-order one.
-        if (orders.size() > rows) {
-            String more = (orderScroll + shown) + "/" + orders.size();
+        if (more != null) {
             com.pgmacdesign.mc3dprint.compat.RenderCompat.drawString(g, font, more,
                     x + WIDTH - 10 - font.width(more), y + ORDERS_Y + 2, LABEL_DIM, false);
         }
