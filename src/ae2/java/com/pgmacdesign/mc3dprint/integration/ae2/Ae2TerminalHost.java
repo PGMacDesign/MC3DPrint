@@ -37,12 +37,15 @@ final class Ae2TerminalHost implements TerminalHost {
     }
 
     /**
-     * MC3DPrint machines adjacent to any grid node on this network.
+     * MC3DPrint machines on this network.
      *
-     * <p>Adjacency rather than a grid capability, because a printer is not an AE2 machine and has
-     * no grid node of its own: it is wired to the network the same way a furnace is, by sitting
-     * next to something that is. Sorted best-tier-first so an order takes the largest machine that
-     * is free rather than whichever happened to be found first.
+     * <p>A machine now owns a grid node of its own (see {@code Ae2MachineNodes}), so it is simply
+     * a member of the grid and this is one flat pass over the node list. It used to be a scan of
+     * all six neighbours of every node on the network, because a printer had no node and could
+     * only be found by sitting next to something that did.
+     *
+     * <p>Sorted best-tier-first so an order takes the largest free machine rather than whichever
+     * was found first.
      */
     @Override
     public List<BlockPos> machines(ServerLevel level) {
@@ -54,20 +57,14 @@ final class Ae2TerminalHost implements TerminalHost {
         // direction, so on a large network the linear scan was the dominant cost of a sync.
         java.util.Map<BlockPos, Integer> tiers = new java.util.LinkedHashMap<>();
         for (IGridNode node : grid.getNodes()) {
-            BlockPos host = positionOf(node);
-            if (host == null) {
+            BlockPos at = Ae2MachineNodes.machinePos(node);
+            if (at == null || tiers.containsKey(at) || !level.isLoaded(at)) {
                 continue;
             }
-            for (net.minecraft.core.Direction dir : net.minecraft.core.Direction.values()) {
-                BlockPos at = host.relative(dir);
-                if (tiers.containsKey(at) || !level.isLoaded(at)) {
-                    continue;
-                }
-                if (level.getBlockEntity(at) instanceof PrinterBlockEntity printer) {
-                    // Tier resolved once, here. The comparator used to look it up on both sides of
-                    // every comparison, so sorting cost O(n log n) block-entity lookups on top.
-                    tiers.put(at.immutable(), printer.tier().number());
-                }
+            if (level.getBlockEntity(at) instanceof PrinterBlockEntity printer) {
+                // Tier resolved once, here. The comparator used to look it up on both sides of
+                // every comparison, so sorting cost O(n log n) block-entity lookups on top.
+                tiers.put(at, printer.tier().number());
             }
         }
         List<BlockPos> found = new ArrayList<>(tiers.keySet());
@@ -231,27 +228,6 @@ final class Ae2TerminalHost implements TerminalHost {
         }
         return new MachineSnapshot(found.size(), best, fu);
     }
-
-    /**
-     * Where a grid node physically is. {@code IGridNode} exposes no position of its own, only its
-     * owner, so it comes from the owning block entity or, for a cable part, from the part host that
-     * carries it.
-     */
-    @Nullable
-    private static BlockPos positionOf(IGridNode node) {
-        Object owner = node.getOwner();
-        if (owner instanceof net.minecraft.world.level.block.entity.BlockEntity be) {
-            return be.getBlockPos();
-        }
-        // AEBasePart tracks its own host; anything else implementing IPart is not ours to
-        // introspect, so it simply does not contribute machines.
-        if (owner instanceof appeng.parts.AEBasePart base) {
-            net.minecraft.world.level.block.entity.BlockEntity host = base.getBlockEntity();
-            return host == null ? null : host.getBlockPos();
-        }
-        return null;
-    }
-
 
     @Nullable
     private static PrinterBlockEntity printerAt(ServerLevel level, BlockPos pos) {

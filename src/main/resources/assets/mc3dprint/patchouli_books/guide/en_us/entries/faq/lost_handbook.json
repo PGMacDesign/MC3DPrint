@@ -17,7 +17,7 @@
     {
       "type": "patchouli:text",
       "title": "Why /give Fails",
-      "text": "This is a $(l)Patchouli$() book, so its item id is $(o)patchouli:guide_book$(). There is no $(o)mc3dprint:$() id to give.$(br2)A plain $(o)/give$() produces an $(l)unbound$() copy that will not open, because the command never sets the component naming the book.$(br2)$(o)/mc3dprint guide$() sets it correctly."
+      "text": "This is a $(l)Patchouli$() book, so its item id is $(o)patchouli:guide_book$(). There is no $(o)mc3dprint:$() id to give.$(br2)A plain $(o)/give$() produces an $(l)unbound$() copy that will not open, because it never records $(o)which$() book the stack is.$(br2)$(o)/mc3dprint guide$() does."
     }
   ]
 }

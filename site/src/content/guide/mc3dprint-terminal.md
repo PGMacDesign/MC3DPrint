@@ -53,6 +53,8 @@ Stock is re-read about once a second rather than every tick, so a very large net
 
 A printer or Fabricator joins the terminal's network by **touching it**. Put the machine directly against any AE2 cable or device that belongs to the same network, on any of its six sides, and it is connected. That is the whole rule.
 
+The cable **visibly connects** to the machine, the way it does to any AE2 machine, so you can see the wiring is right without opening the terminal. The machine costs **no channel**: it joins the grid to be seen and dispatched to, not to consume network capacity.
+
 What you do **not** need:
 
 - No MC3D Cable. That carries RF and Filament Units between MC3DPrint machines and has nothing to do with the ME network.
@@ -86,7 +88,7 @@ An order binds to one machine and that machine runs one order at a time, so two 
 - Nowhere to put the output: holds, and importantly spends nothing while waiting
 - The machine leaves the network: the order is released and looks for another machine
 
-Filament is spent if and only if an item is delivered. There is no state in which the terminal charges you for something you did not receive.
+Filament is charged as each item is made, and given **back to the tiers it came from** if that item cannot be delivered. The refund is per-tier rather than at the cost tier, because spending is down-only: a Tier 3 spool can pay a Tier 1 cost, so crediting the cost tier would lose the difference whenever the drain reached past it.
 
 ## Taking a machine back
 

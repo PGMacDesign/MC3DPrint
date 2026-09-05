@@ -6,7 +6,7 @@
   "pages": [
     {
       "type": "patchouli:text",
-      "text": "Every Fabricator is built the same way:$(li)Lay a flat $(l)NxN square$() of $(item)Printer Casing$()$(li)Put the $(l)controller$() in the $(l)center$() cell$(li)$(l)Right-click$() the controller to form$(br2)All base blocks sit on the controller's own Y level."
+      "text": "Every Fabricator is built the same way:$(li)Lay a flat $(l)NxN square$() of $(item)Printer Casing$()$(li)Put the $(l)controller$() in the $(l)center$()$(li)$(l)Right-click$() it to form$(br2)All base blocks sit on the controller's Y level. $(l)T8 only$(): the four corners must be $(item)Awakened Draconium$()."
     },
     {
       "type": "patchouli:image",

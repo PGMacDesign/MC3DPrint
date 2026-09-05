@@ -7,7 +7,12 @@
     {
       "type": "patchouli:text",
       "title": "Not Printable",
-      "text": "$(l)Not Printable$() means the machine will $(l)never$() print it: no FU value in strict mode, or a spool or restricted trophy.$(br2)Some treasure is $(l)wind-only$(): saddles, name tags and the dragon egg recycle but never print.$(br2)Above the machine's tier reads $(l)Requires a Tier N Printer$()."
+      "text": "$(l)Not Printable$() means the machine will $(l)never$() print it: no FU value in strict mode, or a spool or restricted trophy.$(br2)Free structural blocks are the exception. Water, fire and farmland have no item at all and always print.$(br2)Above the machine's tier reads $(l)Requires a Tier N Printer$()."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Wind-Only",
+      "text": "Some treasure recycles but never prints: saddles, name tags, wither skulls and the dragon egg all wind into filament at the Winder.$(br2)They are a deliberate $(l)sink$(). Printing them back would undo the point of spending them."
     }
   ]
 }

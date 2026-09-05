@@ -12,8 +12,13 @@
     },
     {
       "type": "patchouli:text",
+      "title": "Losing The Channel",
+      "text": "The terminal uses a $(l)channel$(), like AE2's own terminals, so a busy network wants a dense cable or a controller.$(br2)With no channel it goes $(l)offline$(): an open screen closes and nothing new is dispatched.$(br2)A running order $(l)holds$() until the network is back, and spends nothing while it waits."
+    },
+    {
+      "type": "patchouli:text",
       "title": "Connecting Machines",
-      "text": "A printer or Fabricator joins the network by $(l)touching$() it: put the machine against any AE2 cable or device on the same network, on any side.$(br2)No MC3D Cable, interface or storage bus is involved.$(br2)On a Fabricator the $(l)controller$() must touch the network, not the casing."
+      "text": "A printer or Fabricator joins the network by $(l)touching$() it. Put the machine against any AE2 cable or device and the cable $(l)connects to it$(), the same as any AE2 machine.$(br2)It costs no channel. No MC3D Cable, interface or storage bus is involved.$(br2)On a Fabricator the $(l)controller$() must touch the network, not the casing."
     },
     {
       "type": "patchouli:text",
@@ -38,7 +43,7 @@
     {
       "type": "patchouli:text",
       "title": "Orders",
-      "text": "Click an item to $(l)select$() it. Type a quantity, or use $(o)-$() and $(o)+$() (Shift steps by ten, 9999 max), then press $(l)Print$().$(br2)Click one of your own orders to $(l)cancel$() it. An order binds to one machine, so two never spend the same spools.$(br2)Interruptions $(l)hold$() rather than fail. Filament is spent only when an item is delivered."
+      "text": "Click an item to $(l)select$() it. Type a quantity, or use $(o)-$() and $(o)+$() (Shift steps by ten, 9999 max), then press $(l)Print$().$(br2)Click one of your own orders to $(l)cancel$() it. An order binds to one machine, so two never spend the same spools.$(br2)Filament is charged as each item is made, and given $(l)back$() to the tiers it came from if that item cannot be delivered."
     },
     {
       "type": "patchouli:text",
