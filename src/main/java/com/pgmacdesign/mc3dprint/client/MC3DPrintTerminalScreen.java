@@ -51,6 +51,13 @@ public class MC3DPrintTerminalScreen extends AbstractContainerScreen<MC3DPrintTe
     private static final int GRID_X = 42, GRID_Y = 36, CELL = 18;
     private static final int RAIL_X = 8, RAIL_Y = 36, RAIL_W = 30, RAIL_ROW = 13;
     private static final int ORDERS_X = 8, ORDERS_Y = 160, ORDER_LINE = 10;
+
+    /**
+     * First order row drawn. The panel has room for a handful of rows while the book holds many
+     * more, so without this the orders past the last visible one could neither be read nor
+     * cancelled. Client-only: which rows you are looking at is nobody else's business.
+     */
+    private int orderScroll;
     private static final int SEARCH_X = 42, SEARCH_Y = 20, SEARCH_W = 140, SEARCH_H = 12;
 
     private EditBox searchBox;
@@ -162,9 +169,11 @@ public class MC3DPrintTerminalScreen extends AbstractContainerScreen<MC3DPrintTe
                     x + ORDERS_X + 2, y + ORDERS_Y + 2, LABEL_DIM, false);
             return;
         }
-        int shown = Math.min(orders.size(), (HEIGHT - 8 - ORDERS_Y) / ORDER_LINE);
+        int rows = visibleOrderRows();
+        orderScroll = clampOrderScroll(orderScroll, orders.size());
+        int shown = Math.min(orders.size() - orderScroll, rows);
         for (int i = 0; i < shown; i++) {
-            MC3DPrintTerminalMenu.OrderView o = orders.get(i);
+            MC3DPrintTerminalMenu.OrderView o = orders.get(orderScroll + i);
             int oy = y + ORDERS_Y + 2 + i * ORDER_LINE;
             int colour = switch (o.status()) {
                 case COMPLETE -> ACCENT;
@@ -181,6 +190,21 @@ public class MC3DPrintTerminalScreen extends AbstractContainerScreen<MC3DPrintTe
             }
             com.pgmacdesign.mc3dprint.compat.RenderCompat.drawString(g, font, trim(line, WIDTH - ORDERS_X - 16), x + ORDERS_X + 2, oy, colour, false);
         }
+        // Say so when the list runs past the panel, or a full book looks like a five-order one.
+        if (orders.size() > rows) {
+            String more = (orderScroll + shown) + "/" + orders.size();
+            com.pgmacdesign.mc3dprint.compat.RenderCompat.drawString(g, font, more,
+                    x + WIDTH - 10 - font.width(more), y + ORDERS_Y + 2, LABEL_DIM, false);
+        }
+    }
+
+    /** How many order rows the panel has room to draw. Drawing and hit testing share it. */
+    private static int visibleOrderRows() {
+        return (HEIGHT - 8 - ORDERS_Y) / ORDER_LINE;
+    }
+
+    private static int clampOrderScroll(int value, int total) {
+        return Math.max(0, Math.min(value, Math.max(0, total - visibleOrderRows())));
     }
 
     @Override
@@ -289,7 +313,13 @@ public class MC3DPrintTerminalScreen extends AbstractContainerScreen<MC3DPrintTe
         }
         int row = (int) ((mouseY - oy) / ORDER_LINE);
         List<MC3DPrintTerminalMenu.OrderView> orders = menu.orders();
-        return row >= 0 && row < orders.size() ? orders.get(row) : null;
+        // Bounded by what is DRAWN, not by how many orders exist: indexing the whole list let a
+        // click on blank space below the last drawn row cancel an order the player could not see.
+        if (row < 0 || row >= visibleOrderRows()) {
+            return null;
+        }
+        int index = clampOrderScroll(orderScroll, orders.size()) + row;
+        return index < orders.size() ? orders.get(index) : null;
     }
 
     /** Shared by both mouseClicked shapes, so the ordering rule exists once. */
@@ -312,6 +342,11 @@ public class MC3DPrintTerminalScreen extends AbstractContainerScreen<MC3DPrintTe
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double dx, double dy) {
+        if (overOrders((int) mouseX, (int) mouseY)) {
+            orderScroll = clampOrderScroll(
+                    orderScroll - (int) Math.signum(dy), menu.orders().size());
+            return true;
+        }
         if (overGrid((int) mouseX, (int) mouseY)) {
             menu.setScrollRow(menu.scrollRow() - (int) Math.signum(dy));
             return true;
@@ -365,6 +400,11 @@ public class MC3DPrintTerminalScreen extends AbstractContainerScreen<MC3DPrintTe
             return 0;
         }
         return (mouseY - ry) / RAIL_ROW + 1;
+    }
+
+    private boolean overOrders(int mouseX, int mouseY) {
+        return mouseX >= leftPos + ORDERS_X && mouseX < leftPos + WIDTH - 8
+                && mouseY >= topPos + ORDERS_Y && mouseY < topPos + HEIGHT - 8;
     }
 
     private boolean overGrid(int mouseX, int mouseY) {

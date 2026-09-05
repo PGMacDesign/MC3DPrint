@@ -9,6 +9,8 @@ The MC3DPrint Terminal is a catalog you order from. It attaches to an ME cable l
 
 It requires **Applied Energistics 2**. Without AE2 installed the terminal does not exist, and nothing else in the mod changes.
 
+The terminal **uses a channel**, exactly like AE2's own terminals, so on a busy network it wants a dense cable or a controller. With no channel the terminal goes dark: the screen stops updating and orders wait until the channel comes back.
+
 ## It dispatches, it does not craft
 
 The terminal never makes anything itself. Ordering queues a job against a real printer or fabricator, which does the work at its normal speed, its normal RF draw and its normal filament cost.
