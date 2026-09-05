@@ -14,16 +14,8 @@
     "hidden": true
   },
   "criteria": {
-    "placed_t8": {
-      "trigger": "minecraft:placed_block",
-      "conditions": {
-        "location": [
-          {
-            "condition": "minecraft:block_state_property",
-            "block": "mc3dprint:tier8_fabricator"
-          }
-        ]
-      }
+    "formed_t8": {
+      "trigger": "mc3dprint:t8_formed"
     }
   }
 }

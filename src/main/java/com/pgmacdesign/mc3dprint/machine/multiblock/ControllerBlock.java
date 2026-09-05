@@ -61,6 +61,14 @@ public class ControllerBlock extends PrinterBlock {
                 player.displayClientMessage(Component.translatable("message.mc3dprint.multiblock_formed",
                         tier().number()), true);
                 level.playSound(null, pos, SoundEvents.BEACON_ACTIVATE, SoundSource.BLOCKS, 0.6F, 1.2F);
+                // Awarded here, on a validated form, rather than on placing the controller.
+                if (player instanceof net.minecraft.server.level.ServerPlayer served) {
+                    if (tier() == MachineTier.T7) {
+                        com.pgmacdesign.mc3dprint.advancement.ModCriteria.T7_FORMED.trigger(served);
+                    } else if (tier() == MachineTier.T8) {
+                        com.pgmacdesign.mc3dprint.advancement.ModCriteria.T8_FORMED.trigger(served);
+                    }
+                }
             }
         }
         return InteractionResult.sidedSuccess(level.isClientSide);

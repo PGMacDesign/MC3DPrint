@@ -34,11 +34,27 @@ Nothing is hidden. A greyed row tells you what to go build, and the catalog does
 
 Search matches both the display name and the registry id, so typing a mod id narrows things down when two mods ship an item with the same name.
 
+## Connecting your printers
+
+A printer or Fabricator joins the terminal's network by **touching it**. Put the machine directly against any AE2 cable or device that belongs to the same network, on any of its six sides, and it is connected. That is the whole rule.
+
+What you do **not** need:
+
+- No MC3D Cable. That carries RF and Filament Units between MC3DPrint machines and has nothing to do with the ME network.
+- No ME Interface, storage bus or import bus. The terminal finds machines itself.
+- No particular distance. A machine is either touching the network or it is not, so "too far away" is never the reason one is missing.
+
+On a Fabricator it is the **controller** that has to touch the network, not the casing.
+
+The header line counts what it found, for example `4 machines, best T4`. If a machine you built is not in that count, it is not touching the network.
+
 ## The tier rail
 
 Down the left edge, one row per tier, showing the filament that could pay a cost at that tier. Hover any row for exact figures.
 
 Each row counts its own tier **and every tier above it**, because spending is down-only: a Tier 3 spool will pay a Tier 1 cost, but a Tier 1 spool will never pay a Tier 3 one. One combined total would be the number that lies to you, since most of it might sit below the tier you are looking at.
+
+A tier is **orderable** when your best machine's tier is at least that tier. A Tier 4 printer prints Tier 1 through Tier 4 and nothing above, no matter how much filament you have. So `Needs a T6 machine; your best is T4` means build or connect a bigger machine: it is not a filament problem and not a wiring problem.
 
 ## Orders
 

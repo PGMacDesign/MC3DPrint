@@ -243,9 +243,18 @@ public class MC3DPrintTerminalScreen extends AbstractContainerScreen<MC3DPrintTe
                             Component.literal("Tier " + railTier),
                             Component.literal(menu.fuAtTier(railTier) + " FU available")
                                     .withStyle(st -> st.withColor(ACCENT)),
+                            // Name the actual numbers. "Within reach of your best machine" told
+                            // the player nothing: it never said what the best machine was, nor
+                            // what "reach" meant, and reach sounds like distance when it means
+                            // tier. A machine joins by TOUCHING the network, so distance is never
+                            // the answer to why a tier is unavailable.
                             Component.literal(railTier <= menu.bestMachineTier()
-                                    ? "Within reach of your best machine"
-                                    : "No machine on this network can print Tier " + railTier)
+                                    ? "Your best machine is T" + menu.bestMachineTier()
+                                            + ", so it can print this tier"
+                                    : (menu.machineCount() == 0
+                                            ? "No printer is touching this network yet"
+                                            : "Needs a T" + railTier + " machine; your best is T"
+                                                    + menu.bestMachineTier()))
                                     .withStyle(st -> st.withColor(
                                             railTier <= menu.bestMachineTier() ? LABEL_DIM : WARN))),
                     mouseX, mouseY);
