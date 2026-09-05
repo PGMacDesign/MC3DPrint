@@ -9,7 +9,7 @@ The MC3DPrint Terminal is a catalog you order from. It attaches to an ME cable l
 
 It requires **Applied Energistics 2**. Without AE2 installed the terminal does not exist, and nothing else in the mod changes.
 
-The terminal **uses a channel**, exactly like AE2's own terminals, so on a busy network it wants a dense cable or a controller. With no channel the terminal goes dark: the screen stops updating and orders wait until the channel comes back.
+The terminal **uses a channel**, exactly like AE2's own terminals, so on a busy network it wants a dense cable or a controller. With no channel the terminal goes **offline**: an open screen closes, queued orders stop being handed to machines, and an order already running holds where it is, because its output has nowhere to go until the network is back. Nothing is charged while it holds, and everything resumes when the channel returns.
 
 ## It dispatches, it does not craft
 
@@ -51,7 +51,7 @@ An order binds to one machine and that machine runs one order at a time, so two 
 - Out of filament: holds until filament returns, then resumes
 - Out of power: holds
 - Nowhere to put the output: holds, and importantly spends nothing while waiting
-- The machine loses its channel or leaves the network: the order is released and looks for another machine
+- The machine leaves the network: the order is released and looks for another machine
 
 Filament is spent if and only if an item is delivered. There is no state in which the terminal charges you for something you did not receive.
 
