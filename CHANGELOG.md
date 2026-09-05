@@ -3,12 +3,24 @@
 All notable changes to **MC3DPrint**. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/). Versions before 0.3.0 predate this file.
 
-## [1.3.0] - 2026-08-14
+## [1.3.0] - 2026-09-05
 
-Playtest hardening: an un-print for Deconstruct Mode, a library you can curate, and two
-duplication holes closed.
+A rebalancing pass over what things cost, plus an Applied Energistics front end for the printers.
+Crops, doors and beds were all priced wrong, three duplication holes are closed, and the MC3DPrint
+Terminal lets an ME network order prints paid in Filament Units.
 
 ### Added
+- **MC3DPrint Terminal**: an Applied Energistics 2 cable part that lists everything your networked
+  printers and formed Fabricators (T5-T8) can make, and orders it paid in Filament Units instead of
+  ingredients. It **dispatches** rather than crafts: an order queues a job on a real machine, which
+  does the work at its normal speed, RF draw and filament cost, so an order costs exactly what
+  printing the same item by hand costs. An order binds to one machine and a machine runs one order at
+  a time, so two orders never spend the same spools. Interruptions **hold** rather than fail: no
+  filament, no power, nowhere to put the output, or the machine losing its channel all pause and
+  resume, and an order held with nowhere to deliver spends nothing. Filament is spent if and only if
+  an item is delivered. Orders record who placed them and only the placer may cancel one, since the
+  order book is shared by everyone on the network. Finished items go to ME storage. Needs AE2
+  installed; without it the terminal does not exist and nothing else in the mod changes.
 - **Redstone Module**: a fifth printer upgrade, capped at 1 per machine (the other four cap at 4). The
   machine emits a full-strength weak signal from all six faces while it is actively printing or
   deconstructing, and nothing when idle or paused (no power, output full, obstructed, out of filament,
