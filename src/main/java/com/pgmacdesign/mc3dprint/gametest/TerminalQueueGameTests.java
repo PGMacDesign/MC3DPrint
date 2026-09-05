@@ -373,8 +373,16 @@ public class TerminalQueueGameTests {
                         + ", which the network is not holding");
             }
         }
-        if (stockOnly.stream().noneMatch(e -> e.item() == Items.IRON_INGOT)) {
+        var stockedIron = stockOnly.stream().filter(e -> e.item() == Items.IRON_INGOT)
+                .findFirst().orElse(null);
+        if (stockedIron == null) {
             throw new GameTestAssertException("a stocked, printable item was not listed");
+        }
+        // Listed is not the same claim as orderable: without this, a regression that greyed every
+        // stocked row would still pass the loop above.
+        if (!stockedIron.orderable()) {
+            throw new GameTestAssertException("stocked iron at tier 8 with unlimited filament must"
+                    + " be orderable, got " + stockedIron.verdict());
         }
         var stockedSkull = stockOnly.stream()
                 .filter(e -> e.item() == Items.WITHER_SKELETON_SKULL)
@@ -386,6 +394,13 @@ public class TerminalQueueGameTests {
         if (stockedSkull.orderable()) {
             throw new GameTestAssertException("a wind-only item became orderable just by being in"
                     + " stock; blacklisted has to mean blacklisted");
+        }
+        // The loop above proves nothing unstocked is listed, so an excess row can only be a
+        // duplicate. Checked this way rather than against an unrestricted build, which prices the
+        // whole registry inside one tick and starved a neighbouring test.
+        if (stockOnly.size() > stocked.size()) {
+            throw new GameTestAssertException("catalog listed " + stockOnly.size()
+                    + " rows for " + stocked.size() + " stocked items");
         }
         helper.succeed();
     }
@@ -518,50 +533,6 @@ public class TerminalQueueGameTests {
             throw new GameTestAssertException("remaining " + back.remaining()
                     + " exceeds the order of " + back.quantity()
                     + "; the machine would print and bill for the difference");
-        }
-        helper.succeed();
-    }
-
-    /**
-     * The catalog mirrors the network's contents, and being in stock does not launder a ban.
-     *
-     * <p>Two halves, and the second is the one that matters: stock decides what is LISTED, never
-     * what is orderable. A wind-only item sitting in a drive has to stay refused, or "blacklisted"
-     * would quietly mean "blacklisted unless you own one".
-     */
-    @GameTest(template = "empty5", timeoutTicks = 40)
-    public static void theCatalogShowsStockWithoutLaunderingABan(GameTestHelper helper) {
-        java.util.Set<net.minecraft.world.item.Item> stocked =
-                java.util.Set.of(Items.IRON_INGOT, Items.DRAGON_EGG);
-        var listed = com.pgmacdesign.mc3dprint.machine.terminal.TerminalCatalog.build(
-                8, tier -> 1_000_000, stocked);
-
-        for (var e : listed) {
-            if (!stocked.contains(e.item())) {
-                throw new GameTestAssertException("catalog listed " + e.item()
-                        + ", which the network is not holding");
-            }
-        }
-        if (listed.stream().noneMatch(e -> e.item() == Items.IRON_INGOT)) {
-            throw new GameTestAssertException("a stocked, printable item was not listed");
-        }
-
-        var egg = listed.stream().filter(e -> e.item() == Items.DRAGON_EGG).findFirst()
-                .orElseThrow(() -> new GameTestAssertException(
-                        "a stocked item must still be listed even when it cannot be ordered,"
-                                + " because the row is where the reason is shown"));
-        if (egg.orderable()) {
-            throw new GameTestAssertException("a wind-only item became orderable just by being in"
-                    + " stock; blacklisted has to mean blacklisted");
-        }
-
-        // Deliberately NOT compared against an unrestricted build. That sweep prices every item
-        // in the registry, and doing it inside a gametest tick starved a neighbouring test of
-        // ticks badly enough to fail it. The loop above already proves nothing unstocked is
-        // listed, which is the same claim for none of the cost.
-        if (listed.size() > stocked.size()) {
-            throw new GameTestAssertException("catalog listed " + listed.size()
-                    + " rows for " + stocked.size() + " stocked items");
         }
         helper.succeed();
     }

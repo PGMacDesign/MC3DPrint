@@ -10,8 +10,8 @@
     },
     {
       "type": "patchouli:text",
-      "text": "$(l)Tier 1$(): inferium ore in the Nether and the End, 20 FU.$(br2)$(l)Tier 2$(): prosperity ore in both, 4 FU.",
-      "title": "4 pinned values"
+      "text": "The essence ladder is pinned rung by rung, inferium at $(l)Tier 1$() up to supremium at $(l)Tier 5$(), so climbing it can never mint filament. $(l)Mystical Agradditions$() is a separate hook and its Nether and End ores are priced the same way.$(br2)Everything awakened is left $(l)unvalued$(): the Awakening Altar is a recipe the valuator cannot read, and that progression gate holds.",
+      "title": "Values"
     },
     {
       "type": "patchouli:text",

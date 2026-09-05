@@ -10,8 +10,8 @@
     },
     {
       "type": "patchouli:text",
-      "text": "$(l)Tier 2$(): zinc and its ores at 18 FU, andesite alloy at 12.$(br2)$(l)Tier 3$(): brass 22, rose quartz 10.$(br2)Andesite alloy is the mod's early staple and is priced accordingly, so printing a stack of it is never the cheap route past actually building the machine that makes it.",
-      "title": "6 pinned values"
+      "text": "Millstones, mixers and presses are not crafting recipes, so zinc, andesite alloy, brass and rose quartz are priced by hand at $(l)Tier 2$() and $(l)Tier 3$().$(br2)Andesite alloy is the mod's early staple and is priced accordingly, so printing a stack of it is never the cheap route past building the machine that makes it.",
+      "title": "Values"
     }
   ]
 }

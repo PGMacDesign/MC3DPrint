@@ -69,8 +69,7 @@ public final class TerminalRequests {
 
         // Re-decide eligibility here rather than believing the row the client drew. The catalog it
         // is looking at may be a tick stale, or may not have come from us at all.
-        java.util.Set<net.minecraft.world.item.Item> stocked = host.stockedItems();
-        if (stocked != null && !stocked.contains(item)) {
+        if (!host.stocksNow(item)) {
             // Re-checked here, not just filtered out of the catalog: the catalog is advisory and
             // this packet carries an item id the client chose. Without this, a crafted packet
             // could order anything priced, stocked or not.

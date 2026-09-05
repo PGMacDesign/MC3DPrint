@@ -21,7 +21,7 @@ It also means you can watch a fabricator chew through a stack of sixty-four, whi
 
 ## The catalog
 
-Every item with a Filament Unit value appears, sorted by tier and then by cost.
+Every stocked item that carries a Filament Unit value appears, sorted by tier and then by cost.
 
 Items you cannot order stay in the list, greyed, with the reason in the tooltip:
 
@@ -30,9 +30,11 @@ Items you cannot order stay in the list, greyed, with the reason in the tooltip:
 - **Restricted trophy**, for items only ever placed by an official blueprint
 - **Not enough filament at this tier**
 
-Nothing is hidden. A greyed row tells you what to go build, and the catalog does not reshuffle under your cursor as your filament rises and falls.
+Nothing stocked is hidden. A greyed row tells you what to go build, and the catalog does not reshuffle under your cursor as your filament rises and falls.
 
 Search matches both the display name and the registry id, so typing a mod id narrows things down when two mods ship an item with the same name.
+
+The grid scrolls with the mouse wheel, or by dragging the scrollbar down its right edge the way the creative inventory works.
 
 ## The catalog mirrors your network
 
@@ -71,7 +73,9 @@ A tier is **orderable** when your best machine's tier is at least that tier. A T
 
 ## Orders
 
-Click an item to order one, shift-click for a stack. Orders appear at the bottom with their progress.
+Click an item to **select** it. The action bar under the grid shows what you picked and what it costs; set a quantity with the `-` and `+` buttons, holding Shift to step by ten, then press **Print** to queue it. One order can be up to 1024 items.
+
+Orders appear at the bottom with their progress.
 
 Click one of your own orders to cancel it. Orders belong to whoever placed them, so you cannot cancel someone else's.
 

@@ -34,8 +34,11 @@ class FuFormatTest {
             String s = FuFormat.abbreviate(v);
             assertTrue(s.length() <= 4, v + " rendered as " + s);
         }
-        assertTrue(FuFormat.abbreviate(Long.MAX_VALUE).length() <= 5,
-                "even an absurd total stays short: " + FuFormat.abbreviate(Long.MAX_VALUE));
+        // Four, not five. The earlier version of this assertion allowed five and so encoded the
+        // very overflow the class promises not to produce.
+        assertTrue(FuFormat.abbreviate(Long.MAX_VALUE).length() <= 4,
+                "even an absurd total stays four characters: "
+                        + FuFormat.abbreviate(Long.MAX_VALUE));
     }
 
     @Test

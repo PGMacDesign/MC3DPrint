@@ -10,13 +10,8 @@
     },
     {
       "type": "patchouli:text",
-      "text": "$(l)Tier 2$(): fluorite and its ores at 10 FU.$(br2)$(l)Tier 3$(): uranium 25, steel 25, bronze 22, infused alloy 12.$(br2)$(l)Tier 4$(): refined glowstone 35.$(br2)$(l)Tier 5$(): refined obsidian 60, reinforced alloy 70.",
-      "title": "14 pinned values"
-    },
-    {
-      "type": "patchouli:text",
-      "text": "$(l)Tier 6$(): atomic alloy at 130 FU.$(br2)$(l)Tier 8$(): an $(l)antimatter pellet$() at 600, one of only two Tier 8 materials MC3DPrint knows about. It needs an antimatter plant, which is roughly where the mod ends, so it is priced to match.",
-      "title": "The Far End"
+      "text": "Mekanism's ores are mined and its alloys come from custom machines, so both are priced by hand. They span $(l)Tier 2$() to $(l)Tier 6$(), with one exception at the very top.$(br2)An $(l)antimatter pellet$() sits at $(l)Tier 8$(), one of only two Tier 8 materials MC3DPrint knows about. It needs an antimatter plant, which is roughly where the mod ends.",
+      "title": "Values"
     }
   ]
 }

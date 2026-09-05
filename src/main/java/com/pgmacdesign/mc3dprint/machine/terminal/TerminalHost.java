@@ -51,6 +51,19 @@ public interface TerminalHost {
     }
 
     /**
+     * Whether the network holds {@code item} RIGHT NOW, asked without the cache.
+     *
+     * <p>{@link #stockedItems()} is cached for a second so a per-tick sync does not walk the
+     * network's contents, which is fine for deciding what to DRAW. It is not fine for deciding
+     * what may be ORDERED: a snapshot up to a second old would let the last copy of something be
+     * taken out and the terminal still accept an order for it, and nothing downstream re-checks.
+     */
+    default boolean stocksNow(net.minecraft.world.item.Item item) {
+        java.util.Set<net.minecraft.world.item.Item> stocked = stockedItems();
+        return stocked == null || stocked.contains(item);
+    }
+
+    /**
      * Whether this terminal is still a thing {@code player} may act through: the part still exists,
      * its node is live, and they are close enough to reach it.
      *
