@@ -13,16 +13,8 @@
     "frame": "challenge"
   },
   "criteria": {
-    "placed_t7": {
-      "trigger": "minecraft:placed_block",
-      "conditions": {
-        "location": [
-          {
-            "condition": "minecraft:block_state_property",
-            "block": "mc3dprint:tier7_fabricator"
-          }
-        ]
-      }
+    "formed_t7": {
+      "trigger": "mc3dprint:t7_formed"
     }
   }
 }

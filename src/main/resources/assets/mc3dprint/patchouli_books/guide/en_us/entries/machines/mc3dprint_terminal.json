@@ -12,6 +12,16 @@
     },
     {
       "type": "patchouli:text",
+      "title": "Connecting Machines",
+      "text": "A printer or Fabricator joins the network by $(l)touching$() it. Put the machine directly against any AE2 cable or device on the same network, on any side, and it is connected.$(br2)No MC3D Cable is involved: that carries RF and filament between MC3DPrint machines, not ME data. No interface or storage bus either.$(br2)On a Fabricator it is the $(l)controller$() that must touch the network, not the casing."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Why A Tier Is Greyed",
+      "text": "A tier is orderable when your $(l)best machine's tier$() is at least that tier. A Tier 4 printer prints Tier 1 to Tier 4 and nothing above, however much filament you have.$(br2)So $(o)Needs a T6 machine; your best is T4$() means build or connect a bigger machine. It is not a filament problem and not a wiring problem.$(br2)Distance never matters: a machine is either touching the network or it is not."
+    },
+    {
+      "type": "patchouli:text",
       "title": "The Catalog",
       "text": "Every priced item appears, sorted by tier then cost.$(br2)Things you $(l)cannot$() order stay listed and greyed, with the reason: needs a higher tier, wind-only, restricted trophy, or not enough filament.$(br2)Nothing is hidden, so a greyed row tells you what to go build, and the grid does not reshuffle under your cursor as filament moves.$(br2)Search matches the item name $(l)and$() its registry id."
     },
