@@ -103,6 +103,9 @@ Every jar goes to both CurseForge and the GitHub release. The 26.x minimums are 
 because NeoForge still renames API within those lines: an older 26.1 is missing classes
 the jar links against, so the loader refuses it rather than half-loading.
 
+NeoForge 26.1.2.x is published against **Minecraft 26.1.2**, so a 26.1 instance has to be
+on that patch to install a loader this jar accepts. The mod itself accepts any 26.1.x.
+
 1. Install **Minecraft** with the matching loader from the table above.
 2. Download the jar for your version, `mc3dprint-<version>-forge-1.20.1.jar` or
    `mc3dprint-<version>-neoforge-<mc>.jar`, from
