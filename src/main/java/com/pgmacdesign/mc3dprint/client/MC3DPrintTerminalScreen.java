@@ -318,7 +318,11 @@ public class MC3DPrintTerminalScreen extends AbstractContainerScreen<MC3DPrintTe
         g.fill(x + ORDERS_X - 1, y + ACTION_Y - 1, x + WIDTH - 8, y + ACTION_Y + ACTION_H, WELL);
         CatalogEntry sel = selectedEntry();
         if (sel == null) {
-            str(g, "Click an item to select it", x + ORDERS_X + 3, y + ACTION_Y + 3, LABEL_DIM);
+            // Sits directly above the order list, so it reads as that list's label rather
+            // than as advice about the grid.
+            str(g, net.minecraft.network.chat.Component.translatable(
+                            "gui.mc3dprint.terminal.select_hint").getString(),
+                    x + ORDERS_X + 3, y + ACTION_Y + 3, LABEL_DIM);
             return;
         }
         String name = sel.stack().getHoverName().getString();
