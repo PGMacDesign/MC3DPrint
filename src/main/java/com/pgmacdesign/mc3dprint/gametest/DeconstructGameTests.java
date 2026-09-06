@@ -336,9 +336,17 @@ public class DeconstructGameTests {
     }
 
     /** Fails the sequence step unless the pad print has fully landed. */
+    /**
+     * Used as a {@code thenWaitUntil} condition, so on a timeout the LAST message thrown is what
+     * CI reports. "print still running" alone said nothing about why, which cost a full
+     * investigation the one time this timed out on a runner. The state separates the cases that
+     * matter: a stalled machine reads PAUSED_NO_POWER / PAUSED_NO_FILAMENT / OBSTRUCTED, while a
+     * merely slow one reads PRINTING.
+     */
     private static void requirePrintFinished(PrinterBlockEntity printer) {
         if (printer.activeJob() != null) {
-            throw new GameTestAssertException("print still running");
+            throw new GameTestAssertException(
+                    "print still running (state=" + printer.state() + ")");
         }
         if (printer.lastPrint() == null) {
             throw new GameTestAssertException("print did not record a placement");
