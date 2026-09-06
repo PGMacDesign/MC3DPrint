@@ -84,4 +84,49 @@ public class CasingBlock extends Block implements EntityBlock {
         super.onRemove(state, level, pos, newState, isMoving);
     }
     //?}
+
+    // --- Redstone Module output, relayed from the controller ---
+    //
+    // A formed pad buries its controller: on a T8 it is one block of 81, with only its top and
+    // bottom faces exposed, and a real build usually has both of those occupied. Emitting only
+    // from the controller therefore left players with nowhere to take the signal from. Casings
+    // already stand in for the machine for power and for the scanner, so they stand in here too:
+    // the signal can be read off any face of the structure.
+    //
+    // The state lives on the controller, not here. A casing holds no emission of its own, so the
+    // controller pokes every casing's neighbours when its emission flips (see
+    // PrinterBlockEntity.notifyCasingsOfEmission), which is what makes the signal turn back OFF.
+
+    @Override
+    @SuppressWarnings("deprecation")
+    public boolean isSignalSource(BlockState state) {
+        // State-free, because the answer depends on the controller rather than on this block, and
+        // this overload gets no world access. Dust therefore connects to a casing even while the
+        // machine is idle, which is what you want when wiring the thing up.
+        return true;
+    }
+
+    @Override
+    @SuppressWarnings("deprecation")
+    public int getSignal(BlockState state, net.minecraft.world.level.BlockGetter level,
+                         net.minecraft.core.BlockPos pos, net.minecraft.core.Direction direction) {
+        return emittingController(level, pos) ? 15 : 0;
+    }
+
+    /** True when this casing belongs to a formed machine whose Redstone Module is emitting. */
+    private static boolean emittingController(net.minecraft.world.level.BlockGetter level,
+                                              net.minecraft.core.BlockPos pos) {
+        if (!(level.getBlockEntity(pos) instanceof CasingBlockEntity casing)) {
+            return false;
+        }
+        com.pgmacdesign.mc3dprint.machine.PrinterBlockEntity controller = casing.printerController();
+        if (controller == null) {
+            return false;
+        }
+        BlockState controllerState = controller.getBlockState();
+        return controllerState.hasProperty(
+                        com.pgmacdesign.mc3dprint.machine.PrinterBlock.EMITTING)
+                && controllerState.getValue(
+                        com.pgmacdesign.mc3dprint.machine.PrinterBlock.EMITTING);
+    }
 }
