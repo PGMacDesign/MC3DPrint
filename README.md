@@ -88,14 +88,20 @@ in [Design notes](#design-notes-economy--anti-exploit-rationale) below.
 MC3DPrint is a standard Forge/NeoForge mod. Every supported version ships from the
 same release:
 
-| Minecraft | Loader | On CurseForge |
-|---|---|---|
-| 1.20.1 | Forge 47.4.10+ | yes |
-| 1.21.1 | NeoForge | yes |
-| 1.21.8 · 1.21.9 · 1.21.10 · 1.21.11 · 26.1 · 26.2 | NeoForge | GitHub release only |
+| Minecraft | Minimum loader |
+|---|---|
+| 1.20.1 | Forge 47.4.10 |
+| 1.21.1 | NeoForge 21.1 |
+| 1.21.8 | NeoForge 21.8 |
+| 1.21.9 | NeoForge 21.9 |
+| 1.21.10 | NeoForge 21.10 |
+| 1.21.11 | NeoForge 21.11 |
+| 26.1 | NeoForge 26.1.2.77 |
+| 26.2 | NeoForge 26.2.0.16 |
 
-CurseForge carries the two soak-tested builds; the forward jars are attached to every
-GitHub release and get promoted to CurseForge as each one clears its in-world soak.
+Every jar goes to both CurseForge and the GitHub release. The 26.x minimums are exact
+because NeoForge still renames API within those lines: an older 26.1 is missing classes
+the jar links against, so the loader refuses it rather than half-loading.
 
 1. Install **Minecraft** with the matching loader from the table above.
 2. Download the jar for your version, `mc3dprint-<version>-forge-1.20.1.jar` or
