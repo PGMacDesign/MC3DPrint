@@ -3,7 +3,7 @@
 All notable changes to **MC3DPrint**. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/). Versions before 0.3.0 predate this file.
 
-## [1.3.0] - 2026-09-05
+## [1.3.0] - 2026-09-06
 
 A rebalancing pass over what things cost, plus an Applied Energistics front end for the printers.
 Crops, doors and beds were all priced wrong, three duplication holes are closed, and the MC3DPrint
@@ -69,16 +69,25 @@ Terminal lets an ME network order prints paid in Filament Units.
   it switches you to, and nothing else on the panel broke the tie.
 - A deconstruct that stalls with nowhere to put its filament says **Spool Missing or Full** instead of
   *Output Full*, which sent players looking for a blocked output slot that deconstruct does not have.
-- **The Filament Converter is no longer gated on Applied Energistics 2.** Its recipe required AE2
-  while its behaviour never used it: it asks each neighbouring block for an item handler, which a
-  chest, hopper or pipe answers just as well as an ME Interface. The gate cost non-AE2 packs a
-  useful automation block for no mechanical reason. Both doc surfaces said it read an ME network,
-  which it never did, and now describe what it actually does.
 - The Blueprint Repository's burn button reads **STL to Disc** instead of *STL to GCODE*.
 - Base draconium drops from 250 FU to 40, still Tier 7.
 - The Tier 8 fabricator and spool take **awakened draconium**, not dragon eggs.
 
 ### Fixed
+- **Docking a filament spool no longer crashes the client on 1.21.11 and 26.1.** Minecraft moved
+  line width out of pipeline state and into the vertex in 1.21.11, so every line vertex in the
+  overlay wireframes has to carry it. Those two versions still wrote the old, shorter vertex. The
+  buffer does not reject it where it is written: it throws `Missing elements in vertex: LineWidth`
+  when the next vertex begins, from inside the render frame, which takes the client down. 1.21.8
+  through 1.21.10 and the 1.20.1 Forge build predate the change and were never affected.
+- **The 26.x jars now name the NeoForge build they actually need.** The 26.1 jar advertised
+  `[26.1,)` while linking `BreakBlockEvent`, which NeoForge added partway through that line (absent
+  in 26.1.2.20-beta, present from 26.1.2.21-beta). On an earlier 26.1 the loader accepted the mod
+  and then failed to construct it with a `NoClassDefFoundError`, which reads as a broken mod rather
+  than an out-of-date loader. Both 26.x jars now floor at the build they are compiled against, so an
+  older loader declines the jar with a version message instead. Note that NeoForge 26.1.2.x is
+  published against Minecraft 26.1.2, so a 26.1 instance needs that patch to install a loader these
+  jars accept.
 - **A door, bed or double plant is charged once instead of twice.** Both halves of a two-block piece
   are separate placements holding the same block, and both resolve to the same item, so every door
   and bed in a build has always cost two. That put the Efficiency break-even out of reach for those
@@ -141,6 +150,13 @@ Terminal lets an ME network order prints paid in Filament Units.
 - A re-placed fabricator restores the formed look rather than only its active casings.
 - Deconstruct Mode with no region no longer wedges on a permanent *Not Printable*.
 - A comparator no longer pulses `0` between items in Item Mode.
+
+### Removed
+- **The Filament Converter.** It pulled items out of an adjacent inventory and wound them to
+  filament, which is what the Filament Winder already does, so it never earned a slot in the
+  progression. The block, its recipe, its loot table, its textures and its guide pages are all gone.
+  A converter already placed in a world will not survive that world's next load, and anything left
+  inside it goes with it, so empty them before updating.
 
 ## [0.7.0] — 2026-06-20
 
