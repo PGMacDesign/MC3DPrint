@@ -118,6 +118,13 @@ public final class Ae2MachineNodes implements MachineAttachments.Attachment {
 
     @Override
     public void onUnload(PrinterBlockEntity machine) {
+        Level level = machine.getLevel();
+        // Same guard as onLoad, and it matters more here. NODES is keyed by dimension and position,
+        // which a single-player client level shares with the server one, so an unguarded client
+        // unload would destroy the SERVER's node for that machine.
+        if (level == null || level.isClientSide()) {
+            return;
+        }
         Key key = keyOf(machine);
         if (key == null) {
             return;

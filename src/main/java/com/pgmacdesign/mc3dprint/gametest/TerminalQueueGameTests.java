@@ -402,6 +402,34 @@ public class TerminalQueueGameTests {
             throw new GameTestAssertException("catalog listed " + stockOnly.size()
                     + " rows for " + stocked.size() + " stocked items");
         }
+
+        // An unformed controller must never look dispatchable. Its tick returns before the queue
+        // is ever read, so an order bound to one sits there forever instead of moving to a printer
+        // that could run it. Folded in here rather than added as its own @GameTest for the same
+        // shared-world layout reason as the stock block above.
+        BlockPos controllerPos = new BlockPos(3, 1, 3);
+        helper.setBlock(controllerPos,
+                com.pgmacdesign.mc3dprint.registry.ModBlocks.CONTROLLERS.get(0).get());
+        if (!(helper.getBlockEntity(controllerPos)
+                instanceof com.pgmacdesign.mc3dprint.machine.PrinterBlockEntity controller)) {
+            throw new GameTestAssertException("controller block entity missing");
+        }
+        if (controller.isOperable()) {
+            throw new GameTestAssertException("an unformed controller reported itself operable,"
+                    + " so the terminal would dispatch an order it can never run");
+        }
+        // And if it somehow acquires one anyway, the next tick has to hand it back.
+        controller.setTerminalOrder(
+                new com.pgmacdesign.mc3dprint.machine.PrinterBlockEntity.TerminalOrder(
+                        java.util.UUID.randomUUID(), Items.IRON_INGOT,
+                        produced -> 0, (id, count) -> { }, () -> 1));
+        com.pgmacdesign.mc3dprint.machine.PrinterBlockEntity.serverTick(
+                helper.getLevel(), helper.absolutePos(controllerPos),
+                helper.getLevel().getBlockState(helper.absolutePos(controllerPos)), controller);
+        if (controller.hasTerminalOrder()) {
+            throw new GameTestAssertException("an unformed controller kept a terminal order"
+                    + " through a tick; it would never run and never be released");
+        }
         helper.succeed();
     }
 

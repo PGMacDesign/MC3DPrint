@@ -61,7 +61,10 @@ final class Ae2TerminalHost implements TerminalHost {
             if (at == null || tiers.containsKey(at) || !level.isLoaded(at)) {
                 continue;
             }
-            if (level.getBlockEntity(at) instanceof PrinterBlockEntity printer) {
+            // An unformed controller is a PrinterBlockEntity with a grid node like any other, but
+            // its tick returns before the queue is touched, so an order bound to one never runs.
+            if (level.getBlockEntity(at) instanceof PrinterBlockEntity printer
+                    && printer.isOperable()) {
                 // Tier resolved once, here. The comparator used to look it up on both sides of
                 // every comparison, so sorting cost O(n log n) block-entity lookups on top.
                 tiers.put(at, printer.tier().number());

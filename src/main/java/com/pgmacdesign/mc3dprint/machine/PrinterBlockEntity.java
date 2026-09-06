@@ -376,13 +376,30 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         printer.updateRedstoneOutput();
     }
 
+    /**
+     * Whether this machine can actually run work: true for any printer, and for a multiblock
+     * controller only once it has formed.
+     *
+     * <p>Public because a terminal must not dispatch to an unformed controller. {@link #tick()}
+     * bails out before any terminal handling while unformed, so an order bound there would sit
+     * forever instead of finding a machine that could run it.
+     */
+    public boolean isOperable() {
+        BlockState self = getBlockState();
+        return !self.hasProperty(com.pgmacdesign.mc3dprint.machine.multiblock.ControllerBlock.FORMED)
+                || self.getValue(com.pgmacdesign.mc3dprint.machine.multiblock.ControllerBlock.FORMED);
+    }
+
     private void tick() {
         // multiblock controllers only operate while formed
-        if (getBlockState().hasProperty(com.pgmacdesign.mc3dprint.machine.multiblock.ControllerBlock.FORMED)
-                && !getBlockState().getValue(com.pgmacdesign.mc3dprint.machine.multiblock.ControllerBlock.FORMED)) {
+        if (!isOperable()) {
             if (activeJob != null) {
                 cancelActiveJob();
             }
+            // Hand back any terminal order before bailing, exactly as the deconstruct branch below
+            // does. Without this, breaking a casing under a running order strands it on a machine
+            // whose tick returns before it ever looks at the queue.
+            releaseTerminalOrder();
             state = State.IDLE;
             return;
         }
