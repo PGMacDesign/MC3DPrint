@@ -1,6 +1,6 @@
 {
   "name": "Integrations",
   "description": "Which other mods MC3DPrint knows about, and what it does with each of them.",
-  "icon": "mc3dprint:filament_converter",
+  "icon": "mc3dprint:mc3dcable",
   "sortnum": 4
 }

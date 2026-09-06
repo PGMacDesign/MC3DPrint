@@ -1196,7 +1196,7 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
      *
      * <p>Returns the base-FU that would not fit, which should be zero: the drain freed exactly this
      * capacity at exactly these tiers a moment ago. It can be non-zero if another writer (the
-     * Filament Converter topping a spool up, a player hot-swapping one) claimed the space in
+     * a player hot-swapping one) claimed the space in
      * between, so the caller still has to look at it rather than assume the books balanced.
      */
     private long refundLedger(long[] takenByTier) {
@@ -1225,7 +1225,7 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         return unrefunded;
     }
 
-    /** Spool contents changed externally (e.g. Filament Converter top-off). */
+    /** Spool contents changed externally. */
     public void notifySpoolsChanged() {
         setChanged();
         syncToClients();

@@ -129,7 +129,6 @@
   "command.mc3dprint.discovered.reset": "Discovery ledger cleared; every build is findable again",
   "command.mc3dprint.discovered.reseed": "Ledger will re-sync from the library on the next blueprint drop",
   "command.mc3dprint.discovered.needs_player": "Personal libraries track discoveries per player, so run this in-game",
-  "block.mc3dprint.filament_converter": "Filament Converter",
   "block.mc3dprint.filament_rack": "Filament Rack",
   "block.mc3dprint.mc3dcable": "MC3D Cable",
   "block.mc3dprint.blueprint_repository": "Blueprint Repository",

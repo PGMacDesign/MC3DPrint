@@ -11,7 +11,7 @@
     {
       "type": "patchouli:text",
       "title": "Power & Filament",
-      "text": "RF cables connect on $(l)any$() face. Spools dock on the sides: Shift+Right Click the printer with a spool in hand, or Shift+Click it into the spool docks in the GUI.$(br2)Docked spools render on the machine and visibly shrink as filament depletes. The $(item)Filament Converter$() can keep them topped up automatically."
+      "text": "RF cables connect on $(l)any$() face. Spools dock on the sides: Shift+Right Click the printer with a spool in hand, or Shift+Click it into the spool docks in the GUI.$(br2)Docked spools render on the machine and visibly shrink as filament depletes."
     },
     {
       "type": "patchouli:spotlight",

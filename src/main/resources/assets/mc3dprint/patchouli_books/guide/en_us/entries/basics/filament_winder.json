@@ -17,12 +17,6 @@
       "type": "patchouli:text",
       "title": "What It Accepts",
       "text": "Winding is $(l)exact-tier$(): a material only winds into a spool of its own tier, or the GUI reads $(l)Requires Tier X Spool$().$(br2)Unpriced items read $(l)Can't be converted$(). Trivially farmable drops are held back so they cannot be laundered.$(br2)With $(l)Mystical Agradditions$() the $(item)Nether Star$() and $(item)Dragon Egg$() stop winding. $(l)Without$() it, they wind as always."
-    },
-    {
-      "type": "patchouli:spotlight",
-      "item": "mc3dprint:filament_converter",
-      "title": "Filament Converter",
-      "text": "The $(item)Filament Converter$() automates winding. Right-click it with an item to set a filter; it pulls that item from any $(l)adjacent inventory$() and tops up nearby docked spools.$(br2)It only converts when a spool can take the whole yield, so filament is never stranded."
     }
   ]
 }

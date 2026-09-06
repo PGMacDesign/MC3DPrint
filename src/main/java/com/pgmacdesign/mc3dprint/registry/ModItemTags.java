@@ -18,7 +18,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * <h2>Winder blacklist</h2>
  * {@link #WINDER_BLACKLIST} is the "can print, can't wind" list: items that may
  * still cost FU to <em>print</em>, but must never be <em>converted back</em>
- * into filament at the Filament Winder or the Filament Converter.
+ * into filament at the Filament Winder.
  *
  * <p><b>Why this exists (the stick-laundering exploit).</b> Many cheap items
  * have a recipe-derived FU value that is <em>greater in aggregate</em> than the
