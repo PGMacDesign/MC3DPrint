@@ -35,6 +35,30 @@ public final class Ae2Registry {
         return ModList.get().isLoaded(AE2);
     }
 
+    /**
+     * Machines expose an AE2 grid node so cables visibly connect to them. Gated like everything
+     * else here, because the capability token itself is an {@code appeng} class.
+     *
+     * <p>{@link net.minecraftforge.event.AttachCapabilitiesEvent} fires on the FORGE bus rather
+     * than the mod bus, so it is registered from {@link #onCommonSetup} instead of by the class
+     * annotation above, which subscribes this class to the mod bus only.
+     */
+    @SubscribeEvent
+    public static void onCommonSetup(
+            net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent event) {
+        if (!ae2Present()) {
+            return;
+        }
+        event.enqueueWork(() -> {
+            Ae2MachineNodes.install();
+            net.minecraftforge.common.MinecraftForge.EVENT_BUS.addGenericListener(
+                    net.minecraft.world.level.block.entity.BlockEntity.class,
+                    (java.util.function.Consumer<net.minecraftforge.event.AttachCapabilitiesEvent<
+                            net.minecraft.world.level.block.entity.BlockEntity>>)
+                            Ae2MachineNodes::attach);
+        });
+    }
+
     @SubscribeEvent
     public static void onRegister(RegisterEvent event) {
         if (ae2Present()) {

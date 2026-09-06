@@ -74,7 +74,7 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.CLOCK_GENERATOR.get());
                         output.accept(ModItems.REDSTONE_CLOCK.get());
                         if (ae2) {
-                            output.accept(ModItems.FILAMENT_CONVERTER.get());
+                            acceptAe2Part(output, "me_print_terminal");
                         }
                         output.accept(ModItems.REMOTE_TERMINAL.get());
                         output.accept(ModItems.FILAMENT_RACK.get());
@@ -149,4 +149,22 @@ public final class ModCreativeTabs {
                     .build());
 
     private ModCreativeTabs() {}
+
+    /**
+     * Adds an item that only exists when AE2 does, by id.
+     *
+     * <p>The AE2 parts are registered from the AE2-only source set through {@code RegisterEvent},
+     * so they are not in {@link ModItems} and cannot be named here: this class compiles even in
+     * builds that have no AE2 sources at all. Looking the item up by id is what keeps that true.
+     * Without this the MC3DPrint Terminal was registered, craftable and visible in JEI, but sat in
+     * no creative tab at all, so in creative there was no way to get one.
+     */
+    private static void acceptAe2Part(CreativeModeTab.Output output, String path) {
+        net.minecraft.world.item.Item item = net.minecraftforge.registries.ForgeRegistries.ITEMS
+                .getValue(new net.minecraft.resources.ResourceLocation(MC3DPrint.MOD_ID, path));
+        if (item != null && item != net.minecraft.world.item.Items.AIR) {
+            output.accept(item);
+        }
+    }
+
 }

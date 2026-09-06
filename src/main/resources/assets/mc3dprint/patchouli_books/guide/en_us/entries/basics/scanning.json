@@ -6,7 +6,7 @@
   "pages": [
     {
       "type": "patchouli:text",
-      "text": "The $(item)Structure Scanner$() captures any build as a reusable blueprint.$(br2)$(li)Right-click the $(l)first corner$() block$(li)Right-click the $(l)opposite corner$() block$(li)Keep a $(item)Blank Blueprint Disc$() $(l)anywhere in your inventory$(), then right-click the air to scan$(br2)The result is a written $(item)Blueprint Disc$(): portable, tradeable, and printable on any machine of the right tier."
+      "text": "The $(item)Structure Scanner$() captures any build as a blueprint.$(li)Right-click the $(l)first corner$()$(li)Right-click the $(l)opposite corner$()$(li)With a $(item)Blank Blueprint Disc$() anywhere in your inventory, right-click the air$(br2)The result is a written disc: portable and printable on any machine of the right tier."
     },
     {
       "type": "patchouli:crafting",
@@ -26,7 +26,7 @@
     {
       "type": "patchouli:text",
       "title": "Scaffolding",
-      "text": "$(item)Scaffolding$() is how you reach the top corners of a build, so it lands inside most hand scans. The scanner captures it, but the printer acts as if it were not there: it adds $(l)no cost$(), it does $(l)not$() raise the blueprint's tier, and it is $(l)never built$().$(br2)Put it up, scan, tear it down. Without the rule a Tier 1 cottage scanned from a scaffold tower comes back as a $(l)Tier 3$() blueprint needing a machine it never called for."
+      "text": "$(item)Scaffolding$() lands inside most hand scans. The printer acts as if it were not there: $(l)no cost$(), no effect on tier, and $(l)never built$().$(br2)Put it up, scan, tear it down. Without the rule a cottage scanned from a scaffold tower would come back needing a machine it never called for."
     }
   ]
 }

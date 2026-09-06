@@ -129,7 +129,6 @@
   "command.mc3dprint.discovered.reset": "Discovery ledger cleared; every build is findable again",
   "command.mc3dprint.discovered.reseed": "Ledger will re-sync from the library on the next blueprint drop",
   "command.mc3dprint.discovered.needs_player": "Personal libraries track discoveries per player, so run this in-game",
-  "block.mc3dprint.filament_converter": "Filament Converter",
   "block.mc3dprint.filament_rack": "Filament Rack",
   "block.mc3dprint.mc3dcable": "MC3D Cable",
   "block.mc3dprint.blueprint_repository": "Blueprint Repository",
@@ -186,10 +185,6 @@
   "message.mc3dprint.repository.burn_need_blank": "Insert a Blank Blueprint Disc to burn",
   "message.mc3dprint.repository.burn_output_blocked": "Output slot is full",
   "message.mc3dprint.repository.burn_ok": "Burned to disc",
-  "message.mc3dprint.converter_filter_set": "Converter filter: %s",
-  "message.mc3dprint.converter_filter_cleared": "Converter filter cleared",
-  "message.mc3dprint.converter_no_filter": "none — right-click with an item",
-  "message.mc3dprint.converter_status": "Filter: %s",
   "book.mc3dprint.guide.name": "Fabricator's Handbook",
   "book.mc3dprint.guide.landing": "WorldEdit for survival players: scan structures, save them to discs, and print them anywhere — powered by RF and Filament Units.",
   "block.mc3dprint.remote_terminal": "Remote Terminal",
@@ -308,8 +303,10 @@
   "gui.mc3dprint.terminal.no_orders": "No orders",
   "gui.mc3dprint.terminal.no_machines": "No machines on this network",
   "gui.mc3dprint.terminal.not_enough_filament": "Not enough filament at this tier",
-  "gui.mc3dprint.terminal.click_to_order": "Click to order 1, Shift-click for a stack",
+  "gui.mc3dprint.terminal.click_to_order": "Click to select, then set a count and press Print",
+  "gui.mc3dprint.terminal.quantity": "Quantity",
   "block.mc3dprint.me_print_terminal": "MC3DPrint Terminal",
   "item.mc3dprint.me_print_terminal": "MC3DPrint Terminal",
-  "gui.mc3dprint.terminal.offline": "Terminal offline: no channel or no power"
+  "gui.mc3dprint.terminal.offline": "Terminal offline: no channel or no power",
+  "gui.mc3dprint.terminal.select_hint": "Click on a job to cancel it"
 }

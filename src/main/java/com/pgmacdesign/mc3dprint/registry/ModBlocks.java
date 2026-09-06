@@ -68,8 +68,6 @@ public final class ModBlocks {
             () -> new CasingBlock(machineProperties()
                     .lightLevel(s -> s.getValue(CasingBlock.ACTIVE) ? 6 : 0)));
 
-    public static final RegistryObject<Block> FILAMENT_CONVERTER = BLOCKS.register("filament_converter",
-            () -> new com.pgmacdesign.mc3dprint.machine.FilamentConverterBlock(machineProperties()));
 
     public static final RegistryObject<Block> REMOTE_TERMINAL = BLOCKS.register("remote_terminal",
             () -> new com.pgmacdesign.mc3dprint.machine.RemoteTerminalBlock(machineProperties()));

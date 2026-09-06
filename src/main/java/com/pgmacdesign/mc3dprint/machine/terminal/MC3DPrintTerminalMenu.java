@@ -96,7 +96,7 @@ public class MC3DPrintTerminalMenu extends AbstractContainerMenu {
                            int[] fuByTier, int bestMachineTier, int machineCount) {
         this.catalog = catalog;
         this.filtered = null; // a fresh catalog invalidates the filtered view built from the old one
-        this.orders = orders;
+        this.orders = byProgress(orders);
         System.arraycopy(fuByTier, 0, this.fuByTier, 0, Math.min(fuByTier.length, MAX_TIER));
         this.bestMachineTier = bestMachineTier;
         this.machineCount = machineCount;
@@ -123,6 +123,28 @@ public class MC3DPrintTerminalMenu extends AbstractContainerMenu {
 
     public List<OrderView> orders() {
         return orders;
+    }
+
+    /** Exposed for tests: the display order the sync applies. */
+    public static List<OrderView> orderedForDisplay(List<OrderView> incoming) {
+        return byProgress(incoming);
+    }
+
+    private static List<OrderView> byProgress(List<OrderView> incoming) {
+        List<OrderView> live = new ArrayList<>();
+        List<OrderView> waiting = new ArrayList<>();
+        List<OrderView> finished = new ArrayList<>();
+        for (OrderView o : incoming) {
+            switch (o.status()) {
+                case RUNNING, HELD -> live.add(o);
+                case QUEUED -> waiting.add(o);
+                case COMPLETE, CANCELLED -> finished.add(o);
+            }
+        }
+        java.util.Collections.reverse(finished);
+        live.addAll(waiting);
+        live.addAll(finished);
+        return live;
     }
 
     /** Tier-unit FU reachable at exactly {@code tier} (1-based), for the tier rail. */

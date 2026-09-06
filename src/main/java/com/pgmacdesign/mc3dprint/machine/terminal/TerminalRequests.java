@@ -27,7 +27,7 @@ import java.util.UUID;
 public final class TerminalRequests {
 
     /** Ceiling on a single order. Large enough for a stack run, small enough to stay watchable. */
-    public static final int MAX_ORDER_QUANTITY = 1024;
+    public static final int MAX_ORDER_QUANTITY = 9999;
 
     private TerminalRequests() {}
 
@@ -69,6 +69,14 @@ public final class TerminalRequests {
 
         // Re-decide eligibility here rather than believing the row the client drew. The catalog it
         // is looking at may be a tick stale, or may not have come from us at all.
+        if (!host.stocksNow(item)) {
+            // Re-checked here, not just filtered out of the catalog: the catalog is advisory and
+            // this packet carries an item id the client chose. Without this, a crafted packet
+            // could order anything priced, stocked or not.
+            actionBar(player, Component.literal(
+                    "The network is not holding any of that to copy"));
+            return;
+        }
         MachineSnapshot snapshot = host.snapshot(level);
         PrintEligibility.Result eligibility =
                 PrintEligibility.of(new ItemStack(item), snapshot.bestTier());
@@ -92,16 +100,24 @@ public final class TerminalRequests {
         MC3DPrintNetwork.sendTo(player, buildSync(host, snapshot));
     }
 
+    /** One branch-specific call, so the paths above read the same on both lines. */
+    private static void actionBar(ServerPlayer player, Component msg) {
+        player.displayClientMessage(msg, true);
+    }
+
     /**
      * A cheap fingerprint of everything a sync would show. Compared against the last one sent so a
      * per-tick push costs a grid walk and nothing else when nothing has moved, instead of rebuilding
      * and resending the whole item catalog sixty times a second to every viewer.
      */
-    public static int stampOf(MachineSnapshot snapshot, PrintRequestQueue queue) {
+    public static int stampOf(MachineSnapshot snapshot, PrintRequestQueue queue,
+                              int stockedStamp) {
         int stamp = snapshot.machineCount() * 31 + snapshot.bestTier();
         for (int fu : snapshot.fuByTier()) {
             stamp = stamp * 31 + fu;
         }
+        // Stock decides what the catalog contains, so a sync has to notice it moving.
+        stamp = stamp * 31 + stockedStamp;
         for (PrintRequest r : queue.all()) {
             stamp = stamp * 31 + r.id().hashCode();
             stamp = stamp * 31 + r.delivered();
@@ -139,7 +155,8 @@ public final class TerminalRequests {
         int bestTier = snapshot.bestTier();
         int[] fu = snapshot.fuByTier();
         List<CatalogEntry> catalog = TerminalCatalog.build(bestTier,
-                tier -> tier >= 1 && tier <= fu.length ? fu[tier - 1] : 0);
+                tier -> tier >= 1 && tier <= fu.length ? fu[tier - 1] : 0,
+                host.stockedItems());
 
         List<MC3DPrintTerminalMenu.OrderView> orders = new ArrayList<>();
         for (PrintRequest r : host.queue().all()) {

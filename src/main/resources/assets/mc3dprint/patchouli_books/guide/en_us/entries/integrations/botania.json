@@ -1,0 +1,17 @@
+{
+  "name": "Botania",
+  "category": "mc3dprint:integrations",
+  "icon": "minecraft:poppy",
+  "sortnum": 5,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "$(l)Botania$() is a magic mod with no power system: flowers turn things into $(l)mana$(), and mana runs everything else. Nearly all of it is built from blocks and flowers rather than machines with GUIs.$(br2)Its materials come from mana infusion and ritual altars, neither of which is a crafting recipe."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "Mana infusion and the ritual altars are not crafting recipes, so Botania's materials are priced by hand. They run $(l)Tier 3$() to $(l)Tier 6$(), from manasteel up to life essence behind the Gaia ritual.$(br2)Mana diamond is deliberately held below the vanilla diamond's tier, so infusing one is never a route to cheaper diamond-tier filament.",
+      "title": "Values"
+    }
+  ]
+}

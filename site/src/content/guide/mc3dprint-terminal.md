@@ -9,6 +9,8 @@ The MC3DPrint Terminal is a catalog you order from. It attaches to an ME cable l
 
 It requires **Applied Energistics 2**. Without AE2 installed the terminal does not exist, and nothing else in the mod changes.
 
+The terminal **uses a channel**, exactly like AE2's own terminals, so on a busy network it wants a dense cable or a controller. With no channel the terminal goes **offline**: an open screen closes, queued orders stop being handed to machines, and an order already running holds where it is, because its output has nowhere to go until the network is back. Nothing is charged while it holds, and everything resumes when the channel returns.
+
 ## It dispatches, it does not craft
 
 The terminal never makes anything itself. Ordering queues a job against a real printer or fabricator, which does the work at its normal speed, its normal RF draw and its normal filament cost.
@@ -19,7 +21,7 @@ It also means you can watch a fabricator chew through a stack of sixty-four, whi
 
 ## The catalog
 
-Every item with a Filament Unit value appears, sorted by tier and then by cost.
+Every stocked item that carries a Filament Unit value appears, sorted by tier and then by cost.
 
 Items you cannot order stay in the list, greyed, with the reason in the tooltip:
 
@@ -28,9 +30,40 @@ Items you cannot order stay in the list, greyed, with the reason in the tooltip:
 - **Restricted trophy**, for items only ever placed by an official blueprint
 - **Not enough filament at this tier**
 
-Nothing is hidden. A greyed row tells you what to go build, and the catalog does not reshuffle under your cursor as your filament rises and falls.
+Nothing stocked with a Filament Unit value is hidden. A greyed row tells you what to go build, and the catalog does not reshuffle under your cursor as your filament rises and falls.
 
 Search matches both the display name and the registry id, so typing a mod id narrows things down when two mods ship an item with the same name.
+
+The grid scrolls with the mouse wheel, or by dragging the scrollbar down its right edge the way the creative inventory works.
+
+## The catalog mirrors your network
+
+The terminal lists **what your ME network is already holding**, not the whole item registry. It is a way to reprint what you own, so if the network has no cobblestone in it, cobblestone is not on offer.
+
+Two things follow, and the second one matters more:
+
+- Stock decides what gets **listed**. It never decides what can be **ordered**.
+- Every print rule still applies on top. A wind-only item, a restricted trophy or something needing a bigger machine stays greyed and refused even when a drive full of it is plugged in. Blacklisted means blacklisted, whether or not you own one.
+
+The server re-checks stock when the order arrives, not just when the catalog is drawn, so a hand-crafted packet cannot order something the network never had.
+
+Stock is re-read about once a second rather than every tick, so a very large network does not pay for a full contents walk sixty times a second.
+
+## Connecting your printers
+
+A printer or Fabricator joins the terminal's network by **touching it**. Put the machine directly against any AE2 cable or device that belongs to the same network, on any of its six sides, and it is connected. That is the whole rule.
+
+The cable **visibly connects** to the machine, the way it does to any AE2 machine, so you can see the wiring is right without opening the terminal. The machine costs **no channel**: it joins the grid to be seen and dispatched to, not to consume network capacity.
+
+What you do **not** need:
+
+- No MC3D Cable. That carries RF and Filament Units between MC3DPrint machines and has nothing to do with the ME network.
+- No ME Interface, storage bus or import bus. The terminal finds machines itself.
+- No particular distance. A machine is either touching the network or it is not, so "too far away" is never the reason one is missing.
+
+On a Fabricator it is the **controller** that has to touch the network, not the casing.
+
+The header line counts what it found, for example `4 machines, best T4`. If a machine you built is not in that count, it is not touching the network.
 
 ## The tier rail
 
@@ -38,9 +71,13 @@ Down the left edge, one row per tier, showing the filament that could pay a cost
 
 Each row counts its own tier **and every tier above it**, because spending is down-only: a Tier 3 spool will pay a Tier 1 cost, but a Tier 1 spool will never pay a Tier 3 one. One combined total would be the number that lies to you, since most of it might sit below the tier you are looking at.
 
+A tier is **orderable** when your best machine's tier is at least that tier. A Tier 4 printer prints Tier 1 through Tier 4 and nothing above, no matter how much filament you have. So `Needs a T6 machine; your best is T4` means build or connect a bigger machine: it is not a filament problem and not a wiring problem.
+
 ## Orders
 
-Click an item to order one, shift-click for a stack. Orders appear at the bottom with their progress.
+Click an item to **select** it. The action bar under the grid shows what you picked and what it costs. Set a quantity by clicking the number field and typing one, or with the `-` and `+` buttons, holding Shift to step by ten. Then press **Print** to queue it. One order can be up to 9999 items.
+
+Orders appear at the bottom with their progress.
 
 Click one of your own orders to cancel it. Orders belong to whoever placed them, so you cannot cancel someone else's.
 
@@ -49,9 +86,9 @@ An order binds to one machine and that machine runs one order at a time, so two 
 - Out of filament: holds until filament returns, then resumes
 - Out of power: holds
 - Nowhere to put the output: holds, and importantly spends nothing while waiting
-- The machine loses its channel or leaves the network: the order is released and looks for another machine
+- The machine leaves the network: the order is released and looks for another machine
 
-Filament is spent if and only if an item is delivered. There is no state in which the terminal charges you for something you did not receive.
+Filament is charged as each item is made, and given **back to the tiers it came from** if that item cannot be delivered. The refund is per-tier rather than at the cost tier, because spending is down-only: a Tier 3 spool can pay a Tier 1 cost, so crediting the cost tier would lose the difference whenever the drain reached past it.
 
 ## Taking a machine back
 

@@ -7,17 +7,17 @@
     {
       "type": "patchouli:text",
       "title": "Getting Blueprints",
-      "text": "Two ways:$(br)$(li)$(l)Scan$() your own builds with the $(item)Structure Scanner$() (right-click two corners, scan with a $(item)Blank Blueprint Disc$() anywhere in your inventory)$(li)$(l)Find$() curated written $(item)Blueprint Discs$() in $(l)any structure chest$(), plus $(l)archaeology$() brushing sites$(br2)Server operators can also import $(l).schem$() / $(l).litematic$() / $(l).nbt$() files with $(o)/mc3dprint import$()."
+      "text": "Two ways for players:$(li)$(l)Scan$() your own builds with the $(item)Structure Scanner$()$(li)$(l)Find$() curated discs in any structure chest, or by brushing archaeology sites$(br2)Operators can also import $(l).schem$(), $(l).litematic$() and $(l).nbt$() files with $(o)/mc3dprint import$()."
     },
     {
       "type": "patchouli:text",
       "title": "Never the Same Twice",
-      "text": "With $(o)noDuplicateBlueprints$() on (the default), loot won't hand you a build you already have. Every chest that rolls a disc gives you one you've $(l)never found$(), until you've found them $(l)all$() - then discovery starts a new cycle and they can turn up again.$(br2)Whether that set is $(l)shared$() or $(l)per-player$() follows your library: with the default shared $(item)Blueprint Repository$() the whole server works through one set together (anyone can re-burn what anyone found). Set $(o)blueprintRepositoryIsShared = false$() and each player collects their own.$(br2)Blueprints drop from a qualifying container at a base $(l)40%$(). Scale that with $(o)[loot]$() $(o)blueprintChanceMultiplier$() (1.0 by default), or turn the no-repeat rule off with $(o)noDuplicateBlueprints$()."
+      "text": "With $(o)noDuplicateBlueprints$() on (the default), loot never hands you a build you already have, until you have found them all.$(br2)Whether that set is shared or per-player follows your library, and the default $(item)Blueprint Repository$() is shared.$(br2)Discs drop at a base $(l)40%$()."
     },
     {
       "type": "patchouli:text",
       "title": "Operator Tools",
-      "text": "$(o)/mc3dprint discovered list$() shows how many builds are found and how many are still out there.$(br2)$(o)/mc3dprint discovered add <build>$() marks one as already found - useful on a world that predates this system, where discs sitting in a chest were never catalogued.$(br2)$(o)/mc3dprint discovered reseed$() re-syncs from the $(item)Blueprint Repository$() after you deposit a batch.$(br2)$(o)/mc3dprint discovered reset$() clears the ledger so everything is findable again."
+      "text": "$(o)/mc3dprint discovered list$() shows how many builds are found and how many remain.$(br2)$(o)add <build>$() marks one as already found, for a world that predates the ledger.$(br2)$(o)reseed$() re-syncs from the $(item)Blueprint Repository$().$(br2)$(o)reset$() clears the ledger so everything is findable again."
     },
     {
       "type": "patchouli:text",
@@ -28,6 +28,11 @@
       "type": "patchouli:text",
       "title": "Scan Size",
       "text": "The $(item)Structure Scanner$() caps each axis at $(l)33$() by default. Capturing something $(l)bigger$()? Set$(br)$(o)[scanner]$()$(br)$(o)unlockScannerSize = true$()$(br)in $(o)mc3dprint-common.toml$() to scan up to the largest printable size (51 with a $(l)Tier 8$() fabricator)."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Cross-mod builds",
+      "text": "Some curated builds use $(l)another mod's blocks$() and only appear when it is installed.$(br2)The $(l)Coppertide Park$() set is built from $(item)MC Waterslides$() blocks: install that mod and its six discs join creative and world loot. Costs derive from its recipes automatically."
     }
   ]
 }

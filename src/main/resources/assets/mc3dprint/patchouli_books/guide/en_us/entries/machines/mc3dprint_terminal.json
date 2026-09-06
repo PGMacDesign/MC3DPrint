@@ -1,18 +1,39 @@
 {
   "name": "MC3DPrint Terminal",
   "category": "mc3dprint:machines",
+  "flag": "mod:ae2",
   "icon": "mc3dprint:extrudium_crystal",
   "sortnum": 9,
   "pages": [
     {
       "type": "patchouli:text",
       "title": "MC3DPrint Terminal",
-      "text": "An $(l)Applied Energistics 2$() cable part that lists what your printers and formed Fabricators (T5-T8) can make and orders it, paid in $(l)Filament Units$() instead of ingredients.$(br2)It $(l)dispatches$(), it does not craft: ordering queues a job on a real machine, which does the work at its normal speed, RF draw and filament cost. An order costs exactly what printing it by hand would.$(br2)Needs AE2 installed. Without it, the terminal does not exist."
+      "text": "An $(l)Applied Energistics 2$() cable part that lists what your printers and Fabricators can make, and orders it paid in $(l)Filament Units$().$(br2)It $(l)dispatches$(), it does not craft: an order costs what printing it by hand would.$(br2)Needs AE2 installed."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Losing The Channel",
+      "text": "The terminal uses a $(l)channel$(), like AE2's own terminals, so a busy network wants a dense cable or a controller.$(br2)With no channel it goes $(l)offline$(): an open screen closes and nothing new is dispatched.$(br2)A running order $(l)holds$() until the network is back, and spends nothing while it waits."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Connecting Machines",
+      "text": "A printer or Fabricator joins the network by $(l)touching$() it. Put the machine against any AE2 cable or device and the cable $(l)connects to it$(), the same as any AE2 machine.$(br2)It costs no channel. No MC3D Cable, interface or storage bus is involved.$(br2)On a Fabricator the $(l)controller$() must touch the network, not the casing."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Why A Tier Greys",
+      "text": "A tier is orderable when your $(l)best machine's tier$() is at least that tier, however much filament you have.$(br2)So $(o)Needs a T6 machine; your best is T4$() means build or connect a bigger machine.$(br2)Distance never matters: a machine is either touching the network or it is not."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "What It Lists",
+      "text": "The terminal lists what your network is $(l)already holding$(), not every item in the game. It reprints what you own.$(br2)Stock decides what is $(l)listed$(). It never decides what can be $(l)ordered$(): a wind-only item or a restricted trophy stays greyed and refused even with a drive full of it plugged in.$(br2)Blacklisted means blacklisted, whether or not you own one."
     },
     {
       "type": "patchouli:text",
       "title": "The Catalog",
-      "text": "Every priced item appears, sorted by tier then cost.$(br2)Things you $(l)cannot$() order stay listed and greyed, with the reason: needs a higher tier, wind-only, restricted trophy, or not enough filament.$(br2)Nothing is hidden, so a greyed row tells you what to go build, and the grid does not reshuffle under your cursor as filament moves.$(br2)Search matches the item name $(l)and$() its registry id."
+      "text": "Every stocked item that carries a price appears, sorted by tier then cost.$(br2)What you $(l)cannot$() order stays listed and greyed, with the reason, so it tells you what to go build.$(br2)Scroll with the wheel or drag the bar on the right. Search matches the name $(l)and$() the registry id."
     },
     {
       "type": "patchouli:text",
@@ -22,11 +43,16 @@
     {
       "type": "patchouli:text",
       "title": "Orders",
-      "text": "Click to order one, Shift-click for a stack.$(br2)Click one of your own orders in the list to $(l)cancel$() it. Other players' orders are theirs to cancel.$(br2)An order binds to $(l)one$() machine, and a machine runs one order at a time, so two orders never spend the same spools.$(br2)Interruptions $(l)hold$() rather than fail: no filament, no power, or nowhere to put the output all pause and resume.$(br2)If a machine loses its channel or leaves the network, the order is $(l)released$() and looks for another machine. While held with nowhere to deliver, it spends $(l)nothing$().$(br2)Filament is spent if and only if an item is delivered."
+      "text": "Click an item to $(l)select$() it. Type a quantity, or use $(o)-$() and $(o)+$() (Shift steps by ten, 9999 max), then press $(l)Print$().$(br2)Click one of your own orders to $(l)cancel$() it. An order binds to one machine, so two never spend the same spools.$(br2)Filament is charged as each item is made, and given $(l)back$() to the tiers it came from if that item cannot be delivered."
     },
     {
       "type": "patchouli:text",
-      "title": "Taking a Machine Back",
+      "title": "When It Holds",
+      "text": "Interruptions $(l)hold$() rather than fail: no filament, no power, or nowhere to put the output all pause and resume on their own.$(br2)If the machine leaves the network, or you claim it by hand, the order is handed $(l)back$() to the queue and finds somewhere else to run.$(br2)An unformed Fabricator is never offered one."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Taking It Back",
       "text": "Load a disc, or drop an item in a printer's template slot, and that machine is yours again at once.$(br2)Any terminal order it was running is handed back to the queue and finds somewhere else to run. A terminal order $(l)never$() interrupts work you started by hand."
     },
     {

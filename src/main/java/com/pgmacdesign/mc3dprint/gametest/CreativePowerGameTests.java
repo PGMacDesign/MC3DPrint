@@ -20,7 +20,13 @@ import net.minecraftforge.gametest.PrefixGameTestTemplate;
 @PrefixGameTestTemplate(false)
 public class CreativePowerGameTests {
 
-    @GameTest(template = "empty5", timeoutTicks = 100)
+    // The creative source offers Integer.MAX_VALUE per tick, so the printer's own accept rate is
+    // what bounds this: roughly 500 RF/tick into a 50,000 buffer, which needs about 100 ticks. At
+    // timeoutTicks = 100 the test therefore had NO margin and failed whenever the server lost a
+    // single tick, reporting a different partial fill every run (3000, 22000, 31000, 49000...).
+    // succeedWhen still requires a genuinely full buffer, so the larger budget cannot hide a
+    // regression; it only stops a busy machine from failing a healthy one.
+    @GameTest(template = "empty5", timeoutTicks = 300)
     public static void creativeSourceFillsAdjacentPrinter(GameTestHelper helper) {
         BlockPos printerPos = new BlockPos(2, 1, 2);
         helper.setBlock(printerPos, ModBlocks.TIER1_PRINTER.get());

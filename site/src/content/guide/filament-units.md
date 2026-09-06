@@ -11,7 +11,7 @@ A material's FU value is derived from its crafting and smelting recipe graph: st
 
 ## Using the Winder
 
-Put a material in the input slot and an empty (or partial) spool in the spool slot. The Winder consumes the material and winds its FU onto the spool. One universal Winder handles every tier: the **spool's** tier, not the Winder, decides what it accepts. It's craftable from Tier 1 (string, sticks, and a smooth-stone base).
+Put a material in the input slot and an empty (or partial) spool in the spool slot. The Winder consumes the material and winds its FU onto the spool. One universal Winder handles every tier: the **spool's** tier, not the Winder, decides what it accepts. It's an early-game craft: an iron frame around string, a stick, and a smooth-stone base.
 
 ## Exact-tier winding
 
@@ -30,9 +30,25 @@ Winding is where one material becomes another. A spool doesn't remember what you
 
 It only ever works sideways or downward. Cheap materials can't climb a tier, which is exactly why the rule is strict. The printing side of this is [Item Mode](/guide/item-mode/).
 
+## Recycling and wind-only items
+
+Winding is also a sink for items you can't, or don't want to, print. Many treasures wind for a Filament Unit payout even when the printer won't reproduce them:
+
+- **Wind-only treasure**: saddles, name tags, wither skulls, and the dragon egg recycle into FU but never print back. The dragon egg is a one-time 10,000-unit windfall at Tier 7, since you only ever get one.
+- **Mob heads**: creeper, zombie, skeleton, and piglin heads wind at Tier 4 (they still print only as decor from official blueprints, never as loose items).
+- **Bamboo** winds at its base tier now. Bones and **gunpowder**, by contrast, are printable but held back from winding (like other trivially-farmable outputs), so a skeleton or creeper farm can't launder them into filament.
+
+## Reaching Tier 6
+
+The T6 spool is the gate to printing netherite, and it costs a single netherite ingot to craft. Once you have one, rare End and loot items give a netherite route that isn't debris mining: **elytra**, **dragon heads**, **enchanted golden apples**, and (on 1.21+) **heavy cores** all wind into a T6 spool. Because winding is equal-value, this converts hard-won rares into netherite without ever converting cheap materials up a tier.
+
+The next step up, the T7 spool, now costs a single **nether star** (down from four), so beating one wither opens Tier 7. Its main winding input is the nether star itself, plus the dragon egg's one-time windfall.
+
+The **T8 spool** tops the ladder and is the one recipe that leaves vanilla behind: **4 Awakened Draconium ingots** and **4 Extrudium Crystals** around a T7 spool. Awakened draconium is also its winding input, at 500 FU a piece, and it is wind-only: it recycles into filament but a printer will never reproduce it, which is what keeps Fusion Crafting from being printed around.
+
 ## Finding every item of a tier
 
-MC3DPrint adds a line like `MC3DP: Tier-5 (50 FU)` to the tooltip of every item that has an FU value. JEI indexes tooltips, so you can search that line to list a whole tier at once. Type this into JEI's search box:
+MC3DPrint adds a line like `MC3DP: Tier-5 (50 FU)` to the tooltip of every item that has an FU value. Items that can't be freely printed also get a status line, so you can tell at a glance: **Wind-only (can't print)** for recycle-only treasure, **Trophy (prints in official builds only)** for mob heads, and **Print-only (can't wind)** for farmable outputs like bones and gunpowder. The JEI "3D Printing" panel shows the same status, color-coded. JEI indexes tooltips, so you can search that line to list a whole tier at once. Type this into JEI's search box:
 
 ```text
 tier-5
@@ -48,6 +64,6 @@ Combine it with the mod filter to narrow further: `@mc3dprint tier-3` lists only
 
 ## Automation
 
-With **Applied Energistics 2** installed, the **Filament Converter** automates winding straight from an ME network and keeps your docked spools topped up.
+It only converts when a docked spool can take the whole yield, so filament is never stranded, and it honours the [winder blacklist](/guide/fu-economy/) exactly as the Winder does.
 
 For the spending rules (how a spool pays for prints), see [the FU economy](/guide/fu-economy/).
