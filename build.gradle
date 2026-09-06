@@ -163,6 +163,11 @@ tasks.named('test', Test).configure {
     inputs.file(rootProject.file('scripts/build-all.sh'))
             .withPropertyName('buildAllScript')
             .withPathSensitivity(PathSensitivity.RELATIVE)
+    // NodeLoaderRangeTest reads every node's declared NeoForge floor. Without these declared,
+    // Gradle calls :test UP-TO-DATE right after a gradle.properties edit and the guard no-ops.
+    inputs.files(rootProject.fileTree('versions') { include '*/gradle.properties' })
+            .withPropertyName('nodeGradleProperties')
+            .withPathSensitivity(PathSensitivity.RELATIVE)
     // Under Stonecutter each version is a subproject, so the test task's default
     // working dir is versions/<node>/; the blueprint-audit tests read root-relative
     // paths (src/main/resources/...). Pin the working dir to the real project root.

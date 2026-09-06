@@ -161,30 +161,31 @@ public final class RenderCompat {
 
     /**
      * Width for our line overlays. Line width used to be pipeline state set once for the whole
-     * {@code RenderType.lines()} pass; 26.2 moved it into the vertex, so every vertex now carries
-     * its own. Kept at one value so the wireframes look the same as they did before the move.
+     * {@code RenderType.lines()} pass; 1.21.11 moved it into the vertex, so every vertex now
+     * carries its own. Kept at one value so the wireframes look the same as before the move.
      */
     private static final float LINE_WIDTH = 2.0F;
 
     /**
      * One line vertex, with every element the target version's line format demands.
      *
-     * <p>26.2 added {@code LINE_WIDTH} to the lines vertex format. A vertex missing it is not
-     * rejected where it is written: the buffer only notices when the NEXT vertex starts, and then
-     * throws {@code IllegalStateException: Missing elements in vertex} from inside the render
-     * frame, which takes the client down. Docking a spool crashed the game on 26.2 for exactly
-     * this reason.
+     * <p>1.21.11 added {@code LINE_WIDTH} to the lines vertex format
+     * ({@code POSITION_COLOR_NORMAL_LINE_WIDTH}). A vertex missing it is not rejected where it is
+     * written: the buffer only notices when the NEXT vertex starts, and then throws
+     * {@code IllegalStateException: Missing elements in vertex} from inside the render frame,
+     * which takes the client down. Docking a spool crashed the game for exactly this reason.
      *
      * <p>Both of the mod's line emitters go through here so the version split exists once. Adding
      * a second one that writes {@code addVertex(...).setColor(...).setNormal(...)} by hand would
-     * compile everywhere and crash only on 26.2, only when that overlay is on screen.
+     * compile on every version and crash only on the ones whose format demands the element, and
+     * only while that overlay is on screen. {@code LineVertexFormatTest} guards the boundary.
      */
     public static void lineVertex(com.mojang.blaze3d.vertex.PoseStack.Pose pose,
                                   com.mojang.blaze3d.vertex.VertexConsumer c,
                                   float x, float y, float z,
                                   float r, float g, float b, float a,
                                   float nx, float ny, float nz) {
-        //? if >=26.2 {
+        //? if >=1.21.11 {
         /*c.addVertex(pose, x, y, z).setColor(r, g, b, a).setNormal(pose, nx, ny, nz)
                 .setLineWidth(LINE_WIDTH);
         *///?} else {
