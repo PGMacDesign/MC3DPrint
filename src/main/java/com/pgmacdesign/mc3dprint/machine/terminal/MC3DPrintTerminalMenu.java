@@ -134,23 +134,34 @@ public class MC3DPrintTerminalMenu extends AbstractContainerMenu {
     }
 
     /**
-     * Running work first, then what is waiting, then what has finished.
+     * Live work on top, oldest first; everything else below it, newest first.
      *
-     * <p>Insertion order put the newest order last, so once the list outgrew the panel the job
-     * actually printing scrolled out of sight and every visible row was a finished one. The sort
-     * is stable, so orders in the same state keep the order they arrived in and the list does not
-     * reshuffle under the cursor.
+     * <p>Two separate problems produced this shape. Plain insertion order pushed the job actually
+     * printing off the bottom of the panel once the list grew. Bucketing finished orders by state
+     * then anchored a cancelled row in place: newer orders were appended after it, so it sat at the
+     * top of the history and stayed there instead of ageing out of view.
+     *
+     * <p>So the tail is reverse-chronological rather than bucketed. A new order appears directly
+     * under the running ones, and every older row, cancelled or complete alike, is pushed one line
+     * further down. No state is treated specially, which is the point: a cancelled order is just an
+     * old order.
+     *
+     * <p>The head keeps arrival order because machines are leased first-come-first-served, so
+     * reading top to bottom follows the order the work will actually finish in.
      *
      * <p>Applied on sync rather than in {@link #orders()}, which the screen calls every frame.
      */
     private static List<OrderView> byProgress(List<OrderView> incoming) {
-        List<OrderView> sorted = new ArrayList<>(incoming);
-        sorted.sort(java.util.Comparator.comparingInt(o -> switch (o.status()) {
-            case RUNNING, HELD -> 0;
-            case QUEUED -> 1;
-            case COMPLETE, CANCELLED -> 2;
-        }));
-        return sorted;
+        List<OrderView> live = new ArrayList<>();
+        List<OrderView> rest = new ArrayList<>();
+        for (OrderView o : incoming) {
+            boolean working = o.status() == PrintRequest.Status.RUNNING
+                    || o.status() == PrintRequest.Status.HELD;
+            (working ? live : rest).add(o);
+        }
+        java.util.Collections.reverse(rest);
+        live.addAll(rest);
+        return live;
     }
 
     /** Tier-unit FU reachable at exactly {@code tier} (1-based), for the tier rail. */

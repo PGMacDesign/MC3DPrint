@@ -430,6 +430,37 @@ public class TerminalQueueGameTests {
             throw new GameTestAssertException("an unformed controller kept a terminal order"
                     + " through a tick; it would never run and never be released");
         }
+
+        // The order book must not grow without limit. MAX_OPEN_REQUESTS only ever bounded orders
+        // with work left; finished ones were kept for the GUI and never swept, so printing one
+        // item at a time added a row per print to the panel and to the save file, forever.
+        // Asserted here rather than as a JUnit test because the queue needs a real Item, and the
+        // headless bootstrap this repo uses for that is allowed to fail and skip.
+        PrintRequestQueue book = new PrintRequestQueue();
+        UUID live = UUID.randomUUID();
+        book.enqueue(live, Items.IRON_INGOT, 64).orElseThrow();
+        UUID oldestFinished = null;
+        for (int i = 0; i < PrintRequestQueue.MAX_REQUESTS * 3; i++) {
+            UUID id = UUID.randomUUID();
+            book.enqueue(id, Items.OAK_LOG, 1).orElseThrow();
+            book.cancel(id, "bounds check");
+            if (oldestFinished == null) {
+                oldestFinished = id;
+            }
+        }
+        if (book.all().size() > PrintRequestQueue.MAX_REQUESTS) {
+            throw new GameTestAssertException("order book grew to " + book.all().size()
+                    + " rows; the ceiling is " + PrintRequestQueue.MAX_REQUESTS);
+        }
+        if (book.byId(oldestFinished).isPresent()) {
+            throw new GameTestAssertException("trimming kept the oldest finished order,"
+                    + " so it is dropping the wrong end of the list");
+        }
+        // The one rule trimming must never break: history is expendable, work is not.
+        if (book.byId(live).isEmpty()) {
+            throw new GameTestAssertException("an unfinished order was discarded to make room"
+                    + " for finished ones");
+        }
         helper.succeed();
     }
 
