@@ -480,6 +480,51 @@ public class RedstoneModuleGameTests {
         helper.succeed();
     }
 
+    /**
+     * A formed pad has to emit from its CASINGS, not only its controller.
+     *
+     * <p>The controller sits in the centre of the base layer, so on a formed machine its four
+     * horizontal faces are buried in casing and only its top and bottom are exposed. A build that
+     * uses both, which is the normal case, has nowhere to take the signal from. Casings already
+     * stand in for the machine for power and for the scanner; this pins that they do for redstone.
+     *
+     * <p>Both directions are asserted. Reading 15 while printing is the easy half: a casing that
+     * latched on and never cleared would leave a lamp reading "still working" forever, which is
+     * worse than no signal at all.
+     */
+    @GameTest(template = "empty5", timeoutTicks = 300)
+    public static void aFormedPadEmitsFromItsCasingsNotJustTheController(GameTestHelper helper) {
+        PrinterBlockEntity printer = buildAndFormT5(helper);
+        installRedstoneModule(helper, printer);
+        // A casing on the pad's edge, which is where a player can actually reach.
+        BlockPos casing = PRINTER_POS.offset(1, 0, 0);
+        if (!(helper.getLevel().getBlockState(helper.absolutePos(casing)).getBlock()
+                instanceof com.pgmacdesign.mc3dprint.machine.multiblock.CasingBlock)) {
+            throw new GameTestAssertException("expected a casing at the pad edge");
+        }
+        assertSignal(helper, casing, 0, "on an idle pad's casing");
+
+        printer.setAutoStart(true);
+        printer.inventory().setStackInSlot(PrinterBlockEntity.SLOT_TEMPLATE,
+                discFor(helper, slabBlueprint()));
+
+        boolean[] sawHigh = {false};
+        helper.succeedWhen(() -> {
+            if (signalAt(helper, casing, Direction.NORTH) == 15) {
+                sawHigh[0] = true;
+            }
+            if (!sawHigh[0]) {
+                throw new GameTestAssertException(
+                        "a casing never carried the controller's signal while printing");
+            }
+            if (printer.activeJob() != null) {
+                throw new GameTestAssertException("waiting for the print to finish");
+            }
+            // The falling edge is the half that needs the casing neighbour-update to work.
+            assertSignal(helper, casing, 0, "on a casing once the print finished");
+        });
+    }
+
     // --- multiblock scope ---
 
     private static PrinterBlockEntity buildAndFormT5(GameTestHelper helper) {
@@ -506,7 +551,7 @@ public class RedstoneModuleGameTests {
     }
 
     @GameTest(template = "empty5", timeoutTicks = 300)
-    public static void onlyTheControllerEmitsOnAFabricator(GameTestHelper helper) {
+    public static void aLooseCasingNeverEmits(GameTestHelper helper) {
         PrinterBlockEntity fabricator = buildAndFormT5(helper);
         installRedstoneModule(helper, fabricator);
         fabricator.setAutoStart(true);
@@ -514,18 +559,19 @@ public class RedstoneModuleGameTests {
         fabricator.inventory().setStackInSlot(PrinterBlockEntity.SLOT_TEMPLATE,
                 new ItemStack(Items.STONE, 64));
 
-        BlockPos casing = PRINTER_POS.offset(1, 0, 0);
+        // A casing standing on its own, belonging to no formed machine.
+        BlockPos loose = PRINTER_POS.offset(0, 2, 0);
+        helper.setBlock(loose, ModBlocks.PRINTER_CASING.get());
+
         helper.succeedWhen(() -> {
             if (fabricator.state() != PrinterBlockEntity.State.PRINTING) {
                 throw new GameTestAssertException("Waiting for PRINTING, got " + fabricator.state());
             }
             assertSignal(helper, PRINTER_POS, 15, "on a running fabricator controller");
-            // A T8 footprint is 51x51: a casing-wide emitter would make every transition
-            // a ~2600-block neighbor storm, so the machine speaks only through its controller.
-            assertSignal(helper, casing, 0, "on a fabricator casing");
-            if (helper.getLevel().getBlockState(helper.absolutePos(casing)).isSignalSource()) {
-                throw new GameTestAssertException("A casing must never be a signal source");
-            }
+            // Casings of a FORMED pad relay the controller (see the casing-emission test). One
+            // that belongs to no machine has nothing to relay and must stay dark, or a stack of
+            // spare casings in a wall would power whatever it touched.
+            assertSignal(helper, loose, 0, "on a casing that is part of no formed machine");
         });
     }
 

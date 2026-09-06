@@ -3173,6 +3173,43 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         boolean emit = shouldEmitRedstone();
         if (blockState.getValue(PrinterBlock.EMITTING) != emit) {
             level.setBlock(worldPosition, blockState.setValue(PrinterBlock.EMITTING, emit), Block.UPDATE_ALL);
+            notifyCasingsOfEmission(blockState);
+        }
+    }
+
+    /**
+     * Pokes every casing of a formed pad when the controller's emission flips.
+     *
+     * <p>Casings report the controller's signal so redstone can be taken off any face of the
+     * structure, but they hold no state of their own, so nothing would tell the world their
+     * output had changed. {@code setBlock} above only notifies the CONTROLLER's neighbours, and
+     * on a formed pad the controller is buried: on a T8 it is one block of 81, with only its top
+     * and bottom exposed. Without this the signal would appear at a casing and then never clear,
+     * which is the worse half of the bug, since a lamp stuck on reads as a machine still working.
+     *
+     * <p>Only runs on the edge, never per tick: {@link #updateRedstoneOutput} calls it solely when
+     * the value actually changed.
+     */
+    private void notifyCasingsOfEmission(BlockState controllerState) {
+        if (level == null
+                || !controllerState.hasProperty(
+                        com.pgmacdesign.mc3dprint.machine.multiblock.ControllerBlock.FORMED)
+                || !controllerState.getValue(
+                        com.pgmacdesign.mc3dprint.machine.multiblock.ControllerBlock.FORMED)) {
+            return;
+        }
+        int half = com.pgmacdesign.mc3dprint.machine.multiblock.MultiblockPattern.baseEdge(tier()) / 2;
+        for (int dx = -half; dx <= half; dx++) {
+            for (int dz = -half; dz <= half; dz++) {
+                if (dx == 0 && dz == 0) {
+                    continue; // the controller itself; setBlock already notified its neighbours
+                }
+                BlockPos casing = worldPosition.offset(dx, 0, dz);
+                if (level.getBlockState(casing).getBlock()
+                        instanceof com.pgmacdesign.mc3dprint.machine.multiblock.CasingBlock) {
+                    level.updateNeighborsAt(casing, level.getBlockState(casing).getBlock());
+                }
+            }
         }
     }
 
