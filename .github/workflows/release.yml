@@ -62,7 +62,6 @@ jobs:
       # Prereleases publish as "Beta" on CurseForge; the changelog is the release body.
       - name: Publish jar to CurseForge
         if: ${{ env.CF_ENABLED == 'true' }}
-        continue-on-error: true
         uses: Kir-Antipov/mc-publish@52307b03863581dec6b652b83e597aec02ebb075 # v3.3
         with:
           curseforge-id: 1587177
