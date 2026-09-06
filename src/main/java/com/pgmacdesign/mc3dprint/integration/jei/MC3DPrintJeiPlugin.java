@@ -126,7 +126,6 @@ public class MC3DPrintJeiPlugin implements IModPlugin {
             hidden.add(new ItemStack(ModItems.SPOOLS.get(7).get()));
         }
         if (!ModList.get().isLoaded(ModCreativeTabs.AE2_MOD_ID)) {
-            hidden.add(new ItemStack(ModItems.FILAMENT_CONVERTER.get()));
         }
         if (!hidden.isEmpty()) {
             runtime.getIngredientManager().removeIngredientsAtRuntime(VanillaTypes.ITEM_STACK, hidden);

@@ -75,7 +75,6 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.CLOCK_GENERATOR.get());
                         output.accept(ModItems.REDSTONE_CLOCK.get());
                         if (ae2) {
-                            output.accept(ModItems.FILAMENT_CONVERTER.get());
                             acceptAe2Part(output, "me_print_terminal");
                         }
                         output.accept(ModItems.REMOTE_TERMINAL.get());

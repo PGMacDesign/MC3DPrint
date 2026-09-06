@@ -51,8 +51,6 @@ public final class ModCapabilities {
                 (be, side) -> TransferCompat.energyHandler(be.getEnergyStorage()));
         event.registerBlockEntity(Capabilities.Energy.BLOCK, ModBlockEntities.PRINTER.get(),
                 (be, side) -> TransferCompat.energyHandler(be.getEnergyStorage()));
-        event.registerBlockEntity(Capabilities.Energy.BLOCK, ModBlockEntities.FILAMENT_CONVERTER.get(),
-                (be, side) -> TransferCompat.energyHandler(be.getEnergyStorage()));
         event.registerBlockEntity(Capabilities.Energy.BLOCK, ModBlockEntities.FILAMENT_WINDER.get(),
                 (be, side) -> TransferCompat.energyHandler(be.getEnergyStorage()));
         event.registerBlockEntity(Capabilities.Energy.BLOCK, ModBlockEntities.CLOCK_GENERATOR.get(),
@@ -69,8 +67,6 @@ public final class ModCapabilities {
         event.registerBlockEntity(Capabilities.EnergyStorage.BLOCK, ModBlockEntities.MC3DCABLE.get(),
                 (be, side) -> be.getEnergyStorage());
         event.registerBlockEntity(Capabilities.EnergyStorage.BLOCK, ModBlockEntities.PRINTER.get(),
-                (be, side) -> be.getEnergyStorage());
-        event.registerBlockEntity(Capabilities.EnergyStorage.BLOCK, ModBlockEntities.FILAMENT_CONVERTER.get(),
                 (be, side) -> be.getEnergyStorage());
         event.registerBlockEntity(Capabilities.EnergyStorage.BLOCK, ModBlockEntities.FILAMENT_WINDER.get(),
                 (be, side) -> be.getEnergyStorage());

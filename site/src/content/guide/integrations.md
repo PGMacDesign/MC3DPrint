@@ -25,8 +25,6 @@ AE2 adds the [MC3DPrint Terminal](/guide/mc3dprint-terminal/), a cable part that
 
 The terminal uses a channel, like AE2's own terminals. Finished items go into ME storage, and orders belong to whoever placed them.
 
-The **Filament Converter** is often assumed to be an AE2 block. It is not, and never was: it asks each neighbouring block for an item handler, which an ME Interface answers just as well as a chest, hopper or pipe. It works fine in a pack with no AE2 at all.
-
 ### Draconic Evolution
 
 Draconic Evolution unlocks the **Tier 8 Fabricator**, the largest machine in the mod at 9×9. Its four base corners must be Awakened Draconium blocks, so without Draconic Evolution installed Tier 8 cannot form and Tier 7 is the ceiling. The Tier 8 spool and fabricator both take awakened draconium to craft.
