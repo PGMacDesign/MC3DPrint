@@ -134,33 +134,42 @@ public class MC3DPrintTerminalMenu extends AbstractContainerMenu {
     }
 
     /**
-     * Live work on top, oldest first; everything else below it, newest first.
+     * Three bands: live work, then what is waiting, then finished history newest-first.
      *
-     * <p>Two separate problems produced this shape. Plain insertion order pushed the job actually
-     * printing off the bottom of the panel once the list grew. Bucketing finished orders by state
-     * then anchored a cancelled row in place: newer orders were appended after it, so it sat at the
-     * top of the history and stayed there instead of ageing out of view.
+     * <p>Plain insertion order pushed the job actually printing off the bottom of the panel once
+     * the list grew. Bucketing finished orders by state then anchored a cancelled row in place,
+     * since newer orders were appended after it. So history is reverse-chronological and no
+     * finished state is treated specially: a cancelled order is just an old order, and every new
+     * arrival pushes it one line further down.
      *
-     * <p>So the tail is reverse-chronological rather than bucketed. A new order appears directly
-     * under the running ones, and every older row, cancelled or complete alike, is pushed one line
-     * further down. No state is treated specially, which is the point: a cancelled order is just an
-     * old order.
+     * <p>Waiting orders are their own band rather than part of that history. Folding them in and
+     * reversing everything together let a just-finished order display above an order that is still
+     * waiting to run, which reads as the queue having skipped it.
      *
-     * <p>The head keeps arrival order because machines are leased first-come-first-served, so
-     * reading top to bottom follows the order the work will actually finish in.
+     * <p>Live and waiting both keep arrival order, because machines are leased
+     * first-come-first-served, so reading top to bottom follows the order work will finish in.
      *
      * <p>Applied on sync rather than in {@link #orders()}, which the screen calls every frame.
      */
+    /** Exposed for tests: the display order the sync applies. */
+    public static List<OrderView> orderedForDisplay(List<OrderView> incoming) {
+        return byProgress(incoming);
+    }
+
     private static List<OrderView> byProgress(List<OrderView> incoming) {
         List<OrderView> live = new ArrayList<>();
-        List<OrderView> rest = new ArrayList<>();
+        List<OrderView> waiting = new ArrayList<>();
+        List<OrderView> finished = new ArrayList<>();
         for (OrderView o : incoming) {
-            boolean working = o.status() == PrintRequest.Status.RUNNING
-                    || o.status() == PrintRequest.Status.HELD;
-            (working ? live : rest).add(o);
+            switch (o.status()) {
+                case RUNNING, HELD -> live.add(o);
+                case QUEUED -> waiting.add(o);
+                case COMPLETE, CANCELLED -> finished.add(o);
+            }
         }
-        java.util.Collections.reverse(rest);
-        live.addAll(rest);
+        java.util.Collections.reverse(finished);
+        live.addAll(waiting);
+        live.addAll(finished);
         return live;
     }
 

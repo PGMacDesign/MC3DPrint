@@ -431,6 +431,22 @@ public class TerminalQueueGameTests {
                     + " through a tick; it would never run and never be released");
         }
 
+        // Band order: live, then waiting, then finished newest-first. The case that matters is an
+        // OLDER queued order against a NEWER finished one: folding both into one reversed list put
+        // the finished row on top, which reads as the queue having skipped the waiting order.
+        java.util.UUID oldQueued = java.util.UUID.randomUUID();
+        java.util.UUID newDone = java.util.UUID.randomUUID();
+        var bands = java.util.List.of(
+                new com.pgmacdesign.mc3dprint.machine.terminal.MC3DPrintTerminalMenu.OrderView(oldQueued, Items.IRON_INGOT, 0, 4,
+                        PrintRequest.Status.QUEUED, null),
+                new com.pgmacdesign.mc3dprint.machine.terminal.MC3DPrintTerminalMenu.OrderView(newDone, Items.OAK_LOG, 1, 1,
+                        PrintRequest.Status.COMPLETE, null));
+        var shown = com.pgmacdesign.mc3dprint.machine.terminal.MC3DPrintTerminalMenu.orderedForDisplay(bands);
+        if (shown.get(0).id() != oldQueued) {
+            throw new GameTestAssertException("a finished order displaced an order still waiting"
+                    + " to run; waiting is its own band above history");
+        }
+
         // The order book must not grow without limit. MAX_OPEN_REQUESTS only ever bounded orders
         // with work left; finished ones were kept for the GUI and never swept, so printing one
         // item at a time added a row per print to the panel and to the save file, forever.

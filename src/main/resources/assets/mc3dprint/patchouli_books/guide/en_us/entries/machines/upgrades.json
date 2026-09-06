@@ -41,7 +41,7 @@
     {
       "type": "patchouli:text",
       "title": "Wiring It Up",
-      "text": "On a fabricator $(l)any casing$() carries the signal, not just the controller, so you can take it off any face of the pad. The controller is buried once formed.$(br2)It $(l)will not restart itself$(): while emitting, a rising edge never queues a start, so feeding its output back in cannot loop."
+      "text": "On a $(l)formed$() fabricator $(l)any casing$() carries the signal, not just the controller, so you can take it off any face of the pad. A casing belonging to no formed machine stays dark.$(br2)It $(l)will not restart itself$(): while emitting, a rising edge never queues a start, so feeding its output back in cannot loop."
     },
     {
       "type": "patchouli:text",
