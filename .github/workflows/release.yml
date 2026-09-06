@@ -10,13 +10,17 @@ on:
 permissions:
   contents: write
 
+# NOTE: `release` events only run workflows from the DEFAULT branch, so this file does not fire
+# for releases cut from main; main's own release.yml builds and publishes the 1.20.1 jar from this
+# branch. Kept in sync anyway rather than left as a stale copy with a known-leaky secret guard.
 jobs:
   build-and-attach:
     runs-on: ubuntu-latest
-    # Surface the secret as a job env var so the CurseForge step can guard on it —
-    # the `secrets` context is NOT available in step `if:` conditions, but `env` is.
+    # The `secrets` context is not available in step `if:` conditions, so the guard needs an env
+    # var. It holds the BOOLEAN, never the token: putting the secret here would hand it to every
+    # step in the job, third-party actions included. The token reaches one input, on one step.
     env:
-      CF_TOKEN: ${{ secrets.CURSEFORGE_API_KEY }}
+      CF_ENABLED: ${{ secrets.CURSEFORGE_API_KEY != '' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -57,9 +61,9 @@ jobs:
       # working (and the GitHub asset still attaches) until the CURSEFORGE_TOKEN is set.
       # Prereleases publish as "Beta" on CurseForge; the changelog is the release body.
       - name: Publish jar to CurseForge
-        if: ${{ env.CF_TOKEN != '' }}
+        if: ${{ env.CF_ENABLED == 'true' }}
         continue-on-error: true
-        uses: Kir-Antipov/mc-publish@v3.3
+        uses: Kir-Antipov/mc-publish@52307b03863581dec6b652b83e597aec02ebb075 # v3.3
         with:
           curseforge-id: 1587177
           curseforge-token: ${{ secrets.CURSEFORGE_API_KEY }}
