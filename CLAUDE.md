@@ -39,9 +39,12 @@ shippable jar into `dist/`: one `mc3dprint-<ver>-neoforge-<node>.jar` per Stonec
 plus `-forge-1.20.1.jar` (built in a throwaway worktree off the `legacy/1.20.1` branch). Launcher needs
 JDK 21, the legacy Forge build JDK 17 — both auto-detected (override `MC3DP_JDK21`/`MC3DP_JDK17`); the
 26.x nodes compile on a Java 25 toolchain Gradle/foojay provisions itself.
-`.github/workflows/release.yml` runs this on every published GitHub Release and attaches ALL jars to it
-(CurseForge auto-publish stays limited to soak-tested targets). Extend the `NEOFORGE_NODES` array in the
-script to add a future version node.
+`.github/workflows/release.yml` runs this on every published GitHub Release, attaches ALL jars to it,
+and publishes every one to CurseForge from a matrix (one file per target, `continue-on-error` so a
+Minecraft version CurseForge does not list yet cannot block the rest; the job summary names what
+published). Adding a version node means the `NEOFORGE_NODES` array in the script AND a matrix row in
+the workflow: `ReleaseTargetsTest` fails the build when those two disagree, since a missing row builds
+a jar that never reaches CurseForge with every job green.
 
 Multi-version guard lore that bites: replacement pairs (`build.gradle` stonecutter block) must be
 single-hop — an API that moves TWICE across versions needs `if/elif` guard chains (version-range

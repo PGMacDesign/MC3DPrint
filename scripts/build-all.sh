@@ -31,7 +31,9 @@ cd "$ROOT"
 
 # --- the NeoForge nodes built from THIS tree. Add future versions here (e.g. "1.21.8 26.2"). ---
 NEOFORGE_NODES=("1.21.1" "1.21.8" "1.21.9" "1.21.10" "1.21.11" "26.1" "26.2")
-LEGACY_BRANCH="legacy/1.20.1"
+# Overridable so a release candidate can be built from the 1.20.1 side of an open PR rather
+# than from the merged branch. Release CI leaves it unset and gets legacy/1.20.1.
+LEGACY_BRANCH="${MC3DP_LEGACY_REF:-legacy/1.20.1}"
 LEGACY_MC="1.20.1"
 CANONICAL_NODE="1.21.1"   # the vcsVersion; the tree is left on this on exit
 

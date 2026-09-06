@@ -1,3 +1,4 @@
+import org.gradle.api.tasks.PathSensitivity
 plugins {
     id 'eclipse'
     id 'idea'
@@ -152,6 +153,16 @@ if (findProperty('ae2_version')) {
 
 tasks.named('test', Test).configure {
     useJUnitPlatform()
+    // ReleaseTargetsTest reads these two off disk, and neither belongs to a source set, so
+    // Gradle would call the whole task UP-TO-DATE after a change to either and quietly skip the
+    // check that exists to catch exactly that change. Declared as inputs so editing the workflow
+    // or the node list re-runs the suite.
+    inputs.file(rootProject.file('.github/workflows/release.yml'))
+            .withPropertyName('releaseWorkflow')
+            .withPathSensitivity(PathSensitivity.RELATIVE)
+    inputs.file(rootProject.file('scripts/build-all.sh'))
+            .withPropertyName('buildAllScript')
+            .withPathSensitivity(PathSensitivity.RELATIVE)
     // Under Stonecutter each version is a subproject, so the test task's default
     // working dir is versions/<node>/; the blueprint-audit tests read root-relative
     // paths (src/main/resources/...). Pin the working dir to the real project root.

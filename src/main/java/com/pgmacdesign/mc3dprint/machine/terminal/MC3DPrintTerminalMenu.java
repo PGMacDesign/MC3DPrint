@@ -96,7 +96,7 @@ public class MC3DPrintTerminalMenu extends AbstractContainerMenu {
                            int[] fuByTier, int bestMachineTier, int machineCount) {
         this.catalog = catalog;
         this.filtered = null; // a fresh catalog invalidates the filtered view built from the old one
-        this.orders = orders;
+        this.orders = byProgress(orders);
         System.arraycopy(fuByTier, 0, this.fuByTier, 0, Math.min(fuByTier.length, MAX_TIER));
         this.bestMachineTier = bestMachineTier;
         this.machineCount = machineCount;
@@ -121,8 +121,36 @@ public class MC3DPrintTerminalMenu extends AbstractContainerMenu {
         return filtered;
     }
 
+    /**
+     * Orders with running work first, then what is waiting, then what has finished.
+     *
+     * <p>Insertion order put the newest order last, so once the list outgrew the panel the job
+     * actually printing scrolled out of sight and the visible rows were all finished ones. Sorting
+     * by state keeps the row you care about on screen without the list jumping around, because
+     * within a bucket the original order is preserved.
+     */
     public List<OrderView> orders() {
         return orders;
+    }
+
+    /**
+     * Running work first, then what is waiting, then what has finished.
+     *
+     * <p>Insertion order put the newest order last, so once the list outgrew the panel the job
+     * actually printing scrolled out of sight and every visible row was a finished one. The sort
+     * is stable, so orders in the same state keep the order they arrived in and the list does not
+     * reshuffle under the cursor.
+     *
+     * <p>Applied on sync rather than in {@link #orders()}, which the screen calls every frame.
+     */
+    private static List<OrderView> byProgress(List<OrderView> incoming) {
+        List<OrderView> sorted = new ArrayList<>(incoming);
+        sorted.sort(java.util.Comparator.comparingInt(o -> switch (o.status()) {
+            case RUNNING, HELD -> 0;
+            case QUEUED -> 1;
+            case COMPLETE, CANCELLED -> 2;
+        }));
+        return sorted;
     }
 
     /** Tier-unit FU reachable at exactly {@code tier} (1-based), for the tier rail. */
