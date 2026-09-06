@@ -155,7 +155,40 @@ public final class RenderCompat {
                              com.mojang.blaze3d.vertex.VertexConsumer c,
                              float x0, float y0, float z0, float x1, float y1, float z1,
                              float r, float g, float b, float a, float nx, float ny, float nz) {
-        c.addVertex(pose, x0, y0, z0).setColor(r, g, b, a).setNormal(pose, nx, ny, nz);
-        c.addVertex(pose, x1, y1, z1).setColor(r, g, b, a).setNormal(pose, nx, ny, nz);
+        lineVertex(pose, c, x0, y0, z0, r, g, b, a, nx, ny, nz);
+        lineVertex(pose, c, x1, y1, z1, r, g, b, a, nx, ny, nz);
+    }
+
+    /**
+     * Width for our line overlays. Line width used to be pipeline state set once for the whole
+     * {@code RenderType.lines()} pass; 26.2 moved it into the vertex, so every vertex now carries
+     * its own. Kept at one value so the wireframes look the same as they did before the move.
+     */
+    private static final float LINE_WIDTH = 2.0F;
+
+    /**
+     * One line vertex, with every element the target version's line format demands.
+     *
+     * <p>26.2 added {@code LINE_WIDTH} to the lines vertex format. A vertex missing it is not
+     * rejected where it is written: the buffer only notices when the NEXT vertex starts, and then
+     * throws {@code IllegalStateException: Missing elements in vertex} from inside the render
+     * frame, which takes the client down. Docking a spool crashed the game on 26.2 for exactly
+     * this reason.
+     *
+     * <p>Both of the mod's line emitters go through here so the version split exists once. Adding
+     * a second one that writes {@code addVertex(...).setColor(...).setNormal(...)} by hand would
+     * compile everywhere and crash only on 26.2, only when that overlay is on screen.
+     */
+    public static void lineVertex(com.mojang.blaze3d.vertex.PoseStack.Pose pose,
+                                  com.mojang.blaze3d.vertex.VertexConsumer c,
+                                  float x, float y, float z,
+                                  float r, float g, float b, float a,
+                                  float nx, float ny, float nz) {
+        //? if >=26.2 {
+        /*c.addVertex(pose, x, y, z).setColor(r, g, b, a).setNormal(pose, nx, ny, nz)
+                .setLineWidth(LINE_WIDTH);
+        *///?} else {
+        c.addVertex(pose, x, y, z).setColor(r, g, b, a).setNormal(pose, nx, ny, nz);
+        //?}
     }
 }

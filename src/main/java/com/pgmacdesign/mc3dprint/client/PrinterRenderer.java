@@ -1022,10 +1022,12 @@ public class PrinterRenderer implements BlockEntityRenderer<PrinterBlockEntity> 
         dx /= length;
         dy /= length;
         dz /= length;
-        consumer.addVertex(pose, (float) x1, (float) y1, (float) z1)
-                .setColor(r, g, b, 0.9F).setNormal(pose, dx, dy, dz);
-        consumer.addVertex(pose, (float) x2, (float) y2, (float) z2)
-                .setColor(r, g, b, 0.9F).setNormal(pose, dx, dy, dz);
+        // Through RenderCompat so the 26.2 line-width element is never forgotten here; writing
+        // the vertex by hand is what crashed the client when a spool was docked.
+        com.pgmacdesign.mc3dprint.compat.RenderCompat.lineVertex(
+                pose, consumer, (float) x1, (float) y1, (float) z1, r, g, b, 0.9F, dx, dy, dz);
+        com.pgmacdesign.mc3dprint.compat.RenderCompat.lineVertex(
+                pose, consumer, (float) x2, (float) y2, (float) z2, r, g, b, 0.9F, dx, dy, dz);
     }
 
     @Override
