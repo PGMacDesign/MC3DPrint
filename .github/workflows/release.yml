@@ -129,9 +129,9 @@ jobs:
       - name: Publish ${{ matrix.target }} to CurseForge
         id: publish
         if: ${{ env.CF_ENABLED == 'true' }}
-        # A Minecraft version CurseForge does not list yet (the 26.x line leads its
-        # catalogue) must not fail the release or block the other seven uploads. The
-        # summary step below is what keeps a failure from passing unnoticed.
+        # Swallowed HERE only so the report step below can name the target that failed and
+        # so one bad upload does not cancel the other seven (with fail-fast: false). The
+        # report step then fails this matrix leg, so a failure is still red.
         continue-on-error: true
         uses: Kir-Antipov/mc-publish@52307b03863581dec6b652b83e597aec02ebb075 # v3.3
         with:
@@ -146,9 +146,9 @@ jobs:
           loaders: ${{ matrix.loader }}
           java: ${{ matrix.java }}
 
-      # continue-on-error leaves the job green whatever happened, so say plainly which
-      # targets actually reached CurseForge. Without this a silent failure reads as a
-      # successful release.
+      # Turns the swallowed result back into a real one. A configured token that then fails to
+      # publish is a release missing a version, and a green tick would say the opposite; the
+      # summary line names which target so the failure is readable without opening logs.
       - name: Report the outcome
         if: ${{ always() && env.CF_ENABLED == 'true' }}
         env:
@@ -159,4 +159,6 @@ jobs:
             echo "CurseForge: published $TARGET" >> "$GITHUB_STEP_SUMMARY"
           else
             echo "CurseForge: FAILED to publish $TARGET (outcome: $OUTCOME)" >> "$GITHUB_STEP_SUMMARY"
+            echo "CurseForge publish failed for $TARGET (outcome: $OUTCOME)" >&2
+            exit 1
           fi
