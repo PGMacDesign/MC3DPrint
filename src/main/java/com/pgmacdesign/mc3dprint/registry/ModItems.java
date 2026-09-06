@@ -64,8 +64,6 @@ public final class ModItems {
     public static final DeferredHolder<Item, Item> PRINTER_CASING = com.pgmacdesign.mc3dprint.compat.RegistryCompat.registerItem(ITEMS, "printer_casing",
             props -> new BlockItem(ModBlocks.PRINTER_CASING.get(), props), blockItemProps());
 
-    public static final DeferredHolder<Item, Item> FILAMENT_CONVERTER = com.pgmacdesign.mc3dprint.compat.RegistryCompat.registerItem(ITEMS, "filament_converter",
-            props -> new BlockItem(ModBlocks.FILAMENT_CONVERTER.get(), props), blockItemProps());
 
     public static final DeferredHolder<Item, Item> REMOTE_TERMINAL = com.pgmacdesign.mc3dprint.compat.RegistryCompat.registerItem(ITEMS, "remote_terminal",
             props -> new com.pgmacdesign.mc3dprint.machine.RemoteTerminalBlock.TerminalBlockItem(

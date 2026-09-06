@@ -37,12 +37,15 @@ final class Ae2TerminalHost implements TerminalHost {
     }
 
     /**
-     * MC3DPrint machines adjacent to any grid node on this network.
+     * MC3DPrint machines on this network.
      *
-     * <p>Adjacency rather than a grid capability, because a printer is not an AE2 machine and has
-     * no grid node of its own: it is wired to the network the same way a furnace is, by sitting
-     * next to something that is. Sorted best-tier-first so an order takes the largest machine that
-     * is free rather than whichever happened to be found first.
+     * <p>A machine now owns a grid node of its own (see {@code Ae2MachineNodes}), so it is simply
+     * a member of the grid and this is one flat pass over the node list. It used to be a scan of
+     * all six neighbours of every node on the network, because a printer had no node and could
+     * only be found by sitting next to something that did.
+     *
+     * <p>Sorted best-tier-first so an order takes the largest free machine rather than whichever
+     * was found first.
      */
     @Override
     public List<BlockPos> machines(ServerLevel level) {
@@ -50,23 +53,25 @@ final class Ae2TerminalHost implements TerminalHost {
         if (grid == null) {
             return List.of();
         }
-        List<BlockPos> found = new ArrayList<>();
+        // Set-backed rather than List.contains: the membership test runs once per grid node per
+        // direction, so on a large network the linear scan was the dominant cost of a sync.
+        java.util.Map<BlockPos, Integer> tiers = new java.util.LinkedHashMap<>();
         for (IGridNode node : grid.getNodes()) {
-            BlockPos host = positionOf(node);
-            if (host == null) {
+            BlockPos at = Ae2MachineNodes.machinePos(node);
+            if (at == null || tiers.containsKey(at) || !level.isLoaded(at)) {
                 continue;
             }
-            for (net.minecraft.core.Direction dir : net.minecraft.core.Direction.values()) {
-                BlockPos at = host.relative(dir);
-                if (found.contains(at) || !level.isLoaded(at)) {
-                    continue;
-                }
-                if (level.getBlockEntity(at) instanceof PrinterBlockEntity) {
-                    found.add(at);
-                }
+            // An unformed controller is a PrinterBlockEntity with a grid node like any other, but
+            // its tick returns before the queue is touched, so an order bound to one never runs.
+            if (level.getBlockEntity(at) instanceof PrinterBlockEntity printer
+                    && printer.isOperable()) {
+                // Tier resolved once, here. The comparator used to look it up on both sides of
+                // every comparison, so sorting cost O(n log n) block-entity lookups on top.
+                tiers.put(at, printer.tier().number());
             }
         }
-        found.sort((a, b) -> Integer.compare(tierAt(level, b), tierAt(level, a)));
+        List<BlockPos> found = new ArrayList<>(tiers.keySet());
+        found.sort((a, b) -> Integer.compare(tiers.get(b), tiers.get(a)));
         return found;
     }
 
@@ -85,6 +90,101 @@ final class Ae2TerminalHost implements TerminalHost {
             return false;
         }
         return be.getBlockPos().distToCenterSqr(player.position()) <= 64.0D;
+    }
+
+    // --- network stock -------------------------------------------------------------------
+
+    /**
+     * Recompute interval for the stocked set, in ticks. Walking a large network's contents is not
+     * free and the catalog is rebuilt from a fingerprint anyway, so a second of staleness buys a
+     * bounded cost per tick instead of an unbounded one.
+     */
+    private static final long STOCK_TTL_TICKS = 20L;
+
+    @Nullable
+    private java.util.Set<net.minecraft.world.item.Item> stockedCache;
+    private int stockedFingerprint;
+    private long stockedAtTick = Long.MIN_VALUE;
+
+    @Override
+    @Nullable
+    public java.util.Set<net.minecraft.world.item.Item> stockedItems() {
+        refreshStock();
+        return stockedCache;
+    }
+
+    @Override
+    public int stockedStamp() {
+        refreshStock();
+        return stockedFingerprint;
+    }
+
+    private void refreshStock() {
+        if (!(part.getLevel() instanceof ServerLevel level)) {
+            return;
+        }
+        long now = level.getGameTime();
+        if (stockedCache != null && now - stockedAtTick < STOCK_TTL_TICKS) {
+            return;
+        }
+        stockedAtTick = now;
+        IGrid grid = part.getMainNode().getGrid();
+        if (grid == null || !part.getMainNode().isActive()) {
+            // Offline: hold an EMPTY set rather than null. Null means "no restriction", and a
+            // terminal with no channel must not answer that by offering the whole item registry.
+            stockedCache = java.util.Set.of();
+            stockedFingerprint = 0;
+            return;
+        }
+        appeng.api.networking.storage.IStorageService service =
+                grid.getService(appeng.api.networking.storage.IStorageService.class);
+        if (service == null) {
+            stockedCache = java.util.Set.of();
+            stockedFingerprint = 0;
+            return;
+        }
+        java.util.Set<net.minecraft.world.item.Item> items = new java.util.HashSet<>();
+        int fingerprint = 0;
+        for (appeng.api.stacks.AEKey key : service.getInventory().getAvailableStacks().keySet()) {
+            if (key instanceof appeng.api.stacks.AEItemKey itemKey
+                    && items.add(itemKey.getItem())) {
+                // Order-independent on purpose: the set has no order and the walk need not be
+                // stable between ticks.
+                fingerprint += itemKey.getItem().hashCode();
+            }
+        }
+        stockedCache = items;
+        stockedFingerprint = fingerprint * 31 + items.size();
+    }
+
+    /**
+     * Asks the network directly whether it still holds {@code item}, bypassing the stock cache.
+     *
+     * <p>A simulated extract of one is an exact, targeted question: it neither walks the whole
+     * inventory nor trusts a snapshot that may be up to a second stale. The cached set decides what
+     * the catalog DRAWS; this decides what may be ORDERED, and only this is authoritative.
+     */
+    @Override
+    public boolean stocksNow(net.minecraft.world.item.Item item) {
+        if (!(part.getLevel() instanceof ServerLevel)) {
+            return false;
+        }
+        IGrid grid = part.getMainNode().getGrid();
+        if (grid == null || !part.getMainNode().isActive()) {
+            return false;
+        }
+        appeng.api.networking.storage.IStorageService service =
+                grid.getService(appeng.api.networking.storage.IStorageService.class);
+        if (service == null) {
+            return false;
+        }
+        appeng.api.stacks.AEItemKey key =
+                appeng.api.stacks.AEItemKey.of(new net.minecraft.world.item.ItemStack(item));
+        if (key == null) {
+            return false;
+        }
+        return service.getInventory().extract(key, 1L, appeng.api.config.Actionable.SIMULATE,
+                appeng.api.networking.security.IActionSource.ofMachine(part)) > 0L;
     }
 
     @Override
@@ -107,14 +207,18 @@ final class Ae2TerminalHost implements TerminalHost {
         int tiers = com.pgmacdesign.mc3dprint.machine.terminal.MC3DPrintTerminalMenu.MAX_TIER;
         int best = 0;
         long[] totals = new long[tiers];
+        int[] perTier = new int[tiers];
         for (BlockPos pos : found) {
             PrinterBlockEntity printer = printerAt(level, pos);
             if (printer == null) {
                 continue;
             }
             best = Math.max(best, printer.tier().number());
-            for (int t = 1; t <= tiers; t++) {
-                totals[t - 1] += printer.affordableFu(t);
+            // One pass for the whole rail rather than one call per tier, each of which re-walked
+            // the cable network to gather its filament sources.
+            printer.affordableFuByTier(perTier);
+            for (int t = 0; t < tiers; t++) {
+                totals[t] += perTier[t];
             }
         }
         int[] fu = new int[tiers];
@@ -126,31 +230,6 @@ final class Ae2TerminalHost implements TerminalHost {
             fu[i] = (int) Math.min(Integer.MAX_VALUE, totals[i]);
         }
         return new MachineSnapshot(found.size(), best, fu);
-    }
-
-    /**
-     * Where a grid node physically is. {@code IGridNode} exposes no position of its own, only its
-     * owner, so it comes from the owning block entity or, for a cable part, from the part host that
-     * carries it.
-     */
-    @Nullable
-    private static BlockPos positionOf(IGridNode node) {
-        Object owner = node.getOwner();
-        if (owner instanceof net.minecraft.world.level.block.entity.BlockEntity be) {
-            return be.getBlockPos();
-        }
-        // AEBasePart tracks its own host; anything else implementing IPart is not ours to
-        // introspect, so it simply does not contribute machines.
-        if (owner instanceof appeng.parts.AEBasePart base) {
-            net.minecraft.world.level.block.entity.BlockEntity host = base.getBlockEntity();
-            return host == null ? null : host.getBlockPos();
-        }
-        return null;
-    }
-
-    private static int tierAt(ServerLevel level, BlockPos pos) {
-        PrinterBlockEntity printer = printerAt(level, pos);
-        return printer == null ? 0 : printer.tier().number();
     }
 
     @Nullable

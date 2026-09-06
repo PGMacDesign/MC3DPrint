@@ -358,6 +358,125 @@ public class TerminalQueueGameTests {
             throw new GameTestAssertException("wither skeleton skull must be listed as wind-only"
                     + " and never orderable, got " + skull.verdict());
         }
+
+        // The catalog mirrors what the network holds, and stock does not launder a ban. Folded in
+        // here rather than added as its own @GameTest on purpose: GameTest lays every test out in
+        // one shared world by index, so adding a test shifts every later one and made an unrelated
+        // sorter test share space with its neighbour.
+        java.util.Set<net.minecraft.world.item.Item> stocked =
+                java.util.Set.of(Items.IRON_INGOT, Items.WITHER_SKELETON_SKULL);
+        var stockOnly = com.pgmacdesign.mc3dprint.machine.terminal.TerminalCatalog.build(
+                8, tier -> Integer.MAX_VALUE, stocked);
+        for (var e : stockOnly) {
+            if (!stocked.contains(e.item())) {
+                throw new GameTestAssertException("catalog listed " + e.item()
+                        + ", which the network is not holding");
+            }
+        }
+        var stockedIron = stockOnly.stream().filter(e -> e.item() == Items.IRON_INGOT)
+                .findFirst().orElse(null);
+        if (stockedIron == null) {
+            throw new GameTestAssertException("a stocked, printable item was not listed");
+        }
+        // Listed is not the same claim as orderable: without this, a regression that greyed every
+        // stocked row would still pass the loop above.
+        if (!stockedIron.orderable()) {
+            throw new GameTestAssertException("stocked iron at tier 8 with unlimited filament must"
+                    + " be orderable, got " + stockedIron.verdict());
+        }
+        var stockedSkull = stockOnly.stream()
+                .filter(e -> e.item() == Items.WITHER_SKELETON_SKULL)
+                .findFirst().orElse(null);
+        if (stockedSkull == null) {
+            throw new GameTestAssertException("a stocked item must still be listed even when it"
+                    + " cannot be ordered; the row is where the reason is shown");
+        }
+        if (stockedSkull.orderable()) {
+            throw new GameTestAssertException("a wind-only item became orderable just by being in"
+                    + " stock; blacklisted has to mean blacklisted");
+        }
+        // The loop above proves nothing unstocked is listed, so an excess row can only be a
+        // duplicate. Checked this way rather than against an unrestricted build, which prices the
+        // whole registry inside one tick and starved a neighbouring test.
+        if (stockOnly.size() > stocked.size()) {
+            throw new GameTestAssertException("catalog listed " + stockOnly.size()
+                    + " rows for " + stocked.size() + " stocked items");
+        }
+
+        // An unformed controller must never look dispatchable. Its tick returns before the queue
+        // is ever read, so an order bound to one sits there forever instead of moving to a printer
+        // that could run it. Folded in here rather than added as its own @GameTest for the same
+        // shared-world layout reason as the stock block above.
+        BlockPos controllerPos = new BlockPos(3, 1, 3);
+        helper.setBlock(controllerPos,
+                com.pgmacdesign.mc3dprint.registry.ModBlocks.CONTROLLERS.get(0).get());
+        if (!(helper.getBlockEntity(controllerPos)
+                instanceof com.pgmacdesign.mc3dprint.machine.PrinterBlockEntity controller)) {
+            throw new GameTestAssertException("controller block entity missing");
+        }
+        if (controller.isOperable()) {
+            throw new GameTestAssertException("an unformed controller reported itself operable,"
+                    + " so the terminal would dispatch an order it can never run");
+        }
+        // And if it somehow acquires one anyway, the next tick has to hand it back.
+        controller.setTerminalOrder(
+                new com.pgmacdesign.mc3dprint.machine.PrinterBlockEntity.TerminalOrder(
+                java.util.UUID.randomUUID(), Items.IRON_INGOT,
+                produced -> 0, (id, count) -> { }, () -> 1));
+        com.pgmacdesign.mc3dprint.machine.PrinterBlockEntity.serverTick(
+                helper.getLevel(), helper.absolutePos(controllerPos),
+                helper.getLevel().getBlockState(helper.absolutePos(controllerPos)), controller);
+        if (controller.hasTerminalOrder()) {
+            throw new GameTestAssertException("an unformed controller kept a terminal order"
+                    + " through a tick; it would never run and never be released");
+        }
+
+        // Band order: live, then waiting, then finished newest-first. The case that matters is an
+        // OLDER queued order against a NEWER finished one: folding both into one reversed list put
+        // the finished row on top, which reads as the queue having skipped the waiting order.
+        java.util.UUID oldQueued = java.util.UUID.randomUUID();
+        java.util.UUID newDone = java.util.UUID.randomUUID();
+        var bands = java.util.List.of(
+                new com.pgmacdesign.mc3dprint.machine.terminal.MC3DPrintTerminalMenu.OrderView(oldQueued, Items.IRON_INGOT, 0, 4,
+                        PrintRequest.Status.QUEUED, null),
+                new com.pgmacdesign.mc3dprint.machine.terminal.MC3DPrintTerminalMenu.OrderView(newDone, Items.OAK_LOG, 1, 1,
+                        PrintRequest.Status.COMPLETE, null));
+        var shown = com.pgmacdesign.mc3dprint.machine.terminal.MC3DPrintTerminalMenu.orderedForDisplay(bands);
+        if (shown.get(0).id() != oldQueued) {
+            throw new GameTestAssertException("a finished order displaced an order still waiting"
+                    + " to run; waiting is its own band above history");
+        }
+
+        // The order book must not grow without limit. MAX_OPEN_REQUESTS only ever bounded orders
+        // with work left; finished ones were kept for the GUI and never swept, so printing one
+        // item at a time added a row per print to the panel and to the save file, forever.
+        // Asserted here rather than as a JUnit test because the queue needs a real Item, and the
+        // headless bootstrap this repo uses for that is allowed to fail and skip.
+        PrintRequestQueue book = new PrintRequestQueue();
+        UUID live = UUID.randomUUID();
+        book.enqueue(live, Items.IRON_INGOT, 64).orElseThrow();
+        UUID oldestFinished = null;
+        for (int i = 0; i < PrintRequestQueue.MAX_REQUESTS * 3; i++) {
+            UUID id = UUID.randomUUID();
+            book.enqueue(id, Items.OAK_LOG, 1).orElseThrow();
+            book.cancel(id, "bounds check");
+            if (oldestFinished == null) {
+                oldestFinished = id;
+            }
+        }
+        if (book.all().size() > PrintRequestQueue.MAX_REQUESTS) {
+            throw new GameTestAssertException("order book grew to " + book.all().size()
+                    + " rows; the ceiling is " + PrintRequestQueue.MAX_REQUESTS);
+        }
+        if (book.byId(oldestFinished).isPresent()) {
+            throw new GameTestAssertException("trimming kept the oldest finished order,"
+                    + " so it is dropping the wrong end of the list");
+        }
+        // The one rule trimming must never break: history is expendable, work is not.
+        if (book.byId(live).isEmpty()) {
+            throw new GameTestAssertException("an unfinished order was discarded to make room"
+                    + " for finished ones");
+        }
         helper.succeed();
     }
 

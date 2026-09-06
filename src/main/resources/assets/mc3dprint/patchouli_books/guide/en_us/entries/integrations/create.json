@@ -1,0 +1,17 @@
+{
+  "name": "Create",
+  "category": "mc3dprint:integrations",
+  "icon": "minecraft:piston",
+  "sortnum": 8,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "$(l)Create$() builds machines from moving parts: shafts, cogs, belts and windmills carry $(l)rotational force$() around, and contraptions physically move in the world instead of processing items in a box.$(br2)Its processing happens on millstones, mixers and presses, which are not crafting recipes."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "Millstones, mixers and presses are not crafting recipes, so zinc, andesite alloy, brass and rose quartz are priced by hand at $(l)Tier 2$() and $(l)Tier 3$().$(br2)Andesite alloy is the mod's early staple and is priced accordingly, so printing a stack of it is never the cheap route past building the machine that makes it.",
+      "title": "Values"
+    }
+  ]
+}

@@ -6,7 +6,7 @@
   "pages": [
     {
       "type": "patchouli:text",
-      "text": "The $(item)Blueprint Repository$() is your blueprint library. It starts $(l)empty$(): you fill it by depositing the discs you find and scan, then re-burn any catalogued build onto a fresh disc whenever you need a copy.$(br2)Right-click it to open the browser: catalogued builds on the left, details on the right."
+      "text": "The $(item)Blueprint Repository$() is a library block. Deposit a written disc and the build joins a browsable catalogue.$(br2)Select any entry and $(l)burn$() it back onto a blank disc, as often as you like."
     },
     {
       "type": "patchouli:text",
@@ -16,7 +16,7 @@
     {
       "type": "patchouli:text",
       "title": "Duplicates Recycle",
-      "text": "Deposit a disc the library $(l)already has$() and it won't be wasted: the disc is wiped and handed back as a $(item)Blank Blueprint Disc$() you can reuse.$(br2)$(l)Locked$() discs are protected: a duplicate locked disc is left untouched instead of being recycled.$(br2)A re-deposit never rewrites the catalogued entry: it keeps its name and its original depositor."
+      "text": "Depositing a disc you already hold gives the disc back as a $(l)blank$() rather than filing a duplicate.$(br2)The catalogue holds one entry per build, so a shared library never fills with copies of the same thing."
     },
     {
       "type": "patchouli:text",
@@ -26,12 +26,12 @@
     {
       "type": "patchouli:text",
       "title": "Renaming Scans",
-      "text": "The $(item)Structure Scanner$() names a capture after where you stood: $(o)Scan @ 307,70,10$(). Useless once you've deposited a few.$(br2)Select a scan and a $(l)rename$() field appears under its details. Type a name, press $(l)Set$() (or Enter). The new title sticks in the library $(l)and$() in the stored blueprint, so a disc you burn later carries it too.$(br2)$(l)Player scans only$(), and only the player who $(l)deposited$() it (or an $(l)operator$()) - a rename rewrites the stored blueprint, so it follows the same ownership rule as removal. Entries catalogued before depositors were tracked have no recorded owner, so those are $(l)operator-only$() too. Official builds keep their shipped names - they are content, and on a shared library one edit would retitle the build for the whole server.$(br2)Names cap at $(l)48$() characters; formatting codes and line breaks are stripped."
+      "text": "The scanner names a capture after where you stood: $(o)Scan @ 307,70,10$(). Select a scan and a $(l)rename$() field appears; type a name and press $(l)Set$().$(br2)$(l)Player scans only$(), and only by whoever deposited it, or an $(l)operator$(). Official builds keep their shipped names.$(br2)Names cap at 48 characters."
     },
     {
       "type": "patchouli:text",
       "title": "Removing a Scan",
-      "text": "Deposited something by mistake? Select it and press $(l)Del$() $(o)twice$() - the button arms on the first click and reads $(l)Sure?$() for five seconds.$(br2)$(li)Whoever $(l)deposited$() it can remove it$(li)$(l)Operators$() can remove anything$(li)$(l)Official$() builds can't be removed at all$(br2)The default library is shared, so an open button would let anyone wipe other players' contributions.$(br2)Removal takes the $(l)catalogue entry only$(), never the blueprint file: a disc burned earlier still prints, and re-depositing it restores the entry.$(br2)Entries catalogued before removal existed have no recorded depositor, so those are $(l)operator-only$()."
+      "text": "Select an entry and press $(l)Del$() $(o)twice$(): the button arms first and reads $(l)Sure?$() for five seconds.$(li)Whoever $(l)deposited$() it can remove it$(li)$(l)Operators$() can remove anything$(li)$(l)Official$() builds cannot be removed$(br2)Removal takes the entry only, never the blueprint: a disc burned earlier still prints."
     },
     {
       "type": "patchouli:text",

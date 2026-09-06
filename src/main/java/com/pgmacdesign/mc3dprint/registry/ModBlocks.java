@@ -71,8 +71,6 @@ public final class ModBlocks {
             CasingBlock::new, machineProperties()
                     .lightLevel(s -> s.getValue(CasingBlock.ACTIVE) ? 6 : 0));
 
-    public static final DeferredHolder<Block, Block> FILAMENT_CONVERTER = com.pgmacdesign.mc3dprint.compat.RegistryCompat.registerBlock(BLOCKS, "filament_converter",
-            com.pgmacdesign.mc3dprint.machine.FilamentConverterBlock::new, machineProperties());
 
     public static final DeferredHolder<Block, Block> REMOTE_TERMINAL = com.pgmacdesign.mc3dprint.compat.RegistryCompat.registerBlock(BLOCKS, "remote_terminal",
             com.pgmacdesign.mc3dprint.machine.RemoteTerminalBlock::new, machineProperties());

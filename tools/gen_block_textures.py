@@ -3,7 +3,7 @@
 Generate the MC3DPrint BLOCK textures to the VISUAL-REVAMP-BRIEF.
 
 Hero (32x32): tier1..4_printer, tier5..8_fabricator (base), filament_winder.
-Secondary (16x16): printer_casing, filament_converter, remote_terminal,
+Secondary (16x16): printer_casing, remote_terminal,
                    clock_generator, creative_energy_source, extrudium_ore.
 
 Filenames are kept identical so existing cube_all models still resolve. Run
@@ -464,30 +464,6 @@ def printer_casing():
     return img
 
 
-def filament_converter():
-    img = new(S); px = s_acc(img)
-    s_frame(px)
-    # clearer motif: a machined drum in the middle with a cyan throughput arrow
-    # passing left->right (a converter = filament transformed as it passes).
-    # central converter drum (light-grey machined body)
-    rect(px, 6, 5, 4, 6, BODY[3])
-    hline(px, 6, 5, 4, BODY[1]); vline(px, 6, 5, 6, BODY[1])
-    hline(px, 6, 10, 4, BODY[4]); vline(px, 9, 5, 6, BODY[4])
-    # a teal readout window on the drum
-    rect(px, 7, 6, 2, 1, ACCENT_TEAL)
-    put(px, 7, 8, BODY[2])
-    # cyan throughput arrow across the middle (left in, right out)
-    ay = 8
-    for x in range(3, 13):
-        put(px, x, ay, GLOW[3])
-    put(px, 4, ay, GLOW[2]); put(px, 11, ay, GLOW[1])
-    # arrowhead at the right
-    put(px, 12, ay, GLOW[0])
-    put(px, 11, ay - 1, GLOW[2]); put(px, 11, ay + 1, GLOW[2])
-    put(px, 10, ay - 2, GLOW[3]); put(px, 10, ay + 2, GLOW[3])
-    quantize_to_palette(img)
-    return img
-
 
 def remote_terminal():
     img = new(S); px = s_acc(img)
@@ -724,7 +700,6 @@ def main():
     written.append(save_block(filament_winder(), "filament_winder"))
     # secondary
     written.append(save_block(printer_casing(), "printer_casing"))
-    written.append(save_block(filament_converter(), "filament_converter"))
     written.append(save_block(remote_terminal(), "remote_terminal"))
     written.append(save_block(clock_generator(), "clock_generator"))
     written.append(save_block(redstone_clock(), "redstone_clock"))

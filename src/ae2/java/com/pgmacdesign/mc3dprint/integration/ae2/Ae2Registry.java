@@ -35,6 +35,20 @@ public final class Ae2Registry {
         return ModList.get().isLoaded(AE2);
     }
 
+    /**
+     * Machines expose an AE2 grid node so cables visibly connect to them. Registered here, behind
+     * the same {@link ModList} gate as everything else, because the capability token itself is an
+     * {@code appeng} class: naming it on a version where AE2 is absent would fail class loading
+     * for every player who does not run it.
+     */
+    @SubscribeEvent
+    public static void onRegisterCapabilities(
+            net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent event) {
+        if (ae2Present()) {
+            Ae2MachineNodes.install(event);
+        }
+    }
+
     @SubscribeEvent
     public static void onRegister(RegisterEvent event) {
         if (ae2Present()) {

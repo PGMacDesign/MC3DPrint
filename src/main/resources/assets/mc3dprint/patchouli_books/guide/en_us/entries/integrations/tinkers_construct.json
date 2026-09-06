@@ -1,0 +1,22 @@
+{
+  "name": "Tinkers' Construct",
+  "category": "mc3dprint:integrations",
+  "icon": "minecraft:anvil",
+  "sortnum": 3,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "$(l)Tinkers' Construct$() is about building your own tools: cast and assemble them from parts, then keep modifying them.$(br2)Its $(l)Smeltery$() alloys metals, and that is the part MC3DPrint cares about: an alloy is not a crafting recipe, so its value cannot derive."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "The $(l)Smeltery$() is not a crafting recipe, so its alloys are priced by hand, along with cobalt because that is $(l)mined$(). They run $(l)Tier 3$() to $(l)Tier 6$().$(br2)Manyullyn sits at the top because it alloys cobalt with netherite scrap: any lower and down-only printing would launder diamond-tier filament into a debris metal.",
+      "title": "Values"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "$(l)Necrotic bone$() is $(l)wind-only$(): a wither skeleton farm makes them in bulk, so it recycles into filament and is never printable.$(br2)That is the standing shape of the rule. Anything a farm can produce faster than it should be worth is a sink rather than a product, whichever mod adds it.",
+      "title": "A Filament Sink"
+    }
+  ]
+}

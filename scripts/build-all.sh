@@ -31,7 +31,9 @@ cd "$ROOT"
 
 # --- the NeoForge nodes built from THIS tree. Add future versions here (e.g. "1.21.8 26.2"). ---
 NEOFORGE_NODES=("1.21.1" "1.21.8" "1.21.9" "1.21.10" "1.21.11" "26.1" "26.2")
-LEGACY_BRANCH="legacy/1.20.1"
+# Overridable so a release candidate can be built from the 1.20.1 side of an open PR rather
+# than from the merged branch. Release CI leaves it unset and gets legacy/1.20.1.
+LEGACY_BRANCH="${MC3DP_LEGACY_REF:-legacy/1.20.1}"
 LEGACY_MC="1.20.1"
 CANONICAL_NODE="1.21.1"   # the vcsVersion; the tree is left on this on exit
 
@@ -97,9 +99,21 @@ echo "==> Building MC3DPrint $VERSION → $DIST"
 restore_node() { JAVA_HOME="$JDK21" ./gradlew "Set active project to $CANONICAL_NODE" -q >/dev/null 2>&1 || true; }
 trap restore_node EXIT
 
-# pick the production jar in a build/libs dir (exclude sources/dev/javadoc)
+# The production jar for THIS version, by exact name.
+#
+# This used to be `ls mc3dprint-*.jar | head -1`, which is alphabetical, not newest: a build/libs
+# that still held mc3dprint-0.10.0.jar from an earlier build shipped that file copied out as
+# mc3dprint-<new version>-neoforge-<node>.jar. The jar was stale by two releases and nothing said
+# so, because the name it was given was correct. Release CI never hit it (fresh checkout, one jar
+# in the directory), which is exactly what made it dangerous.
+#
+# Gradle names the artifact mc3dprint-<mod_version>.jar (archivesName = mod_id), and the build is
+# invoked with -Pmod_version="$VERSION", so the expected name is known exactly. Anything else is an
+# error rather than something to guess at.
 pick_jar() {
-    ls "$1"/mc3dprint-*.jar 2>/dev/null | grep -vE -- '-(sources|dev|javadoc|slim)\.jar$' | head -1
+    local want="$1/mc3dprint-$VERSION.jar"
+    [ -f "$want" ] || return 1
+    printf '%s\n' "$want"
 }
 
 # --- NeoForge nodes (this tree) ---
@@ -184,6 +198,25 @@ PYEOF
         echo "    $(basename "$zipfile") (formats $range verified)"
     done
 fi
+
+# Every dist jar must declare the version it is named after. pick_jar makes shipping a stale jar
+# impossible by construction; this catches the same class of mistake arriving another way.
+for j in "$DIST"/mc3dprint-"$VERSION"-*.jar; do
+    [ -f "$j" ] || continue
+    # Forge jars carry META-INF/mods.toml, NeoForge jars META-INF/neoforge.mods.toml. Asking for
+    # both at once makes unzip exit 11 for the one that is absent, which under `set -e` kills the
+    # build; read them one at a time and let a miss be a miss.
+    declared=""
+    for meta in META-INF/neoforge.mods.toml META-INF/mods.toml; do
+        declared="$(unzip -p "$j" "$meta" 2>/dev/null \
+            | sed -n 's/^version="\([^"]*\)".*/\1/p' | head -1 || true)"
+        [ -n "$declared" ] && break
+    done
+    if [ -n "$declared" ] && [ "$declared" != "$VERSION" ]; then
+        echo "ERROR: $(basename "$j") declares version $declared, expected $VERSION" >&2
+        exit 1
+    fi
+done
 
 echo
 echo "==> Done. Artifacts in $DIST:"

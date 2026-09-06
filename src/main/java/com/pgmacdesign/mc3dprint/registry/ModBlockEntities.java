@@ -26,10 +26,6 @@ public final class ModBlockEntities {
                     RegistryCompat.blockEntityType(com.pgmacdesign.mc3dprint.machine.multiblock.CasingBlockEntity::new,
                             ModBlocks.PRINTER_CASING.get()));
 
-    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<com.pgmacdesign.mc3dprint.machine.FilamentConverterBlockEntity>> FILAMENT_CONVERTER =
-            BLOCK_ENTITIES.register("filament_converter", () ->
-                    RegistryCompat.blockEntityType(com.pgmacdesign.mc3dprint.machine.FilamentConverterBlockEntity::new,
-                            ModBlocks.FILAMENT_CONVERTER.get()));
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<com.pgmacdesign.mc3dprint.machine.RemoteTerminalBlock.TerminalBlockEntity>> REMOTE_TERMINAL =
             BLOCK_ENTITIES.register("remote_terminal", () ->

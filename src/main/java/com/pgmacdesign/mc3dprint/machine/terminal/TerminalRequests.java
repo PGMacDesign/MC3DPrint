@@ -27,7 +27,7 @@ import java.util.UUID;
 public final class TerminalRequests {
 
     /** Ceiling on a single order. Large enough for a stack run, small enough to stay watchable. */
-    public static final int MAX_ORDER_QUANTITY = 1024;
+    public static final int MAX_ORDER_QUANTITY = 9999;
 
     private TerminalRequests() {}
 
@@ -69,8 +69,17 @@ public final class TerminalRequests {
 
         // Re-decide eligibility here rather than believing the row the client drew. The catalog it
         // is looking at may be a tick stale, or may not have come from us at all.
-        int bestTier = host.snapshot(level).bestTier();
-        PrintEligibility.Result eligibility = PrintEligibility.of(new ItemStack(item), bestTier);
+        if (!host.stocksNow(item)) {
+            // Re-checked here, not just filtered out of the catalog: the catalog is advisory and
+            // this packet carries an item id the client chose. Without this, a crafted packet
+            // could order anything priced, stocked or not.
+            actionBar(player, Component.literal(
+                    "The network is not holding any of that to copy"));
+            return;
+        }
+        MachineSnapshot snapshot = host.snapshot(level);
+        PrintEligibility.Result eligibility =
+                PrintEligibility.of(new ItemStack(item), snapshot.bestTier());
         if (!eligibility.printable()) {
             com.pgmacdesign.mc3dprint.compat.MsgCompat.actionBar(player,
                     Component.literal("Cannot print: " + eligibility.reason()));
@@ -80,8 +89,21 @@ public final class TerminalRequests {
             com.pgmacdesign.mc3dprint.compat.MsgCompat.actionBar(player, Component.literal(
                     "The terminal's order book is full (" + PrintRequestQueue.MAX_OPEN_REQUESTS
                             + " open orders)"));
+            // Refused, so nothing a viewer can see changed. Resyncing here would rebuild the whole
+            // catalog for a packet that did nothing, which is the amplification the cancel path
+            // already refuses: with the book full, every further order request would buy a grid
+            // walk and a full catalog send.
+            return;
         }
-        sync(player, menu, host, level);
+        // Reuses the snapshot taken for the eligibility check. Enqueuing changes the order book,
+        // which buildSync reads fresh, but not the machines or the filament, so a second grid walk
+        // would answer the identical question.
+        MC3DPrintNetwork.sendTo(player, buildSync(host, snapshot));
+    }
+
+    /** One branch-specific call, so the paths above read the same on both lines. */
+    private static void actionBar(ServerPlayer player, Component msg) {
+        com.pgmacdesign.mc3dprint.compat.MsgCompat.actionBar(player, msg);
     }
 
     /**
@@ -89,11 +111,14 @@ public final class TerminalRequests {
      * per-tick push costs a grid walk and nothing else when nothing has moved, instead of rebuilding
      * and resending the whole item catalog sixty times a second to every viewer.
      */
-    public static int stampOf(MachineSnapshot snapshot, PrintRequestQueue queue) {
+    public static int stampOf(MachineSnapshot snapshot, PrintRequestQueue queue,
+                              int stockedStamp) {
         int stamp = snapshot.machineCount() * 31 + snapshot.bestTier();
         for (int fu : snapshot.fuByTier()) {
             stamp = stamp * 31 + fu;
         }
+        // Stock decides what the catalog contains, so a sync has to notice it moving.
+        stamp = stamp * 31 + stockedStamp;
         for (PrintRequest r : queue.all()) {
             stamp = stamp * 31 + r.id().hashCode();
             stamp = stamp * 31 + r.delivered();
@@ -116,18 +141,29 @@ public final class TerminalRequests {
      */
     public static void sync(ServerPlayer player, MC3DPrintTerminalMenu menu,
                             TerminalHost host, ServerLevel level) {
-        MachineSnapshot snapshot = host.snapshot(level);
+        MC3DPrintNetwork.sendTo(player, buildSync(host, host.snapshot(level)));
+    }
+
+    /**
+     * The payload for a given state, built once.
+     *
+     * <p>Nothing in it is per-player: the catalog's affordability comes from the network's
+     * filament, not from anything the viewer owns. Building it inside the per-viewer loop meant a
+     * second grid walk and a full catalog rebuild for every extra person with the screen open, on
+     * top of the walk the change fingerprint already did.
+     */
+    public static TerminalSyncPacket buildSync(TerminalHost host, MachineSnapshot snapshot) {
         int bestTier = snapshot.bestTier();
         int[] fu = snapshot.fuByTier();
         List<CatalogEntry> catalog = TerminalCatalog.build(bestTier,
-                tier -> tier >= 1 && tier <= fu.length ? fu[tier - 1] : 0);
+                tier -> tier >= 1 && tier <= fu.length ? fu[tier - 1] : 0,
+                host.stockedItems());
 
         List<MC3DPrintTerminalMenu.OrderView> orders = new ArrayList<>();
         for (PrintRequest r : host.queue().all()) {
             orders.add(new MC3DPrintTerminalMenu.OrderView(
                     r.id(), r.item(), r.delivered(), r.quantity(), r.status(), r.reason()));
         }
-        MC3DPrintNetwork.sendTo(player, new TerminalSyncPacket(
-                catalog, orders, fu, bestTier, snapshot.machineCount()));
+        return new TerminalSyncPacket(catalog, orders, fu, bestTier, snapshot.machineCount());
     }
 }

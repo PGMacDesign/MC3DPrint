@@ -1,0 +1,22 @@
+{
+  "name": "Mystical Agriculture",
+  "category": "mc3dprint:integrations",
+  "icon": "minecraft:wheat_seeds",
+  "sortnum": 9,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "$(l)Mystical Agriculture$() lets you $(l)farm your resources$(). Essence crops grown from special seeds yield iron, diamonds and most modded metals, turning mining into farming.$(br2)That makes it the mod most likely to break an economy, so its pricing is the most conservative here."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "The essence ladder is pinned rung by rung, inferium at $(l)Tier 1$() up to supremium at $(l)Tier 5$(), so climbing it can never mint filament. $(l)Mystical Agradditions$() is a separate hook and its Nether and End ores are priced the same way.$(br2)Everything awakened is left $(l)unvalued$(): the Awakening Altar is a recipe the valuator cannot read, and that progression gate holds.",
+      "title": "Values"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "The crops themselves are not pinned; the general rule covers them. A planted crop costs its $(l)seed$(), and seeds cannot be wound back into filament.$(br2)A farm that made its own seeds would otherwise print money, which is exactly the hole this mod would have found first.",
+      "title": "The Crops"
+    }
+  ]
+}

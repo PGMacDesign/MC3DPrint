@@ -25,7 +25,7 @@ While it is installed, the machine emits a **full-strength (15) weak redstone si
 
 A **paused** machine reads 0: out of power, output full, obstructed, out of filament, in a zone conflict, waiting, or idle. The signal answers one question, "is this machine busy right now", which is what makes it usable as a stall alarm: wire the inverted signal into a lamp and the lamp lights the moment a print stalls.
 
-On a multiblock fabricator, **only the controller emits**, not the casings, so wire it from above or below the controller (the horizontal faces are casing on a formed fabricator). This is the same rule the redstone START input already follows.
+On a **formed** multiblock fabricator, **any casing carries the signal**, not just the controller, so you can wire it from any face of the pad. The controller sits in the centre of the base layer and is buried once the machine forms, so requiring it would leave a real build with nowhere to take the signal from. A casing that belongs to no formed machine stays dark.
 
 It **will not restart itself**. Printers start on a redstone rising edge, so a machine that also emits redstone would otherwise be a loop waiting to happen. While the machine is emitting, an incoming rising edge never queues a start, so wiring its own output back into itself (or just running dust beside it) cannot cause an infinite reprint. The tradeoff worth knowing: on a machine with this module, a redstone pulse that arrives mid-print is ignored rather than queued as a re-run.
 

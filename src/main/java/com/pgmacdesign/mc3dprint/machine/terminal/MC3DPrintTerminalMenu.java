@@ -96,7 +96,7 @@ public class MC3DPrintTerminalMenu extends AbstractContainerMenu {
                            int[] fuByTier, int bestMachineTier, int machineCount) {
         this.catalog = catalog;
         this.filtered = null; // a fresh catalog invalidates the filtered view built from the old one
-        this.orders = orders;
+        this.orders = byProgress(orders);
         System.arraycopy(fuByTier, 0, this.fuByTier, 0, Math.min(fuByTier.length, MAX_TIER));
         this.bestMachineTier = bestMachineTier;
         this.machineCount = machineCount;
@@ -121,8 +121,56 @@ public class MC3DPrintTerminalMenu extends AbstractContainerMenu {
         return filtered;
     }
 
+    /**
+     * Orders with running work first, then what is waiting, then what has finished.
+     *
+     * <p>Insertion order put the newest order last, so once the list outgrew the panel the job
+     * actually printing scrolled out of sight and the visible rows were all finished ones. Sorting
+     * by state keeps the row you care about on screen without the list jumping around, because
+     * within a bucket the original order is preserved.
+     */
     public List<OrderView> orders() {
         return orders;
+    }
+
+    /**
+     * Three bands: live work, then what is waiting, then finished history newest-first.
+     *
+     * <p>Plain insertion order pushed the job actually printing off the bottom of the panel once
+     * the list grew. Bucketing finished orders by state then anchored a cancelled row in place,
+     * since newer orders were appended after it. So history is reverse-chronological and no
+     * finished state is treated specially: a cancelled order is just an old order, and every new
+     * arrival pushes it one line further down.
+     *
+     * <p>Waiting orders are their own band rather than part of that history. Folding them in and
+     * reversing everything together let a just-finished order display above an order that is still
+     * waiting to run, which reads as the queue having skipped it.
+     *
+     * <p>Live and waiting both keep arrival order, because machines are leased
+     * first-come-first-served, so reading top to bottom follows the order work will finish in.
+     *
+     * <p>Applied on sync rather than in {@link #orders()}, which the screen calls every frame.
+     */
+    /** Exposed for tests: the display order the sync applies. */
+    public static List<OrderView> orderedForDisplay(List<OrderView> incoming) {
+        return byProgress(incoming);
+    }
+
+    private static List<OrderView> byProgress(List<OrderView> incoming) {
+        List<OrderView> live = new ArrayList<>();
+        List<OrderView> waiting = new ArrayList<>();
+        List<OrderView> finished = new ArrayList<>();
+        for (OrderView o : incoming) {
+            switch (o.status()) {
+                case RUNNING, HELD -> live.add(o);
+                case QUEUED -> waiting.add(o);
+                case COMPLETE, CANCELLED -> finished.add(o);
+            }
+        }
+        java.util.Collections.reverse(finished);
+        live.addAll(waiting);
+        live.addAll(finished);
+        return live;
     }
 
     /** Tier-unit FU reachable at exactly {@code tier} (1-based), for the tier rail. */

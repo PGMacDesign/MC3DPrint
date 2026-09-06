@@ -28,8 +28,13 @@ public record TerminalOrderPacket(ResourceLocation itemId, int quantity, Optiona
     public static final Type<TerminalOrderPacket> TYPE =
             new Type<>(ResourceLocation.fromNamespaceAndPath(MC3DPrint.MOD_ID, "terminal_order"));
 
-    /** Matches the queue's own ceiling on a single order, so the server never sees a silly number. */
-    public static final int MAX_QUANTITY = 1024;
+    /**
+     * The queue's ceiling, referenced rather than repeated. These were two literals that had to
+     * agree, and they stopped agreeing: the queue moved to 9999 while this stayed at 1024, so a
+     * typed 9999 was clamped on the wire and the order silently became 1024.
+     */
+    public static final int MAX_QUANTITY =
+            com.pgmacdesign.mc3dprint.machine.terminal.TerminalRequests.MAX_ORDER_QUANTITY;
 
     public static final StreamCodec<RegistryFriendlyByteBuf, TerminalOrderPacket> STREAM_CODEC =
             StreamCodec.ofMember(TerminalOrderPacket::write, TerminalOrderPacket::read);

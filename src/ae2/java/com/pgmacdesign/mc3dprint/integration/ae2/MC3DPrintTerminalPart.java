@@ -46,6 +46,7 @@ public class MC3DPrintTerminalPart extends AEBasePart implements IGridTickable {
     public MC3DPrintTerminalPart(IPartItem<?> partItem) {
         super(partItem);
         getMainNode()
+                .setFlags(GridFlags.REQUIRE_CHANNEL)
                 .setIdlePowerUsage(0.5)
                 .addService(IGridTickable.class, this);
     }
@@ -129,14 +130,19 @@ public class MC3DPrintTerminalPart extends AEBasePart implements IGridTickable {
         if (viewers.isEmpty()) {
             return; // nobody is looking; do not walk the grid at all
         }
-        int stamp = TerminalRequests.stampOf(host.snapshot(level), host.queue());
+        // One snapshot for the whole tick: the fingerprint and the payload are built from the
+        // same walk, and the payload is built once for everyone rather than once per viewer.
+        com.pgmacdesign.mc3dprint.machine.terminal.MachineSnapshot snapshot = host.snapshot(level);
+        int stamp = TerminalRequests.stampOf(snapshot, host.queue(),
+                host.stockedStamp());
         if (stamp == lastSyncStamp) {
             return; // nothing a viewer can see has moved
         }
         lastSyncStamp = stamp;
+        com.pgmacdesign.mc3dprint.network.TerminalSyncPacket payload =
+                TerminalRequests.buildSync(host, snapshot);
         for (ServerPlayer viewer : viewers) {
-            TerminalRequests.sync(viewer,
-                    (MC3DPrintTerminalMenu) viewer.containerMenu, host, level);
+            com.pgmacdesign.mc3dprint.network.MC3DPrintNetwork.sendTo(viewer, payload);
         }
     }
 

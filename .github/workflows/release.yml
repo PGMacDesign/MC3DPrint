@@ -2,8 +2,8 @@ name: Build & attach all mod jars to release
 
 # Runs when you publish a GitHub Release. Builds every shippable jar via
 # scripts/build-all.sh (NeoForge 1.21.1/1.21.8/1.21.9/1.21.10/1.21.11/26.1/26.2 from
-# this tree's Stonecutter nodes, Forge 1.20.1 from the legacy/1.20.1 branch) and
-# attaches them all to that release.
+# this tree's Stonecutter nodes, Forge 1.20.1 from the legacy/1.20.1 branch),
+# attaches them all to that release, and publishes EVERY one to CurseForge.
 on:
   release:
     types: [published]
@@ -15,10 +15,8 @@ permissions:
 jobs:
   build-and-attach:
     runs-on: ubuntu-latest
-    # Surface the secret as a job env var so the CurseForge steps can guard on it —
-    # the `secrets` context is NOT available in step `if:` conditions, but `env` is.
-    env:
-      CF_TOKEN: ${{ secrets.CURSEFORGE_API_KEY }}
+    outputs:
+      version: ${{ steps.ver.outputs.version }}
     steps:
       - name: Checkout (full history — the Forge build needs the legacy/1.20.1 branch)
         uses: actions/checkout@v4
@@ -71,39 +69,96 @@ jobs:
           RELEASE_TAG: ${{ github.event.release.tag_name }}
         run: gh release upload "$RELEASE_TAG" dist/*.jar dist/*.zip --clobber
 
-      # CurseForge: publish only the soak-tested targets. 1.20.1 (Forge) and 1.21.1
-      # (NeoForge) ship; the forward jars (1.21.8 through 26.2) are attached to the
-      # GitHub release but NOT auto-published to CurseForge until each passes its
-      # in-world soak — promote one by adding a step mirroring these (loaders:
-      # neoforge, game-versions: <mc>, java: 21 or 25 for 26.x) when it's ready.
-      - name: Publish 1.20.1 (Forge) to CurseForge
-        if: ${{ env.CF_TOKEN != '' }}
-        continue-on-error: true
-        uses: Kir-Antipov/mc-publish@v3.3
+      # Handed to the publish job rather than rebuilt there: building twice would double a
+      # ~30 minute release and could produce jars that differ from the ones attached above.
+      - name: Upload jars for the publish job
+        uses: actions/upload-artifact@v4
         with:
-          curseforge-id: 1587177
-          curseforge-token: ${{ secrets.CURSEFORGE_API_KEY }}
-          files: dist/mc3dprint-*-forge-1.20.1.jar
-          name: ${{ github.event.release.name }}
-          version: ${{ steps.ver.outputs.version }}
-          version-type: ${{ github.event.release.prerelease && 'beta' || 'release' }}
-          changelog: ${{ github.event.release.body }}
-          game-versions: 1.20.1
-          loaders: forge
-          java: 17
+          name: dist
+          path: dist/
+          retention-days: 1
 
-      - name: Publish 1.21.1 (NeoForge) to CurseForge
-        if: ${{ env.CF_TOKEN != '' }}
+  # One CurseForge upload per shipped jar. A matrix rather than eight near-identical steps:
+  # the failure mode of copy-paste here is a jar published under the WRONG Minecraft version,
+  # which is invisible in review and lands on players.
+  publish-curseforge:
+    needs: build-and-attach
+    runs-on: ubuntu-latest
+    # The `secrets` context is not available in step `if:` conditions, so the guard needs an env
+    # var. It holds the BOOLEAN, never the token: putting the secret here would hand it to every
+    # step in the job, including the third-party download-artifact action, which has no business
+    # seeing it. The token reaches exactly one input, on the one step that publishes.
+    env:
+      CF_ENABLED: ${{ secrets.CURSEFORGE_API_KEY != '' }}
+    strategy:
+      # Every target is independent, so one CurseForge hiccup must not cancel the rest.
+      fail-fast: false
+      matrix:
+        include:
+          - { target: "forge-1.20.1",    loader: forge,    game: "1.20.1",   java: 17 }
+          - { target: "neoforge-1.21.1", loader: neoforge, game: "1.21.1",   java: 21 }
+          - { target: "neoforge-1.21.8", loader: neoforge, game: "1.21.8",   java: 21 }
+          - { target: "neoforge-1.21.9", loader: neoforge, game: "1.21.9",   java: 21 }
+          - { target: "neoforge-1.21.10", loader: neoforge, game: "1.21.10", java: 21 }
+          - { target: "neoforge-1.21.11", loader: neoforge, game: "1.21.11", java: 21 }
+          # The 26.x line moved to Java 25 (see nodeJavaVersion in build.gradle).
+          - { target: "neoforge-26.1",   loader: neoforge, game: "26.1",     java: 25 }
+          - { target: "neoforge-26.2",   loader: neoforge, game: "26.2",     java: 25 }
+    steps:
+      - name: Download built jars
+        if: ${{ env.CF_ENABLED == 'true' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+
+      # The glob ends in the exact target plus .jar, so 1.21.1 cannot also match 1.21.10.
+      - name: Check the jar for this target exists
+        if: ${{ env.CF_ENABLED == 'true' }}
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          set -euo pipefail
+          count=$(find dist -maxdepth 1 -name "mc3dprint-*-$TARGET.jar" | wc -l)
+          if [ "$count" -ne 1 ]; then
+            echo "expected exactly 1 jar for $TARGET, found $count" >&2
+            find dist -maxdepth 1 -name '*.jar' >&2
+            exit 1
+          fi
+
+      - name: Publish ${{ matrix.target }} to CurseForge
+        id: publish
+        if: ${{ env.CF_ENABLED == 'true' }}
+        # Swallowed HERE only so the report step below can name the target that failed and
+        # so one bad upload does not cancel the other seven (with fail-fast: false). The
+        # report step then fails this matrix leg, so a failure is still red.
         continue-on-error: true
-        uses: Kir-Antipov/mc-publish@v3.3
+        uses: Kir-Antipov/mc-publish@52307b03863581dec6b652b83e597aec02ebb075 # v3.3
         with:
           curseforge-id: 1587177
           curseforge-token: ${{ secrets.CURSEFORGE_API_KEY }}
-          files: dist/mc3dprint-*-neoforge-1.21.1.jar
+          files: dist/mc3dprint-*-${{ matrix.target }}.jar
           name: ${{ github.event.release.name }}
-          version: ${{ steps.ver.outputs.version }}
+          version: ${{ needs.build-and-attach.outputs.version }}
           version-type: ${{ github.event.release.prerelease && 'beta' || 'release' }}
           changelog: ${{ github.event.release.body }}
-          game-versions: 1.21.1
-          loaders: neoforge
-          java: 21
+          game-versions: ${{ matrix.game }}
+          loaders: ${{ matrix.loader }}
+          java: ${{ matrix.java }}
+
+      # Turns the swallowed result back into a real one. A configured token that then fails to
+      # publish is a release missing a version, and a green tick would say the opposite; the
+      # summary line names which target so the failure is readable without opening logs.
+      - name: Report the outcome
+        if: ${{ always() && env.CF_ENABLED == 'true' }}
+        env:
+          TARGET: ${{ matrix.target }}
+          OUTCOME: ${{ steps.publish.outcome }}
+        run: |
+          if [ "$OUTCOME" = "success" ]; then
+            echo "CurseForge: published $TARGET" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "CurseForge: FAILED to publish $TARGET (outcome: $OUTCOME)" >> "$GITHUB_STEP_SUMMARY"
+            echo "CurseForge publish failed for $TARGET (outcome: $OUTCOME)" >&2
+            exit 1
+          fi

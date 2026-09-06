@@ -1,0 +1,17 @@
+{
+  "name": "Mekanism",
+  "category": "mc3dprint:integrations",
+  "icon": "minecraft:redstone",
+  "sortnum": 4,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "$(l)Mekanism$() is a large tech mod built around multiplying your ores: each processing tier adds machines and chemicals that turn one ore into more ingots, up to five.$(br2)It also brings its own alloys, reactors and antimatter, most made in custom machines no crafting recipe describes."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "Mekanism's ores are mined and its alloys come from custom machines, so both are priced by hand. They span $(l)Tier 2$() to $(l)Tier 6$(), with one exception at the very top.$(br2)An $(l)antimatter pellet$() sits at $(l)Tier 8$(), one of very few materials at that tier. It needs an antimatter plant, which is roughly where the mod ends.",
+      "title": "Values"
+    }
+  ]
+}

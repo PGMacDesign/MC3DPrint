@@ -25,7 +25,7 @@
     },
     {
       "type": "patchouli:text",
-      "title": "Lower Tiers Cost More",
+      "title": "Low Tiers Cost More",
       "text": "Lower-tier machines pay a higher FU multiplier per block: a Tier 1 printer costs more per block than a Tier 8 Fabricator.$(br2)Printing always costs a little $(l)more$() than the matter is worth. Stack $(l)4 Efficiency modules$() to reach exact break-even (1:1); you can never print matter for less than it's worth. Per-tier efficiencies are in the config."
     },
     {

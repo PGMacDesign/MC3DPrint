@@ -42,7 +42,14 @@ OUT_DIR = os.path.join(
     ROOT, "src/main/resources/assets/mc3dprint/textures/patchouli")
 
 W = H = 256
-CONTENT_H = 200  # keep all content in the top 200px
+# Patchouli's image page renders the TOP-LEFT 200x200 of a 256x256 texture, so
+# that square is the whole visible canvas: anything outside it is silently cut.
+# Centering on W//2 (=128) therefore pushes art right-of-centre AND lets it run
+# off the right edge, which is exactly what the multiblock diagrams used to do.
+# Centre on VIEW//2 (=100) and keep every pixel inside VIEW.
+VIEW = 200
+CX = VIEW // 2
+CONTENT_H = VIEW
 
 # ---------------------------------------------------------------------------
 # Palette — matches gen_printer_gui.py ("GUI dark tech-console") + tier accents
@@ -64,6 +71,19 @@ GLOW_BODY   = (0x5C, 0xC8, 0xFF, 255)
 CASING      = (0x9A, 0xA3, 0xAD, 255)  # BODY[3] — machined grey casing
 CASING_HI   = (0xBC, 0xC4, 0xCC, 255)  # BODY[2]
 CASING_LO   = (0x6E, 0x76, 0x7F, 255)  # BODY[4]
+
+# Guidebook ink. The console palette above is built for a near-black GUI; the
+# Patchouli page is cream parchment (~0xF0E4C4), so LABEL/WHITE on it measure
+# almost zero contrast and the captions read as blank. Book art gets its own
+# dark ink instead, and the tier accents are darkened for the same reason.
+INK         = (0x33, 0x2A, 0x20, 255)  # body text on parchment
+INK_DIM     = (0x63, 0x55, 0x42, 255)  # secondary captions
+BOOK_TIER = {
+    5: (0x9A, 0x73, 0x0E, 255),  # gold, darkened to read on cream
+    6: (0xA8, 0x4B, 0x14, 255),  # orange
+    7: (0x5E, 0x36, 0xA8, 255),  # violet
+    8: (0xA8, 0x1F, 0x68, 255),  # magenta
+}
 
 # Tier accents (tex_common.TIER), used to tint each layout's controller/title.
 TIER = {
@@ -115,6 +135,29 @@ def _fit_font(draw, s, start_size, max_w, floor=10):
         if draw.textlength(s, font=f) <= max_w:
             return f
     return _load_font(floor)
+
+
+def _fit_lines(draw, s, start_size, max_w, floor=10):
+    """Fit ``s`` into ``max_w``, wrapping to a second line rather than overflowing.
+
+    ``_fit_font`` alone returns the floor size even when the text is still too
+    wide there, which is how the Tier 8 count caption ("76 casing + 4 corners +
+    1 controller") ran past the visible edge. Shrinking further would not help:
+    the page draws this image at about half size, so anything under ~10px is
+    unreadable anyway. Breaking the line keeps the type legible instead.
+    """
+    font = _fit_font(draw, s, start_size, max_w, floor)
+    if draw.textlength(s, font=font) <= max_w:
+        return font, [s]
+    words = s.split(" ")
+    best = None
+    for i in range(len(words) - 1, 0, -1):
+        a, b = " ".join(words[:i]), " ".join(words[i:])
+        if max(draw.textlength(a, font=font),
+               draw.textlength(b, font=font)) <= max_w:
+            best = [a, b]
+            break
+    return font, best or [s]
 
 
 # ---------------------------------------------------------------------------
@@ -189,38 +232,40 @@ def _corner_style(tier):
 
 
 def gen_layout(tier, edge):
-    """Top-down N×N base diagram.
+    """Top-down N×N base diagram, drawn for the guidebook page.
 
-    Vertical budget (256px canvas, content kept in the top 200px):
-      title (centered, with top margin)         y ~  6
-      title underline                           y = 30
-      corner caption band (own row)             y = 38
-      grid (centered square, fixed top)         y = 56 .. 56+grid_px
-      controller caption                        below the grid
-      "N casing + 1 controller" caption         below that
-      "right-click controller to form" caption  below that
-    Everything is centered and font-fitted so no title or caption is clipped.
+    Everything lives inside the top-left ``VIEW``x``VIEW`` square and is centred
+    on ``CX``, because that square is all Patchouli shows of a 256x256 image.
+
+    No title is drawn. The Patchouli page already carries one ("Tier 5 · 3×3"),
+    so a second baked-in title was both a duplicate and the widest thing on the
+    canvas, which is what used to run off the right edge.
+
+    Vertical budget inside VIEW:
+      corner caption            y =  6
+      grid (centred square)     y = 22 .. 22+grid_px
+      controller caption        below the grid
+      "N casing + 1 controller" below that
+      "right-click to form"     below that
     """
     img, draw = new_canvas()
-    accent = TIER[tier]
-    underline_y = title_bar(draw, f"Tier {tier}  -  {edge}x{edge} Base", accent)
+    accent = BOOK_TIER[tier]
 
     c_fill, c_hi, c_lo, corner_label = _corner_style(tier)
 
-    # --- corner caption: its own row between the underline and the grid, so it
-    # never overlaps the title or the top of the grid. Font-fit to the canvas.
-    corner_cap_y = underline_y + 6
-    corner_font = _fit_font(draw, corner_label, 12, W - 16)
-    _text_center(draw, W // 2, corner_cap_y, corner_label, corner_font, LABEL)
+    # --- corner caption, fitted to the VISIBLE width, not the canvas width.
+    corner_cap_y = 6
+    corner_font = _fit_font(draw, corner_label, 12, VIEW - 16)
+    _text_center(draw, CX, corner_cap_y, corner_label, corner_font, INK_DIM)
 
-    # --- grid geometry: a centered square. Cell size is chosen so the whole
-    # grid fits a fixed footprint regardless of edge count, then re-centered.
-    grid_box = 116                      # target footprint for the N×N grid
+    # --- grid geometry: a centred square sized so the largest edge count still
+    # leaves room for the captions underneath.
+    grid_box = 108
     cell = max(8, grid_box // edge)
     grid_px = cell * edge
     gap = max(1, cell // 12)
-    gx = (W - grid_px) // 2             # horizontal centering
-    gy = corner_cap_y + 14              # grid starts just below the caption row
+    gx = CX - grid_px // 2
+    gy = corner_cap_y + 16
 
     half = edge // 2
     for r in range(edge):
@@ -231,43 +276,45 @@ def gen_layout(tier, edge):
             is_corner = (r in (0, edge - 1) and c in (0, edge - 1))
             inner = cell - gap
             if is_center:
-                # controller: tier-accent core with a glow ring
                 bevel_cell(draw, x, y, inner, accent,
                            tuple(min(255, v + 40) for v in accent[:3]) + (255,),
                            tuple(max(0, v - 50) for v in accent[:3]) + (255,))
                 ccx, ccy = x + inner // 2, y + inner // 2
-                draw.ellipse([ccx - 3, ccy - 3, ccx + 3, ccy + 3], fill=GLOW_CORE)
+                draw.ellipse([ccx - 2, ccy - 2, ccx + 2, ccy + 2], fill=WHITE)
             elif is_corner:
                 bevel_cell(draw, x, y, inner, c_fill, c_hi, c_lo)
             else:
                 bevel_cell(draw, x, y, inner, CASING, CASING_HI, CASING_LO)
 
-    # leader from the top-left corner cell up to the corner caption row.
+    # leader from the top-left corner cell up to the corner caption row
     corner_cx = gx + cell // 2
     corner_cy = gy + cell // 2
-    draw.line([(corner_cx, corner_cy), (corner_cx, corner_cap_y + 10)],
-              fill=LABEL_DIM)
+    draw.line([(corner_cx, corner_cy), (corner_cx, corner_cap_y + 11)],
+              fill=INK_DIM)
 
-    # --- controller caption: leader from the centre cell down to a caption row.
+    # --- controller caption: leader from the centre cell down to its label
     cen_cx = gx + half * cell + cell // 2
     cen_cy = gy + half * cell + cell // 2
-    ctrl_y = gy + grid_px + 8
+    ctrl_y = gy + grid_px + 6
     draw.line([(cen_cx, cen_cy), (cen_cx, ctrl_y)], fill=accent)
-    _text_center(draw, cen_cx, ctrl_y, "controller (center)", FONT_SMALL, accent)
+    ctrl_font = _fit_font(draw, "controller (center)", 11, VIEW - 16)
+    _text_center(draw, CX, ctrl_y, "controller (center)", ctrl_font, accent)
 
-    # --- footer captions: how to form. Font-fit the count line so even
-    # "80 casing + 1 controller" fits fully on the canvas.
-    base_cells = edge * edge - 1        # all base cells except the controller
+    # --- footer captions, all fitted to the visible width
+    base_cells = edge * edge - 1
     if tier == 8:
-        # four corners are Awakened Draconium, the rest are Printer Casing
         casing = base_cells - 4
         count_txt = f"{casing} casing + 4 corners + 1 controller"
     else:
         count_txt = f"{base_cells} casing + 1 controller"
-    count_font = _fit_font(draw, count_txt, 11, W - 12)
-    _text_center(draw, W // 2, ctrl_y + 16, count_txt, count_font, LABEL_DIM)
-    _text_center(draw, W // 2, ctrl_y + 30,
-                 "right-click controller to form", FONT_SMALL, LABEL_DIM)
+    count_font, count_lines = _fit_lines(draw, count_txt, 11, VIEW - 12)
+    y = ctrl_y + 15
+    for line in count_lines:
+        _text_center(draw, CX, y, line, count_font, INK_DIM)
+        y += 12
+    form_txt = "right-click controller to form"
+    form_font = _fit_font(draw, form_txt, 10, VIEW - 12)
+    _text_center(draw, CX, y + 1, form_txt, form_font, INK_DIM)
     return img
 
 

@@ -1,0 +1,22 @@
+{
+  "name": "Applied Energistics 2",
+  "category": "mc3dprint:integrations",
+  "icon": "mc3dprint:me_print_terminal",
+  "sortnum": 1,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "The deepest integration in the mod. AE2 adds the $(l)MC3DPrint Terminal$(): a cable part that lists what your networked machines can make and orders it, paid in $(l)Filament Units$().$(br2)It $(l)dispatches$() rather than crafts: an order queues a job on a real machine."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "The terminal uses a $(l)channel$(), like AE2's own terminals, so a busy network wants a dense cable or a controller.$(br2)Finished items go into ME storage. Orders belong to whoever placed them, and only the placer can cancel one.$(br2)See the Terminal entry under Machines for the full rules.",
+      "title": "Ordering"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "The Inscriber is not a crafting recipe, so AE2's processors are priced by hand, along with certus quartz and the network backbone. They run $(l)Tier 2$() to $(l)Tier 5$().$(br2)Certus is capped to amethyst's tier because it is auto-farmable, and the engineering processor at Tier 5 is what pulls the controller, drives and quantum ring up with it.",
+      "title": "Values"
+    }
+  ]
+}

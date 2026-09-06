@@ -38,6 +38,17 @@ public final class PrintRequestQueue {
     /** Hard ceiling on queued orders, so a stuck terminal cannot grow the save file forever. */
     public static final int MAX_OPEN_REQUESTS = 64;
 
+    /**
+     * Ceiling on the whole book, finished orders included.
+     *
+     * <p>{@link #MAX_OPEN_REQUESTS} only ever bounded orders with work left. Completed and
+     * cancelled ones were kept for the GUI to show and then never swept ({@link #sweepTerminal}
+     * existed but nothing called it), so printing one item at a time added a row per print,
+     * forever, in the GUI and in the save file. Trimming happens oldest-first and only ever
+     * touches finished rows, so live work can never be dropped to make room for history.
+     */
+    public static final int MAX_REQUESTS = 64;
+
     private final List<PrintRequest> requests = new ArrayList<>();
     /** machine position -> the request id currently leased to it. */
     private final Map<BlockPos, UUID> leases = new HashMap<>();
@@ -89,7 +100,24 @@ public final class PrintRequestQueue {
         }
         PrintRequest req = new PrintRequest(id, item, quantity, owner);
         requests.add(req);
+        trimHistory();
         return Optional.of(req);
+    }
+
+    /**
+     * Drops the oldest finished orders until the book fits {@link #MAX_REQUESTS}.
+     *
+     * <p>Only finished rows are eligible. If a player somehow holds MAX_REQUESTS live orders the
+     * list simply stays that long rather than discarding work, which is why the open-order ceiling
+     * still exists as its own gate.
+     */
+    private void trimHistory() {
+        for (java.util.Iterator<PrintRequest> it = requests.iterator();
+                requests.size() > MAX_REQUESTS && it.hasNext(); ) {
+            if (it.next().status().isTerminal()) {
+                it.remove();
+            }
+        }
     }
 
     /**

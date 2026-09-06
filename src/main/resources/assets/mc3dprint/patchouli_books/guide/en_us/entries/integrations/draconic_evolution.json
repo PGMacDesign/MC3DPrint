@@ -1,0 +1,17 @@
+{
+  "name": "Draconic Evolution",
+  "category": "mc3dprint:integrations",
+  "icon": "mc3dprint:tier8_fabricator",
+  "sortnum": 2,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "Draconic Evolution is what unlocks the $(l)Tier 8 Fabricator$(), the largest machine in the mod at 9×9.$(br2)Its four base corners must be $(l)Awakened Draconium$() blocks. Without Draconic Evolution installed there is no such block, so Tier 8 simply does not form and Tier 7 is the ceiling."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "The Tier 8 spool and the Tier 8 Fabricator both take awakened draconium to craft.$(br2)Draconic materials are priced by hand across $(l)Tier 7$() and $(l)Tier 8$(). Base draconium sits at Tier 7; awakened draconium is the mod's only $(l)Tier 8$() material, and one of very few at that tier anywhere.",
+      "title": "Tier 7 and 8"
+    }
+  ]
+}

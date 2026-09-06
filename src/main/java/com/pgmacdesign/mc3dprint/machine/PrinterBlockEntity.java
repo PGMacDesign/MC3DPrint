@@ -372,13 +372,30 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         printer.updateRedstoneOutput();
     }
 
+    /**
+     * Whether this machine can actually run work: true for any printer, and for a multiblock
+     * controller only once it has formed.
+     *
+     * <p>Public because a terminal must not dispatch to an unformed controller. {@link #tick()}
+     * bails out before any terminal handling while unformed, so an order bound there would sit
+     * forever instead of finding a machine that could run it.
+     */
+    public boolean isOperable() {
+        BlockState self = getBlockState();
+        return !self.hasProperty(com.pgmacdesign.mc3dprint.machine.multiblock.ControllerBlock.FORMED)
+                || self.getValue(com.pgmacdesign.mc3dprint.machine.multiblock.ControllerBlock.FORMED);
+    }
+
     private void tick() {
         // multiblock controllers only operate while formed
-        if (getBlockState().hasProperty(com.pgmacdesign.mc3dprint.machine.multiblock.ControllerBlock.FORMED)
-                && !getBlockState().getValue(com.pgmacdesign.mc3dprint.machine.multiblock.ControllerBlock.FORMED)) {
+        if (!isOperable()) {
             if (activeJob != null) {
                 cancelActiveJob();
             }
+            // Hand back any terminal order before bailing, exactly as the deconstruct branch below
+            // does. Without this, breaking a casing under a running order strands it on a machine
+            // whose tick returns before it ever looks at the queue.
+            releaseTerminalOrder();
             state = State.IDLE;
             return;
         }
@@ -653,13 +670,18 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             return;
         }
 
-        long unpaid = drainFu(fuCost, costTier);
+        // Ledgered, because both failure paths below have to hand this filament back and a refund
+        // is exact-tier while this drain is down-only.
+        long[] paidByTier = new long[SpoolItem.CAPACITY_BY_TIER.length];
+        long unpaid = drainFu(fuCost, costTier, paidByTier);
         if (unpaid > 0) {
             // The affordability check above and the drain disagreed, which should be unreachable
-            // within one tick. Hold rather than deliver: the player is out the filament that WAS
-            // taken, which is the safe direction to fail, since the alternative is a free item.
-            LOGGER.warn("[MC3DP] Tier {} machine at {} short {} base FU mid-order; holding",
-                    tier.number(), worldPosition, unpaid);
+            // within one tick. Hold rather than deliver, and give back the part that WAS taken:
+            // the alternative is either a free item or a partial charge for nothing.
+            long stranded = refundLedger(paidByTier);
+            LOGGER.warn("[MC3DP] Tier {} machine at {} short {} base FU mid-order; holding"
+                            + " (unreturned: {})",
+                    tier.number(), worldPosition, unpaid, stranded);
             state = State.PAUSED_NO_FILAMENT;
             return;
         }
@@ -673,10 +695,16 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
                 order.onDeliver().accept(order.id(), 1);
                 return;
             }
-            // Nowhere to bank it either, so give the filament back. Paying for nothing is the
-            // one outcome the economy must never have, and a refund makes the tick a no-op
-            // instead of a loss. itemProgress stays at done so it retries next tick.
-            creditFu(fuCost, costTier);
+            // Nowhere to bank it either, so give the filament back. Paying for nothing is the one
+            // outcome the economy must never have. Paid back into the tiers it actually came from:
+            // crediting the cost tier instead would lose the lot whenever the down-only drain had
+            // reached past it, because a credit is exact-tier and the cost tier may be full.
+            long stranded = refundLedger(paidByTier);
+            if (stranded > 0) {
+                // Only reachable if another writer took the freed space during this same tick.
+                LOGGER.warn("[MC3DP] Machine at {} could not return {} base FU after a failed"
+                        + " delivery; that filament is lost", worldPosition, stranded);
+            }
             itemProgress = maxProgress();
             state = State.PAUSED_OUTPUT_FULL;
             return;
@@ -994,6 +1022,43 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
      * racks) can supply. Mirrors the docked-first/reserve drain so a printer with
      * empty docked spools but a stocked rack still prints.
      */
+    /**
+     * Every tier's affordable FU in ONE pass, into {@code out} indexed from cost tier 1 at [0].
+     *
+     * <p>Calling {@link #affordableFu(int)} per tier re-gathered {@code reachableSources()} and
+     * re-swept every tier above the cost tier on each call, so answering the whole rail was
+     * quadratic in the tier count and walked the cable network once per tier. The terminal asks for
+     * the whole rail on every sync, per machine, which is where that bill landed.
+     *
+     * <p>Spending is down-only, so a cost at tier N is payable by anything from N upward: the
+     * per-tier availability is gathered once and then suffix-summed.
+     */
+    public void affordableFuByTier(int[] out) {
+        int ratio = FuConversion.ratio();
+        List<IFilamentSource> sources = reachableSources();
+        int maxTier = SpoolItem.CAPACITY_BY_TIER.length;
+        long[] availableAt = new long[maxTier + 2];
+        for (int tier = 1; tier <= maxTier; tier++) {
+            long base = FilamentDrain.availableTier(spools, tier, ratio);
+            for (IFilamentSource src : sources) {
+                base += src.availableExactTier(tier);
+            }
+            availableAt[tier] = base;
+        }
+        long payableFrom = 0;
+        long[] suffix = new long[maxTier + 2];
+        for (int tier = maxTier; tier >= 1; tier--) {
+            payableFrom += availableAt[tier];
+            suffix[tier] = payableFrom;
+        }
+        for (int costTier = 1; costTier <= out.length; costTier++) {
+            out[costTier - 1] = costTier <= maxTier
+                    ? FuConversion.clampToInt(
+                            FuConversion.fromBase(suffix[costTier], costTier, ratio))
+                    : 0;
+        }
+    }
+
     public int affordableFu(int costTier) {
         int ratio = FuConversion.ratio();
         List<IFilamentSource> sources = reachableSources();
@@ -1101,28 +1166,84 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
      * which is a bug in one of them, not a game state a player can reach.
      */
     private long drainFu(int amount, int costTier) {
+        return drainFu(amount, costTier, null);
+    }
+
+    /**
+     * As {@link #drainFu(int, int)}, but records what it actually took.
+     *
+     * <p>{@code takenByTier}, when non-null, must be at least {@code CAPACITY_BY_TIER.length} long
+     * and is filled with the base-FU drawn from each tier, indexed from tier 1 at [0]. Only the
+     * paths that may have to hand the filament back need it. A refund is exact-tier while this
+     * drain is down-only, so without the ledger a refund has to guess a tier, and guessing the cost
+     * tier loses the whole thing whenever the drain came from further up.
+     */
+    private long drainFu(int amount, int costTier, long[] takenByTier) {
         int ratio = FuConversion.ratio();
         long remainingBase = FuConversion.toBase(amount, costTier, ratio);
         List<IFilamentSource> sources = null;
         for (int tier = costTier; tier <= SpoolItem.CAPACITY_BY_TIER.length && remainingBase > 0; tier++) {
+            long owedAtTierStart = remainingBase;
             remainingBase = FilamentDrain.drainTier(spools, remainingBase, tier, ratio); // docked first
+            if (remainingBase > 0) {
+                if (sources == null) {
+                    sources = reachableSources();
+                }
+                for (IFilamentSource src : sources) {
+                    if (remainingBase <= 0) {
+                        break;
+                    }
+                    remainingBase -= src.drainExactTier(tier, remainingBase);
+                }
+            }
+            if (takenByTier != null) {
+                // The difference, not the request: drainTier may overshoot by up to one unit when a
+                // spool's unit is worth more than the remainder, and that overshoot is really gone
+                // from the spool, so it has to be really given back.
+                takenByTier[tier - 1] = owedAtTierStart - remainingBase;
+            }
             if (remainingBase <= 0) {
                 break;
-            }
-            if (sources == null) {
-                sources = reachableSources();
-            }
-            for (IFilamentSource src : sources) {
-                if (remainingBase <= 0) {
-                    break;
-                }
-                remainingBase -= src.drainExactTier(tier, remainingBase);
             }
         }
         return Math.max(0, remainingBase);
     }
 
-    /** Spool contents changed externally (e.g. Filament Converter top-off). */
+    /**
+     * Pays a ledger from {@link #drainFu(int, int, long[])} back into the tiers it came from.
+     *
+     * <p>Returns the base-FU that would not fit, which should be zero: the drain freed exactly this
+     * capacity at exactly these tiers a moment ago. It can be non-zero if another writer (the
+     * a player hot-swapping one) claimed the space in
+     * between, so the caller still has to look at it rather than assume the books balanced.
+     */
+    private long refundLedger(long[] takenByTier) {
+        int ratio = FuConversion.ratio();
+        List<IFilamentSource> sources = null;
+        long unrefunded = 0;
+        for (int tier = 1; tier <= takenByTier.length; tier++) {
+            long owed = takenByTier[tier - 1];
+            if (owed <= 0) {
+                continue;
+            }
+            owed -= FilamentDrain.fillTier(spools, owed, tier, ratio);
+            if (owed > 0) {
+                if (sources == null) {
+                    sources = reachableSources();
+                }
+                for (IFilamentSource src : sources) {
+                    if (owed <= 0) {
+                        break;
+                    }
+                    owed -= src.insertExactTier(tier, owed);
+                }
+            }
+            unrefunded += Math.max(0, owed);
+        }
+        return unrefunded;
+    }
+
+    /** Spool contents changed externally. */
     public void notifySpoolsChanged() {
         setChanged();
         syncToClients();
@@ -2486,7 +2607,7 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
     }
 
     /** Reverse of {@link #drainFu}: banks tier-unit FU docked-spools-first, then the network. */
-    private void creditFu(int amount, int tier) {
+    private long creditFu(int amount, int tier) {
         int ratio = FuConversion.ratio();
         long remainingBase = FuConversion.toBase(amount, tier, ratio);
         remainingBase -= FilamentDrain.fillTier(spools, remainingBase, tier, ratio);
@@ -2498,6 +2619,7 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
                 remainingBase -= src.insertExactTier(tier, remainingBase);
             }
         }
+        return Math.max(0, remainingBase);
     }
 
     /** Tier-unit FU of free exact-tier capacity across docked spools + the network. */
@@ -2646,6 +2768,7 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
     @Override
     public void onLoad() {
         super.onLoad();
+        MachineAttachments.load(this);
         // re-claim zone + chunk tickets for a job restored from disk
         if (activeJob != null && level instanceof ServerLevel serverLevel) {
             PrintZoneManager.claim(serverLevel, worldPosition, jobBox());
@@ -2656,6 +2779,18 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
             PrintZoneManager.claim(serverLevel, worldPosition, box);
             acquireChunks(serverLevel, box);
         }
+    }
+
+    @Override
+    public void setRemoved() {
+        super.setRemoved();
+        MachineAttachments.unload(this);
+    }
+
+    @Override
+    public void onChunkUnloaded() {
+        super.onChunkUnloaded();
+        MachineAttachments.unload(this);
     }
 
     // --- Client sync (renderer needs the active job + last placement) ---
@@ -3095,6 +3230,43 @@ public class PrinterBlockEntity extends BlockEntity implements MenuProvider {
         boolean emit = shouldEmitRedstone();
         if (blockState.getValue(PrinterBlock.EMITTING) != emit) {
             level.setBlock(worldPosition, blockState.setValue(PrinterBlock.EMITTING, emit), Block.UPDATE_ALL);
+            notifyCasingsOfEmission(blockState);
+        }
+    }
+
+    /**
+     * Pokes every casing of a formed pad when the controller's emission flips.
+     *
+     * <p>Casings report the controller's signal so redstone can be taken off any face of the
+     * structure, but they hold no state of their own, so nothing would tell the world their
+     * output had changed. {@code setBlock} above only notifies the CONTROLLER's neighbours, and
+     * on a formed pad the controller is buried: on a T8 it is one block of 81, with only its top
+     * and bottom exposed. Without this the signal would appear at a casing and then never clear,
+     * which is the worse half of the bug, since a lamp stuck on reads as a machine still working.
+     *
+     * <p>Only runs on the edge, never per tick: {@link #updateRedstoneOutput} calls it solely when
+     * the value actually changed.
+     */
+    private void notifyCasingsOfEmission(BlockState controllerState) {
+        if (level == null
+                || !controllerState.hasProperty(
+                        com.pgmacdesign.mc3dprint.machine.multiblock.ControllerBlock.FORMED)
+                || !controllerState.getValue(
+                        com.pgmacdesign.mc3dprint.machine.multiblock.ControllerBlock.FORMED)) {
+            return;
+        }
+        int half = com.pgmacdesign.mc3dprint.machine.multiblock.MultiblockPattern.baseEdge(tier()) / 2;
+        for (int dx = -half; dx <= half; dx++) {
+            for (int dz = -half; dz <= half; dz++) {
+                if (dx == 0 && dz == 0) {
+                    continue; // the controller itself; setBlock already notified its neighbours
+                }
+                BlockPos casing = worldPosition.offset(dx, 0, dz);
+                if (level.getBlockState(casing).getBlock()
+                        instanceof com.pgmacdesign.mc3dprint.machine.multiblock.CasingBlock) {
+                    level.updateNeighborsAt(casing, level.getBlockState(casing).getBlock());
+                }
+            }
         }
     }
 

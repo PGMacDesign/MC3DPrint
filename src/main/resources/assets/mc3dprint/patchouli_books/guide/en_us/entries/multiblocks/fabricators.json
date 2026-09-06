@@ -6,7 +6,7 @@
   "pages": [
     {
       "type": "patchouli:text",
-      "text": "Tiers 5-8 are $(l)Fabricators$(): multiblock machines built from a square base of $(item)Printer Casing$() with a controller block in the center. They print bigger, faster, and cheaper than any single-block printer.$(br2)$(li)$(l)T5$(): 3×3 base$(li)$(l)T6$(): 5×5 base$(li)$(l)T7$(): 7×7 base$(li)$(l)T8$(): 9×9 base"
+      "text": "Tiers 5-8 are $(l)Fabricators$(): a square base of $(item)Printer Casing$() with a controller in the center. They print bigger, faster and cheaper.$(li)$(l)T5$(): 3x3$(li)$(l)T6$(): 5x5$(li)$(l)T7$(): 7x7$(li)$(l)T8$(): 9x9, with $(item)Awakened Draconium$() corners"
     },
     {
       "type": "patchouli:crafting",
@@ -21,7 +21,7 @@
     {
       "type": "patchouli:text",
       "title": "Forming & Collapsing",
-      "text": "Lay the base, place the controller in the center, and $(l)right-click the controller$() to form the machine. The casing lights up. See the $(l)Build Walkthrough$() for the layouts.$(br2)Breaking a $(l)formed$() controller collapses the whole machine back into a $(l)single item$() that re-forms when re-placed with its inventory, upgrades and $(l)stored RF intact$(). It always comes back in $(l)Print mode$() with a clean status (any armed deconstruct region is dropped), so break-and-replace also works as a $(l)reset$() for a machine stuck in the wrong mode.$(br2)Move a Fabricator without rebuilding it.$(br2)Once formed, $(l)any casing$() stands in for the machine: power pushed into a casing feeds the controller, and sneak-clicking a casing with the $(item)Structure Scanner$() arms the controller's deconstruct region."
+      "text": "Lay the base, put the controller in the center, and $(l)right-click$() it to form. The casing lights up.$(br2)Breaking a formed controller collapses the machine into a $(l)single item$() that re-forms with its inventory, upgrades and stored RF intact.$(br2)Once formed, $(l)any casing$() stands in for the machine: power it or sneak-click it with the scanner."
     },
     {
       "type": "patchouli:spotlight",

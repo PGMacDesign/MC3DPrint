@@ -7,12 +7,12 @@
     {
       "type": "patchouli:text",
       "title": "Scan, Disc, Print",
-      "text": "The whole loop: $(l)scan$() a build with the Structure Scanner, save it to a $(l)disc$(), then $(l)print$() it anywhere a printer can reach.$(br2)Scans are stored as $(l)blueprints$() in the world save; a $(item)Blueprint Disc$() is the key that references one. Shift+Right Click a written disc to $(l)lock$() it against being overwritten.$(br2)Discs also turn up in $(l)structure chests$() and $(l)archaeology$() finds, modded ones included: print what you find, no scanning required. By default loot won't repeat a build you already have, so every disc you dig up is a new one."
+      "text": "$(l)Scan$() a build with the Structure Scanner, save it to a $(l)disc$(), then $(l)print$() it anywhere.$(br2)Shift+Right Click a written disc to $(l)lock$() it.$(br2)Discs also drop from structure chests and archaeology, and loot never repeats a build you have."
     },
     {
       "type": "patchouli:text",
       "title": "Naming & Tier",
-      "text": "Every written disc shows its $(l)tier$(): the highest material tier among its blocks (one diamond block in a pile of stone still reads as that tier). That's the lowest machine tier that can print all of it.$(br2)It also shows a $(l)Print Cost$() in that top tier: the total Filament the print needs if you feed it a single top-tier spool (cheaper blocks fold in at the down-conversion rate). Free structural blocks cost nothing: water, fire, farmland and dirt paths. Crops are not free; a planted block costs whatever you would have planted, so a field of wheat costs seeds. A crop whose seed has no value is refused by $(l)strict mode$(), which is the default.$(br2)To $(l)rename$() a disc, drop it in an $(item)Anvil$() and type a name, just $(l)1 level$() of XP.$(br2)$(l)Trophy items$() (mob heads/skulls) are restricted: printers never duplicate them, and they place only from specific $(l)official$() blueprints that carry them."
+      "text": "A disc shows its $(l)tier$(): the highest material tier among its blocks, and so the lowest machine that can print it.$(br2)It also shows a $(l)Print Cost$() in that tier. Water, fire, farmland and paths are free; crops cost their seed.$(br2)Rename one in an $(item)Anvil$() for 1 level. $(l)Trophy items$() are never duplicated."
     },
     {
       "type": "patchouli:text",

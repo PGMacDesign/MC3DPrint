@@ -357,13 +357,17 @@ public class StructurePrintGameTests {
                 .build();
         printer.inventory().setStackInSlot(PrinterBlockEntity.SLOT_TEMPLATE, discFor(helper, blueprint));
 
-        helper.runAfterDelay(40, () -> {
+        // succeedWhen, not a fixed delay: this samples every tick until the machine has judged the
+        // disc, so it does not depend on evaluation landing inside an arbitrary window. It sampled
+        // once at tick 40 before, which was marginal and finally broke when deleting two unrelated
+        // tests changed the batch's concurrency and pushed evaluation past that tick.
+        helper.succeedWhen(() -> {
             if (printer.state() != PrinterBlockEntity.State.NOT_PRINTABLE) {
-                helper.fail("T3 machine must refuse an all-netherite structure, got " + printer.state());
-                return;
+                throw new GameTestAssertException(
+                        "T3 machine must refuse an all-netherite structure, got " + printer.state());
             }
+            // Checked in the same pass: refusing is only half of it, the block must never land.
             helper.assertBlockNotPresent(Blocks.NETHERITE_BLOCK, new BlockPos(2, 2, 2));
-            helper.succeed();
         });
     }
 

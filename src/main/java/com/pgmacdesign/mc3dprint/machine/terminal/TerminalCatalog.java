@@ -36,8 +36,23 @@ public final class TerminalCatalog {
      * @param available given a tier, the tier-unit FU reachable at exactly that tier
      */
     public static List<CatalogEntry> build(int bestTier, IntUnaryOperator available) {
+        return build(bestTier, available, null);
+    }
+
+    /**
+     * As above, but restricted to {@code stocked} when it is non-null.
+     *
+     * <p>Being in stock decides whether a row is LISTED. It never decides whether the row can be
+     * ordered: eligibility runs exactly as before, so a wind-only or blacklisted item sitting in a
+     * drive is listed and greyed, not quietly made printable by owning one.
+     */
+    public static List<CatalogEntry> build(int bestTier, IntUnaryOperator available,
+                                           @javax.annotation.Nullable java.util.Set<Item> stocked) {
         List<CatalogEntry> out = new ArrayList<>();
         for (Item item : BuiltInRegistries.ITEM) {
+            if (stocked != null && !stocked.contains(item)) {
+                continue;
+            }
             ItemStack stack = new ItemStack(item);
             if (stack.isEmpty()) {
                 continue;

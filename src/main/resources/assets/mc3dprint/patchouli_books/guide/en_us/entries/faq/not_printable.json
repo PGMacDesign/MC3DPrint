@@ -7,7 +7,12 @@
     {
       "type": "patchouli:text",
       "title": "Not Printable",
-      "text": "$(l)Not Printable$() means the machine will $(l)never$() print that item: it has $(l)no FU value$() in strict mode ($(l)default$()), or it's a filament spool / restricted trophy the printer won't duplicate.$(br2)Some treasure is $(l)wind-only$(): saddles, name tags, wither skulls, and the dragon egg recycle into Filament Units at the Winder but never print back.$(br2)A material that's simply $(l)above the machine's tier$() (e.g. Tier 3 string in a Tier 2 printer) shows $(l)Requires a Tier N Printer$() instead; just use a higher-tier machine.$(br2)$(l)No Region Set$() means the machine is in $(l)Deconstruct Mode$() without a region: toggle the GUI's $(l)Mode$() button back to Print, or arm a region with the scanner.$(br2)To price unknown blocks, set $(o)unknownBlocksPrintable=true$()."
+      "text": "$(l)Not Printable$() means the machine will $(l)never$() print it: no FU value in strict mode, or a spool or restricted trophy.$(br2)Free structural blocks are the exception. Water, fire and farmland have no item at all and always print.$(br2)Above the machine's tier reads $(l)Requires a Tier N Printer$()."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Wind-Only",
+      "text": "Some treasure recycles but never prints: saddles, name tags, wither skulls and the dragon egg all wind into filament at the Winder.$(br2)They are a deliberate $(l)sink$(). Printing them back would undo the point of spending them."
     }
   ]
 }

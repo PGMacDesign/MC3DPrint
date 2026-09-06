@@ -1,0 +1,17 @@
+{
+  "name": "Immersive Engineering",
+  "category": "mc3dprint:integrations",
+  "icon": "minecraft:copper_ingot",
+  "sortnum": 7,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "$(l)Immersive Engineering$() is tech with a retro-industrial look: big multiblock machines wired together by $(l)overhead power lines$() on transformers and posts, rather than cables buried in a wall.$(br2)Its metals come out of the Arc Furnace and the Crusher."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "The Arc Furnace and the Crusher are not crafting recipes, and IE's metals are mined, so both are priced by hand at $(l)Tier 2$() and $(l)Tier 3$().$(br2)Tier 3 is deliberately flat. Steel matches Tinkers' and Mekanism's steel exactly, so no pack can arbitrage one mod's steel into another's.",
+      "title": "Values"
+    }
+  ]
+}

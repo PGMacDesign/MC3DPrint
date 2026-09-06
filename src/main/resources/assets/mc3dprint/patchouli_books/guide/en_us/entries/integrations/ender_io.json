@@ -1,0 +1,17 @@
+{
+  "name": "Ender IO",
+  "category": "mc3dprint:integrations",
+  "icon": "minecraft:ender_pearl",
+  "sortnum": 6,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "$(l)Ender IO$() is a compact tech mod best known for its $(l)conduits$(): power, items, fluids and redstone all run through one block instead of four parallel pipe runs.$(br2)Its machines run on a ladder of alloys made in the Alloy Smelter, which is why they need pinning."
+    },
+    {
+      "type": "patchouli:text",
+      "text": "The Alloy Smelter is not a crafting recipe, so Ender IO's alloy ladder is priced by hand. It runs $(l)Tier 3$() to $(l)Tier 6$(), redstone alloy at the bottom and end steel at the top.$(br2)Its steel matches Tinkers' and Mekanism's exactly: same material, same price.",
+      "title": "Values"
+    }
+  ]
+}
