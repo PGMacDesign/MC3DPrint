@@ -97,7 +97,7 @@ same release:
 | 1.21.10 | NeoForge 21.10 |
 | 1.21.11 | NeoForge 21.11 |
 | 26.1 | NeoForge 26.1.2.77 |
-| 26.2 | NeoForge 26.2.0.16 |
+| 26.2 | NeoForge 26.2.0.16-beta |
 
 Every jar goes to both CurseForge and the GitHub release. The 26.x minimums are exact
 because NeoForge still renames API within those lines: an older 26.1 is missing classes
